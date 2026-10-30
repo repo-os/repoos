@@ -178,3 +178,4 @@ The source robots files above remain unchanged.
 - 2026-10-30T09:11:57Z · body: Handoff summary (added)
 - 2026-10-30T09:11:57Z · message_queued at 2026-10-30T09:11:57.637Z
 - 2026-10-30T09:12:16Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-30T09:12:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
