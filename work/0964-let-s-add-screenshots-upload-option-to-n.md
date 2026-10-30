@@ -2,7 +2,7 @@
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-26T19:48:27Z"
+updated_at: "2026-10-30T15:21:06Z"
 ---
 ## Problem
 
@@ -57,3 +57,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-26T19:47:48Z · screenshots
 - 2026-10-26T19:47:49Z · screenshots
 - 2026-10-26T19:48:27Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
+- 2026-10-30T15:21:06Z · status inbox→ready
