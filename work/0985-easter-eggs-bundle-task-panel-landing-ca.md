@@ -1,16 +1,18 @@
 ---
-updated_at: "2026-10-30T16:01:25Z"
-review_passes: 1
 id: "0985"
 title: "Easter eggs bundle: task panel landing card padding, status card times, filename row"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-task-panel-landing-ca
 created_at: "2026-10-30T09:32:06Z"
+updated_at: "2026-10-30T16:01:26Z"
+review_rounds: 1
+routing_switches: 1
+review_passes: 1
 ---
 ## Items
 
@@ -98,4 +100,4 @@ Web only. Keep the popover keyboard- and touch-usable.
 - 2026-10-30T16:00:32Z · status active→review
 - 2026-10-30T16:00:34Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a58f63587) during finalization (#0734)
 - 2026-10-30T16:01:25Z · note: review pass 1: needs some work
-
+- 2026-10-30T16:01:26Z · status review→active
