@@ -10,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
-updated_at: "2026-10-30T09:11:23Z"
+updated_at: "2026-10-30T09:11:57Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -118,6 +118,36 @@ Optional docs negotiation was skipped because docs are static Cloudflare assets 
 
 ai-train was deliberately left unset in both repository robots files for the owner to decide.
 
+## Handoff summary
+Homepage acceptance criteria 1–4 already pass live, from commit 9a195ec7d on main: the initial HTML contains the data-agent-fallback <main>, meta description and og:description, and rel=alternate to /llms.txt. This branch only adds robots.txt.
+
+Both landing/public/robots.txt and user-docs/public/robots.txt contain exactly:
+
+User-agent: *
+Content-Signal: search=yes, ai-input=yes
+Allow: /
+
+There is no Sitemap line because no sitemap exists. ai-train is deliberately left unset for the owner to decide.
+
+Live robots checks after curl -fsSL https://repoos.org/robots.txt | head -5 and curl -fsSL https://docs.repoos.org/robots.txt | head -5 both begin:
+
+# As a condition of accessing this website, you agree to abide by the following
+# content signals:
+
+# (a) If a content-signal = yes, you may collect content for the corresponding
+# use.
+
+The live responses currently show only the Cloudflare managed comment block and no required directives. After deploy, if the comments persist, the owner must turn off Cloudflare Manage your robots.txt on both zones (repoos.org and docs.repoos.org): Security > Bots > Robots.txt / AI Crawl Control.
+
+Optional docs Accept negotiation is skipped: Cloudflare Pages static hosting has no per-request hook without adding a Worker, and a partial setup is not allowed. Verified with curl -sSI -H Accept: text/markdown https://docs.repoos.org/configuration:
+
+HTTP/2 200
+content-type: text/html
+
+No Vary header was returned. The existing .md twin remains available.
+
+The source robots files above remain unchanged.
+
 ## Activity
 
 - 2026-10-30T05:37:53Z · created · hello@repoos.org
@@ -145,3 +175,4 @@ ai-train was deliberately left unset in both repository robots files for the own
 - 2026-10-30T09:11:23Z · needs_input
 - 2026-10-30T09:11:23Z · status review→active
 - 2026-10-30T09:11:23Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-10-30T09:11:57Z · body: Handoff summary (added)
