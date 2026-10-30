@@ -3,6 +3,9 @@ id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Static `robots.txt` files are correct and built artifacts match, but live zones still serve Cloudflare’s comment-only r…"
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -187,3 +190,4 @@ The source robots files above remain unchanged.
 - 2026-10-30T09:15:14Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
 - 2026-10-30T09:32:18Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-10-30T09:33:44Z · note: review pass 4: needs some work
+- 2026-10-30T09:33:44Z · needs_input
