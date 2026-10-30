@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-10-30T09:33:45Z"
-review_passes: 4
 id: "0984"
 title: Make repoos.org and docs.repoos.org readable without JavaScript
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Static `robots.txt` files are correct and built artifacts match, but live zones still serve Cloudflare’s comment-only r…"
 priority: p2
 area: [landing, docs, infra]
 assigned_to: ai
@@ -15,9 +10,7 @@ created_by: hello@repoos.org
 branch: feat/make-repoos-org-and-docs-repoos-org-read
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-30T05:37:53Z"
-review_rounds: 2
-routing_switches: 1
-routing_escalations: 1
+updated_at: "2026-10-30T06:19:15Z"
 ---
 ## Problem
 
@@ -106,51 +99,6 @@ Leave ai-train unset unless the owner decides; flag that choice in your summary.
 
 Constraints: don't change docs content or URLs, and don't remove the existing .md twins, llms.txt, llms-full.txt or the rel=alternate links. If any fix lives in Cloudflare dashboard settings rather than the repo, say exactly what to change instead of guessing. Report back what you changed, where, and the output of each verification command.
 
-## Round 2 handoff verification
-## Changes and artifact checks
-
-Added static robots.txt files at landing/public/robots.txt and user-docs/public/robots.txt. Built artifact checks passed: landing/dist/robots.txt and user-docs/.vitepress/dist/robots.txt each contain User-agent: *, Content-Signal: search=yes, ai-input=yes, and Allow: /. Neither includes Sitemap (none exists) or ai-train. The docs build still emits llms.txt, llms-full.txt, and raw Markdown twins, including configuration.md.
-
-The landing build and current live https://repoos.org/ both contain the existing homepage fallback copy, install command, docs and llms.txt links, meta description, Open Graph description, and rel=alternate Markdown link. No homepage source change was needed.
-
-Production robots verification is pending deployment: curl -fsSL https://repoos.org/robots.txt and curl -fsSL https://docs.repoos.org/robots.txt currently return Cloudflare’s comment-only policy text and no User-agent, Content-Signal, or Allow directives. The branch artifact files are correct; recheck the live URLs after both static sites deploy.
-
-Cloudflare zone setting to check for repoos.org and docs.repoos.org: Dashboard > Security > Settings > Bot traffic > Configure AI bot policies. Set Search=Allow and Agent=Allow, keep Training=Allow so ai-train remains unset, and leave Enable Bot Preference Sync off if the current policy still overrides the origin robots.txt. Cloudflare documentation says Bot Preference Sync prepends managed directives only when enabled and at least one policy blocks; with all policies Allow it serves origin robots.txt unchanged.
-
-Optional docs negotiation was skipped because docs are static Cloudflare assets and supporting Accept-based routing requires adding request handling. Verified with curl -sSI -H Accept: text/markdown https://docs.repoos.org/configuration: HTTP/2 200, content-type: text/html, no Vary: Accept. Existing .md URL remains available as a raw Markdown artifact.
-
-ai-train was deliberately left unset in both repository robots files for the owner to decide.
-
-## Handoff summary
-Homepage acceptance criteria 1–4 already pass live, from commit 9a195ec7d on main: the initial HTML contains the data-agent-fallback <main>, meta description and og:description, and rel=alternate to /llms.txt. This branch only adds robots.txt.
-
-Both landing/public/robots.txt and user-docs/public/robots.txt contain exactly:
-
-User-agent: *
-Content-Signal: search=yes, ai-input=yes
-Allow: /
-
-There is no Sitemap line because no sitemap exists. ai-train is deliberately left unset for the owner to decide.
-
-Live robots checks after curl -fsSL https://repoos.org/robots.txt | head -5 and curl -fsSL https://docs.repoos.org/robots.txt | head -5 both begin:
-
-# As a condition of accessing this website, you agree to abide by the following
-# content signals:
-
-# (a) If a content-signal = yes, you may collect content for the corresponding
-# use.
-
-The live responses currently show only the Cloudflare managed comment block and no required directives. After deploy, if the comments persist, the owner must turn off Cloudflare Manage your robots.txt on both zones (repoos.org and docs.repoos.org): Security > Bots > Robots.txt / AI Crawl Control.
-
-Optional docs Accept negotiation is skipped: Cloudflare Pages static hosting has no per-request hook without adding a Worker, and a partial setup is not allowed. Verified with curl -sSI -H Accept: text/markdown https://docs.repoos.org/configuration:
-
-HTTP/2 200
-content-type: text/html
-
-No Vary header was returned. The existing .md twin remains available.
-
-The source robots files above remain unchanged.
-
 ## Activity
 
 - 2026-10-30T05:37:53Z · created · hello@repoos.org
@@ -158,37 +106,3 @@ The source robots files above remain unchanged.
 - 2026-10-30T05:42:54Z · status inbox→ready
 - 2026-10-30T05:43:08Z · status ready→active, branch
 - 2026-10-30T06:19:15Z · status active→review
-- 2026-10-30T06:19:16Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
-- 2026-10-30T06:21:15Z · note: review pass 1: needs some work
-- 2026-10-30T06:21:24Z · status review→active
-- 2026-10-30T06:22:39Z · body: Round 2 handoff verification (added); Changes and artifact checks (added)
-- 2026-10-30T06:22:39Z · message_queued at 2026-10-30T06:22:39.535Z
-- 2026-10-30T06:24:32Z · note: handoff requested (ui-review)
-- 2026-10-30T06:25:29Z · status active→review
-- 2026-10-30T06:25:30Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
-- 2026-10-30T06:26:24Z · note: review pass 2: needs some work
-- 2026-10-30T06:26:25Z · message_delivered: 1 message(s)
-- 2026-10-30T06:26:25Z · status review→active
-- 2026-10-30T06:28:40Z · status active→review
-- 2026-10-30T06:28:40Z · needs_input
-- 2026-10-30T06:28:41Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
-- 2026-10-30T09:09:47Z · needs_input (review-rounds-exhausted) cleared for review again by human
-- 2026-10-30T09:10:50Z · note: review pass 3: needs some work
-- 2026-10-30T09:10:50Z · needs_input
-- 2026-10-30T09:11:23Z · needs_input
-- 2026-10-30T09:11:23Z · status review→active
-- 2026-10-30T09:11:23Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
-- 2026-10-30T09:11:57Z · body: Handoff summary (added)
-- 2026-10-30T09:11:57Z · message_queued at 2026-10-30T09:11:57.637Z
-- 2026-10-30T09:12:16Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-10-30T09:12:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-10-30T09:12:16Z · status active→review
-- 2026-10-30T09:12:16Z · message_delivered: 1 message(s)
-- 2026-10-30T09:12:17Z · note: handoff requested (cli)
-- 2026-10-30T09:15:13Z · status active→review
-- 2026-10-30T09:15:13Z · needs_input
-- 2026-10-30T09:15:14Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (cad328067) during finalization (#0734)
-- 2026-10-30T09:32:18Z · needs_input (review-rounds-exhausted) cleared for review again by human
-- 2026-10-30T09:33:44Z · note: review pass 4: needs some work
-- 2026-10-30T09:33:44Z · needs_input
-
