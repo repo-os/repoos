@@ -2,16 +2,16 @@
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/add-screenshot-upload-to-new-story
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-30T15:21:06Z"
+updated_at: "2026-10-30T15:21:11Z"
 ---
 ## Problem
 
@@ -58,3 +58,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-26T19:47:49Z · screenshots
 - 2026-10-26T19:48:27Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-30T15:21:06Z · status inbox→ready
+- 2026-10-30T15:21:11Z · status ready→active, branch
