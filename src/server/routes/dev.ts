@@ -13,6 +13,7 @@
 import type { RouteHandler } from "./types.js";
 import { json } from "./utils.js";
 import type { DevTargetManager } from "../dev.js";
+import { repoAgentRunTmpOpts } from "../../core/agent-run-tmpdir.js";
 import {
   debuggerAgent,
   extractOneShotReportText,
@@ -152,6 +153,7 @@ export const explainDevFailure: RouteHandler = async (ctx, _req, res, params) =>
   });
   const result = await runPrompt(agent, devFailurePrompt(target, output), {
     cwd: ctx.config.root,
+    ...repoAgentRunTmpOpts(ctx.config),
     timeoutMs: 60_000,
   });
   recordOneShotSession(ctx.config.root, agent, result, { sessionType: "debugger", taskId: null });

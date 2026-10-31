@@ -54,6 +54,11 @@ import {
 import { markPmWorking } from "./pm-runs.js";
 import { deleteBranch, removeWorktree } from "../core/git.js";
 import { sanitizeSpawnArgs } from "../core/spawn-args.js";
+import {
+  applyAgentRunTmpEnv,
+  prepareAgentRunTmpdir,
+  removeAgentRunTmpdir,
+} from "../core/agent-run-tmpdir.js";
 
 /** A freeform run in flight, durable across a server reload. */
 export interface FreeformRunRecord {
@@ -170,7 +175,13 @@ function writeFreeformStore(config: RepoOSConfig, store: FreeformRunStore): void
   }
 }
 
-/** In-flight freeform runs from the durable registry. */
+/** Run ids whose PM child is still alive — boot sweep must keep their TMPDIR. */
+export function liveFreeformRunIds(config: RepoOSConfig): string[] {
+  return readFreeformRuns(config)
+    .filter((r) => pidAlive(r.pid))
+    .map((r) => r.runId);
+}
+
 export function readFreeformRuns(config: RepoOSConfig): FreeformRunRecord[] {
   return readFreeformStore(config).runs;
 }
@@ -281,6 +292,13 @@ export class FreeformRunManager {
       mkdirSync(join(this.config.root, this.config.cacheDir, "agent-logs"), { recursive: true });
       const outFd = openSync(out, "w");
       const errFd = openSync(err, "w");
+      const runTmp = prepareAgentRunTmpdir(
+        this.config.root,
+        this.config.cacheDir ?? ".repoos",
+        input.runId,
+      );
+      const env = childEnv();
+      applyAgentRunTmpEnv(env, runTmp.dir);
       try {
         proc = spawn(input.command.cmd, sanitizeSpawnArgs(input.command.args).args, {
           cwd: input.cwd,
@@ -290,8 +308,11 @@ export class FreeformRunManager {
           // Own process group, so the child survives the parent's reload and a
           // group signal (reload.ts's failure cleanup) does not reach it.
           detached: process.platform !== "win32",
-          env: childEnv(),
+          env,
         });
+      } catch (err) {
+        runTmp.cleanup();
+        throw err;
       } finally {
         closeSync(outFd);
         closeSync(errFd);
@@ -516,6 +537,7 @@ export class FreeformRunManager {
     } catch {
       /* the finalizer owns its own error handling; never crash the manager */
     } finally {
+      removeAgentRunTmpdir(this.config.root, this.config.cacheDir ?? ".repoos", record.runId);
       cleanupFreeformWorktree(this.config, record.pmWorktreeBranch);
     }
   }

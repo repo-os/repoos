@@ -18,6 +18,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { BuiltInAgentConfig, RepoOSConfig } from "../core/types.js";
 import { saveBuiltInAgentsConfig } from "../core/config.js";
+import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import {
   runPrompt,
   recordOneShotSession,
@@ -484,6 +485,7 @@ export async function runSkillGuidedAgent(
   try {
     result = await runPrompt(agent, prompt, {
       cwd: config.root,
+      ...repoAgentRunTmpOpts(config),
       timeoutMs: SKILL_GUIDED_TIMEOUT_MS,
     });
   } catch (err) {

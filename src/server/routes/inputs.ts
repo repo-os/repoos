@@ -17,6 +17,7 @@ import { commitTaskFile } from "../../core/git.js";
 import { removeInputAttachments } from "../../core/input.js";
 import { deleteInputFile, PathGuardError, WriteError } from "../write.js";
 import type { Agent } from "../../core/types.js";
+import { repoAgentRunTmpOpts } from "../../core/agent-run-tmpdir.js";
 import {
   extractOneShotReportText,
   resolvePmAgent,
@@ -134,7 +135,10 @@ async function enrichInputInBackground(
   let outcome = input;
   let enrichedApplied = false;
   try {
-    const result = await runPrompt(pm, inputPrompt(text), { cwd: ctx.config.root });
+    const result = await runPrompt(pm, inputPrompt(text), {
+      cwd: ctx.config.root,
+      ...repoAgentRunTmpOpts(ctx.config),
+    });
     recordOneShotSession(ctx.config.root, pm, result, { sessionType: "pm", taskId: null });
     const report = result.ok ? extractOneShotReportText(pm.cli, result.output ?? "") : "";
     const fields = parseEnrichment(report);

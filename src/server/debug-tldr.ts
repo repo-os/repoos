@@ -45,6 +45,7 @@ import {
   doneErrorTldrFingerprint,
   tldrFingerprint,
 } from "../core/debug-tldr-key.js";
+import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import {
   extractOneShotReportText,
   debuggerAgent,
@@ -360,7 +361,10 @@ export class DebugTldrManager {
       // stays keyed on the raw detail — it identifies the on-disk failure.
       const detailForPrompt = detail ? redactSecrets(detail).slice(0, DETAIL_CHARS) : undefined;
       const prompt = buildDebugTldrPrompt(task, reason, detailForPrompt, excerpt);
-      const run = this.deps.run ?? ((a: Agent, p: string, cwd: string) => runPrompt(a, p, { cwd }));
+      const run =
+        this.deps.run ??
+        ((a: Agent, p: string, cwd: string) =>
+          runPrompt(a, p, { cwd, ...repoAgentRunTmpOpts(this.deps.config) }));
       const result = await run(agent, prompt, this.deps.config.root);
       // Every LLM call must record its usage, even on failure.
       recordOneShotSession(this.deps.config.root, agent, result, {
@@ -423,7 +427,10 @@ export class DebugTldrManager {
     try {
       const excerpt = this.buildCloseOutExcerpt(taskId, currentCtx);
       const prompt = buildCloseOutTldrPrompt(task, closeOutContextForPrompt(currentCtx), excerpt);
-      const run = this.deps.run ?? ((a: Agent, p: string, cwd: string) => runPrompt(a, p, { cwd }));
+      const run =
+        this.deps.run ??
+        ((a: Agent, p: string, cwd: string) =>
+          runPrompt(a, p, { cwd, ...repoAgentRunTmpOpts(this.deps.config) }));
       const result = await run(agent, prompt, this.deps.config.root);
       recordOneShotSession(this.deps.config.root, agent, result, {
         sessionType: "debugger",

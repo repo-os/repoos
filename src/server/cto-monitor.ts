@@ -7,6 +7,10 @@
  * - review run completes
  * - agent turn exits
  *
+ * When `ctoSkipHealthy` is on (default), a tick with no stuck tasks, fresh build,
+ * normal processes, and an unchanged structural digest skips the CTO model entirely
+ * — so an idle board does not launch an agent every interval (#0649, #0989).
+ *
  * The digest includes:
  * - task counts and staleness (active with no recent output, review stuck)
  * - stuck patterns (handoff requested, no done; session idle > threshold)

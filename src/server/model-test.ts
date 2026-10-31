@@ -1,6 +1,8 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import type { Agent } from "../core/types.js";
 import type { ModelSourceResult } from "../core/models.js";
+import { applyAgentRunTmpEnv, prepareAgentRunTmpdir } from "../core/agent-run-tmpdir.js";
 import { oneShotFailureDetail, promptCommand } from "./agents.js";
 import { sanitizeSpawnArgs } from "../core/spawn-args.js";
 
@@ -59,6 +61,9 @@ export interface ModelTestOptions {
   cwd: string;
   timeoutMs?: number;
   concurrency?: number;
+  /** With {@link cacheDir}, isolates the probe's TMPDIR under the repo cache (#0989). */
+  repoRoot?: string;
+  cacheDir?: string;
 }
 
 export function sanitizeDiagnostic(text: string): string {
@@ -94,10 +99,26 @@ export function testModelCombination(
   if (cli === "codex") args.splice(1, 0, "--skip-git-repo-check");
   const spawnArgs = sanitizeSpawnArgs(args).args;
   return new Promise((resolve) => {
+    let cleanupRunTmp: (() => void) | undefined;
+    const childEnv = { ...process.env };
+    if (opts.repoRoot && opts.cacheDir) {
+      const handle = prepareAgentRunTmpdir(
+        opts.repoRoot,
+        opts.cacheDir,
+        `model-test-${randomUUID()}`,
+      );
+      cleanupRunTmp = handle.cleanup;
+      applyAgentRunTmpEnv(childEnv, handle.dir);
+    }
     let proc: ChildProcess;
     try {
-      proc = spawn(cmd, spawnArgs, { cwd: opts.cwd, stdio: ["ignore", "pipe", "pipe"] });
+      proc = spawn(cmd, spawnArgs, {
+        cwd: opts.cwd,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: childEnv,
+      });
     } catch (err) {
+      cleanupRunTmp?.();
       resolve(finish("failed", err instanceof Error ? err.message : String(err)));
       return;
     }
@@ -108,6 +129,7 @@ export function testModelCombination(
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      cleanupRunTmp?.();
       resolve(result);
     };
     const timer = setTimeout(() => {
