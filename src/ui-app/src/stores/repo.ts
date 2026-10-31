@@ -992,7 +992,7 @@ export const useRepoStore = defineStore("repo", () => {
    *  a hold whose auto-release time has passed is no longer shown. */
   const heldTasks = computed<Task[]>(() =>
     tasks.value
-      .filter((t) => !t.isArchived && isHoldActive(t, holdNow.value))
+      .filter((t) => t.status !== "done" && !t.isArchived && isHoldActive(t, holdNow.value))
       .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
   );
 
