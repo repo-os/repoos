@@ -30,7 +30,13 @@ import { localQueueHintForTask } from "../lib/local-queue-hint";
 const props = withDefaults(
   defineProps<{
     task: Task;
-    statusDetails?: { title: string; detail: string; timestamp?: string | null }[];
+    statusDetails?: {
+      title: string;
+      detail: string;
+      timestamp?: string | null;
+      /** Per-line verdicts (the landable checklist) drawn in status colours. */
+      checks?: { status: string; text: string }[];
+    }[];
   }>(),
   { statusDetails: () => [] },
 );
@@ -530,7 +536,18 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
               >{{ relTime(row.timestamp) }}</time
             >
           </div>
-          <p class="debug-status-text">{{ row.detail }}</p>
+          <ul v-if="row.checks?.length" class="debug-status-checks">
+            <li
+              v-for="(check, i) in row.checks"
+              :key="i"
+              class="debug-status-check"
+              :class="`is-${check.status}`"
+            >
+              <span class="debug-status-check-badge">{{ check.status.toUpperCase() }}</span>
+              {{ check.text }}
+            </li>
+          </ul>
+          <p v-else class="debug-status-text">{{ row.detail }}</p>
         </article>
         <div v-if="!statusDetails.length && !repo.doneErrorFor(task.id)" class="changes-empty">
           No additional status details. Recent checks and activity are in Logs.
@@ -794,6 +811,41 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   border-radius: 2px;
 }
 
+.debug-status-checks {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--txt-dim);
+  overflow-wrap: anywhere;
+}
+.debug-status-check-badge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.debug-status-check.is-pass .debug-status-check-badge {
+  color: var(--green);
+  background: var(--green-tint, transparent);
+}
+.debug-status-check.is-warn .debug-status-check-badge {
+  color: var(--amber, var(--yellow));
+  background: var(--amber-tint, transparent);
+}
+.debug-status-check.is-fail .debug-status-check-badge {
+  color: var(--red);
+  background: var(--red-tint);
+}
+.debug-status-check.is-fail {
+  color: var(--txt);
+}
 .debug-status-text {
   margin: 6px 0 0;
   color: var(--txt-dim);

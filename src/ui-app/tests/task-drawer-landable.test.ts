@@ -147,7 +147,8 @@ describe("task drawer landing pre-checks (#0867)", () => {
     const summary = wrapper.find(".drawer-status-summary");
     expect(summary.exists()).toBe(true);
     expect(summary.find(".drawer-status-l1").text()).toContain("Not landable");
-    expect(summary.find(".drawer-status-l3").text()).toContain("1 landing check failing");
+    expect(summary.find(".drawer-status-l2").text()).toContain("Merge with main");
+    expect(summary.find(".drawer-status-l3").exists()).toBe(false);
     expect(wrapper.findAll(".drawer-status-summary")).toHaveLength(1);
     expect(wrapper.find(".landable-checks").exists()).toBe(false);
 
