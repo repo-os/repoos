@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
-  AGENT_SKILL_URL,
+  AGENT_SKILL_RAW_URL,
   INSTALL_COMMANDS,
   readStarterPrompt,
   renderLlmsTxt,
@@ -16,7 +16,9 @@ describe("landing llms.txt", () => {
     expect(llms.startsWith("# RepoOS\n\n> ")).toBe(true);
     expect(llms).toContain("## Install");
     expect(llms).toContain("## Documentation");
-    expect(llms).toMatch(/^- \[Documentation\]\(https:\/\/docs\.repoos\.org\): .+$/m);
+    expect(llms).toMatch(
+      /^- \[Documentation index\]\(https:\/\/docs\.repoos\.org\/llms\.txt\): .+$/m,
+    );
   });
 
   it("publishes the six install commands, including mise's long form", () => {
@@ -26,11 +28,13 @@ describe("landing llms.txt", () => {
 
   it("links the public docs and repository, but not this repo's docs/ or agents.txt", () => {
     for (const url of [
-      "https://docs.repoos.org",
-      "https://docs.repoos.org/getting-started",
-      "https://docs.repoos.org/cli",
-      "https://docs.repoos.org/ai-agents",
-      AGENT_SKILL_URL,
+      "https://docs.repoos.org/llms.txt",
+      "https://docs.repoos.org/llms-essentials.txt",
+      "https://docs.repoos.org/llms-full.txt",
+      "https://docs.repoos.org/getting-started.md",
+      "https://docs.repoos.org/cli.md",
+      "https://docs.repoos.org/ai-agents.md",
+      AGENT_SKILL_RAW_URL,
       "https://github.com/repo-os/repoos",
     ]) {
       expect(llms).toContain(`](${url})`);

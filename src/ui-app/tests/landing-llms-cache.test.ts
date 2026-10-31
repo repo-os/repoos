@@ -50,5 +50,8 @@ describe("landing llms.txt caching", () => {
     expect(headers).toMatch(
       /\/llms-full\.txt\n\s+Cache-Control: public, max-age=300, must-revalidate/,
     );
+    expect(headers).toMatch(
+      /\/llms-essentials\.txt\n\s+Cache-Control: public, max-age=300, must-revalidate/,
+    );
   });
 });

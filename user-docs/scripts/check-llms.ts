@@ -13,6 +13,12 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  AGENT_SKILL_RAW_URL,
+  ESSENTIALS_FILE,
+  ESSENTIALS_TOKEN_BUDGET,
+  estimateTokens,
+} from "../.vitepress/llms-enrich";
+import {
   LLMS_INDEX_EXCLUDED_SOURCES,
   SITE_ORIGIN,
   discoverDocsPages,
@@ -65,6 +71,7 @@ export function collectLlmsFailures(options: LlmsCheckOptions = {}): string[] {
 
   const llmsTxt = readDist("llms.txt");
   const llmsFull = readDist("llms-full.txt");
+  const essentials = readDist(ESSENTIALS_FILE);
 
   const pages = discoverDocsPages(docsRoot);
   if (pages.length === 0) fail("no Markdown pages found under user-docs/");
@@ -85,10 +92,18 @@ export function collectLlmsFailures(options: LlmsCheckOptions = {}): string[] {
     if (!existsSync(path.join(distRoot, page.htmlPath))) {
       fail(`HTML route missing for ${page.source}: expected ${page.htmlPath}`);
     }
-    if (!llmsTxt.includes(`](${SITE_ORIGIN}/${page.markdownPath})`)) {
+    const pageLink = `](${SITE_ORIGIN}/${page.markdownPath})`;
+    if (!llmsTxt.includes(pageLink)) {
       fail(
         `llms.txt omits ${page.source} (expected a link to ${SITE_ORIGIN}/${page.markdownPath})`,
       );
+    } else {
+      const entry = llmsTxt
+        .split("\n")
+        .find((line) => line.includes(pageLink) && line.startsWith("- ["));
+      if (entry && !/: \S/.test(entry.slice(entry.indexOf(pageLink) + pageLink.length))) {
+        fail(`llms.txt entry for ${page.source} has no one-line description`);
+      }
     }
     if (!llmsFull.includes(`url: ${SITE_ORIGIN}/${page.markdownPath}`)) {
       fail(
@@ -99,8 +114,24 @@ export function collectLlmsFailures(options: LlmsCheckOptions = {}): string[] {
 
   // The index must teach an agent how to fetch one page as raw Markdown, and
   // point at the full dump.
-  for (const required of ["raw Markdown", `${SITE_ORIGIN}/llms-full.txt`]) {
+  for (const required of [
+    "raw Markdown",
+    `${SITE_ORIGIN}/llms-full.txt`,
+    `${SITE_ORIGIN}/${ESSENTIALS_FILE}`,
+    AGENT_SKILL_RAW_URL,
+  ]) {
     if (!llmsTxt.includes(required)) fail(`llms.txt does not mention ${required}`);
+  }
+  if (essentials) {
+    const tokens = estimateTokens(essentials);
+    if (tokens > ESSENTIALS_TOKEN_BUDGET) {
+      fail(
+        `${ESSENTIALS_FILE} is about ${tokens} tokens, over the ${ESSENTIALS_TOKEN_BUDGET} budget`,
+      );
+    }
+    if (!essentials.startsWith("# ")) {
+      fail(`${ESSENTIALS_FILE} is missing its H1`);
+    }
   }
   if (!llmsTxt.startsWith("# ") || !/^> /m.test(llmsTxt)) {
     fail("llms.txt is not llmstxt.org-shaped (expected an H1 and a blockquote summary)");
@@ -113,7 +144,9 @@ export function collectLlmsFailures(options: LlmsCheckOptions = {}): string[] {
       .map((match) => match[1])
       .filter(
         (url): url is string =>
-          url.startsWith(`${SITE_ORIGIN}/`) && url !== `${SITE_ORIGIN}/llms-full.txt`,
+          url.startsWith(`${SITE_ORIGIN}/`) &&
+          url !== `${SITE_ORIGIN}/llms-full.txt` &&
+          url !== `${SITE_ORIGIN}/${ESSENTIALS_FILE}`,
       )
       .map((url) => url.slice(SITE_ORIGIN.length + 1)),
   );
