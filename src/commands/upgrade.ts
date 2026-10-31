@@ -20,6 +20,9 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { c } from "../cli/colors.js";
+import { launcherScript } from "../core/launcher-runtime.js";
+
+export { launcherScript } from "../core/launcher-runtime.js";
 
 const REPO = "repo-os/repoos";
 
@@ -218,26 +221,6 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
     console.log("");
     console.log(notes);
   }
-}
-
-/**
- * The `repoos` launcher script: Bun when it's installed, Node otherwise
- * (`REPOOS_RUNTIME=node` pins Node). The runtime is picked each time `repoos`
- * runs, so installing Bun later takes effect with no reinstall. Must match the
- * heredoc in install.sh exactly; launcher.test.ts compares the two.
- */
-export function launcherScript(entry: string): string {
-  return [
-    "#!/usr/bin/env bash",
-    "# repoos launcher: Bun when it's installed, Node otherwise (REPOOS_RUNTIME=node pins Node).",
-    `entry="${entry}"`,
-    'if [ "${REPOOS_RUNTIME:-}" != "node" ]; then',
-    '  bun="${REPOOS_BUN_PATH:-$(command -v bun 2>/dev/null || true)}"',
-    '  if [ -n "$bun" ] && [ -x "$bun" ]; then exec "$bun" "$entry" "$@"; fi',
-    "fi",
-    'exec node --no-warnings "$entry" "$@"',
-    "",
-  ].join("\n");
 }
 
 /**
