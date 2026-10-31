@@ -2,14 +2,14 @@
 id: "0993"
 title: Auto-recover tasks that are active with no live engineer
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T12:21:11Z"
+updated_at: "2026-10-31T12:22:38Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ Seen on #0970 (done, branch merged to main): an engineer session that outlived t
 
 - 2026-10-31T10:08:41Z · created · njachowski@gmail.com
 - 2026-10-31T12:21:11Z · body: Also: stale state on done tasks (added)
+- 2026-10-31T12:22:38Z · status inbox→ready
