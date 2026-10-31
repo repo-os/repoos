@@ -9,11 +9,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T13:23:40Z"
+updated_at: "2026-10-31T16:18:07Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
 - [ ] **E2 · Page skeletons match their pages** (web) — each page's loading skeleton should mirror the real layout (e.g. /work has 6 status columns, /inputs has 3), not a generic block. Source: human report.
+- [ ] **E3 · Done column sorts by when the task reached done** (web) — the Done column currently sorts by `updated_at`, which any later write bumps (activity notes, flag clears, release records), so old done tasks jump back to the top. Sort Done by the timestamp of the last `status …→done` line in the task's activity log. Source: human report (#0970 sits at the top of Done though it reached done on 28 Oct).
 
 ## E1 · Card integrating text clamp
 
@@ -59,3 +60,4 @@ Web only. Read the column list from the board config rather than hard-coding six
 - 2026-10-31T13:23:30Z · body: Items (added 1, removed 1)
 - 2026-10-31T13:23:32Z · body: E2 · Page skeletons match their pages (added)
 - 2026-10-31T13:23:40Z · title
+- 2026-10-31T16:18:07Z · body: Items (added 1)
