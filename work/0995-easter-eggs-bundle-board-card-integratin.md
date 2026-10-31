@@ -1,6 +1,6 @@
 ---
 id: "0995"
-title: "Easter eggs bundle: board card integrating status clamped to three lines"
+title: "Easter eggs bundle: board card integrating text, page skeleton shapes"
 type: chore
 status: inbox
 priority: p3
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T13:23:32Z"
+updated_at: "2026-10-31T13:23:40Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -58,3 +58,4 @@ Web only. Read the column list from the board config rather than hard-coding six
 - 2026-10-31T13:08:03Z · screenshots
 - 2026-10-31T13:23:30Z · body: Items (added 1, removed 1)
 - 2026-10-31T13:23:32Z · body: E2 · Page skeletons match their pages (added)
+- 2026-10-31T13:23:40Z · title
