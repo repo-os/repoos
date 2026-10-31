@@ -11,7 +11,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T18:12:05Z"
+updated_at: "2026-10-31T19:01:10Z"
 ---
 ## Problem
 
@@ -40,6 +40,18 @@ Seen on #0970 (done, branch merged to main): an engineer session that outlived t
 ## Also: holds on done tasks
 The board's Held list shows done tasks (seen: #0899 and #0849, both status done with a bare hold: true and no reason, owner or time, so the hold predates the structured hold fields). A hold on a done task controls nothing. Acceptance: (1) moving a task to done clears hold and its reason, until, by and at fields; (2) a one-time migration clears hold on tasks that are already done; (3) the UI Held list and the driver brief exclude done tasks even if a stale hold remains; (4) tests for each.
 
+## Shots
+```json
+[
+{
+  "label": "Active without engineer recovery window setting",
+  "target": "default",
+  "route": "/settings?focus=watchdog.activeWithoutEngineerRecoverMs",
+  "highlight": "#setting-watchdog-activeWithoutEngineerRecoverMs"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-31T10:08:41Z · created · njachowski@gmail.com
@@ -50,3 +62,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-10-31T17:47:24Z · status ready→active, branch
 - 2026-10-31T18:10:25Z · note: adopted orphaned engineer pid 58658
 - 2026-10-31T18:12:05Z · note: adopted orphaned engineer pid 58658
+- 2026-10-31T19:01:10Z · body
