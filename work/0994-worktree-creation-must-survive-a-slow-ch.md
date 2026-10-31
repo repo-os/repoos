@@ -11,7 +11,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-10-31T20:31:51Z"
+updated_at: "2026-10-31T20:32:45Z"
 ---
 ## Problem
 
@@ -55,3 +55,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T19:39:10Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T20:31:51Z · status active→review
 - 2026-10-31T20:31:51Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-31T20:32:45Z · note: review pass 1: good to go
