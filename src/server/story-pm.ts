@@ -26,6 +26,7 @@ import {
   storiesDirOf,
   setStoryPmWorking,
   parseGeneratedStoryDefinition,
+  parseStoryDefinitionFile,
   rewriteStoryDefinition,
   storyFreeformPrompt,
 } from "../core/story-definition-files.js";
@@ -37,6 +38,8 @@ import {
   runPrompt,
 } from "./agents.js";
 import { patchTaskFile } from "./write.js";
+import { readFileSync } from "node:fs";
+import { extractSection, removeSection, SCREENSHOTS_HEADING } from "../core/task.js";
 
 export interface StoryPmDeps {
   config: RepoOSConfig;
@@ -111,7 +114,24 @@ export async function fleshOutStory(deps: StoryPmDeps, run: StoryPmRun): Promise
           config.root,
           storiesDirOf(config),
         );
-        const { definition, previousPath } = rewriteStoryDefinition(config, path, parsed, commits);
+        // Uploads can land while the PM is running. Preserve the latest
+        // screenshot section when replacing the placeholder with generated prose.
+        const current = parseStoryDefinitionFile(
+          readFileSync(join(config.root, path), "utf8"),
+          path,
+        );
+        const screenshots = current ? extractSection(current.body, SCREENSHOTS_HEADING) : null;
+        let nextBody = parsed.body;
+        if (screenshots) {
+          const withoutPmSection = removeSection(parsed.body.trim(), SCREENSHOTS_HEADING).trim();
+          nextBody = [withoutPmSection, screenshots].filter(Boolean).join("\n\n");
+        }
+        const { definition, previousPath } = rewriteStoryDefinition(
+          config,
+          path,
+          { ...parsed, body: nextBody },
+          commits,
+        );
         setStoryPmWorking(path, false);
         path = definition.path;
         name = definition.name;

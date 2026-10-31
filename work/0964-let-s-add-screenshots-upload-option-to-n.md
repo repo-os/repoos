@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 641061
-last_close_out_gate_at: "2026-10-31T12:32:16.399Z"
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 76ef4dceaeedb8543b9fe2fdca450dc442bb771e
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-screenshot-upload-to-new-story
@@ -16,6 +15,8 @@ pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
 updated_at: "2026-10-31T12:32:16Z"
+last_close_out_gate_ms: 641061
+last_close_out_gate_at: "2026-10-31T12:32:16.399Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-10-31T10:26:50.190Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 review_rounds: 2

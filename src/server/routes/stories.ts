@@ -29,13 +29,16 @@ import {
   storiesDirOf,
   listStoryDefinitionsFromCommits,
   markStoryPmChat,
+  parseStoryDefinitionFile,
   rewriteStoryDefinition,
   writeStoryDefinition,
 } from "../../core/story-definition-files.js";
+import { readFileSync } from "node:fs";
 import { deleteStoryFile, PathGuardError, WriteError } from "../write.js";
 import { dropPmImages, queuePmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { fleshOutStory } from "../story-pm.js";
 import { getGitWorker } from "../git-worker.js";
+import { appendScreenshotsSection, readAttachment, saveScreenshot } from "../attachments.js";
 
 function pmWithOverrides(base: Agent, body: Record<string, unknown>): Agent {
   const cli =
@@ -126,6 +129,49 @@ export const createFreeformStory: RouteHandler = async (ctx, req, res) => {
     void fleshOutStory(ctx, { path: definition.path, humanName, description, pm, runId });
   }
   return json(res, 201, { ok: true, pending: pm !== null, definition });
+};
+
+/** Persist an image against a story key and add its markdown reference. */
+export const uploadStoryScreenshot: RouteHandler = async (ctx, req, res, params) => {
+  const { config } = ctx;
+  const key = params.param1;
+  const definition = (await storyDefinitions(ctx)).find((item) => item.key === key);
+  if (!definition) return json(res, 404, { error: "Story not found" });
+  const body = (await readBody(req)) as { name?: unknown; mime?: unknown; data?: unknown };
+  const result = saveScreenshot(
+    config,
+    { id: key } as import("../../core/types.js").Task,
+    body ?? {},
+  );
+  if ("error" in result) return json(res, 400, { error: result.error });
+  result.url = `/api/stories/${encodeURIComponent(key)}/attachments/${encodeURIComponent(result.path.split("/").at(-1)!)}`;
+  // Re-read from disk before merging: uploads can race the background PM flesh-out
+  // (same pattern as patchTaskFile re-reading the task file on task uploads).
+  const absPath = join(config.root, definition.path);
+  const current = parseStoryDefinitionFile(readFileSync(absPath, "utf8"), definition.path);
+  if (!current) return json(res, 500, { error: "Story file could not be read" });
+  const updated = rewriteStoryDefinition(config, definition.path, {
+    name: current.name,
+    body: appendScreenshotsSection(current.body, [result]),
+  });
+  await commitStoryFileWithRetry(
+    config.root,
+    join(config.root, updated.definition.path),
+    `docs(stories): attach screenshot to "${definition.name}"`,
+  );
+  ctx.emitEvent({ type: "story.definitionsChanged", at: new Date().toISOString() });
+  return json(res, 201, { ok: true, attachment: result });
+};
+
+export const getStoryScreenshot: RouteHandler = (ctx, _req, res, params) => {
+  const stored = readAttachment(ctx.config, params.param1, params.param2);
+  if (!stored) return json(res, 404, { error: "Attachment not found" });
+  res.writeHead(200, {
+    "Content-Type": stored.mime,
+    "Cache-Control": "no-cache",
+    "Access-Control-Allow-Origin": "*",
+  });
+  res.end(stored.data);
 };
 
 /**
