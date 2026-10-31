@@ -11,7 +11,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-10-31T17:32:33Z"
+updated_at: "2026-10-31T18:10:24Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T16:39:36Z · status inbox→ready
 - 2026-10-31T16:40:05Z · cli_override, model_override
 - 2026-10-31T17:32:33Z · status ready→active, branch
+- 2026-10-31T18:10:24Z · note: adopted orphaned engineer pid 25301
