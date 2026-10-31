@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-10-31T01:45:50.159Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
@@ -92,3 +94,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T01:15:45Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (6b826c467) during finalization (#0734)
 - 2026-10-31T01:17:01Z · note: review pass 1: needs some work
 - 2026-10-31T01:17:07Z · status review→active
+
