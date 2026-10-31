@@ -3,12 +3,6 @@ id: "0970"
 title: "Check gate audit: record per-step timings and a timings report"
 type: chore
 status: done
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: "Agent stopped because commit 7cbb4d0c2 dropped the repoos.toml profile settings that the profile tests need, so they fail — have the driver apply that config on main (or restore it on the branch), then re-handoff."
-debug_tldr_at: "2026-10-28T13:20:20Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p1
 area: core
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-31T11:43:40Z"
+updated_at: "2026-10-31T12:19:48Z"
 review_rounds: 1
 review_passes: 1
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
@@ -122,3 +116,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-31T03:17:28Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T09:46:03Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T11:43:40Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-31T12:19:48Z · needs_input
