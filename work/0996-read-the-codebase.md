@@ -21,14 +21,14 @@ then turn what's missing into work.
 ## What to do
 
 1. Scan the repo: top-level structure, languages and frameworks, build and
-   test commands, and any existing conventions or docs.
+test commands, and any existing conventions or docs.
 2. Write the durable findings into `docs/` — architecture notes and the
-   conventions anyone working here must follow.
+conventions anyone working here must follow.
 3. Draft a small starter backlog of real tasks with `repoos new "<title>"`,
-   each concrete enough to work on its own.
+each concrete enough to work on its own.
 4. Record what you wrote here, then hand this task off with
-   `repoos mv <id> review` and stop — RepoOS runs the checks and moves the
-   status (or `done` if there is nothing left to capture).
+`repoos mv <id> review` and stop — RepoOS runs the checks and moves the
+status (or `done` if there is nothing left to capture).
 
 ## Notes for AI
 
