@@ -1390,7 +1390,7 @@ async function offerAreaVocabulary(root: string): Promise<void> {
   console.log(c.dim("  Preview targets route a task preview by its area — the picker and"));
   console.log(
     c.dim(
-      "  the PM prompt offer target areas automatically; see user-docs/configuration.md's Previews section.",
+      "  the PM prompt offer target areas automatically; see https://docs.repoos.org/configuration (Previews).",
     ),
   );
   const previewStub = await confirm(
@@ -1933,7 +1933,7 @@ async function guidedNewRepo(opts: NewProjectOptions): Promise<void> {
     console.log(c.dim("  Preview targets route a task preview by its area — the picker and"));
     console.log(
       c.dim(
-        "  the PM prompt offer target areas automatically; see user-docs/configuration.md's Previews section.",
+        "  the PM prompt offer target areas automatically; see https://docs.repoos.org/configuration (Previews).",
       ),
     );
   }
