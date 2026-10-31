@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
-updated_at: "2026-10-31T13:47:03Z"
+updated_at: "2026-10-31T13:48:00Z"
 ---
 ## Problem
 
@@ -39,3 +39,4 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T13:07:37Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T13:11:44Z · note: adopted orphaned engineer pid 60316
 - 2026-10-31T13:47:03Z · status active→review
+- 2026-10-31T13:48:00Z · note: review pass 1: good to go
