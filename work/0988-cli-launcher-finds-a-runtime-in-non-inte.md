@@ -11,7 +11,7 @@ branch: feat/cli-launcher-finds-a-runtime-in-non-inte
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T08:30:56Z"
-updated_at: "2026-10-31T11:23:21Z"
+updated_at: "2026-10-31T11:24:00Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -47,3 +47,4 @@ Find the launcher in the install scripts and the package bin before changing any
 - 2026-10-31T11:05:37Z · status review→active
 - 2026-10-31T11:23:20Z · status active→review
 - 2026-10-31T11:23:21Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-31T11:24:00Z · note: review pass 2: good to go
