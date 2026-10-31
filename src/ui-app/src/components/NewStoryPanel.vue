@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { randomId } from "../lib/random-id";
-import { X } from "lucide-vue-next";
+import { Info, X } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
@@ -17,6 +17,12 @@ import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
+import ShotDropzone from "./ShotDropzone.vue";
+import PendingAttachmentList from "./PendingAttachmentList.vue";
+import ScreenshotViewer from "./ScreenshotViewer.vue";
+import { pendingToShots } from "../lib/screenshot-viewer";
+import { markAttachmentUploading, markAttachmentUploadFailed } from "../lib/attachment-upload-ui";
+import type { PendingScreenshot } from "../stores/ui";
 
 const ui = useUiStore();
 const repo = useRepoStore();
@@ -30,6 +36,12 @@ function setOpen(v: boolean): void {
 const storyName = ref("");
 const description = ref("");
 const formError = ref("");
+interface PendingStoryScreenshot extends PendingScreenshot {
+  /** The story that owns this queued retry; never retarget a failed upload. */
+  uploadStoryKey?: string;
+}
+const pendingScreenshots = ref<PendingStoryScreenshot[]>([]);
+const dragDepth = ref(0);
 const freeformRunning = ref(false);
 const freeformRunId = ref<string | null>(null);
 /**
@@ -76,6 +88,7 @@ watch(
     storyName.value = "";
     description.value = "";
     formError.value = "";
+    pendingScreenshots.value = [];
     resetRun();
     initFreeformOverrides();
   },
@@ -137,6 +150,101 @@ function resetRun(): void {
   freeformRunId.value = null;
 }
 
+function addShotFiles(files: File[]): void {
+  for (const file of files) {
+    if (pendingScreenshots.value.length >= 12) break;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string")
+        pendingScreenshots.value.push({
+          name: file.name,
+          mime: file.type,
+          dataUrl: reader.result,
+          size: file.size,
+        });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+function onDragEnter(): void {
+  dragDepth.value++;
+}
+function onDragLeave(): void {
+  dragDepth.value = Math.max(0, dragDepth.value - 1);
+}
+function onDrop(event: DragEvent): void {
+  dragDepth.value = 0;
+  if (event.dataTransfer?.files.length) addShotFiles(Array.from(event.dataTransfer.files));
+}
+
+const shotInfoEl = ref<HTMLButtonElement | null>(null);
+const shotHintOpen = ref(false);
+const shotHintStyle = ref<Record<string, string>>({});
+function positionShotHint(): void {
+  const rect = shotInfoEl.value?.getBoundingClientRect();
+  if (!rect || typeof window === "undefined") return;
+  const maxW = Math.min(320, Math.max(200, window.innerWidth - 28));
+  const left = Math.min(Math.max(rect.left, 14), window.innerWidth - maxW - 14);
+  shotHintStyle.value = {
+    left: `${left}px`,
+    top: `${rect.bottom + 8}px`,
+    maxWidth: `${maxW}px`,
+  };
+}
+function showShotHint(): void {
+  shotHintOpen.value = true;
+  positionShotHint();
+}
+function hideShotHint(): void {
+  shotHintOpen.value = false;
+}
+function onShotHintViewportChange(): void {
+  if (shotHintOpen.value) positionShotHint();
+}
+onMounted(() => {
+  window.addEventListener("resize", onShotHintViewportChange);
+  window.addEventListener("scroll", onShotHintViewportChange, true);
+});
+onUnmounted(() => {
+  window.removeEventListener("resize", onShotHintViewportChange);
+  window.removeEventListener("scroll", onShotHintViewportChange, true);
+});
+
+const pendingViewerOpen = ref(false);
+const pendingViewerStart = ref(0);
+const pendingViewerShots = computed(() => pendingToShots(pendingScreenshots.value));
+function openPendingViewer(index: number): void {
+  pendingViewerStart.value = index;
+  pendingViewerOpen.value = true;
+}
+
+async function uploadScreenshots(key: string): Promise<void> {
+  for (const shot of [...pendingScreenshots.value]) {
+    if (shot.uploadStoryKey && shot.uploadStoryKey !== key) continue;
+    shot.uploadStoryKey = key;
+    markAttachmentUploading(shot);
+    try {
+      await repo.uploadStoryScreenshot(key, shot);
+      pendingScreenshots.value.splice(pendingScreenshots.value.indexOf(shot), 1);
+    } catch (error) {
+      markAttachmentUploadFailed(shot, error);
+    }
+  }
+}
+async function retryScreenshot(index: number): Promise<void> {
+  const shot = pendingScreenshots.value[index];
+  const key = shot?.uploadStoryKey;
+  if (!key || !shot) return;
+  markAttachmentUploading(shot);
+  try {
+    await repo.uploadStoryScreenshot(key, shot);
+    pendingScreenshots.value.splice(index, 1);
+  } catch (error) {
+    markAttachmentUploadFailed(shot, error);
+  }
+}
+const submittedStoryKey = ref("");
+
 async function createStory(): Promise<void> {
   const desc = description.value.trim();
   if (!desc || freeformRunning.value) return;
@@ -155,6 +263,8 @@ async function createStory(): Promise<void> {
       freeformRunId.value,
       overrides,
     );
+    submittedStoryKey.value = res.definition?.key ?? "";
+    if (submittedStoryKey.value) await uploadScreenshots(submittedStoryKey.value);
     submittedPending.value = res.pending === true;
     submitted.value = true;
     storyName.value = "";
@@ -167,10 +277,24 @@ async function createStory(): Promise<void> {
   }
 }
 
+function hasFailedPendingScreenshots(): boolean {
+  return pendingScreenshots.value.some((s) => s.uploadPhase === "failed");
+}
+
 /** Back to a fresh form; the submitted story keeps being fleshed out. */
 function createAnotherStory(): void {
+  clearResolvedScreenshots();
+  if (!hasFailedPendingScreenshots()) submittedStoryKey.value = "";
   resetRun();
   requestAnimationFrame(() => document.getElementById("ns-story-name")?.focus());
+}
+
+/** Keep failed picks attached to their original story; discard anything resolved. */
+function clearResolvedScreenshots(): void {
+  for (let i = pendingScreenshots.value.length - 1; i >= 0; i--) {
+    const shot = pendingScreenshots.value[i];
+    if (shot?.uploadPhase !== "failed") pendingScreenshots.value.splice(i, 1);
+  }
 }
 
 /** Acknowledge the in-flight creation and leave the pane. */
@@ -193,6 +317,10 @@ function onOpenAutoFocus(e: Event): void {
     <DialogContent
       :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
       @open-auto-focus="onOpenAutoFocus"
+      @dragenter.prevent="onDragEnter"
+      @dragleave.prevent="onDragLeave"
+      @dragover.prevent
+      @drop.prevent="onDrop"
     >
       <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
       <div class="drawer-head">
@@ -219,6 +347,14 @@ function onOpenAutoFocus(e: Event): void {
           <p v-else class="ff-done-copy">
             Your story was saved as written. It's on the Stories page now.
           </p>
+          <PendingAttachmentList
+            v-if="pendingScreenshots.length"
+            :items="pendingScreenshots"
+            aria-label="Story screenshot uploads"
+            :allow-remove="false"
+            @open-shot="openPendingViewer"
+            @retry="(i) => void retryScreenshot(i)"
+          />
           <div class="btn-row" style="margin-top: 18px">
             <Button variant="default" @click="createAnotherStory">Create another story</Button>
             <Button variant="outline" @click="done">Done</Button>
@@ -241,6 +377,49 @@ function onOpenAutoFocus(e: Event): void {
           </div>
         </div>
         <template v-else>
+          <div class="field">
+            <div class="shot-label-row">
+              <label>Screenshots</label>
+              <button
+                ref="shotInfoEl"
+                type="button"
+                class="field-info"
+                aria-label="Accepted screenshot formats"
+                @mouseenter="showShotHint"
+                @mouseleave="hideShotHint"
+                @focus="showShotHint"
+                @blur="hideShotHint"
+              >
+                <Info class="size-3.5" />
+              </button>
+            </div>
+            <ShotDropzone :over="dragDepth > 0" @files="addShotFiles">{{
+              pendingScreenshots.length
+                ? `Add more — ${pendingScreenshots.length} screenshot${pendingScreenshots.length === 1 ? "" : "s"} added`
+                : "Click to add screenshots, or drop them anywhere on this panel"
+            }}</ShotDropzone>
+            <PendingAttachmentList
+              v-if="pendingScreenshots.length"
+              :items="pendingScreenshots"
+              @open-shot="openPendingViewer"
+              @remove="(i) => pendingScreenshots.splice(i, 1)"
+              @retry="(i) => void retryScreenshot(i)"
+            />
+            <div
+              v-if="pendingScreenshots.some((s) => s.uploadPhase === 'failed')"
+              class="ff-notice"
+              role="status"
+            >
+              Some screenshots failed to upload. Retry them above.
+            </div>
+          </div>
+          <Teleport to="body">
+            <div v-if="shotHintOpen" class="field-info-pane" role="tooltip" :style="shotHintStyle">
+              <p>
+                PNG, JPEG, GIF, WebP, AVIF or BMP — attached to the new story when you create it.
+              </p>
+            </div>
+          </Teleport>
           <div class="field">
             <label for="ns-story-name">Story name</label>
             <Input
@@ -302,4 +481,10 @@ function onOpenAutoFocus(e: Event): void {
       </div>
     </DialogContent>
   </Dialog>
+
+  <ScreenshotViewer
+    v-model:open="pendingViewerOpen"
+    :shots="pendingViewerShots"
+    :start-index="pendingViewerStart"
+  />
 </template>

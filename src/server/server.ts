@@ -380,6 +380,8 @@ import {
   getStoryPmOutput,
   pmStoryMessage,
   pmStoryInterrupt,
+  uploadStoryScreenshot,
+  getStoryScreenshot,
   // Tasks routes
   getTasks,
   getTaskContext,
@@ -3322,6 +3324,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/stories", createStoryDefinition);
   router.register("PATCH", /^\/api\/stories\/([^/]+)$/, updateStoryDefinition);
   router.register("POST", "/api/stories/freeform", createFreeformStory);
+  router.register("POST", /^\/api\/stories\/([^/]+)\/attachments$/, uploadStoryScreenshot);
+  router.register("GET", /^\/api\/stories\/([^/]+)\/attachments\/([^/]+)$/, getStoryScreenshot);
   // Story delete (#0634) — registered definitions only; tag-only stories 404.
   router.register("DELETE", /^\/api\/stories\/([^/]+)$/, deleteStory);
   // The story panel's PM chat (#0515) — the story counterparts of the task

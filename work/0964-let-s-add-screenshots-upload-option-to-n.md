@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-31T12:20:44Z"
-review_passes: 3
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
@@ -10,15 +8,10 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-screenshot-upload-to-new-story
-cli_override: cursor
-model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-last_check_failure: "repoos check at 2026-10-31T10:26:50.190Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
-review_rounds: 2
-routing_switches: 1
-dev_error_count: 3
+updated_at: "2026-10-31T01:15:43Z"
 ---
 ## Problem
 
@@ -58,26 +51,6 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 ![Screenshot-2026-10-27-at-02.44.47](/api/tasks/0964/attachments/att_b18d1156-5238-4f43-a252-50d3eeb9115f.png)
 ![Screenshot-2026-10-27-at-02.45.59](/api/tasks/0964/attachments/att_e26f6cd1-0434-4a70-8ac4-5240b2cab068.png)
 
-## Shots
-```json
-[
-{
-"label": "New story screenshot picker",
-"target": "default",
-"route": "/stories",
-"highlight": ".shot-dropzone",
-"steps": [
-{
-"click": "button.new-btn"
-},
-{
-"waitMs": 300
-}
-]
-}
-]
-```
-
 ## Activity
 
 - 2026-10-26T19:47:15Z · created · hello@repoos.org
@@ -86,26 +59,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-26T19:48:27Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-10-30T15:21:06Z · status inbox→ready
 - 2026-10-30T15:21:11Z · status ready→active, branch
-- 2026-10-30T15:26:26Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-10-31T00:43:22Z · status ready→active
-- 2026-10-31T00:48:36Z · body
-- 2026-10-31T00:50:07Z · body
-- 2026-10-31T00:54:16Z · note: adopted orphaned engineer pid 76136
-- 2026-10-31T00:59:11Z · note: adopted orphaned engineer pid 76136
-- 2026-10-31T01:15:44Z · status active→review
-- 2026-10-31T01:15:45Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (6b826c467) during finalization (#0734)
-- 2026-10-31T01:17:01Z · note: review pass 1: needs some work
-- 2026-10-31T01:17:07Z · status review→active
-- 2026-10-31T01:46:07Z · agent exited with an error (codex) · 2026-10-31T01:45:56.230648Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
-- 2026-10-31T01:46:07Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-31T01:45:56.230648Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
-- 2026-10-31T04:40:37Z · cli_override, model_override
-- 2026-10-31T10:14:39Z · needs_input
-- 2026-10-31T10:14:39Z · status active→review
-- 2026-10-31T10:16:01Z · note: review pass 2: needs some work
-- 2026-10-31T10:16:02Z · message_queued at 2026-10-31T10:16:02.036Z
-- 2026-10-31T10:16:02Z · status review→active
-- 2026-10-31T10:26:49Z · message_delivered: 1 message(s)
-- 2026-10-31T10:44:32Z · note: shots: failed — preview for target "default" did not start: preview server for #0964 did not become ready
-- 2026-10-31T12:19:50Z · status active→review
-- 2026-10-31T12:20:44Z · note: review pass 3: good to go
-
+- 2026-10-31T01:15:43Z · status active→review
