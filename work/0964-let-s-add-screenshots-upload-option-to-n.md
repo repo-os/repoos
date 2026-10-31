@@ -2,10 +2,10 @@
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "2026-10-31T01:45:56.230648Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
+needs_input_detail: "2026-10-31T01:46:16.846101Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 priority: p2
 area: web
 assigned_to: ai
@@ -14,13 +14,13 @@ branch: feat/add-screenshot-upload-to-new-story
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T01:46:07Z"
+updated_at: "2026-10-31T01:46:27Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-31T01:45:50.159Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
-dev_error_count: 1
+dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-31T01:46:07.200Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -101,3 +101,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T01:17:07Z · status review→active
 - 2026-10-31T01:46:07Z · agent exited with an error (codex) · 2026-10-31T01:45:56.230648Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
 - 2026-10-31T01:46:07Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-10-31T01:45:56.230648Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-10-31T01:46:27Z · status active→review
