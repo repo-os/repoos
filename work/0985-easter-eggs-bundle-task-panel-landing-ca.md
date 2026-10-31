@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-task-panel-landing-ca
 created_at: "2026-10-30T09:32:06Z"
-updated_at: "2026-10-31T00:04:25Z"
+updated_at: "2026-10-31T00:05:34Z"
 last_close_out_gate_ms: 381279
 last_close_out_gate_at: "2026-10-31T00:04:25.614Z"
 last_check_failure: "repoos check at 2026-10-30T16:41:38.708Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review failure status cards with ages and full-time tooltip (target \"default\"): hover .debug-status-detail:first-child .debug-status-time: hover: Timeout 5000ms exceeded. on /work?task=9999&tab=debug (http://127.0.0.1:50515/work?shotState=drawer:statusDetails)"
@@ -133,4 +133,4 @@ Web only. Keep the popover keyboard- and touch-usable.
 - 2026-10-30T16:52:52Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (5a0f58242) during finalization (#0734)
 - 2026-10-30T16:53:47Z · note: review pass 2: good to go
 - 2026-10-31T00:04:25Z · close-out gate completed in 381s
-
+- 2026-10-31T00:05:34Z · status done→done, release:success
