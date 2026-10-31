@@ -89,9 +89,10 @@ Current launchers probe, in order:
 1. **Bun** — `REPOOS_BUN_PATH`, `bun` on `PATH`, `~/.bun/bin/bun`, mise shims,
    Homebrew/`/usr/local` paths, and a bundled copy under your install directory
    when present.
-2. **Node** — `node` on `PATH`, mise shims, the nvm **default** alias
-   (`~/.nvm/versions/node/<version>/bin/node`), then `/opt/homebrew/bin`,
-   `/usr/local/bin`, and `/usr/bin`.
+2. **Node** — `node` on `PATH`, mise shims, then the nvm **default** alias
+   (reads `alias/default`, follows one level of alias names such as `lts/iron`,
+   and tries both `versions/node/<version>` and `versions/node/v<version>`),
+   then `/opt/homebrew/bin`, `/usr/local/bin`, and `/usr/bin`.
 
 If nothing matches, the launcher prints where it looked and how to fix it
 (install Bun, install Node ≥ 20.6.0, set `REPOOS_BUN_PATH`, or run
