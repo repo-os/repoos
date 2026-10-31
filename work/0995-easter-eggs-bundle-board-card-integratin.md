@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T16:23:02Z"
+updated_at: "2026-10-31T16:23:04Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -71,6 +71,23 @@ In the Done column, the most recently completed task is first. A later bookkeepi
 ### Notes for AI
 Web only; the activity log is in the task body (`- <timestamp> · status A→B` lines) and is already available to the UI. Do not add a new frontmatter field and do not migrate any task files (AGENTS.md: never write work/*.md directly). Check the line format against real done tasks such as #0970 and #0988.
 
+## E4 · Open any past review pass from the Review tab
+### Problem
+Every review pass is stored on disk at `.repoos/reviews/<task id>/<pass>.md` (with the latest also at `.repoos/reviews/<id>.md`), and the Review tab's table lists them all with time, reviewer, model and verdict. But the rows are not interactive and the report body below is always the latest pass, so older reports, including failed passes and their error text, cannot be read in the UI.
+
+### Desired UX
+Clicking (or keyboard-activating) a pass row shows that pass's report in the body, with the selected row highlighted and a clear way back to the latest. The default view stays the latest pass.
+
+### Acceptance criteria
+- [ ] Each row in the review history table is a keyboard-focusable control; selecting it renders that pass's stored report below.
+- [ ] The latest pass is selected by default and a "Latest" control returns to it; the selection resets when the task changes.
+- [ ] A failed pass shows its stored failure text instead of an empty report.
+- [ ] The report for a pass is served from the stored per-pass file by an existing or new read-only route (documented in the CLI/API parity list if a route is added) and is covered by a test, including a pass that does not exist.
+- [ ] Rows use the existing styled controls, no native title tooltips.
+
+### Notes for AI
+Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-history-table` markup in `TaskDrawer.vue`. Read-only; do not change how reports are written.
+
 ## Activity
 
 - 2026-10-31T13:08:01Z · created · njachowski@gmail.com
@@ -82,3 +99,4 @@ Web only; the activity log is in the task body (`- <timestamp> · status A→B` 
 - 2026-10-31T16:18:09Z · body: E3 · Done column sorts by when the task reached done (added)
 - 2026-10-31T16:18:11Z · title
 - 2026-10-31T16:23:02Z · body: Items (added 1)
+- 2026-10-31T16:23:04Z · body: E4 · Open any past review pass from the Review tab (added)
