@@ -1,16 +1,19 @@
 ---
-updated_at: "2026-10-31T13:48:00Z"
-review_passes: 1
 id: "0991"
 title: "Serve Markdown for Accept: text/markdown at both site roots"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 28333, alive), #0992 check (pid 40140, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 12s"
 priority: p2
 area: [landing, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
+updated_at: "2026-10-31T15:34:41Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -41,4 +44,5 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T13:11:44Z · note: adopted orphaned engineer pid 60316
 - 2026-10-31T13:47:03Z · status active→review
 - 2026-10-31T13:48:00Z · note: review pass 1: good to go
-
+- 2026-10-31T15:33:49Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 28333, alive), #0992 check (pid 40140, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T15:34:41Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (bf59e7020) during finalization (#0734)
