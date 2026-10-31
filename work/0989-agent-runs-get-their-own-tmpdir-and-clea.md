@@ -5,7 +5,7 @@ type: bug
 status: active
 needs_input: true
 needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
+needs_input_detail: "Error: [aborted] read ECONNRESET"
 priority: p1
 area: server
 assigned_to: ai
@@ -15,7 +15,7 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T08:30:59Z"
 updated_at: "2026-10-31T14:51:24Z"
-dev_error_count: 1
+dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-31T14:51:24.421Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
