@@ -2,7 +2,7 @@
 id: "0989"
 title: Agent runs get their own TMPDIR and clean it up
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T17:05:07Z"
+updated_at: "2026-10-31T17:23:24Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-31T15:25:03.027Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -54,3 +54,4 @@ Start from where agent processes are spawned (`src/server/agents.ts` and the CTO
 - 2026-10-31T16:40:31Z · needs_input
 - 2026-10-31T17:03:43Z · note: adopted orphaned engineer pid 19084
 - 2026-10-31T17:05:07Z · note: adopted orphaned engineer pid 19084
+- 2026-10-31T17:23:24Z · status active→review
