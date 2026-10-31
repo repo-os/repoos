@@ -3,11 +3,15 @@ id: "0996"
 title: Read this codebase and propose docs/ + an initial task backlog
 type: spec
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Acceptance criteria"
 priority: p2
 area: docs
 assigned_to: unassigned
 created_by: repoos-init
 branch: ""
+updated_at: "2026-10-31T23:22:58Z"
 ---
 ## Overview
 
@@ -36,3 +40,6 @@ Read `AGENTS.md` first — it's the operating loop for this repo. Base the docs
 on what the code actually does rather than what you'd expect it to; where the
 repo is silent, write down the open question instead of guessing.
 
+## Activity
+
+- 2026-10-31T23:22:58Z · needs_input
