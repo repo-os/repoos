@@ -1,0 +1,35 @@
+---
+id: "0991"
+title: "Serve Markdown for Accept: text/markdown at both site roots"
+type: feature
+status: inbox
+priority: p2
+area: [landing, docs]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-10-31T08:31:06Z"
+updated_at: "2026-10-31T08:31:06Z"
+---
+## Problem
+
+`Accept: text/markdown` already works for docs pages (#0987), but `/` on docs.repoos.org and on repoos.org still returns HTML because there is no .md copy; `/index.md` returns 404.
+
+## Desired UX
+
+An agent asking for Markdown at either root gets it; browsers still get HTML.
+
+## Acceptance criteria
+
+- [ ] `curl -sI -H 'Accept: text/markdown' https://repoos.org/` and the docs root return `content-type: text/markdown` with `Vary: Accept`.
+- [ ] A plain curl at both roots still returns `text/html`, and the existing `/llms.txt`, `.md` twins and `rel="alternate"` links are unchanged.
+- [ ] The Markdown served is the existing llms.txt content or a new index.md, whichever is simpler; no duplicate content to maintain by hand.
+- [ ] Tests cover both roots with and without the Accept header.
+
+## Notes for AI
+
+Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`. Verification against the live sites needs a deploy; say so in the summary.
+
+## Activity
+
+- 2026-10-31T08:31:06Z · created · njachowski@gmail.com
