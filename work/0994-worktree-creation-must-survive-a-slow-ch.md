@@ -2,14 +2,14 @@
 id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-10-31T12:59:31Z"
+updated_at: "2026-10-31T16:39:36Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 ## Activity
 
 - 2026-10-31T12:59:31Z · created · njachowski@gmail.com
+- 2026-10-31T16:39:36Z · status inbox→ready
