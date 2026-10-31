@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 275969
-last_close_out_gate_at: "2026-10-31T11:33:18.024Z"
 id: "0988"
 title: CLI launcher finds a runtime in non-interactive shells
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: 14b9bd9543faff0e8971dfb52c0d6eee401356e2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/cli-launcher-finds-a-runtime-in-non-inte
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T08:30:56Z"
 updated_at: "2026-10-31T11:33:18Z"
+last_close_out_gate_ms: 275969
+last_close_out_gate_at: "2026-10-31T11:33:18.024Z"
 review_passes: 2
 review_rounds: 1
 ---
