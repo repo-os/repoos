@@ -2,14 +2,14 @@
 id: "0991"
 title: "Serve Markdown for Accept: text/markdown at both site roots"
 type: feature
-status: active
+status: review
 priority: p2
 area: [landing, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
-updated_at: "2026-10-31T18:11:03Z"
+updated_at: "2026-10-31T18:19:21Z"
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -51,3 +51,4 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T16:05:25Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T17:03:41Z · note: adopted orphaned engineer pid 17788
 - 2026-10-31T17:05:06Z · note: adopted orphaned engineer pid 17788
+- 2026-10-31T18:19:21Z · status active→review
