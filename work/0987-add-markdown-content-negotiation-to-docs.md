@@ -2,14 +2,14 @@
 id: "0987"
 title: Add Markdown content negotiation on docs.repoos.org
 type: feature
-status: active
+status: review
 priority: p2
 area: [docs, infra]
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-markdown-content-negotiation-on-docs
 created_at: "2026-10-31T01:23:36Z"
-updated_at: "2026-10-31T03:08:36Z"
+updated_at: "2026-10-31T03:20:33Z"
 ---
 ## Problem
 
@@ -106,3 +106,4 @@ Report what you changed, where, and the verification output.
 - 2026-10-31T01:24:18Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-31T03:08:32Z · status inbox→ready
 - 2026-10-31T03:08:36Z · status ready→active, branch
+- 2026-10-31T03:20:33Z · status active→review
