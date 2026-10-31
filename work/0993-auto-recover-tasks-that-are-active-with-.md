@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — } >"
-last_handoff_failure_sha: 5309ba0816dd650b4561d23091e48844828f163e
 id: "0993"
 title: Auto-recover tasks that are active with no live engineer
 type: bug
@@ -13,7 +11,9 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T23:09:32Z"
+updated_at: "2026-10-31T23:10:48Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — } >"
+last_handoff_failure_sha: 5309ba0816dd650b4561d23091e48844828f163e
 ---
 ## Problem
 
@@ -75,4 +75,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-10-31T20:58:00Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T22:32:52Z · note: handoff requested (ui-review)
 - 2026-10-31T23:09:32Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — } >
-
+- 2026-10-31T23:10:48Z · message_queued at 2026-10-31T23:10:48.146Z
