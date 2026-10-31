@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-31T16:57:28Z"
-review_passes: 1
+last_close_out_gate_ms: 385123
+last_close_out_gate_at: "2026-10-31T17:12:06.107Z"
 id: "0992"
 title: "llms.txt: descriptions, raw skill links and a small essentials bundle"
 type: feature
@@ -12,6 +12,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/llms-txt-descriptions-raw-skill-links-an
 created_at: "2026-10-31T08:31:09Z"
+updated_at: "2026-10-31T17:12:06Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -48,4 +50,5 @@ Do this after #0990 (starter prompt and init docs) lands, to avoid conflicts in 
 - 2026-10-31T16:31:10Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T16:56:29Z · status active→review
 - 2026-10-31T16:57:28Z · note: review pass 1: good to go
+- 2026-10-31T17:12:06Z · close-out gate completed in 385s
 
