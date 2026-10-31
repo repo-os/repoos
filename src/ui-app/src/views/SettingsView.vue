@@ -518,6 +518,22 @@ function settingsSectionAnchor(id: string): string {
   return `settings-section-${id}`;
 }
 
+/**
+ * The element that actually scrolls `el`: the nearest ancestor with an
+ * auto/scroll overflow that has something to scroll. On Settings that is the
+ * page body under the stationary header (#0949), or `.main` once the page
+ * returns to normal flow at narrow widths.
+ */
+function scrollPortOf(el: HTMLElement): HTMLElement | null {
+  for (let p = el.parentElement; p; p = p.parentElement) {
+    const overflowY = getComputedStyle(p).overflowY;
+    if ((overflowY === "auto" || overflowY === "scroll") && p.scrollHeight > p.clientHeight) {
+      return p;
+    }
+  }
+  return null;
+}
+
 // The last section a scroll was applied for. Guards against re-scrolling the
 // section after a ?focus= deep link clears its query param (the focused row is
 // the more specific target and must keep the viewport).
@@ -531,7 +547,7 @@ function scrollSectionIntoView(id: string): void {
     if (activeTab.value !== "general") return;
     const el = document.getElementById(settingsSectionAnchor(id));
     if (!el) return;
-    const main = el.closest<HTMLElement>(".main");
+    const main = scrollPortOf(el);
     if (main) {
       const elRect = el.getBoundingClientRect();
       const mainRect = main.getBoundingClientRect();
@@ -737,7 +753,7 @@ function settingRowVisible(el: HTMLElement): boolean {
 }
 
 function scrollSettingRowIntoView(el: HTMLElement): void {
-  const main = el.closest<HTMLElement>(".main");
+  const main = scrollPortOf(el);
   if (main) {
     const elRect = el.getBoundingClientRect();
     const mainRect = main.getBoundingClientRect();
