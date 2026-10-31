@@ -178,7 +178,9 @@ from `main` to `prod` before linking users to it from public release copy.
 Cloudflare's dashboard now creates git-connected sites as **Workers**
 (`wrangler deploy`), not the older "Pages project" flow — deployment is driven
 by `wrangler.jsonc` in this directory. `worker.ts` runs before the static asset
-binding so page requests can negotiate the existing Markdown twins. Markdown
+binding so page requests can negotiate the existing Markdown twins. `/` has no
+`index.md` twin, so `Accept: text/markdown` there returns the generated
+`llms.txt` body. Markdown
 negotiated responses use `Cache-Control: private, no-store` because static
 asset caching is not documented to split on `Vary: Accept`; HTML responses and
 negotiated Markdown responses both include `Vary: Accept`. In the "Create an app" wizard:
