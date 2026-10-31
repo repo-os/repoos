@@ -2,16 +2,16 @@
 id: "0989"
 title: Agent runs get their own TMPDIR and clean it up
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T08:31:28Z"
+updated_at: "2026-10-31T11:43:42Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Start from where agent processes are spawned (`src/server/agents.ts` and the CTO
 - 2026-10-31T08:30:59Z · created · njachowski@gmail.com
 - 2026-10-31T08:31:24Z · cli_override, model_override
 - 2026-10-31T08:31:28Z · status inbox→ready
+- 2026-10-31T11:43:42Z · status ready→active, branch
