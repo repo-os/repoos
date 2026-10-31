@@ -11,7 +11,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T23:26:11Z"
+updated_at: "2026-10-31T23:26:14Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — } >"
 last_handoff_failure_sha: 5309ba0816dd650b4561d23091e48844828f163e
 ---
