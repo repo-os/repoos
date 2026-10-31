@@ -11,7 +11,7 @@ branch: feat/add-screenshot-upload-to-new-story
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T00:48:36Z"
+updated_at: "2026-10-31T00:50:07Z"
 ---
 ## Problem
 
@@ -59,7 +59,14 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
   "target": "default",
   "route": "/stories",
   "highlight": ".shot-dropzone",
-  "state": "panel:defaultScreenshotPicker"
+  "steps": [
+    {
+      "click": "button.new-btn"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -75,3 +82,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-30T15:26:26Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-31T00:43:22Z · status ready→active
 - 2026-10-31T00:48:36Z · body
+- 2026-10-31T00:50:07Z · body
