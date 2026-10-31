@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T13:23:30Z"
+updated_at: "2026-10-31T13:23:32Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -36,8 +36,25 @@ Web only; do not change what the server sends. Use the existing styled tooltip (
 
 ![Board card while Moving to done: the integrating status wraps to nine lines](/api/tasks/0995/attachments/att_1cc7d0b4-2156-4094-a835-ff3ea4a136a7.png)
 
+## E2 · Page skeletons match their pages
+### Problem
+The loading skeletons are generic. /work always draws five equal columns, but the real board has six status columns (Draft, Inbox, Ready, Active, Review, Done); /inputs has three columns; other pages (stories, checks, releases, deployments, dev, secrets, agents, settings) each have their own shape, and the skeleton shows rows or cards that do not match what replaces them, so the page visibly jumps when data arrives.
+
+### Desired UX
+Each page's skeleton mirrors its real layout: the same number of columns, similar card heights and the same table or card grid, under the page title (kept at the top, see the earlier loading-title fix).
+
+### Acceptance criteria
+- [ ] /work shows six column skeletons matching the board's real column set, driven by the same column definition the board uses so they cannot drift.
+- [ ] /inputs shows three columns; every other routed page uses a skeleton shaped like its real content (verify each page against its loaded layout).
+- [ ] `loadingSkeletonKind` and `PageSkeleton` are the one place that chooses the shape; a test asserts the column count for /work and /inputs and that every route in `router.ts` has an explicit skeleton choice.
+- [ ] No layout jump larger than a few pixels when data arrives on /work and /inputs (compare the skeleton and loaded column positions).
+
+### Notes for AI
+Web only. Read the column list from the board config rather than hard-coding six. Keep the page title above the skeleton (App.vue loading header). Reduced-motion behaviour stays as it is.
+
 ## Activity
 
 - 2026-10-31T13:08:01Z · created · njachowski@gmail.com
 - 2026-10-31T13:08:03Z · screenshots
 - 2026-10-31T13:23:30Z · body: Items (added 1, removed 1)
+- 2026-10-31T13:23:32Z · body: E2 · Page skeletons match their pages (added)
