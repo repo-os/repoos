@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { randomId } from "../lib/random-id";
-import { X } from "lucide-vue-next";
+import { Info, X } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
@@ -19,6 +19,8 @@ import DialogTitle from "./ui/dialog/title.vue";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
 import ShotDropzone from "./ShotDropzone.vue";
 import PendingAttachmentList from "./PendingAttachmentList.vue";
+import ScreenshotViewer from "./ScreenshotViewer.vue";
+import { pendingToShots } from "../lib/screenshot-viewer";
 import { markAttachmentUploading, markAttachmentUploadFailed } from "../lib/attachment-upload-ui";
 import type { PendingScreenshot } from "../stores/ui";
 
@@ -174,6 +176,48 @@ function onDrop(event: DragEvent): void {
   dragDepth.value = 0;
   if (event.dataTransfer?.files.length) addShotFiles(Array.from(event.dataTransfer.files));
 }
+
+const shotInfoEl = ref<HTMLButtonElement | null>(null);
+const shotHintOpen = ref(false);
+const shotHintStyle = ref<Record<string, string>>({});
+function positionShotHint(): void {
+  const rect = shotInfoEl.value?.getBoundingClientRect();
+  if (!rect || typeof window === "undefined") return;
+  const maxW = Math.min(320, Math.max(200, window.innerWidth - 28));
+  const left = Math.min(Math.max(rect.left, 14), window.innerWidth - maxW - 14);
+  shotHintStyle.value = {
+    left: `${left}px`,
+    top: `${rect.bottom + 8}px`,
+    maxWidth: `${maxW}px`,
+  };
+}
+function showShotHint(): void {
+  shotHintOpen.value = true;
+  positionShotHint();
+}
+function hideShotHint(): void {
+  shotHintOpen.value = false;
+}
+function onShotHintViewportChange(): void {
+  if (shotHintOpen.value) positionShotHint();
+}
+onMounted(() => {
+  window.addEventListener("resize", onShotHintViewportChange);
+  window.addEventListener("scroll", onShotHintViewportChange, true);
+});
+onUnmounted(() => {
+  window.removeEventListener("resize", onShotHintViewportChange);
+  window.removeEventListener("scroll", onShotHintViewportChange, true);
+});
+
+const pendingViewerOpen = ref(false);
+const pendingViewerStart = ref(0);
+const pendingViewerShots = computed(() => pendingToShots(pendingScreenshots.value));
+function openPendingViewer(index: number): void {
+  pendingViewerStart.value = index;
+  pendingViewerOpen.value = true;
+}
+
 async function uploadScreenshots(key: string): Promise<void> {
   for (const shot of [...pendingScreenshots.value]) {
     if (shot.uploadStoryKey && shot.uploadStoryKey !== key) continue;
@@ -308,6 +352,7 @@ function onOpenAutoFocus(e: Event): void {
             :items="pendingScreenshots"
             aria-label="Story screenshot uploads"
             :allow-remove="false"
+            @open-shot="openPendingViewer"
             @retry="(i) => void retryScreenshot(i)"
           />
           <div class="btn-row" style="margin-top: 18px">
@@ -333,7 +378,21 @@ function onOpenAutoFocus(e: Event): void {
         </div>
         <template v-else>
           <div class="field">
-            <label>Screenshots</label>
+            <div class="shot-label-row">
+              <label>Screenshots</label>
+              <button
+                ref="shotInfoEl"
+                type="button"
+                class="field-info"
+                aria-label="Accepted screenshot formats"
+                @mouseenter="showShotHint"
+                @mouseleave="hideShotHint"
+                @focus="showShotHint"
+                @blur="hideShotHint"
+              >
+                <Info class="size-3.5" />
+              </button>
+            </div>
             <ShotDropzone :over="dragDepth > 0" @files="addShotFiles">{{
               pendingScreenshots.length
                 ? `Add more — ${pendingScreenshots.length} screenshot${pendingScreenshots.length === 1 ? "" : "s"} added`
@@ -342,6 +401,7 @@ function onOpenAutoFocus(e: Event): void {
             <PendingAttachmentList
               v-if="pendingScreenshots.length"
               :items="pendingScreenshots"
+              @open-shot="openPendingViewer"
               @remove="(i) => pendingScreenshots.splice(i, 1)"
               @retry="(i) => void retryScreenshot(i)"
             />
@@ -353,6 +413,13 @@ function onOpenAutoFocus(e: Event): void {
               Some screenshots failed to upload. Retry them above.
             </div>
           </div>
+          <Teleport to="body">
+            <div v-if="shotHintOpen" class="field-info-pane" role="tooltip" :style="shotHintStyle">
+              <p>
+                PNG, JPEG, GIF, WebP, AVIF or BMP — attached to the new story when you create it.
+              </p>
+            </div>
+          </Teleport>
           <div class="field">
             <label for="ns-story-name">Story name</label>
             <Input
@@ -414,4 +481,10 @@ function onOpenAutoFocus(e: Event): void {
       </div>
     </DialogContent>
   </Dialog>
+
+  <ScreenshotViewer
+    v-model:open="pendingViewerOpen"
+    :shots="pendingViewerShots"
+    :start-index="pendingViewerStart"
+  />
 </template>
