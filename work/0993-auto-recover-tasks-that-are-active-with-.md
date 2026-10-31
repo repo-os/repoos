@@ -2,7 +2,7 @@
 id: "0993"
 title: Auto-recover tasks that are active with no live engineer
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T23:26:14Z"
+updated_at: "2026-10-31T23:26:46Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — } >"
 last_handoff_failure_sha: 5309ba0816dd650b4561d23091e48844828f163e
 ---
@@ -80,3 +80,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-10-31T23:18:29Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-10-31T23:19:39Z · model_override
 - 2026-10-31T23:21:33Z · message_queued at 2026-10-31T23:21:33.854Z
+- 2026-10-31T23:26:46Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: tests — } > · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
