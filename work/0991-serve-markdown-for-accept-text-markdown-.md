@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
-updated_at: "2026-10-31T12:56:21Z"
+updated_at: "2026-10-31T12:58:27Z"
 ---
 ## Problem
 
