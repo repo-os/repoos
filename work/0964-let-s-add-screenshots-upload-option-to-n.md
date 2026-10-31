@@ -2,7 +2,7 @@
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-screenshot-upload-to-new-story
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T00:59:11Z"
+updated_at: "2026-10-31T01:15:44Z"
 ---
 ## Problem
 
@@ -85,3 +85,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T00:50:07Z · body
 - 2026-10-31T00:54:16Z · note: adopted orphaned engineer pid 76136
 - 2026-10-31T00:59:11Z · note: adopted orphaned engineer pid 76136
+- 2026-10-31T01:15:44Z · status active→review
