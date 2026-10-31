@@ -9,12 +9,13 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T16:18:11Z"
+updated_at: "2026-10-31T16:23:02Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
 - [ ] **E2 · Page skeletons match their pages** (web) — each page's loading skeleton should mirror the real layout (e.g. /work has 6 status columns, /inputs has 3), not a generic block. Source: human report.
 - [ ] **E3 · Done column sorts by when the task reached done** (web) — the Done column currently sorts by `updated_at`, which any later write bumps (activity notes, flag clears, release records), so old done tasks jump back to the top. Sort Done by the timestamp of the last `status …→done` line in the task's activity log. Source: human report (#0970 sits at the top of Done though it reached done on 28 Oct).
+- [ ] **E4 · Open any past review pass from the Review tab** (web) — the pass table lists every review pass but the rows are plain text and the body always shows the latest report. Make each row open that pass's stored report (`.repoos/reviews/<id>/<pass>.md`). Source: human report (#0970 has two stored passes).
 
 ## E1 · Card integrating text clamp
 
@@ -80,3 +81,4 @@ Web only; the activity log is in the task body (`- <timestamp> · status A→B` 
 - 2026-10-31T16:18:07Z · body: Items (added 1)
 - 2026-10-31T16:18:09Z · body: E3 · Done column sorts by when the task reached done (added)
 - 2026-10-31T16:18:11Z · title
+- 2026-10-31T16:23:02Z · body: Items (added 1)
