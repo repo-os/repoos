@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 391946
-last_close_out_gate_at: "2026-10-31T13:07:30.646Z"
 id: "0990"
 title: "Starter prompt and init docs: new-project path and one accurate list"
 type: chore
-status: review
+status: done
 priority: p2
 area: docs
+merged_commit: b37a480d18d4e585276dc6c26f917268871761d6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/starter-prompt-and-init-docs-new-project
 created_at: "2026-10-31T08:31:03Z"
 updated_at: "2026-10-31T13:07:30Z"
+last_close_out_gate_ms: 391946
+last_close_out_gate_at: "2026-10-31T13:07:30.646Z"
 review_passes: 1
 ---
 ## Problem

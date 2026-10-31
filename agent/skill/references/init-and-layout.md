@@ -8,14 +8,21 @@ Run this from the repository root, only after the user agrees:
 repoos init
 ```
 
-It scaffolds four things and touches nothing else:
+Init does not overwrite an existing file. With the default `repoos/` layout it creates:
 
 | Path | What it is |
 | --- | --- |
-| `repoos/work/` | One Markdown file per task. This is the board. |
-| `repoos/docs/` | Project context an agent needs to work here. |
-| `AGENTS.md` | Instructions every agent reads first; stays at the repository root. |
-| `repoos.toml` | Configuration. Every field is optional; stays at the root. |
+| `repoos.toml` | Configuration. Every field is optional. Always at the repo root. |
+| `repoos/work/` | One markdown file per task. This is the board. Includes `0001-set-up-repoos.md` (a `done` example) and an inbox starter task. |
+| `repoos/docs/` | Context an agent needs to work on *this* project — architecture notes, decisions, history. |
+| `AGENTS.md` | Instructions agents read first. The cross-tool standard; Claude Code, Codex, Cursor, Aider and Zed all read it. Always at the repo root. |
+| `.env.example` | Names of secrets a fuller setup expects. No values. |
+| `.gitignore` | Created, or appended when one already exists. Ignores the derived cache, root `.repoos/` runtime state, `.env`, `.env*.local`, `node_modules/`, task and input attachment directories, and `.DS_Store`. |
+| `repoos/.repoos/canary.txt` | Tracked canary counter. |
+
+A new project also runs `git init` and, unless you pass `--no-commit`, commits
+the scaffold (`chore: initialize RepoOS project`). Init in an existing repo
+does not make that commit.
 
 A fresh install defaults to the namespaced `repoos/` layout. The config it writes
 sets `workDir = "repoos/work"`, `docsDir = "repoos/docs"`, and the matching
@@ -32,9 +39,20 @@ starter task as a suggestion, not work that auto-runs.
 
 ## Start the board
 
+Before `repoos serve`, check which agents are enabled in `repoos.toml`. A
+project with no `[[agents]]` rows uses the built-in defaults.
+
 ```bash
 repoos serve
 ```
+
+Serve starts the local server and background automation. The CTO board monitor
+ticks every 5 minutes (`ctoMonitorIntervalMs`, default `300000`). When the
+`cto` agent has `enabled = true`, that tick launches a coding agent. Turn it
+off with `enabled = false` on that `[[agents]]` row. The built-in default
+leaves the CTO disabled. The reviewer is on by default and starts when a task
+enters `review`. The watchdog (`watchdog.enabled`, default `true`) can restart
+a stalled engineer.
 
 The command prints the local URL to open. The board reads the same Markdown
 files, so a change made by an agent appears there without an import step.
