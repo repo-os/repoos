@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-10-31T18:20:07Z"
-review_passes: 2
 id: "0991"
 title: "Serve Markdown for Accept: text/markdown at both site roots"
 type: feature
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
+updated_at: "2026-10-31T18:19:21Z"
 close_out_repair_count: 1
+review_passes: 1
 ---
 ## Problem
 
@@ -47,11 +47,4 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T15:57:55Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T15:57:55Z · status review→active
 - 2026-10-31T15:57:55Z · note: close-out repair: gate-failure
-- 2026-10-31T16:04:40Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-10-31T16:05:25Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-10-31T17:03:41Z · note: adopted orphaned engineer pid 17788
-- 2026-10-31T17:05:06Z · note: adopted orphaned engineer pid 17788
 - 2026-10-31T18:19:21Z · status active→review
-- 2026-10-31T18:19:24Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (e9e87724d) during finalization (#0734)
-- 2026-10-31T18:20:07Z · note: review pass 2: good to go
-
