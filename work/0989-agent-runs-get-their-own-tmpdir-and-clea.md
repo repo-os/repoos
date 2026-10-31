@@ -11,7 +11,7 @@ branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T13:15:26Z"
+updated_at: "2026-10-31T13:15:30Z"
 ---
 ## Problem
 
