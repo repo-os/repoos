@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitepress";
 import llmstxt from "vitepress-plugin-llms";
 import { themeBootPlugin, themeBootScriptContent } from "./vite-plugin-theme-boot";
+import { llmsEnrichPlugin } from "./llms-enrich";
 import { LLMS_INDEX_EXCLUDED_SOURCES, SITE_ORIGIN, llmsIndexTemplate } from "./llms-index";
 
 // The header mark's geometry is shared with the landing page (repo-root
@@ -63,6 +64,9 @@ export default defineConfig({
         excludeIndexPage: true,
         customLLMsTxtTemplate: llmsIndexTemplate,
       }),
+      // Fills index descriptions the generator left blank, and writes
+      // /llms-essentials.txt from the built raw pages.
+      llmsEnrichPlugin(fileURLToPath(new URL("..", import.meta.url))),
     ],
   },
   head: [

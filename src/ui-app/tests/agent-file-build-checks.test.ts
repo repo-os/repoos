@@ -107,11 +107,13 @@ function docsLlms(): string {
 
 > The repo is the operating system.
 
-Every page below is also published as raw Markdown at the same path with \`.md\` appended — for example https://docs.repoos.org/getting-started.md. The whole manual: https://docs.repoos.org/llms-full.txt
+Every page below is also published as raw Markdown at the same path with \`.md\` appended — for example https://docs.repoos.org/getting-started.md. Essentials: https://docs.repoos.org/llms-essentials.txt. The whole manual: https://docs.repoos.org/llms-full.txt
+
+- [RepoOS Agent Skill (raw SKILL.md)](https://raw.githubusercontent.com/repo-os/repoos/main/agent/skill/SKILL.md): Portable skill.
 
 ## Documentation
 
-- [Getting started](https://docs.repoos.org/getting-started.md)
+- [Getting started](https://docs.repoos.org/getting-started.md): Install RepoOS and open the board.
 `;
 }
 
@@ -122,6 +124,7 @@ function docsFixture(): string {
   write(docsRoot, "getting-started.md", "# Getting started\n");
   write(docsRoot, "index.md", "# Home\n");
   write(dist, "llms.txt", docsLlms());
+  write(dist, "llms-essentials.txt", "# RepoOS essentials\n\n> A short bundle.\n");
   write(
     dist,
     "llms-full.txt",
