@@ -2,7 +2,7 @@
 id: "0986"
 title: "Record release-profile check runs, including failures, in the checks history"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/record-release-profile-check-runs-includ
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T00:59:20Z"
-updated_at: "2026-10-31T10:02:55Z"
+updated_at: "2026-10-31T10:15:37Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-31T03:17:45.679Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -43,3 +43,4 @@ Start from `src/core/check-store.ts` and where the release path invokes the chec
 - 2026-10-31T03:17:52Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #0986 (pid 81749)
 - 2026-10-31T04:42:52Z · cli_override, model_override
 - 2026-10-31T10:02:55Z · needs_input
+- 2026-10-31T10:15:37Z · status active→review
