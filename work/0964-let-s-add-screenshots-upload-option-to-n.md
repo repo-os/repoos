@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-31T01:17:01Z"
+review_passes: 1
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
@@ -11,7 +13,6 @@ branch: feat/add-screenshot-upload-to-new-story
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T01:17:01Z"
 ---
 ## Problem
 
@@ -88,3 +89,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T01:15:44Z · status active→review
 - 2026-10-31T01:15:45Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (6b826c467) during finalization (#0734)
 - 2026-10-31T01:17:01Z · note: review pass 1: needs some work
+
