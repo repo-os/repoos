@@ -2941,8 +2941,10 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: DEFAULT_CONFIG.ctoSkipHealthy,
       description:
-        "Don't call the CTO model a monitor tick when no task is stuck, the build is fresh " +
-        "and the process check is normal. Disable to run a full CTO pass on every tick.",
+        "Don't call the CTO model on a monitor tick when no task is stuck, the build is fresh " +
+        "and the process check is normal — including when the board is idle (nothing in active or " +
+        "review needs attention) and the structural digest has not changed since the last pass (#0649, #0989). " +
+        "Disable to run a full CTO pass on every tick.",
     },
     {
       key: "cto.actions",
