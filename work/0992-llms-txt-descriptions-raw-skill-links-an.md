@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/llms-txt-descriptions-raw-skill-links-an
 created_at: "2026-10-31T08:31:09Z"
-updated_at: "2026-10-31T16:56:29Z"
+updated_at: "2026-10-31T16:57:28Z"
 ---
 ## Problem
 
@@ -46,3 +46,4 @@ Do this after #0990 (starter prompt and init docs) lands, to avoid conflicts in 
 - 2026-10-31T16:06:10Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 23899, alive), #0991 check (pid 24370, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 8s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-10-31T16:31:10Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T16:56:29Z · status active→review
+- 2026-10-31T16:57:28Z · note: review pass 1: good to go
