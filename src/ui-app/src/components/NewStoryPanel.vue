@@ -233,10 +233,14 @@ async function createStory(): Promise<void> {
   }
 }
 
+function hasFailedPendingScreenshots(): boolean {
+  return pendingScreenshots.value.some((s) => s.uploadPhase === "failed");
+}
+
 /** Back to a fresh form; the submitted story keeps being fleshed out. */
 function createAnotherStory(): void {
   clearResolvedScreenshots();
-  submittedStoryKey.value = "";
+  if (!hasFailedPendingScreenshots()) submittedStoryKey.value = "";
   resetRun();
   requestAnimationFrame(() => document.getElementById("ns-story-name")?.focus());
 }
