@@ -11,7 +11,7 @@ branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T17:23:26Z"
+updated_at: "2026-10-31T17:24:31Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-31T15:25:03.027Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -56,3 +56,4 @@ Start from where agent processes are spawned (`src/server/agents.ts` and the CTO
 - 2026-10-31T17:05:07Z · note: adopted orphaned engineer pid 19084
 - 2026-10-31T17:23:24Z · status active→review
 - 2026-10-31T17:23:26Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-10-31T17:24:31Z · note: review pass 1: good to go
