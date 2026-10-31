@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 210838
-last_close_out_gate_at: "2026-10-31T05:53:05.261Z"
 id: "0987"
 title: Add Markdown content negotiation on docs.repoos.org
 type: feature
-status: review
+status: done
 priority: p2
 area: [docs, infra]
+merged_commit: 9a49c2c648b89a91d8b090a1f2764dadbd2d6cde
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-markdown-content-negotiation-on-docs
 created_at: "2026-10-31T01:23:36Z"
 updated_at: "2026-10-31T05:53:05Z"
+last_close_out_gate_ms: 210838
+last_close_out_gate_at: "2026-10-31T05:53:05.261Z"
 ---
 ## Problem
 
