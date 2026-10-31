@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-markdown-content-negotiation-on-docs
 created_at: "2026-10-31T01:23:36Z"
-updated_at: "2026-10-31T03:21:18Z"
+updated_at: "2026-10-31T03:20:33Z"
 ---
 ## Problem
 
@@ -106,7 +106,4 @@ Report what you changed, where, and the verification output.
 - 2026-10-31T01:24:18Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-31T03:08:32Z · status inbox→ready
 - 2026-10-31T03:08:36Z · status ready→active, branch
-- 2026-10-31T03:09:15Z · note: adopted orphaned engineer pid 81210
 - 2026-10-31T03:20:33Z · status active→review
-- 2026-10-31T03:20:35Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (9a49c2c64) during finalization (#0734)
-- 2026-10-31T03:21:18Z · note: review pass 1: good to go

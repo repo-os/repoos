@@ -175,9 +175,13 @@ convention, matching repoos.org (`landing/`):
 `user-docs/macos-hub.md` is the RepoOS Hub for Mac guide. Publish the docs site
 from `main` to `prod` before linking users to it from public release copy.
 
-Cloudflare's dashboard now creates git-connected static sites as **Workers**
+Cloudflare's dashboard now creates git-connected sites as **Workers**
 (`wrangler deploy`), not the older "Pages project" flow — deployment is driven
-by `wrangler.jsonc` in this directory. In the "Create an app" wizard:
+by `wrangler.jsonc` in this directory. `worker.ts` runs before the static asset
+binding so page requests can negotiate the existing Markdown twins. Markdown
+negotiated responses use `Cache-Control: private, no-store` because static
+asset caching is not documented to split on `Vary: Accept`; HTML responses and
+negotiated Markdown responses both include `Vary: Accept`. In the "Create an app" wizard:
 
 - **Build command:** `bun install && bun run build`
 - **Deploy command:** leave the default (`npx wrangler deploy`)
