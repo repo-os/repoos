@@ -11,7 +11,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-10-31T22:26:34Z"
+updated_at: "2026-10-31T23:22:59Z"
 review_passes: 1
 ---
 ## Problem
@@ -58,3 +58,6 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T20:31:51Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-31T20:32:45Z · note: review pass 1: good to go
 - 2026-10-31T22:26:34Z · status review→active
+- 2026-10-31T23:09:21Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T23:09:36Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T23:22:59Z · note: adopted orphaned engineer pid 84641
