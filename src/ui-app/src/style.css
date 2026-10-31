@@ -1200,6 +1200,19 @@
 .page-header .page-desc {
   margin-bottom: 0;
 }
+/* App-level loading state: the page title stays at the top, skeleton below it. */
+.page-loading {
+  display: flex;
+  flex-direction: column;
+}
+.page-loading > .page-header {
+  flex: 0 0 auto;
+}
+.page-loading > .page-skeleton {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
 .page-header-actions {
   display: flex;
   align-items: center;
