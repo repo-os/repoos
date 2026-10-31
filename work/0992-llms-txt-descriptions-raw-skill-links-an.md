@@ -5,11 +5,11 @@ type: feature
 status: inbox
 priority: p3
 area: [landing, docs]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T08:31:09Z"
-updated_at: "2026-10-31T08:31:09Z"
+updated_at: "2026-10-31T08:31:16Z"
 ---
 ## Problem
 
@@ -31,9 +31,9 @@ Every index entry says what it is, skill links return raw Markdown, and a small 
 - [ ] The llms index check and agent guide check pass, and `llms-full.txt` still exists.
 
 ## Notes for AI
-
-Do after the starter prompt task (#0988 area: docs wording) lands to avoid conflicts in the same files. Generate bundles from the docs at build time instead of hand-maintaining them.
+Do this after #0990 (starter prompt and init docs) lands, to avoid conflicts in the same files. Generate bundles from the docs at build time instead of hand-maintaining them.
 
 ## Activity
 
 - 2026-10-31T08:31:09Z · created · njachowski@gmail.com
+- 2026-10-31T08:31:16Z · body: Notes for AI (added 1, removed 1)
