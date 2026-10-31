@@ -2,14 +2,14 @@
 id: "0991"
 title: "Serve Markdown for Accept: text/markdown at both site roots"
 type: feature
-status: active
+status: review
 priority: p2
 area: [landing, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
-updated_at: "2026-10-31T12:58:27Z"
+updated_at: "2026-10-31T13:47:03Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T08:31:06Z · created · njachowski@gmail.com
 - 2026-10-31T12:21:57Z · status inbox→ready
 - 2026-10-31T12:56:21Z · status ready→active, branch
+- 2026-10-31T13:47:03Z · status active→review
