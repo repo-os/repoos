@@ -2,14 +2,14 @@
 id: "0990"
 title: "Starter prompt and init docs: new-project path and one accurate list"
 type: chore
-status: ready
+status: active
 priority: p2
 area: docs
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/starter-prompt-and-init-docs-new-project
 created_at: "2026-10-31T08:31:03Z"
-updated_at: "2026-10-31T08:31:34Z"
+updated_at: "2026-10-31T12:22:32Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Docs and init output text only. Keep the llms index checks passing (`llms index 
 
 - 2026-10-31T08:31:03Z · created · njachowski@gmail.com
 - 2026-10-31T08:31:34Z · status inbox→ready
+- 2026-10-31T12:22:32Z · status ready→active, branch
