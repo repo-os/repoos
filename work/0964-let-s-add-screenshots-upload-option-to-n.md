@@ -14,7 +14,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T12:32:16Z"
+updated_at: "2026-10-31T12:35:00Z"
 last_close_out_gate_ms: 641061
 last_close_out_gate_at: "2026-10-31T12:32:16.399Z"
 review_passes: 3
@@ -114,4 +114,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T12:30:00Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 74370, alive), #0990 check (pid 97192, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-10-31T12:32:15Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T12:32:16Z · close-out gate completed in 641s
-
+- 2026-10-31T12:35:00Z · status done→done, release:success
