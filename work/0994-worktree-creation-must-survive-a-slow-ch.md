@@ -54,3 +54,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T19:33:39Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 17200, alive), #0994 check (pid 80846, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 15s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-10-31T19:39:10Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T20:31:51Z · status active→review
+- 2026-10-31T20:31:51Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
