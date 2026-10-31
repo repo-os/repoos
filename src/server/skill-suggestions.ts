@@ -37,6 +37,7 @@ import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { commitTaskFile } from "../core/git.js";
 import { utcTimestamp } from "../core/task.js";
 import type { Logger } from "../core/logger.js";
+import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import {
   extractOneShotReportText,
   recordOneShotSession,
@@ -675,7 +676,8 @@ export class SkillSuggestionManager {
       const mission = buildSkillSuggestionMission(task, transcript);
       const analyze =
         this.deps.analyze ??
-        ((a: Agent, prompt: string, cwd: string) => runPrompt(a, prompt, { cwd }));
+        ((a: Agent, prompt: string, cwd: string) =>
+          runPrompt(a, prompt, { cwd, ...repoAgentRunTmpOpts(this.deps.config) }));
       const result = await analyze(agent, mission, this.deps.config.root);
       // Every LLM call must record its usage, even on failure.
       recordOneShotSession(this.deps.config.root, agent, result, {

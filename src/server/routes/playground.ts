@@ -12,6 +12,7 @@
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { listPlaygroundModels, PLAYGROUND_PROVIDERS } from "../../core/providers/index.js";
+import { repoAgentRunTmpOpts } from "../../core/agent-run-tmpdir.js";
 import { runPrompt, recordOneShotSession } from "../agents.js";
 import type { Agent } from "../../core/types.js";
 
@@ -96,7 +97,10 @@ export const sendPlaygroundMessage: RouteHandler = async (ctx, req, res) => {
 
   const agent: Agent = { name: "playground", cli: "opencode", model: runId, enabled: true };
   const prompt = buildPlaygroundPrompt(runId, history);
-  const result = await runPrompt(agent, prompt, { cwd: config.root });
+  const result = await runPrompt(agent, prompt, {
+    cwd: config.root,
+    ...repoAgentRunTmpOpts(config),
+  });
   recordOneShotSession(config.root, agent, result, { sessionType: "playground", taskId: null });
 
   if (!result.ok || !result.output) {

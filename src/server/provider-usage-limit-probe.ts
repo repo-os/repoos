@@ -7,6 +7,7 @@ import {
   resumeAllowlistEntry,
 } from "../core/budget-allowlist.js";
 import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
+import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import { recordOneShotSession, runPrompt } from "./agents.js";
 import type { Logger } from "../core/logger.js";
 import { configTomlMutationPath, loadConfigAfterServerWrite } from "./preview-config-isolation.js";
@@ -155,7 +156,7 @@ export function startProviderUsageLimitProbes(
       const result = await runPrompt(
         agent,
         "Reply with OK only. Do not use tools. This is a one-token availability probe.",
-        { cwd: config.root, timeoutMs: 45_000 },
+        { cwd: config.root, ...repoAgentRunTmpOpts(config), timeoutMs: 45_000 },
       );
       const output = [result.output, result.error].filter(Boolean).join("\n");
       recordOneShotSession(config.root, agent, result, {
