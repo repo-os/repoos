@@ -39,7 +39,7 @@ import {
 } from "./agents.js";
 import { patchTaskFile } from "./write.js";
 import { readFileSync } from "node:fs";
-import { extractSection, SCREENSHOTS_HEADING } from "../core/task.js";
+import { extractSection, removeSection, SCREENSHOTS_HEADING } from "../core/task.js";
 
 export interface StoryPmDeps {
   config: RepoOSConfig;
@@ -121,9 +121,11 @@ export async function fleshOutStory(deps: StoryPmDeps, run: StoryPmRun): Promise
           path,
         );
         const screenshots = current ? extractSection(current.body, SCREENSHOTS_HEADING) : null;
-        const nextBody = screenshots
-          ? `${parsed.body.trim()}\n\n## Screenshots\n\n${screenshots.trim()}`
-          : parsed.body;
+        let nextBody = parsed.body;
+        if (screenshots) {
+          const withoutPmSection = removeSection(parsed.body.trim(), SCREENSHOTS_HEADING).trim();
+          nextBody = [withoutPmSection, screenshots].filter(Boolean).join("\n\n");
+        }
         const { definition, previousPath } = rewriteStoryDefinition(
           config,
           path,
