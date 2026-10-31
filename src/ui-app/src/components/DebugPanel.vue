@@ -28,7 +28,10 @@ import DiffFileViewer from "./DiffFileViewer.vue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 
 const props = withDefaults(
-  defineProps<{ task: Task; statusDetails?: { title: string; detail: string }[] }>(),
+  defineProps<{
+    task: Task;
+    statusDetails?: { title: string; detail: string; timestamp?: string | null }[];
+  }>(),
   { statusDetails: () => [] },
 );
 const router = useRouter();
@@ -516,7 +519,17 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
       <section class="changes-summary" aria-label="Task status details">
         <div class="changes-summary-title">Status details</div>
         <article v-for="row in statusDetails" :key="row.title" class="debug-status-detail">
-          <strong>{{ row.title }}</strong>
+          <div class="debug-status-head">
+            <strong>{{ row.title }}</strong>
+            <time
+              v-if="row.timestamp && relTime(row.timestamp) !== 'unknown'"
+              class="debug-status-time"
+              :datetime="row.timestamp"
+              :data-tip="new Date(row.timestamp).toLocaleString()"
+              tabindex="0"
+              >{{ relTime(row.timestamp) }}</time
+            >
+          </div>
           <p class="debug-status-text">{{ row.detail }}</p>
         </article>
         <div v-if="!statusDetails.length && !repo.doneErrorFor(task.id)" class="changes-empty">
@@ -755,9 +768,30 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
   background: var(--surface-2);
 }
 
-.debug-status-detail > strong {
+.debug-status-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.debug-status-head > strong {
   color: var(--txt);
   font-size: 12px;
+}
+
+.debug-status-time {
+  flex: none;
+  color: var(--txt-faint);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.debug-status-time:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .debug-status-text {
