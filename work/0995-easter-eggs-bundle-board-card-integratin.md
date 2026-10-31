@@ -1,6 +1,6 @@
 ---
 id: "0995"
-title: "Easter eggs bundle: board card integrating text, page skeleton shapes"
+title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
 status: inbox
 priority: p3
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T16:18:09Z"
+updated_at: "2026-10-31T16:18:11Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -79,3 +79,4 @@ Web only; the activity log is in the task body (`- <timestamp> · status A→B` 
 - 2026-10-31T13:23:40Z · title
 - 2026-10-31T16:18:07Z · body: Items (added 1)
 - 2026-10-31T16:18:09Z · body: E3 · Done column sorts by when the task reached done (added)
+- 2026-10-31T16:18:11Z · title
