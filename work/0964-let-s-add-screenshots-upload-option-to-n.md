@@ -14,7 +14,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T12:35:00Z"
+updated_at: "2026-10-31T12:37:28Z"
 last_close_out_gate_ms: 641061
 last_close_out_gate_at: "2026-10-31T12:32:16.399Z"
 review_passes: 3
@@ -115,3 +115,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T12:32:15Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T12:32:16Z · close-out gate completed in 641s
 - 2026-10-31T12:35:00Z · status done→done, release:success
+- 2026-10-31T12:37:28Z · note: shots: failed — preview for target "default" did not start: No git worktree exists for branch "feat/add-screenshot-upload-to-new-story"
