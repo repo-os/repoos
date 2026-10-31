@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 1818298
-last_close_out_gate_at: "2026-10-31T18:55:38.510Z"
 id: "0991"
 title: "Serve Markdown for Accept: text/markdown at both site roots"
 type: feature
-status: review
+status: done
 priority: p2
 area: [landing, docs]
+merged_commit: e9e87724d890d8843ff291b35ac782280f5a5e55
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
 updated_at: "2026-10-31T18:55:38Z"
+last_close_out_gate_ms: 1818298
+last_close_out_gate_at: "2026-10-31T18:55:38.510Z"
 review_passes: 2
 close_out_repair_count: 1
 ---
