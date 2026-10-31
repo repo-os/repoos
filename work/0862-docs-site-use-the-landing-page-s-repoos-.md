@@ -12,7 +12,7 @@ branch: feat/docs-site-use-the-landing-page-s-repoos-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-20T06:23:23Z"
-updated_at: "2026-10-31T03:09:07Z"
+updated_at: "2026-10-31T03:17:25Z"
 last_close_out_gate_ms: 279520
 last_close_out_gate_at: "2026-10-21T06:03:38.801Z"
 review_passes: 1
@@ -187,3 +187,4 @@ Start from `landing/src/components/SiteLogo.vue` and `landing/src/assets/logo.sv
 - 2026-10-29T13:34:14Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T01:17:05Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T03:09:07Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-31T03:17:25Z · message_overdue: still queued after 60m without being delivered
