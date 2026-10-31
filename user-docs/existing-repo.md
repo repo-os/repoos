@@ -16,18 +16,24 @@ By default, RepoOS files live under a `repoos/` subdirectory to keep metadata
 out of your project source. You can choose a different location or explicitly
 pick the repo root during the interactive prompt.
 
-It creates only what isn't already there:
+It creates only what isn't already there. With the default layout:
 
 | Path | What it is |
 | --- | --- |
-| `repoos/work/` | One markdown file per task. The board. |
-| `repoos/docs/` | Context an agent reads before working — architecture notes, decisions, history. |
-| `AGENTS.md` | The cross-tool agent-instructions standard. Always at the repo root. |
 | `repoos.toml` | Configuration. Every field is optional. Always at the repo root. |
-| `repoos/work/0001-set-up-repoos.md` | A worked example of a task file, marked `done` — it's not work to do. |
-| `repoos/work/0002-read-the-codebase.md` | An `inbox` starter task: read this codebase and propose `repoos/docs/` + an initial task backlog. Promote it with `repoos mv 0002 ready` when you want it picked up. |
-| `.env.example` | Documents the secrets a fuller setup expects. |
-| `.gitignore` entries | Ignore RepoOS runtime state — the derived cache (`repoos/.repoos/`), the root `.repoos/` runtime directory, and macOS `.DS_Store` files at any depth — plus local secrets (`.env`, `.env*.local`) and installed dependencies (`node_modules/`). |
+| `repoos/work/` | One markdown file per task. This is the board. Includes `0001-set-up-repoos.md` (a `done` example) and an inbox starter task. |
+| `repoos/docs/` | Context an agent needs to work on *this* project — architecture notes, decisions, history. |
+| `AGENTS.md` | Instructions agents read first. The cross-tool standard; Claude Code, Codex, Cursor, Aider and Zed all read it. Always at the repo root. |
+| `.env.example` | Names of secrets a fuller setup expects. No values. |
+| `.gitignore` | Created, or appended when one already exists. Ignores the derived cache, root `.repoos/` runtime state, `.env`, `.env*.local`, `node_modules/`, task and input attachment directories, and `.DS_Store`. |
+| `repoos/.repoos/canary.txt` | Tracked canary counter. |
+
+On an existing repo the inbox starter is `0002-read-the-codebase.md` (read this
+codebase and propose `repoos/docs/` plus an initial backlog). Promote it with
+`repoos mv 0002 ready` when you want it picked up. A brand-new project seeds
+`0002-flesh-out-the-vision.md` instead, runs `git init`, and unless you pass
+`--no-commit` commits the scaffold (`chore: initialize RepoOS project`). Init
+in an existing repo does not make that commit.
 
 With the default layout, `repoos.toml` persists the configured paths:
 
@@ -122,9 +128,18 @@ for the non-interactive recipe and pitfalls.
 ## Next
 
 ```bash
-repoos serve     # start the local control plane
+repoos serve     # local control plane, plus background agents — check first
 repoos new "Fix the login redirect loop"
 ```
+
+Before `repoos serve`, check which agents are enabled. Serve starts the web UI
+and API, and background automation. The CTO board monitor ticks every 5 minutes
+(`ctoMonitorIntervalMs`, default `300000`). When the `cto` agent has
+`enabled = true`, that tick launches a coding agent. Turn it off with
+`enabled = false` on that `[[agents]]` row. The built-in default leaves the CTO
+disabled. The reviewer is on by default and starts when a task enters `review`.
+The watchdog (`watchdog.enabled`, default `true`) can restart a stalled
+engineer.
 
 Then see [Install and first task](/getting-started) for the lifecycle, or
 [Configuration](/configuration) for `repoos.toml`.
