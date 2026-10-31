@@ -40,3 +40,4 @@ Find the launcher in the install scripts and the package bin before changing any
 - 2026-10-31T08:31:22Z · status inbox→ready
 - 2026-10-31T10:37:06Z · status ready→active, branch
 - 2026-10-31T11:04:43Z · status active→review
+- 2026-10-31T11:04:43Z · note: shots: skipped — Docs site skipped: no docs shot declared
