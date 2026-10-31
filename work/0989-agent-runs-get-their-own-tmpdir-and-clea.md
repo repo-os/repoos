@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
-model_override: composer-2.5
+model_override: grok-4.7-low
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T13:15:25Z"
+updated_at: "2026-10-31T13:15:26Z"
 ---
 ## Problem
 
@@ -44,3 +44,4 @@ Start from where agent processes are spawned (`src/server/agents.ts` and the CTO
 - 2026-10-31T12:55:44Z · engineer stopped by request
 - 2026-10-31T13:11:42Z · note: adopted orphaned engineer pid 54869
 - 2026-10-31T13:15:24Z · engineer stopped by request
+- 2026-10-31T13:15:26Z · model_override
