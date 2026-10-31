@@ -55,18 +55,18 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 ```json
 [
 {
-  "label": "New story screenshot picker",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".shot-dropzone",
-  "steps": [
-    {
-      "click": "button.new-btn"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "New story screenshot picker",
+"target": "default",
+"route": "/stories",
+"highlight": ".shot-dropzone",
+"steps": [
+  {
+    "click": "button.new-btn"
+  },
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```
