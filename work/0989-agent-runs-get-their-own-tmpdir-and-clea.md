@@ -11,7 +11,7 @@ branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T16:40:36Z"
+updated_at: "2026-10-31T17:03:43Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-31T15:25:03.027Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -52,3 +52,4 @@ Start from where agent processes are spawned (`src/server/agents.ts` and the CTO
 - 2026-10-31T15:25:33Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/12 crashes in 30m) · Error: [aborted] read ECONNRESET
 - 2026-10-31T16:40:31Z · engineer stopped by request
 - 2026-10-31T16:40:31Z · needs_input
+- 2026-10-31T17:03:43Z · note: adopted orphaned engineer pid 19084
