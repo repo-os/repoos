@@ -7514,8 +7514,9 @@ watch(
   grid-template-rows: auto auto auto;
   gap: 4px;
   align-content: center;
-  width: 100%;
-  margin: 8px 0;
+  /* Same 22px gutter as the drawer header and tab strip above and below. */
+  width: calc(100% - 44px);
+  margin: 8px 22px;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
