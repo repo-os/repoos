@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T22:26:48Z"
+updated_at: "2026-10-31T22:40:48Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
