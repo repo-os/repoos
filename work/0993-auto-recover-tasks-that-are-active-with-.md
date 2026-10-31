@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T12:22:38Z"
+updated_at: "2026-10-31T13:04:46Z"
 ---
 ## Problem
 
@@ -35,8 +35,12 @@ Start from `src/server/task-watchdog.ts` and `src/server/engineer-crash-recovery
 ## Also: stale state on done tasks
 Seen on #0970 (done, branch merged to main): an engineer session that outlived the move to done crashed later, set needs_input dev-error, and the badge stayed on a done task. A queued message to that session was never delivered, and the log shows a message_overdue entry every few hours. Acceptance: (1) moving a task to done clears needs_input, its reason and detail, and the debug tl;dr; (2) queued messages for a done task are dropped, with one activity line saying so, instead of re-warning forever; (3) an engineer crash on a task that is already done does not set needs_input; (4) a test covers each. Also related: the board status label can read 'Waiting on a human: dev error' after an engineer was restarted (seen on #0964); the label must follow the live state.
 
+## Also: holds on done tasks
+The board's Held list shows done tasks (seen: #0899 and #0849, both status done with a bare hold: true and no reason, owner or time, so the hold predates the structured hold fields). A hold on a done task controls nothing. Acceptance: (1) moving a task to done clears hold and its reason, until, by and at fields; (2) a one-time migration clears hold on tasks that are already done; (3) the UI Held list and the driver brief exclude done tasks even if a stale hold remains; (4) tests for each.
+
 ## Activity
 
 - 2026-10-31T10:08:41Z · created · njachowski@gmail.com
 - 2026-10-31T12:21:11Z · body: Also: stale state on done tasks (added)
 - 2026-10-31T12:22:38Z · status inbox→ready
+- 2026-10-31T13:04:46Z · body: Also: holds on done tasks (added)
