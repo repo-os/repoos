@@ -39,7 +39,8 @@ export type AttentionKind =
   | "remoteHostDegraded"
   | "ctoAction"
   | "gitLock"
-  | "ctoSilent";
+  | "ctoSilent"
+  | "engineerRecoveryFailed";
 
 export interface AttentionItem {
   /** Stable per event — dedupe key for clients and dismiss markers. */
@@ -63,7 +64,13 @@ export interface AttentionFeed {
 /** Durable attention events recorded on the server (provider failures, remote fallback). */
 export interface RecordedAttentionEvent {
   id: string;
-  kind: "providerFailure" | "providerUsageLimit" | "remoteFallback" | "ctoAction" | "gitLock";
+  kind:
+    | "providerFailure"
+    | "providerUsageLimit"
+    | "remoteFallback"
+    | "ctoAction"
+    | "gitLock"
+    | "engineerRecoveryFailed";
   taskId: string | null;
   message: string;
   detail: string;
@@ -146,6 +153,7 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   ctoAction: "info",
   gitLock: "warning",
   ctoSilent: "warning",
+  engineerRecoveryFailed: "error",
 };
 
 /** Attention kinds that imply the CTO (or a driver) should be acting (#0728). */

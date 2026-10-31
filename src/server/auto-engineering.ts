@@ -28,6 +28,7 @@ import {
   type SelectionResult,
   type TaskConflict,
 } from "../core/task-selection.js";
+import { countEngineerCapUsage, type EngineerSlotSignals } from "../core/engineer-slot.js";
 
 /** Which picker produced a decision. */
 export type PickerKind = "deterministic" | "pm-veto";
@@ -220,6 +221,7 @@ export class AutoEngineeringOrchestrator {
     config: RepoOSConfig,
     allTasks: Task[],
     trigger: AutoEngineeringDecision["trigger"],
+    slotSignals?: EngineerSlotSignals,
   ): Promise<ReconciliationResult> {
     if (this.reconciling) {
       return { triggered: false };
@@ -232,7 +234,7 @@ export class AutoEngineeringOrchestrator {
 
     this.reconciling = true;
     try {
-      return await this.reconcileImpl(config, allTasks, trigger);
+      return await this.reconcileImpl(config, allTasks, trigger, slotSignals);
     } finally {
       this.reconciling = false;
     }
@@ -242,13 +244,15 @@ export class AutoEngineeringOrchestrator {
     config: RepoOSConfig,
     allTasks: Task[],
     trigger: AutoEngineeringDecision["trigger"],
+    slotSignals?: EngineerSlotSignals,
   ): Promise<ReconciliationResult> {
     const maxActiveTasks = config.maxActiveTasks ?? 3;
-    // Archived tasks are parked (#0657): they hold no slot and are never
-    // picked up, even if their underlying status is `active`.
-    const activeCount = allTasks.filter(
-      (t) => t.status === "active" && !t.isArchived && t.assignee !== "human" && !isHoldActive(t),
-    ).length;
+    const signals: EngineerSlotSignals = slotSignals ?? {
+      isRunning: () => false,
+      isQueued: () => false,
+      isHandoffInFlight: () => false,
+    };
+    const activeCount = countEngineerCapUsage(allTasks, signals);
     const availableSlots = Math.max(0, maxActiveTasks - activeCount);
 
     // No capacity available.
