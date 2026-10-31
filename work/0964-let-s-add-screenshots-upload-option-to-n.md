@@ -16,7 +16,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T04:40:37Z"
+updated_at: "2026-10-31T04:42:22Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-31T01:45:50.159Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
