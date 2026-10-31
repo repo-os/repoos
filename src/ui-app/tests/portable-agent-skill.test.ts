@@ -206,7 +206,7 @@ describe("portable RepoOS Agent Skill", () => {
     expect(AGENT_SKILL_RAW_URL).toBe(
       "https://raw.githubusercontent.com/repo-os/repoos/main/agent/skill/SKILL.md",
     );
-    expect(renderLlmsTxt()).toContain(`](${AGENT_SKILL_URL})`);
+    expect(renderLlmsTxt()).toContain(`](${AGENT_SKILL_RAW_URL})`);
     expect(allSkillText()).toContain(AGENT_SKILL_URL);
   });
 
@@ -218,7 +218,7 @@ describe("portable RepoOS Agent Skill", () => {
     const page = readFileSync(join(repoRoot, "user-docs", "agent-skill.md"), "utf8");
     const meta = frontmatter(page);
     expect(meta.title).toBe("RepoOS Agent Skill");
-    expect(meta.description).toContain(`[repo-os/repoos agent/skill](${AGENT_SKILL_URL})`);
+    expect(meta.description).toContain(`[SKILL.md](${AGENT_SKILL_RAW_URL})`);
     expect(page).toContain(AGENT_SKILL_RAW_URL);
     expect(page).toContain("references/");
   });

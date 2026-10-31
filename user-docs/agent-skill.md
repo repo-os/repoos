@@ -1,6 +1,6 @@
 ---
 title: RepoOS Agent Skill
-description: "Portable Agent Skill for outside coding agents: [repo-os/repoos agent/skill](https://github.com/repo-os/repoos/tree/main/agent/skill). Start at SKILL.md."
+description: "Portable Agent Skill for outside coding agents. Start at the raw [SKILL.md](https://raw.githubusercontent.com/repo-os/repoos/main/agent/skill/SKILL.md)."
 ---
 
 # RepoOS Agent Skill

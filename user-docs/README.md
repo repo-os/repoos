@@ -102,13 +102,14 @@ The agent index does not depend on the sidebar: `vitepress-plugin-llms` reads
 every published `user-docs/*.md` page, so a new page lands in `llms.txt` (under
 **Other** until it has a sidebar section) without a second allowlist edit.
 
-## Agent files (`llms.txt`, `llms-full.txt`, raw Markdown)
+## Agent files (`llms.txt`, `llms-essentials.txt`, `llms-full.txt`, raw Markdown)
 
 `bun run build` publishes the manual for agents alongside the HTML site:
 
 | Output | What it is |
 | --- | --- |
-| `/llms.txt` | Index of every public page, with a link to its raw Markdown |
+| `/llms.txt` | Index of every public page: a raw Markdown link and a one-line description |
+| `/llms-essentials.txt` | Install, concepts, and agent setup in one file, generated at build time |
 | `/llms-full.txt` | The whole manual concatenated for one fetch |
 | `/<route>.md` | Each page as raw Markdown (`/getting-started.md`, …) |
 
