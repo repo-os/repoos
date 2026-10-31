@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 502052
-last_close_out_gate_at: "2026-10-31T10:34:05.075Z"
 id: "0986"
 title: "Record release-profile check runs, including failures, in the checks history"
 type: bug
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 9d4519e390eed5956ec4a497c7906b7df656af0a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/record-release-profile-check-runs-includ
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T00:59:20Z"
 updated_at: "2026-10-31T10:34:05Z"
+last_close_out_gate_ms: 502052
+last_close_out_gate_at: "2026-10-31T10:34:05.075Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-31T03:17:45.679Z\",\"reason\":\"clean-exit-without-handoff\"}]"
