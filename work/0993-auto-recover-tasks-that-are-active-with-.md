@@ -2,7 +2,7 @@
 id: "0993"
 title: Auto-recover tasks that are active with no live engineer
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
