@@ -2,10 +2,7 @@
 id: "0992"
 title: "llms.txt: descriptions, raw skill links and a small essentials bundle"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: check-wait
-needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 23899, alive), #0991 check (pid 24370, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 8s"
+status: review
 priority: p3
 area: [landing, docs]
 depends_on: ["0990"]
@@ -13,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/llms-txt-descriptions-raw-skill-links-an
 created_at: "2026-10-31T08:31:09Z"
-updated_at: "2026-10-31T16:06:10Z"
+updated_at: "2026-10-31T16:56:29Z"
 ---
 ## Problem
 
@@ -47,3 +44,5 @@ Do this after #0990 (starter prompt and init docs) lands, to avoid conflicts in 
 - 2026-10-31T15:33:04Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 28333, alive), #0991 check (pid 40035, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-10-31T15:33:34Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T16:06:10Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 23899, alive), #0991 check (pid 24370, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 8s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T16:31:10Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T16:56:29Z · status active→review
