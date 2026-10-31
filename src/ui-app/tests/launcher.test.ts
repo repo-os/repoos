@@ -16,8 +16,12 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, join, resolve } from "node:path";
-import { launcherScript, launcherScriptInstallShHeredoc } from "../../core/launcher-runtime.js";
+import { delimiter, dirname, join, resolve } from "node:path";
+import {
+  launcherScript,
+  launcherScriptInstallShHeredoc,
+  LAUNCHER_RUNTIME_PROBE_SUMMARY,
+} from "../../core/launcher-runtime.js";
 import { resolveBun } from "../../core/runtime.js";
 
 const ROOT = resolve(__dirname, "../../..");
@@ -147,18 +151,52 @@ describe("repoos launcher", () => {
       ).toBe("node");
     });
 
-    it.runIf(realNodeBinary() !== null)("finds nvm default node when PATH is stripped", () => {
+    function nvmNodeFixture(
+      home: string,
+      node: string,
+      layout: {
+        defaultAlias: string;
+        versionDir: string;
+        aliasFiles?: Record<string, string>;
+      },
+    ): void {
+      const nvmDir = join(home, ".nvm");
+      mkdirSync(join(nvmDir, "alias"), { recursive: true });
+      writeFileSync(join(nvmDir, "alias/default"), `${layout.defaultAlias}\n`);
+      for (const [name, target] of Object.entries(layout.aliasFiles ?? {})) {
+        const aliasFile = join(nvmDir, "alias", name);
+        mkdirSync(dirname(aliasFile), { recursive: true });
+        writeFileSync(aliasFile, `${target}\n`);
+      }
+      const binDir = join(nvmDir, "versions/node", layout.versionDir, "bin");
+      mkdirSync(binDir, { recursive: true });
+      cpSync(node, join(binDir, "node"));
+    }
+
+    it.runIf(realNodeBinary() !== null)(
+      "finds nvm default node when the version dir uses a v prefix",
+      () => {
+        const node = realNodeBinary()!;
+        const d = tmp();
+        const home = join(d, "home");
+        const entry = fixtureEntry(join(home, ".repoos"));
+        nvmNodeFixture(home, node, { defaultAlias: "20.10.0", versionDir: "v20.10.0" });
+        expect(
+          launchWith(entry, d, { HOME: home, PATH: STRIPPED_PATH, REPOOS_RUNTIME: "node" }),
+        ).toBe("node");
+      },
+    );
+
+    it.runIf(realNodeBinary() !== null)("finds nvm default through an lts alias hop", () => {
       const node = realNodeBinary()!;
       const d = tmp();
       const home = join(d, "home");
-      const installRoot = join(home, ".repoos");
-      const entry = fixtureEntry(installRoot);
-      const nvmDir = join(home, ".nvm");
-      mkdirSync(join(nvmDir, "alias"), { recursive: true });
-      writeFileSync(join(nvmDir, "alias/default"), "20.10.0\n");
-      const binDir = join(nvmDir, "versions/node/20.10.0/bin");
-      mkdirSync(binDir, { recursive: true });
-      cpSync(node, join(binDir, "node"));
+      const entry = fixtureEntry(join(home, ".repoos"));
+      nvmNodeFixture(home, node, {
+        defaultAlias: "lts/iron",
+        versionDir: "v20.10.0",
+        aliasFiles: { "lts/iron": "20.10.0" },
+      });
       expect(
         launchWith(entry, d, { HOME: home, PATH: STRIPPED_PATH, REPOOS_RUNTIME: "node" }),
       ).toBe("node");
@@ -179,8 +217,37 @@ describe("repoos launcher", () => {
     it("documents an actionable error when no runtime is found", () => {
       const script = launcherScript(join(tmp(), "cli", "index.js"));
       expect(script).toContain("no JavaScript runtime found");
-      expect(script).toContain("mise/shims");
+      for (const line of LAUNCHER_RUNTIME_PROBE_SUMMARY) {
+        expect(script).toContain(line);
+      }
       expect(script).toMatch(/exit 1\n$/);
+    });
+
+    it("exits non-zero with probe list on stderr when no runtime exists", () => {
+      const d = tmp();
+      const home = join(d, "home");
+      mkdirSync(home);
+      const emptyPath = join(d, "empty-path");
+      mkdirSync(emptyPath);
+      const entry = fixtureEntry(join(home, ".repoos"));
+      const launcher = join(d, "repoos");
+      writeFileSync(launcher, launcherScript(entry));
+      chmodSync(launcher, 0o755);
+      let stderr = "";
+      let status = 0;
+      try {
+        execFileSync("/bin/bash", [launcher], {
+          env: { HOME: home, PATH: emptyPath, REPOOS_RUNTIME: "node" },
+          stdio: ["ignore", "ignore", "pipe"],
+        });
+      } catch (err) {
+        const e = err as NodeJS.ErrnoException & { status?: number; stderr?: Buffer };
+        status = e.status ?? 1;
+        stderr = e.stderr?.toString() ?? "";
+      }
+      expect(status).not.toBe(0);
+      expect(stderr).toContain("no JavaScript runtime found");
+      expect(stderr).toContain(LAUNCHER_RUNTIME_PROBE_SUMMARY[3]);
     });
   });
 });

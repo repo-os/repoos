@@ -151,15 +151,41 @@ _repoos_find_bun() {
   return 1
 }
 
+_repoos_nvm_node_path() {
+  local nvm_dir="\$1" ver="\$2" stripped candidate c
+  stripped="\${ver#v}"
+  for candidate in "\$ver" "\$stripped" "v\${stripped}"; do
+    [ -z "\$candidate" ] && continue
+    c="\$(_repoos_try "\${nvm_dir}/versions/node/\${candidate}/bin/node")" && { printf "%s\n" "\$c"; return 0; }
+  done
+  return 1
+}
+
+_repoos_find_nvm_node() {
+  local nvm_dir ver hop alias_path c
+  nvm_dir="\${NVM_DIR:-\${home}/.nvm}"
+  [ -f "\${nvm_dir}/alias/default" ] || return 1
+  ver="\$(tr -d "[:space:]" < "\${nvm_dir}/alias/default")"
+  [ -n "\$ver" ] || return 1
+  hop=0
+  while [ -n "\$ver" ] && [ "\$hop" -lt 4 ]; do
+    c="\$(_repoos_nvm_node_path "\$nvm_dir" "\$ver")" && { printf "%s\n" "\$c"; return 0; }
+    alias_path="\${nvm_dir}/alias/\${ver}"
+    if [ -f "\$alias_path" ]; then
+      ver="\$(tr -d "[:space:]" < "\$alias_path")"
+      hop=\$((hop + 1))
+    else
+      return 1
+    fi
+  done
+  return 1
+}
+
 _repoos_find_node() {
-  local c nvm_dir ver
+  local c
   c="\$(_repoos_try "\$(command -v node 2>/dev/null || true)")" && { printf "%s\n" "\$c"; return; }
   c="\$(_repoos_try "\${home}/.local/share/mise/shims/node")" && { printf "%s\n" "\$c"; return; }
-  nvm_dir="\${NVM_DIR:-\${home}/.nvm}"
-  if [ -f "\${nvm_dir}/alias/default" ]; then
-    ver="\$(tr -d "[:space:]" < "\${nvm_dir}/alias/default")"
-    c="\$(_repoos_try "\${nvm_dir}/versions/node/\${ver}/bin/node")" && { printf "%s\n" "\$c"; return; }
-  fi
+  c="\$(_repoos_find_nvm_node 2>/dev/null)" && { printf "%s\n" "\$c"; return; }
   c="\$(_repoos_try "/opt/homebrew/bin/node")" && { printf "%s\n" "\$c"; return; }
   c="\$(_repoos_try "/usr/local/bin/node")" && { printf "%s\n" "\$c"; return; }
   c="\$(_repoos_try "/usr/bin/node")" && { printf "%s\n" "\$c"; return; }
@@ -178,9 +204,9 @@ if [ -n "\$runtime" ]; then exec "\$runtime" --no-warnings "\$entry" "\$@"; fi
   printf "  - REPOOS_BUN_PATH and bun on PATH\n" >&2
   printf "  - ~/.bun/bin/bun\n" >&2
   printf "  - ~/.local/share/mise/shims (bun and node)\n" >&2
-  printf "  - nvm default (~/.nvm/versions/node/<version>/bin/node)\n" >&2
+  printf "  - nvm default (alias/default, with alias hops and v-prefixed version dirs)\n" >&2
   printf "  - bundled Bun at <install>/bun/bin/bun (when shipped)\n" >&2
-  printf "  - /opt/homebrew/bin, /usr/local/bin, /usr/bin\n" >&2
+  printf "  - /opt/homebrew/bin, /usr/local/bin, and /usr/bin\n" >&2
   printf "\n" >&2
   printf "Install Bun (recommended): curl -fsSL https://bun.sh/install | bash\n" >&2
   printf "Or install Node.js >= 20.6.0, set REPOOS_BUN_PATH=/path/to/bun,\n" >&2
