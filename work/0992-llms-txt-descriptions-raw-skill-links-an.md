@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p3
 area: [landing, docs]
+depends_on: ["0990"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T08:31:09Z"
-updated_at: "2026-10-31T08:31:16Z"
+updated_at: "2026-10-31T08:31:17Z"
 ---
 ## Problem
 
@@ -37,3 +38,4 @@ Do this after #0990 (starter prompt and init docs) lands, to avoid conflicts in 
 
 - 2026-10-31T08:31:09Z · created · njachowski@gmail.com
 - 2026-10-31T08:31:16Z · body: Notes for AI (added 1, removed 1)
+- 2026-10-31T08:31:17Z · depends_on
