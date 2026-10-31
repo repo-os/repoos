@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
-updated_at: "2026-10-31T18:19:24Z"
+updated_at: "2026-10-31T18:20:07Z"
 close_out_repair_count: 1
 review_passes: 1
 ---
@@ -53,3 +53,4 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T17:05:06Z · note: adopted orphaned engineer pid 17788
 - 2026-10-31T18:19:21Z · status active→review
 - 2026-10-31T18:19:24Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (e9e87724d) during finalization (#0734)
+- 2026-10-31T18:20:07Z · note: review pass 2: good to go
