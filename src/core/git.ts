@@ -52,11 +52,18 @@ function git(root: string, args: string[], timeoutMs = 4000): string | null {
  * information `removeWorktree` needs to tell "already gone" from "refused
  * because the branch is checked out elsewhere".
  */
-function gitCapture(root: string, args: string[]): GitRun {
+/**
+ * A full checkout of a task worktree can take far longer than the 4 s used for
+ * ref reads when the machine is busy; killing it half-way leaves a branch with
+ * no worktree. Generous, but still bounded because this call is synchronous.
+ */
+const WORKTREE_ADD_TIMEOUT_MS = 60_000;
+
+function gitCapture(root: string, args: string[], timeoutMs = 4000): GitRun {
   const run = spawnSync("git", observationalGitArgs(args), {
     cwd: root,
     encoding: "utf8",
-    timeout: 4000,
+    timeout: timeoutMs,
   });
   return {
     status: run.status,
@@ -1117,7 +1124,7 @@ export function ensureWorktree(
   const args = branchExists
     ? ["worktree", "add", target, branch]
     : ["worktree", "add", "-b", branch, target];
-  const first = gitCapture(root, args);
+  const first = gitCapture(root, args, WORKTREE_ADD_TIMEOUT_MS);
   if (first.status !== 0) {
     let failure = worktreeAddFailure(first);
     // An orphaned directory (leftover from a prior interrupted close-out) blocks
@@ -1129,7 +1136,16 @@ export function ensureWorktree(
       } catch {
         /* best-effort */
       }
-      const retry = gitCapture(root, args);
+      // A first attempt killed mid-checkout has already created the branch, so
+      // the retry must use the plain form: `-b` would fail with "a branch named
+      // ... already exists" and poison every later start (#0994). Fall back to
+      // the original args when the branch was never created.
+      const plainArgs = ["worktree", "add", target, branch];
+      gitCapture(root, ["worktree", "prune"]);
+      let retry = gitCapture(root, plainArgs, WORKTREE_ADD_TIMEOUT_MS);
+      if (retry.status !== 0 && args !== plainArgs) {
+        retry = gitCapture(root, args, WORKTREE_ADD_TIMEOUT_MS);
+      }
       if (retry.status === 0) {
         let path = target;
         try {
