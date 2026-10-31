@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "0986"
 title: "Record release-profile check runs, including failures, in the checks history"
 type: bug
@@ -10,7 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/record-release-profile-check-runs-includ
 created_at: "2026-10-31T00:59:20Z"
-updated_at: "2026-10-31T03:08:48Z"
+updated_at: "2026-10-31T03:17:45Z"
+handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-10-31T03:17:45.679Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -36,5 +37,4 @@ Start from `src/core/check-store.ts` and where the release path invokes the chec
 - 2026-10-31T00:59:20Z · created · njachowski@gmail.com
 - 2026-10-31T03:08:30Z · status inbox→ready
 - 2026-10-31T03:08:48Z · status ready→active, branch
-
-
+- 2026-10-31T03:17:45Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
