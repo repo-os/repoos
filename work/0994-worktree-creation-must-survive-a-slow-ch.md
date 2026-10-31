@@ -8,8 +8,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-10-31T16:39:36Z"
+updated_at: "2026-10-31T16:40:05Z"
 ---
 ## Problem
 
@@ -43,3 +45,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 
 - 2026-10-31T12:59:31Z · created · njachowski@gmail.com
 - 2026-10-31T16:39:36Z · status inbox→ready
+- 2026-10-31T16:40:05Z · cli_override, model_override
