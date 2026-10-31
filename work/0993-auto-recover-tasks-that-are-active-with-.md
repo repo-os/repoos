@@ -81,3 +81,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-10-31T23:19:39Z · model_override
 - 2026-10-31T23:21:33Z · message_queued at 2026-10-31T23:21:33.854Z
 - 2026-10-31T23:26:46Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: tests — } > · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-31T23:26:46Z · note: handoff requested (cli)
