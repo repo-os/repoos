@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-31T10:16:01Z"
+review_passes: 2
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
@@ -13,12 +15,10 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T10:16:01Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-31T01:45:50.159Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 dev_error_count: 3
 ---
 ## Problem
@@ -103,3 +103,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T10:14:39Z · needs_input
 - 2026-10-31T10:14:39Z · status active→review
 - 2026-10-31T10:16:01Z · note: review pass 2: needs some work
+
