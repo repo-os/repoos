@@ -11,7 +11,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T20:27:05Z"
+updated_at: "2026-10-31T22:32:52Z"
 ---
 ## Problem
 
@@ -44,10 +44,10 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 ```json
 [
 {
-  "label": "Active-without-engineer recovery window setting",
-  "target": "default",
-  "route": "/settings?tab=watchdog",
-  "highlight": "[data-setting-key=\"watchdog.activeWithoutEngineerRecoverMs\"]"
+"label": "Active-without-engineer recovery window setting",
+"target": "default",
+"route": "/settings?tab=watchdog",
+"highlight": "[data-setting-key=\"watchdog.activeWithoutEngineerRecoverMs\"]"
 }
 ]
 ```
@@ -69,3 +69,6 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-10-31T20:15:11Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 83935, alive), #0994 check (pid 97854, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-10-31T20:26:12Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T20:27:05Z · body
+- 2026-10-31T20:57:30Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T20:58:00Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T22:32:52Z · note: handoff requested (ui-review)
