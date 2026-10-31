@@ -293,8 +293,8 @@ export class CheckStore {
   }
 
   /** Insert one row (plus retention pruning). Fail-soft by design. */
-  record(input: RecordCheckRunInput): void {
-    if (!this.available || !this.db) return;
+  record(input: RecordCheckRunInput): number | null {
+    if (!this.available || !this.db) return null;
     try {
       this.db
         .prepare(
@@ -332,6 +332,7 @@ export class CheckStore {
           JSON.stringify(input.testFileTimings ?? []),
           input.reuseContext ? JSON.stringify(input.reuseContext) : null,
         );
+      const id = Number(this.db.prepare("SELECT last_insert_rowid() AS id").get()?.id);
       // Retention: delete everything older than the newest MAX_ROWS rows.
       this.db
         .prepare(
@@ -339,6 +340,7 @@ export class CheckStore {
              (SELECT id FROM check_runs ORDER BY id DESC LIMIT ${MAX_ROWS})`,
         )
         .run();
+      return Number.isFinite(id) ? id : null;
     } catch (e) {
       // Visibility only — never fail the gate on a store write. But say so,
       // once per process: silent history loss made #0607 hard to diagnose
@@ -348,6 +350,50 @@ export class CheckStore {
         console.error(
           `[repoos] check-run history write failed (${this.dbPath}): ` +
             `${(e as Error)?.message ?? String(e)}`,
+        );
+      }
+      return null;
+    }
+  }
+
+  /** Replace a provisional run row with its completed result. */
+  update(id: number, input: RecordCheckRunInput): void {
+    if (!this.available || !this.db) return;
+    try {
+      this.db
+        .prepare(
+          `UPDATE check_runs SET task_id=?, phase=?, worktree=?, candidate_sha=?, machine=?, remote=?, scope=?, started_at=?, duration_ms=?, outcome=?, failed_step=?, skipped_steps=?, detail=?, failed_tests=?, isolation_note=?, steps_done=?, steps_total=?, tests_done=?, tests_total=?, step_timings=?, test_file_timings=?, reuse_context=? WHERE id=?`,
+        )
+        .run(
+          input.taskId ?? null,
+          input.phase,
+          input.worktree ?? null,
+          input.candidateSha ?? null,
+          input.machine ?? null,
+          input.remote ? 1 : 0,
+          input.scope || "full",
+          input.startedAt,
+          input.durationMs ?? null,
+          input.outcome,
+          input.failedStep ?? null,
+          input.skippedSteps?.length ? JSON.stringify(input.skippedSteps) : null,
+          clipDetail(input.detail),
+          input.failedTests?.length ? JSON.stringify(input.failedTests) : null,
+          input.isolationNote?.trim() || null,
+          input.stepsDone ?? null,
+          input.stepsTotal ?? null,
+          input.testsDone ?? null,
+          input.testsTotal ?? null,
+          input.steps ? JSON.stringify(readStepTimings(input.steps)) : null,
+          JSON.stringify(input.testFileTimings ?? []),
+          input.reuseContext ? JSON.stringify(input.reuseContext) : null,
+          id,
+        );
+    } catch (e) {
+      if (!warnedRecordFailed) {
+        warnedRecordFailed = true;
+        console.error(
+          `[repoos] check-run history update failed (${this.dbPath}): ${(e as Error)?.message ?? String(e)}`,
         );
       }
     }

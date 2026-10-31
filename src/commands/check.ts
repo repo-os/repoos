@@ -2491,6 +2491,21 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   waitRecord = waits.finish();
 
   const runStartedAt = new Date();
+  // Persist a provisional row before running steps. If this process is killed,
+  // the durable history still shows an interrupted run instead of no run.
+  const historyRunId = recordRunHistoryRow({
+    root: checkStoreRoot,
+    cacheDir: cfg.cacheDir,
+    attribution: runContext,
+    scope: changedRef ? `changed:${changedRef}` : "full",
+    worktree: repoRoot,
+    startedAt: runStartedAt.toISOString(),
+    durationMs: 0,
+    outcome: "cancelled",
+    failedStep: "check",
+    skippedSteps: [],
+    detail: "Check was interrupted before completion.",
+  });
   // Failed-first ordering (#0655): only interactive/CLI and pre-review runs
   // reorder. Close-out and release run their selected suite from a clean
   // slate, and the remote close-out gate never reaches this point. Attribution
@@ -2568,6 +2583,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       skippedSteps: [],
       steps: completedSteps,
       detail: `check crashed before completing: ${(e as Error).message}`,
+      updateId: historyRunId,
     });
     throw e;
   } finally {
@@ -2763,6 +2779,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     failedTests: gatingFailures.flatMap((r) => extractFailedTests(r.output ?? "")),
     // Informational isolation label (#0655) — never part of the outcome.
     isolationNote: results.find((r) => r.isolationNote)?.isolationNote ?? null,
+    updateId: historyRunId,
   });
 
   process.exit(gatingFailures.length > 0 ? 1 : 0);
@@ -2811,7 +2828,7 @@ function recordRunHistoryRow(row: {
   snapshot?: CheckSnapshot | null;
   startedAt: string;
   durationMs: number;
-  outcome: "pass" | "fail" | "skipped";
+  outcome: "pass" | "fail" | "skipped" | "cancelled";
   failedStep: string | null;
   skippedSteps: string[];
   detail: string | null;
@@ -2823,10 +2840,12 @@ function recordRunHistoryRow(row: {
   testsTotal?: number | null;
   steps?: CheckStepTiming[];
   testFileTimings?: TestFileTiming[];
-}): void {
+  updateId?: number | null;
+}): number | null {
   try {
     const { taskId, phase } = row.attribution;
-    getCheckStore(row.root, row.cacheDir).record({
+    const store = getCheckStore(row.root, row.cacheDir);
+    const input = {
       taskId,
       phase,
       worktree: row.worktree,
@@ -2851,9 +2870,15 @@ function recordRunHistoryRow(row: {
       testsTotal: row.testsTotal,
       steps: row.steps,
       testFileTimings: row.testFileTimings,
-    });
+    };
+    if (row.updateId != null) {
+      store.update(row.updateId, input);
+      return row.updateId;
+    }
+    return store.record(input);
   } catch {
     /* never fail the gate on a history write */
+    return null;
   }
 }
 

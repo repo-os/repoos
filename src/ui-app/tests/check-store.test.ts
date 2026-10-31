@@ -97,6 +97,31 @@ describe("check-run store", () => {
     expect(Number.isFinite(rows[0]!.id)).toBe(true);
   });
 
+  it("finalizes an interrupted provisional release run in place", () => {
+    const { s } = store();
+    const id = s.record(
+      row({ taskId: null, phase: "release", outcome: "cancelled", failedStep: "check" }),
+    );
+    expect(id).not.toBeNull();
+    s.update(
+      id!,
+      row({
+        taskId: null,
+        phase: "release",
+        outcome: "fail",
+        failedStep: "tests",
+        failedTests: ["src/example.test.ts > suite > case"],
+      }),
+    );
+    expect(s.list()).toHaveLength(1);
+    expect(s.list()[0]).toMatchObject({
+      phase: "release",
+      outcome: "fail",
+      failedStep: "tests",
+      failedTests: ["src/example.test.ts > suite > case"],
+    });
+  });
+
   it("round-trips skipped steps, failed step and detail", () => {
     const { s } = store();
     s.record(
