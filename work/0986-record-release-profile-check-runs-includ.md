@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0986"
 title: "Record release-profile check runs, including failures, in the checks history"
 type: bug
@@ -35,3 +36,4 @@ Start from `src/core/check-store.ts` and where the release path invokes the chec
 - 2026-10-31T00:59:20Z · created · njachowski@gmail.com
 - 2026-10-31T03:08:30Z · status inbox→ready
 - 2026-10-31T03:08:48Z · status ready→active, branch
+
