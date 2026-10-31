@@ -74,7 +74,7 @@ afterAll(() => {
 });
 
 /** Run cmdCheck in the fixture root, stubbing process.exit; returns its exit code. */
-async function runCheck(args: string[], root: string): Promise<number | undefined> {
+async function runCheck(args: string[], root: string, phase?: string): Promise<number | undefined> {
   logs = [];
   // Defense in depth for the global scrub in tests/setup/check-env.ts: a
   // gate-exported routing var (STORE_ROOT/PHASE/TASK_ID) must never redirect
@@ -91,6 +91,7 @@ async function runCheck(args: string[], root: string): Promise<number | undefine
   delete process.env.REPOOS_CHECK_TASK_ID;
   delete process.env.REPOOS_TASK_ID;
   delete process.env.REPOOS_CHECK_CHANGED;
+  if (phase) process.env.REPOOS_CHECK_PHASE = phase;
   const spy = vi.spyOn(console, "log").mockImplementation((...parts: unknown[]) => {
     logs.push(parts.map(String).join(" "));
   });
@@ -174,6 +175,31 @@ describe("cmdCheck — the skipped outcome (#0592)", () => {
     const rows = getCheckStore(root).list({ limit: 5 });
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0]?.outcome).toBe("skipped");
+  });
+
+  it("records a failed release-profile run and its failed step", async () => {
+    const root = fixture();
+    writeFileSync(
+      join(root, "repoos.toml"),
+      [
+        "[check]",
+        "version = 1",
+        'defaultProfile = "release"',
+        "",
+        "[[check.steps]]",
+        'name = "release-gate"',
+        'command = "false"',
+        'profiles = ["release"]',
+        "",
+      ].join("\n"),
+    );
+    const code = await runCheck(["--profile", "release"], root, "release");
+    expect(code).toBe(1);
+    expect(getCheckStore(root).list({ limit: 5 })[0]).toMatchObject({
+      phase: "release",
+      outcome: "fail",
+      failedStep: "release-gate",
+    });
   });
 
   it("never writes to an inherited REPOOS_CHECK_STORE_ROOT (#0607)", async () => {
