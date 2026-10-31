@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/starter-prompt-and-init-docs-new-project
 created_at: "2026-10-31T08:31:03Z"
-updated_at: "2026-10-31T13:07:30Z"
+updated_at: "2026-10-31T13:11:16Z"
 last_close_out_gate_ms: 391946
 last_close_out_gate_at: "2026-10-31T13:07:30.646Z"
 review_passes: 1
@@ -50,4 +50,4 @@ Docs and init output text only. Keep the llms index checks passing (`llms index 
 - 2026-10-31T12:56:29Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-31T12:57:45Z · note: review pass 1: good to go
 - 2026-10-31T13:07:30Z · close-out gate completed in 392s
-
+- 2026-10-31T13:11:16Z · status done→done, release:success
