@@ -226,6 +226,14 @@ board-level roles that work in the main checkout (Ross, the CTO, the debugger).
 Read-only uses, such as model tests and PM task authoring, run without the
 bypass.
 
+### Agent temp directories
+
+Each managed agent spawn (engineer, reviewer, board one-shots including the CTO)
+gets its own `TMPDIR` under `.repoos/agent-run-tmp/` instead of the host `/tmp`.
+RepoOS deletes that directory when the run ends (normal exit, timeout, or turn
+cleanup). If the server dies mid-run, the next boot sweeps orphaned directories
+after re-adopting any agent children that survived the crash.
+
 ### Gemini CLI deprecation
 
 The legacy `gemini` executable is no longer part of the **Detected Coding

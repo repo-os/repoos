@@ -24,6 +24,7 @@ import {
   resolvePmAgent,
   runPrompt,
 } from "../agents.js";
+import { repoAgentRunTmpOpts } from "../../core/agent-run-tmpdir.js";
 import type { Agent, RepoOSConfig } from "../../core/types.js";
 import { getCheckStore } from "../../core/check-store.js";
 import { extractFailedTests } from "../../core/check-failure-summary.js";
@@ -322,6 +323,7 @@ async function writeReleaseTldr(
     });
     const result = await runPrompt(agent, releaseTldrPrompt(phase, output, tests), {
       cwd: config.root,
+      ...repoAgentRunTmpOpts(config),
     });
     recordOneShotSession(config.root, agent, result, { sessionType: "debugger", taskId: null });
     settle(result.ok ? sanitizeTldrAnswer(agent.cli, result.output ?? "") : null);
@@ -544,6 +546,7 @@ async function draftNotes(
   try {
     const result = await runPrompt(agent, prompt, {
       cwd: config.root,
+      ...repoAgentRunTmpOpts(config),
       // Structured output so extractUsage records real tokens/cost for this
       // board-level call (house rule: every one-shot LLM call is recorded).
       command: pmCommand(agent, prompt, config.root),
