@@ -119,17 +119,74 @@ mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 tar -xzf "$tmpfile" -C "$INSTALL_DIR"
 chmod +x "$INSTALL_DIR/cli/index.js"
 
-# Keep in sync with launcherScript() in src/commands/upgrade.ts (a test compares
+# Keep in sync with launcherScript() in src/core/launcher-runtime.ts (a test compares
 # the two). The runtime is picked each time `repoos` runs, not at install time.
 cat > "$BIN_DIR/repoos" <<EOF
 #!/usr/bin/env bash
-# repoos launcher: Bun when it's installed, Node otherwise (REPOOS_RUNTIME=node pins Node).
+# repoos launcher: Bun when available, Node otherwise (REPOOS_RUNTIME=node pins Node).
+# Runtime discovery order (non-interactive SSH often has a minimal PATH):
+#   1. Bun — REPOOS_BUN_PATH, PATH bun, ~/.bun/bin/bun, mise shims, Homebrew/usr/local, bundled install copy
+#   2. Node — PATH node, mise shims, nvm default alias, Homebrew /usr/local /usr/bin
 entry="$INSTALL_DIR/cli/index.js"
-if [ "\${REPOOS_RUNTIME:-}" != "node" ]; then
-  bun="\${REPOOS_BUN_PATH:-\$(command -v bun 2>/dev/null || true)}"
-  if [ -n "\$bun" ] && [ -x "\$bun" ]; then exec "\$bun" "\$entry" "\$@"; fi
-fi
-exec node --no-warnings "\$entry" "\$@"
+install_root="\$(cd "\$(dirname "\$entry")/.." && pwd)"
+home="\${HOME:-}"
+
+_repoos_try() {
+  [ -n "\$1" ] && [ -x "\$1" ] && printf "%s\n" "\$1"
+}
+
+_repoos_find_bun() {
+  [ "\${REPOOS_RUNTIME:-}" = "node" ] && return 1
+  local c
+  if [ -n "\${REPOOS_BUN_PATH:-}" ]; then
+    c="\$(_repoos_try "\${REPOOS_BUN_PATH}")" && { printf "%s\n" "\$c"; return; }
+    return 1
+  fi
+  c="\$(_repoos_try "\$(command -v bun 2>/dev/null || true)")" && { printf "%s\n" "\$c"; return; }
+  c="\$(_repoos_try "\${home}/.bun/bin/bun")" && { printf "%s\n" "\$c"; return; }
+  c="\$(_repoos_try "\${home}/.local/share/mise/shims/bun")" && { printf "%s\n" "\$c"; return; }
+  c="\$(_repoos_try "/opt/homebrew/bin/bun")" && { printf "%s\n" "\$c"; return; }
+  c="\$(_repoos_try "/usr/local/bin/bun")" && { printf "%s\n" "\$c"; return; }
+  c="\$(_repoos_try "\${install_root}/bun/bin/bun")" && { printf "%s\n" "\$c"; return; }
+  return 1
+}
+
+_repoos_find_node() {
+  local c nvm_dir ver
+  c="\$(_repoos_try "\$(command -v node 2>/dev/null || true)")" && { printf "%s\n" "\$c"; return; }
+  c="\$(_repoos_try "\${home}/.local/share/mise/shims/node")" && { printf "%s\n" "\$c"; return; }
+  nvm_dir="\${NVM_DIR:-\${home}/.nvm}"
+  if [ -f "\${nvm_dir}/alias/default" ]; then
+    ver="\$(tr -d "[:space:]" < "\${nvm_dir}/alias/default")"
+    c="\$(_repoos_try "\${nvm_dir}/versions/node/\${ver}/bin/node")" && { printf "%s\n" "\$c"; return; }
+  fi
+  c="\$(_repoos_try "/opt/homebrew/bin/node")" && { printf "%s\n" "\$c"; return; }
+  c="\$(_repoos_try "/usr/local/bin/node")" && { printf "%s\n" "\$c"; return; }
+  c="\$(_repoos_try "/usr/bin/node")" && { printf "%s\n" "\$c"; return; }
+  return 1
+}
+
+runtime="\$(_repoos_find_bun 2>/dev/null | head -n 1 || true)"
+if [ -n "\$runtime" ]; then exec "\$runtime" "\$entry" "\$@"; fi
+
+runtime="\$(_repoos_find_node 2>/dev/null | head -n 1 || true)"
+if [ -n "\$runtime" ]; then exec "\$runtime" --no-warnings "\$entry" "\$@"; fi
+
+{
+  printf "repoos: no JavaScript runtime found.\n" >&2
+  printf "Looked for Bun and Node in:\n" >&2
+  printf "  - REPOOS_BUN_PATH and bun on PATH\n" >&2
+  printf "  - ~/.bun/bin/bun\n" >&2
+  printf "  - ~/.local/share/mise/shims (bun and node)\n" >&2
+  printf "  - nvm default (~/.nvm/versions/node/<version>/bin/node)\n" >&2
+  printf "  - bundled Bun at <install>/bun/bin/bun (when shipped)\n" >&2
+  printf "  - /opt/homebrew/bin, /usr/local/bin, /usr/bin\n" >&2
+  printf "\n" >&2
+  printf "Install Bun (recommended): curl -fsSL https://bun.sh/install | bash\n" >&2
+  printf "Or install Node.js >= 20.6.0, set REPOOS_BUN_PATH=/path/to/bun,\n" >&2
+  printf "or run repoos upgrade after installing a runtime (refreshes this launcher).\n" >&2
+} >&2
+exit 1
 EOF
 chmod +x "$BIN_DIR/repoos"
 

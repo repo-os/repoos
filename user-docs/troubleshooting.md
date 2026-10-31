@@ -75,6 +75,34 @@ Bun is substantially faster for the subprocess-heavy work RepoOS does, so the
 default is worth keeping unless you have a reason to pin Node. See
 [Configuration → Worktrees and runtime](/configuration#worktrees-and-runtime).
 
+### `node: not found` from a curl install over SSH
+
+The `repoos` script in `~/.local/bin` (from
+[Getting started → Install](/getting-started#install)) picks a runtime
+each time it runs. Interactive shells often load mise, nvm, or Bun into `PATH`,
+but **non-interactive SSH** (`ssh host repoos --version`, CI, outside agents)
+usually does not — a bare `exec node` then fails with `node: not found` even
+when Node or Bun is installed.
+
+Current launchers probe, in order:
+
+1. **Bun** — `REPOOS_BUN_PATH`, `bun` on `PATH`, `~/.bun/bin/bun`, mise shims,
+   Homebrew/`/usr/local` paths, and a bundled copy under your install directory
+   when present.
+2. **Node** — `node` on `PATH`, mise shims, the nvm **default** alias
+   (`~/.nvm/versions/node/<version>/bin/node`), then `/opt/homebrew/bin`,
+   `/usr/local/bin`, and `/usr/bin`.
+
+If nothing matches, the launcher prints where it looked and how to fix it
+(install Bun, install Node ≥ 20.6.0, set `REPOOS_BUN_PATH`, or run
+`repoos upgrade` after installing a runtime so the launcher script refreshes).
+
+You do **not** need to edit shell rc files on the server just to make SSH work —
+install Bun or Node in one of the locations above, or point
+`REPOOS_BUN_PATH` at your binary. To refresh an older launcher after upgrading
+RepoOS, run `repoos upgrade` (standalone curl install) or re-run the
+[install script](https://repoos.org/install).
+
 ## A "check failed" job you can't explain
 
 If `repoos check` fails on a change that couldn't plausibly have caused it, the
