@@ -5,3 +5,5 @@
   Cache-Control: public, max-age=300, must-revalidate
 /llms-full.txt
   Cache-Control: public, max-age=300, must-revalidate
+/llms-essentials.txt
+  Cache-Control: public, max-age=300, must-revalidate

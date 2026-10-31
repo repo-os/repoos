@@ -14,7 +14,7 @@ export { INSTALL_COMMANDS };
 
 const DOCS_ORIGIN = "https://docs.repoos.org";
 /** Files the docs build generates, so there is no `user-docs/*.md` source. */
-const GENERATED_DOCS_FILES = new Set(["llms.txt", "llms-full.txt"]);
+const GENERATED_DOCS_FILES = new Set(["llms.txt", "llms-full.txt", "llms-essentials.txt"]);
 
 // The one committed copy of the starter prompt lives at the repo root, outside
 // landing/ and docs/, so the landing build and the docs site can share it.
@@ -83,11 +83,13 @@ repoos serve   # start the board; prints the local URL to open
 
 ## Documentation
 
-- [Documentation](https://docs.repoos.org): The user manual: concepts, configuration, and day-to-day use.
-- [Getting started](https://docs.repoos.org/getting-started): Install RepoOS, initialize a repository, and open the board.
-- [CLI reference](https://docs.repoos.org/cli): Every command and flag, including tasks, stories, and worktrees.
-- [Using RepoOS with an AI coding agent](https://docs.repoos.org/ai-agents): Hand the setup to an agent, with permission guidance and the starter prompt.
-- [RepoOS Agent Skill](${AGENT_SKILL_URL}): The portable Agent Skills directory an outside agent can fetch — start at SKILL.md.
+- [Documentation index](https://docs.repoos.org/llms.txt): Every user-manual page as a raw Markdown link, with a one-line description.
+- [Essentials bundle](https://docs.repoos.org/llms-essentials.txt): Install, concepts, and agent setup in one file, small enough for one fetch.
+- [Full manual](https://docs.repoos.org/llms-full.txt): The whole user manual concatenated.
+- [Getting started](https://docs.repoos.org/getting-started.md): Install RepoOS, initialize a repository, and open the board.
+- [CLI reference](https://docs.repoos.org/cli.md): Every command and flag, including tasks, stories, and worktrees.
+- [Using RepoOS with an AI coding agent](https://docs.repoos.org/ai-agents.md): Hand the setup to an agent, with permission guidance and the starter prompt.
+- [RepoOS Agent Skill](${AGENT_SKILL_RAW_URL}): The portable Agent Skill as raw Markdown — start here, then fetch the references it names.
 - [GitHub repository](https://github.com/repo-os/repoos): Source, releases, and issues.
 
 ## Starter prompt

@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 385123
-last_close_out_gate_at: "2026-10-31T17:12:06.107Z"
 id: "0992"
 title: "llms.txt: descriptions, raw skill links and a small essentials bundle"
 type: feature
-status: review
+status: done
 priority: p3
 area: [landing, docs]
 depends_on: ["0990"]
+merged_commit: eac04d01fa532c67c5bb6754ec222826a187b0c9
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/llms-txt-descriptions-raw-skill-links-an
 created_at: "2026-10-31T08:31:09Z"
 updated_at: "2026-10-31T17:12:06Z"
+last_close_out_gate_ms: 385123
+last_close_out_gate_at: "2026-10-31T17:12:06.107Z"
 review_passes: 1
 ---
 ## Problem

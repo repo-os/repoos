@@ -34,7 +34,9 @@ export const llmsIndexTemplate = `# {title}
 
 {details}
 
-Every page below is also published as raw Markdown at the same path with \`.md\` appended — for example ${SITE_ORIGIN}/getting-started.md — while the HTML page stays at ${SITE_ORIGIN}/getting-started. The whole manual in one file: ${SITE_ORIGIN}/llms-full.txt
+Every page below is also published as raw Markdown at the same path with \`.md\` appended — for example ${SITE_ORIGIN}/getting-started.md — while the HTML page stays at ${SITE_ORIGIN}/getting-started. A smaller essentials bundle (install, concepts, and agent setup): ${SITE_ORIGIN}/llms-essentials.txt. The whole manual in one file: ${SITE_ORIGIN}/llms-full.txt
+
+- [RepoOS Agent Skill (raw SKILL.md)](https://raw.githubusercontent.com/repo-os/repoos/main/agent/skill/SKILL.md): Portable Agent Skill an outside coding agent can fetch as Markdown.
 
 ## Documentation
 
