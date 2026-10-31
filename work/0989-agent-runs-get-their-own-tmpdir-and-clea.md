@@ -14,9 +14,9 @@ branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T14:51:24Z"
+updated_at: "2026-10-31T15:25:33Z"
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-31T14:51:24.421Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-31T15:25:03.027Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -52,3 +52,4 @@ Start from where agent processes are spawned (`src/server/agents.ts` and the CTO
 - 2026-10-31T13:15:26Z · model_override
 - 2026-10-31T14:51:24Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-10-31T14:51:24Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-10-31T15:25:33Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/12 crashes in 30m) · Error: [aborted] read ECONNRESET
