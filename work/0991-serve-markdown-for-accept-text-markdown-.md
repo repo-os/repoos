@@ -1,15 +1,17 @@
 ---
+close_out_repair_count: 1
 id: "0991"
 title: "Serve Markdown for Accept: text/markdown at both site roots"
 type: feature
-status: review
+status: active
 priority: p2
 area: [landing, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
-updated_at: "2026-10-31T13:47:03Z"
+updated_at: "2026-10-31T15:57:55Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -35,4 +37,14 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T08:31:06Z · created · njachowski@gmail.com
 - 2026-10-31T12:21:57Z · status inbox→ready
 - 2026-10-31T12:56:21Z · status ready→active, branch
+- 2026-10-31T13:07:20Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 56011, alive), #0990 check (pid 89885, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T13:07:37Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T13:11:44Z · note: adopted orphaned engineer pid 60316
 - 2026-10-31T13:47:03Z · status active→review
+- 2026-10-31T13:48:00Z · note: review pass 1: good to go
+- 2026-10-31T15:33:49Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 28333, alive), #0992 check (pid 40140, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T15:34:41Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (bf59e7020) during finalization (#0734)
+- 2026-10-31T15:57:55Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T15:57:55Z · status review→active
+- 2026-10-31T15:57:55Z · note: close-out repair: gate-failure
+

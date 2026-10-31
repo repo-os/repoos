@@ -55,10 +55,12 @@ when to ask.
   [Install](/getting-started#install) that fits the machine — curl is the
   zero-dependency default, and Homebrew, npm, Bun, pnpm, and mise are also
   supported — and asks before running a global install.
-- It runs `repoos init` from the repository root only after you agree. See
-  [Initialize a repo](/getting-started#initialize-a-repo) for what that
-  scaffolds (`repoos/work/`, `repoos/docs/`, and `AGENTS.md`) and the
-  non-interactive flags for a brand-new project.
+- It runs `repoos init` only after you agree. An existing repo uses `repoos init`
+  from the repository root. A new project uses
+  `repoos init <name> --new --description "..." --areas web,api --no-launch`
+  outside a git repo (do not `git init` first). See
+  [Initialize a repo](/getting-started#initialize-a-repo) for the files that
+  creates and for what `repoos serve` starts.
 - It explains what changed, and asks before any significant edit outside the
   RepoOS scaffold.
 
