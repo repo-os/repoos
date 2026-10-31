@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p1
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T10:08:41Z"
+updated_at: "2026-10-31T12:21:11Z"
 ---
 ## Problem
 
@@ -32,6 +32,10 @@ A task that is active with no live engineer is recovered automatically, or the h
 
 Start from `src/server/task-watchdog.ts` and `src/server/engineer-crash-recovery.ts`. Never recover a held task (`isHoldActive`) or a human-assigned one. Respect the budget allowlist and paused pairs; do not work around a refusal. Never override a human-set override.
 
+## Also: stale state on done tasks
+Seen on #0970 (done, branch merged to main): an engineer session that outlived the move to done crashed later, set needs_input dev-error, and the badge stayed on a done task. A queued message to that session was never delivered, and the log shows a message_overdue entry every few hours. Acceptance: (1) moving a task to done clears needs_input, its reason and detail, and the debug tl;dr; (2) queued messages for a done task are dropped, with one activity line saying so, instead of re-warning forever; (3) an engineer crash on a task that is already done does not set needs_input; (4) a test covers each. Also related: the board status label can read 'Waiting on a human: dev error' after an engineer was restarted (seen on #0964); the label must follow the live state.
+
 ## Activity
 
 - 2026-10-31T10:08:41Z · created · njachowski@gmail.com
+- 2026-10-31T12:21:11Z · body: Also: stale state on done tasks (added)
