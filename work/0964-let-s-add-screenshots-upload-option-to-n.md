@@ -13,7 +13,7 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T10:44:32Z"
+updated_at: "2026-10-31T11:43:29Z"
 last_check_failure: "repoos check at 2026-10-31T10:26:50.190Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 review_rounds: 2
 routing_switches: 1
