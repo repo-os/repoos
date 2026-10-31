@@ -2,7 +2,7 @@
 id: "0992"
 title: "llms.txt: descriptions, raw skill links and a small essentials bundle"
 type: feature
-status: active
+status: review
 priority: p3
 area: [landing, docs]
 depends_on: ["0990"]
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/llms-txt-descriptions-raw-skill-links-an
 created_at: "2026-10-31T08:31:09Z"
-updated_at: "2026-10-31T15:27:46Z"
+updated_at: "2026-10-31T16:56:29Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Do this after #0990 (starter prompt and init docs) lands, to avoid conflicts in 
 - 2026-10-31T08:31:17Z · depends_on
 - 2026-10-31T12:21:41Z · status inbox→ready
 - 2026-10-31T15:27:46Z · status ready→active, branch
+- 2026-10-31T16:56:29Z · status active→review
