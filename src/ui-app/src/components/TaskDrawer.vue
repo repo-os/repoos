@@ -5516,29 +5516,14 @@ watch(
                           )
                   }}
                 </div>
-                <!-- needsInputDetail for dev-error is internal skill-routing
-                   metadata — not meaningful to users, so we hide it. -->
-                <div v-if="activeNeedsInputDetailLine" class="agent-waiting-detail">
+                <!-- Why it failed: at most two lines here; the full text is in
+                   Debug → Status details. -->
+                <div
+                  v-if="activeNeedsInputDetailLine"
+                  class="agent-waiting-detail agent-waiting-detail--clamp"
+                >
                   {{ activeNeedsInputDetailLine }}
                 </div>
-                <details class="drawer-info-popover waiting-info">
-                  <summary aria-label="Help for waiting for you"><Info class="size-3.5" /></summary>
-                  <div class="drawer-info-content" role="note">
-                    <p>
-                      Choose the suggested action, answer questions in PM, or dismiss this request.
-                      The task stays active until its work is resolved.
-                    </p>
-                    <button
-                      type="button"
-                      @click="
-                        ui.activeTab = 'debug';
-                        ui.debugView = 'status';
-                      "
-                    >
-                      Open Status details
-                    </button>
-                  </div>
-                </details>
                 <div class="agent-waiting-actions">
                   <Button
                     v-if="needsInputPrimary && !staleNeedsInputOnReview"

@@ -217,7 +217,7 @@ export function needsInputDetailVisible(
   detail: string | undefined,
   hasQuestions = false,
 ): boolean {
-  if (!detail?.trim() || reason === "dev-error") return false;
+  if (!detail?.trim()) return false;
   return detail.trim() !== needsInputBannerText(reason, hasQuestions).trim();
 }
 
@@ -237,7 +237,7 @@ export function formatNeedsInputDetailForDisplay(
 }
 
 export function needsInputDetailUsesLineClamp(reason: string | undefined): boolean {
-  return reason === "review-rounds-exhausted";
+  return reason === "review-rounds-exhausted" || reason === "dev-error";
 }
 
 export function needsInputSuggestionText(

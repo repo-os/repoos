@@ -197,3 +197,13 @@ describe("needsInputPrimaryAction (#0511)", () => {
     expect(needsInputSuggestionText("review-rounds-exhausted")).not.toContain("Review again hides");
   });
 });
+
+describe("dev-error failure reason", () => {
+  it("shows why the agent failed instead of hiding the detail", () => {
+    const detail = "codex exited with code 1: workspace routing discovery failed";
+    expect(needsInputDetailVisible("dev-error", detail)).toBe(true);
+    expect(formatNeedsInputDetailForDisplay("dev-error", detail)).toBe(detail);
+    expect(needsInputDetailVisible("dev-error", undefined)).toBe(false);
+    expect(needsInputDetailUsesLineClamp("dev-error")).toBe(true);
+  });
+});
