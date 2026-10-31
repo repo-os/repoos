@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T16:18:07Z"
+updated_at: "2026-10-31T16:18:09Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -53,6 +53,23 @@ Each page's skeleton mirrors its real layout: the same number of columns, simila
 ### Notes for AI
 Web only. Read the column list from the board config rather than hard-coding six. Keep the page title above the skeleton (App.vue loading header). Reduced-motion behaviour stays as it is.
 
+## E3 · Done column sorts by when the task reached done
+### Problem
+The Done column's "Most recently updated" order uses `updated_at`, which the server stamps on every write to a task file, not only on status changes. #0970 reached done on 2026-10-28T12:40Z but shows at the top of Done because later writes (a stale-flag clear, "message overdue" notes) bumped its `updated_at`. The order should mean "most recently finished".
+
+### Desired UX
+In the Done column, the most recently completed task is first. A later bookkeeping write never reorders it. Other columns keep their current behaviour.
+
+### Acceptance criteria
+- [ ] The Done column orders tasks by the timestamp of the LAST `status …→done` line in the task's activity log (for example `- 2026-10-28T12:40:39Z · status ready→done`), newest first.
+- [ ] A task with no such line (old or hand-written files) falls back to `updated_at`, so nothing disappears or errors.
+- [ ] A later write to a done task (an activity note, a flag clear, a release record) does not change its position; moving a task out of done and back in makes it the newest.
+- [ ] The parsing lives in one shared helper used by the board and covered by tests, including a log with several done transitions and a log with none.
+- [ ] Only the board's recent sort for the Done column changes; Priority, Task number and the other columns are unchanged.
+
+### Notes for AI
+Web only; the activity log is in the task body (`- <timestamp> · status A→B` lines) and is already available to the UI. Do not add a new frontmatter field and do not migrate any task files (AGENTS.md: never write work/*.md directly). Check the line format against real done tasks such as #0970 and #0988.
+
 ## Activity
 
 - 2026-10-31T13:08:01Z · created · njachowski@gmail.com
@@ -61,3 +78,4 @@ Web only. Read the column list from the board config rather than hard-coding six
 - 2026-10-31T13:23:32Z · body: E2 · Page skeletons match their pages (added)
 - 2026-10-31T13:23:40Z · title
 - 2026-10-31T16:18:07Z · body: Items (added 1)
+- 2026-10-31T16:18:09Z · body: E3 · Done column sorts by when the task reached done (added)
