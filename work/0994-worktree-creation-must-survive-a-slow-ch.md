@@ -3,6 +3,9 @@ id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 26260, alive), #0991 check (pid 98688, wedged); slot holder has made no progress for 30 minutes (no heartbeat) for 3m"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-10-31T18:12:03Z"
+updated_at: "2026-10-31T18:49:21Z"
 ---
 ## Problem
 
@@ -49,3 +52,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T17:32:33Z · status ready→active, branch
 - 2026-10-31T18:10:24Z · note: adopted orphaned engineer pid 25301
 - 2026-10-31T18:12:03Z · note: adopted orphaned engineer pid 25301
+- 2026-10-31T18:49:21Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 26260, alive), #0991 check (pid 98688, wedged); slot holder has made no progress for 30 minutes (no heartbeat) for 3m · next step: investigate the abnormal wait; the flag clears when the check starts
