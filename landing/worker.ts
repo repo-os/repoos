@@ -182,6 +182,27 @@ export async function handleEnquiry(request: Request, env: LandingEnv): Promise<
 const AGENT_TEXT_PATHS = new Set(["/llms.txt", "/llms-full.txt"]);
 export const AGENT_TEXT_CACHE_CONTROL = "public, max-age=300, must-revalidate";
 
+/**
+ * Same rule as user-docs/worker.ts: Markdown wins only when it is listed and
+ * its q-value is at least HTML's. A missing Accept or a bare wildcard stays HTML.
+ */
+export function prefersMarkdown(accept: string | null): boolean {
+  if (!accept || accept.trim() === "*/*") return false;
+  const ranges = new Map<string, number>();
+  for (const part of accept.split(",")) {
+    const [rawType, ...parameters] = part.trim().toLowerCase().split(";");
+    if (!rawType) continue;
+    const qParameter = parameters.find((parameter) => /^\s*q\s*=/.test(parameter));
+    const parsedQ = qParameter ? Number(qParameter.split("=")[1]) : 1;
+    const quality = Number.isFinite(parsedQ) ? Math.max(0, Math.min(1, parsedQ)) : 0;
+    ranges.set(rawType.trim(), quality);
+  }
+  const markdownQ = ranges.get("text/markdown");
+  if (markdownQ === undefined || markdownQ === 0) return false;
+  const htmlQ = ranges.get("text/html") ?? ranges.get("*/*") ?? 0;
+  return markdownQ >= htmlQ;
+}
+
 export async function serveAgentText(request: Request, env: LandingEnv): Promise<Response> {
   const asset = await env.ASSETS.fetch(request);
   const headers = new Headers(asset.headers);
@@ -192,6 +213,26 @@ export async function serveAgentText(request: Request, env: LandingEnv): Promise
 export default {
   async fetch(request: Request, env: LandingEnv): Promise<Response> {
     const url = new URL(request.url);
+    if (
+      url.pathname === "/" &&
+      (request.method === "GET" || request.method === "HEAD") &&
+      prefersMarkdown(request.headers.get("Accept"))
+    ) {
+      const markdownUrl = new URL(request.url);
+      markdownUrl.pathname = "/llms.txt";
+      const markdown = await env.ASSETS.fetch(new Request(markdownUrl, request));
+      if (markdown.ok) {
+        const headers = new Headers(markdown.headers);
+        headers.set("Content-Type", "text/markdown; charset=utf-8");
+        headers.set("Cache-Control", "private, no-store");
+        headers.set("Vary", "Accept");
+        return new Response(markdown.body, {
+          status: markdown.status,
+          statusText: markdown.statusText,
+          headers,
+        });
+      }
+    }
     if (AGENT_TEXT_PATHS.has(url.pathname)) return serveAgentText(request, env);
     if (url.pathname === "/api/enquiry") return handleEnquiry(request, env);
     if (url.pathname.startsWith("/api/")) return json(404, false);

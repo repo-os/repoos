@@ -75,8 +75,10 @@ landing/
 reads the one canonical starter prompt at `../agent/starter-prompt.md` and adds a
 short llmstxt.org overview with the published install commands and links to the
 docs site. `vite dev` serves the same text at `/llms.txt`; `vite build` emits
-`dist/llms.txt` at the dist root so the Worker serves it. Edit the prompt file,
-not a copy in a Vue component.
+`dist/llms.txt` at the dist root so the Worker serves it. A request to `/` with
+`Accept: text/markdown` returns that same body (`Content-Type: text/markdown`,
+`Vary: Accept`); a request without that preference still gets the HTML page.
+Edit the prompt file, not a copy in a Vue component.
 
 The hero's agent call to action (`src/components/AgentPromptCta.vue`) copies that
 same prompt. Its heading, sentence, button labels and guide link come from
