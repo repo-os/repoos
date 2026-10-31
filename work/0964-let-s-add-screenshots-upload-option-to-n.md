@@ -11,7 +11,7 @@ branch: feat/add-screenshot-upload-to-new-story
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T00:43:22Z"
+updated_at: "2026-10-31T00:48:36Z"
 ---
 ## Problem
 
@@ -51,6 +51,19 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 ![Screenshot-2026-10-27-at-02.44.47](/api/tasks/0964/attachments/att_b18d1156-5238-4f43-a252-50d3eeb9115f.png)
 ![Screenshot-2026-10-27-at-02.45.59](/api/tasks/0964/attachments/att_e26f6cd1-0434-4a70-8ac4-5240b2cab068.png)
 
+## Shots
+```json
+[
+{
+  "label": "New story screenshot picker",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".shot-dropzone",
+  "state": "panel:defaultScreenshotPicker"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-26T19:47:15Z · created · hello@repoos.org
@@ -61,3 +74,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-30T15:21:11Z · status ready→active, branch
 - 2026-10-30T15:26:26Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-10-31T00:43:22Z · status ready→active
+- 2026-10-31T00:48:36Z · body
