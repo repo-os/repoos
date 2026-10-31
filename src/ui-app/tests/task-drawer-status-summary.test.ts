@@ -189,10 +189,10 @@ describe("task drawer status summary (#0952)", () => {
 
     const summary = wrapper.find(".drawer-status-summary");
     expect(summary.find(".drawer-status-l1").text()).toContain("Not landable");
-    expect(summary.find(".drawer-status-l3").text()).toContain("1 landing check failing");
-    expect(summary.text()).not.toContain("Merge with main");
+    expect(summary.find(".drawer-status-l2").text()).toBe("Merge with main");
+    expect(summary.find(".drawer-status-l3").exists()).toBe(false);
     expect(summary.find(".drawer-info-popover").exists()).toBe(false);
-    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(2);
 
     await summary.trigger("keydown", { key: "Enter" });
     await flush();

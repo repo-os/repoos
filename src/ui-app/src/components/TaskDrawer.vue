@@ -813,7 +813,11 @@ const drawerStatusSummary = computed(() => {
   } else if (key === "reviewFailed") {
     lines = ["Review failed", "Review report", shortDetails.reviewFailed || "No complete report"];
   } else if (key === "notLandable") {
-    lines = ["Not landable", "Landing checks", shortDetails.notLandable];
+    // Row 2 lists what is failing (the row ellipsizes); there is no third row.
+    const failing = (landable.value?.checks ?? [])
+      .filter((check) => check.status === "fail")
+      .map((check) => check.label);
+    lines = ["Not landable", failing.length ? failing.join(", ") : shortDetails.notLandable];
   } else if (key === "handoffFailed") {
     lines = ["Handoff failed", "Handoff", shortDetails.handoffFailed];
   } else {
@@ -871,6 +875,10 @@ const drawerStatusDetails = computed(() => {
             `${check.status.toUpperCase()}: ${check.label} — ${check.detail}${check.nextStep ? `; next: ${check.nextStep}` : ""}`,
         )
         .join("\n"),
+      checks: landable.value.checks.map((check) => ({
+        status: check.status,
+        text: `${check.label} — ${check.detail}${check.nextStep ? `; next: ${check.nextStep}` : ""}`,
+      })),
     });
   if (handoffError.value)
     rows.push({
@@ -5416,16 +5424,12 @@ watch(
             <span class="drawer-status-row drawer-status-l2">{{
               drawerStatusSummary.lines[1]
             }}</span>
-            <span class="drawer-status-row drawer-status-l3">{{
+            <span v-if="drawerStatusSummary.lines[2]" class="drawer-status-row drawer-status-l3">{{
               drawerStatusSummary.lines[2]
             }}</span>
           </button>
           <DoneErrorCard
-            v-if="
-              ui.active.status === 'review' &&
-              drawerStatusSummary?.key === 'handoffFailed' &&
-              repo.doneErrorFor(ui.active.id)
-            "
+            v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
             class="drawer-done-error"
             mode="panel"
             :message="repo.doneErrorFor(ui.active.id)!.message"

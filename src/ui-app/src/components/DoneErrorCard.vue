@@ -199,24 +199,14 @@ onBeforeUnmount(() => clearTimeout(copiedTimer));
     <details v-if="mode === 'card' && stale" class="done-error-stale">
       <summary class="done-error-stale-summary">Previous attempt failed: {{ staleShort }}</summary>
       <div class="done-error-row">
-        <button
-          type="button"
-          class="done-error-toggle"
-          :title="'Open the task panel to see the full error'"
-          @click="showMore"
-        >
+        <button type="button" class="done-error-toggle" :data-tip="message" @click="showMore">
           <CircleAlert class="done-error-ico" aria-hidden="true" />
           <span ref="msgEl" class="done-error-msg clamped">{{ displayLine }}</span>
         </button>
       </div>
     </details>
     <div v-else-if="mode === 'card'" class="done-error-row">
-      <button
-        type="button"
-        class="done-error-toggle"
-        :title="'Open the task panel to see the full error'"
-        @click="showMore"
-      >
+      <button type="button" class="done-error-toggle" :data-tip="message" @click="showMore">
         <CircleAlert class="done-error-ico" aria-hidden="true" />
         <span ref="msgEl" class="done-error-msg clamped">{{ displayLine }}</span>
       </button>
