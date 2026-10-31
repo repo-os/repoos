@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-31T12:20:44Z"
-review_passes: 3
+last_close_out_gate_ms: 641061
+last_close_out_gate_at: "2026-10-31T12:32:16.399Z"
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
@@ -15,6 +15,8 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
+updated_at: "2026-10-31T12:32:16Z"
+review_passes: 3
 last_check_failure: "repoos check at 2026-10-31T10:26:50.190Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 review_rounds: 2
 routing_switches: 1
@@ -108,4 +110,7 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T10:44:32Z · note: shots: failed — preview for target "default" did not start: preview server for #0964 did not become ready
 - 2026-10-31T12:19:50Z · status active→review
 - 2026-10-31T12:20:44Z · note: review pass 3: good to go
+- 2026-10-31T12:30:00Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 74370, alive), #0990 check (pid 97192, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T12:32:15Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T12:32:16Z · close-out gate completed in 641s
 
