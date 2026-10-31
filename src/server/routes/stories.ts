@@ -29,9 +29,11 @@ import {
   storiesDirOf,
   listStoryDefinitionsFromCommits,
   markStoryPmChat,
+  parseStoryDefinitionFile,
   rewriteStoryDefinition,
   writeStoryDefinition,
 } from "../../core/story-definition-files.js";
+import { readFileSync } from "node:fs";
 import { deleteStoryFile, PathGuardError, WriteError } from "../write.js";
 import { dropPmImages, queuePmImages, type IncomingPmImage } from "../pm-attachments.js";
 import { fleshOutStory } from "../story-pm.js";
@@ -143,9 +145,14 @@ export const uploadStoryScreenshot: RouteHandler = async (ctx, req, res, params)
   );
   if ("error" in result) return json(res, 400, { error: result.error });
   result.url = `/api/stories/${encodeURIComponent(key)}/attachments/${encodeURIComponent(result.path.split("/").at(-1)!)}`;
+  // Re-read from disk before merging: uploads can race the background PM flesh-out
+  // (same pattern as patchTaskFile re-reading the task file on task uploads).
+  const absPath = join(config.root, definition.path);
+  const current = parseStoryDefinitionFile(readFileSync(absPath, "utf8"), definition.path);
+  if (!current) return json(res, 500, { error: "Story file could not be read" });
   const updated = rewriteStoryDefinition(config, definition.path, {
-    name: definition.name,
-    body: appendScreenshotsSection(definition.body, [result]),
+    name: current.name,
+    body: appendScreenshotsSection(current.body, [result]),
   });
   await commitStoryFileWithRetry(
     config.root,
