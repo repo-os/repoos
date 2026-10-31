@@ -17,6 +17,10 @@ import DialogDescription from "./ui/dialog/description.vue";
 import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import { autoGrowTextarea } from "../utils/textarea-autogrow";
+import ShotDropzone from "./ShotDropzone.vue";
+import PendingAttachmentList from "./PendingAttachmentList.vue";
+import { markAttachmentUploading, markAttachmentUploadFailed } from "../lib/attachment-upload-ui";
+import type { PendingScreenshot } from "../stores/ui";
 
 const ui = useUiStore();
 const repo = useRepoStore();
@@ -30,6 +34,8 @@ function setOpen(v: boolean): void {
 const storyName = ref("");
 const description = ref("");
 const formError = ref("");
+const pendingScreenshots = ref<PendingScreenshot[]>([]);
+const dragDepth = ref(0);
 const freeformRunning = ref(false);
 const freeformRunId = ref<string | null>(null);
 /**
@@ -76,6 +82,7 @@ watch(
     storyName.value = "";
     description.value = "";
     formError.value = "";
+    pendingScreenshots.value = [];
     resetRun();
     initFreeformOverrides();
   },
@@ -137,6 +144,57 @@ function resetRun(): void {
   freeformRunId.value = null;
 }
 
+function addShotFiles(files: File[]): void {
+  for (const file of files) {
+    if (pendingScreenshots.value.length >= 12) break;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string")
+        pendingScreenshots.value.push({
+          name: file.name,
+          mime: file.type,
+          dataUrl: reader.result,
+          size: file.size,
+        });
+    };
+    reader.readAsDataURL(file);
+  }
+}
+function onDragEnter(): void {
+  dragDepth.value++;
+}
+function onDragLeave(): void {
+  dragDepth.value = Math.max(0, dragDepth.value - 1);
+}
+function onDrop(event: DragEvent): void {
+  dragDepth.value = 0;
+  if (event.dataTransfer?.files.length) addShotFiles(Array.from(event.dataTransfer.files));
+}
+async function uploadScreenshots(key: string): Promise<void> {
+  for (const shot of pendingScreenshots.value) {
+    markAttachmentUploading(shot);
+    try {
+      await repo.uploadStoryScreenshot(key, shot);
+      pendingScreenshots.value.splice(pendingScreenshots.value.indexOf(shot), 1);
+    } catch (error) {
+      markAttachmentUploadFailed(shot, error);
+    }
+  }
+}
+async function retryScreenshot(index: number): Promise<void> {
+  const key = submittedStoryKey.value;
+  const shot = pendingScreenshots.value[index];
+  if (!key || !shot) return;
+  markAttachmentUploading(shot);
+  try {
+    await repo.uploadStoryScreenshot(key, shot);
+    pendingScreenshots.value.splice(index, 1);
+  } catch (error) {
+    markAttachmentUploadFailed(shot, error);
+  }
+}
+const submittedStoryKey = ref("");
+
 async function createStory(): Promise<void> {
   const desc = description.value.trim();
   if (!desc || freeformRunning.value) return;
@@ -155,6 +213,8 @@ async function createStory(): Promise<void> {
       freeformRunId.value,
       overrides,
     );
+    submittedStoryKey.value = res.definition?.key ?? "";
+    if (submittedStoryKey.value) await uploadScreenshots(submittedStoryKey.value);
     submittedPending.value = res.pending === true;
     submitted.value = true;
     storyName.value = "";
@@ -193,6 +253,10 @@ function onOpenAutoFocus(e: Event): void {
     <DialogContent
       :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
       @open-auto-focus="onOpenAutoFocus"
+      @dragenter.prevent="onDragEnter"
+      @dragleave.prevent="onDragLeave"
+      @dragover.prevent
+      @drop.prevent="onDrop"
     >
       <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
       <div class="drawer-head">
@@ -219,6 +283,13 @@ function onOpenAutoFocus(e: Event): void {
           <p v-else class="ff-done-copy">
             Your story was saved as written. It's on the Stories page now.
           </p>
+          <PendingAttachmentList
+            v-if="pendingScreenshots.length"
+            :items="pendingScreenshots"
+            aria-label="Story screenshot uploads"
+            :allow-remove="false"
+            @retry="(i) => void retryScreenshot(i)"
+          />
           <div class="btn-row" style="margin-top: 18px">
             <Button variant="default" @click="createAnotherStory">Create another story</Button>
             <Button variant="outline" @click="done">Done</Button>
@@ -241,6 +312,27 @@ function onOpenAutoFocus(e: Event): void {
           </div>
         </div>
         <template v-else>
+          <div class="field">
+            <label>Screenshots</label>
+            <ShotDropzone :over="dragDepth > 0" @files="addShotFiles">{{
+              pendingScreenshots.length
+                ? `Add more — ${pendingScreenshots.length} screenshot${pendingScreenshots.length === 1 ? "" : "s"} added`
+                : "Click to add screenshots, or drop them anywhere on this panel"
+            }}</ShotDropzone>
+            <PendingAttachmentList
+              v-if="pendingScreenshots.length"
+              :items="pendingScreenshots"
+              @remove="(i) => pendingScreenshots.splice(i, 1)"
+              @retry="(i) => void retryScreenshot(i)"
+            />
+            <div
+              v-if="pendingScreenshots.some((s) => s.uploadPhase === 'failed')"
+              class="ff-notice"
+              role="status"
+            >
+              Some screenshots failed to upload. Retry them above.
+            </div>
+          </div>
           <div class="field">
             <label for="ns-story-name">Story name</label>
             <Input

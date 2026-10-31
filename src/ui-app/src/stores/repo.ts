@@ -3627,6 +3627,14 @@ export const useRepoStore = defineStore("repo", () => {
     );
   }
 
+  async function uploadStoryScreenshot(storyKey: string, s: PendingScreenshot): Promise<void> {
+    const data = s.dataUrl.split(",")[1] ?? "";
+    await api(
+      `/api/stories/${encodeURIComponent(storyKey)}/attachments`,
+      JSON_OPTS("POST", { name: s.name, mime: s.mime, data }),
+    );
+  }
+
   /**
    * Freeform create: routes the explanation through the PM agent server-side.
    * `runId` (optional) tags the streamed `agent.output` events the server
@@ -4250,6 +4258,7 @@ export const useRepoStore = defineStore("repo", () => {
     patchTask,
     createTask,
     uploadScreenshot,
+    uploadStoryScreenshot,
     uploadTaskScreenshot,
     inputAttachmentUploads,
     inputAttachmentUploadsForBatch,
