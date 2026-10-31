@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T22:26:42Z"
+updated_at: "2026-10-31T22:26:48Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -114,3 +114,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-10-31T21:10:30Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 63569, alive), #0994 check (pid 85677, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-10-31T21:11:15Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T21:18:23Z · engineer stopped by request
+- 2026-10-31T22:26:48Z · message_queued at 2026-10-31T22:26:48.251Z
