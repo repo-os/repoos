@@ -62,7 +62,8 @@ const WORKTREE_ADD_TIMEOUT_MS = 60_000;
 /** Direct ref probe when `localBranches` timed out and returned an empty set (#0994). */
 const BRANCH_REF_VERIFY_TIMEOUT_MS = 60_000;
 const WORKTREE_ADD_LOCK_WAIT_MS = 120_000;
-const WORKTREE_ADD_LOCK_STALE_MS = 5 * 60_000;
+/** Reclaim a lock held by a live pid if creation has not finished in this long (#0994). */
+const WORKTREE_ADD_LOCK_STALE_MS = WORKTREE_ADD_TIMEOUT_MS + 60_000;
 
 export function gitCapture(root: string, args: string[], timeoutMs = 4000): GitRun {
   const run = spawnSync("git", observationalGitArgs(args), {
@@ -160,11 +161,23 @@ function worktreeAddLockIsStale(lockDir: string): boolean {
 function tryAcquireWorktreeAddLock(root: string, branch: string): (() => void) | null {
   const lockDir = worktreeAddLockPath(root, branch);
   mkdirSync(dirname(lockDir), { recursive: true });
-  if (existsSync(lockDir) && worktreeAddLockIsStale(lockDir)) {
+  if (existsSync(lockDir)) {
     try {
-      rmSync(lockDir, { recursive: true, force: true });
+      const holder = Number(readFileSync(join(lockDir, "pid"), "utf8"));
+      if (Number.isInteger(holder) && holder === process.pid) {
+        return () => {
+          /* reentrant: outer ensureWorktree still owns release */
+        };
+      }
     } catch {
-      /* contested */
+      /* fall through to stale handling */
+    }
+    if (worktreeAddLockIsStale(lockDir)) {
+      try {
+        rmSync(lockDir, { recursive: true, force: true });
+      } catch {
+        /* contested */
+      }
     }
   }
   try {
@@ -182,15 +195,30 @@ function tryAcquireWorktreeAddLock(root: string, branch: string): (() => void) |
   }
 }
 
-function waitForWorktreeAddLock(root: string, branch: string): (() => void) | null {
+type WorktreeAddLockWait =
+  | { kind: "held"; release: () => void }
+  | { kind: "exists" }
+  | { kind: "timeout" };
+
+function waitForWorktreeAddLock(root: string, branch: string): WorktreeAddLockWait {
   const deadline = Date.now() + WORKTREE_ADD_LOCK_WAIT_MS;
   const waitBuf = new Int32Array(new SharedArrayBuffer(4));
   while (Date.now() < deadline) {
+    if (worktreePaths(root).has(branch)) return { kind: "exists" };
+    const lockDir = worktreeAddLockPath(root, branch);
+    if (existsSync(lockDir) && worktreeAddLockIsStale(lockDir)) {
+      try {
+        rmSync(lockDir, { recursive: true, force: true });
+      } catch {
+        /* contested */
+      }
+    }
     const release = tryAcquireWorktreeAddLock(root, branch);
-    if (release) return release;
+    if (release) return { kind: "held", release };
     Atomics.wait(waitBuf, 0, 0, 50);
   }
-  return null;
+  if (worktreePaths(root).has(branch)) return { kind: "exists" };
+  return { kind: "timeout" };
 }
 
 function branchCommitsAheadOfMain(root: string, branch: string): number | null {
@@ -1271,8 +1299,14 @@ export function ensureWorktree(
     return { ok: true, path: existing, created: false };
   }
 
-  const release = waitForWorktreeAddLock(root, branch);
-  if (!release) {
+  const lockWait = waitForWorktreeAddLock(root, branch);
+  if (lockWait.kind === "exists") {
+    const raced = worktreePaths(root).get(branch)!;
+    if (taskRelPath) healMissingTaskFile(root, raced, taskRelPath);
+    linkInheritedEnv(root, raced);
+    return { ok: true, path: raced, created: false };
+  }
+  if (lockWait.kind === "timeout") {
     const raced = worktreePaths(root).get(branch);
     if (raced) {
       if (taskRelPath) healMissingTaskFile(root, raced, taskRelPath);
@@ -1286,6 +1320,7 @@ export function ensureWorktree(
       reason: "could not create worktree: timed out waiting for another start to finish",
     };
   }
+  const release = lockWait.release;
   try {
     const afterLock = worktreePaths(root).get(branch);
     if (afterLock) {
