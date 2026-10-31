@@ -2,7 +2,7 @@
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -14,11 +14,11 @@ pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
 updated_at: "2026-10-31T10:16:02Z"
+review_rounds: 2
+routing_switches: 1
 review_passes: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-10-31T01:45:50.159Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
-review_rounds: 1
-routing_switches: 1
 dev_error_count: 3
 ---
 ## Problem
@@ -104,3 +104,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T10:14:39Z · status active→review
 - 2026-10-31T10:16:01Z · note: review pass 2: needs some work
 - 2026-10-31T10:16:02Z · message_queued at 2026-10-31T10:16:02.036Z
+- 2026-10-31T10:16:02Z · status review→active
