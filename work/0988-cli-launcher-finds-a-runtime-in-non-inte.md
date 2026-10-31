@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-10-31T11:05:37Z"
+review_passes: 1
 id: "0988"
 title: CLI launcher finds a runtime in non-interactive shells
 type: bug
@@ -11,7 +13,6 @@ branch: feat/cli-launcher-finds-a-runtime-in-non-inte
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T08:30:56Z"
-updated_at: "2026-10-31T11:05:37Z"
 ---
 ## Problem
 
@@ -42,3 +43,4 @@ Find the launcher in the install scripts and the package bin before changing any
 - 2026-10-31T11:04:43Z · status active→review
 - 2026-10-31T11:04:43Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-31T11:05:37Z · note: review pass 1: needs some work
+
