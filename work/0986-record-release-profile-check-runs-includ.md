@@ -3,13 +3,16 @@ id: "0986"
 title: "Record release-profile check runs, including failures, in the checks history"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "automatic resume could not start the engineer: This worktree already has a recorded live engineer for task #0986 (pid 81749). The task stayed active with its worktree intact."
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/record-release-profile-check-runs-includ
 created_at: "2026-10-31T00:59:20Z"
-updated_at: "2026-10-31T03:17:45Z"
+updated_at: "2026-10-31T03:17:52Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-31T03:17:45.679Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -38,3 +41,4 @@ Start from `src/core/check-store.ts` and where the release path invokes the chec
 - 2026-10-31T03:08:30Z · status inbox→ready
 - 2026-10-31T03:08:48Z · status ready→active, branch
 - 2026-10-31T03:17:45Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-10-31T03:17:52Z · watchdog: automatic resume failed — This worktree already has a recorded live engineer for task #0986 (pid 81749)
