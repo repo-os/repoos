@@ -9,13 +9,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T13:08:03Z"
+updated_at: "2026-10-31T13:23:30Z"
 ---
 ## Items
-
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
-
-Every item uses the same sub-headings below; edit items with `repoos update --section`, never a full `--body`.
+- [ ] **E2 · Page skeletons match their pages** (web) — each page's loading skeleton should mirror the real layout (e.g. /work has 6 status columns, /inputs has 3), not a generic block. Source: human report.
 
 ## E1 · Card integrating text clamp
 
@@ -42,3 +40,4 @@ Web only; do not change what the server sends. Use the existing styled tooltip (
 
 - 2026-10-31T13:08:01Z · created · njachowski@gmail.com
 - 2026-10-31T13:08:03Z · screenshots
+- 2026-10-31T13:23:30Z · body: Items (added 1, removed 1)
