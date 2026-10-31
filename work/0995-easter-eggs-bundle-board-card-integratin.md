@@ -2,7 +2,7 @@
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T16:40:07Z"
+updated_at: "2026-10-31T16:40:12Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -103,3 +103,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-10-31T16:23:02Z · body: Items (added 1)
 - 2026-10-31T16:23:04Z · body: E4 · Open any past review pass from the Review tab (added)
 - 2026-10-31T16:40:07Z · cli_override, model_override
+- 2026-10-31T16:40:12Z · status inbox→ready
