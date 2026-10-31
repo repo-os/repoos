@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0991"
 title: "Serve Markdown for Accept: text/markdown at both site roots"
 type: feature
@@ -46,3 +47,4 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T15:57:55Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T15:57:55Z · status review→active
 - 2026-10-31T15:57:55Z · note: close-out repair: gate-failure
+
