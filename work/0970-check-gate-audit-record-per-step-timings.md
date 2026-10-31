@@ -13,7 +13,7 @@ model_override: gpt-6.1-sol
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-10-27T14:50:38Z"
-updated_at: "2026-10-31T13:15:40Z"
+updated_at: "2026-10-31T17:33:03Z"
 review_rounds: 1
 review_passes: 1
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
@@ -118,3 +118,4 @@ Change the gate by editing `[[check.steps]]` in repoos.toml (AGENTS.md "Definiti
 - 2026-10-31T11:43:40Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T12:19:48Z · needs_input
 - 2026-10-31T13:15:40Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-31T17:33:03Z · message_overdue: still queued after 60m without being delivered
