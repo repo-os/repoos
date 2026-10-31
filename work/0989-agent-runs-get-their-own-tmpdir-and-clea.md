@@ -11,7 +11,7 @@ branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T16:40:31Z"
+updated_at: "2026-10-31T16:40:36Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-31T15:25:03.027Z\",\"kind\":\"dev-error\"}]"
 ---
