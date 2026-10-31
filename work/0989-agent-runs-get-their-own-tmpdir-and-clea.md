@@ -9,11 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-runs-get-their-own-tmpdir-and-clea
 cli_override: cursor
-model_override: grok-4.7-low
+model_override: composer-2.5
 created_at: "2026-10-31T08:30:59Z"
-updated_at: "2026-10-31T17:24:31Z"
-dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-10-31T15:25:03.027Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-10-31T17:23:23Z"
 ---
 ## Problem
 
@@ -41,19 +39,4 @@ Start from where agent processes are spawned (`src/server/agents.ts` and the CTO
 - 2026-10-31T08:31:24Z · cli_override, model_override
 - 2026-10-31T08:31:28Z · status inbox→ready
 - 2026-10-31T11:43:42Z · status ready→active, branch
-- 2026-10-31T11:48:56Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
-- 2026-10-31T11:50:19Z · status ready→active
-- 2026-10-31T12:55:44Z · engineer stopped by request
-- 2026-10-31T13:11:42Z · note: adopted orphaned engineer pid 54869
-- 2026-10-31T13:15:24Z · engineer stopped by request
-- 2026-10-31T13:15:26Z · model_override
-- 2026-10-31T14:51:24Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
-- 2026-10-31T14:51:24Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
-- 2026-10-31T15:25:33Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/12 crashes in 30m) · Error: [aborted] read ECONNRESET
-- 2026-10-31T16:40:31Z · engineer stopped by request
-- 2026-10-31T16:40:31Z · needs_input
-- 2026-10-31T17:03:43Z · note: adopted orphaned engineer pid 19084
-- 2026-10-31T17:05:07Z · note: adopted orphaned engineer pid 19084
-- 2026-10-31T17:23:24Z · status active→review
-- 2026-10-31T17:23:26Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-10-31T17:24:31Z · note: review pass 1: good to go
+- 2026-10-31T17:23:23Z · status active→review

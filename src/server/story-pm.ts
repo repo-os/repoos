@@ -31,6 +31,7 @@ import {
   storyFreeformPrompt,
 } from "../core/story-definition-files.js";
 import { getGitWorker } from "./git-worker.js";
+import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import {
   extractOneShotReportText,
   parseOneShotLine,
@@ -81,6 +82,7 @@ export async function fleshOutStory(deps: StoryPmDeps, run: StoryPmRun): Promise
       storyFreeformPrompt(run.humanName, run.description, candidates),
       {
         cwd: config.root,
+        ...repoAgentRunTmpOpts(config),
         onLine: run.runId
           ? (line) => {
               // Parse structured JSONL like the task flow does, so the pane
