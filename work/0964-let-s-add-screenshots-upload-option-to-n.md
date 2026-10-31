@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-10-31T10:26:50.190Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 id: "0964"
 title: Add screenshot upload to New Story
 type: feature
@@ -15,7 +13,9 @@ model_override: composer-2.5
 pm_cli_override: cursor
 pm_model_override: grok-4.7-low
 created_at: "2026-10-26T19:47:15Z"
-updated_at: "2026-10-31T10:26:49Z"
+updated_at: "2026-10-31T10:44:32Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-10-31T10:26:50.190Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 review_rounds: 2
 routing_switches: 1
 review_passes: 2
@@ -106,4 +106,4 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 - 2026-10-31T10:16:02Z · message_queued at 2026-10-31T10:16:02.036Z
 - 2026-10-31T10:16:02Z · status review→active
 - 2026-10-31T10:26:49Z · message_delivered: 1 message(s)
-
+- 2026-10-31T10:44:32Z · note: shots: failed — preview for target "default" did not start: preview server for #0964 did not become ready
