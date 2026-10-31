@@ -2,14 +2,14 @@
 id: "0991"
 title: "Serve Markdown for Accept: text/markdown at both site roots"
 type: feature
-status: active
+status: review
 priority: p2
 area: [landing, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
-updated_at: "2026-10-31T13:11:44Z"
+updated_at: "2026-10-31T13:47:03Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T13:07:20Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0989 check (pid 56011, alive), #0990 check (pid 89885, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-10-31T13:07:37Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T13:11:44Z · note: adopted orphaned engineer pid 60316
+- 2026-10-31T13:47:03Z · status active→review
