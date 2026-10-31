@@ -10,6 +10,12 @@ import { randomUUID } from "node:crypto";
 import { spawn, execFile, type ChildProcess } from "node:child_process";
 import { setPriority } from "node:os";
 import {
+  applyAgentRunTmpEnv,
+  prepareAgentRunTmpdir,
+  removeAgentRunTmpdir,
+  sweepStaleAgentRunTmpdirs,
+} from "../core/agent-run-tmpdir.js";
+import {
   patternKillWarning,
   processGroupKillSupported,
   reapAgentTurnProcessGroup,
@@ -4696,6 +4702,8 @@ function antigravityWorktreeRefusal(
     : "Antigravity only runs in a RepoOS task worktree, so it can't drive board-level chats that run in the main checkout. Pick a different agent for this role.";
 }
 
+export { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
+
 export function runPrompt(
   agent: Agent,
   prompt: string,
@@ -4705,17 +4713,26 @@ export function runPrompt(
     onLine?: (line: string) => void;
     command?: { cmd: string; args: string[] };
     onSpawn?: (proc: ChildProcess) => void;
+    /** With {@link cacheDir}, isolates the child TMPDIR under the repo cache (#0989). */
+    repoRoot?: string;
+    cacheDir?: string;
+    runId?: string;
   } = {},
 ): Promise<PromptResult> {
   const cwd = opts.cwd ?? process.cwd();
   const timeoutMs = opts.timeoutMs ?? PROMPT_TIMEOUT_MS;
   return new Promise((resolve) => {
+    let cleanupRunTmp: (() => void) | undefined;
+    const finish = (result: PromptResult): void => {
+      cleanupRunTmp?.();
+      resolve(result);
+    };
     let command: { cmd: string; args: string[] };
     try {
       command = opts.command ?? promptCommand(agent, prompt);
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      resolve({ ok: false, error: reason });
+      finish({ ok: false, error: reason });
       return;
     }
     const sanitized = sanitizeSpawnArgs(command.args);
@@ -4727,11 +4744,19 @@ export function runPrompt(
     // which runs in config.root) must be in a linked task worktree.
     const refusal = antigravityWorktreeRefusal(cmd, args, cwd);
     if (refusal) {
-      resolve({ ok: false, error: refusal });
+      finish({ ok: false, error: refusal });
       return;
     }
     let proc: ChildProcess;
     const startedAt = Date.now();
+    const childEnv = harnessChildEnv(cmd, { ...process.env });
+    let runTmpId: string | undefined;
+    if (opts.repoRoot && opts.cacheDir) {
+      runTmpId = opts.runId ?? randomUUID();
+      const handle = prepareAgentRunTmpdir(opts.repoRoot, opts.cacheDir, runTmpId);
+      cleanupRunTmp = () => removeAgentRunTmpdir(opts.repoRoot!, opts.cacheDir!, runTmpId!);
+      applyAgentRunTmpEnv(childEnv, handle.dir);
+    }
     try {
       proc = spawn(cmd, args, {
         cwd,
@@ -4739,11 +4764,11 @@ export function runPrompt(
         // Inherit the server env (minus the per-harness override below): a
         // one-shot has no control-plane pointer, but crush still needs
         // CRUSH_CLIENT_SERVER=0 so it cannot spawn a detached server.
-        env: harnessChildEnv(cmd, { ...process.env }),
+        env: childEnv,
       });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      resolve({ ok: false, error: `could not launch ${cmd}: ${reason}` });
+      finish({ ok: false, error: `could not launch ${cmd}: ${reason}` });
       return;
     }
     opts.onSpawn?.(proc);
@@ -4779,7 +4804,7 @@ export function runPrompt(
       } catch {
         /* already gone */
       }
-      resolve({
+      finish({
         ok: false,
         error: `the ${agent.cli} agent timed out after ${Math.round(timeoutMs / 1000)}s`,
       });
@@ -4813,7 +4838,7 @@ export function runPrompt(
         const detail = oneShotFailureDetail(stderr, output) || "no stderr output";
         const termination = signal ? `signal ${signal}` : `code ${exitCode ?? "unknown"}`;
         const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
-        resolve({
+        finish({
           ok: false,
           error: `${cmd} exited with ${termination}: ${detail}${hint ? ` ${hint}` : ""}`,
           ...usageFields,
@@ -4823,17 +4848,17 @@ export function runPrompt(
       if (agent.cli === "antigravity" && output) {
         const error = antigravityOneShotError(output, stderr);
         if (error) {
-          resolve({ ok: false, error, ...usageFields });
+          finish({ ok: false, error, ...usageFields });
           return;
         }
       }
       if (output) {
-        resolve({ ok: true, output, ...usageFields });
+        finish({ ok: true, output, ...usageFields });
         return;
       }
       const reason = oneShotFailureDetail(stderr, output) || "no output produced";
       const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
-      resolve({
+      finish({
         ok: false,
         error: `${cmd} exited without output: ${reason}${hint ? ` ${hint}` : ""}`,
         ...usageFields,
@@ -4844,7 +4869,7 @@ export function runPrompt(
     proc.on("close", (code, signal) => done(code, signal));
     proc.on("error", (err) => {
       clearTimeout(timer);
-      resolve({ ok: false, error: `could not launch ${cmd}: ${err.message}` });
+      finish({ ok: false, error: `could not launch ${cmd}: ${err.message}` });
     });
   });
 }
@@ -5138,6 +5163,9 @@ export async function runBoardAgent(
     onLine: opts.onLine,
     command,
     onSpawn: opts.onSpawn,
+    repoRoot: opts.cwd,
+    cacheDir: opts.cacheDir,
+    runId: randomUUID(),
   });
   const quarantined = await quarantineStrayFiles(opts.cwd, opts.cacheDir, before);
   if (quarantined.length && opts.onQuarantine) opts.onQuarantine(quarantined);
@@ -5377,6 +5405,24 @@ export class AgentRunner {
     for (const entry of this.entries.values()) {
       for (const tailer of entry.tailers ?? []) clearInterval(tailer.timer);
     }
+  }
+
+  /**
+   * Drop orphaned per-run TMPDIR folders left by a crashed server (#0989).
+   * Preserves dirs for agent children still running per the durable registry.
+   */
+  sweepOrphanRunTmpdirs(extraPreserveRunIds: readonly string[] = []): number {
+    const registry = readRegistry(this.cacheDir);
+    const preserveRunIds: string[] = [...extraPreserveRunIds];
+    for (const rec of registry.entries) {
+      const leader = rec.processGroupLeader ?? rec.pid;
+      if (pidAlive(rec.pid) || livePidsInRecordedGroup(leader).length > 0) {
+        preserveRunIds.push(rec.runId);
+      }
+    }
+    return sweepStaleAgentRunTmpdirs(this.config.root, this.config.cacheDir ?? ".repoos", {
+      preserveRunIds,
+    });
   }
 
   /**
@@ -7268,6 +7314,12 @@ export class AgentRunner {
         );
         if (shimDir) prependPath(agentEnv, shimDir);
       }
+      const runTmp = prepareAgentRunTmpdir(
+        this.config.root,
+        this.config.cacheDir ?? ".repoos",
+        runId,
+      );
+      applyAgentRunTmpEnv(agentEnv, runTmp.dir);
       proc = spawn(cmd, args, {
         cwd,
         stdio: ["ignore", outFd, errFd],
@@ -7277,6 +7329,7 @@ export class AgentRunner {
       });
       lowerAgentPriority(proc.pid);
     } catch (err) {
+      removeAgentRunTmpdir(this.config.root, this.config.cacheDir ?? ".repoos", runId);
       const reason = err instanceof Error ? err.message : String(err);
       this.logger?.agent(taskId, "error", `Failed to spawn agent: ${reason}`, { cmd, args });
       this.emit({
@@ -9202,6 +9255,7 @@ export class AgentRunner {
         );
       }
     }
+    removeAgentRunTmpdir(this.config.root, this.config.cacheDir ?? ".repoos", entry.runId);
     // Self-heal may have appended a final system line, so persist only after it.
     this.persist(taskId);
     if (this.pendingCompletion.delete(taskId)) this.finishCompletion(taskId);
@@ -9281,12 +9335,22 @@ export class AgentRunner {
   private captureKiroSessionId(taskId: string, session: Session, cwd: string): Promise<void> {
     return new Promise((resolve) => {
       let proc: ChildProcess;
+      const listTmp = prepareAgentRunTmpdir(
+        this.config.root,
+        this.config.cacheDir ?? ".repoos",
+        `kiro-list-${randomUUID()}`,
+      );
+      const listEnv = { ...process.env };
+      applyAgentRunTmpEnv(listEnv, listTmp.dir);
+      const cleanupListTmp = (): void => listTmp.cleanup();
       try {
         proc = spawn("kiro-cli", ["chat", "--list-sessions", "--format", "json"], {
           cwd,
           stdio: ["ignore", "pipe", "pipe"],
+          env: listEnv,
         });
       } catch {
+        cleanupListTmp();
         resolve();
         return;
       }
@@ -9297,6 +9361,7 @@ export class AgentRunner {
         } catch {
           /* already gone */
         }
+        cleanupListTmp();
         resolve();
       }, 5000);
       proc.stdout?.on("data", (c: Buffer) => {
@@ -9304,10 +9369,12 @@ export class AgentRunner {
       });
       proc.on("error", () => {
         clearTimeout(timer);
+        cleanupListTmp();
         resolve();
       });
       proc.on("close", () => {
         clearTimeout(timer);
+        cleanupListTmp();
         try {
           const rows = JSON.parse(out) as Array<{
             cwd?: string;

@@ -199,7 +199,7 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { runAreaMigrationPass } from "./area-migration.js";
 import { runTaskBodyMigrationPass } from "./task-body-migration.js";
 import { sweepUnderspecifiedTasks } from "./task-underspecified-flag.js";
-import { FreeformRunManager } from "./freeform-runs.js";
+import { FreeformRunManager, liveFreeformRunIds } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
 import { attachPendingPmImages } from "./pm-attachments.js";
 import { clearStoryPmChat, isStoryPmWorking } from "../core/story-definition-files.js";
@@ -2154,6 +2154,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Reads the durable registry, checks PID aliveness, and re-attaches
   // to still-running children so isRunning() reports true immediately.
   const runnerAdoption = isPreviewChild ? Promise.resolve() : runner.adoptRunningAgents();
+  if (!isPreviewChild) {
+    void runnerAdoption
+      .catch(() => {
+        /* sweep still runs; live registry entries are preserved */
+      })
+      .then(() => {
+        const removed = runner.sweepOrphanRunTmpdirs(liveFreeformRunIds(config));
+        if (removed > 0) {
+          logger.system("info", `agent-run tmp sweep: removed ${removed} orphaned dir(s)`);
+        }
+      });
+  }
 
   // Recover any pending handoff requests from a previous interrupted turn (#0235).
   // Validates each request (task still exists, active, branch matches) and

@@ -43,7 +43,11 @@ export const testModel: RouteHandler = async (ctx, _req, res) => {
     if (typeof body.model !== "string" || !body.model.trim() || body.model.length > 120) {
       return json(res, 400, { error: "model must be a non-empty string" });
     }
-    const result = await testModelCombination(body.cli, body.model, { cwd: config.root });
+    const result = await testModelCombination(body.cli, body.model, {
+      cwd: config.root,
+      repoRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+    });
     return json(res, 200, { result, at: new Date().toISOString() });
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);

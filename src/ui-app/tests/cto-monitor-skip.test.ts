@@ -138,6 +138,20 @@ afterEach(() => {
 });
 
 describe("CTO monitor skip-when-healthy (#0649)", () => {
+  it("skips an idle board with no active or review tasks on a repeat tick (#0989)", async () => {
+    const { cto, runs } = fakeCto();
+    const monitor = monitorFor(
+      [task({ id: "0001", status: "done" }), task({ id: "0002", status: "ready" })],
+      cto,
+    );
+
+    await monitor.checkNow("timer");
+    await monitor.checkNow("timer");
+
+    expect(cto.run).not.toHaveBeenCalled();
+    expect(runs).toHaveLength(0);
+  });
+
   it("makes zero LLM calls on a healthy board", async () => {
     const { cto, runs } = fakeCto();
     const monitor = monitorFor([task({ id: "0001", status: "inbox" })], cto);
