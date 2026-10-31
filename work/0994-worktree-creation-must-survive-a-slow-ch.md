@@ -11,7 +11,8 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-10-31T22:26:35Z"
+updated_at: "2026-10-31T22:26:34Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -47,5 +48,13 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T16:39:36Z · status inbox→ready
 - 2026-10-31T16:40:05Z · cli_override, model_override
 - 2026-10-31T17:32:33Z · status ready→active, branch
-- 2026-10-31T20:31:50Z · status active→review
-- 2026-10-31T22:26:35Z · status review→active
+- 2026-10-31T18:10:24Z · note: adopted orphaned engineer pid 25301
+- 2026-10-31T18:12:03Z · note: adopted orphaned engineer pid 25301
+- 2026-10-31T18:49:21Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 26260, alive), #0991 check (pid 98688, wedged); slot holder has made no progress for 30 minutes (no heartbeat) for 3m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T18:55:51Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T19:33:39Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 17200, alive), #0994 check (pid 80846, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 15s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T19:39:10Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T20:31:51Z · status active→review
+- 2026-10-31T20:31:51Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-10-31T20:32:45Z · note: review pass 1: good to go
+- 2026-10-31T22:26:34Z · status review→active

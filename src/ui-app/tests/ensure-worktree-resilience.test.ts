@@ -159,6 +159,29 @@ describe("ensureWorktree resilience (#0994)", () => {
     }
   });
 
+  it("does not deadlock when ensureWorktree is reentered on the same branch", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/reentrant";
+      let nested = false;
+      setEnsureWorktreeTestSeam({
+        gitCapture: (repo, args, timeoutMs): GitRun => {
+          if (!nested && args[0] === "worktree" && args[1] === "add" && args[2] === "-b") {
+            nested = true;
+            const inner = ensureWorktree(root, branch);
+            expect(inner.ok).toBe(true);
+          }
+          return gitCapture(repo, args, timeoutMs);
+        },
+      });
+      const res = ensureWorktree(root, branch);
+      expect(res.ok).toBe(true);
+      expect(nested).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
   it("serializes concurrent starts from separate processes on one branch", async () => {
     const { root, clean } = makeRepo();
     try {
