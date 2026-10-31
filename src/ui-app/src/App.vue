@@ -20,7 +20,7 @@ import CopyInspectorOverlay from "./components/CopyInspectorOverlay.vue";
 import ReleaseUpdateNotification from "./components/ReleaseUpdateNotification.vue";
 import DependencyOverrideDialog from "./components/DependencyOverrideDialog.vue";
 import PageSkeleton from "./components/PageSkeleton.vue";
-import { loadingSkeletonKind } from "./lib/loading-skeleton";
+import { loadingPageHeader, loadingSkeletonKind } from "./lib/loading-skeleton";
 import { configureUiRecovery, checkUiBuild, showOffline } from "./lib/uiRecovery";
 import {
   applyShotPreviewConfigFixture,
@@ -43,6 +43,7 @@ const notices = useNoticesStore();
 // yet, and the sidebar/topbar assume a signed-in session.
 const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
 const loadingKind = computed(() => loadingSkeletonKind(route.path));
+const loadingHeader = computed(() => loadingPageHeader(route.path));
 
 const onApiTimeout = (event: Event): void => {
   const detail = (event as CustomEvent<string>).detail;
@@ -143,7 +144,15 @@ onUnmounted(() => {
         <Sidebar />
 
         <div class="main">
-          <PageSkeleton v-if="repo.loading" :kind="loadingKind" class="main-route" />
+          <div v-if="repo.loading" class="main-route page-loading">
+            <header v-if="loadingHeader" class="page-header">
+              <div>
+                <div class="page-title">{{ loadingHeader.title }}</div>
+                <div class="page-desc">{{ loadingHeader.desc }}</div>
+              </div>
+            </header>
+            <PageSkeleton :kind="loadingKind" />
+          </div>
           <RouterView v-else class="main-route" />
         </div>
       </div>
