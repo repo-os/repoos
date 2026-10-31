@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-31T10:17:18Z"
-review_passes: 1
+last_close_out_gate_ms: 502052
+last_close_out_gate_at: "2026-10-31T10:34:05.075Z"
 id: "0986"
 title: "Record release-profile check runs, including failures, in the checks history"
 type: bug
@@ -13,6 +13,8 @@ branch: feat/record-release-profile-check-runs-includ
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T00:59:20Z"
+updated_at: "2026-10-31T10:34:05Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-31T03:17:45.679Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -47,4 +49,5 @@ Start from `src/core/check-store.ts` and where the release path invokes the chec
 - 2026-10-31T10:15:37Z · status active→review
 - 2026-10-31T10:15:38Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-31T10:17:18Z · note: review pass 1: good to go
+- 2026-10-31T10:34:05Z · close-out gate completed in 502s
 
