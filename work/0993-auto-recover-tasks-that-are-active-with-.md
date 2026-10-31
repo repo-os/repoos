@@ -11,7 +11,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T19:01:10Z"
+updated_at: "2026-10-31T19:01:30Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-10-31T18:10:25Z · note: adopted orphaned engineer pid 58658
 - 2026-10-31T18:12:05Z · note: adopted orphaned engineer pid 58658
 - 2026-10-31T19:01:10Z · body
+- 2026-10-31T19:01:30Z · body
