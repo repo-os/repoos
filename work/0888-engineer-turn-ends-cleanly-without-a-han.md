@@ -12,7 +12,7 @@ branch: feat/engineer-turn-ends-cleanly-without-a-han
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-10-20T21:57:26Z"
-updated_at: "2026-10-31T17:33:01Z"
+updated_at: "2026-10-31T18:11:13Z"
 last_close_out_gate_ms: 100234
 last_close_out_gate_at: "2026-10-21T01:04:36.950Z"
 review_passes: 1
@@ -131,3 +131,4 @@ Relevant code: src/server/agents.ts (`cleanup()`, `deliverQueuedMessages`, crash
 - 2026-10-31T11:43:38Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T13:15:39Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T17:33:01Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-31T18:11:13Z · message_overdue: still queued after 60m without being delivered
