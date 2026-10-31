@@ -20,7 +20,6 @@ review_rounds: 1
 routing_switches: 1
 review_passes: 1
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-10-31T01:46:07.200Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
