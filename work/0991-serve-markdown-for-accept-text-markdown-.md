@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/serve-markdown-for-accept-text-markdown-
 created_at: "2026-10-31T08:31:06Z"
-updated_at: "2026-10-31T18:55:38Z"
+updated_at: "2026-10-31T18:59:30Z"
 last_close_out_gate_ms: 1818298
 last_close_out_gate_at: "2026-10-31T18:55:38.510Z"
 review_passes: 2
@@ -58,4 +58,4 @@ Build on #0987 (docs negotiation) and the landing worker in `landing/worker.ts`.
 - 2026-10-31T18:19:24Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (e9e87724d) during finalization (#0734)
 - 2026-10-31T18:20:07Z · note: review pass 2: good to go
 - 2026-10-31T18:55:38Z · close-out gate completed in 1818s
-
+- 2026-10-31T18:59:30Z · status done→done, release:success
