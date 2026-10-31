@@ -248,7 +248,11 @@ export function collectLandingAgentFileFailures(repoRoot = defaultRepoRoot()): s
         .map((name) => readFileSync(path.join(assetsDir, name), "utf8"))
         .join("\n");
       // Minifiers differ on quoting; decode the escapes they commonly emit.
-      const decoded = bundle.replace(/\\n/g, "\n").replace(/\\`/g, "`").replace(/\\"/g, '"');
+      const decoded = bundle
+        .replace(/\\n/g, "\n")
+        .replace(/\\`/g, "`")
+        .replace(/\\"/g, '"')
+        .replace(/\\'/g, "'");
       const missing = prompt
         .split(/\r?\n/)
         .map((line) => line.trim())
