@@ -14,7 +14,7 @@ branch: feat/record-release-profile-check-runs-includ
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T00:59:20Z"
-updated_at: "2026-10-31T04:42:52Z"
+updated_at: "2026-10-31T09:45:52Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-31T03:17:45.679Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
