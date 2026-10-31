@@ -18,7 +18,7 @@ hero:
 
 features:
   - title: Install into any repo
-    details: RepoOS isn't a hosted service or a place you move your work to. Run repoos init inside a repo you already have, and it adds repoos/work/, repoos/docs/, and an AGENTS.md. You can choose another layout during setup.
+    details: RepoOS isn't a hosted service or a place you move your work to. Run repoos init inside a repo you already have. The default layout adds repoos.toml, repoos/work/, repoos/docs/, AGENTS.md, .env.example, .gitignore, and repoos/.repoos/canary.txt. You can choose another layout during setup.
     link: /getting-started
     linkText: Install and initialize
   - title: Tasks are files, status is a field
@@ -68,8 +68,8 @@ pnpm add -g @repo-os/repoos
 </div>
 
 ```bash
-repoos init    # by default scaffolds repoos/work/, repoos/docs/, and AGENTS.md
-repoos serve   # starts the board — prints the local URL to open
+repoos init    # default layout: repoos.toml, repoos/work/, repoos/docs/, AGENTS.md, .env.example, .gitignore, repoos/.repoos/canary.txt
+repoos serve   # local server plus background agents — check [[agents]] first
 ```
 
 `repoos init` seeds a real starter task (as an `inbox` suggestion, not work to
