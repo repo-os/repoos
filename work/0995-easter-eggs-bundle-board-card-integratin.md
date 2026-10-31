@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T23:23:00Z"
+updated_at: "2026-10-31T23:34:10Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -90,6 +90,26 @@ Clicking (or keyboard-activating) a pass row shows that pass's report in the bod
 ### Notes for AI
 Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-history-table` markup in `TaskDrawer.vue`. Read-only; do not change how reports are written.
 
+## Shots
+```json
+[
+{
+  "label": "Board card: integrating progress clamped to three lines",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"task-card-agent-hint\"].tc-hint--progress-clamp",
+  "state": "closeOut:uploading"
+},
+{
+  "label": "Review tab: selectable pass history rows",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".review-history-table .review-history-row",
+  "state": "board:withReviewTask"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-31T13:08:01Z · created · njachowski@gmail.com
@@ -117,3 +137,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-10-31T22:26:48Z · message_queued at 2026-10-31T22:26:48.251Z
 - 2026-10-31T22:42:12Z · model_override
 - 2026-10-31T23:23:00Z · note: adopted orphaned engineer pid 65794
+- 2026-10-31T23:34:10Z · body
