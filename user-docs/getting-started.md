@@ -112,16 +112,23 @@ From the root of any git repo:
 repoos init
 ```
 
-That scaffolds four things and touches nothing else. Fresh installs keep RepoOS
-metadata under `repoos/` by default; the interactive prompt can instead use the
-repo root or another location.
+Fresh installs keep RepoOS metadata under `repoos/` by default; the interactive
+prompt can instead use the repo root or another location. Init does not
+overwrite an existing file. With the default layout it creates:
 
 | Path | What it is |
 | --- | --- |
-| `repoos/work/` | One markdown file per task. This is the board. |
+| `repoos.toml` | Configuration. Every field is optional. Always at the repo root. |
+| `repoos/work/` | One markdown file per task. This is the board. Includes `0001-set-up-repoos.md` (a `done` example) and an inbox starter task. |
 | `repoos/docs/` | Context an agent needs to work on *this* project — architecture notes, decisions, history. |
-| `AGENTS.md` | Instructions agents read first. The cross-tool standard; Claude Code, Codex, Cursor, Aider and Zed all read it. |
-| `repoos.toml` | Configuration. Every field is optional. |
+| `AGENTS.md` | Instructions agents read first. The cross-tool standard; Claude Code, Codex, Cursor, Aider and Zed all read it. Always at the repo root. |
+| `.env.example` | Names of secrets a fuller setup expects. No values. |
+| `.gitignore` | Created, or appended when one already exists. Ignores the derived cache, root `.repoos/` runtime state, `.env`, `.env*.local`, `node_modules/`, task and input attachment directories, and `.DS_Store`. |
+| `repoos/.repoos/canary.txt` | Tracked canary counter. |
+
+A new project also runs `git init` and, unless you pass `--no-commit`, commits
+the scaffold (`chore: initialize RepoOS project`). Init in an existing repo
+does not make that commit.
 
 Run `repoos init` outside a git repo and it starts a guided flow for a brand
 new project instead. In a terminal it asks a few questions; with no TTY (an
@@ -263,8 +270,8 @@ treat the answers list as a starting point and adjust from the output.
    board is, how to create tasks, how to hand off. Everything below is in more
    detail there.
 2. **The starter task is a suggestion, not a queue item.** Init leaves
-   `flesh-out-the-vision` in `ready` as a prompt for the project's first work.
-   It is not dispatched to an agent until a human starts it; don't auto-run it.
+   `flesh-out-the-vision` in `inbox`. It is not dispatched until someone
+   promotes it (`repoos mv 0002 ready`); don't auto-run it.
 3. **Never hand-edit `work/*.md`.** Create and change tasks with `repoos new`,
    `repoos mv`, `repoos update`, `repoos note`, or the HTTP API — never by
    editing frontmatter or files directly.
@@ -321,7 +328,19 @@ doesn't link, or if the docs directory is empty while tasks exist.
 repoos serve
 ```
 
-This starts the local control plane — a web UI and an API over the same files.
+Check which agents are enabled before you run this. Serve starts the local
+control plane — a web UI and an API over the same files — and background
+automation:
+
+- The **CTO board monitor** ticks every 5 minutes (`ctoMonitorIntervalMs`,
+  default `300000`). When the `cto` agent has `enabled = true`, that tick
+  launches a coding agent. Turn it off with `enabled = false` on that
+  `[[agents]]` row in `repoos.toml`. A project with no `[[agents]]` rows uses
+  the built-in defaults, which leave the CTO disabled.
+- The **reviewer** is on by default and starts when a task enters `review`.
+- The **watchdog** (`watchdog.enabled`, default `true`) can restart a stalled
+  engineer. Set `watchdog.enabled = false` to stop that.
+
 It picks a stable port derived from the repo's path, so two different repos
 never collide; pin one with `servePort` if you'd rather. Stop it with
 `repoos stop`.
