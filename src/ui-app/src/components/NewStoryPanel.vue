@@ -34,7 +34,11 @@ function setOpen(v: boolean): void {
 const storyName = ref("");
 const description = ref("");
 const formError = ref("");
-const pendingScreenshots = ref<PendingScreenshot[]>([]);
+interface PendingStoryScreenshot extends PendingScreenshot {
+  /** The story that owns this queued retry; never retarget a failed upload. */
+  uploadStoryKey?: string;
+}
+const pendingScreenshots = ref<PendingStoryScreenshot[]>([]);
 const dragDepth = ref(0);
 const freeformRunning = ref(false);
 const freeformRunId = ref<string | null>(null);
@@ -171,7 +175,9 @@ function onDrop(event: DragEvent): void {
   if (event.dataTransfer?.files.length) addShotFiles(Array.from(event.dataTransfer.files));
 }
 async function uploadScreenshots(key: string): Promise<void> {
-  for (const shot of pendingScreenshots.value) {
+  for (const shot of [...pendingScreenshots.value]) {
+    if (shot.uploadStoryKey && shot.uploadStoryKey !== key) continue;
+    shot.uploadStoryKey = key;
     markAttachmentUploading(shot);
     try {
       await repo.uploadStoryScreenshot(key, shot);
@@ -182,8 +188,8 @@ async function uploadScreenshots(key: string): Promise<void> {
   }
 }
 async function retryScreenshot(index: number): Promise<void> {
-  const key = submittedStoryKey.value;
   const shot = pendingScreenshots.value[index];
+  const key = shot?.uploadStoryKey;
   if (!key || !shot) return;
   markAttachmentUploading(shot);
   try {
@@ -229,8 +235,18 @@ async function createStory(): Promise<void> {
 
 /** Back to a fresh form; the submitted story keeps being fleshed out. */
 function createAnotherStory(): void {
+  clearResolvedScreenshots();
+  submittedStoryKey.value = "";
   resetRun();
   requestAnimationFrame(() => document.getElementById("ns-story-name")?.focus());
+}
+
+/** Keep failed picks attached to their original story; discard anything resolved. */
+function clearResolvedScreenshots(): void {
+  for (let i = pendingScreenshots.value.length - 1; i >= 0; i--) {
+    const shot = pendingScreenshots.value[i];
+    if (shot?.uploadPhase !== "failed") pendingScreenshots.value.splice(i, 1);
+  }
 }
 
 /** Acknowledge the in-flight creation and leave the pane. */
