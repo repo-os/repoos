@@ -61,10 +61,10 @@ Let's add screenshots upload option to "New Story" similar to how we have it on 
 "highlight": ".shot-dropzone",
 "steps": [
 {
-  "click": "button.new-btn"
+"click": "button.new-btn"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
