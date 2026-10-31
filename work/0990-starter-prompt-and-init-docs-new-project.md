@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-10-31T12:57:45Z"
-review_passes: 1
+last_close_out_gate_ms: 391946
+last_close_out_gate_at: "2026-10-31T13:07:30.646Z"
 id: "0990"
 title: "Starter prompt and init docs: new-project path and one accurate list"
 type: chore
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/starter-prompt-and-init-docs-new-project
 created_at: "2026-10-31T08:31:03Z"
+updated_at: "2026-10-31T13:07:30Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -46,4 +48,5 @@ Docs and init output text only. Keep the llms index checks passing (`llms index 
 - 2026-10-31T12:56:21Z · status active→review
 - 2026-10-31T12:56:29Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-10-31T12:57:45Z · note: review pass 1: good to go
+- 2026-10-31T13:07:30Z · close-out gate completed in 392s
 
