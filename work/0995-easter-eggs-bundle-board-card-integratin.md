@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T23:34:10Z"
+updated_at: "2026-10-31T23:34:37Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -99,13 +99,6 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
   "route": "/work",
   "highlight": "[data-test-id=\"task-card-agent-hint\"].tc-hint--progress-clamp",
   "state": "closeOut:uploading"
-},
-{
-  "label": "Review tab: selectable pass history rows",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".review-history-table .review-history-row",
-  "state": "board:withReviewTask"
 }
 ]
 ```
@@ -138,3 +131,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-10-31T22:42:12Z · model_override
 - 2026-10-31T23:23:00Z · note: adopted orphaned engineer pid 65794
 - 2026-10-31T23:34:10Z · body
+- 2026-10-31T23:34:37Z · body
