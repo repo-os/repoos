@@ -163,4 +163,31 @@ describe("fleshOutStory", () => {
     expect(isStoryPmWorking(placeholder.path)).toBe(false);
     expect(events.find((e) => e.type === "story.pmFinished")?.reason).toBe("usage limit");
   });
+
+  it("preserves an uploaded Screenshots section when the PM rewrites the body", async () => {
+    const { cfg, index } = setup();
+    const placeholder = writeStoryDefinition(cfg, {
+      name: "Mobile slice",
+      body: "Placeholder description.\n\n## Screenshots\n\n![ui](/api/stories/mobile-slice/attachments/shot.png)",
+      createdBy: "hello@repoos.org",
+    });
+    const story =
+      "---\nname: Native mobile app\ntasks: []\n---\n\n## Problem\n\nShip native.\n\n## Screenshots\n\n![pm-only](/x.png)";
+    vi.mocked(runPrompt).mockResolvedValue({ ok: true, output: story });
+    await fleshOutStory(
+      {
+        config: cfg,
+        index,
+        logger: { task() {}, system() {} } as never,
+        emitEvent: () => {},
+      },
+      { path: placeholder.path, humanName: "", description: "desc", pm, runId: null },
+    );
+    const body = readFileSync(join(cfg.root, listStoryDefinitions(cfg)[0].path), "utf8");
+    expect(body).toContain("## Problem");
+    expect(body).toContain("Ship native.");
+    expect(body).toContain("![ui](/api/stories/mobile-slice/attachments/shot.png)");
+    expect(body).not.toContain("![pm-only](/x.png)");
+    expect(body.match(/^## Screenshots$/gm)).toHaveLength(1);
+  });
 });
