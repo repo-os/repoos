@@ -45,6 +45,33 @@ describe("Markdown negotiation", () => {
     expect(await response.text()).toBe("<html></html>");
   });
 
+  test("serves the docs root as the llms.txt body when Markdown is preferred", async () => {
+    const env = {
+      ASSETS: {
+        fetch: async (request: Request) => {
+          const path = new URL(request.url).pathname;
+          if (path === "/llms.txt") return new Response("# Docs index");
+          if (path === "/") {
+            return new Response("<html></html>", { headers: { "Content-Type": "text/html" } });
+          }
+          return new Response("missing", { status: 404 });
+        },
+      },
+    } as never;
+    const markdown = await worker.fetch(
+      new Request("https://docs.example/", { headers: { Accept: "text/markdown" } }),
+      env,
+    );
+    expect(markdown.status).toBe(200);
+    expect(markdown.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
+    expect(markdown.headers.get("Vary")).toBe("Accept");
+    expect(await markdown.text()).toBe("# Docs index");
+
+    const html = await worker.fetch(new Request("https://docs.example/"), env);
+    expect(html.headers.get("Content-Type")).toBe("text/html");
+    expect(await html.text()).toBe("<html></html>");
+  });
+
   test("serves twins as non-cacheable Markdown with Vary", async () => {
     const env = {
       ASSETS: {
