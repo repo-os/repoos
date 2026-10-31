@@ -2,14 +2,14 @@
 id: "0986"
 title: "Record release-profile check runs, including failures, in the checks history"
 type: bug
-status: ready
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/record-release-profile-check-runs-includ
 created_at: "2026-10-31T00:59:20Z"
-updated_at: "2026-10-31T03:08:30Z"
+updated_at: "2026-10-31T03:08:48Z"
 ---
 ## Problem
 
@@ -34,3 +34,4 @@ Start from `src/core/check-store.ts` and where the release path invokes the chec
 
 - 2026-10-31T00:59:20Z · created · njachowski@gmail.com
 - 2026-10-31T03:08:30Z · status inbox→ready
+- 2026-10-31T03:08:48Z · status ready→active, branch
