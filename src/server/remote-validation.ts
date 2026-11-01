@@ -2,9 +2,7 @@ import { stepTimingsFromOutput } from "../core/check-timings.js";
 import { TestFileTimingCollector, testFileTimings } from "../core/test-file-timings.js";
 import {
   TestCaseTimingCollector,
-  mergeTestCaseTimings,
   pushTimingOutputChunk,
-  testCaseTimings,
 } from "../core/test-case-timings.js";
 /**
  * Remote Validation Runner (#RVR).
@@ -5089,8 +5087,9 @@ function recordRemoteRunHistory(
       failedTests: meta.failedTests,
       steps: stepTimingsFromOutput(summary?.output ?? ""),
       testFileTimings: summary?.testFileTimings ?? testFileTimings(summary?.output ?? ""),
-      testCaseTimings:
-        summary?.testCaseTimings ?? mergeTestCaseTimings(testCaseTimings(summary?.output ?? "")),
+      // Case timings arrive as structured reporter events on the live stream;
+      // never reconstruct them from the bounded human-readable output tail.
+      testCaseTimings: summary?.testCaseTimings ?? [],
     });
   } catch {
     /* never fail the gate on a history write */

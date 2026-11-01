@@ -44,7 +44,6 @@ import {
 } from "../core/test-file-timings.js";
 import {
   TestCaseTimingCollector,
-  testCaseTimings,
   formatSlowestTestCases,
   mergeTestCaseTimings,
   pushTimingOutputChunk,
@@ -2671,9 +2670,9 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   const fileTimings = results.flatMap((r) => r.testFileTimings ?? testFileTimings(r.output ?? ""));
-  const caseTimings = mergeTestCaseTimings(
-    results.flatMap((r) => r.testCaseTimings ?? testCaseTimings(r.output ?? "")),
-  );
+  // Individual case history comes only from Vitest's structured reporter
+  // events. Step output is intentionally bounded and must never be its source.
+  const caseTimings = mergeTestCaseTimings(results.flatMap((r) => r.testCaseTimings ?? []));
   if (fileTimings.length) {
     heading("Slowest test files");
     console.log(formatSlowestTestFiles(fileTimings));
