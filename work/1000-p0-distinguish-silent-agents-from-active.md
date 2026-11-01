@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: github copilot
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T18:18:13Z"
+updated_at: "2026-11-01T18:18:14Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
 dev_error_count: 3
