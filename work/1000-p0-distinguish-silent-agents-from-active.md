@@ -11,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T17:54:06Z"
+updated_at: "2026-11-01T18:01:22Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T17:40:34.412Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 dev_error_count: 3
@@ -39,11 +39,11 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 ```json
 [
 {
-  "label": "Task card shows live check progress instead of stuck silent",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-hint",
-  "state": "checks:progress"
+"label": "Task card shows live check progress instead of stuck silent",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-hint",
+"state": "checks:progress"
 }
 ]
 ```
@@ -95,3 +95,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T17:42:27Z · needs_input
 - 2026-11-01T17:50:48Z · body
 - 2026-11-01T17:54:06Z · body
+- 2026-11-01T18:01:22Z · message_queued at 2026-11-01T18:01:22.953Z
