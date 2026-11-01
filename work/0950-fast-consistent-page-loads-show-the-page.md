@@ -13,7 +13,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-10-24T16:13:34Z"
-updated_at: "2026-11-01T01:27:39Z"
+updated_at: "2026-11-01T04:42:34Z"
 last_close_out_gate_ms: 642649
 last_close_out_gate_at: "2026-10-26T15:35:39.943Z"
 review_passes: 10
@@ -483,3 +483,4 @@ Retained the committed distribution empty-result fix and its empty/populated ret
 - 2026-10-31T20:32:34Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T23:26:28Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T01:27:39Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:42:34Z · message_overdue: still queued after 60m without being delivered
