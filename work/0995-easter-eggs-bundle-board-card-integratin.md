@@ -140,3 +140,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T00:45:02Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
 - 2026-11-01T00:45:02Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-01T00:45:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T00:45:06Z · message_delivered: 1 message(s)
