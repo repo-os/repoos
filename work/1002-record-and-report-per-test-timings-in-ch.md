@@ -15,7 +15,6 @@ updated_at: "2026-11-01T18:38:24Z"
 handoff_signal_retry_count: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T18:15:40.617Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T18:16:37.245Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T18:18:15.592Z\",\"kind\":\"usage-limit\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-01T18:18:19.072Z\",\"kind\":\"dev-error\"},{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-01T18:19:14.664Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 RepoOS stores per-test-file durations and repoos checks timings reports the ten slowest files, but individual Vitest case timings are only visible in detailed raw output. There is no structured per-test history to answer which cases are slow, whether one case regressed, or how test and hook time differ. Raw output may be truncated and is inconvenient to compare across runs.
@@ -38,19 +37,19 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 ```json
 [
 {
-  "label": "Runs tab with per-test timing detail",
-  "target": "default",
-  "route": "/checks?tab=runs",
-  "highlight": ".cr-test-timings table",
-  "steps": [
-    {
-      "click": "tr.cr-expandable"
-    },
-    {
-      "waitMs": 400
-    }
-  ],
-  "state": "checks:timings"
+"label": "Runs tab with per-test timing detail",
+"target": "default",
+"route": "/checks?tab=runs",
+"highlight": ".cr-test-timings table",
+"steps": [
+  {
+    "click": "tr.cr-expandable"
+  },
+  {
+    "waitMs": 400
+  }
+],
+"state": "checks:timings"
 }
 ]
 ```
