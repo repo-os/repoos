@@ -2,7 +2,7 @@
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
@@ -126,4 +126,3 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T19:17:05Z · body
 - 2026-11-01T19:21:46Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T19:21:46Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
-- 2026-11-01T19:21:47Z · status active→review
