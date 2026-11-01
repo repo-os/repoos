@@ -21,6 +21,7 @@ import {
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { isLinkedWorktreeRoot, worktreesDir, worktreesInheritEnv } from "./config.js";
+import { repoosTomlDiffIsAutomaticPauseOnly } from "./repoos-toml-runtime-diff.js";
 import { notifyGitMutation, onGitMutation } from "./git-activity.js";
 import { trackGitCall } from "./git-inflight.js";
 import {
@@ -2538,12 +2539,31 @@ export function filterIgnorableMainDirtyPaths(
   return paths.filter((p) => !p.startsWith(cachePrefix) && !isLocalAttachmentPath(p, dirs));
 }
 
-/** `dirtyFiles` on the primary checkout, minus ignorable runtime/attachment churn. */
+/**
+ * `dirtyFiles` on the primary checkout, minus ignorable runtime/attachment churn.
+ * A `repoos.toml` whose only uncommitted change is automatic quota/pause
+ * bookkeeping is omitted too (#0998): it must not block enqueue, landability,
+ * or publication, and it is not checkpoint-committed.
+ */
 export async function mainDirtyFilesForCloseOut(
   root: string,
   dirs: MainDirtyPathFilter = {},
 ): Promise<string[]> {
-  return filterIgnorableMainDirtyPaths(await dirtyFiles(root, { untrackedFiles: "all" }), dirs);
+  const files = filterIgnorableMainDirtyPaths(
+    await dirtyFiles(root, { untrackedFiles: "all" }),
+    dirs,
+  );
+  if (!files.includes("repoos.toml")) return files;
+  const head = await runGit(root, ["show", "HEAD:repoos.toml"], 10_000);
+  if (head.status !== 0) return files;
+  let work: string;
+  try {
+    work = readFileSync(join(root, "repoos.toml"), "utf8");
+  } catch {
+    return files;
+  }
+  if (!repoosTomlDiffIsAutomaticPauseOnly(head.stdout, work)) return files;
+  return files.filter((path) => path !== "repoos.toml");
 }
 
 /** Repo-relative path is a committed task markdown file under `workDir` (board bookkeeping). */
