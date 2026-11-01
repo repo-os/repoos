@@ -5090,8 +5090,7 @@ function recordRemoteRunHistory(
       steps: stepTimingsFromOutput(summary?.output ?? ""),
       testFileTimings: summary?.testFileTimings ?? testFileTimings(summary?.output ?? ""),
       testCaseTimings:
-        summary?.testCaseTimings ??
-        mergeTestCaseTimings(testCaseTimings(summary?.output ?? "")),
+        summary?.testCaseTimings ?? mergeTestCaseTimings(testCaseTimings(summary?.output ?? "")),
     });
   } catch {
     /* never fail the gate on a history write */

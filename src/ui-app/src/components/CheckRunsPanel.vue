@@ -452,20 +452,14 @@ function outcomeLabel(r: CheckRunRow): string {
                     Per-file totals include hook time in that file; they are not the sum of
                     individual cases.
                   </p>
-                  <pre class="cr-mono-block">{{ formatSlowestTestFiles(r.testFileTimings, 10) }}</pre>
+                  <pre class="cr-mono-block">{{
+                    formatSlowestTestFiles(r.testFileTimings, 10)
+                  }}</pre>
                 </section>
-                <section
-                  v-if="testCasesLoading.has(r.id)"
-                  class="cr-test-timings"
-                  aria-busy="true"
-                >
+                <section v-if="testCasesLoading.has(r.id)" class="cr-test-timings" aria-busy="true">
                   <p class="cr-count">Loading slow test cases…</p>
                 </section>
-                <section
-                  v-else-if="testCasesError.has(r.id)"
-                  class="cr-test-timings"
-                  role="status"
-                >
+                <section v-else-if="testCasesError.has(r.id)" class="cr-test-timings" role="status">
                   <p class="cr-err">{{ testCasesError.get(r.id) }}</p>
                 </section>
                 <section
