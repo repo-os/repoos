@@ -70,6 +70,8 @@ export interface TaskCheckRun {
   stepName: string | null;
   attempt: number | null;
   attemptReason: string | null;
+  /** Last progress marker or output chunk while running (#1000). */
+  lastProgressAt: string | null;
 }
 
 export type TaskCheckEventKind = "started" | "output" | "done";
@@ -204,6 +206,7 @@ export class TaskCheckManager {
       stepName: null,
       attempt,
       attemptReason,
+      lastProgressAt: run.startedAt,
     };
     const list = history;
     list.push(run);
@@ -220,6 +223,7 @@ export class TaskCheckManager {
         if (run.output.length > MAX_BUFFERED_CHARS) {
           run.output = run.output.slice(run.output.length - MAX_BUFFERED_CHARS);
         }
+        run.lastProgressAt = new Date().toISOString();
         const progress = parseCheckProgress(run.output);
         if (progress) {
           run.stepsDone = progress.stepsDone ?? run.stepsDone;

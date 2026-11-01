@@ -20,6 +20,10 @@ controls:
 - `localChecks.maxConcurrent` (default **2**) — cross-process cap on local
   `repoos check`; extra runs queue with a visible position on the task card and
   in Debug output (`[queue] waiting for a local check slot`).
+- When an engineer waits on a remote gate, the task card shows `remote …` or
+  `queued · runner …` with host and elapsed time. If host-lock telemetry shows an
+  SSH slot for the task while the runner registry is idle, the card reports
+  **validation wait · telemetry mismatch** instead of a healthy idle host (#1000).
 - `playwright.maxConcurrent` (default **1**) — one shared semaphore for smoke,
   contrast audit, shot capture, and UI verification.
 - `remoteValidation.localFallback` — when a remote run falls back locally:

@@ -186,4 +186,67 @@ describe("TaskCard stuck-agent detection", () => {
     expect(hint.classes()).toContain("tc-coding");
     expect(hint.classes()).not.toContain("tc-stuck");
   });
+
+  it("shows check progress instead of stuck · silent while a gate is running (#0994)", async () => {
+    vi.useFakeTimers();
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [task], counts: { ...EMPTY_COUNTS, active: 1 }, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/diff-stats"))
+          return json({ filesChanged: 0, additions: 0, deletions: 0 });
+        throw new Error("unexpected fetch: " + url);
+      }),
+    );
+    const repo = useRepoStore();
+    await repo.init();
+
+    const wrapper = await mountCard(pinia, task);
+    const t0 = Date.now();
+    FakeEventSource.instances[0].emit("agent.running", {
+      type: "agent.running",
+      id: "0001",
+      at: new Date(t0).toISOString(),
+    });
+    repo.taskChecks["0001"] = [
+      {
+        id: "0001-handoff-finalize-1",
+        taskId: "0001",
+        kind: "handoff-finalize",
+        startedAt: new Date(t0).toISOString(),
+        finishedAt: null,
+        durationMs: null,
+        running: true,
+        passed: null,
+        code: null,
+        output: "",
+        scope: "changed:main",
+        machine: "air",
+        stepsDone: 5,
+        stepsTotal: 12,
+        testsDone: 109,
+        testsTotal: 645,
+        currentStep: 5,
+        stepName: "tests",
+        lastProgressAt: new Date(t0 + 60_000).toISOString(),
+      },
+    ];
+    await vi.advanceTimersByTimeAsync(9 * 60 * 1000);
+    repo.taskChecks["0001"]![0]!.lastProgressAt = new Date(Date.now() - 15_000).toISOString();
+    await flush();
+
+    const hint = wrapper.find(".tc-hint");
+    expect(hint.text()).toContain("checking");
+    expect(hint.text()).toContain("109/645");
+    expect(hint.classes()).not.toContain("tc-stuck");
+  });
 });

@@ -430,6 +430,8 @@ export interface RemoteTaskActivity {
     phases: RemoteRunPhaseTiming[];
   } | null;
   queue: RemoteQueuedRunInfo | null;
+  /** Host-lock vs registry disagreement (#1000). */
+  telemetryMismatch?: string | null;
 }
 
 /** Derive a job kind from the check-run phase when a caller did not name one. */
