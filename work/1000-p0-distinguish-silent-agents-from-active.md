@@ -11,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T19:05:51Z"
+updated_at: "2026-11-01T19:10:44Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
@@ -119,3 +119,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T19:05:44Z · message_queued at 2026-11-01T19:05:44.096Z
 - 2026-11-01T19:05:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T19:05:51Z · body
+- 2026-11-01T19:10:44Z · CTO nudge: held — an undelivered message is already queued
