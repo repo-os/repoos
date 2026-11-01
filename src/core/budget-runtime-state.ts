@@ -14,7 +14,8 @@
  */
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { pauseAllowlistEntry, type AgentModelAllowRow } from "./budget-allowlist.js";
+import { pauseAllowlistEntry } from "./budget-allowlist.js";
+import type { AgentModelAllowRow } from "./types.js";
 
 export const AUTOMATIC_PAUSE_REASON_PREFIX = "out of usage since ";
 
