@@ -317,10 +317,10 @@ describe("ChecksView default tab (#0738)", () => {
     ]);
     const slots = wrapper.findAll(".ck-local-slot");
     expect(slots[0]?.text()).toContain("No recent heartbeat");
-    expect(slots[0]?.text()).toContain("80s ago");
+    expect(slots[0]?.text()).toContain("last seen 1m 20s ago");
     expect(slots[0]?.text()).toContain("alive");
     expect(slots[1]?.text()).not.toContain("No recent heartbeat");
-    expect(slots[1]?.text()).toContain("heartbeat 2s ago");
+    expect(slots[1]?.text()).toContain("heartbeat 2.0s ago");
     wrapper.unmount();
   });
 });
