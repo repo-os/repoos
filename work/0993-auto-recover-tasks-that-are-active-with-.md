@@ -2,7 +2,7 @@
 id: "0993"
 title: Auto-recover tasks that are active with no live engineer
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-11-01T00:07:15Z"
+updated_at: "2026-11-01T02:40:55Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — } >"
 last_handoff_failure_sha: 5309ba0816dd650b4561d23091e48844828f163e
 ---
@@ -85,3 +85,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-11-01T00:05:15Z · note: ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:56263/settings?tab=watchdog)
 - 2026-11-01T00:05:15Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:56263/settings?tab=watchdog)
 - 2026-11-01T00:07:15Z · message_delivered: 2 message(s)
+- 2026-11-01T02:40:55Z · status active→review
