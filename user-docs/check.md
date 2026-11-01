@@ -362,9 +362,12 @@ land in `check_run_test_cases` in `.repoos/checks.db`, keyed to the check run.
 They are independent of the truncated step output log.
 
 - **File total vs case time:** a file row is Vitest's module total (tests plus
-  hooks in that file). A case row is only that case's execution time. Case times
-  in one file do not add up to the file total because hooks and setup are in the
-  file total but not attributed to a single case.
+  hooks in that file). A case row is Vitest's test-case duration: it includes
+  that case's `beforeEach` and `afterEach` hooks as well as the test body. It
+  does not include file collection or environment setup, or suite-level hooks
+  that Vitest does not attribute to the case. Case times in one file do not add
+  up to the file total because file totals also include suite-level hooks and
+  other module work, and files may execute concurrently.
 - **Compare runs:** `repoos checks timings --tests --run-id <id>` lists the
   slowest cases for one run; omit `--run-id` to search the last ten runs.
   `--recent-runs`, `--limit`, `--offset`, and `--json` paginate and export a
