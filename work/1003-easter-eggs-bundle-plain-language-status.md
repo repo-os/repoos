@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T16:06:49Z"
+updated_at: "2026-11-01T16:06:57Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
@@ -74,7 +74,7 @@ The four panels are Feature releases, Live activity, Needs a decision, and Needs
 ## E4 · Combine default and custom agents in one tab
 
 ### Problem
-
+Agents settings splits default agents and custom agents across separate tabs. This makes related configuration harder to find and forces users to switch tabs to see the agents that work in the same repo.
 
 ### Desired UX
 
@@ -119,3 +119,5 @@ The four panels are Feature releases, Live activity, Needs a decision, and Needs
 - 2026-11-01T16:06:48Z · screenshots
 - 2026-11-01T16:06:49Z · body: Items (added 1); E4 · Combine default and custom agents in one tab (added)
 - 2026-11-01T16:06:49Z · note: bundle add E4
+- 2026-11-01T16:06:57Z · body: E4 · Combine default and custom agents in one tab (added 1)
+- 2026-11-01T16:06:57Z · note: bundle edit E4
