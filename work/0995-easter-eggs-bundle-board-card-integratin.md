@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
+hold: true
+hold_reason: Nick requested stop duplicate local checks and restart with remote validation
+hold_at: "2026-11-01T08:59:50.410Z"
 priority: p3
 area: web
 assigned_to: ai
@@ -189,3 +192,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T08:24:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T08:29:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T08:59:50Z · engineer stopped by request
+- 2026-11-01T08:59:50Z · held, held-reason, held-at
