@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T06:53:32Z"
+updated_at: "2026-11-01T08:14:06Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T06:53:32.418Z\",\"kind\":\"dev-error\"}]"
@@ -24,6 +24,7 @@ engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"20
 - [ ] **E2 · Page skeletons match their pages** (web) — each page's loading skeleton should mirror the real layout (e.g. /work has 6 status columns, /inputs has 3), not a generic block. Source: human report.
 - [ ] **E3 · Done column sorts by when the task reached done** (web) — the Done column currently sorts by `updated_at`, which any later write bumps (activity notes, flag clears, release records), so old done tasks jump back to the top. Sort Done by the timestamp of the last `status …→done` line in the task's activity log. Source: human report (#0970 sits at the top of Done though it reached done on 28 Oct).
 - [ ] **E4 · Open any past review pass from the Review tab** (web) — the pass table lists every review pass but the rows are plain text and the body always shows the latest report. Make each row open that pass's stored report (`.repoos/reviews/<id>/<pass>.md`). Source: human report (#0970 has two stored passes).
+- [ ] **E5 · Human-readable duration controls in Settings** (web) — Audit all Settings duration inputs and replace raw milliseconds with clearly labelled seconds or minutes wherever those units are easier to understand and edit. Cover Phantom runner detect window (180000 ms = 3 minutes) and Active without engineer recovery window (600000 ms = 10 minutes) from the attached screenshot. Also inspect engineer crash failover window, CTO idle nudge threshold/cooldown, close-out timeout, local check queue/heartbeat/reclaim timeouts, Playwright queue timeout, routing decision timeout, and any other duration controls present when implemented. Choose sensible units per field; milliseconds may remain only where genuinely useful for subsecond tuning. Keep repoos.toml/API storage units and behavior unchanged; convert values, defaults, bounds, steps, validation and help text consistently at the UI boundary. Optional secondary text may show the equivalent milliseconds/config value. Preserve fractional values and existing precise config values without silent rounding, handle zero/disabled semantics, and ensure opening/saving unchanged settings does not alter values. Record the audit decisions and declare Settings shots showing the two reported cases and representative additional controls.. Source: Nick report, 2026-11-01; Screenshot 2026-11-01 at 15.19.14.png attached to this task. Humans should see and edit understandable durations, with ms only as optional config detail..
 
 ## E1 · Card integrating text clamp
 
@@ -41,10 +42,6 @@ At most three lines on the card, ellipsis when it overflows. The full text is on
 
 ### Notes for AI
 Web only; do not change what the server sends. Use the existing styled tooltip (`data-tip`) if a hover explanation is wanted, never `title`.
-
-## Screenshots
-
-![Board card while Moving to done: the integrating status wraps to nine lines](/api/tasks/0995/attachments/att_1cc7d0b4-2156-4094-a835-ff3ea4a136a7.png)
 
 ## E2 · Page skeletons match their pages
 ### Problem
@@ -96,6 +93,23 @@ Clicking (or keyboard-activating) a pass row shows that pass's report in the bod
 ### Notes for AI
 Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-history-table` markup in `TaskDrawer.vue`. Read-only; do not change how reports are written.
 
+
+## E5 · Human-readable duration controls in Settings
+
+### Problem
+
+
+### Desired UX
+
+
+### Acceptance criteria
+
+- Test: Cover loading 180000 ms as 3 minutes and 600000 ms as 10 minutes, editing and saving back to milliseconds, unchanged-value round trips (including fractional/non-round durations), converted min/max/step validation, defaults and zero/disabled values. Verify every audited Settings duration control has an explicit readable unit and consistent help text.
+
+### Notes for AI
+
+
+
 ## Shots
 ```json
 [
@@ -113,6 +127,10 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 }
 ]
 ```
+
+## Screenshots
+
+![Board card while Moving to done: the integrating status wraps to nine lines](/api/tasks/0995/attachments/att_1cc7d0b4-2156-4094-a835-ff3ea4a136a7.png)
 
 ## Activity
 
@@ -163,3 +181,5 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T04:44:29Z · note: adopted orphaned engineer pid 91926
 - 2026-11-01T06:44:32Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-01T06:53:32Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-01T08:14:06Z · body: Items (added 1); E5 · Human-readable duration controls in Settings (added)
+- 2026-11-01T08:14:06Z · note: bundle add E5
