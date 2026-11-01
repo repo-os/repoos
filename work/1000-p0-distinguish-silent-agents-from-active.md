@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
@@ -12,8 +14,6 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
 updated_at: "2026-11-01T18:05:44Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-01T17:40:34.412Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 dev_error_count: 3
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
 ---
@@ -100,3 +100,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T18:05:44Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T18:05:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T18:05:44Z · message_delivered: 1 message(s)
+
