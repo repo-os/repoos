@@ -2,7 +2,7 @@
  * #0989 — each RepoOS agent spawn gets an isolated TMPDIR under the repo cache,
  * cleaned up when the run ends; boot sweeps orphans from a crashed server.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -18,6 +18,14 @@ import { runPrompt } from "../../server/agents.js";
 import type { Agent } from "../../core/types.js";
 
 const roots: string[] = [];
+const prevTmpHome = process.env.REPOOS_AGENT_TMP_HOME;
+
+beforeEach(() => {
+  // The per-run root lives under the user's state home, never inside a repo;
+  // point it at a throwaway directory so tests do not touch ~/.repoos.
+  process.env.REPOOS_AGENT_TMP_HOME = mkdtempSync(join(tmpdir(), "repoos-art-home-"));
+  roots.push(process.env.REPOOS_AGENT_TMP_HOME);
+});
 
 function tempRoot(prefix: string): string {
   const root = mkdtempSync(join(tmpdir(), prefix));
@@ -26,6 +34,8 @@ function tempRoot(prefix: string): string {
 }
 
 afterEach(() => {
+  if (prevTmpHome === undefined) delete process.env.REPOOS_AGENT_TMP_HOME;
+  else process.env.REPOOS_AGENT_TMP_HOME = prevTmpHome;
   for (const root of roots.splice(0)) {
     try {
       rmSync(root, { recursive: true, force: true });
@@ -36,6 +46,13 @@ afterEach(() => {
 });
 
 describe("agent-run tmpdir core (#0989)", () => {
+  it("keeps the root outside the repository checkout", () => {
+    const repo = tempRoot("repoos-art-outside-");
+    const root = agentRunTmpRoot(repo, ".repoos");
+    expect(root.startsWith(repo)).toBe(false);
+    expect(root).toContain(AGENT_RUN_TMP_DIRNAME);
+  });
+
   it("removes a prepared directory on cleanup", () => {
     const repo = tempRoot("repoos-art-core-");
     const handle = prepareAgentRunTmpdir(repo, ".repoos", "run-a");
