@@ -8,6 +8,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, DOMWrapper } from "@vue/test-utils";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { reactive } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
@@ -238,6 +240,25 @@ describe("WorkView board column labels", () => {
 });
 
 describe("DashboardView column labels", () => {
+  it("keeps Mission Control panels in an equal-height 2×2 desktop grid that stacks on narrow screens", async () => {
+    await loadConfig();
+    const wrapper = mount(DashboardView, { global: { stubs: DASH_STUBS } });
+    await flushPromises();
+    expect(wrapper.findAll(".dash-grid > *")).toHaveLength(4);
+
+    const styles = readFileSync(
+      fileURLToPath(new URL("../src/style.css", import.meta.url)),
+      "utf8",
+    );
+    expect(styles).toMatch(
+      /\.dash-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)[^}]*grid-auto-rows:\s*340px/s,
+    );
+    expect(styles).toMatch(
+      /@media\s*\(max-width:\s*800px\)\s*\{\s*\.dash-grid\s*\{[^}]*grid-template-columns:\s*1fr/s,
+    );
+    wrapper.unmount();
+  });
+
   it("uses original labels by default (no config)", async () => {
     await loadConfig();
     const wrapper = mount(DashboardView, { global: { stubs: DASH_STUBS } });
