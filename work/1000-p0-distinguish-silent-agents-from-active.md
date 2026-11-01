@@ -3,6 +3,9 @@ id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (1 in 30m): a human-set task override (github copilot + default) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p0
 area: [web, server, core]
 assigned_to: ai
@@ -12,12 +15,13 @@ cli_override: github copilot
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T18:46:12Z"
+updated_at: "2026-11-01T18:46:13Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
-dev_error_count: 3
+dev_error_count: 4
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
+engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-01T18:46:13.305Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Active task cards can show STUCK · SILENT while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
@@ -110,3 +114,5 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T18:45:27Z · status active→review
 - 2026-11-01T18:46:12Z · note: review pass 1: needs some work
 - 2026-11-01T18:46:12Z · status review→active
+- 2026-11-01T18:46:13Z · agent exited with an error (copilot) · error: --no-remote was removed. Use /remote off in a session; manage incoming connections in /environments.
+- 2026-11-01T18:46:13Z · engineer crash recovery: surfaced instead of switching — a human-set task override (github copilot + default) is pinned, so RepoOS did not replace it (1/3 crashes in 30m)
