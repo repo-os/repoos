@@ -3,6 +3,12 @@ id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: "Scoped check failed (15 unrelated test files plus ui-smoke \"Work page board not rendered\"), so the agent couldn't hand off — retry `repoos check --changed main` on the runner and inspect the ui-smoke failure."
+debug_tldr_at: "2026-11-01T00:45:22Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +17,9 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T23:34:37Z"
+updated_at: "2026-11-01T00:49:13Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T00:45:02.297Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -94,10 +102,17 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 ```json
 [
 {
-  "label": "Board card: integrating progress clamped to three lines",
+  "label": "Board card integrating line clamped to three lines",
   "target": "default",
   "route": "/work",
-  "highlight": "[data-test-id=\"task-card-agent-hint\"].tc-hint--progress-clamp",
+  "highlight": ".tc-hint--progress-clamp",
+  "state": "closeOut:uploading"
+},
+{
+  "label": "Status details shows the full integrating line",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug",
+  "highlight": ".debug-status-text",
   "state": "closeOut:uploading"
 }
 ]
@@ -132,3 +147,8 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-10-31T23:23:00Z · note: adopted orphaned engineer pid 65794
 - 2026-10-31T23:34:10Z · body
 - 2026-10-31T23:34:37Z · body
+- 2026-11-01T00:45:02Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-11-01T00:45:02Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-01T00:45:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T00:45:06Z · message_delivered: 1 message(s)
+- 2026-11-01T00:49:13Z · body
