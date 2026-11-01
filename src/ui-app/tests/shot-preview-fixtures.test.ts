@@ -225,12 +225,13 @@ describe("shot preview board fixtures (#0743)", () => {
     });
     applyShotPreviewFixture(repo, "checks:progress");
     expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]).toMatchObject({
-      kind: "merge-gate",
+      kind: "handoff-finalize",
       stepName: "tests",
-      testsDone: 140,
-      testsTotal: 289,
-      attempt: 2,
+      testsDone: 109,
+      testsTotal: 645,
+      lastProgressAt: expect.any(String),
     });
+    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
   });
 
   it("seeds an active coding run for board card indicator shots (#0787)", () => {
