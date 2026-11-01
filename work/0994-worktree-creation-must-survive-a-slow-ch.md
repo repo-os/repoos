@@ -11,7 +11,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-11-01T04:47:38Z"
+updated_at: "2026-11-01T04:47:50Z"
 handoff_signal_retry_count: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T00:45:52.761Z: repoos check failed: tests — }"
@@ -77,3 +77,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T02:31:14Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 21218, alive), #0993 check (pid 61737, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 11s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-01T02:40:44Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T04:42:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:47:50Z · message_overdue: still queued after 60m without being delivered
