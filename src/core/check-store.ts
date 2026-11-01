@@ -18,6 +18,11 @@
  */
 
 import { testFileTimings, type TestFileTiming } from "./test-file-timings.js";
+import {
+  mergeTestCaseTimings,
+  type TestCaseTiming,
+  type TestCaseTimingRow,
+} from "./test-case-timings.js";
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { hostname } from "node:os";
@@ -109,6 +114,13 @@ const SCHEMA = `
  *  leak nobody asked for; 1000 runs at one row per gate is years of history. */
 const MAX_ROWS = 1000;
 
+/** Cap per-run case rows so one suite cannot blow the store. */
+const MAX_TEST_CASES_PER_RUN = 25_000;
+
+/** Default page size for slow-case listings (CLI and API). */
+export const DEFAULT_TEST_CASE_LIST_LIMIT = 50;
+export const MAX_TEST_CASE_LIST_LIMIT = 500;
+
 /** Clip failure details so one noisy failure can't make a row huge. */
 const MAX_DETAIL_CHARS = 4000;
 
@@ -168,6 +180,8 @@ export interface CheckRunRow {
   testsTotal: number | null;
   steps?: CheckStepTiming[];
   testFileTimings?: TestFileTiming[];
+  /** Not loaded by list() — query listSlowTestCases for a run. */
+  testCaseCount?: number;
 }
 
 export interface RecordCheckRunInput {
@@ -194,6 +208,24 @@ export interface RecordCheckRunInput {
   testsTotal?: number | null;
   steps?: CheckStepTiming[];
   testFileTimings?: TestFileTiming[];
+  testCaseTimings?: TestCaseTiming[];
+}
+
+export interface ListSlowTestCasesOptions {
+  runId?: number;
+  /** When runId is omitted, search the N newest runs (default 10, max 100). */
+  recentRuns?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ListSlowTestCasesResult {
+  cases: TestCaseTimingRow[];
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+  runId?: number;
+  recentRuns?: number;
 }
 
 export interface ListCheckRunsOptions {
@@ -245,6 +277,7 @@ export class CheckStore {
       // short busy window instead of failing the row outright.
       this.db.exec("PRAGMA busy_timeout=3000");
       this.db.exec("PRAGMA synchronous=NORMAL");
+      this.db.exec("PRAGMA foreign_keys=ON");
       this.db.exec(SCHEMA);
       this.migrate();
       this.available = true;
@@ -285,6 +318,26 @@ export class CheckStore {
     for (const name of ["steps_done", "steps_total", "tests_done", "tests_total"]) {
       if (!cols.some((c) => c.name === name))
         this.db.exec(`ALTER TABLE check_runs ADD COLUMN ${name} INTEGER`);
+    }
+    const tables = this.db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='check_run_test_cases'")
+      .all() as { name: string }[];
+    if (!tables.length) {
+      this.db.exec(`
+        CREATE TABLE check_run_test_cases (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          run_id        INTEGER NOT NULL,
+          file          TEXT NOT NULL,
+          name          TEXT NOT NULL,
+          case_id       TEXT NOT NULL,
+          retry         INTEGER NOT NULL DEFAULT 0,
+          duration_ms   INTEGER NOT NULL,
+          result        TEXT NOT NULL,
+          FOREIGN KEY (run_id) REFERENCES check_runs(id) ON DELETE CASCADE
+        );
+        CREATE INDEX idx_check_run_test_cases_run_duration
+          ON check_run_test_cases(run_id, duration_ms DESC);
+      `);
     }
   }
 
@@ -333,11 +386,19 @@ export class CheckStore {
           input.reuseContext ? JSON.stringify(input.reuseContext) : null,
         );
       const id = Number(this.db.prepare("SELECT last_insert_rowid() AS id").get()?.id);
+      if (Number.isFinite(id) && input.testCaseTimings?.length) {
+        this.replaceTestCases(id, input.testCaseTimings);
+      }
       // Retention: delete everything older than the newest MAX_ROWS rows.
       this.db
         .prepare(
           `DELETE FROM check_runs WHERE id NOT IN
              (SELECT id FROM check_runs ORDER BY id DESC LIMIT ${MAX_ROWS})`,
+        )
+        .run();
+      this.db
+        .prepare(
+          `DELETE FROM check_run_test_cases WHERE run_id NOT IN (SELECT id FROM check_runs)`,
         )
         .run();
       return Number.isFinite(id) ? id : null;
@@ -389,6 +450,9 @@ export class CheckStore {
           input.reuseContext ? JSON.stringify(input.reuseContext) : null,
           id,
         );
+      if (input.testCaseTimings?.length) {
+        this.replaceTestCases(id, input.testCaseTimings);
+      }
     } catch (e) {
       if (!warnedRecordFailed) {
         warnedRecordFailed = true;
@@ -425,6 +489,116 @@ export class CheckStore {
       return rows.map((r) => this.toRow(r));
     } catch {
       return [];
+    }
+  }
+
+  /** Slowest individual test cases for one run or recent runs. Newest run context first. */
+  listSlowTestCases(opts: ListSlowTestCasesOptions = {}): ListSlowTestCasesResult {
+    const empty: ListSlowTestCasesResult = {
+      cases: [],
+      limit: DEFAULT_TEST_CASE_LIST_LIMIT,
+      offset: 0,
+      hasMore: false,
+    };
+    if (!this.available || !this.db) return empty;
+    const limit = Math.min(
+      MAX_TEST_CASE_LIST_LIMIT,
+      Math.max(1, Math.floor(opts.limit ?? DEFAULT_TEST_CASE_LIST_LIMIT)),
+    );
+    const offset = Math.max(0, Math.floor(opts.offset ?? 0));
+    const runId = opts.runId != null ? Math.floor(opts.runId) : undefined;
+    const recentRuns =
+      runId == null
+        ? Math.min(100, Math.max(1, Math.floor(opts.recentRuns ?? 10)))
+        : undefined;
+    try {
+      const args: unknown[] = [];
+      let where = "";
+      if (runId != null && runId > 0) {
+        where = "WHERE t.run_id = ?";
+        args.push(runId);
+      } else {
+        where = `WHERE t.run_id IN (SELECT id FROM check_runs ORDER BY id DESC LIMIT ${recentRuns})`;
+      }
+      const sql = `
+        SELECT t.file, t.name, t.case_id, t.retry, t.duration_ms, t.result,
+               t.run_id, r.started_at, r.task_id, r.phase, r.machine, r.remote, r.scope
+        FROM check_run_test_cases t
+        JOIN check_runs r ON r.id = t.run_id
+        ${where}
+        ORDER BY t.duration_ms DESC, t.run_id DESC, t.id DESC
+        LIMIT ? OFFSET ?`;
+      args.push(limit + 1, offset);
+      const rows = this.db.prepare(sql).all(...args) as Record<string, unknown>[];
+      const hasMore = rows.length > limit;
+      const slice = hasMore ? rows.slice(0, limit) : rows;
+      const cases: TestCaseTimingRow[] = slice.map((r) => ({
+        file: String(r.file ?? ""),
+        name: String(r.name ?? ""),
+        caseId: String(r.case_id ?? ""),
+        retry: Number(r.retry) || 0,
+        durationMs: Number(r.duration_ms) || 0,
+        result: (String(r.result ?? "passed") === "failed"
+          ? "failed"
+          : String(r.result) === "skipped"
+            ? "skipped"
+            : "passed") as TestCaseTiming["result"],
+        runId: Number(r.run_id) || 0,
+        startedAt: String(r.started_at ?? ""),
+        taskId: r.task_id == null ? null : String(r.task_id),
+        phase: String(r.phase ?? ""),
+        machine: r.machine == null ? null : String(r.machine),
+        remote: Number(r.remote) === 1,
+        scope: String(r.scope ?? "full"),
+      }));
+      return {
+        cases,
+        limit,
+        offset,
+        hasMore,
+        ...(runId != null ? { runId } : {}),
+        ...(recentRuns != null ? { recentRuns } : {}),
+      };
+    } catch {
+      return { ...empty, limit, offset };
+    }
+  }
+
+  testCaseCountForRun(runId: number): number {
+    if (!this.available || !this.db || !Number.isFinite(runId)) return 0;
+    try {
+      const row = this.db
+        .prepare("SELECT COUNT(*) AS n FROM check_run_test_cases WHERE run_id = ?")
+        .get(runId) as { n?: number };
+      return Number(row?.n) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  private replaceTestCases(runId: number, cases: TestCaseTiming[]): void {
+    if (!this.available || !this.db || !Number.isFinite(runId)) return;
+    const merged = mergeTestCaseTimings(cases).slice(0, MAX_TEST_CASES_PER_RUN);
+    if (!merged.length) return;
+    try {
+      const del = this.db.prepare("DELETE FROM check_run_test_cases WHERE run_id = ?");
+      const ins = this.db.prepare(
+        `INSERT INTO check_run_test_cases
+           (run_id, file, name, case_id, retry, duration_ms, result)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      );
+      del.run(runId);
+      for (const c of merged) {
+        ins.run(runId, c.file, c.name, c.caseId, c.retry, c.durationMs, c.result);
+      }
+    } catch (e) {
+      if (!warnedRecordFailed) {
+        warnedRecordFailed = true;
+        console.error(
+          `[repoos] check-run test-case history write failed (${this.dbPath}): ` +
+            `${(e as Error)?.message ?? String(e)}`,
+        );
+      }
     }
   }
 

@@ -540,6 +540,7 @@ import {
   healthCheckRoute,
   getCheckPlan,
   getCheckRuns,
+  getCheckRunTestCases,
   getSupportBundlePreview,
   createSupportBundle,
   revealSupportBundle,
@@ -3838,6 +3839,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   );
   // Durable check-run history across all tasks (#0564) — the Runs tab.
   router.register("GET", "/api/check-runs", getCheckRuns);
+  router.register("GET", "/api/check-run-test-cases", getCheckRunTestCases);
   router.register("GET", "/api/integration/pipeline", getIntegrationPipeline);
   router.register("POST", /^\/api\/integration\/pipeline\/retry\/([^/]+)$/, retryIntegration);
   router.register(

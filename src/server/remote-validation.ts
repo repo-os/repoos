@@ -1,5 +1,11 @@
 import { stepTimingsFromOutput } from "../core/check-timings.js";
 import { TestFileTimingCollector, testFileTimings } from "../core/test-file-timings.js";
+import {
+  TestCaseTimingCollector,
+  mergeTestCaseTimings,
+  pushTimingOutputChunk,
+  testCaseTimings,
+} from "../core/test-case-timings.js";
 /**
  * Remote Validation Runner (#RVR).
  *
@@ -2960,10 +2966,14 @@ export class RemoteValidationRunner implements RemoteValidator {
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
     let remoteTestRef: string | null = null;
     const fileTimingCollector = new TestFileTimingCollector();
+    const caseTimingCollector = new TestCaseTimingCollector();
     const withScope = (summary: CheckSummary): CheckSummary => ({
       ...summary,
       ...(fileTimingCollector.values().length
         ? { testFileTimings: fileTimingCollector.values() }
+        : {}),
+      ...(caseTimingCollector.values().length
+        ? { testCaseTimings: caseTimingCollector.values() }
         : {}),
       ...(remoteTestRef != null ? { remoteTestScopeRef: remoteTestRef } : {}),
     });
@@ -2984,7 +2994,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.clearIdleTimer();
     const startedAt = Date.now();
     const emit = (s: string): void => {
-      fileTimingCollector.push(s);
+      pushTimingOutputChunk(s, fileTimingCollector, caseTimingCollector);
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
     };
@@ -5079,6 +5089,9 @@ function recordRemoteRunHistory(
       failedTests: meta.failedTests,
       steps: stepTimingsFromOutput(summary?.output ?? ""),
       testFileTimings: summary?.testFileTimings ?? testFileTimings(summary?.output ?? ""),
+      testCaseTimings:
+        summary?.testCaseTimings ??
+        mergeTestCaseTimings(testCaseTimings(summary?.output ?? "")),
     });
   } catch {
     /* never fail the gate on a history write */
@@ -5605,15 +5618,19 @@ export class TailscaleRunner implements RemoteValidator {
     const startedAt = Date.now();
     let remoteTestRef: string | null = null;
     const fileTimingCollector = new TestFileTimingCollector();
+    const caseTimingCollector = new TestCaseTimingCollector();
     const withScope = (summary: CheckSummary): CheckSummary => ({
       ...summary,
       ...(fileTimingCollector.values().length
         ? { testFileTimings: fileTimingCollector.values() }
         : {}),
+      ...(caseTimingCollector.values().length
+        ? { testCaseTimings: caseTimingCollector.values() }
+        : {}),
       ...(remoteTestRef != null ? { remoteTestScopeRef: remoteTestRef } : {}),
     });
     const emit = (s: string): void => {
-      fileTimingCollector.push(s);
+      pushTimingOutputChunk(s, fileTimingCollector, caseTimingCollector);
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
     };

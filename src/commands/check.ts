@@ -42,6 +42,14 @@ import {
   formatSlowestTestFiles,
   type TestFileTiming,
 } from "../core/test-file-timings.js";
+import {
+  TestCaseTimingCollector,
+  testCaseTimings,
+  formatSlowestTestCases,
+  mergeTestCaseTimings,
+  pushTimingOutputChunk,
+  type TestCaseTiming,
+} from "../core/test-case-timings.js";
 import { checkBuildForRoot } from "../core/build.js";
 import { findRepoRoot, loadConfig } from "../core/config.js";
 import type { CheckContrastPair, CheckThemeScope, RepoOSConfig } from "../core/types.js";
@@ -1131,6 +1139,7 @@ interface StepContext {
 /** What a built-in `kind` handler returns. */
 interface BuiltinOutcome {
   testFileTimings?: TestFileTiming[];
+  testCaseTimings?: TestCaseTiming[];
   status: StepStatus;
   /** The command it resolved to (so the results block can name it). */
   command?: string;
@@ -1620,6 +1629,10 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
     );
   }
   const fileTimingCollector = new TestFileTimingCollector();
+  const caseTimingCollector = new TestCaseTimingCollector();
+  const onTimingChunk = (chunk: string): void => {
+    pushTimingOutputChunk(chunk, fileTimingCollector, caseTimingCollector);
+  };
   const hasTestScript = Boolean(ctx.scriptPkg.scripts?.test);
   const hasTestFiles = ["test", "__tests__", "tests"].some((d) => existsSync(join(ctx.cwd, d)));
   if (!hasTestScript && !hasTestFiles) return skipped("skipped — no test suite found");
@@ -1660,7 +1673,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
     console.log(c.dim(`  · previously-failed test file(s) first · ${priorFiles.join(", ")}`));
     const pre = await runCommand({
       command: preflight,
-      onChunk: (chunk) => fileTimingCollector.push(chunk),
+      onChunk: onTimingChunk,
       cwd: ctx.cwd,
       timeoutMs: 300_000,
       env,
@@ -1675,6 +1688,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
         status: pre.status === "timeout" ? "timeout" : "failed",
         command: preflight,
         testFileTimings: fileTimingCollector.values(),
+        testCaseTimings: caseTimingCollector.values(),
         detail: `previously-failed test file(s) still fail — ${why}`,
         output: pre.output,
       };
@@ -1702,13 +1716,14 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
     timeoutMs,
     env,
     echo: ctx.echo,
-    onChunk: (chunk) => fileTimingCollector.push(chunk),
+    onChunk: onTimingChunk,
   });
   if (res.status === "passed") {
     return {
       status: "passed",
       command,
       testFileTimings: fileTimingCollector.values(),
+      testCaseTimings: caseTimingCollector.values(),
       detail: changedRef ? `scoped to changed vs ${changedRef} plus always-run suites` : undefined,
       output: res.output,
     };
@@ -1717,6 +1732,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
     return {
       status: "timeout",
       testFileTimings: fileTimingCollector.values(),
+      testCaseTimings: caseTimingCollector.values(),
       command,
       detail: `timed out after ${timeoutLabel(timeoutMs)}`,
       output: res.output,
@@ -1728,6 +1744,7 @@ async function stepTests(ctx: StepContext): Promise<BuiltinOutcome> {
   return {
     status: "failed",
     testFileTimings: fileTimingCollector.values(),
+    testCaseTimings: caseTimingCollector.values(),
     command,
     detail: outputTail(res.output) ?? `Tests failed (exit ${res.exitCode})`,
     output: res.output,
@@ -2105,6 +2122,7 @@ export async function runCheckPlan(
       required: step.required,
       isolationNote: outcome.isolationNote,
       testFileTimings: outcome.testFileTimings,
+      testCaseTimings: outcome.testCaseTimings,
     });
   }
   return results;
@@ -2653,9 +2671,23 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   const fileTimings = results.flatMap((r) => r.testFileTimings ?? testFileTimings(r.output ?? ""));
+  const caseTimings = mergeTestCaseTimings(
+    results.flatMap(
+      (r) => r.testCaseTimings ?? testCaseTimings(r.output ?? ""),
+    ),
+  );
   if (fileTimings.length) {
     heading("Slowest test files");
     console.log(formatSlowestTestFiles(fileTimings));
+    console.log(
+      c.dim(
+        "  File totals include hook time in that file; they are not the sum of individual cases below.",
+      ),
+    );
+  }
+  if (caseTimings.length) {
+    heading("Slowest test cases");
+    console.log(formatSlowestTestCases(caseTimings));
   }
 
   // Persist the run for the Checks surface (#0447) before exiting. Fail-soft:
@@ -2728,6 +2760,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         durationMs: r.durationMs,
         output: r.output,
         testFileTimings: r.testFileTimings,
+        testCaseTimings: r.testCaseTimings,
         detail: r.detail,
         required: r.required,
       })),
@@ -2756,6 +2789,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     stepsDone: finalProgress?.stepsDone ?? null,
     stepsTotal: finalProgress?.stepsTotal ?? null,
     testFileTimings: fileTimings,
+    testCaseTimings: caseTimings,
     testsDone: testProgress?.testsDone ?? null,
     testsTotal: testProgress?.testsTotal ?? null,
     detail: (() => {
@@ -2840,6 +2874,7 @@ function recordRunHistoryRow(row: {
   testsTotal?: number | null;
   steps?: CheckStepTiming[];
   testFileTimings?: TestFileTiming[];
+  testCaseTimings?: TestCaseTiming[];
   updateId?: number | null;
 }): number | null {
   try {
@@ -2870,6 +2905,7 @@ function recordRunHistoryRow(row: {
       testsTotal: row.testsTotal,
       steps: row.steps,
       testFileTimings: row.testFileTimings,
+      testCaseTimings: row.testCaseTimings,
     };
     if (row.updateId != null) {
       store.update(row.updateId, input);

@@ -28,6 +28,7 @@ export type StepStatus = "passed" | "failed" | "timeout" | "missing-prereq" | "s
 
 export interface StepRunResult {
   testFileTimings?: import("./test-file-timings.js").TestFileTiming[];
+  testCaseTimings?: import("./test-case-timings.js").TestCaseTiming[];
   name: string;
   status: StepStatus;
   /** The command actually run (a `kind` step fills this in once resolved). */

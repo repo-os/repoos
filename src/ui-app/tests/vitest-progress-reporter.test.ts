@@ -54,6 +54,22 @@ describe("vitest progress reporter", () => {
     expect(timingLines[0]).toContain('"file":"slow.test.ts","durationMs":1234');
   });
 
+  it("records finished test cases with retry index", () => {
+    const reporter = new RepoOSProgressReporter();
+    const testCase = {
+      id: "case-1",
+      fullName: "suite > works",
+      module: { moduleId: `${process.cwd()}/case.test.ts` },
+      result: () => ({ state: "passed" }),
+      diagnostic: () => ({ duration: 42, retryCount: 1 }),
+    };
+    reporter.onTestCaseResult(testCase);
+    const caseLines = lines.filter((line) => line.startsWith("::repoos-test-case::"));
+    expect(caseLines).toHaveLength(1);
+    expect(caseLines[0]).toContain('"retry":1');
+    expect(caseLines[0]).toContain('"durationMs":42');
+  });
+
   it("accumulates file counts across vitest passes via base offsets", () => {
     const pass1 = new RepoOSProgressReporter();
     pass1.onTestRunStart([{ id: "a" }, { id: "b" }, { id: "c" }]);

@@ -991,6 +991,23 @@ export interface CheckRunRow {
   stepsTotal?: number | null;
   testsDone?: number | null;
   testsTotal?: number | null;
+  testFileTimings?: Array<{ file: string; durationMs: number }>;
+}
+
+export interface CheckRunTestCaseRow {
+  file: string;
+  name: string;
+  caseId: string;
+  retry: number;
+  durationMs: number;
+  result: "passed" | "failed" | "skipped";
+  runId: number;
+  startedAt: string;
+  taskId: string | null;
+  phase: string;
+  machine: string | null;
+  remote: boolean;
+  scope: string;
 }
 
 /** One host's live state from `GET /api/remote-validation/status` (#0521/#0564). */
