@@ -3,6 +3,9 @@ id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
 status: active
+hold: true
+hold_reason: Enable remote engineer self-checks before restarting validation
+hold_at: "2026-11-01T09:44:37.379Z"
 priority: p1
 area: core
 assigned_to: ai
@@ -94,3 +97,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T09:02:26Z · message_queued at 2026-11-01T09:02:26.500Z
 - 2026-11-01T09:06:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T09:44:37Z · engineer stopped by request
+- 2026-11-01T09:44:37Z · held, held-reason, held-at
