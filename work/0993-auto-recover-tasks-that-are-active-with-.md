@@ -12,8 +12,6 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
 updated_at: "2026-11-01T02:40:56Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — } >"
-last_handoff_failure_sha: 5309ba0816dd650b4561d23091e48844828f163e
 ---
 ## Problem
 
@@ -92,3 +90,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-11-01T02:10:59Z · body
 - 2026-11-01T02:11:07Z · note: handoff requested (ui-review)
 - 2026-11-01T02:40:56Z · status active→review
+
