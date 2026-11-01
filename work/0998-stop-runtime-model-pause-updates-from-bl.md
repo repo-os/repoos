@@ -47,3 +47,4 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T10:35:43Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-11-01T10:36:13Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
 - 2026-11-01T10:36:16Z · needs_input
+- 2026-11-01T10:36:16Z · message_delivered: 1 message(s)
