@@ -159,3 +159,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T22:41:28Z · body
 - 2026-11-01T22:46:20Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T22:46:21Z · status active→review
+- 2026-11-01T22:46:21Z · message_delivered: 1 message(s)
