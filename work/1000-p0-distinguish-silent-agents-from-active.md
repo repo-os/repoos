@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T22:06:11Z"
+updated_at: "2026-11-01T22:06:12Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -144,3 +144,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T22:06:03Z · status review→active
 - 2026-11-01T22:06:03Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-01T22:06:11Z · needs_input
+- 2026-11-01T22:06:12Z · message_queued at 2026-11-01T22:06:12.929Z
