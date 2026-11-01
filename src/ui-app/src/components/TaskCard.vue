@@ -828,7 +828,7 @@ const FIX_DISABLED_WHILE_CLOSE_OUT =
   "Close-out is running — wait for it to finish before sending to Debugger";
 
 const BLOCK_AGENT_INTERRUPT =
-  "A check or remote validation is in flight — wait for it to finish or cancel it before pausing or restarting the agent.";
+  "A check or remote validation is in flight — wait for RepoOS to confirm it has ended before pausing or restarting the agent.";
 
 const IN_PIPELINE: CardAction = {
   label: "Moving to done…",

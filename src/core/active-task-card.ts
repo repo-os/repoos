@@ -186,7 +186,7 @@ export function resolveActiveEngineerCardHint(input: ActiveTaskCardInput): Activ
     const progress = check.progressLabel ?? "no recent progress";
     return {
       label: `check stalled · ${silent}`,
-      title: `The local check is still running but has not reported progress for ${silent} (last: ${progress}). Cancel the check or investigate before restarting the agent.`,
+      title: `The local check is still running but has not reported progress for ${silent} (last: ${progress}). Open the task's check output and verify the run has ended through RepoOS before restarting the agent.`,
       cls: "tc-stuck",
       blocksAgentInterrupt: true,
     };
