@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T22:10:22Z"
+updated_at: "2026-11-01T22:23:25Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -150,3 +150,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T22:06:53Z · message_delivered: 1 message(s)
 - 2026-11-01T22:06:54Z · note: handoff requested (cli)
 - 2026-11-01T22:10:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-01T22:23:25Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
