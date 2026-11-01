@@ -214,10 +214,7 @@ import { runCtoMonitorSafeActions } from "./cto-actions.js";
 import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
-import {
-  hostLockJobsForTask,
-  taskRemoteActivityForCard,
-} from "./active-task-card.js";
+import { hostLockJobsForTask, taskRemoteActivityForCard } from "./active-task-card.js";
 import { computeSlowRunFlags } from "./attention-feed.js";
 import { applyPipelineDetail, buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";

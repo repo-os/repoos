@@ -20,7 +20,9 @@ function runningCheck(runs: TaskCheckRun[] | undefined): TaskCheckRun | null {
 
 function checkSnapshot(run: TaskCheckRun): ActiveTaskCheckSnapshot {
   const scopeLabel =
-    run.scope && run.scope !== "full" ? `Changed-path (${run.scope.replace(/^changed:/, "")})` : null;
+    run.scope && run.scope !== "full"
+      ? `Changed-path (${run.scope.replace(/^changed:/, "")})`
+      : null;
   return {
     running: true,
     startedAt: run.startedAt,
@@ -39,7 +41,9 @@ function checkSnapshot(run: TaskCheckRun): ActiveTaskCheckSnapshot {
   };
 }
 
-function remoteSnapshot(activity: RemoteTaskActivity | null | undefined): ActiveTaskRemoteSnapshot | null {
+function remoteSnapshot(
+  activity: RemoteTaskActivity | null | undefined,
+): ActiveTaskRemoteSnapshot | null {
   if (!activity) return null;
   return {
     run: activity.run
@@ -72,7 +76,11 @@ export function activeEngineerCardHint(opts: {
   resourceQueueMarkers: LocalQueueMarker[] | undefined;
   busyChild?: string | null;
 }): ActiveTaskCardHint {
-  const localQueued = localQueueHintForTask(opts.resourceQueueMarkers, opts.taskId, new Date(opts.nowMs));
+  const localQueued = localQueueHintForTask(
+    opts.resourceQueueMarkers,
+    opts.taskId,
+    new Date(opts.nowMs),
+  );
   const poolQueued = remotePoolQueueHintForTaskChecks(opts.taskChecks);
   const run = runningCheck(opts.taskChecks);
 

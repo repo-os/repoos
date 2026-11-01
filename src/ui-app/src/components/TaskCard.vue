@@ -9,9 +9,7 @@ import { useNoticesStore } from "../stores/notices";
 import { recordOrigin, takeOrigin } from "../lib/flip";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
-import {
-  autoRepairHint,
-} from "../lib/retryHints";
+import { autoRepairHint } from "../lib/retryHints";
 import {
   needsInputBannerText,
   needsInputStatusLabel,
