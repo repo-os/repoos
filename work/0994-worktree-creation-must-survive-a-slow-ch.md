@@ -3,6 +3,9 @@ id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,12 +14,13 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-11-01T10:30:04Z"
+updated_at: "2026-11-01T10:36:13Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T07:59:36.226Z: repoos check failed: tests — onKeydown: [Function: invoker] {"
 handoff_signal_retry_count: 2
 review_passes: 1
-dev_error_count: 1
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T10:35:43.595Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -110,3 +114,7 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T10:19:32Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-01T10:19:47Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T10:30:04Z · body
+- 2026-11-01T10:35:03Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-01T10:35:32Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-01T10:35:43Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-11-01T10:36:13Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
