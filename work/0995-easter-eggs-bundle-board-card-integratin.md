@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T09:04:17Z"
+updated_at: "2026-11-01T09:06:23Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T06:53:32.418Z\",\"kind\":\"dev-error\"}]"
@@ -109,22 +109,22 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 ```json
 [
 {
-  "label": "Integrating progress clamped to three lines",
-  "target": "default",
-  "route": "/work?shotState=closeOut:uploading",
-  "highlight": ".tc-hint--progress-clamp"
+"label": "Integrating progress clamped to three lines",
+"target": "default",
+"route": "/work?shotState=closeOut:uploading",
+"highlight": ".tc-hint--progress-clamp"
 },
 {
-  "label": "Full close-out progress in Status details",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug&shotState=closeOut:uploading",
-  "highlight": ".debug-status-detail"
+"label": "Full close-out progress in Status details",
+"target": "default",
+"route": "/work?task=9999&tab=debug&shotState=closeOut:uploading",
+"highlight": ".debug-status-detail"
 },
 {
-  "label": "Phantom runner detect window in minutes",
-  "target": "default",
-  "route": "/settings",
-  "highlight": "[data-config-key=\"watchdog.phantomDetectMs\"] .duration-unit"
+"label": "Phantom runner detect window in minutes",
+"target": "default",
+"route": "/settings",
+"highlight": "[data-config-key=\"watchdog.phantomDetectMs\"] .duration-unit"
 }
 ]
 ```
@@ -196,3 +196,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T09:02:11Z · message_delivered: 1 message(s)
 - 2026-11-01T09:02:27Z · message_queued at 2026-11-01T09:02:27.319Z
 - 2026-11-01T09:04:17Z · body
+- 2026-11-01T09:06:23Z · CTO nudge: held — an undelivered message is already queued
