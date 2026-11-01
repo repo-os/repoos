@@ -9,8 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T19:59:38Z"
-check_retry_count: 1
+updated_at: "2026-11-01T20:01:32Z"
 last_check_failure: "repoos check at 2026-11-01T19:50:06.862Z: repoos check failed: ◆ Check plan"
 review_passes: 2
 review_rounds: 1
@@ -130,3 +129,6 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T19:33:43Z · status review→active
 - 2026-11-01T19:34:33Z · body
 - 2026-11-01T19:59:38Z · body
+- 2026-11-01T20:01:17Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-01T20:01:32Z · watchdog: check wait ended or recovered — cleared needs_input
+
