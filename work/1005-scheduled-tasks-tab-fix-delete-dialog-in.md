@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p1
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-01T16:13:02Z"
+updated_at: "2026-11-01T16:13:04Z"
 ---
 ## Problem
 
@@ -36,25 +36,32 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 ```json
 [
 {
-  "label": "Scheduled task cards use a compact horizontal layout",
-  "target": "default",
-  "route": "/agents?tab=scheduled",
-  "highlight": ".schedule-card"
+"label": "Scheduled task cards use a compact horizontal layout",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": ".schedule-card"
 },
 {
-  "label": "Delete schedule dialog with working actions",
-  "target": "default",
-  "route": "/agents?tab=scheduled",
-  "highlight": "[role=\"dialog\"]",
-  "steps": [
-    {
-      "click": "[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child"
-    }
-  ]
+"label": "Delete schedule dialog with working actions",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": "[role=\"dialog\"]",
+"steps": [
+  {
+    "click": "[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child"
+  }
+]
 }
 ]
 ```
 
+## Screenshots
+
+![Screenshot-2026-11-02-at-00.07.14](/api/tasks/1005/attachments/att_5cbde5b5-45a3-4683-8b65-4702cfcf7d74.png)
+![Screenshot-2026-11-02-at-00.08.05](/api/tasks/1005/attachments/att_f0a1cede-8a97-4647-9063-81f3d1c66471.png)
+![Screenshot-2026-11-02-at-00.11.19](/api/tasks/1005/attachments/att_70cbe84e-7d18-4608-8570-434426e9596d.png)
+
 ## Activity
 
 - 2026-11-01T16:13:02Z · created · njachowski@gmail.com
+- 2026-11-01T16:13:04Z · screenshots
