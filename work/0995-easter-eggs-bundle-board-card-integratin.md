@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T03:10:02Z"
+updated_at: "2026-11-01T03:10:03Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -154,3 +154,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T02:29:58Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0994 check (pid 41853, alive), #0993 check (pid 61737, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-01T02:30:28Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T03:10:02Z · phantom runner detected: no live process, restarted
+- 2026-11-01T03:10:03Z · note: phantom runner detected: no live process, restarted
