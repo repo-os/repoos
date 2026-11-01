@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-01T16:50:19Z"
-review_passes: 1
 id: 1001
 title: Remote changed-test selection must retain its base ref
 type: bug
@@ -13,6 +11,7 @@ branch: feat/remote-changed-test-selection-must-retai
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T14:19:48Z"
+updated_at: "2026-11-01T16:49:34Z"
 ---
 ## Problem
 Remote validation receives the task commit but may not have the requested base ref such as main. scripts/select-test-files.mjs then cannot compute a merge base and safely falls back to the entire suite. On 2026-11-01, #0998's remote runner reported that main was not a valid object and expanded a scoped check to all 645 test files. This wastes many minutes and large bundle uploads on ordinary changes.
@@ -38,19 +37,4 @@ Inspect scripts/select-test-files.mjs, scripts/run-tests.mjs, src/server/remote-
 - 2026-11-01T14:20:17Z · note: Nick requested the remote changed-test base-ref fix.
 - 2026-11-01T15:16:30Z · cli_override, model_override
 - 2026-11-01T15:16:32Z · status ready→active, branch
-- 2026-11-01T15:35:00Z · CTO nudge: held — machine under pressure (swap in/out 1.6 MB/s over 26.063 s (limit 1.0 MB/s) — holding new work until paging eases. Check Activity Monitor (Memory tab), `vm_stat 1`, or `memory_pressure -Q` on macOS; `/proc/pressure/memory` and `vmstat 1` on Linux.)
-- 2026-11-01T15:40:15Z · body
-- 2026-11-01T15:50:00Z · message_queued at 2026-11-01T15:50:00.425Z
-- 2026-11-01T15:50:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-01T15:54:08Z · body
-- 2026-11-01T15:55:00Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-01T16:05:02Z · CTO nudge: held — handoff gate is running
-- 2026-11-01T16:11:15Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-01T16:11:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-01T16:11:17Z · message_delivered: 1 message(s)
-- 2026-11-01T16:28:34Z · note: adopted orphaned engineer pid 59230
-- 2026-11-01T16:32:51Z · body
-- 2026-11-01T16:49:35Z · status active→review
-- 2026-11-01T16:49:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-11-01T16:50:18Z · note: review pass 1: good to go
-
+- 2026-11-01T16:49:34Z · status active→review

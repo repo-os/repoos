@@ -192,8 +192,10 @@ export function remoteMirrorPath(root: string): string {
 
 /** Ref the candidate commit travels under; a stable name validate.sh knows. */
 export const MIRROR_CANDIDATE_REF = "refs/repoos/candidate";
-/** Ref the pre-fetched main tip travels under, for scoped `--changed` runs. */
+/** Ref the validated changed-test base travels under on the host mirror (#1001). */
 export const MIRROR_SCOPE_REF = "refs/repoos/scope";
+/** Tag validate.sh materializes inside the runner checkout for `--changed`. */
+export const RUNNER_CHANGED_BASE_REF = "refs/tags/repoos-changed-base";
 
 /** What a host's persistent mirror currently holds (#0717). */
 export interface RemoteMirrorState {
@@ -2102,40 +2104,73 @@ export type RemoteChangedTestScope =
   | { scoped: true; ref: string; baseSha: string };
 
 /**
- * Resolve `--changed` / `REPOOS_CHECK_CHANGED` for the remote runner. When the
- * ref does not resolve, returns full-suite mode and a warning string for logs.
+ * Resolve `--changed` / `REPOOS_CHECK_CHANGED` for the remote runner. Uses the
+ * same merge-base as `scripts/select-test-files.mjs` (HEAD vs the requested
+ * ref). When the base cannot be verified, returns full-suite mode and a warning.
  */
 export async function remoteChangedTestScope(
   worktreePath: string,
   changedRef?: string,
+  candidateSha?: string,
 ): Promise<RemoteChangedTestScope> {
   const ref = changedRef?.trim();
   if (!ref) return { scoped: false };
-  const res = await runGit(worktreePath, ["rev-parse", "--verify", ref], 15_000);
-  if (res.status !== 0) {
+  const verify = await runGit(worktreePath, ["rev-parse", "--verify", ref], 15_000);
+  if (verify.status !== 0) {
     return {
       scoped: false,
       warning: `could not resolve changed ref "${ref}" for remote tests — running the full suite on the runner, not a scoped self-check`,
     };
   }
-  return { scoped: true, ref, baseSha: res.stdout.trim() };
+  let head = candidateSha?.trim();
+  if (!head) {
+    const headRes = await runGit(worktreePath, ["rev-parse", "HEAD"], 15_000);
+    if (headRes.status !== 0) {
+      return {
+        scoped: false,
+        warning:
+          "could not resolve worktree HEAD before scoping remote tests — running the full suite on the runner",
+      };
+    }
+    head = headRes.stdout.trim();
+  }
+  const mergeBase = await runGit(worktreePath, ["merge-base", head, ref], 15_000);
+  const baseSha = mergeBase.stdout.trim();
+  if (mergeBase.status !== 0 || !/^[0-9a-f]{40}$/.test(baseSha)) {
+    return {
+      scoped: false,
+      warning: `could not compute merge-base between HEAD and "${ref}" for remote tests — running the full suite on the runner`,
+    };
+  }
+  const ancestor = await runGit(
+    worktreePath,
+    ["merge-base", "--is-ancestor", baseSha, head],
+    15_000,
+  );
+  if (ancestor.status !== 0) {
+    return {
+      scoped: false,
+      warning: `changed-test base ${baseSha.slice(0, 12)} is not an ancestor of the candidate — running the full suite on the runner`,
+    };
+  }
+  return { scoped: true, ref: baseSha, baseSha };
 }
 
 async function prepareRemoteTestBundle(
   worktreePath: string,
   changedRef: string | undefined,
+  candidateSha: string,
   emit: (line: string) => void,
 ): Promise<{ remoteTestRef: string | null; changedBaseSha: string | null }> {
-  const testScope = await remoteChangedTestScope(worktreePath, changedRef);
+  const testScope = await remoteChangedTestScope(worktreePath, changedRef, candidateSha);
   if (!testScope.scoped && testScope.warning) {
     emit(`[remote validation] WARNING: ${testScope.warning}\n`);
   }
   if (!testScope.scoped) {
     return { remoteTestRef: null, changedBaseSha: null };
   }
-  // The scope ref (e.g. `main`) travels as a NAMED ref so the runner can run
-  // `--changed main`; the base sha both names that ref and bounds the partial
-  // bundle (#0717).
+  // The verified merge-base sha travels to validate.sh as $4 and is bundled as
+  // `refs/repoos/scope` so a sparse checkout can still resolve `--changed`.
   return { remoteTestRef: testScope.ref, changedBaseSha: testScope.baseSha };
 }
 
@@ -2986,7 +3021,12 @@ export class RemoteValidationRunner implements RemoteValidator {
       //    the host does not already have (#0717).
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
       const bundlePath = join(tmp, "candidate.bundle");
-      const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
+      const prepared = await prepareRemoteTestBundle(
+        opts.worktreePath,
+        opts.changedRef,
+        opts.candidateSha,
+        emit,
+      );
       remoteTestRef = prepared.remoteTestRef;
       runMeta.remoteTestRef = remoteTestRef;
       const remoteBundle = paths.bundle;
@@ -5629,7 +5669,12 @@ export class TailscaleRunner implements RemoteValidator {
       //    instead of the full ~100 MB history.
       tmp = mkdtempSync(join(tmpdir(), "repoos-rvr-"));
       const bundlePath = join(tmp, "candidate.bundle");
-      const prepared = await prepareRemoteTestBundle(opts.worktreePath, opts.changedRef, emit);
+      const prepared = await prepareRemoteTestBundle(
+        opts.worktreePath,
+        opts.changedRef,
+        opts.candidateSha,
+        emit,
+      );
       remoteTestRef = prepared.remoteTestRef;
       const remoteBundle = paths.bundle;
       this.setActiveRunStage(

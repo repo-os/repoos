@@ -255,8 +255,10 @@ full `HEAD` bundle until you update the script). The task Debug tab's
 remote-validation events show bundle size and upload time for each run. The
 Remote runners tab and Settings → Remote validation show each host's
 `validate.sh` generation and a one-line install command when an update is needed. With `--changed` /
-`REPOOS_CHECK_CHANGED`, the **remote** test step is scoped the same way as locally
-(#0695); handoff runs the full suite on the runner unless it reuses a recent
+`REPOOS_CHECK_CHANGED`, the **remote** test step uses the same verified merge-base as the local
+selector (#1001): the runner receives the base commit sha and materializes it from the bundle when
+the checkout has no branch ref (for example `main`). If that base cannot be verified, the remote
+run logs why and falls back to the full suite. Handoff runs the full suite on the runner unless it reuses a recent
 self-check as described below, and default close-out runs
 changed tests plus safety suites (below). Managed
 engineers (`REPOOS_AGENT=1`) always use the board's runner (Hetzner or Tailscale).

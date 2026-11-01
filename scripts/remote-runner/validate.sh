@@ -26,11 +26,13 @@ set -euo pipefail
 
 BUNDLE="${1:?usage: validate.sh <bundle-path> <expected-sha>}"
 SHA="${2:?usage: validate.sh <bundle-path> <expected-sha>}"
-# Optional: vitest changed-path ref (e.g. main) for engineer self-checks (#0695).
+# Optional: vitest changed-path base sha for engineer self-checks (#0695, #1001).
 CHANGED_REF="${4:-}"
 # Optional: persistent per-repo bare mirror (#0717). Empty = legacy full-bundle
 # clone, so an older RepoOS against a newer script still works.
 MIRROR="${5:-}"
+# Tag materialized in the runner checkout so `--changed` resolves without `main`.
+REPOOS_CHANGED_BASE_TAG="refs/tags/repoos-changed-base"
 # Per-run artifacts dir (#0520): RepoOS passes a unique one so overlapping runs
 # never wipe each other's logs. Without it, fall back to the shared default.
 # Under $HOME, not /tmp or /var/tmp: on Linux, /tmp is commonly a RAM-backed
@@ -126,12 +128,13 @@ if [ -n "$MIRROR" ]; then
     exit 3
   fi
   if [ -n "$CHANGED_REF" ]; then
-    # Bring the scope ref (the changed-ref base) in under its own name so the
-    # in-container `--changed <ref>` resolves (#0695).
+    # Bring the validated merge-base in under a stable mirror ref (#1001).
     SCOPE_SRC="$(git bundle list-heads "$BUNDLE" | awk '$2 ~ /^refs\/repoos\/scope/ {print $2; exit}')"
     if [ -n "$SCOPE_SRC" ]; then
-      git -C "$MIRROR" fetch -q --no-tags --force "$BUNDLE" \
-        "+${SCOPE_SRC}:refs/heads/${CHANGED_REF}" 2>/dev/null || true
+      if ! git -C "$MIRROR" fetch -q --no-tags --force "$BUNDLE" \
+        "+${SCOPE_SRC}:refs/repoos/scope" 2>/dev/null; then
+        echo "[validate] WARNING: could not fetch changed-test base ref from bundle into mirror — scoped tests may fall back to the full suite" >&2
+      fi
     fi
   fi
   MIRROR_SHA="$(git -C "$MIRROR" rev-parse --verify --quiet refs/repoos/candidate || true)"
@@ -156,6 +159,41 @@ if [ "$ACTUAL" != "$SHA" ]; then
   exit 3
 fi
 echo "[validate] HEAD verified at $SHA"
+
+# Ensure the validated merge-base exists before scoping tests (#1001). A partial
+# bundle may omit branch names such as `main`; the scope ref carries the base sha.
+materialize_changed_test_base() {
+  [ -n "$CHANGED_REF" ] || return 0
+  if git rev-parse --verify --quiet "${CHANGED_REF}^{commit}" 2>/dev/null; then
+    return 0
+  fi
+  SCOPE_SRC="$(git bundle list-heads "$BUNDLE" 2>/dev/null | awk '$2 ~ /^refs\/repoos\/scope/ {print $2; exit}')"
+  if [ -z "$SCOPE_SRC" ]; then
+    echo "[validate] WARNING: changed-test base ${CHANGED_REF} is not in this checkout and the bundle carries no scope ref — running the full test suite" >&2
+    CHANGED_REF=""
+    return 0
+  fi
+  if [ -n "$MIRROR" ]; then
+    git fetch -q origin "refs/repoos/scope:${REPOOS_CHANGED_BASE_TAG}" 2>/dev/null \
+      || git fetch -q "$BUNDLE" "+${SCOPE_SRC}:${REPOOS_CHANGED_BASE_TAG}" 2>/dev/null \
+      || true
+  else
+    git fetch -q "$BUNDLE" "+${SCOPE_SRC}:${REPOOS_CHANGED_BASE_TAG}" 2>/dev/null || true
+  fi
+  if ! git rev-parse --verify --quiet "${REPOOS_CHANGED_BASE_TAG}^{commit}" 2>/dev/null; then
+    echo "[validate] WARNING: could not materialize changed-test base ${CHANGED_REF} in this checkout — running the full test suite" >&2
+    CHANGED_REF=""
+    return 0
+  fi
+  RESOLVED="$(git rev-parse "${REPOOS_CHANGED_BASE_TAG}")"
+  if [ "$RESOLVED" != "$CHANGED_REF" ]; then
+    echo "[validate] WARNING: scope ref is ${RESOLVED} but expected ${CHANGED_REF} — running the full test suite" >&2
+    CHANGED_REF=""
+    return 0
+  fi
+  CHANGED_REF="$REPOOS_CHANGED_BASE_TAG"
+}
+materialize_changed_test_base
 
 # Run Docker as the SSH user's uid:gid so all files it creates are owned by
 # that user.  This means _rvcleanup needs no Docker chown step — a plain
