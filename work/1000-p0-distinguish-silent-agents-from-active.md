@@ -99,3 +99,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T18:01:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T18:02:40Z · body
 - 2026-11-01T18:05:44Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T18:05:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
