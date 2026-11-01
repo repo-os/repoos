@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1110681
-last_close_out_gate_at: "2026-11-01T12:52:17.126Z"
 id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: 4164a08ccf013472915c2bd2401b7ee00a6f4456
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/worktree-creation-must-survive-a-slow-ch
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
 updated_at: "2026-11-01T12:52:17Z"
+last_close_out_gate_ms: 1110681
+last_close_out_gate_at: "2026-11-01T12:52:17.126Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-01T07:59:36.226Z: repoos check failed: tests — onKeydown: [Function: invoker] {"
 handoff_signal_retry_count: 2
