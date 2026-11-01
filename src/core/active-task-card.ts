@@ -74,6 +74,17 @@ function msSince(iso: string | null | undefined, nowMs: number): number | null {
   return Number.isFinite(ms) && ms >= 0 ? ms : null;
 }
 
+/** Match card classification for cancel eligibility: absent, malformed, or
+ * future-dated heartbeats cannot prove current progress and are stalled. */
+export function isCheckHeartbeatStalled(
+  lastProgressAt: string | null | undefined,
+  nowMs: number,
+  stallMs = DEFAULT_CHECK_STALL_MS,
+): boolean {
+  const idle = msSince(lastProgressAt, nowMs);
+  return idle === null || idle >= stallMs;
+}
+
 function formatCardDuration(ms: number): string {
   const mins = Math.round(ms / 60_000);
   if (mins < 1) return "just now";
@@ -97,8 +108,7 @@ function checkStalled(check: ActiveTaskCheckSnapshot, nowMs: number, stallMs: nu
   if (!check.running) return false;
   // A running check without a valid heartbeat cannot establish progress.
   // Fail closed so it is surfaced as stalled instead of agent silence.
-  const idle = msSince(check.lastProgressAt, nowMs);
-  return idle === null || idle >= stallMs;
+  return isCheckHeartbeatStalled(check.lastProgressAt, nowMs, stallMs);
 }
 
 function remoteRunHeartbeating(
