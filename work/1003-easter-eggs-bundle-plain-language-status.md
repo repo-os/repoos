@@ -60,7 +60,7 @@ Change user-facing merge-status and merge-eligibility wording throughout product
 Mission Control currently puts Feature releases, Live activity, and Needs a decision in one row, with Needs your attention below. The panels have uneven heights, making the page harder to scan and compare.
 
 ### Desired UX
-
+At desktop widths, arrange the four panels in a 2×2 grid. Give all four equal medium heights, between the current short and tall panels, and let each panel's contents scroll within it. Keep narrower layouts responsive and readable.
 
 ### Acceptance criteria
 
@@ -92,5 +92,7 @@ Mission Control currently puts Feature releases, Live activity, and Needs a deci
 - 2026-11-01T15:43:05Z · body: Items (added 1); E3 · Mission Control panels use a balanced 2×2 layout (added)
 - 2026-11-01T15:43:05Z · note: bundle add E3
 - 2026-11-01T15:43:21Z · body: Items (added 1, removed 1)
+- 2026-11-01T15:43:22Z · body: E3 · Mission Control panels use a balanced 2×2 layout (added 1)
+- 2026-11-01T15:43:22Z · note: bundle edit E3
 - 2026-11-01T15:43:22Z · body: E3 · Mission Control panels use a balanced 2×2 layout (added 1)
 - 2026-11-01T15:43:22Z · note: bundle edit E3
