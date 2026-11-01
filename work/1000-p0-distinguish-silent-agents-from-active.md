@@ -2,14 +2,14 @@
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
-status: review
+status: active
 priority: p0
 area: [web, server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T22:46:21Z"
+updated_at: "2026-11-01T22:46:22Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 2fb9cde64350a418ce539aa739486dbb774b91c7
 review_passes: 4
