@@ -12,7 +12,6 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
 updated_at: "2026-11-01T21:30:47Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T21:19:43.254Z: repoos check failed: ◆ Check plan"
 dev_error_count: 1
 ---
@@ -245,3 +244,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-01T21:16:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T21:16:28Z · message_delivered: 1 message(s)
 - 2026-11-01T21:30:47Z · body
+
