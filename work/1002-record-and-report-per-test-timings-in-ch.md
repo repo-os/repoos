@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: 1002
 title: Record and report per-test timings in check history
 type: feature
@@ -74,3 +75,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T17:54:37Z · body
 - 2026-11-01T18:06:58Z · body
 - 2026-11-01T18:10:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
