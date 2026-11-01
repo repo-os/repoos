@@ -11,7 +11,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-11-01T02:41:01Z"
+updated_at: "2026-11-01T02:42:21Z"
 ---
 ## Problem
 
@@ -91,3 +91,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-11-01T02:11:07Z · note: handoff requested (ui-review)
 - 2026-11-01T02:40:56Z · status active→review
 - 2026-11-01T02:41:01Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (f134266a1) during finalization (#0734)
+- 2026-11-01T02:42:21Z · note: review pass 1: good to go
