@@ -18,6 +18,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -33,6 +34,7 @@ import {
   isRunnerBundleTransportMismatch,
   validateScriptArgs,
   validateScriptInstallCommand,
+  remoteChangedTestScope,
   RUNNER_SCRIPT_MIRROR_TOKEN,
   PREREQ_OK_TOKEN,
   VALIDATE_SCRIPT,
@@ -296,7 +298,12 @@ describe("RemoteValidationRunner", () => {
     expect(bundleOpts?.refs?.some((ref) => ref.startsWith("refs/repoos/candidate"))).toBe(true);
     expect(bundleOpts?.refs?.some((ref) => ref.startsWith("refs/repoos/scope"))).toBe(true);
     const cmd = remoteSuiteCalls(exec)[0]![1] as string;
-    expect(cmd).toContain("main");
+    const mergeBase = execFileSync("git", ["merge-base", headSha, "main"], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+    expect(cmd).toContain(mergeBase);
+    expect(cmd).not.toMatch(/\bmain\b/);
     await r.dispose();
   });
 
@@ -691,6 +698,26 @@ describe("prepareCandidateUpload (#0717)", () => {
   const HOST: RemoteHost = { ip: "203.0.113.9", user: "root" };
   const MIRROR = "~/.repoos-cache/repo-deadbeef.git";
 
+  /** `main` stays at `baseSha`; the candidate is one commit ahead on `feat`. */
+  function makeScopedRepo(): { root: string; baseSha: string; candidateSha: string } {
+    const root = mkdtempSync(join(tmpdir(), "repoos-1001-"));
+    const git = (...args: string[]): string =>
+      execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+    git("init", "-q", "-b", "main");
+    git("config", "user.email", "t@example.com");
+    git("config", "user.name", "T");
+    writeFileSync(join(root, "f.txt"), "one\n");
+    git("add", ".");
+    git("commit", "-qm", "base");
+    const baseSha = git("rev-parse", "HEAD");
+    git("checkout", "-q", "-b", "feat");
+    writeFileSync(join(root, "f.txt"), "two\n");
+    git("add", ".");
+    git("commit", "-qm", "candidate");
+    const candidateSha = git("rev-parse", "HEAD");
+    return { root, baseSha, candidateSha };
+  }
+
   /** A real git repo with `base` → `candidate` on top, plus a sibling history. */
   function makeRepo(): { root: string; baseSha: string; candidateSha: string } {
     const root = mkdtempSync(join(tmpdir(), "repoos-0717-"));
@@ -859,9 +886,7 @@ describe("prepareCandidateUpload (#0717)", () => {
   it("ships the scope ref while still excluding a base the host holds", async () => {
     const { root, baseSha, candidateSha } = makeRepo();
     try {
-      // The scope tip (main) is the middle commit: a strict descendant of the
-      // host's base and a strict ancestor of the candidate.
-      const scopeTip = execFileSync("git", ["rev-parse", `${candidateSha}^`], {
+      const mergeBase = execFileSync("git", ["merge-base", candidateSha, "main"], {
         cwd: root,
         encoding: "utf8",
       }).trim();
@@ -869,7 +894,7 @@ describe("prepareCandidateUpload (#0717)", () => {
       const exec = realBundleExec({
         probeMirror: vi.fn(async () => ({
           exists: true,
-          refs: { "refs/repoos/candidate": baseSha, "refs/repoos/scope": scopeTip },
+          refs: { "refs/repoos/candidate": baseSha, "refs/repoos/scope": mergeBase },
         })),
       });
       const res = await prepareCandidateUpload(exec, {
@@ -879,7 +904,7 @@ describe("prepareCandidateUpload (#0717)", () => {
         worktreePath: root,
         candidateSha,
         changedRef: "main",
-        changedBaseSha: scopeTip,
+        changedBaseSha: mergeBase,
         mirrorPath: MIRROR,
         emit: () => {},
       });
@@ -904,8 +929,13 @@ describe("prepareCandidateUpload (#0717)", () => {
   });
 
   it("does not exclude a base equal to the scope tip (it would drop the scope ref)", async () => {
-    const { root, baseSha, candidateSha } = makeRepo();
+    const { root, baseSha, candidateSha } = makeScopedRepo();
     try {
+      const mergeBase = execFileSync("git", ["merge-base", candidateSha, "main"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+      expect(mergeBase).toBe(baseSha);
       const bundlePath = join(root, "candidate.bundle");
       // The host's only base IS the scope tip: excluding it would also exclude
       // the scope ref the runner needs, so the run must fall back to full.
@@ -922,7 +952,7 @@ describe("prepareCandidateUpload (#0717)", () => {
         worktreePath: root,
         candidateSha,
         changedRef: "main",
-        changedBaseSha: baseSha,
+        changedBaseSha: mergeBase,
         mirrorPath: MIRROR,
         emit: () => {},
       });
@@ -930,12 +960,96 @@ describe("prepareCandidateUpload (#0717)", () => {
       if (!res.ok) return;
       expect(res.baseSha).toBeNull();
       expect(res.partial).toBe(false);
-      // The scope ref is still carried, so `--changed main` resolves.
+      // The scope ref is still carried, so `--changed` resolves via the bundled base.
       const refs = listBundleRefs(bundlePath);
       expect(refs.some((r) => r.startsWith("refs/repoos/scope"))).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  describe("remote changed-test base (#1001)", () => {
+    it("resolves the merge-base used by local changed-path selection", async () => {
+      const { root, baseSha, candidateSha } = makeScopedRepo();
+      try {
+        const scope = await remoteChangedTestScope(root, "main", candidateSha);
+        expect(scope).toMatchObject({ scoped: true, ref: baseSha, baseSha });
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    it("bundles refs/repoos/scope at the verified merge-base", async () => {
+      const { root, baseSha, candidateSha } = makeScopedRepo();
+      const bundlePath = join(root, "candidate.bundle");
+      try {
+        const scope = await remoteChangedTestScope(root, "main", candidateSha);
+        if (!scope.scoped) throw new Error("expected scoped");
+        const exec = realBundleExec({
+          probeMirror: vi.fn(async () => EMPTY_REMOTE_MIRROR),
+        });
+        const upload = await prepareCandidateUpload(exec, {
+          host: HOST,
+          bundlePath,
+          remoteBundle: "~/.repoos-x.bundle",
+          worktreePath: root,
+          candidateSha,
+          changedRef: "main",
+          changedBaseSha: scope.baseSha,
+          mirrorPath: MIRROR,
+          emit: () => {},
+        });
+        expect(upload.ok).toBe(true);
+        if (!upload.ok) return;
+        const scopeHead = execFileSync("git", ["bundle", "list-heads", bundlePath], {
+          encoding: "utf8",
+        })
+          .split("\n")
+          .find((line) => line.includes("refs/repoos/scope"));
+        expect(scopeHead?.split(/\s+/)[0]).toBe(scope.baseSha);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+
+    it("selects the same files with --changed main as with the verified merge-base sha", async () => {
+      const { root, candidateSha } = makeScopedRepo();
+      try {
+        const scope = await remoteChangedTestScope(root, "main", candidateSha);
+        if (!scope.scoped) throw new Error("expected scoped");
+        // @ts-expect-error plain JS test helper
+        const { resolveTestSelection } = await import("../../../scripts/select-test-files.mjs");
+        const requireFromRepo = createRequire(join(process.cwd(), "package.json"));
+        const vitest = join(requireFromRepo.resolve("vitest/package.json"), "..", "vitest.mjs");
+        const config = join(process.cwd(), "src/ui-app/vite.config.ts");
+        const local = resolveTestSelection(process.execPath, vitest, config, "main", [], root);
+        const viaBase = resolveTestSelection(
+          process.execPath,
+          vitest,
+          config,
+          scope.baseSha,
+          [],
+          root,
+        );
+        expect(local.files).not.toBeNull();
+        expect(viaBase.files).not.toBeNull();
+        expect(new Set(viaBase.files)).toEqual(new Set(local.files));
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }, 120_000);
+
+    it("falls back to the full suite when the merge-base cannot be resolved", async () => {
+      const { root, candidateSha } = makeScopedRepo();
+      try {
+        const scope = await remoteChangedTestScope(root, "not-a-ref", candidateSha);
+        expect(scope.scoped).toBe(false);
+        if (scope.scoped) throw new Error("expected full fallback");
+        expect(scope.warning).toMatch(/full suite/i);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
   });
 
   it("retries the upload instead of losing the whole run", async () => {

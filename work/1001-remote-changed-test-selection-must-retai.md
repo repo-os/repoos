@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 279838
-last_close_out_gate_at: "2026-11-01T17:01:22.335Z"
 id: 1001
 title: Remote changed-test selection must retain its base ref
 type: bug
-status: review
+status: done
 priority: p1
 area: [core, server]
+merged_commit: 96a7a9fc2bc2aea722c1f347f0ee21212cd82ce0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-changed-test-selection-must-retai
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T14:19:48Z"
 updated_at: "2026-11-01T17:01:22Z"
+last_close_out_gate_ms: 279838
+last_close_out_gate_at: "2026-11-01T17:01:22.335Z"
 review_passes: 1
 ---
 ## Problem
