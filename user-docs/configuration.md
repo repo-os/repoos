@@ -554,7 +554,13 @@ selector. Each row and model chip has **Pause** / **Resume** controls; Pause
 opens a dialog for an optional resume date/time and reason. From a driver shell,
 use `repoos agents pause <agent> [--model <model>] [--until <date>] [--reason "…"]`
 and `repoos agents resume <agent> [--model <model>]`. The `budget.allowlist` key
-is also in the Settings schema so search can find it.
+is also in the Settings schema so search can find it. A pause you set is stored
+in `repoos.toml`. A pause RepoOS records after a quota error (reason starting
+`out of usage since`) is stored in the gitignored `.repoos/budget-runtime.json`
+instead, so it does not dirty main. Your pause on the same agent or model wins.
+An expired `pausedUntil` resumes with no rewrite. On startup, automatic pause
+fields still sitting in `repoos.toml` are copied into that runtime file and then
+read from there.
 
 When an allowlist entry is paused, selection falls back to the next allowed
 pair that is not paused and records the swap (and the reason) in the task's
