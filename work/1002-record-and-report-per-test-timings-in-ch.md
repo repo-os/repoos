@@ -11,7 +11,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T23:06:22Z"
+updated_at: "2026-11-01T23:06:46Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-01T21:27:03.891Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 review_rounds: 2
@@ -136,3 +136,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T23:05:42Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-01T23:05:48Z · needs_input
 - 2026-11-01T23:05:50Z · message_queued at 2026-11-01T23:05:50.485Z
+- 2026-11-01T23:06:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
