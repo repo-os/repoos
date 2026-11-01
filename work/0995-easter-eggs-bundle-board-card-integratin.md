@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T11:48:04Z"
+updated_at: "2026-11-01T11:53:22Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T10:34:21.808Z: repoos check failed: ui verification: capture of /work?shotState=closeOut:uploading failed — screenshot: Timeout 30000ms exceeded."
 handoff_signal_retry_count: 2
@@ -223,3 +223,6 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T11:20:43Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T11:22:00Z · body
 - 2026-11-01T11:48:04Z · body
+- 2026-11-01T11:50:46Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-01T11:53:01Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-01T11:53:22Z · handoff_deferred: 1 queued message(s) must be read before review
