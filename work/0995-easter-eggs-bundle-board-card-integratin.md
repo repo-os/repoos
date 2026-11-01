@@ -202,3 +202,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T09:31:56Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T09:31:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T09:31:57Z · needs_input
+- 2026-11-01T09:31:57Z · message_delivered: 1 message(s)
