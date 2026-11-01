@@ -108,7 +108,11 @@ function run(
   registerCancel?: (cancel: () => Promise<boolean>) => void,
 ): Promise<RunResult> {
   return new Promise((finish) => {
-    const child = spawn(cmd, args, { cwd, env: env ?? process.env, detached: process.platform !== "win32" });
+    const child = spawn(cmd, args, {
+      cwd,
+      env: env ?? process.env,
+      detached: process.platform !== "win32",
+    });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -131,25 +135,31 @@ function run(
     });
     child.on("error", (error: NodeJS.ErrnoException) => done(null, error));
     child.on("close", (code) => done(code));
-    registerCancel?.(() => new Promise<boolean>((resolve) => {
-      if (settled || !child.pid) return resolve(settled);
-      try {
-        if (process.platform === "win32") child.kill("SIGTERM");
-        else process.kill(-child.pid, "SIGTERM");
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ESRCH") return resolve(false);
-      }
-      const verify = setTimeout(() => {
-        if (settled) return resolve(true);
-        try {
-          if (process.platform === "win32") child.kill("SIGKILL");
-          else process.kill(-child.pid!, "SIGKILL");
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "ESRCH") return resolve(false);
-        }
-      }, 1500);
-      child.once("close", () => { clearTimeout(verify); resolve(true); });
-    }));
+    registerCancel?.(
+      () =>
+        new Promise<boolean>((resolve) => {
+          if (settled || !child.pid) return resolve(settled);
+          try {
+            if (process.platform === "win32") child.kill("SIGTERM");
+            else process.kill(-child.pid, "SIGTERM");
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code !== "ESRCH") return resolve(false);
+          }
+          const verify = setTimeout(() => {
+            if (settled) return resolve(true);
+            try {
+              if (process.platform === "win32") child.kill("SIGKILL");
+              else process.kill(-child.pid!, "SIGKILL");
+            } catch (error) {
+              if ((error as NodeJS.ErrnoException).code !== "ESRCH") return resolve(false);
+            }
+          }, 1500);
+          child.once("close", () => {
+            clearTimeout(verify);
+            resolve(true);
+          });
+        }),
+    );
     timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
   });
 }
