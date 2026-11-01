@@ -15,7 +15,6 @@ updated_at: "2026-11-01T18:05:44Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T17:40:34.412Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T17:42:24.330Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
 ---
 ## Problem
