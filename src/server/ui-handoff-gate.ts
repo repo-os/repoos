@@ -57,6 +57,7 @@ import {
   planAutoCapture,
   reserveBrowserCapture,
   releaseBrowserCapture,
+  waitForBrowserCapture,
   type CommandCaptureEvidence,
   type ShotCaptureResult,
 } from "./shot-capture.js";
@@ -689,10 +690,15 @@ export async function runUiHandoffGate(
     config.remoteValidation.browserCaptureMode !== "local"
   ) {
     if (!reserveBrowserCapture(task.id)) {
-      return {
-        ok: false,
-        detail: "ui verification failed: a browser capture is already in flight for this task",
-      };
+      // Automatic/declared shot capture can overlap finalization. Let it finish,
+      // then re-enter the gate so evidence freshness and the plan are checked
+      // against the completed capture instead of failing the handoff on a race.
+      if (await waitForBrowserCapture(task.id)) {
+        return runUiHandoffGate(config, task, previews, log, deps);
+      }
+      const detail = "ui verification failed: timed out waiting for the task's browser capture";
+      log(task.id, "error", detail);
+      return { ok: false, detail };
     }
     try {
       const canonical = canonicalCaptureContext(config, task, plan);
