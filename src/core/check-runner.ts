@@ -19,6 +19,7 @@
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
+import { processGroupAlive, terminateProcessGroupAndWait } from "./process-group.js";
 
 import type { CheckStep } from "./check-plan.js";
 import { EMPTY_MARKERS, type RepoMarkers } from "./check-plan.js";
@@ -89,6 +90,7 @@ export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
     let chunks = "";
     let killed = false;
     let settled = false;
+    let termination: Promise<void> | undefined;
     const child = spawn(opts.command, {
       cwd: opts.cwd,
       env: opts.env ?? process.env,
@@ -125,35 +127,14 @@ export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
     child.stderr?.on("data", capture);
 
     let timer: NodeJS.Timeout | undefined;
-    /**
-     * Signal the whole group the child leads, falling back to the child alone
-     * when group signalling isn't available (Windows) or the group is gone.
-     */
-    const killTree = (signal: NodeJS.Signals): void => {
-      const pid = child.pid;
-      if (pid !== undefined) {
-        try {
-          process.kill(-pid, signal);
-          return;
-        } catch {
-          /* no process group (Windows) — fall through to the single child */
-        }
-      }
-      try {
-        child.kill(signal);
-      } catch {
-        /* already exited */
-      }
-    };
     if (timeoutMs) {
       timer = setTimeout(() => {
         killed = true;
-        killTree("SIGTERM");
-        // A child that ignores SIGTERM (a wrapper script, a JVM) must not hold
-        // the gate open past its timeout.
-        setTimeout(() => {
-          if (!settled) killTree("SIGKILL");
-        }, 5_000).unref?.();
+        if (child.pid && process.platform !== "win32") {
+          termination ??= terminateProcessGroupAndWait(child.pid);
+        } else {
+          child.kill("SIGKILL");
+        }
       }, timeoutMs);
     }
 
@@ -163,8 +144,13 @@ export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
     // would orphan a running test suite or JVM and leave it holding the
     // terminal. Relay the signal to the tree, then exit ourselves.
     const relay = (signal: NodeJS.Signals): void => {
-      killTree(signal === "SIGINT" ? "SIGTERM" : signal);
-      process.exit(signal === "SIGINT" ? 130 : 143);
+      const exitCode = signal === "SIGINT" ? 130 : 143;
+      if (child.pid && process.platform !== "win32") {
+        void terminateProcessGroupAndWait(child.pid).finally(() => process.exit(exitCode));
+      } else {
+        child.kill(signal === "SIGINT" ? "SIGTERM" : signal);
+        process.exit(exitCode);
+      }
     };
     const relayed: NodeJS.Signals[] = ["SIGINT", "SIGTERM", "SIGHUP"];
     for (const sig of relayed) process.on(sig, relay);
@@ -176,11 +162,26 @@ export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
       finish({ status: "error", exitCode: null, error: (err as Error).message });
     });
     child.on("close", (code, signal) => {
-      if (killed || signal === "SIGTERM" || signal === "SIGKILL") {
-        finish({ status: "timeout", exitCode: code });
-        return;
-      }
-      finish({ status: code === 0 ? "passed" : "failed", exitCode: code });
+      void (async () => {
+        if (child.pid && process.platform !== "win32" && (termination || processGroupAlive(child.pid))) {
+          termination ??= terminateProcessGroupAndWait(child.pid);
+          try {
+            await termination;
+          } catch (error) {
+            finish({
+              status: "error",
+              exitCode: null,
+              error: `could not confirm check process group exit: ${(error as Error).message}`,
+            });
+            return;
+          }
+        }
+        if (killed || signal === "SIGTERM" || signal === "SIGKILL") {
+          finish({ status: "timeout", exitCode: code });
+          return;
+        }
+        finish({ status: code === 0 ? "passed" : "failed", exitCode: code });
+      })();
     });
   });
 }

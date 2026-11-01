@@ -16,6 +16,9 @@ import {
 } from "../../server/task-check.js";
 import { CheckStore, resetCheckStore } from "../../core/check-store.js";
 import { NO_CHECK_PLAN_NOTICE } from "../../core/check-skip.js";
+import { processGroupAlive } from "../../core/process-group.js";
+import { runHandoffCommand } from "../../server/handoff.js";
+import { taskHasBlockingCheckOrRemote } from "../../server/active-task-card.js";
 
 const dirs: string[] = [];
 
@@ -118,6 +121,73 @@ describe("TaskCheckManager durable cancelled runs (#0564)", () => {
     await expect(m.cancel("1000")).resolves.toMatchObject({ ok: true });
     expect(m.getRuns("1000")[0]).toMatchObject({ running: false, code: null });
   });
+
+  it.skipIf(process.platform === "win32")(
+    "keeps restart blocked until an explicit cancel kills a SIGTERM-ignoring descendant",
+    async () => {
+      const { m } = manager();
+      let cancelProcess!: () => Promise<boolean>;
+      let groupPid: number | null = null;
+      let readyResolve!: () => void;
+      const ready = new Promise<void>((resolve) => (readyResolve = resolve));
+      const script = [
+        `const { spawn } = require("node:child_process");`,
+        `spawn(process.execPath, ["-e", "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)"], { stdio: "ignore" });`,
+        `console.log("ready:" + process.pid);`,
+        `setInterval(() => {}, 1000);`,
+      ].join("\n");
+      const command = runHandoffCommand(
+        process.execPath,
+        ["-e", script],
+        tmpdir(),
+        30_000,
+        process.env,
+        (chunk) => {
+          const match = chunk.match(/ready:(\d+)/);
+          if (match) {
+            groupPid = Number(match[1]);
+            readyResolve();
+          }
+        },
+        (cancel) => (cancelProcess = cancel),
+      );
+      let cancellationSettled = false;
+      try {
+        let readyTimer: ReturnType<typeof setTimeout> | undefined;
+        await Promise.race([
+          ready,
+          new Promise<never>((_, reject) => {
+            readyTimer = setTimeout(() => reject(new Error("child did not start")), 5_000);
+          }),
+        ]);
+        if (readyTimer) clearTimeout(readyTimer);
+        const handle = m.start("1000", "handoff-finalize", () => {});
+        handle.setCancel(async () => {
+          const stopped = await cancelProcess();
+          if (stopped) handle.done(null);
+          return stopped;
+        });
+        const cancellation = m.cancel("1000").then((result) => {
+          cancellationSettled = true;
+          return result;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        expect(cancellationSettled).toBe(false);
+        expect(m.getRuns("1000")[0]?.running).toBe(true);
+        expect(taskHasBlockingCheckOrRemote("1000", (id) => m.getRuns(id), undefined)).toBe(true);
+
+        await expect(cancellation).resolves.toMatchObject({ ok: true });
+        await command;
+        expect(groupPid).not.toBeNull();
+        expect(processGroupAlive(groupPid!)).toBe(false);
+        expect(m.getRuns("1000")[0]?.running).toBe(false);
+        expect(taskHasBlockingCheckOrRemote("1000", (id) => m.getRuns(id), undefined)).toBe(false);
+      } finally {
+        if (!cancellationSettled && cancelProcess) await cancelProcess();
+        await command;
+      }
+    },
+  );
 
   it("does NOT record a durable row when the child exited on its own", () => {
     const { m, store } = manager();

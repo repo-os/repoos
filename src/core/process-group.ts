@@ -48,6 +48,44 @@ export function listProcessGroupPids(leaderPid: number): number[] {
     .filter((n) => Number.isFinite(n) && n > 0);
 }
 
+/** Whether the detached process group still has any members on POSIX. */
+export function processGroupAlive(leaderPid: number): boolean {
+  if (leaderPid <= 0 || !processGroupKillSupported()) return false;
+  try {
+    process.kill(-leaderPid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+/**
+ * Terminate a spawned check's detached process group and wait until the group
+ * is gone. SIGKILL is repeated while any member survives SIGTERM; callers can
+ * therefore treat resolution as verified teardown, not just leader exit.
+ */
+export async function terminateProcessGroupAndWait(
+  leaderPid: number,
+  opts: { graceMs?: number; pollMs?: number } = {},
+): Promise<void> {
+  if (leaderPid <= 0 || !processGroupKillSupported()) return;
+  const graceMs = opts.graceMs ?? 1_500;
+  const pollMs = opts.pollMs ?? 100;
+  const signalGroup = (signal: NodeJS.Signals): void => {
+    try {
+      process.kill(-leaderPid, signal);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+    }
+  };
+  signalGroup("SIGTERM");
+  const killAt = Date.now() + graceMs;
+  while (processGroupAlive(leaderPid)) {
+    if (Date.now() >= killAt) signalGroup("SIGKILL");
+    await new Promise<void>((resolve) => setTimeout(resolve, pollMs));
+  }
+}
+
 /**
  * After an agent CLI exits, tear down anything still in its process group and
  * return PIDs that survived a SIGKILL (daemonized children, etc.).
