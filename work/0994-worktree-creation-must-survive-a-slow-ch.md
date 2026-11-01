@@ -3,9 +3,6 @@ id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-11-01T10:36:13Z"
+updated_at: "2026-11-01T10:37:44Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T07:59:36.226Z: repoos check failed: tests — onKeydown: [Function: invoker] {"
 handoff_signal_retry_count: 2
@@ -118,3 +115,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T10:35:32Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T10:35:43Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-11-01T10:36:13Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
+- 2026-11-01T10:37:44Z · needs_input
