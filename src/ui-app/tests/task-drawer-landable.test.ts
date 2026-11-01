@@ -284,11 +284,14 @@ describe("review pass selection and identity (#1003)", () => {
     );
     expect(wrapper.find(".verdict-callout").text()).toContain("Latest");
     expect(wrapper.findAll(".review-history-row")[0]?.classes()).toContain("is-selected");
+    expect(wrapper.findAll(".review-history-row")[0]?.attributes("aria-pressed")).toBe("true");
     expect(wrapper.find(".review-history-reviewer").text()).toBe("Codex");
 
     await wrapper.findAll(".review-history-row")[1]!.trigger("click");
     await flush();
     expect(wrapper.findAll(".review-history-row")[1]?.classes()).toContain("is-selected");
+    expect(wrapper.findAll(".review-history-row")[1]?.attributes("aria-pressed")).toBe("true");
+    expect(wrapper.findAll(".review-history-row")[0]?.attributes("aria-pressed")).toBe("false");
     expect(wrapper.find(".verdict-callout").text()).toContain("Not latest");
     expect(wrapper.findAll(".review-history-reviewer")[1]?.text()).toBe("Cursor");
     expect(wrapper.find(".review-card").text()).toContain("Older review details.");
