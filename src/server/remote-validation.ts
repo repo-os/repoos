@@ -1,9 +1,6 @@
 import { stepTimingsFromOutput } from "../core/check-timings.js";
 import { TestFileTimingCollector, testFileTimings } from "../core/test-file-timings.js";
-import {
-  TestCaseTimingCollector,
-  pushTimingOutputChunk,
-} from "../core/test-case-timings.js";
+import { TestCaseTimingCollector, pushTimingOutputChunk } from "../core/test-case-timings.js";
 /**
  * Remote Validation Runner (#RVR).
  *
