@@ -44,9 +44,10 @@ User-facing copy uses “landed,” “landable,” and related forms to describ
 Across user-facing UI, notifications, CLI messages, and user documentation, use clear wording that states the merge status. For successful merges, say “merged into main,” “now in main,” or another context-appropriate equivalent. For eligibility, say “ready to merge” or “can be merged into main.” Keep the `repoos landable` CLI command and API identifiers intact for compatibility; change their human-facing descriptions.
 
 ### Acceptance criteria
-
-- Test: successful Move to done notifications and summaries say the task was merged into main.
-- Test: copy for non-merge events does not claim a merge occurred.
+- Test: user-facing success messages describe completed merges as merged into main or an equally clear contextual equivalent.
+- Test: user-facing eligibility labels describe work as ready to merge or can be merged into main.
+- Audit: UI, notifications, CLI output/help, and user docs do not use “landed” or “landable” as vague merge-status language.
+- Test: the existing `repoos landable` CLI command and API route remain compatible.
 
 ### Notes for AI
 
@@ -66,4 +67,6 @@ Limit the change to user-facing text. Internal code comments and technical descr
 - 2026-11-01T15:39:05Z · body: E2 · Replace “landed” in user-facing merge messages (added 1, removed 1)
 - 2026-11-01T15:39:05Z · note: bundle edit E2
 - 2026-11-01T15:39:06Z · body: E2 · Replace “landed” in user-facing merge messages (added 1, removed 1)
+- 2026-11-01T15:39:06Z · note: bundle edit E2
+- 2026-11-01T15:39:06Z · body: E2 · Replace “landed” in user-facing merge messages (added 4, removed 2)
 - 2026-11-01T15:39:06Z · note: bundle edit E2
