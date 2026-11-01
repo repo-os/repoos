@@ -3,6 +3,9 @@ id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
 status: active
+hold: true
+hold_reason: Nick requested stop duplicate local checks and restart with remote validation
+hold_at: "2026-11-01T08:59:45.723Z"
 priority: p1
 area: core
 assigned_to: ai
@@ -11,8 +14,12 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-10-31T22:26:34Z"
+updated_at: "2026-11-01T08:59:48Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-01T07:59:36.226Z: repoos check failed: tests — onKeydown: [Function: invoker] {"
+handoff_signal_retry_count: 2
 review_passes: 1
+dev_error_count: 1
 ---
 ## Problem
 
@@ -58,3 +65,30 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T20:31:51Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-10-31T20:32:45Z · note: review pass 1: good to go
 - 2026-10-31T22:26:34Z · status review→active
+- 2026-10-31T23:09:21Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T23:09:36Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T23:22:59Z · note: adopted orphaned engineer pid 84641
+- 2026-11-01T00:51:05Z · message_queued at 2026-11-01T00:51:05.318Z
+- 2026-11-01T00:56:20Z · message_queued at 2026-11-01T00:56:20.747Z
+- 2026-11-01T01:01:34Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-01T01:01:35Z · note: handoff requested (cli)
+- 2026-11-01T01:02:17Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 57982, alive), #0995 check (pid 58198, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-01T01:15:47Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-01T01:27:29Z · note: adopted orphaned engineer pid 97089
+- 2026-11-01T01:27:40Z · message_queued at 2026-11-01T01:27:40.547Z
+- 2026-11-01T02:16:58Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 2963, alive), #0993 check (pid 61737, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-01T02:28:43Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-01T02:31:14Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 21218, alive), #0993 check (pid 61737, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 11s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-01T02:40:44Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-01T04:42:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:47:50Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:47:50Z · message_delivered: 3 message(s)
+- 2026-11-01T06:26:37Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-01T06:26:37Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-01T06:53:34Z · engineer crash recovery: start failed — Could not create the task worktree: not a git repository
+- 2026-11-01T07:33:28Z · needs_input
+- 2026-11-01T08:09:15Z · message_queued at 2026-11-01T08:09:15.821Z
+- 2026-11-01T08:09:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-01T08:14:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T08:59:45Z · engineer stopped by request
+- 2026-11-01T08:59:48Z · held, held-reason, held-at

@@ -11,6 +11,7 @@ import {
 } from "../core/docs.js";
 import { loadConfig } from "../core/config.js";
 import { c } from "../cli/colors.js";
+import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "../server/agents.js";
 import { currentDocsDir, importDocsInto, scaffoldDocsInto } from "./docs-io.js";
 
@@ -42,6 +43,7 @@ export async function cmdNewDoc(args: string[]): Promise<void> {
       const docResult = await createFreeformDocument(config, description, async (desc) => {
         const result = await runPrompt(pm, docFreeformPrompt(desc), {
           cwd: config.root,
+          ...repoAgentRunTmpOpts(config),
         });
         // Freeform doc authoring is real PM spend that belongs to no task (0311).
         recordOneShotSession(config.root, pm, result, { sessionType: "pm", taskId: null });

@@ -4,6 +4,7 @@
 import type { RouteHandler } from "./types.js";
 import type { Agent } from "../../core/types.js";
 import { json, readBody } from "./utils.js";
+import { repoAgentRunTmpOpts } from "../../core/agent-run-tmpdir.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession, mergeAgentOverride } from "../agents.js";
 
 /** Apply optional `cliOverride` / `modelOverride` from a request body onto the base PM agent. */
@@ -85,6 +86,7 @@ export const createFreeformSkillRoute: RouteHandler = async (ctx, req, res) => {
     const skillResult = await createFreeformSkill(config, description, async (desc) => {
       const result = await runPrompt(pm, skillFreeformPrompt(desc), {
         cwd: config.root,
+        ...repoAgentRunTmpOpts(config),
         onLine: runId
           ? (line) => {
               emitEvent({
@@ -129,6 +131,7 @@ export const createFreeformDoc: RouteHandler = async (ctx, req, res) => {
     const docResult = await createFreeformDocument(config, description, async (desc) => {
       const result = await runPrompt(pm, docFreeformPrompt(desc), {
         cwd: config.root,
+        ...repoAgentRunTmpOpts(config),
         onLine: runId
           ? (line) => {
               emitEvent({

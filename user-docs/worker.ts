@@ -1,3 +1,7 @@
+interface Fetcher {
+  fetch(request: Request): Promise<Response>;
+}
+
 interface Env {
   ASSETS: Fetcher;
 }
@@ -54,14 +58,17 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const twinPath = markdownTwinPath(url.pathname);
+    // The docs home has no index.md twin. Serve the generated llms.txt index
+    // so Accept: text/markdown at / is not a second copy to maintain.
+    const negotiatedPath = url.pathname === "/" ? "/llms.txt" : twinPath;
 
     if (
       (request.method === "GET" || request.method === "HEAD") &&
-      twinPath &&
+      negotiatedPath &&
       prefersMarkdown(request.headers.get("Accept"))
     ) {
       const twinUrl = new URL(request.url);
-      twinUrl.pathname = twinPath;
+      twinUrl.pathname = negotiatedPath;
       const twinRequest = new Request(twinUrl, request);
       const markdown = await env.ASSETS.fetch(twinRequest);
       if (markdown.ok) {

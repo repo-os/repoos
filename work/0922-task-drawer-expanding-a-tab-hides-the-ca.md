@@ -12,7 +12,7 @@ branch: feat/task-drawer-expanding-a-tab-hides-the-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-10-22T05:45:27Z"
-updated_at: "2026-10-31T13:15:39Z"
+updated_at: "2026-11-01T07:01:10Z"
 last_close_out_gate_ms: 151500
 last_close_out_gate_at: "2026-10-22T13:17:38.727Z"
 review_passes: 1
@@ -147,3 +147,11 @@ Start from the `fullscreen` ref, `toggleFullscreen`, `onEscapeKeyDown` and the `
 - 2026-10-31T09:46:03Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T11:43:39Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T13:15:39Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-31T17:33:02Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-31T18:11:14Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-31T20:32:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-10-31T23:26:28Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T01:27:38Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:42:34Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:47:49Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T07:01:10Z · message_overdue: still queued after 60m without being delivered
