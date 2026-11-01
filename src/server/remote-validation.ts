@@ -36,6 +36,7 @@ import { TestFileTimingCollector, testFileTimings } from "../core/test-file-timi
  */
 
 import { spawn } from "node:child_process";
+import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
 import { writeChildStdin } from "../core/child-stdin.js";
 import {
   bundleUploadLimitsFromConfig,
@@ -2060,10 +2061,11 @@ function runLocal(
   },
 ): Promise<RemoteExecResult> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: opts.cwd });
+    const child = spawn(cmd, args, { cwd: opts.cwd, detached: process.platform !== "win32" });
     let output = "";
     let timedOut = false;
     let settled = false;
+    let termination: Promise<void> | undefined;
     const done = (code: number | null): void => {
       if (settled) return;
       settled = true;
@@ -2071,7 +2073,12 @@ function runLocal(
       resolve({ code, output, timedOut });
     };
     opts.registerAbort?.(() => {
-      if (!settled) child.kill("SIGKILL");
+      if (settled) return;
+      if (child.pid && process.platform !== "win32") {
+        termination ??= terminateProcessGroupAndWait(child.pid);
+      } else {
+        child.kill("SIGKILL");
+      }
     });
     const onData = (b: Buffer): void => {
       const s = b.toString("utf8");
@@ -2084,10 +2091,22 @@ function runLocal(
       output += `\n[could not spawn ${cmd}: ${(e as Error).message}]\n`;
       done(null);
     });
-    child.on("close", (code) => done(code));
+    child.on("close", (code) => {
+      void (async () => {
+        if (child.pid && process.platform !== "win32" && (termination || processGroupAlive(child.pid))) {
+          termination ??= terminateProcessGroupAndWait(child.pid);
+          await termination;
+        }
+        done(code);
+      })();
+    });
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      if (child.pid && process.platform !== "win32") {
+        termination ??= terminateProcessGroupAndWait(child.pid);
+      } else {
+        child.kill("SIGKILL");
+      }
     }, opts.timeoutMs);
   });
 }

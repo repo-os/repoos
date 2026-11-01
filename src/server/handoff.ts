@@ -25,6 +25,7 @@ import {
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
 import type { LogLevel } from "../core/logger.js";
 import type { PreviewManager } from "./preview.js";
@@ -98,7 +99,7 @@ interface RunResult {
   error?: NodeJS.ErrnoException;
 }
 
-function run(
+export function runHandoffCommand(
   cmd: string,
   args: string[],
   cwd: string,
@@ -116,6 +117,16 @@ function run(
     let stdout = "";
     let stderr = "";
     let settled = false;
+    let childClosed = false;
+    let closeCode: number | null = null;
+    let cancellationRequested = false;
+    let timedOut = false;
+    let termination: Promise<void> | undefined;
+    let finalizePromise: Promise<void> | undefined;
+    let closeResolve!: () => void;
+    const childClose = new Promise<void>((resolveClose) => {
+      closeResolve = resolveClose;
+    });
     let timer: ReturnType<typeof setTimeout>;
     const done = (status: number | null, error?: NodeJS.ErrnoException): void => {
       if (settled) return;
@@ -134,33 +145,48 @@ function run(
       onChunk?.(text);
     });
     child.on("error", (error: NodeJS.ErrnoException) => done(null, error));
-    child.on("close", (code) => done(code));
-    registerCancel?.(
-      () =>
-        new Promise<boolean>((resolve) => {
-          if (settled || !child.pid) return resolve(settled);
-          try {
-            if (process.platform === "win32") child.kill("SIGTERM");
-            else process.kill(-child.pid, "SIGTERM");
-          } catch (error) {
-            if ((error as NodeJS.ErrnoException).code !== "ESRCH") return resolve(false);
+    const finalize = (code: number | null): Promise<void> => {
+      if (finalizePromise) return finalizePromise;
+      finalizePromise = (async () => {
+        if (child.pid && process.platform !== "win32") {
+          if (!termination && processGroupAlive(child.pid)) {
+            termination = terminateProcessGroupAndWait(child.pid);
           }
-          const verify = setTimeout(() => {
-            if (settled) return resolve(true);
-            try {
-              if (process.platform === "win32") child.kill("SIGKILL");
-              else process.kill(-child.pid!, "SIGKILL");
-            } catch (error) {
-              if ((error as NodeJS.ErrnoException).code !== "ESRCH") return resolve(false);
-            }
-          }, 1500);
-          child.once("close", () => {
-            clearTimeout(verify);
-            resolve(true);
-          });
-        }),
+          await termination;
+        }
+        done(cancellationRequested || timedOut ? null : code);
+      })();
+      return finalizePromise;
+    };
+    child.on("close", (code) => {
+      childClosed = true;
+      closeCode = code;
+      closeResolve();
+      void finalize(code);
+    });
+    registerCancel?.(
+      async () => {
+        if (settled) return true;
+        if (!child.pid) return settled;
+        cancellationRequested = true;
+        if (process.platform === "win32") {
+          child.kill("SIGTERM");
+          await childClose;
+          return settled;
+        }
+        termination ??= terminateProcessGroupAndWait(child.pid);
+        await termination;
+        if (!childClosed) await childClose;
+        await finalize(closeCode);
+        return settled;
+      },
     );
-    timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
+    timer = setTimeout(() => {
+      timedOut = true;
+      if (!child.pid) return;
+      if (process.platform === "win32") child.kill("SIGKILL");
+      else termination ??= terminateProcessGroupAndWait(child.pid);
+    }, timeoutMs);
   });
 }
 
@@ -284,7 +310,7 @@ async function runCheck(
   };
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
   for (const candidate of candidates) {
-    last = await run(
+    last = await runHandoffCommand(
       candidate[0],
       [...candidate.slice(1)],
       worktree,
