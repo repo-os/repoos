@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 756475
+last_close_out_gate_at: "2026-11-01T14:58:20.128Z"
 id: "0998"
 title: Stop runtime model pause updates from blocking close-out as dirty config
 type: bug
@@ -10,7 +12,7 @@ created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
 model_override: composer-2.5
 created_at: "2026-11-01T09:46:53Z"
-updated_at: "2026-11-01T14:24:57Z"
+updated_at: "2026-11-01T14:58:20Z"
 last_check_failure: "repoos check at 2026-11-01T13:59:35.581Z: repoos check failed: tests — dir: undefined,"
 handoff_signal_retry_count: 1
 dev_error_count: 2
@@ -75,3 +77,5 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T14:24:01Z · status active→review
 - 2026-11-01T14:24:01Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-01T14:24:57Z · note: review pass 1: good to go
+- 2026-11-01T14:58:20Z · close-out gate completed in 756s
+
