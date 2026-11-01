@@ -138,3 +138,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T23:05:50Z · message_queued at 2026-11-01T23:05:50.485Z
 - 2026-11-01T23:06:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T23:06:46Z · status active→review
+- 2026-11-01T23:06:46Z · message_delivered: 1 message(s)
