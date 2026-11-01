@@ -11,7 +11,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-11-01T12:01:51Z"
+updated_at: "2026-11-01T12:02:55Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T07:59:36.226Z: repoos check failed: tests — onKeydown: [Function: invoker] {"
 handoff_signal_retry_count: 2
@@ -128,3 +128,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T11:53:01Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-01T11:53:16Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T12:01:51Z · body
+- 2026-11-01T12:02:55Z · handoff_deferred: 1 queued message(s) must be read before review
