@@ -135,9 +135,9 @@ describe("resolveActiveEngineerCardHint (agent silence)", () => {
 
 describe("remoteTelemetryMismatch (#0998)", () => {
   it("flags host-lock holder when the server registry is idle", async () => {
-    const { remoteTelemetryMismatch, taskHasBlockingCheckOrRemote } = await import(
-      "../../server/active-task-card.js"
-    );
+    const { remoteTelemetryMismatch, taskHasBlockingCheckOrRemote } =
+      await import("../../server/active-task-card.js");
+    type RemoteValidator = import("../../server/remote-validation.js").RemoteValidator;
     const mismatch = remoteTelemetryMismatch(
       "0998",
       null,
@@ -171,38 +171,34 @@ describe("remoteTelemetryMismatch (#0998)", () => {
     expect(mismatch).toContain("0998");
 
     expect(
-      taskHasBlockingCheckOrRemote(
-        "0998",
-        () => [],
-        {
-          taskActivity: () => null,
-          activeRemoteRuns: () => [],
-          hostStatus: () => [
-            {
-              host: "thinkpad",
-              user: "nick",
-              labels: [],
-              maxConcurrent: 1,
-              inFlight: 0,
-              queued: 0,
-              probed: true,
-              healthy: true,
-              hostLock: {
-                holders: [
-                  {
-                    state: "holding",
-                    taskId: "0998",
-                    label: "#0998",
-                    phase: "self-check",
-                    ageSecs: 120,
-                  },
-                ],
-                waiters: [],
-              },
+      taskHasBlockingCheckOrRemote("0998", () => [], {
+        taskActivity: () => null,
+        activeRemoteRuns: () => [],
+        hostStatus: () => [
+          {
+            host: "thinkpad",
+            user: "nick",
+            labels: [],
+            maxConcurrent: 1,
+            inFlight: 0,
+            queued: 0,
+            probed: true,
+            healthy: true,
+            hostLock: {
+              holders: [
+                {
+                  state: "holding",
+                  taskId: "0998",
+                  label: "#0998",
+                  phase: "self-check",
+                  ageSecs: 120,
+                },
+              ],
+              waiters: [],
             },
-          ],
-        },
-      ),
+          },
+        ],
+      } as unknown as RemoteValidator),
     ).toBe(true);
   });
 });
