@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 764324
+last_close_out_gate_at: "2026-11-01T09:45:05.747Z"
 id: "0993"
 title: Auto-recover tasks that are active with no live engineer
 type: bug
@@ -11,7 +13,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-11-01T09:02:36Z"
+updated_at: "2026-11-01T09:45:05Z"
 review_passes: 1
 ---
 ## Problem
@@ -98,3 +100,5 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-11-01T08:43:50Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 53971, alive), #0994 check (pid 49829, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 13s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-01T08:54:05Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T09:02:36Z · note: Nick explicitly approved restarting Move to done and landing if remote validation passes. Duplicate local tests stopped; server remote validator restarted; thinkpad, bee and mini passed prerequisite probes.
+- 2026-11-01T09:45:05Z · close-out gate completed in 764s
+
