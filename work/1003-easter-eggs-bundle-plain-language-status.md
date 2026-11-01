@@ -9,14 +9,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T15:37:19Z"
+updated_at: "2026-11-01T15:39:05Z"
 ---
 ## Items
-
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
-- [ ] **E2 · Replace “landed” in user-facing merge messages** (web) — say “merged into main” when a task's changes have been merged into the main branch. Source: Nick's terminology feedback, 2026-11-01.
+- [ ] **E2 · Replace “landed” and “landable” merge wording** (web) — use plain-language variants of “merged into main” for completed merges and “ready to merge” for eligible changes. Source: Nick's terminology feedback, 2026-11-01.
 
-Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `repoos bundle edit`; never replace the whole body.
 
 ## E1 · Replace “wedged” with heartbeat wording
 
@@ -66,3 +64,4 @@ Limit the change to user-facing text. Internal code comments and technical descr
 
 - 2026-11-01T15:37:17Z · created · njachowski@gmail.com
 - 2026-11-01T15:37:19Z · screenshots
+- 2026-11-01T15:39:05Z · body: Items (added 1, removed 2)
