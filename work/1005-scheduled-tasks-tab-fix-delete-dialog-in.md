@@ -47,9 +47,9 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "route": "/agents?tab=scheduled",
 "highlight": "[role=\"dialog\"]",
 "steps": [
-  {
-    "click": "[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child"
-  }
+{
+  "click": "[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child"
+}
 ]
 }
 ]
