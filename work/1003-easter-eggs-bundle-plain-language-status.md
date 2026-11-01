@@ -75,6 +75,7 @@ The four panels are Feature releases, Live activity, Needs a decision, and Needs
 ![Screenshot-2026-11-01-at-23.31.44](/api/tasks/1003/attachments/att_6dfbfffd-07f3-4c0f-8e59-f8a6df429326.png)
 ![Screenshot-2026-11-01-at-23.30.58](/api/tasks/1003/attachments/att_b17f9b26-3b1a-4276-9c56-124c2c78c9b9.png)
 ![Mission Control panels have uneven heights and a 3+1 layout](/api/tasks/1003/attachments/att_5f8b6a2b-d1b4-469c-bb0f-bdfe98eddb91.png)
+![Agents settings reference: combine default and custom agent sections](/api/tasks/1003/attachments/att_003c5df7-edd1-40f2-bc8f-271510dca214.png)
 
 ## Activity
 
@@ -99,3 +100,4 @@ The four panels are Feature releases, Live activity, Needs a decision, and Needs
 - 2026-11-01T15:43:22Z · note: bundle edit E3
 - 2026-11-01T15:43:23Z · body: E3 · Mission Control panels use a balanced 2×2 layout (added 1)
 - 2026-11-01T15:43:23Z · note: bundle edit E3
+- 2026-11-01T16:06:48Z · screenshots
