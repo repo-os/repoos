@@ -42,12 +42,12 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 "route": "/checks?tab=runs",
 "highlight": ".cr-test-timings table",
 "steps": [
-  {
-    "click": "tr.cr-expandable"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "tr.cr-expandable"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "checks:timings"
 }
