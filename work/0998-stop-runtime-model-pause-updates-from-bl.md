@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0998"
 title: Stop runtime model pause updates from blocking close-out as dirty config
 type: bug
@@ -36,3 +37,4 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T09:57:33Z · body: Notes for AI (added 1, removed 1)
 - 2026-11-01T09:57:33Z · message_queued at 2026-11-01T09:57:33.868Z
 - 2026-11-01T10:02:44Z · message_queued at 2026-11-01T10:02:44.126Z
+
