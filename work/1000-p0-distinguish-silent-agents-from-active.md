@@ -2,14 +2,14 @@
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
-status: review
+status: active
 priority: p0
 area: [web, server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T19:33:20Z"
+updated_at: "2026-11-01T19:33:43Z"
 review_passes: 2
 review_rounds: 1
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
@@ -126,3 +126,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T19:32:29Z · status active→review
 - 2026-11-01T19:33:04Z · note: review pass 2: needs some work
 - 2026-11-01T19:33:20Z · review_cli_override, review_model_override
+- 2026-11-01T19:33:43Z · status review→active
