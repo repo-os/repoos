@@ -11,7 +11,7 @@ branch: feat/remote-changed-test-selection-must-retai
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T14:19:48Z"
-updated_at: "2026-11-01T15:50:00Z"
+updated_at: "2026-11-01T15:54:08Z"
 ---
 ## Problem
 Remote validation receives the task commit but may not have the requested base ref such as main. scripts/select-test-files.mjs then cannot compute a merge base and safely falls back to the entire suite. On 2026-11-01, #0998's remote runner reported that main was not a valid object and expanded a scoped check to all 645 test files. This wastes many minutes and large bundle uploads on ordinary changes.
@@ -41,3 +41,4 @@ Inspect scripts/select-test-files.mjs, scripts/run-tests.mjs, src/server/remote-
 - 2026-11-01T15:40:15Z · body
 - 2026-11-01T15:50:00Z · message_queued at 2026-11-01T15:50:00.425Z
 - 2026-11-01T15:50:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-01T15:54:08Z · body
