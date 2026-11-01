@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-01T15:54:15Z"
+updated_at: "2026-11-01T15:54:16Z"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -18,10 +18,9 @@ The protected set revealed several different cases: 12 tasks marked done (six wi
 
 The current warning gives one total and suggests `repoos gc`, but does not make clear which entries are safe to remove, why others are retained, or that normal maintenance only collects integration candidates.
 
-
 ## Desired UX
+Make cleanup run automatically for worktrees that RepoOS can prove are safe to remove, and explain retained worktrees by reason. Derive fail-closed rules for completed, archived, missing, dirty, and unmerged task branches. Keep active or human-owned work protected; preserve any source or task data that is not proven redundant with the canonical main checkout. Make dry-run output and the worktree warning distinguish safe cleanup candidates from protected entries and worktrees outside RepoOS's control.
 
-Give each retained worktree a clear disposition based on live task status, branch contents, and working-tree changes. Preserve any source change not proven to be present in main. Reconcile task state and remove a worktree only through RepoOS's guarded lifecycle after proving its contents are safe to discard.
 
 ## Acceptance criteria
 
@@ -42,3 +41,4 @@ Use `repoos gc --dry-run` and RepoOS status as evidence, not as permission to de
 - 2026-11-01T15:50:52Z · created · njachowski@gmail.com
 - 2026-11-01T15:54:14Z · title
 - 2026-11-01T15:54:15Z · body: Problem (added 3, removed 1)
+- 2026-11-01T15:54:16Z · body: Desired UX (added 1, removed 1)
