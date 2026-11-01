@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T18:37:16Z"
+updated_at: "2026-11-01T18:37:44Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived.
@@ -96,6 +96,24 @@ Use the attached screenshot as layout context. Its Cursor model-refresh timeout 
 ![Review passes: move Latest into the callout row and identify the reviewer agent](/api/tasks/1003/attachments/att_44a3ed0f-5b52-49b1-bb92-0ff74721dcc1.png)
 ![Review pass selection: highlight the selected older pass and mark it Not latest](/api/tasks/1003/attachments/att_a1a8b279-092b-4e5f-aed7-1b9cb717ef19.png)
 
+## E5 · Make review-pass selection and reviewer identity clear
+### Problem
+
+The Review tab shows Latest on a separate row below the green Good to go callout, making the active selection unclear. Selecting an older review pass does not clearly communicate that it is not the latest. The reviewer column also displays the generic word “reviewer” instead of the coding agent that produced the review.
+
+### Desired UX
+
+Keep the Latest marker on the right side of the Good to go callout row. Select the latest pass by default and visibly highlight whichever pass is selected. When an older pass is selected, change the callout marker to “Not latest” using a distinct color. Show the reviewer coding agent (for example, Cursor or Codex) in the reviewer column; keep the model in its separate column.
+
+### Acceptance criteria
+
+- The latest pass is selected by default, visibly highlighted, and marked Latest in the callout row.
+- Selecting an older pass highlights that row and changes the callout marker to Not latest with a distinct visual treatment.
+- The selected pass controls the displayed review details; the Latest marker does not remain when an older pass is selected.
+- The reviewer column displays the recorded coding agent identity instead of the generic “reviewer” role label, while preserving the model column.
+- Tests cover default selection, switching between latest and older passes, reviewer identity, and responsive/accessibility behavior.
+
+
 ## Activity
 
 - 2026-11-01T15:37:17Z · created · njachowski@gmail.com
@@ -132,3 +150,4 @@ Use the attached screenshot as layout context. Its Cursor model-refresh timeout 
 - 2026-11-01T18:37:00Z · screenshots
 - 2026-11-01T18:37:16Z · body: Items (added 2, removed 2)
 - 2026-11-01T18:37:16Z · screenshots
+- 2026-11-01T18:37:44Z · body: E5 · Make review-pass selection and reviewer identity clear (added)
