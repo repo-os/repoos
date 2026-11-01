@@ -33,10 +33,19 @@ export default class RepoOSProgressReporter {
 
   onTestCaseResult(testCase) {
     const result = testCase.result?.();
-    if (!result || result.state === "pending") return;
+    if (!result || result.state === "pending" || result.state === "todo") return;
     const diagnostic = testCase.diagnostic?.();
-    const durationMs = diagnostic?.duration;
+    const durationMs = diagnostic?.duration ?? (result.state === "skip" ? 0 : undefined);
     if (!Number.isFinite(durationMs) || durationMs < 0) return;
+    const outcome =
+      result.state === "pass" || result.state === "passed"
+        ? "passed"
+        : result.state === "fail" || result.state === "failed"
+          ? "failed"
+          : result.state === "skip" || result.state === "skipped"
+            ? "skipped"
+            : null;
+    if (!outcome) return;
     const moduleRef = testCase.module;
     const file = relative(process.cwd(), moduleRef?.moduleId ?? moduleRef?.id ?? "").replaceAll(
       "\\",
@@ -49,7 +58,7 @@ export default class RepoOSProgressReporter {
       caseId: testCase.id,
       retry: Number.isInteger(diagnostic?.retryCount) ? diagnostic.retryCount : 0,
       durationMs,
-      result: result.state,
+      result: outcome,
     };
     process.stdout.write(`::repoos-test-case::${JSON.stringify(payload)}\n`);
   }
