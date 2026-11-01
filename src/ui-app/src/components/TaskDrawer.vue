@@ -36,6 +36,7 @@ import type {
   DetectedAgent,
   CheckRunRow,
   ConflictResolutionSnapshot,
+  ReviewReport,
   UiHandoffCaptureEvidence,
 } from "../types";
 import {
@@ -59,7 +60,9 @@ import { api, JSON_OPTS } from "../api";
 import { checkRunSkipped } from "../../../core/check-skip.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import { useNow } from "../composables/useNow";
+import { integrationActiveCopy, integrationQueuedCopy } from "../lib/integration-pipeline-ui";
 import { isHoldActive } from "../../../core/task-selection.js";
+import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import { Clock3 } from "lucide-vue-next";
 import {
   needsInputBannerText,
@@ -936,6 +939,25 @@ const drawerStatusDetails = computed(() => {
     rows.push({ title: "Reviewer running", detail: "The reviewer is inspecting this task." });
   if (repo.isRunning(task.id) || repo.pmWorkingFor(task.id))
     rows.push({ title: "Work running", detail: "An agent is working on this task." });
+  const snap = repo.integration;
+  if (snap && task.status === "review") {
+    if (snap.active?.taskId === task.id && !snap.active.failed) {
+      const copy = integrationActiveCopy(snap, checkNow.value);
+      rows.push({
+        title: "Close-out progress",
+        timestamp: snap.active.startedAt,
+        detail: copy.label,
+      });
+    } else if (snap.queue.includes(task.id)) {
+      const queued = integrationQueuedCopy(snap, task.id);
+      if (queued) {
+        rows.push({
+          title: "Close-out queue",
+          detail: `${queued.label}\n${queued.title}`,
+        });
+      }
+    }
+  }
   return rows;
 });
 
@@ -3067,8 +3089,47 @@ const taskRounds = computed(() => {
 });
 
 /** Rendered (safe) Markdown of the report body. */
+const selectedReviewPass = ref<number | null>(null);
+const reviewPassBody = ref<ReviewReport | null>(null);
+const reviewPassLoading = ref(false);
+
+watch(
+  () => ui.active?.id,
+  () => {
+    selectedReviewPass.value = null;
+    reviewPassBody.value = null;
+  },
+);
+
+async function selectReviewPass(pass: number): Promise<void> {
+  const id = ui.active?.id;
+  if (!id) return;
+  selectedReviewPass.value = pass;
+  reviewPassLoading.value = true;
+  try {
+    const r = await api<{ ok: boolean; review: ReviewReport | null }>(
+      `/api/tasks/${id}/review/passes/${pass}`,
+    );
+    reviewPassBody.value = r.review;
+  } catch {
+    reviewPassBody.value = null;
+  } finally {
+    reviewPassLoading.value = false;
+  }
+}
+
+function showLatestReviewPass(): void {
+  selectedReviewPass.value = null;
+  reviewPassBody.value = null;
+}
+
+const displayedReviewReport = computed(() => {
+  if (selectedReviewPass.value === null) return review.value?.report ?? null;
+  return reviewPassBody.value;
+});
+
 const reviewHtml = computed(() =>
-  review.value?.report ? renderMarkdown(review.value.report.markdown) : "",
+  displayedReviewReport.value ? renderMarkdown(displayedReviewReport.value.markdown) : "",
 );
 
 /** True when a new review is in progress while a previous report is still
@@ -3135,7 +3196,7 @@ async function loadIntegrationConflictResolution(taskId: string): Promise<void> 
 watch(
   () => [ui.active?.id, inPipeline.value] as const,
   ([id, inPipe]) => {
-    if (!id || !inPipe) {
+    if (!id || !inPipe || id === SHOT_PREVIEW_FIXTURE_TASK_ID) {
       integrationConflictResolution.value = null;
       return;
     }
@@ -6287,6 +6348,17 @@ watch(
                 </dl>
               </div>
               <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
+                <div class="review-history-toolbar">
+                  <button
+                    type="button"
+                    class="review-history-latest"
+                    :class="{ 'is-active': selectedReviewPass === null }"
+                    @click="showLatestReviewPass"
+                  >
+                    Latest
+                  </button>
+                  <span v-if="reviewPassLoading" class="review-history-loading">Loading…</span>
+                </div>
                 <table class="review-history-table" aria-label="Feature review pass records">
                   <thead>
                     <tr>
@@ -6298,7 +6370,18 @@ watch(
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="h in reviewHistoryRows" :key="h.pass">
+                    <tr
+                      v-for="h in reviewHistoryRows"
+                      :key="h.pass"
+                      class="review-history-row"
+                      :class="{ 'is-selected': selectedReviewPass === h.pass }"
+                      tabindex="0"
+                      role="button"
+                      :aria-pressed="selectedReviewPass === h.pass"
+                      @click="selectReviewPass(h.pass)"
+                      @keydown.enter.prevent="selectReviewPass(h.pass)"
+                      @keydown.space.prevent="selectReviewPass(h.pass)"
+                    >
                       <td class="ta-left review-history-pass">#{{ h.pass }}</td>
                       <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
                       <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>

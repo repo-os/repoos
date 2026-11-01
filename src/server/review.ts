@@ -993,6 +993,36 @@ export class ReviewManager {
     };
   }
 
+  /** Stored report for one numbered pass (#0995 E4), or null when missing. */
+  readPass(taskId: string, pass: number): ReviewReport | null {
+    const file = reviewPassPath(this.config, taskId, pass);
+    if (!existsSync(file)) return null;
+    let raw: string;
+    try {
+      raw = readFileSync(file, "utf8");
+    } catch {
+      return null;
+    }
+    const doc = parseDocument(raw);
+    const str = (key: string): string => {
+      const v = doc.data[key];
+      return v === null || v === undefined ? "" : String(v);
+    };
+    const treeIdentity = str("tree_identity") || null;
+    return {
+      id: str("task") || taskId,
+      at: str("at"),
+      agent: str("agent"),
+      cli: str("cli"),
+      model: str("model"),
+      branch: str("branch"),
+      state:
+        str("state") === "failed" ? "failed" : str("state") === "incomplete" ? "incomplete" : "ok",
+      markdown: doc.body.trim(),
+      ...(treeIdentity ? { treeIdentity } : {}),
+    };
+  }
+
   /**
    * The synchronous gate both `run` and `send` share: is a review possible for
    * this task right now? Resolved before firing the async spawn so an HTTP

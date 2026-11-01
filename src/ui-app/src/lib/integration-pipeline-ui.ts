@@ -171,6 +171,32 @@ export interface IntegrationActiveCopy {
   stalled: boolean;
 }
 
+const INTEGRATING_PREFIX = "integrating · ";
+
+/**
+ * Reorder a live integrating label so the current stage and upload percent lead
+ * (#0995 E1). The full string is unchanged in Status details; the card uses
+ * this shorter-leading form so a three-line clamp keeps the useful parts.
+ */
+export function integrationProgressCardLabel(label: string): string {
+  if (!label.startsWith(INTEGRATING_PREFIX)) return label;
+  const tail = label.slice(INTEGRATING_PREFIX.length);
+  const pct = tail.match(/\(\d+%\)/)?.[0] ?? null;
+  const segments = tail
+    .split(" · ")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const stage = segments[0] ?? "";
+  const head: string[] = ["integrating"];
+  if (stage) head.push(stage);
+  if (pct) head.push(pct);
+  const used = new Set<string>([stage, pct].filter(Boolean) as string[]);
+  const rest = segments.slice(1).filter((part) => !used.has(part));
+  let out = head.join(" · ");
+  if (rest.length) out += ` · ${rest.join(" · ")}`;
+  return out;
+}
+
 /** Active-job copy for the board card and pipeline bar (#0740). */
 export function integrationActiveCopy(
   snap: IntegrationPipelineSnapshot,

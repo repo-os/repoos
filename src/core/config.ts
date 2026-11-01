@@ -2898,9 +2898,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       default: 180000,
       description:
         "How long a runner entry may have no live engineer process and no live child " +
-        "(milliseconds) before RepoOS clears it and restarts the same agent. " +
+        "before RepoOS clears it and restarts the same agent. " +
         "A running check, test, or remote-validation wait is never treated as gone. " +
-        "Minimum 15000. Automatic restarts are limited to 3 per task per hour.",
+        "Minimum 15 seconds. Automatic restarts are limited to 3 per task per hour.",
     },
     {
       key: "watchdog.activeWithoutEngineerRecoverMs",
@@ -2958,8 +2958,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       step: 60000,
       default: DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
       description:
-        "How far back (milliseconds) RepoOS counts engineer crashes for the failover " +
-        "threshold. Default 1800000 (30 minutes); minimum 60000 (1 minute). A clean " +
+        "How far back RepoOS counts engineer crashes for the failover " +
+        "threshold. Default 30 minutes; minimum 1 minute. A clean " +
         "turn clears the count, so an occasional crash over days does not trigger a switch.",
     },
     {
@@ -2995,10 +2995,10 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       step: 60_000,
       default: DEFAULT_CTO_NUDGE_IDLE_MS,
       description:
-        "How long (milliseconds) an active engineer may go without worktree activity before " +
+        "How long an active engineer may go without worktree activity before " +
         "the CTO sends one completion reminder. The nudge is held while a check, test, " +
         "remote validation, review or handoff gate is running, a message is queued, or the " +
-        "machine is under memory pressure. Default 300000 (5 minutes); minimum 30000. " +
+        "machine is under memory pressure. Default 5 minutes; minimum 30 seconds. " +
         "Invalid values fall back to the default.",
     },
     {
@@ -3012,9 +3012,9 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       step: 60_000,
       default: DEFAULT_CTO_NUDGE_COOLDOWN_MS,
       description:
-        "How long (milliseconds) the CTO waits before nudging the same task again after a " +
-        "completion reminder, and after recording a held-nudge reason. Default 3600000 " +
-        "(60 minutes); minimum 60000. Invalid values fall back to the default.",
+        "How long the CTO waits before nudging the same task again after a " +
+        "completion reminder, and after recording a held-nudge reason. Default 60 minutes; " +
+        "minimum 1 minute. Invalid values fall back to the default.",
     },
     {
       key: "skillSuggestions",
@@ -3515,17 +3515,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     },
     {
       key: "localChecks.queueTimeoutMs",
-      label: "Local check queue timeout (ms)",
+      label: "Local check queue timeout",
       type: "number",
       tier: "live",
       restartRequired: false,
       default: 2_700_000,
       description:
-        "How long a queued local `repoos check` waits for a slot before failing with an actionable timeout. Default 45 minutes (2_700_000 ms).",
+        "How long a queued local `repoos check` waits for a slot before failing with an actionable timeout. Default 45 minutes.",
     },
     {
       key: "localChecks.staleAfterMs",
-      label: "Local check heartbeat timeout (ms)",
+      label: "Local check heartbeat timeout",
       type: "number",
       tier: "live",
       restartRequired: false,
@@ -3535,7 +3535,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     },
     {
       key: "localChecks.reclaimGraceMs",
-      label: "Local check reclaim grace (ms)",
+      label: "Local check reclaim grace",
       type: "number",
       tier: "live",
       restartRequired: false,
@@ -3545,13 +3545,13 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     },
     {
       key: "playwright.queueTimeoutMs",
-      label: "Playwright queue timeout (ms)",
+      label: "Playwright queue timeout",
       type: "number",
       tier: "live",
       restartRequired: false,
       default: 2_700_000,
       description:
-        "How long queued Playwright work waits for a browser slot before failing. Default 45 minutes (2_700_000 ms).",
+        "How long queued Playwright work waits for a browser slot before failing. Default 45 minutes.",
     },
     {
       key: "remoteValidation.browserCaptureMode",
@@ -4170,13 +4170,13 @@ export function getConfigSchema(): ConfigFieldMeta[] {
     },
     {
       key: "model_routing.timeoutMs",
-      label: "Routing decision timeout (ms)",
+      label: "Routing decision timeout",
       type: "number",
       tier: "live",
       restartRequired: false,
       default: 8000,
       description:
-        "How long one routing decision may take before the configured fallback is used. Between 500 and 60000 ms.",
+        "How long one routing decision may take before the configured fallback is used. Between 0.5 and 60 seconds.",
     },
     {
       key: "model_routing.humanStepCheck",

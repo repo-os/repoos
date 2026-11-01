@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import type { LoadingSkeletonKind } from "../lib/loading-skeleton";
+import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../lib/work-board-columns";
 
 const props = withDefaults(defineProps<{ kind?: LoadingSkeletonKind }>(), {
   kind: "rows",
 });
 
-const itemCount = () => {
-  if (props.kind === "board") return 5;
+const columnCount = (): number => {
+  if (props.kind === "board") return WORK_BOARD_COLUMN_COUNT;
+  if (props.kind === "inputBoard") return INPUT_BOARD_COLUMN_COUNT;
+  return 0;
+};
+
+const itemCount = (): number => {
+  if (props.kind === "board" || props.kind === "inputBoard") return columnCount();
+  if (props.kind === "dashboard") return 6;
   if (props.kind === "cards" || props.kind === "deployments") return 3;
   if (props.kind === "targets") return 2;
   return 5;
@@ -14,7 +22,12 @@ const itemCount = () => {
 </script>
 
 <template>
-  <div class="page-skeleton" :class="`page-skeleton--${kind}`" aria-label="Loading page content">
+  <div
+    class="page-skeleton"
+    :class="`page-skeleton--${kind}`"
+    :style="columnCount() ? { '--skeleton-cols': String(columnCount()) } : undefined"
+    aria-label="Loading page content"
+  >
     <span v-for="i in itemCount()" :key="i" class="page-skeleton__item">
       <i></i><i></i><i></i>
     </span>
@@ -31,15 +44,18 @@ const itemCount = () => {
   width: 100%;
 }
 .page-skeleton--cards,
-.page-skeleton--deployments {
+.page-skeleton--deployments,
+.page-skeleton--dashboard {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
-.page-skeleton--board {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+.page-skeleton--board,
+.page-skeleton--inputBoard {
+  grid-template-columns: repeat(var(--skeleton-cols, 6), minmax(0, 1fr));
   align-content: start;
   height: 100%;
 }
-.page-skeleton--board .page-skeleton__item {
+.page-skeleton--board .page-skeleton__item,
+.page-skeleton--inputBoard .page-skeleton__item {
   min-height: 240px;
   align-content: start;
 }
@@ -64,6 +80,9 @@ const itemCount = () => {
   align-content: start;
   gap: 24px;
   padding: 20px;
+}
+.page-skeleton--dashboard .page-skeleton__item {
+  min-height: 72px;
 }
 .page-skeleton__matrix {
   grid-column: 1 / -1;
@@ -102,10 +121,12 @@ const itemCount = () => {
   }
 }
 @media (max-width: 760px) {
-  .page-skeleton--board {
+  .page-skeleton--board,
+  .page-skeleton--inputBoard {
     grid-template-columns: 1fr;
   }
-  .page-skeleton--board .page-skeleton__item {
+  .page-skeleton--board .page-skeleton__item,
+  .page-skeleton--inputBoard .page-skeleton__item {
     min-height: 96px;
   }
 }
