@@ -99,6 +99,7 @@ describe("resolveActiveEngineerCardHint (#0998 remote wait)", () => {
           stage: "run",
           startedAt: "2026-11-01T11:58:00.000Z",
           elapsedMs: 120_000,
+          lastProgressAt: "2026-11-01T11:59:30.000Z",
         },
         queue: null,
         telemetryMismatch: null,
@@ -111,6 +112,62 @@ describe("resolveActiveEngineerCardHint (#0998 remote wait)", () => {
     });
     expect(hint.label).toContain("remote self-check");
     expect(hint.cls).toBe("tc-moving");
+    expect(hint.blocksAgentInterrupt).toBe(true);
+  });
+
+  it("keeps an old run live while its progress heartbeat advances", () => {
+    const hint = resolveActiveEngineerCardHint({
+      nowMs: NOW,
+      agentSilentMs: 20 * 60 * 1000,
+      check: null,
+      remote: {
+        run: {
+          host: "thinkpad",
+          kind: "self-check",
+          stage: "tests",
+          startedAt: "2026-11-01T10:00:00.000Z",
+          elapsedMs: 2 * 60 * 60 * 1000,
+          lastProgressAt: "2026-11-01T11:59:50.000Z",
+        },
+        queue: null,
+        telemetryMismatch: null,
+      },
+      localQueueLabel: null,
+      localQueueTitle: null,
+      remotePoolQueueLabel: null,
+      remotePoolQueueTitle: null,
+      busyChild: null,
+    });
+    expect(hint.label).toContain("remote self-check · tests");
+    expect(hint.cls).toBe("tc-moving");
+    expect(hint.blocksAgentInterrupt).toBe(true);
+  });
+
+  it("labels a remote run stalled from its last heartbeat, not its total age", () => {
+    const hint = resolveActiveEngineerCardHint({
+      nowMs: NOW,
+      agentSilentMs: 20 * 60 * 1000,
+      check: null,
+      remote: {
+        run: {
+          host: "thinkpad",
+          kind: "self-check",
+          stage: "tests",
+          startedAt: "2026-11-01T10:00:00.000Z",
+          elapsedMs: 2 * 60 * 60 * 1000,
+          lastProgressAt: "2026-11-01T11:55:00.000Z",
+        },
+        queue: null,
+        telemetryMismatch: null,
+      },
+      localQueueLabel: null,
+      localQueueTitle: null,
+      remotePoolQueueLabel: null,
+      remotePoolQueueTitle: null,
+      busyChild: null,
+    });
+    expect(hint.label).toMatch(/^remote validation stalled/);
+    expect(hint.title).toContain("thinkpad");
     expect(hint.blocksAgentInterrupt).toBe(true);
   });
 });

@@ -24,6 +24,9 @@ controls:
   `queued · runner …` with host and elapsed time. If host-lock telemetry shows an
   SSH slot for the task while the runner registry is idle, the card reports
   **validation wait · telemetry mismatch** instead of a healthy idle host (#1000).
+  A running remote job remains live according to its last output heartbeat,
+  independent of total run age; a stale heartbeat is shown as a stalled remote
+  validation and keeps restart blocked until RepoOS confirms the run is over.
 - `playwright.maxConcurrent` (default **1**) — one shared semaphore for smoke,
   contrast audit, shot capture, and UI verification.
 - `remoteValidation.localFallback` — when a remote run falls back locally:

@@ -53,6 +53,7 @@ function remoteSnapshot(
           stage: activity.run.stage,
           startedAt: activity.run.startedAt,
           elapsedMs: activity.run.elapsedMs,
+          lastProgressAt: activity.run.lastProgressAt,
         }
       : null,
     queue: activity.queue

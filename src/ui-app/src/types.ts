@@ -1038,6 +1038,7 @@ export interface RemoteTaskActivity {
     kind: RemoteRunKind;
     startedAt: string;
     elapsedMs: number;
+    lastProgressAt: string;
     stage: string | null;
     phases: RemoteRunPhaseTiming[];
   } | null;

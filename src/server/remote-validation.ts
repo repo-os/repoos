@@ -426,6 +426,8 @@ export interface RemoteTaskActivity {
     kind: RemoteRunKind;
     startedAt: string;
     elapsedMs: number;
+    /** Last output/progress heartbeat, independent of total run age. */
+    lastProgressAt: string;
     stage: string | null;
     phases: RemoteRunPhaseTiming[];
   } | null;
@@ -622,6 +624,8 @@ export interface ActiveRemoteRunInfo {
   phase: CheckRunPhase;
   scope: string;
   startedAt: string;
+  /** Last output/progress heartbeat for the active stage. */
+  lastProgressAt?: string;
   /** e.g. `bundle`, `upload`, `queue`, `lock`, `run`, `install`, `test`. */
   stage: string | null;
   uploadBytes: number | null;
@@ -668,6 +672,7 @@ export class ActiveRemoteRunRegistry {
     }
     const prev = this.runs.get(taskId);
     const now = Date.now();
+    info = { ...info, lastProgressAt: new Date(now).toISOString() };
     const phases = (prev?.phases ?? info.phases ?? []).map((p) => ({ ...p }));
     const stage = info.stage ?? "run";
     const last = phases[phases.length - 1];
@@ -687,6 +692,12 @@ export class ActiveRemoteRunRegistry {
       startedAt: prev ? new Date(now).toISOString() : info.startedAt,
     });
     this.runs.set(taskId, { ...info, kind: info.kind ?? prev?.kind, phases });
+  }
+
+  /** Refresh the progress heartbeat when remote output advances within a stage. */
+  touch(taskId: string): void {
+    const run = this.runs.get(taskId);
+    if (run) run.lastProgressAt = new Date().toISOString();
   }
 }
 
@@ -710,6 +721,7 @@ export function taskActivityFromRegistry(
       kind: info.kind ?? remoteRunKindForPhase(info.phase),
       startedAt: info.startedAt,
       elapsedMs: Math.max(0, Date.now() - Date.parse(info.startedAt)),
+      lastProgressAt: info.lastProgressAt ?? info.startedAt,
       stage: info.stage,
       phases: info.phases ?? [],
     },
@@ -2951,6 +2963,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.clearIdleTimer();
     const startedAt = Date.now();
     const emit = (s: string): void => {
+      this.activeRunRegistry.touch(opts.taskId);
       fileTimingCollector.push(s);
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
@@ -5938,6 +5951,7 @@ export class TailscaleRunner implements RemoteValidator {
           }
         };
         const emitStream = (s: string): void => {
+          this.activeRunRegistry.touch(opts.taskId);
           streamBuf += s;
           advanceStepStage();
           if (!gateFinished && remoteRunHasGateExit(streamBuf)) {
