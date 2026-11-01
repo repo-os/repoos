@@ -1,11 +1,11 @@
 /** Per-test-file temp directory nested under global-reap's run root. */
 import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach } from "vitest";
+import { defaultOsTmpdir } from "../helpers";
 
 const runRoot = process.env.REPOOS_TEST_TMP_ROOT;
-const base = runRoot ?? tmpdir();
+const base = runRoot ?? defaultOsTmpdir();
 const root = mkdtempSync(join(base, runRoot ? "file-" : "repoos-vitest-"));
 const previousLocalCheckSlotHome = process.env.REPOOS_LOCAL_CHECK_SLOT_HOME;
 process.env.TMPDIR = root;

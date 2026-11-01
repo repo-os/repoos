@@ -174,3 +174,30 @@ export function reapStaleFixtures(prefix: string): number {
   }
   return removed;
 }
+
+/**
+ * The OS default temp directory, ignoring TMPDIR/TMP/TEMP for this call.
+ * Managed agent runs often point those at a directory inside the checkout; nested
+ * paths still satisfy `git rev-parse --is-inside-work-tree`, which breaks
+ * nogit fixtures that use `mkdtempSync(join(tmpdir(), …))`.
+ */
+export function defaultOsTmpdir(): string {
+  const saved = {
+    TMPDIR: process.env.TMPDIR,
+    TMP: process.env.TMP,
+    TEMP: process.env.TEMP,
+  };
+  delete process.env.TMPDIR;
+  delete process.env.TMP;
+  delete process.env.TEMP;
+  try {
+    return tmpdir();
+  } finally {
+    if (saved.TMPDIR === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = saved.TMPDIR;
+    if (saved.TMP === undefined) delete process.env.TMP;
+    else process.env.TMP = saved.TMP;
+    if (saved.TEMP === undefined) delete process.env.TEMP;
+    else process.env.TEMP = saved.TEMP;
+  }
+}
