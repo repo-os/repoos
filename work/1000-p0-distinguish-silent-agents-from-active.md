@@ -11,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T19:17:05Z"
+updated_at: "2026-11-01T19:21:46Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
@@ -121,3 +121,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T19:05:51Z · body
 - 2026-11-01T19:10:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T19:17:05Z · body
+- 2026-11-01T19:21:46Z · handoff_deferred: 1 queued message(s) must be read before review
