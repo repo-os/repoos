@@ -18,7 +18,7 @@ import {
   symlinkSync,
   statSync,
 } from "node:fs";
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { isLinkedWorktreeRoot, worktreesDir, worktreesInheritEnv } from "./config.js";
 import { notifyGitMutation, onGitMutation } from "./git-activity.js";
@@ -419,6 +419,18 @@ export async function retryOnGitLock<T>(
 
 export function isGitRepo(root: string): boolean {
   return git(root, ["rev-parse", "--is-inside-work-tree"]) === "true";
+}
+
+/** True when `root` is a worktree top-level, not a subdirectory inside one. */
+function isGitRepositoryRoot(root: string): boolean {
+  if (git(root, ["rev-parse", "--is-inside-work-tree"]) !== "true") return false;
+  const top = git(root, ["rev-parse", "--show-toplevel"]);
+  if (!top) return false;
+  try {
+    return realpathSync(root) === realpathSync(top);
+  } catch {
+    return resolve(root) === resolve(top);
+  }
 }
 
 export function currentBranch(root: string): string | null {
@@ -1281,7 +1293,7 @@ export function ensureWorktree(
   branch: string,
   taskRelPath?: string,
 ): EnsureWorktreeResult {
-  if (!isGitRepo(root)) {
+  if (!isGitRepositoryRoot(root)) {
     return {
       ok: false,
       path: "",
@@ -3226,7 +3238,7 @@ export function ensureHotfix(
   branch: string,
   hotfixTarget: "branch" | "main",
 ): EnsureHotfixResult {
-  if (!isGitRepo(root)) {
+  if (!isGitRepositoryRoot(root)) {
     return { ok: false, path: root, branch, reason: "not a git repository" };
   }
   const head = currentBranch(root);
