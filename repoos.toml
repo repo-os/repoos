@@ -122,6 +122,7 @@ pressureGuard.enabled = true
 remoteValidation.offloadBrowserSteps = true
 pressureGuard.maxCompressorBytes = 12884901888
 closeOut.gate = "reuse"
+scheduledTasks.enabled = true
 [[remoteValidation.tailscaleHosts]]
 host = "thinkpad"
 user = "nick"

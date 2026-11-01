@@ -14,13 +14,13 @@ task_priority: p2
 task_assigned_to: ai
 task_status: ready
 auto_start_agent: true
-last_run_at: ""
-last_result: ""
-last_task_id: ""
+last_run_at: "2026-11-01T16:28:33.226Z"
+last_result: success
+last_task_id: 1006
 last_error: ""
-last_occurrence_key: ""
+last_occurrence_key: "daily:2026-11-01"
 created_at: "2026-11-01T15:58:12.727Z"
-updated_at: "2026-11-01T15:58:12.727Z"
+updated_at: "2026-11-01T16:28:33.226Z"
 ---
 ## Purpose
 
