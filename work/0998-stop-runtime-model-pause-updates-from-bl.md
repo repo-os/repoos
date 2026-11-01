@@ -73,3 +73,4 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T14:21:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T14:21:35Z · message_delivered: 1 message(s)
 - 2026-11-01T14:24:01Z · status active→review
+- 2026-11-01T14:24:01Z · note: shots: skipped — Docs site skipped: no docs shot declared
