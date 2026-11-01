@@ -4,14 +4,27 @@
  * RepoOS gives each spawn its own directory under the repo cache and deletes it
  * when the run ends; orphans from a crashed server are swept on the next boot.
  */
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
 
 export const AGENT_RUN_TMP_DIRNAME = "agent-run-tmp";
 
-/** Root under `<repo>/<cacheDir>/agent-run-tmp/` where per-run dirs live. */
-export function agentRunTmpRoot(repoRoot: string, cacheDir: string): string {
-  return join(repoRoot, cacheDir, AGENT_RUN_TMP_DIRNAME);
+/**
+ * Root where per-run dirs live: `~/.repoos/agent-run-tmp/<repo hash>/`.
+ *
+ * It must be OUTSIDE every git checkout. Under `<repo>/.repoos` the children's
+ * TMPDIR sat inside the main repo, so any test that made a throwaway directory
+ * and asked "is this a git repo?" walked up into the real checkout and failed
+ * (38 failures in 20 files in an engineer's own full-suite run). The hash keeps
+ * two checkouts' runs apart. Tests may redirect it with REPOOS_AGENT_TMP_HOME.
+ * `cacheDir` stays in the signature for call-site compatibility.
+ */
+export function agentRunTmpRoot(repoRoot: string, _cacheDir: string): string {
+  const home = process.env.REPOOS_AGENT_TMP_HOME?.trim() || join(homedir(), ".repoos");
+  const repoKey = createHash("sha1").update(resolve(repoRoot)).digest("hex").slice(0, 12);
+  return join(home, AGENT_RUN_TMP_DIRNAME, repoKey);
 }
 
 export interface AgentRunTmpHandle {
