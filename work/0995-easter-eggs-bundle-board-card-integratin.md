@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T10:34:21.808Z: repoos check failed: ui verification: capture of /work?shotState=closeOut:uploading failed — screenshot: Timeout 30000ms exceeded."
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
@@ -212,3 +214,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T09:46:50Z · note: adopted orphaned engineer pid 22768
 - 2026-11-01T10:03:53Z · body
 - 2026-11-01T10:07:02Z · needs_input
+
