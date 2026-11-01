@@ -2,7 +2,7 @@
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
-status: active
+status: review
 needs_input: true
 needs_input_reason: dev-error
 hold: true
@@ -16,7 +16,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T09:45:53Z"
+updated_at: "2026-11-01T13:39:38Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 ---
@@ -209,3 +209,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T09:41:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T09:44:38Z · engineer stopped by request
 - 2026-11-01T09:44:38Z · held, held-reason, held-at
+- 2026-11-01T13:39:38Z · status active→review
