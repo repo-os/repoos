@@ -6399,7 +6399,10 @@ watch(
                       }"
                       tabindex="0"
                       role="button"
-                      :aria-pressed="selectedReviewPass === h.pass"
+                      :aria-pressed="
+                        selectedReviewPass === h.pass ||
+                        (selectedReviewPass === null && h.pass === latestReviewPass)
+                      "
                       @click="selectReviewPass(h.pass)"
                       @keydown.enter.prevent="selectReviewPass(h.pass)"
                       @keydown.space.prevent="selectReviewPass(h.pass)"

@@ -314,7 +314,7 @@ full set of checks.
 
 The task drawer keeps its header chip brief and places the selected status card
 below the preview row. When several conditions apply, it shows one status by
-priority: waiting for you, incomplete review, landing blockers, handoff error,
+priority: waiting for you, incomplete review, merge blockers, handoff error,
 exhausted checks, then active handoff/check/reviewer/work progress. Open **Debug
 → Status details** for the full checklist, failure text, timing, and guidance;
 the Review and Logs views retain their reports and output. The header keeps one
