@@ -9,14 +9,14 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T16:07:00Z"
+updated_at: "2026-11-01T18:37:00Z"
 ---
 ## Items
-- [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
-- [ ] **E2 · Replace “landed” and “landable” merge wording** (web) — use plain-language variants of “merged into main” for completed merges and “ready to merge” for eligible changes. Source: Nick's terminology feedback, 2026-11-01.
+- [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick\x27s UI feedback, 2026-11-01.
+- [ ] **E2 · Replace “landed” and “landable” merge wording** (web) — use plain-language variants of “merged into main” for completed merges and “ready to merge” for eligible changes. Source: Nick\x27s terminology feedback, 2026-11-01.
 - [ ] **E3 · Mission Control panels use a balanced 2×2 layout** (web) — show the four panels in two columns and two rows, with equal medium heights between the current short and tall panels. Source: Nick, 2026-11-01 screenshot.
-- [ ] **E4 · Combine default and custom agents in one tab** (web) — Rename the Default Agents tab to Agents, remove the Custom Agents tab, and render its section below Default Agents in the Agents tab.. Source: Nick, 2026-11-02 screenshot.
-
+- [ ] **E4 · Combine default and custom agents in one tab** (web) — Rename the Default Agents tab to Agents, remove the Custom Agents tab, and render its section below Default Agents in the Agents tab. Source: Nick, 2026-11-02 screenshot.
+- [ ] **E5 · Make review-pass selection and reviewer identity clear** (web) — place the Latest indicator on the Good to go callout row, highlight the selected pass, mark an older selected pass “Not latest” in a distinct color, and show the reviewer coding agent (for example, Cursor or Codex) instead of the generic “reviewer” label. Source: Nick, 2026-11-02 screenshots.
 
 ## E1 · Replace “wedged” with heartbeat wording
 
@@ -126,3 +126,4 @@ Use the attached screenshot as layout context. Its Cursor model-refresh timeout 
 - 2026-11-01T16:06:58Z · note: bundle edit E4
 - 2026-11-01T16:07:00Z · body: E4 · Combine default and custom agents in one tab (added 1)
 - 2026-11-01T16:07:00Z · note: bundle edit E4
+- 2026-11-01T18:37:00Z · body: Items (added 4, removed 3)
