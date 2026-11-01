@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T23:10:49Z"
+updated_at: "2026-11-01T23:12:07Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T23:04:14.181Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0a907db8 to a188b7db) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 5
@@ -176,3 +176,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T23:04:13Z · message_queued at 2026-11-01T23:04:13.874Z
 - 2026-11-01T23:05:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T23:10:49Z · CTO nudge: held — remote validation is running
+- 2026-11-01T23:12:07Z · body
