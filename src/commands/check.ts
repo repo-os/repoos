@@ -2672,9 +2672,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
 
   const fileTimings = results.flatMap((r) => r.testFileTimings ?? testFileTimings(r.output ?? ""));
   const caseTimings = mergeTestCaseTimings(
-    results.flatMap(
-      (r) => r.testCaseTimings ?? testCaseTimings(r.output ?? ""),
-    ),
+    results.flatMap((r) => r.testCaseTimings ?? testCaseTimings(r.output ?? "")),
   );
   if (fileTimings.length) {
     heading("Slowest test files");

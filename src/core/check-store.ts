@@ -397,9 +397,7 @@ export class CheckStore {
         )
         .run();
       this.db
-        .prepare(
-          `DELETE FROM check_run_test_cases WHERE run_id NOT IN (SELECT id FROM check_runs)`,
-        )
+        .prepare(`DELETE FROM check_run_test_cases WHERE run_id NOT IN (SELECT id FROM check_runs)`)
         .run();
       return Number.isFinite(id) ? id : null;
     } catch (e) {
@@ -508,9 +506,7 @@ export class CheckStore {
     const offset = Math.max(0, Math.floor(opts.offset ?? 0));
     const runId = opts.runId != null ? Math.floor(opts.runId) : undefined;
     const recentRuns =
-      runId == null
-        ? Math.min(100, Math.max(1, Math.floor(opts.recentRuns ?? 10)))
-        : undefined;
+      runId == null ? Math.min(100, Math.max(1, Math.floor(opts.recentRuns ?? 10))) : undefined;
     try {
       const args: unknown[] = [];
       let where = "";
