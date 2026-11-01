@@ -3,6 +3,9 @@ id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p3
 area: web
 assigned_to: ai
@@ -11,9 +14,10 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T04:44:29Z"
+updated_at: "2026-11-01T06:53:32Z"
 handoff_signal_retry_count: 2
-dev_error_count: 1
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T06:53:32.418Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -157,3 +161,5 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T04:42:36Z · message_delivered: 2 message(s)
 - 2026-11-01T04:44:26Z · body
 - 2026-11-01T04:44:29Z · note: adopted orphaned engineer pid 91926
+- 2026-11-01T06:44:32Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-01T06:53:32Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
