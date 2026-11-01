@@ -3,16 +3,13 @@ id: "0998"
 title: Stop runtime model pause updates from blocking close-out as dirty config
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p1
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
 created_at: "2026-11-01T09:46:53Z"
-updated_at: "2026-11-01T10:36:13Z"
+updated_at: "2026-11-01T10:36:16Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T10:35:43.230Z\",\"kind\":\"dev-error\"}]"
@@ -49,3 +46,4 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T10:31:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T10:35:43Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-11-01T10:36:13Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
+- 2026-11-01T10:36:16Z · needs_input
