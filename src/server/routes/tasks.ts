@@ -2635,6 +2635,18 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
       });
     }
+    if (
+      ctx.taskChecks &&
+      taskHasBlockingCheckOrRemote(
+        id,
+        (taskId) => ctx.taskChecks!.getRuns(taskId),
+        ctx.remoteValidator,
+      )
+    ) {
+      return json(res, 409, {
+        error: `Task #${id} has a check or remote validation in flight — wait for it to finish before starting the engineer`,
+      });
+    }
     const body = (await readBody(req)) as {
       mode?: unknown;
       instruction?: unknown;

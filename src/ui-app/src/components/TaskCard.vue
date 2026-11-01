@@ -199,6 +199,25 @@ function shouldGlide(): boolean {
 const GLIDE_DURATION_MS = 480;
 const GLIDE_EASING = "cubic-bezier(.22,1,.36,1)";
 
+const CARD_REMOTE_POLL_MS = 5_000;
+let cardRemotePoll: ReturnType<typeof setInterval> | undefined;
+
+function stopCardRemotePoll(): void {
+  if (cardRemotePoll !== undefined) {
+    clearInterval(cardRemotePoll);
+    cardRemotePoll = undefined;
+  }
+}
+
+function syncCardRemotePoll(id: string, status: string, running: boolean): void {
+  stopCardRemotePoll();
+  if (status !== "active" || !running) return;
+  void repo.refreshTaskChecks(id, { remoteOnly: true });
+  cardRemotePoll = setInterval(() => {
+    void repo.refreshTaskChecks(id, { remoteOnly: true });
+  }, CARD_REMOTE_POLL_MS);
+}
+
 onMounted(() => {
   // Hydrate check runs so a reload mid-handoff still reads "running checks"
   // instead of "paused" (SSE only delivers events from now on).
@@ -206,6 +225,7 @@ onMounted(() => {
   if (props.task.status === "active" && repo.taskChecks[id] === undefined) {
     void repo.refreshTaskChecks(id);
   }
+  syncCardRemotePoll(id, props.task.status, repo.isRunning(id));
 });
 
 watch(
@@ -214,6 +234,7 @@ watch(
     if (status === "active" && running) {
       void repo.refreshTaskChecks(id);
     }
+    syncCardRemotePoll(id, status, running);
   },
 );
 
@@ -295,6 +316,7 @@ watch(
 );
 onUnmounted(() => {
   clearInterval(nowTimer);
+  stopCardRemotePoll();
 });
 
 /** The task's most recent agent activity timestamp, if known. */

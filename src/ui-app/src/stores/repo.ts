@@ -1953,10 +1953,12 @@ export const useRepoStore = defineStore("repo", () => {
         output: "",
         scope: e.scope,
         machine: e.machine,
+        lastProgressAt: e.at,
       });
     } else if (e.type === "task-check.output") {
       const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
       if (run) {
+        run.lastProgressAt = e.at;
         run.output += e.chunk;
         const marker = "::repoos-check-progress::";
         const at = run.output.lastIndexOf(marker);
