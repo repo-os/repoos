@@ -12,12 +12,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T12:22:25Z"
+updated_at: "2026-11-01T12:22:43Z"
 ---
 ## Problem
-Active task cards can show `STUCK · SILENT` while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
+Active task cards can show STUCK · SILENT while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
 
-## Desired behavior
+## Desired UX
 Task cards show the actual phase and evidence: agent working/silent, local check step and progress, remote validation queued/running with host and elapsed time, or a stalled check with the last heartbeat and recovery action. A task is only called stuck when no engineer, check, remote run, queue wait, or heartbeat indicates legitimate progress. Restart is unavailable while a check or validation is in flight unless RepoOS safely cancels it first.
 
 ## Acceptance criteria
@@ -40,3 +40,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T12:22:22Z · created · njachowski@gmail.com
 - 2026-11-01T12:22:23Z · screenshots
 - 2026-11-01T12:22:25Z · needs_input
+- 2026-11-01T12:22:43Z · body: Problem (added 1, removed 1); Desired UX (added); Desired behavior (removed)
