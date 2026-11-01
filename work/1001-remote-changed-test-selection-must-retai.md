@@ -40,3 +40,4 @@ Inspect scripts/select-test-files.mjs, scripts/run-tests.mjs, src/server/remote-
 - 2026-11-01T15:35:00Z · CTO nudge: held — machine under pressure (swap in/out 1.6 MB/s over 26.063 s (limit 1.0 MB/s) — holding new work until paging eases. Check Activity Monitor (Memory tab), `vm_stat 1`, or `memory_pressure -Q` on macOS; `/proc/pressure/memory` and `vmstat 1` on Linux.)
 - 2026-11-01T15:40:15Z · body
 - 2026-11-01T15:50:00Z · message_queued at 2026-11-01T15:50:00.425Z
+- 2026-11-01T15:50:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
