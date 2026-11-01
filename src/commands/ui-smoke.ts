@@ -23,6 +23,7 @@ import {
   combineHarnessErrors,
   type SmokeBrowser,
   type SmokeContext,
+  type SmokePage,
 } from "./ui-harness.js";
 
 /**
@@ -88,6 +89,13 @@ export function makeSmokeFixture(): string {
  * Exports failures as thrown errors. Server startup + webkit launch share the
  * harness in ui-harness.ts with the screenshot script (#0213).
  */
+/** Work view is lazy-loaded; under a loaded gate the board can appear after 500ms. */
+async function waitForWorkBoard(page: SmokePage): Promise<void> {
+  await page.waitForFunction(() => document.querySelector(".board") !== null, {
+    timeout: 10_000,
+  });
+}
+
 async function runUISmokeTest(): Promise<void> {
   const fixture = makeSmokeFixture();
   let server: Awaited<ReturnType<typeof startPreviewServer>> | undefined;
@@ -200,13 +208,7 @@ async function runUISmokeTest(): Promise<void> {
         if (item.textContent?.includes("Work")) (item as HTMLElement).click();
       }
     });
-    await page.waitForTimeout(500);
-
-    // Verify work page rendered
-    const workEl = await page.$(".board");
-    if (!workEl) {
-      consoleErrs.push("Work page board not rendered — check page navigation");
-    }
+    await waitForWorkBoard(page);
 
     // Check that the +New Task button exists
     const newBtn = await page.$(".new-btn");
@@ -294,7 +296,7 @@ async function runUISmokeTest(): Promise<void> {
           if (item.textContent?.includes("Work")) (item as HTMLElement).click();
         }
       });
-      await page.waitForTimeout(500);
+      await waitForWorkBoard(page);
     };
     const assertActive = async (sel: string, what: string): Promise<void> => {
       const ok = await page.evaluate(

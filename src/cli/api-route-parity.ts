@@ -98,6 +98,8 @@ const FILE_CLI_MATCHERS: Matcher[] = [
 
 /** UI-only, SSE/hub, auth, or internal routes — no CLI required. */
 const UI_ONLY_MATCHERS: Matcher[] = [
+  // Task-card-only explicit cancellation of a stalled, registered local check.
+  re("POST", /^\/api\/tasks\/([^/]+)\/cancel-check$/.source),
   under("/api/auth/"),
   under("/api/hub/"),
   under("/api/telegram/"),
