@@ -3092,29 +3092,52 @@ const taskRounds = computed(() => {
 const selectedReviewPass = ref<number | null>(null);
 const reviewPassBody = ref<ReviewReport | null>(null);
 const reviewPassLoading = ref(false);
+let reviewPassRequest = 0;
 
 watch(
   () => ui.active?.id,
   () => {
+    reviewPassRequest++;
     selectedReviewPass.value = null;
     reviewPassBody.value = null;
+    reviewPassLoading.value = false;
   },
 );
 
 async function selectReviewPass(pass: number): Promise<void> {
   const id = ui.active?.id;
   if (!id) return;
+  const request = ++reviewPassRequest;
   selectedReviewPass.value = pass;
+  reviewPassBody.value = null;
   reviewPassLoading.value = true;
   try {
     const r = await api<{ ok: boolean; review: ReviewReport | null }>(
       `/api/tasks/${id}/review/passes/${pass}`,
     );
-    reviewPassBody.value = r.review;
+    if (
+      ui.active?.id === id &&
+      selectedReviewPass.value === pass &&
+      reviewPassRequest === request
+    ) {
+      reviewPassBody.value = r.review;
+    }
   } catch {
-    reviewPassBody.value = null;
+    if (
+      ui.active?.id === id &&
+      selectedReviewPass.value === pass &&
+      reviewPassRequest === request
+    ) {
+      reviewPassBody.value = null;
+    }
   } finally {
-    reviewPassLoading.value = false;
+    if (
+      ui.active?.id === id &&
+      selectedReviewPass.value === pass &&
+      reviewPassRequest === request
+    ) {
+      reviewPassLoading.value = false;
+    }
   }
 }
 
