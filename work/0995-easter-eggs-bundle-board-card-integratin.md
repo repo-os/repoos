@@ -131,6 +131,7 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 ## Screenshots
 
 ![Board card while Moving to done: the integrating status wraps to nine lines](/api/tasks/0995/attachments/att_1cc7d0b4-2156-4094-a835-ff3ea4a136a7.png)
+![E5: Settings duration inputs show 180000 and 600000 milliseconds; use human-readable seconds or minutes](/api/tasks/0995/attachments/att_59d24fc0-338c-4db9-88eb-114005679215.png)
 
 ## Activity
 
@@ -183,3 +184,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T06:53:32Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-01T08:14:06Z · body: Items (added 1); E5 · Human-readable duration controls in Settings (added)
 - 2026-11-01T08:14:06Z · note: bundle add E5
+- 2026-11-01T08:14:23Z · screenshots
