@@ -11,7 +11,7 @@ created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
 model_override: composer-2.5
 created_at: "2026-11-01T09:46:53Z"
-updated_at: "2026-11-01T14:58:20Z"
+updated_at: "2026-11-01T15:00:17Z"
 last_close_out_gate_ms: 756475
 last_close_out_gate_at: "2026-11-01T14:58:20.128Z"
 last_check_failure: "repoos check at 2026-11-01T13:59:35.581Z: repoos check failed: tests — dir: undefined,"
@@ -79,4 +79,4 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T14:24:01Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-01T14:24:57Z · note: review pass 1: good to go
 - 2026-11-01T14:58:20Z · close-out gate completed in 756s
-
+- 2026-11-01T15:00:17Z · status done→done, release:success
