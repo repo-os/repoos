@@ -184,7 +184,7 @@ export function resolveActiveEngineerCardHint(input: ActiveTaskCardInput): Activ
   if (remote?.telemetryMismatch) {
     return {
       label: "validation wait · telemetry mismatch",
-      title: remote.telemetryMismatch,
+      title: `${remote.telemetryMismatch} Pause the engineer if it is still running, then inspect the Runners page; start stays blocked until the host lock clears or the run is registered.`,
       cls: "tc-stuck",
       blocksAgentInterrupt: true,
     };

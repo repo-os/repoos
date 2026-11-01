@@ -27,6 +27,9 @@ controls:
   A running remote job remains live according to its last output heartbeat,
   independent of total run age; a stale heartbeat is shown as a stalled remote
   validation and keeps restart blocked until RepoOS confirms the run is over.
+  For an unregistered host-lock mismatch, an already-running engineer can be
+  paused safely while start/resume remains blocked; inspect the Runners page
+  and wait for RepoOS to reconcile the lock before starting another worker.
 - `playwright.maxConcurrent` (default **1**) — one shared semaphore for smoke,
   contrast audit, shot capture, and UI verification.
 - `remoteValidation.localFallback` — when a remote run falls back locally:

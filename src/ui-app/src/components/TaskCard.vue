@@ -200,12 +200,14 @@ const GLIDE_DURATION_MS = 480;
 const GLIDE_EASING = "cubic-bezier(.22,1,.36,1)";
 
 const CARD_REMOTE_POLL_MS = 5_000;
-let cardRemotePoll: ReturnType<typeof setInterval> | undefined;
+// `<script setup>` executes per card instance; keeping the handle in a ref
+// makes the independent mount/update/unmount lifecycle explicit.
+const cardRemotePoll = ref<ReturnType<typeof setInterval> | undefined>(undefined);
 
 function stopCardRemotePoll(): void {
-  if (cardRemotePoll !== undefined) {
-    clearInterval(cardRemotePoll);
-    cardRemotePoll = undefined;
+  if (cardRemotePoll.value !== undefined) {
+    clearInterval(cardRemotePoll.value);
+    cardRemotePoll.value = undefined;
   }
 }
 
@@ -213,7 +215,7 @@ function syncCardRemotePoll(id: string, status: string, running: boolean): void 
   stopCardRemotePoll();
   if (status !== "active" || !running) return;
   void repo.refreshTaskChecks(id, { remoteOnly: true });
-  cardRemotePoll = setInterval(() => {
+  cardRemotePoll.value = setInterval(() => {
     void repo.refreshTaskChecks(id, { remoteOnly: true });
   }, CARD_REMOTE_POLL_MS);
 }
@@ -478,7 +480,15 @@ function codingOrStuckHint(_taskId: string): CardHint {
 
 const agentInterruptBlocked = computed(() => {
   if (props.task.status !== "active" || !repo.isRunning(props.task.id)) return false;
-  return activeEngineerCardBlocksInterrupt(activeEngineerEvidence.value);
+  const evidence = activeEngineerEvidence.value;
+  const mismatchOnly =
+    !!repo.taskRemoteActivity[props.task.id]?.telemetryMismatch &&
+    !(repo.taskChecks[props.task.id] ?? []).some((run) => run.running) &&
+    !repo.taskRemoteActivity[props.task.id]?.run &&
+    !repo.taskRemoteActivity[props.task.id]?.queue;
+  // Pausing the engineer is safe during an unregistered host-lock mismatch;
+  // starting/resuming remains blocked until the remote state is reconciled.
+  return activeEngineerCardBlocksInterrupt(evidence) && !mismatchOnly;
 });
 
 const suppressAgentStuckHint = computed(

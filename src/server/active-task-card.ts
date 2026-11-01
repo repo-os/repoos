@@ -82,8 +82,13 @@ export function taskHasBlockingCheckOrRemote(
   taskId: string,
   getRuns: (id: string) => { running: boolean }[],
   remoteValidator: RemoteValidator | undefined,
+  options: { includeTelemetryMismatch?: boolean } = {},
 ): boolean {
   if (getRuns(taskId).some((r) => r.running)) return true;
   const remote = taskRemoteActivityForCard(taskId, remoteValidator);
-  return !!(remote?.run || remote?.queue || remote?.telemetryMismatch);
+  return !!(
+    remote?.run ||
+    remote?.queue ||
+    (options.includeTelemetryMismatch !== false && remote?.telemetryMismatch)
+  );
 }

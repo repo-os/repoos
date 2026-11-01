@@ -257,5 +257,40 @@ describe("remoteTelemetryMismatch (#0998)", () => {
         ],
       } as unknown as RemoteValidator),
     ).toBe(true);
+    expect(
+      taskHasBlockingCheckOrRemote(
+        "0998",
+        () => [],
+        {
+          taskActivity: () => null,
+          activeRemoteRuns: () => [],
+          hostStatus: () => [
+            {
+              host: "thinkpad",
+              user: "nick",
+              labels: [],
+              maxConcurrent: 1,
+              inFlight: 0,
+              queued: 0,
+              probed: true,
+              healthy: true,
+              hostLock: {
+                holders: [
+                  {
+                    state: "holding",
+                    taskId: "0998",
+                    label: "#0998",
+                    phase: "self-check",
+                    ageSecs: 120,
+                  },
+                ],
+                waiters: [],
+              },
+            },
+          ],
+        } as unknown as RemoteValidator,
+        { includeTelemetryMismatch: false },
+      ),
+    ).toBe(false);
   });
 });
