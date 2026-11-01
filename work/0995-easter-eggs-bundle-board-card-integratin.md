@@ -242,3 +242,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T12:44:11Z · message_delivered: 1 message(s)
 - 2026-11-01T12:44:30Z · needs_input
 - 2026-11-01T13:39:38Z · status active→review
+- 2026-11-01T13:39:38Z · note: Task body is underspecified: E5: empty Problem, Desired UX, Notes for AI
