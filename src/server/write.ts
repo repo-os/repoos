@@ -16,6 +16,7 @@ import { readFileSync, writeFileSync, existsSync, unlinkSync } from "node:fs";
 import { gitOutputAsync } from "../core/git.js";
 import { join, resolve, sep, relative, basename } from "node:path";
 import type { RepoOSConfig, Task, Status } from "../core/types.js";
+import { clearTerminalStateForDone } from "../core/done-task-cleanup.js";
 import { STATUSES } from "../core/types.js";
 import {
   parseTask,
@@ -740,12 +741,7 @@ export function stampTaskDoneOnPublish(
   }
   task.status = "done";
   task.mergedCommit = mergedCommit ?? task.mergedCommit;
-  // A landed task is never waiting on human input. The `release:success`
-  // marker is deliberately NOT written here: `markTaskReleased` records it
-  // after the post-merge install/rebuild succeeds, and if that step fails the
-  // stamp is reverted to `review` so a retry resumes honestly.
-  task.needsInput = false;
-  task.needsInputReason = undefined;
+  clearTerminalStateForDone(task);
   writeFileSync(absPath, serializeTask(task));
   return { task, changed: true };
 }
@@ -862,13 +858,7 @@ function markTaskReleasedImpl(
   const previousStatus = task.status;
   task.status = "done";
   task.mergedCommit = resolvedMergedCommit;
-  // A finished task is never "waiting on human input" — leaving a stale flag
-  // here (e.g. from an earlier failed review that got fixed on retry) makes a
-  // completed task show a permanent "needs input" badge for no reason (#0293
-  // follow-up: confirmed live on #0253, which released with needs_input still
-  // set from a since-resolved merge conflict retry).
-  task.needsInput = false;
-  task.needsInputReason = undefined;
+  clearTerminalStateForDone(task);
   recordChange(task, `status ${previousStatus}→done, release:success`);
   writeFileSync(absPath, serializeTask(task));
   commitTaskFile(config.root, absPath, `docs(${task.id}): set status done`);

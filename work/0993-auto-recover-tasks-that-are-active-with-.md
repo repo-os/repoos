@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 764324
-last_close_out_gate_at: "2026-11-01T09:45:05.747Z"
 id: "0993"
 title: Auto-recover tasks that are active with no live engineer
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: f134266a1d533dd2de38bd63e5d3f59fa903b427
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/auto-recover-tasks-that-are-active-with-
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
 updated_at: "2026-11-01T09:45:05Z"
+last_close_out_gate_ms: 764324
+last_close_out_gate_at: "2026-11-01T09:45:05.747Z"
 review_passes: 1
 ---
 ## Problem

@@ -11,6 +11,7 @@ export function needsInputClearsOnNewEngineerRun(reason: string | undefined): bo
   // A fresh engineer run retries an abnormal check wait (#0983). If the
   // underlying holder is still dead/stalled, the watchdog will raise it again.
   if (reason === "check-wait") return true;
+  if (reason === "dev-error" || reason === "watchdog-stuck") return true;
   return reason === "provider-failure" || reason === "degenerate-output";
 }
 

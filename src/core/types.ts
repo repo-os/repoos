@@ -1973,6 +1973,11 @@ export interface WatchdogConfig {
    */
   phantomDetectMs?: number;
   /**
+   * How long an `active` task may have no live engineer before RepoOS restarts
+   * it on the next allowlisted, non-paused pair (#0993). Default 10 minutes.
+   */
+  activeWithoutEngineerRecoverMs?: number;
+  /**
    * Crashes (or usage/auth failures) for one agent+model before RepoOS
    * switches the task to the next unpaused budget-allowlist pair (#0869).
    * Default 3. Minimum 1.
