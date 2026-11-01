@@ -448,9 +448,7 @@ export class CheckStore {
           input.reuseContext ? JSON.stringify(input.reuseContext) : null,
           id,
         );
-      if (input.testCaseTimings?.length) {
-        this.replaceTestCases(id, input.testCaseTimings);
-      }
+      this.replaceTestCases(id, input.testCaseTimings ?? []);
     } catch (e) {
       if (!warnedRecordFailed) {
         warnedRecordFailed = true;
@@ -575,15 +573,15 @@ export class CheckStore {
   private replaceTestCases(runId: number, cases: TestCaseTiming[]): void {
     if (!this.available || !this.db || !Number.isFinite(runId)) return;
     const merged = mergeTestCaseTimings(cases).slice(0, MAX_TEST_CASES_PER_RUN);
-    if (!merged.length) return;
     try {
       const del = this.db.prepare("DELETE FROM check_run_test_cases WHERE run_id = ?");
+      del.run(runId);
+      if (!merged.length) return;
       const ins = this.db.prepare(
         `INSERT INTO check_run_test_cases
            (run_id, file, name, case_id, retry, duration_ms, result)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
       );
-      del.run(runId);
       for (const c of merged) {
         ins.run(runId, c.file, c.name, c.caseId, c.retry, c.durationMs, c.result);
       }
