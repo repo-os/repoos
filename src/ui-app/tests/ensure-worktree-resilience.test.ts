@@ -2,7 +2,8 @@ import { describe, expect, it, afterEach } from "vitest";
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { rmFixture } from "./helpers.js";
 import {
   ensureWorktree,
@@ -13,6 +14,8 @@ import {
   type GitRun,
 } from "../../core/git.js";
 import { worktreesDir } from "../../core/config.js";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 function git(root: string, args: string[]): string {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -31,7 +34,6 @@ function runEnsureWorktreeInSubprocess(
   root: string,
   branch: string,
 ): Promise<EnsureWorktreeResult> {
-  const repoRoot = process.cwd();
   const script =
     `import { ensureWorktree } from ${JSON.stringify(join(repoRoot, "src/core/git.ts"))};` +
     `console.log(JSON.stringify(ensureWorktree(${JSON.stringify(root)}, ${JSON.stringify(branch)})));`;
