@@ -11,7 +11,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T20:11:19Z"
+updated_at: "2026-11-01T20:11:21Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T20:08:42.361Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 review_passes: 2
@@ -117,3 +117,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T20:07:15Z · note: review pass 2: needs some work
 - 2026-11-01T20:11:19Z · status review→active
 - 2026-11-01T20:11:19Z · note: Returning to active to retry the transient in-flight browser capture verification per user request.
+- 2026-11-01T20:11:21Z · CTO nudge: held — remote validation is running
