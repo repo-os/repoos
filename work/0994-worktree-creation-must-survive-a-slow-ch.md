@@ -17,7 +17,6 @@ check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T00:45:52.761Z: repoos check failed: tests — }"
 review_passes: 1
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T06:26:37.833Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
