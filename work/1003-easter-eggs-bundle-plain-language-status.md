@@ -265,3 +265,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-01T22:47:22Z · body
 - 2026-11-01T22:50:44Z · CTO nudge: held — handoff gate is running
 - 2026-11-01T22:50:51Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T22:50:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
