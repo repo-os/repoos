@@ -193,3 +193,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T19:34:32Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-01T19:34:32Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-01T19:34:36Z · needs_input
+- 2026-11-01T19:34:36Z · message_delivered: 1 message(s)
