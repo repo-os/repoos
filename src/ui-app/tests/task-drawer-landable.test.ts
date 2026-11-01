@@ -117,7 +117,9 @@ async function mountDrawer(
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/api/agents/queued")) return json({ tasks: [] });
       if (url.endsWith("/review"))
-        return json(reviewResponse ?? { ok: true, running: false, enabled: true, review: null, lines: [] });
+        return json(
+          reviewResponse ?? { ok: true, running: false, enabled: true, review: null, lines: [] },
+        );
       if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
       return json({ ok: true });
     }),
@@ -248,13 +250,35 @@ describe("review pass selection and identity (#1003)", () => {
       markdown: "## Verdict\ngood to go.\n\nOlder review details.\n",
     };
     const history = [
-      { pass: 1, at: older.at, state: "ok", verdict: "good to go", agent: "reviewer", cli: "cursor", model: "composer" },
-      { pass: 2, at: latest.at, state: "ok", verdict: "good to go", agent: "reviewer", cli: "codex", model: "gpt-5" },
+      {
+        pass: 1,
+        at: older.at,
+        state: "ok",
+        verdict: "good to go",
+        agent: "reviewer",
+        cli: "cursor",
+        model: "composer",
+      },
+      {
+        pass: 2,
+        at: latest.at,
+        state: "ok",
+        verdict: "good to go",
+        agent: "reviewer",
+        cli: "codex",
+        model: "gpt-5",
+      },
     ];
     const wrapper = await mountDrawer(
       setup(),
       reviewTask(),
-      { ok: true, taskId: "0001", landable: false, checks: [], summary: { pass: 0, warn: 0, fail: 0 } },
+      {
+        ok: true,
+        taskId: "0001",
+        landable: false,
+        checks: [],
+        summary: { pass: 0, warn: 0, fail: 0 },
+      },
       { ok: true, running: false, enabled: true, review: latest, history, lines: [] },
       { 1: older },
     );

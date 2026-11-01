@@ -664,9 +664,7 @@ it("hides unavailable Antigravity selectors on the default tab", async () => {
   // block; the default tab must not offer an undetected Antigravity.
   expect(wrapper.text()).not.toContain("Deprecated");
 
-  const defaultTab = wrapper
-    .findAll("button.tab-btn")
-    .find((button) => button.text() === "Agents");
+  const defaultTab = wrapper.findAll("button.tab-btn").find((button) => button.text() === "Agents");
   await defaultTab!.trigger("click");
   await flush();
   const defaultPanel = wrapper.findAll(".agent-tab-panel")[0];

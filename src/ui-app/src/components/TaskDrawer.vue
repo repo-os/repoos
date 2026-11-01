@@ -5233,7 +5233,9 @@ watch(
               aria-live="polite"
             >
               <div class="landable-title">
-                <strong>{{ landable.landable ? "Ready to merge" : "Not ready to merge yet" }}</strong>
+                <strong>{{
+                  landable.landable ? "Ready to merge" : "Not ready to merge yet"
+                }}</strong>
                 <span class="landable-summary">
                   {{ landable.summary.pass }} passed · {{ landable.summary.warn }} warning{{
                     landable.summary.warn === 1 ? "" : "s"
@@ -6391,7 +6393,9 @@ watch(
                       :key="h.pass"
                       class="review-history-row"
                       :class="{
-                        'is-selected': selectedReviewPass === h.pass || (selectedReviewPass === null && h.pass === latestReviewPass),
+                        'is-selected':
+                          selectedReviewPass === h.pass ||
+                          (selectedReviewPass === null && h.pass === latestReviewPass),
                       }"
                       tabindex="0"
                       role="button"
