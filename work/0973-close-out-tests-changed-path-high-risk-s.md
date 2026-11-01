@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: grok-4.7-low
 created_at: "2026-10-28T09:17:44Z"
-updated_at: "2026-11-01T04:42:35Z"
+updated_at: "2026-11-01T04:47:50Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-10-28T11:49:16.051Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 5
@@ -107,3 +107,4 @@ Builds on #0970 (step_timings in check_runs, the timings report). Do not edit re
 - 2026-10-31T23:26:29Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T01:27:39Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T04:42:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:47:50Z · message_overdue: still queued after 60m without being delivered
