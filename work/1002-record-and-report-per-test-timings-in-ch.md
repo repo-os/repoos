@@ -2,7 +2,7 @@
 id: 1002
 title: Record and report per-test timings in check history
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, cli, web]
 assigned_to: ai
@@ -137,3 +137,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T23:05:48Z · needs_input
 - 2026-11-01T23:05:50Z · message_queued at 2026-11-01T23:05:50.485Z
 - 2026-11-01T23:06:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T23:06:46Z · status active→review
