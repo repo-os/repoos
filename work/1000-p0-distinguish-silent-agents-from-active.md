@@ -11,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T18:02:40Z"
+updated_at: "2026-11-01T18:05:44Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T17:40:34.412Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 dev_error_count: 3
@@ -98,3 +98,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T18:01:22Z · message_queued at 2026-11-01T18:01:22.953Z
 - 2026-11-01T18:01:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T18:02:40Z · body
+- 2026-11-01T18:05:44Z · handoff_deferred: 1 queued message(s) must be read before review
