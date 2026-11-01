@@ -93,6 +93,7 @@ Use the attached screenshot as layout context. Its Cursor model-refresh timeout 
 ![Screenshot-2026-11-01-at-23.30.58](/api/tasks/1003/attachments/att_b17f9b26-3b1a-4276-9c56-124c2c78c9b9.png)
 ![Mission Control panels have uneven heights and a 3+1 layout](/api/tasks/1003/attachments/att_5f8b6a2b-d1b4-469c-bb0f-bdfe98eddb91.png)
 ![Agents settings reference: combine default and custom agent sections](/api/tasks/1003/attachments/att_003c5df7-edd1-40f2-bc8f-271510dca214.png)
+![Review passes: move Latest into the callout row and identify the reviewer agent](/api/tasks/1003/attachments/att_44a3ed0f-5b52-49b1-bb92-0ff74721dcc1.png)
 
 ## Activity
 
@@ -127,3 +128,4 @@ Use the attached screenshot as layout context. Its Cursor model-refresh timeout 
 - 2026-11-01T16:07:00Z · body: E4 · Combine default and custom agents in one tab (added 1)
 - 2026-11-01T16:07:00Z · note: bundle edit E4
 - 2026-11-01T18:37:00Z · body: Items (added 4, removed 3)
+- 2026-11-01T18:37:00Z · screenshots
