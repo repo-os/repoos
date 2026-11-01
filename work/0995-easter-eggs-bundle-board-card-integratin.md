@@ -3,6 +3,8 @@ id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +13,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T10:03:53Z"
+updated_at: "2026-11-01T10:07:02Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 ---
@@ -209,3 +211,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T09:46:23Z · message_delivered: 1 message(s)
 - 2026-11-01T09:46:50Z · note: adopted orphaned engineer pid 22768
 - 2026-11-01T10:03:53Z · body
+- 2026-11-01T10:07:02Z · needs_input
