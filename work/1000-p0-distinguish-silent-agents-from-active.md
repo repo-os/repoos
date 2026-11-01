@@ -154,3 +154,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T22:10:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-01T22:23:25Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
 - 2026-11-01T22:35:44Z · message_queued at 2026-11-01T22:35:44.384Z
+- 2026-11-01T22:35:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
