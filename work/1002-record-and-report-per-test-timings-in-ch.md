@@ -11,7 +11,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T20:04:25Z"
+updated_at: "2026-11-01T20:05:44Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -108,3 +108,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T20:00:44Z · message_queued at 2026-11-01T20:00:44.765Z
 - 2026-11-01T20:00:45Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T20:04:25Z · body
+- 2026-11-01T20:05:44Z · CTO nudge: held — an undelivered message is already queued
