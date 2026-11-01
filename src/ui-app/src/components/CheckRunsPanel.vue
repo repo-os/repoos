@@ -4,7 +4,10 @@ import { summarizeStepTimings } from "../../../core/check-timings.js";
 import { formatSlowestTestFiles } from "../../../core/test-file-timings.js";
 import { RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
-import { shotFixturePinnedCheckRuns } from "../lib/shot-preview-fixtures";
+import {
+  shotFixturePinnedCheckRuns,
+  shotFixturePinnedTestCases,
+} from "../lib/shot-preview-fixtures";
 import Button from "./ui/button.vue";
 import PageSkeleton from "./PageSkeleton.vue";
 import FailedTestsList from "./FailedTestsList.vue";
@@ -51,6 +54,13 @@ function isExpandable(r: CheckRunRow): boolean {
 
 async function loadTestCases(runId: number): Promise<void> {
   if (testCasesByRun.value.has(runId) || testCasesLoading.value.has(runId)) return;
+  const pinned = shotFixturePinnedTestCases(runId);
+  if (pinned) {
+    const next = new Map(testCasesByRun.value);
+    next.set(runId, pinned);
+    testCasesByRun.value = next;
+    return;
+  }
   testCasesLoading.value = new Set(testCasesLoading.value).add(runId);
   testCasesError.value.delete(runId);
   try {
