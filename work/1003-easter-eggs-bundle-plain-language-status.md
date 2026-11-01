@@ -3,9 +3,6 @@ id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T19:34:32Z"
+updated_at: "2026-11-01T19:34:36Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-01T19:34:32.531Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -195,3 +192,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T19:34:32Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T19:34:32Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-01T19:34:32Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-01T19:34:36Z · needs_input
