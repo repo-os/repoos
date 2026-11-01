@@ -9,11 +9,15 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-01T15:54:14Z"
+updated_at: "2026-11-01T15:54:15Z"
 ---
 ## Problem
+The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
 
-After RepoOS GC, multiple worktrees remain because their task records are marked done while branches have commits not in main or uncommitted task-file changes. An archived, superseded task (#0652) also retains a worktree because its status is still ready. These records keep the advisory worktree count above its ceiling and make it unclear whether work is missing from main or only stale local state remains.
+The protected set revealed several different cases: 12 tasks marked done (six with commits not in main; six with uncommitted changes limited to work/*.md, while #0664 also has uncommitted repository files); #0652 is archived but still has ready status; #0794 is human-assigned and ready; #1000 and #1001 are active. Four additional registered worktrees are outside RepoOS's managed task-worktree directory (three Codex worktrees and /private/tmp/pre-merge-0960).
+
+The current warning gives one total and suggests `repoos gc`, but does not make clear which entries are safe to remove, why others are retained, or that normal maintenance only collects integration candidates.
+
 
 ## Desired UX
 
@@ -37,3 +41,4 @@ Use `repoos gc --dry-run` and RepoOS status as evidence, not as permission to de
 
 - 2026-11-01T15:50:52Z · created · njachowski@gmail.com
 - 2026-11-01T15:54:14Z · title
+- 2026-11-01T15:54:15Z · body: Problem (added 3, removed 1)
