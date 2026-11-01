@@ -11,12 +11,11 @@ area: [core, cli, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/record-and-report-per-test-timings-in-ch
-cli_override: github copilot
 model_override: default
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T18:19:14Z"
+updated_at: "2026-11-01T18:24:54Z"
 handoff_signal_retry_count: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
@@ -98,3 +97,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T18:18:27Z · needs_input
 - 2026-11-01T18:19:14Z · agent exited with an error (copilot) · error: --no-remote was removed. Use /remote off in a session; manage incoming connections in /environments.
 - 2026-11-01T18:19:14Z · engineer crash recovery: surfaced instead of switching — a human-set task override (github copilot + default) is pinned, so RepoOS did not replace it (2/3 crashes in 30m)
+- 2026-11-01T18:24:54Z · cli_override
