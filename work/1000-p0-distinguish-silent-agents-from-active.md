@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T17:40:34.412Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
@@ -87,3 +89,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T17:06:25Z · note: adopted orphaned engineer pid 96893
 - 2026-11-01T17:15:12Z · body
 - 2026-11-01T17:31:28Z · body
+
