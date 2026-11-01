@@ -81,6 +81,23 @@ describe("resolveActiveEngineerCardHint (#0994 local check)", () => {
       expect(hint.cls).toBe("tc-stuck");
     },
   );
+
+  it("treats future-dated heartbeat as invalid and stalled, matching cancel eligibility", () => {
+    const future = new Date(NOW + 60_000).toISOString();
+    const hint = resolveActiveEngineerCardHint({
+      nowMs: NOW,
+      agentSilentMs: 9 * 60 * 1000,
+      check: check({ lastProgressAt: future }),
+      remote: null,
+      localQueueLabel: null,
+      localQueueTitle: null,
+      remotePoolQueueLabel: null,
+      remotePoolQueueTitle: null,
+      busyChild: null,
+    });
+    expect(hint.label).toMatch(/^check stalled/);
+    expect(hint.cls).toBe("tc-stuck");
+  });
 });
 
 describe("resolveActiveEngineerCardHint (#0998 remote wait)", () => {

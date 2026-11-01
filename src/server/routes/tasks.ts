@@ -23,7 +23,7 @@ import {
   extractOneShotReportText,
   type PromptResult,
 } from "../agents.js";
-import { DEFAULT_CHECK_STALL_MS } from "../../core/active-task-card.js";
+import { DEFAULT_CHECK_STALL_MS, isCheckHeartbeatStalled } from "../../core/active-task-card.js";
 import { taskHasBlockingCheckOrRemote } from "../active-task-card.js";
 import { resolveRoutedAgent } from "../model-routing-wiring.js";
 import {
@@ -2497,9 +2497,8 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       ?.getRuns(id)
       .filter((check) => check.running)
       .at(-1);
-    const lastProgress = run?.lastProgressAt ? Date.parse(run.lastProgressAt) : Number.NaN;
     if (!run) return json(res, 409, { error: `No running check is registered for #${id}` });
-    if (!Number.isFinite(lastProgress) || Date.now() - lastProgress < DEFAULT_CHECK_STALL_MS) {
+    if (!isCheckHeartbeatStalled(run.lastProgressAt, Date.now(), DEFAULT_CHECK_STALL_MS)) {
       return json(res, 409, {
         error: `The check is still progressing; cancellation is available after ${DEFAULT_CHECK_STALL_MS / 60_000} minutes without a valid heartbeat`,
       });

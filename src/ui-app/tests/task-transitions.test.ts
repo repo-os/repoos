@@ -385,6 +385,49 @@ describe("POST /api/tasks/:id/start — dependency gate", () => {
   });
 });
 
+describe("POST /api/tasks/:id/cancel-check — stalled heartbeat policy", () => {
+  it.each([null, "not-a-timestamp", new Date(Date.now() + 60_000).toISOString()])(
+    "allows cancellation when heartbeat %s cannot prove progress and verifies manager stop",
+    async (lastProgressAt) => {
+      const fx = makeFixture("active");
+      try {
+        const ctx = makeCtx(fx);
+        const cancel = vi.fn(async () => ({ ok: true, detail: "check exited" }));
+        ctx.taskChecks = {
+          getRuns: () => [{ running: true, lastProgressAt }],
+          cancel,
+        } as any;
+        const { res, fake } = makeRes();
+        await taskAction(ctx, makeReq(), res, { param1: "0296", param2: "cancel-check" });
+        expect(fake.status).toBe(200);
+        expect(cancel).toHaveBeenCalledWith("0296");
+        expect(fake.payload).toMatchObject({ ok: true });
+      } finally {
+        fx.clean();
+      }
+    },
+  );
+
+  it("keeps the age threshold for valid recent heartbeats", async () => {
+    const fx = makeFixture("active");
+    try {
+      const ctx = makeCtx(fx);
+      const cancel = vi.fn(async () => ({ ok: true, detail: "check exited" }));
+      ctx.taskChecks = {
+        getRuns: () => [{ running: true, lastProgressAt: new Date().toISOString() }],
+        cancel,
+      } as any;
+      const { res, fake } = makeRes();
+      await taskAction(ctx, makeReq(), res, { param1: "0296", param2: "cancel-check" });
+      expect(fake.status).toBe(409);
+      expect((fake.payload as { error: string }).error).toMatch(/still progressing/);
+      expect(cancel).not.toHaveBeenCalled();
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
 describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
   it("refuses to start a held task without --force", async () => {
     const fx = makeFixture(
