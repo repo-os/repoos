@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T15:39:05Z"
+updated_at: "2026-11-01T15:39:06Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
@@ -41,8 +41,7 @@ Keep internal identifiers and code comments as appropriate; this item concerns t
 User-facing copy uses “landed,” “landable,” and related forms to describe merge success or eligibility. These terms are jargon and do not say plainly whether work is already in main or can be merged there.
 
 ### Desired UX
-
-When a task's changes have been merged into the main branch, say “merged into main.” Use wording that states the actual destination for other outcomes rather than using “landed” as a generic success verb.
+Across user-facing UI, notifications, CLI messages, and user documentation, use clear wording that states the merge status. For successful merges, say “merged into main,” “now in main,” or another context-appropriate equivalent. For eligibility, say “ready to merge” or “can be merged into main.” Keep the `repoos landable` CLI command and API identifiers intact for compatibility; change their human-facing descriptions.
 
 ### Acceptance criteria
 
@@ -66,3 +65,5 @@ Limit the change to user-facing text. Internal code comments and technical descr
 - 2026-11-01T15:39:05Z · body: Items (added 1, removed 2)
 - 2026-11-01T15:39:05Z · body: E2 · Replace “landed” in user-facing merge messages (added 1, removed 1)
 - 2026-11-01T15:39:05Z · note: bundle edit E2
+- 2026-11-01T15:39:06Z · body: E2 · Replace “landed” in user-facing merge messages (added 1, removed 1)
+- 2026-11-01T15:39:06Z · note: bundle edit E2
