@@ -13,7 +13,6 @@ model_override: composer-2.5
 created_at: "2026-11-01T14:20:03Z"
 updated_at: "2026-11-01T18:10:14Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T17:42:39.030Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
 ---
 ## Problem
