@@ -1,10 +1,11 @@
 ---
-updated_at: "2026-11-01T12:25:53Z"
-review_passes: 2
 id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
 status: review
+hold: true
+hold_reason: Enable remote engineer self-checks before restarting validation
+hold_at: "2026-11-01T09:44:37.379Z"
 priority: p1
 area: core
 assigned_to: ai
@@ -13,9 +14,12 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
+updated_at: "2026-11-01T12:25:15Z"
+check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T07:59:36.226Z: repoos check failed: tests — onKeydown: [Function: invoker] {"
 handoff_signal_retry_count: 2
-dev_error_count: 2
+review_passes: 1
+dev_error_count: 1
 ---
 ## Problem
 
@@ -94,49 +98,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T09:06:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T09:44:37Z · engineer stopped by request
 - 2026-11-01T09:44:37Z · held, held-reason, held-at
-- 2026-11-01T09:46:21Z · released
-- 2026-11-01T09:46:22Z · message_delivered: 1 message(s)
-- 2026-11-01T09:46:49Z · note: adopted orphaned engineer pid 22506
-- 2026-11-01T09:56:27Z · message_queued at 2026-11-01T09:56:27.680Z
-- 2026-11-01T09:56:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-01T09:56:42Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-01T10:03:31Z · body
-- 2026-11-01T10:13:05Z · engineer stopped by request
-- 2026-11-01T10:13:24Z · message_delivered: 1 message(s)
-- 2026-11-01T10:13:32Z · engineer stopped by request
-- 2026-11-01T10:17:51Z · body
-- 2026-11-01T10:19:15Z · body
-- 2026-11-01T10:19:32Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-01T10:19:47Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-01T10:30:04Z · body
-- 2026-11-01T10:35:03Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-01T10:35:32Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-01T10:35:43Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
-- 2026-11-01T10:36:13Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
-- 2026-11-01T10:37:44Z · needs_input
-- 2026-11-01T11:05:57Z · watchdog: restarting engineer after 28m with no live process
-- 2026-11-01T11:15:41Z · message_queued at 2026-11-01T11:15:41.605Z
-- 2026-11-01T11:15:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-01T11:20:40Z · body
-- 2026-11-01T11:20:42Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-01T11:35:36Z · body
-- 2026-11-01T11:49:11Z · body
-- 2026-11-01T11:49:31Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-01T11:50:46Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-01T11:53:01Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-01T11:53:16Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-01T12:01:51Z · body
-- 2026-11-01T12:02:55Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-01T12:02:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-01T12:02:56Z · message_delivered: 1 message(s)
-- 2026-11-01T12:15:41Z · message_queued at 2026-11-01T12:15:41.737Z
-- 2026-11-01T12:15:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-01T12:20:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-01T12:21:15Z · body
-- 2026-11-01T12:23:05Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-01T12:23:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-01T12:23:06Z · message_delivered: 1 message(s)
 - 2026-11-01T12:25:15Z · status active→review
-- 2026-11-01T12:25:15Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-01T12:25:52Z · note: review pass 2: good to go
-

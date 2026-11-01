@@ -16,8 +16,9 @@ import {
   realpathSync,
   rmSync,
   symlinkSync,
+  statSync,
 } from "node:fs";
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { isLinkedWorktreeRoot, worktreesDir, worktreesInheritEnv } from "./config.js";
 import { notifyGitMutation, onGitMutation } from "./git-activity.js";
@@ -58,18 +59,197 @@ function git(root: string, args: string[], timeoutMs = 4000): string | null {
  * no worktree. Generous, but still bounded because this call is synchronous.
  */
 const WORKTREE_ADD_TIMEOUT_MS = 60_000;
+/** Direct ref probe when `localBranches` timed out and returned an empty set (#0994). */
+const BRANCH_REF_VERIFY_TIMEOUT_MS = 60_000;
+const WORKTREE_ADD_LOCK_WAIT_MS = 120_000;
+/** Reclaim a lock held by a live pid if creation has not finished in this long (#0994). */
+const WORKTREE_ADD_LOCK_STALE_MS = WORKTREE_ADD_TIMEOUT_MS + 60_000;
 
-function gitCapture(root: string, args: string[], timeoutMs = 4000): GitRun {
+export function gitCapture(root: string, args: string[], timeoutMs = 4000): GitRun {
   const run = spawnSync("git", observationalGitArgs(args), {
     cwd: root,
     encoding: "utf8",
     timeout: timeoutMs,
   });
+  const timedOut =
+    run.error != null &&
+    "code" in run.error &&
+    (run.error as NodeJS.ErrnoException).code === "ETIMEDOUT";
   return {
     status: run.status,
     stdout: run.stdout ?? "",
     stderr: run.stderr ?? (run.error ? `${run.error.message}\n` : ""),
+    timedOut,
   };
+}
+
+/** Test seam for `ensureWorktree` resilience cases (#0994). */
+export interface EnsureWorktreeTestSeam {
+  gitCapture?: (root: string, args: string[], timeoutMs: number) => GitRun;
+  localBranchExists?: (root: string, branch: string) => boolean;
+}
+
+let ensureWorktreeTestSeam: EnsureWorktreeTestSeam | null = null;
+
+export function setEnsureWorktreeTestSeam(seam: EnsureWorktreeTestSeam | null): void {
+  ensureWorktreeTestSeam = seam;
+}
+
+function captureGitForWorktreeAdd(root: string, args: string[], timeoutMs: number): GitRun {
+  return (
+    ensureWorktreeTestSeam?.gitCapture?.(root, args, timeoutMs) ?? gitCapture(root, args, timeoutMs)
+  );
+}
+
+/**
+ * Whether `branch` exists locally. An empty `localBranches` set may mean a ref-read
+ * timeout, not "no branches" — verify the one ref directly before choosing `-b`.
+ */
+function localBranchExistsForWorktree(root: string, branch: string): boolean {
+  if (ensureWorktreeTestSeam?.localBranchExists) {
+    return ensureWorktreeTestSeam.localBranchExists(root, branch);
+  }
+  const listed = localBranches(root);
+  if (listed.has(branch)) return true;
+  if (listed.size > 0) return false;
+  return (
+    git(
+      root,
+      ["rev-parse", "--verify", `refs/heads/${branch}^{commit}`],
+      BRANCH_REF_VERIFY_TIMEOUT_MS,
+    ) !== null
+  );
+}
+
+function worktreeAddArgs(root: string, target: string, branch: string): string[] {
+  return localBranchExistsForWorktree(root, branch)
+    ? ["worktree", "add", target, branch]
+    : ["worktree", "add", "-b", branch, target];
+}
+
+function worktreeAddLockPath(root: string, branch: string): string {
+  const hash = createHash("sha256").update(branch).digest("hex").slice(0, 16);
+  return join(root, ".repoos", "worktree-add-locks", hash);
+}
+
+function worktreeAddLockIsStale(lockDir: string): boolean {
+  try {
+    const pid = Number(readFileSync(join(lockDir, "pid"), "utf8"));
+    if (!Number.isInteger(pid) || pid <= 0) return true;
+    if (process.platform !== "win32") {
+      const result = spawnSync("ps", ["-o", "stat=", "-p", String(pid)], {
+        encoding: "utf8",
+        timeout: 1_000,
+      });
+      if (result.status === 0 && result.stdout.trim()) {
+        return result.stdout.trim().startsWith("Z");
+      }
+    }
+    try {
+      process.kill(pid, 0);
+      const age = Date.now() - statSync(lockDir).mtimeMs;
+      return age > WORKTREE_ADD_LOCK_STALE_MS;
+    } catch (error) {
+      return (error as NodeJS.ErrnoException).code === "ESRCH";
+    }
+  } catch {
+    return true;
+  }
+}
+
+/** Cross-process mutex so two starts for the same branch do not both run `-b` (#0994). */
+function tryAcquireWorktreeAddLock(root: string, branch: string): (() => void) | null {
+  const lockDir = worktreeAddLockPath(root, branch);
+  mkdirSync(dirname(lockDir), { recursive: true });
+  if (existsSync(lockDir)) {
+    try {
+      const holder = Number(readFileSync(join(lockDir, "pid"), "utf8"));
+      if (Number.isInteger(holder) && holder === process.pid) {
+        return () => {
+          /* reentrant: outer ensureWorktree still owns release */
+        };
+      }
+    } catch {
+      /* fall through to stale handling */
+    }
+    if (worktreeAddLockIsStale(lockDir)) {
+      try {
+        rmSync(lockDir, { recursive: true, force: true });
+      } catch {
+        /* contested */
+      }
+    }
+  }
+  try {
+    mkdirSync(lockDir);
+    writeFileSync(join(lockDir, "pid"), String(process.pid), "utf8");
+    return () => {
+      try {
+        rmSync(lockDir, { recursive: true, force: true });
+      } catch {
+        /* already gone */
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+
+type WorktreeAddLockWait =
+  | { kind: "held"; release: () => void }
+  | { kind: "exists" }
+  | { kind: "timeout" };
+
+function waitForWorktreeAddLock(root: string, branch: string): WorktreeAddLockWait {
+  const deadline = Date.now() + WORKTREE_ADD_LOCK_WAIT_MS;
+  const waitBuf = new Int32Array(new SharedArrayBuffer(4));
+  while (Date.now() < deadline) {
+    if (worktreePaths(root).has(branch)) return { kind: "exists" };
+    const lockDir = worktreeAddLockPath(root, branch);
+    if (existsSync(lockDir) && worktreeAddLockIsStale(lockDir)) {
+      try {
+        rmSync(lockDir, { recursive: true, force: true });
+      } catch {
+        /* contested */
+      }
+    }
+    const release = tryAcquireWorktreeAddLock(root, branch);
+    if (release) return { kind: "held", release };
+    Atomics.wait(waitBuf, 0, 0, 50);
+  }
+  if (worktreePaths(root).has(branch)) return { kind: "exists" };
+  return { kind: "timeout" };
+}
+
+function branchCommitsAheadOfMain(root: string, branch: string): number | null {
+  const base = currentBranch(root);
+  if (!base) return null;
+  const count = git(root, ["rev-list", "--count", `${base}..${branch}`]);
+  if (count === null) return null;
+  const n = Number(count);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Remove a half-made directory; optionally drop an empty orphan branch (#0994). */
+function cleanupFailedWorktreeAdd(
+  root: string,
+  branch: string,
+  target: string,
+  opts: { deleteOrphanBranch?: boolean } = {},
+): void {
+  if (existsSync(target)) {
+    try {
+      rmSync(target, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
+    }
+  }
+  pruneWorktrees(root);
+  if (!opts.deleteOrphanBranch) return;
+  if (worktreePaths(root).has(branch)) return;
+  const ahead = branchCommitsAheadOfMain(root, branch);
+  if (ahead === null || ahead > 0) return;
+  deleteBranch(root, branch);
 }
 
 /**
@@ -239,6 +419,18 @@ export async function retryOnGitLock<T>(
 
 export function isGitRepo(root: string): boolean {
   return git(root, ["rev-parse", "--is-inside-work-tree"]) === "true";
+}
+
+/** True when `root` is a worktree top-level, not a subdirectory inside one. */
+function isGitRepositoryRoot(root: string): boolean {
+  if (git(root, ["rev-parse", "--is-inside-work-tree"]) !== "true") return false;
+  const top = git(root, ["rev-parse", "--show-toplevel"]);
+  if (!top) return false;
+  try {
+    return realpathSync(root) === realpathSync(top);
+  } catch {
+    return resolve(root) === resolve(top);
+  }
 }
 
 export function currentBranch(root: string): string | null {
@@ -1101,7 +1293,7 @@ export function ensureWorktree(
   branch: string,
   taskRelPath?: string,
 ): EnsureWorktreeResult {
-  if (!isGitRepo(root)) {
+  if (!isGitRepositoryRoot(root)) {
     return {
       ok: false,
       path: "",
@@ -1119,56 +1311,46 @@ export function ensureWorktree(
     return { ok: true, path: existing, created: false };
   }
 
-  const target = join(worktreesDir(root), branch);
-  const branchExists = localBranches(root).has(branch);
-  const args = branchExists
-    ? ["worktree", "add", target, branch]
-    : ["worktree", "add", "-b", branch, target];
-  const first = gitCapture(root, args, WORKTREE_ADD_TIMEOUT_MS);
-  if (first.status !== 0) {
-    let failure = worktreeAddFailure(first);
-    // An orphaned directory (leftover from a prior interrupted close-out) blocks
-    // `git worktree add`.  Remove it once and retry — the branch is still valid,
-    // only the worktree registration (gitdir) is missing.
-    if (existsSync(target)) {
-      try {
-        rmSync(target, { recursive: true, force: true });
-      } catch {
-        /* best-effort */
-      }
-      // A first attempt killed mid-checkout has already created the branch, so
-      // the retry must use the plain form: `-b` would fail with "a branch named
-      // ... already exists" and poison every later start (#0994). Fall back to
-      // the original args when the branch was never created.
-      const plainArgs = ["worktree", "add", target, branch];
-      gitCapture(root, ["worktree", "prune"]);
-      let retry = gitCapture(root, plainArgs, WORKTREE_ADD_TIMEOUT_MS);
-      if (retry.status !== 0 && args !== plainArgs) {
-        retry = gitCapture(root, args, WORKTREE_ADD_TIMEOUT_MS);
-      }
-      if (retry.status === 0) {
-        let path = target;
-        try {
-          path = realpathSync(target);
-        } catch {
-          /* keep */
-        }
-        if (taskRelPath) healMissingTaskFile(root, path, taskRelPath);
-        linkInheritedEnv(root, path);
-        notifyGitMutation(root, "checkout");
-        return { ok: true, path, created: true };
-      }
-      failure = worktreeAddFailure(retry);
+  const lockWait = waitForWorktreeAddLock(root, branch);
+  if (lockWait.kind === "exists") {
+    const raced = worktreePaths(root).get(branch)!;
+    if (taskRelPath) healMissingTaskFile(root, raced, taskRelPath);
+    linkInheritedEnv(root, raced);
+    return { ok: true, path: raced, created: false };
+  }
+  if (lockWait.kind === "timeout") {
+    const raced = worktreePaths(root).get(branch);
+    if (raced) {
+      if (taskRelPath) healMissingTaskFile(root, raced, taskRelPath);
+      linkInheritedEnv(root, raced);
+      return { ok: true, path: raced, created: false };
     }
     return {
       ok: false,
-      path: target,
+      path: join(worktreesDir(root), branch),
       created: false,
-      reason: `could not create worktree: ${failure}`,
+      reason: "could not create worktree: timed out waiting for another start to finish",
     };
   }
-  // git reports real paths (macOS /var -> /private/var); normalize the fresh
-  // path so a later reuse lookup returns the identical string.
+  const release = lockWait.release;
+  try {
+    const afterLock = worktreePaths(root).get(branch);
+    if (afterLock) {
+      if (taskRelPath) healMissingTaskFile(root, afterLock, taskRelPath);
+      linkInheritedEnv(root, afterLock);
+      return { ok: true, path: afterLock, created: false };
+    }
+    return ensureWorktreeUnderLock(root, branch, taskRelPath);
+  } finally {
+    release();
+  }
+}
+
+function ensureWorktreeSuccess(
+  root: string,
+  target: string,
+  taskRelPath: string | undefined,
+): EnsureWorktreeResult {
   let path = target;
   try {
     path = realpathSync(target);
@@ -1179,6 +1361,41 @@ export function ensureWorktree(
   linkInheritedEnv(root, path);
   notifyGitMutation(root, "checkout");
   return { ok: true, path, created: true };
+}
+
+function ensureWorktreeUnderLock(
+  root: string,
+  branch: string,
+  taskRelPath?: string,
+): EnsureWorktreeResult {
+  const target = join(worktreesDir(root), branch);
+  let run = captureGitForWorktreeAdd(
+    root,
+    worktreeAddArgs(root, target, branch),
+    WORKTREE_ADD_TIMEOUT_MS,
+  );
+  if (run.status === 0) {
+    return ensureWorktreeSuccess(root, target, taskRelPath);
+  }
+
+  let failure = worktreeAddFailure(run);
+  cleanupFailedWorktreeAdd(root, branch, target);
+  run = captureGitForWorktreeAdd(
+    root,
+    worktreeAddArgs(root, target, branch),
+    WORKTREE_ADD_TIMEOUT_MS,
+  );
+  if (run.status === 0) {
+    return ensureWorktreeSuccess(root, target, taskRelPath);
+  }
+  failure = worktreeAddFailure(run);
+  cleanupFailedWorktreeAdd(root, branch, target, { deleteOrphanBranch: true });
+  return {
+    ok: false,
+    path: target,
+    created: false,
+    reason: `could not create worktree: ${failure}`,
+  };
 }
 
 /**
@@ -3021,7 +3238,7 @@ export function ensureHotfix(
   branch: string,
   hotfixTarget: "branch" | "main",
 ): EnsureHotfixResult {
-  if (!isGitRepo(root)) {
+  if (!isGitRepositoryRoot(root)) {
     return { ok: false, path: root, branch, reason: "not a git repository" };
   }
   const head = currentBranch(root);
