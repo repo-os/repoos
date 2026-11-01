@@ -219,3 +219,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T10:38:17Z · needs_input
 - 2026-11-01T11:06:09Z · watchdog: restarting engineer after 28m with no live process
 - 2026-11-01T11:15:42Z · message_queued at 2026-11-01T11:15:42.367Z
+- 2026-11-01T11:15:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
