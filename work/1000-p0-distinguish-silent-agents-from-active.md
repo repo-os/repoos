@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T19:50:06.862Z: repoos check failed: ◆ Check plan"
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
@@ -12,7 +14,6 @@ created_at: "2026-11-01T12:22:22Z"
 updated_at: "2026-11-01T19:34:33Z"
 review_passes: 2
 review_rounds: 1
-last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
 ---
@@ -128,3 +129,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T19:33:20Z · review_cli_override, review_model_override
 - 2026-11-01T19:33:43Z · status review→active
 - 2026-11-01T19:34:33Z · body
+
