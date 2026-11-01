@@ -2,7 +2,7 @@
 id: "0998"
 title: Stop runtime model pause updates from blocking close-out as dirty config
 type: bug
-status: active
+status: review
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
 model_override: composer-2.5
 created_at: "2026-11-01T09:46:53Z"
-updated_at: "2026-11-01T14:21:35Z"
+updated_at: "2026-11-01T14:24:01Z"
 last_check_failure: "repoos check at 2026-11-01T13:59:35.581Z: repoos check failed: tests — dir: undefined,"
 handoff_signal_retry_count: 1
 dev_error_count: 2
@@ -72,4 +72,4 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T14:21:35Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T14:21:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T14:21:35Z · message_delivered: 1 message(s)
-
+- 2026-11-01T14:24:01Z · status active→review
