@@ -2,14 +2,14 @@
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
-status: active
+status: review
 priority: p0
 area: [web, server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T20:51:33Z"
+updated_at: "2026-11-01T21:30:10Z"
 review_rounds: 2
 routing_switches: 1
 review_passes: 3
@@ -137,3 +137,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T20:38:01Z · status review→active
 - 2026-11-01T20:38:04Z · CTO nudge: held — remote validation is running
 - 2026-11-01T20:51:33Z · body
+- 2026-11-01T21:30:10Z · status active→review
