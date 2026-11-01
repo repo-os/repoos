@@ -17,7 +17,6 @@ review_passes: 1
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
-engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-01T18:46:13.305Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Active task cards can show STUCK · SILENT while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
