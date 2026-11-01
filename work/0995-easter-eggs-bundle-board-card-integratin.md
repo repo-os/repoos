@@ -229,3 +229,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T11:53:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T11:53:22Z · needs_input
 - 2026-11-01T11:53:23Z · needs_input
+- 2026-11-01T11:53:23Z · message_delivered: 1 message(s)
