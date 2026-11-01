@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T22:06:53Z"
+updated_at: "2026-11-01T22:06:54Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -148,3 +148,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T22:06:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T22:06:53Z · status active→review
 - 2026-11-01T22:06:53Z · message_delivered: 1 message(s)
+- 2026-11-01T22:06:54Z · note: handoff requested (cli)
