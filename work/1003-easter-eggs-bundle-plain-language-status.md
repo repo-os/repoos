@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T15:43:23Z"
+updated_at: "2026-11-01T16:06:48Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
