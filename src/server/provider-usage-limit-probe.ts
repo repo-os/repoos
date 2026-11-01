@@ -1,16 +1,18 @@
 /** Periodically verify exhausted providers with a tiny prompt, then unpause. */
 import type { Agent, AgentModelAllowRow, RepoOSConfig } from "../core/types.js";
-import { applyReloadedConfig, patchTomlConfig } from "../core/config.js";
 import {
   pairPauseInfo,
   pauseAllowlistEntry,
   resumeAllowlistEntry,
 } from "../core/budget-allowlist.js";
+import {
+  AUTOMATIC_PAUSE_REASON_PREFIX,
+  recordAutomaticAllowlist,
+} from "../core/budget-runtime-state.js";
 import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
 import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import { recordOneShotSession, runPrompt } from "./agents.js";
 import type { Logger } from "../core/logger.js";
-import { configTomlMutationPath, loadConfigAfterServerWrite } from "./preview-config-isolation.js";
 
 export const PROVIDER_USAGE_PROBE_INTERVAL_MS = 10 * 60_000;
 
@@ -20,7 +22,7 @@ export const USAGE_PROBE_BACKOFF_START_MS = PROVIDER_USAGE_PROBE_INTERVAL_MS;
 /** Ceiling for the doubled probe gap (6 hours). */
 export const USAGE_PROBE_BACKOFF_CAP_MS = 6 * 60 * 60_000;
 
-const AUTO_PAUSE_PREFIX = "out of usage since ";
+const AUTO_PAUSE_PREFIX = AUTOMATIC_PAUSE_REASON_PREFIX;
 
 /** What one availability probe found. A boolean is a probe with no CLI text. */
 export type UsageProbeVerdict = boolean | { ok: boolean; output?: string };
@@ -172,10 +174,8 @@ export function startProviderUsageLimitProbes(
     running = true;
     try {
       const persist = (): void => {
-        patchTomlConfig(configTomlMutationPath(config.root, config.cacheDir), {
-          "budget.allowlist": config.budget?.allowlist ?? [],
-        });
-        applyReloadedConfig({ config }, loadConfigAfterServerWrite(config.root, config.cacheDir));
+        const rows = recordAutomaticAllowlist(config.root, config.budget?.allowlist ?? []);
+        config.budget = { ...config.budget, allowlist: rows };
       };
       const resumed = await probeExhaustedUsageLimitPairs(
         config,
