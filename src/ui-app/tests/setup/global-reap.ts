@@ -25,7 +25,7 @@
 import { mkdtempSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { killSpawnedLogs, reapStaleFixtures, STALE_FIXTURE_AGE_MS } from "../helpers";
+import { killSpawnedLogs, reapStaleFixtures, STALE_FIXTURE_AGE_MS, defaultOsTmpdir } from "../helpers";
 
 /**
  * Every file's isolated tmpdir (see tmp-isolation.ts) lives under this run's
@@ -51,8 +51,9 @@ export async function setup(): Promise<void> {
     );
   }
 
-  // Workers use this run-scoped parent for their per-file temp roots.
-  runRoot = mkdtempSync(join(tmpdir(), "repoos-vitest-"));
+  // Workers use this run-scoped parent for their per-file temp roots. Keep it
+  // outside any checkout even when the test process inherited agent TMPDIR.
+  runRoot = mkdtempSync(join(defaultOsTmpdir(), "repoos-vitest-"));
   process.env.REPOOS_TEST_TMP_ROOT = runRoot;
   // Nested fixture writes do not necessarily update the run root's mtime. Keep
   // a long-running worker's root younger than the stale-age gate so a
