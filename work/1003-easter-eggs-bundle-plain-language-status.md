@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T19:39:21Z"
+updated_at: "2026-11-01T19:40:05Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-01T19:34:32.531Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -154,9 +154,6 @@ Hovering the robot icon shows a compact, well-presented table with the task’s 
 
 Use the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only.
 
-
-## Problem\n\nThe robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.\n\n## Desired UX\n\nHovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.\n\n## Acceptance criteria\n\n- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.\n- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.\n- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.\n- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.\n\n## Notes for AI\n\nUse the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only.
-
 ## Screenshots
 
 ![Screenshot-2026-11-01-at-23.30.22](/api/tasks/1003/attachments/att_1cfc9082-f10e-43ff-8458-3edfc582e276.png)
@@ -230,3 +227,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-01T19:39:20Z · message_queued at 2026-11-01T19:39:20.870Z
 - 2026-11-01T19:39:21Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-11-01T19:39:21Z · message_queued at 2026-11-01T19:39:21.926Z
+- 2026-11-01T19:40:05Z · body: Problem\n\nThe robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.\n\n## Desired UX\n\nHovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.\n\n## Acceptance criteria\n\n- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.\n- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.\n- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.\n- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.\n\n## Notes for AI\n\nUse the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only. (removed)
