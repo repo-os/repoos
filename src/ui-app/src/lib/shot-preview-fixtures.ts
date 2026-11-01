@@ -751,6 +751,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           kind: "close-out",
           startedAt: seeded.status.hosts[0]!.activeRuns![0]!.startedAt,
           elapsedMs: 18 * 60_000,
+          lastProgressAt: new Date().toISOString(),
           stage: "run",
           phases: seeded.status.hosts[0]!.activeRuns![0]!.phases ?? [],
         },
