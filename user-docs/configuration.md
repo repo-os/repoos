@@ -986,8 +986,8 @@ provider = "none"
 | `vitest.maxWorkers` | select (1–16) | `2` | yes | Vitest worker cap for processes an engineer launches. Exports `VITEST_MAX_WORKERS` and `REPOOS_TEST_WORKERS`, and applies `--maxWorkers` to direct and Bun package invocations. |
 | `localChecks.maxConcurrent` | select (1–8) | `2` | yes | Cross-process cap on local `repoos check` runs on this machine; extras queue with a visible position (#0836). Shares the heavy-slot pool when `heavySlots` is set. |
 | `localChecks.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long a queued local check may wait for a slot before failing with an actionable timeout (minimum 60000). |
-| `localChecks.staleAfterMs` | number | `75000` | yes | Mark a silent but live local check holder as wedged after this heartbeat age (minimum 15000). |
-| `localChecks.reclaimGraceMs` | number | `150000` | yes | Grace after marking a holder wedged before reclaiming its managed process group (minimum 15000). |
+| `localChecks.staleAfterMs` | number | `75000` | yes | Show when a live local check holder has no recent heartbeat after this age (minimum 15000). |
+| `localChecks.reclaimGraceMs` | number | `150000` | yes | Grace after a live check holder stops reporting before reclaiming its managed process group (minimum 15000). |
 | `playwright.maxConcurrent` | select (1–4) | `1` | yes | Shared cap on headless Playwright work (smoke, contrast audit, shots, UI verification). |
 | `playwright.workers` | select (1–8) | `2` | yes | Playwright workers inside one engineer-launched run. The heavy-command shim applies `--workers` to `playwright test` and exports `PLAYWRIGHT_WORKERS`. Separate from `playwright.maxConcurrent`. |
 | `playwright.queueTimeoutMs` | number | `2700000` (45 min) | yes | How long queued Playwright work may wait for the shared browser slot before timing out (minimum 60000). |

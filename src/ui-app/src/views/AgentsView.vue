@@ -50,7 +50,6 @@ const reminders = useRemindersStore();
 
 type AgentTab =
   | "default"
-  | "custom"
   | "team"
   | "scheduled"
   | "reminders"
@@ -61,8 +60,7 @@ type AgentTab =
   | "model-routing";
 
 const AGENT_TAB_LABELS: Record<AgentTab, string> = {
-  default: "Default Agents",
-  custom: "Custom Agents",
+  default: "Agents",
   team: "Build Your Team",
   scheduled: "Scheduled Tasks",
   reminders: "Reminders",
@@ -75,7 +73,6 @@ const AGENT_TAB_LABELS: Record<AgentTab, string> = {
 
 const AGENT_TABS: AgentTab[] = [
   "default",
-  "custom",
   "team",
   "scheduled",
   "reminders",
@@ -813,7 +810,7 @@ onUnmounted(() => {
 
         <div
           class="agent-tab-panel"
-          v-show="activeTab === 'custom'"
+          v-show="activeTab === 'default'"
           style="padding: 0 18px 6px; margin-bottom: 16px"
         >
           <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">

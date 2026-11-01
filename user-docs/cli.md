@@ -226,7 +226,7 @@ done wait by default in human mode).
 | `repoos done <id> [--commit-dirty] [--wait]` | `POST /api/tasks/:id/done` |
 | `repoos done <id> --cancel` (`repoos abort <id>`) | `POST /api/tasks/:id/done/cancel` |
 | `repoos api <METHOD> /api/<path> [--json body] [--port N]` | Any `/api/` route |
-| `repoos landable <id>` | `GET /api/tasks/:id/landable` — read-only landing pre-checks; exits non-zero unless the task can land (`--json` for a stable checklist shape) |
+| `repoos landable <id>` | `GET /api/tasks/:id/landable` — read-only merge readiness checks; exits non-zero unless the task is ready to merge (`--json` for a stable checklist shape) |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
 | `repoos dev [list]` · `repoos dev <name> start\|stop\|restart\|status\|logs` | `GET`/`POST /api/dev/targets` |
