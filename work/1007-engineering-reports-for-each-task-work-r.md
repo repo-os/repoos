@@ -2,14 +2,14 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-01T18:38:31Z"
+updated_at: "2026-11-01T18:38:54Z"
 ---
 ## Problem
 
@@ -41,3 +41,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-01T18:38:06Z · created · njachowski@gmail.com
 - 2026-11-01T18:38:07Z · needs_input
 - 2026-11-01T18:38:31Z · needs_input, body: Notes for AI (added)
+- 2026-11-01T18:38:54Z · status inbox→ready
