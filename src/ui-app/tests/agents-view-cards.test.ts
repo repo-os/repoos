@@ -89,7 +89,15 @@ describe("AgentsView agent cards", () => {
       .findAll(".agent-tab-panel")[0]
       .findAll(".agent-name")
       .map((el) => el.text());
-    expect(names).toEqual(["pm", "engineer", "reviewer"]);
+    expect(names).toEqual(["pm", "engineer", "reviewer", "data analyst"]);
+    const agentsPanel = wrapper.findAll(".agent-tab-panel")[0]!;
+    expect(agentsPanel.text()).toContain("Custom agents");
+    expect(agentsPanel.findAll(".agent-name").map((el) => el.text())).toEqual([
+      "pm",
+      "engineer",
+      "reviewer",
+      "data analyst",
+    ]);
 
     expect(wrapper.find(".agent-instr").exists()).toBe(false);
     expect(wrapper.find(".agent-skills-inline-summary").exists()).toBe(true);

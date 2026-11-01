@@ -66,7 +66,7 @@ export function cmdChecks(args: string[]): void {
       ).find((item) => item.slot === slot);
       if (!holder?.pid) throw new Error(`slot ${slot} is free`);
       console.log(
-        `Releasing slot ${slot}, held by task #${String(holder.meta?.taskId ?? "unknown")} check, PID ${holder.pid}${holder.dead ? ", dead" : holder.wedged ? ", wedged" : ", alive"}.`,
+        `Releasing slot ${slot}, held by task #${String(holder.meta?.taskId ?? "unknown")} check, PID ${holder.pid}${holder.dead ? ", process exited" : holder.wedged ? `, no recent heartbeat (last seen ${Math.round(holder.heartbeatAgeMs / 1000)}s ago)` : ", alive"}.`,
       );
       releaseLocalCheckSlot(root, slot, pid, config.localChecks?.staleAfterMs);
       console.log(c.green("  ✔ Slot released."));
@@ -87,7 +87,7 @@ export function cmdChecks(args: string[]): void {
       : "unattributed check";
     console.log(
       holder.pid
-        ? `slot ${holder.slot}: ${task}, pid ${holder.pid}, ${holder.dead ? "dead, reclaiming" : holder.wedged ? "wedged" : "alive"}, held ${Math.round(holder.ageMs / 1000)}s, heartbeat ${Math.round(holder.heartbeatAgeMs / 1000)}s ago`
+        ? `slot ${holder.slot}: ${task}, pid ${holder.pid}, ${holder.dead ? "process exited, reclaiming" : holder.wedged ? `no recent heartbeat (last seen ${Math.round(holder.heartbeatAgeMs / 1000)}s ago)` : "alive"}, held ${Math.round(holder.ageMs / 1000)}s, heartbeat ${Math.round(holder.heartbeatAgeMs / 1000)}s ago`
         : `slot ${holder.slot}: free`,
     );
   }

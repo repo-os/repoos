@@ -93,7 +93,13 @@ const FAILING: LandableResult = {
   summary: { pass: 5, warn: 0, fail: 1 },
 };
 
-async function mountDrawer(pinia: Pinia, task: Task, landableResponse: unknown) {
+async function mountDrawer(
+  pinia: Pinia,
+  task: Task,
+  landableResponse: unknown,
+  reviewResponse: unknown = null,
+  passResponses: Record<number, unknown> = {},
+) {
   const router = createRouter({ history: createMemoryHistory(), routes: [] });
   await router.push("/");
   await router.isReady();
@@ -102,20 +108,23 @@ async function mountDrawer(pinia: Pinia, task: Task, landableResponse: unknown) 
     "fetch",
     vi.fn(async (url: string) => {
       if (url.includes("/landable")) return json(landableResponse);
+      const passMatch = url.match(/\/review\/passes\/(\d+)/);
+      if (passMatch) return json({ ok: true, review: passResponses[Number(passMatch[1])] ?? null });
       if (url.includes("/api/health"))
         return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
       if (url.includes("/api/index"))
         return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/api/agents/queued")) return json({ tasks: [] });
-      if (url.includes("/review"))
-        return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+      if (url.endsWith("/review"))
+        return json(reviewResponse ?? { ok: true, running: false, enabled: true, review: null, lines: [] });
       if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
       return json({ ok: true });
     }),
   );
   const ui = useUiStore();
   ui.open(task);
+  ui.activeTab = "review";
   const wrapper = mount(TaskDrawer, {
     global: {
       plugins: [pinia, router],
@@ -146,7 +155,7 @@ describe("task drawer landing pre-checks (#0867)", () => {
 
     const summary = wrapper.find(".drawer-status-summary");
     expect(summary.exists()).toBe(true);
-    expect(summary.find(".drawer-status-l1").text()).toContain("Not landable");
+    expect(summary.find(".drawer-status-l1").text()).toContain("Not ready to merge");
     expect(summary.find(".drawer-status-l2").text()).toContain("Merge with main");
     expect(summary.find(".drawer-status-l3").exists()).toBe(false);
     expect(wrapper.findAll(".drawer-status-summary")).toHaveLength(1);
@@ -215,7 +224,50 @@ describe("task drawer landing pre-checks (#0867)", () => {
     const checks = wrapper.find(".landable-checks");
     expect(wrapper.find(".drawer-status-summary").exists(), "the status card renders").toBe(true);
     expect(wrapper.find(".drawer-status-l1").text(), "the status card copy is short").toContain(
-      "Not landable",
+      "Not ready to merge",
     );
+  });
+});
+
+describe("review pass selection and identity (#1003)", () => {
+  it("selects the latest pass by default, marks an older pass, and shows its coding agent", async () => {
+    const latest = {
+      id: "0001",
+      at: "2026-11-02T10:00:00.000Z",
+      agent: "reviewer",
+      cli: "codex",
+      model: "gpt-5",
+      branch: "feat/landable",
+      state: "ok",
+      markdown: "## Verdict\ngood to go.\n\nLatest review details.\n",
+    };
+    const older = {
+      ...latest,
+      at: "2026-11-01T10:00:00.000Z",
+      cli: "cursor",
+      markdown: "## Verdict\ngood to go.\n\nOlder review details.\n",
+    };
+    const history = [
+      { pass: 1, at: older.at, state: "ok", verdict: "good to go", agent: "reviewer", cli: "cursor", model: "composer" },
+      { pass: 2, at: latest.at, state: "ok", verdict: "good to go", agent: "reviewer", cli: "codex", model: "gpt-5" },
+    ];
+    const wrapper = await mountDrawer(
+      setup(),
+      reviewTask(),
+      { ok: true, taskId: "0001", landable: false, checks: [], summary: { pass: 0, warn: 0, fail: 0 } },
+      { ok: true, running: false, enabled: true, review: latest, history, lines: [] },
+      { 1: older },
+    );
+    expect(wrapper.find(".verdict-callout").text()).toContain("Latest");
+    expect(wrapper.findAll(".review-history-row")[0]?.classes()).toContain("is-selected");
+    expect(wrapper.find(".review-history-reviewer").text()).toBe("Codex");
+
+    await wrapper.findAll(".review-history-row")[1]!.trigger("click");
+    await flush();
+    expect(wrapper.findAll(".review-history-row")[1]?.classes()).toContain("is-selected");
+    expect(wrapper.find(".verdict-callout").text()).toContain("Not latest");
+    expect(wrapper.findAll(".review-history-reviewer")[1]?.text()).toBe("Cursor");
+    expect(wrapper.find(".review-card").text()).toContain("Older review details.");
+    expect(wrapper.find(".review-pass-freshness").classes()).toContain("is-old");
   });
 });

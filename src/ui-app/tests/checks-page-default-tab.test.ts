@@ -205,7 +205,7 @@ describe("ChecksView default tab (#0738)", () => {
     wrapper.unmount();
   });
 
-  async function mountChecks(initialPath: string) {
+  async function mountChecks(initialPath: string, holders: unknown[] = []) {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
@@ -218,6 +218,7 @@ describe("ChecksView default tab (#0738)", () => {
             pipeline: { empty: true, active: null, queue: [], at: "" },
           });
         if (path.includes("/api/remote-validation/status")) return jsonResponse(idleRemote());
+        if (path.includes("/api/local-check-slots")) return jsonResponse({ holders, queue: [] });
         if (path.includes("/api/health")) return jsonResponse({ ok: true, root: "/tmp" });
         if (path.includes("/api/test-run"))
           return jsonResponse({ ok: true, running: false, output: "" });
@@ -291,6 +292,36 @@ describe("ChecksView default tab (#0738)", () => {
     expect(parseChecksTab(router.currentRoute.value.query.tab)).toBe("now");
     expect(wrapper.find(".ck-local-slots").exists()).toBe(true);
     expect(wrapper.text()).toContain("No local check slots are currently in use.");
+  });
+
+  it("describes a live stale check by its last heartbeat, while a fresh heartbeat stays clear", async () => {
+    const { wrapper } = await mountChecks("/checks?tab=now", [
+      {
+        slot: 1,
+        pid: 123,
+        ageMs: 90_000,
+        heartbeatAgeMs: 80_000,
+        wedged: true,
+        dead: false,
+        meta: { taskId: "1003" },
+      },
+      {
+        slot: 2,
+        pid: 456,
+        ageMs: 12_000,
+        heartbeatAgeMs: 2_000,
+        wedged: false,
+        dead: false,
+        meta: { taskId: "1004" },
+      },
+    ]);
+    const slots = wrapper.findAll(".ck-local-slot");
+    expect(slots[0]?.text()).toContain("No recent heartbeat");
+    expect(slots[0]?.text()).toContain("80s ago");
+    expect(slots[0]?.text()).toContain("alive");
+    expect(slots[1]?.text()).not.toContain("No recent heartbeat");
+    expect(slots[1]?.text()).toContain("heartbeat 2s ago");
+    wrapper.unmount();
   });
 });
 

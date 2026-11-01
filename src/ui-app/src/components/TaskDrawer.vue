@@ -728,7 +728,7 @@ const drawerStatusSummary = computed(() => {
   const labels = {
     waitingForYou: "Needs input",
     reviewFailed: "Review failed",
-    notLandable: "Not landable",
+    notLandable: "Not ready to merge",
     handoffFailed: "Handoff failed",
     checksRunning: "Checks running",
     confirmingHandoff: "Confirming handoff",
@@ -744,7 +744,7 @@ const drawerStatusSummary = computed(() => {
       task.needsInputDetail,
     ),
     reviewFailed: review.value?.report?.summary || "No complete report",
-    notLandable: `${failCount} landing check${failCount === 1 ? "" : "s"} failing`,
+    notLandable: `${failCount} merge readiness check${failCount === 1 ? "" : "s"} failing`,
     handoffFailed:
       handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish.",
     checksFailedAfterRetries: "After retries",
@@ -756,7 +756,7 @@ const drawerStatusSummary = computed(() => {
     reviewerRunning: "",
     workRunning: "",
   };
-  const landableChecklist = landable.value
+  const mergeReadinessChecklist = landable.value
     ? landable.value.checks
         .map(
           (check) =>
@@ -769,7 +769,7 @@ const drawerStatusSummary = computed(() => {
       "Choose the suggested action, answer questions in PM, or dismiss this request. The task stays active until its work is resolved.",
     reviewFailed:
       "Read the latest review report, then send the task to the engineer or use Review again. The Review tab keeps the full report and retry action.",
-    notLandable: landableChecklist || "This task is not ready to land yet.",
+    notLandable: mergeReadinessChecklist || "This task is not ready to merge into main yet.",
     handoffFailed: `${handoffError.value ?? repo.doneErrorFor(task.id)?.message ?? "The handoff did not finish."}\nFix it and click Review again.`,
     checksFailedAfterRetries: checkChip.value?.title ?? "Checks failed after retries.",
     checksRunning: localCheckWait.value
@@ -820,7 +820,7 @@ const drawerStatusSummary = computed(() => {
     const failing = (landable.value?.checks ?? [])
       .filter((check) => check.status === "fail")
       .map((check) => check.label);
-    lines = ["Not landable", failing.length ? failing.join(", ") : shortDetails.notLandable];
+    lines = ["Not ready to merge", failing.length ? failing.join(", ") : shortDetails.notLandable];
   } else if (key === "handoffFailed") {
     lines = ["Handoff failed", "Handoff", shortDetails.handoffFailed];
   } else {
@@ -870,7 +870,7 @@ const drawerStatusDetails = computed(() => {
     });
   if (landable.value)
     rows.push({
-      title: landable.value.landable ? "Landable summary" : "Not landable checklist",
+      title: landable.value.landable ? "Merge readiness summary" : "Merge readiness checklist",
       timestamp: repo.landableFetchedAtFor(task.id),
       detail: landable.value.checks
         .map(
@@ -3118,15 +3118,36 @@ async function selectReviewPass(pass: number): Promise<void> {
   }
 }
 
-function showLatestReviewPass(): void {
-  selectedReviewPass.value = null;
-  reviewPassBody.value = null;
-}
-
 const displayedReviewReport = computed(() => {
   if (selectedReviewPass.value === null) return review.value?.report ?? null;
   return reviewPassBody.value;
 });
+
+const latestReviewPass = computed(() =>
+  reviewHistoryRows.value.reduce((latest, row) => Math.max(latest, row.pass), 0),
+);
+const selectedReviewPassIsLatest = computed(
+  () => selectedReviewPass.value === null || selectedReviewPass.value === latestReviewPass.value,
+);
+const verdict = computed(() => parseReviewVerdict(displayedReviewReport.value?.markdown));
+
+function reviewAgentLabel(value: string): string {
+  const normalized = value.toLowerCase().replace(/[ _-]+/g, "");
+  const known: Record<string, string> = {
+    codex: "Codex",
+    codexcli: "Codex",
+    cursor: "Cursor",
+    claude: "Claude",
+    claudecode: "Claude Code",
+    opencode: "OpenCode",
+    gemini: "Gemini",
+    geminicli: "Gemini CLI",
+    copilot: "Copilot",
+    qwen: "Qwen Code",
+  };
+  if (known[normalized]) return known[normalized];
+  return value === "reviewer" ? "—" : value;
+}
 
 const reviewHtml = computed(() =>
   displayedReviewReport.value ? renderMarkdown(displayedReviewReport.value.markdown) : "",
@@ -3156,9 +3177,6 @@ const reviewStale = computed(() =>
 
 // ---- agent review tab (0110) ----
 
-/** The review agent's verdict, derived from the report's verdict line. */
-const verdict = computed(() => parseReviewVerdict(review.value?.report?.markdown));
-
 /**
  * Review passes as table rows, newest first. Each pass appears once — the
  * records table is the single record of every review run, so the latest run is
@@ -3173,7 +3191,7 @@ const reviewHistoryRows = computed(() => {
       pass: h.pass,
       at: h.at,
       verdict: h.state === "ok" ? (h.verdict ?? "—") : h.state,
-      reviewer: h.agent || h.cli || "—",
+      reviewer: reviewAgentLabel(h.cli || h.agent || "—"),
       model: h.model || "—",
     }));
 });
@@ -5215,7 +5233,7 @@ watch(
               aria-live="polite"
             >
               <div class="landable-title">
-                <strong>{{ landable.landable ? "Landable" : "Not landable yet" }}</strong>
+                <strong>{{ landable.landable ? "Ready to merge" : "Not ready to merge yet" }}</strong>
                 <span class="landable-summary">
                   {{ landable.summary.pass }} passed · {{ landable.summary.warn }} warning{{
                     landable.summary.warn === 1 ? "" : "s"
@@ -6297,6 +6315,12 @@ watch(
               >
                 <span class="verdict-dot"></span>
                 <span class="verdict-label">{{ verdict.label }}</span>
+                <span
+                  v-if="reviewHistoryRows.length > 0"
+                  class="review-pass-freshness"
+                  :class="{ 'is-old': !selectedReviewPassIsLatest }"
+                  >{{ selectedReviewPassIsLatest ? "Latest" : "Not latest" }}</span
+                >
               </div>
               <div
                 v-if="integrationConflictResolution"
@@ -6349,14 +6373,6 @@ watch(
               </div>
               <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
                 <div class="review-history-toolbar">
-                  <button
-                    type="button"
-                    class="review-history-latest"
-                    :class="{ 'is-active': selectedReviewPass === null }"
-                    @click="showLatestReviewPass"
-                  >
-                    Latest
-                  </button>
                   <span v-if="reviewPassLoading" class="review-history-loading">Loading…</span>
                 </div>
                 <table class="review-history-table" aria-label="Feature review pass records">
@@ -6364,7 +6380,7 @@ watch(
                     <tr>
                       <th class="ta-left">pass</th>
                       <th class="ta-left">when</th>
-                      <th class="ta-left">reviewer</th>
+                      <th class="ta-left">agent</th>
                       <th class="ta-left">model</th>
                       <th class="ta-left">verdict</th>
                     </tr>
@@ -6374,7 +6390,9 @@ watch(
                       v-for="h in reviewHistoryRows"
                       :key="h.pass"
                       class="review-history-row"
-                      :class="{ 'is-selected': selectedReviewPass === h.pass }"
+                      :class="{
+                        'is-selected': selectedReviewPass === h.pass || (selectedReviewPass === null && h.pass === latestReviewPass),
+                      }"
                       tabindex="0"
                       role="button"
                       :aria-pressed="selectedReviewPass === h.pass"

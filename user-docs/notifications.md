@@ -43,7 +43,7 @@ separate from failure because the advice differs:
 
 | Notice | Meaning |
 | --- | --- |
-| Move to done: #id landed | The merge landed on your primary branch. |
+| Move to done: #id merged into main | The task's changes were merged into main. |
 | Move to done: #id failed | A real gate failure; the task stays in `review`. |
 | Move to done: #id timed out after Nm | The run passed `closeOut.timeoutMs`; a retryable failure. Retry, or raise the budget in Settings. |
 
@@ -63,7 +63,7 @@ Settings → **Notifications** controls the bell sound and browser push. Both ar
 
 - Task attention — review ready, paused, stuck, needs attention.
 - Releases — notes ready, release succeeded, release failed.
-- Close-out — Move to done landed, failed, timed out.
+- Close-out — merged into main, failed, timed out.
 - Provider and spend — provider/credit errors, silent runs, spend threshold,
   awaiting visual check, remote fallback to local.
 

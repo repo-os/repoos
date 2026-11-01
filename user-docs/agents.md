@@ -111,10 +111,11 @@ that is a CLI limitation rather than an indication that RepoOS lost the run.
 
 ## The Agents page
 
-The page is organised into tabs:
+The **Agents** tab groups the lifecycle roles RepoOS ships with under **Default
+agents**, followed by **Custom agents** for your own roles.
 
-- **Default Agents** — the lifecycle roles RepoOS ships with.
-- **Custom Agents** — your own roles.
+Other tabs:
+
 - **Build Your Team** — built-in agents and chat assistants (see below).
 - **Scheduled Tasks** — recurring or one-time task templates that create ordinary
   `work/*.md` tasks on a cadence (see `docs/scheduled-tasks.md`).

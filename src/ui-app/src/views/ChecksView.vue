@@ -392,7 +392,9 @@ const RESULT_ICON: Record<string, string> = {
               {{ fmtDuration(holder.ageMs) }} · heartbeat
               {{ fmtDuration(holder.heartbeatAgeMs) }} ago
               <strong v-if="holder.dead"> · holder is gone, reclaiming</strong>
-              <strong v-else-if="holder.wedged"> · wedged</strong>
+              <strong v-else-if="holder.wedged">
+                · No recent heartbeat (last seen {{ fmtDuration(holder.heartbeatAgeMs) }} ago)
+              </strong>
               <Button
                 v-if="holder.wedged && !holder.dead"
                 size="sm"
