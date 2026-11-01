@@ -214,6 +214,10 @@ import { runCtoMonitorSafeActions } from "./cto-actions.js";
 import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
+import {
+  hostLockJobsForTask,
+  taskRemoteActivityForCard,
+} from "./active-task-card.js";
 import { computeSlowRunFlags } from "./attention-feed.js";
 import { applyPipelineDetail, buildIntegrationSnapshot } from "./integration-status.js";
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
@@ -2548,8 +2552,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const ctoMonitor = new CTOMonitor(config, index, cto, runner, {
     // #0873: a running review or remote-validation wait is work, not idleness.
     reviewRunning: (taskId) => reviews.isRunning(taskId),
-    remoteValidationRunning: (taskId) =>
-      (remoteValidator?.activeRemoteRuns?.() ?? []).some((run) => run.taskId === taskId),
+    remoteValidationRunning: (taskId) => {
+      if ((remoteValidator?.activeRemoteRuns?.() ?? []).some((run) => run.taskId === taskId)) {
+        return true;
+      }
+      return hostLockJobsForTask(remoteValidator?.hostStatus?.(), taskId) !== null;
+    },
   });
   ctoMonitor.wireHeartbeatTouch(() => {
     ctoHeartbeat.touch();
@@ -3593,7 +3601,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       ok: true,
       runs: taskChecks.getRuns(params.param1),
       // Live remote phase + pool queue position for the drawer (#0897).
-      remote: remoteValidator?.taskActivity?.(params.param1) ?? null,
+      remote: taskRemoteActivityForCard(params.param1, remoteValidator),
     });
   });
   router.register("GET", /^\/api\/tasks\/([^/]+)\/stats$/, getTaskStats);

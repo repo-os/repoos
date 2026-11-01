@@ -459,6 +459,10 @@ A waiting check says so, in three places:
 - **The task card** shows a `waiting for a check slot · Nm` chip (with queue position) whose
   tooltip reads `waiting: <reason> for Nm`. It replaces the old silent `queued`
   chip. The drawer shows the same hint next to the check chip.
+- While a **local check** is running for an active engineer, the card shows
+  `checking · …` with step/test progress and keeps **Pause work** disabled until
+  the gate finishes — agent output can go quiet without tripping `stuck · silent`
+  (#1000).
 - **The run record** stores the wait (`waited: { reason, ms }`) alongside the
   steps, so a finished run still says "this one sat 26 minutes before it
   started".

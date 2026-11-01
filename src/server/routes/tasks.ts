@@ -23,6 +23,7 @@ import {
   extractOneShotReportText,
   type PromptResult,
 } from "../agents.js";
+import { taskHasBlockingCheckOrRemote } from "../active-task-card.js";
 import { resolveRoutedAgent } from "../model-routing-wiring.js";
 import {
   markPmWorking,
@@ -3508,6 +3509,14 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (existing.status !== "active") {
       return json(res, 400, {
         error: `Only active tasks can be paused (#${id} is ${existing.status})`,
+      });
+    }
+    if (
+      ctx.taskChecks &&
+      taskHasBlockingCheckOrRemote(id, (taskId) => ctx.taskChecks!.getRuns(taskId), ctx.remoteValidator)
+    ) {
+      return json(res, 409, {
+        error: `Task #${id} has a check or remote validation in flight — wait for it to finish before pausing the agent`,
       });
     }
     const stopRes = runner.stop(id);
