@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T22:06:12Z"
+updated_at: "2026-11-01T22:06:40Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
