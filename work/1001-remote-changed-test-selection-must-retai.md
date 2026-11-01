@@ -50,3 +50,4 @@ Inspect scripts/select-test-files.mjs, scripts/run-tests.mjs, src/server/remote-
 - 2026-11-01T16:28:34Z · note: adopted orphaned engineer pid 59230
 - 2026-11-01T16:32:51Z · body
 - 2026-11-01T16:49:35Z · status active→review
+- 2026-11-01T16:49:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
