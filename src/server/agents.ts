@@ -5237,6 +5237,8 @@ export class AgentRunner {
   private readonly messageTimeoutMs = 60 * 60 * 1000;
   /** Ids already flagged overdue, so the warning is recorded once (#0821). */
   private readonly messageOverdueFlagged = new Set<string>();
+  /** One activity line per done task when its queue is discarded (#0993). */
+  private readonly messageDroppedForDone = new Set<string>();
   /** When a runner entry was first observed with no live process group (#0863). */
   private readonly phantomDeadSince = new Map<string, number>();
   /** Automatic phantom-heal timestamps per task, for the hourly rate limit. */
@@ -5601,7 +5603,10 @@ export class AgentRunner {
       (c) => sameWorkdirPath(c.workdir, cwd),
     );
     for (const cand of candidates) {
-      return `This worktree already has a recorded live engineer for task #${cand.taskId} (pid ${cand.pid})`;
+      if (this.recordedEngineerGroupStillLive(cand)) {
+        return `This worktree already has a recorded live engineer for task #${cand.taskId} (pid ${cand.pid})`;
+      }
+      this.removeRegistryEntry(cand.taskId);
     }
     return undefined;
   }
@@ -6997,6 +7002,11 @@ export class AgentRunner {
   private checkExpiredMessages(): void {
     const nowMs = Date.now();
     for (const [id, queuedAt] of this.messageQueuedAt.entries()) {
+      const terminal = this.getTask?.(id);
+      if (terminal?.status === "done") {
+        this.discardQueuedMessagesForDoneTask(id);
+        continue;
+      }
       if (nowMs - new Date(queuedAt).getTime() <= this.messageTimeoutMs) continue;
       if (this.messageOverdueFlagged.has(id)) continue;
       this.messageOverdueFlagged.add(id);
@@ -7046,6 +7056,26 @@ export class AgentRunner {
     );
   }
 
+  /** Drop queued messages for a finished task — once, with an activity line (#0993). */
+  private discardQueuedMessagesForDoneTask(id: string): void {
+    const msgs = this.queuedMessages.get(id);
+    if (!msgs?.length) {
+      this.messageQueuedAt.delete(id);
+      this.messageOverdueFlagged.delete(id);
+      return;
+    }
+    const count = msgs.length;
+    this.queuedMessages.delete(id);
+    this.messageQueuedAt.delete(id);
+    this.messageOverdueFlagged.delete(id);
+    if (this.messageDroppedForDone.has(id)) return;
+    this.messageDroppedForDone.add(id);
+    this.recordTaskActivity(
+      id,
+      `message_dropped: ${count} queued message(s) discarded — task is done`,
+    );
+  }
+
   /**
    * Deliver messages queued while a turn was running, now that it has ended
    * (#0821). Starts a fresh resumed turn carrying the queued texts so the human
@@ -7057,6 +7087,11 @@ export class AgentRunner {
   private deliverQueuedMessages(id: string): void {
     const msgs = this.queuedMessages.get(id);
     if (!msgs || msgs.length === 0) return;
+    const live = this.getTask?.(id);
+    if (live?.status === "done") {
+      this.discardQueuedMessagesForDoneTask(id);
+      return;
+    }
     if (this.entries.has(id) || this.queuedIds.has(id) || this.handoffsInFlight.has(id)) return;
     const first = msgs[0];
     if (!DRIVABLE_CLIS.has(first.agent.cli)) {
@@ -9720,6 +9755,7 @@ export class AgentRunner {
         defaultStatus: this.config.defaultStatus,
         defaultAssignee: this.config.defaultAssignee,
       });
+      if (current.status === "done" || current.isArchived) return;
       const errCount = current.extra?.dev_error_count;
       current.extra = {
         ...current.extra,
