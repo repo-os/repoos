@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T00:45:52.761Z: repoos check failed: tests — }"
 id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
@@ -61,3 +63,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T23:09:21Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-10-31T23:09:36Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T23:22:59Z · note: adopted orphaned engineer pid 84641
+
