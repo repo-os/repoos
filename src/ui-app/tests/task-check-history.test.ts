@@ -16,7 +16,7 @@ import {
 } from "../../server/task-check.js";
 import { CheckStore, resetCheckStore } from "../../core/check-store.js";
 import { NO_CHECK_PLAN_NOTICE } from "../../core/check-skip.js";
-import { processGroupAlive } from "../../core/process-group.js";
+import { listProcessGroupPids, processGroupAlive } from "../../core/process-group.js";
 import { runHandoffCommand } from "../../server/handoff.js";
 import { taskHasBlockingCheckOrRemote } from "../../server/active-task-card.js";
 
@@ -132,8 +132,8 @@ describe("TaskCheckManager durable cancelled runs (#0564)", () => {
       const ready = new Promise<void>((resolve) => (readyResolve = resolve));
       const script = [
         `const { spawn } = require("node:child_process");`,
-        `spawn(process.execPath, ["-e", "process.on('SIGTERM', () => {}); setInterval(() => {}, 1000)"], { stdio: "ignore" });`,
-        `console.log("ready:" + process.pid);`,
+        `const descendant = spawn(process.execPath, ["-e", "process.on('SIGTERM', () => {}); console.log('descendant-ready'); setInterval(() => {}, 1000)"], { stdio: ["ignore", "pipe", "ignore"] });`,
+        `descendant.stdout.once("data", () => console.log("ready:" + process.pid));`,
         `setInterval(() => {}, 1000);`,
       ].join("\n");
       const command = runHandoffCommand(
@@ -162,6 +162,9 @@ describe("TaskCheckManager durable cancelled runs (#0564)", () => {
         ]);
         if (readyTimer) clearTimeout(readyTimer);
         const handle = m.start("1000", "handoff-finalize", () => {});
+        expect(groupPid).not.toBeNull();
+        expect(processGroupAlive(groupPid!)).toBe(true);
+        expect(listProcessGroupPids(groupPid!).length).toBeGreaterThan(1);
         handle.setCancel(async () => {
           const stopped = await cancelProcess();
           if (stopped) handle.done(null);
