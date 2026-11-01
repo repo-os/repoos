@@ -8,7 +8,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, DOMWrapper } from "@vue/test-utils";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { reactive } from "vue";
 import { createPinia, setActivePinia } from "pinia";
@@ -246,10 +246,12 @@ describe("DashboardView column labels", () => {
     await flushPromises();
     expect(wrapper.findAll(".dash-grid > *")).toHaveLength(4);
 
-    const styles = readFileSync(
+    const stylePath = [
       resolve(process.cwd(), "src/style.css"),
-      "utf8",
-    );
+      resolve(process.cwd(), "src/ui-app/src/style.css"),
+    ].find(existsSync);
+    expect(stylePath).toBeDefined();
+    const styles = readFileSync(stylePath!, "utf8");
     expect(styles).toMatch(
       /\.dash-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)[^}]*grid-auto-rows:\s*340px/s,
     );
