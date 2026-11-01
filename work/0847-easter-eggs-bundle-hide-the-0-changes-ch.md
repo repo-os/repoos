@@ -14,7 +14,7 @@ model_override: default
 review_cli_override: pi
 review_model_override: "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"
 created_at: "2026-10-19T07:50:02Z"
-updated_at: "2026-11-01T01:27:36Z"
+updated_at: "2026-11-01T04:42:32Z"
 last_close_out_gate_ms: 344353
 last_close_out_gate_at: "2026-10-19T16:00:42.308Z"
 review_passes: 1
@@ -253,3 +253,4 @@ Items are independent; edit them with `repoos bundle edit`, never a full `--body
 - 2026-10-31T20:32:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-10-31T23:26:25Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T01:27:36Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:42:32Z · message_overdue: still queued after 60m without being delivered
