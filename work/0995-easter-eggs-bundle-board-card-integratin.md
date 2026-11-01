@@ -233,3 +233,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T12:26:26Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:58723/api/tasks/9999/integration-job (http://127.0.0.1:58723/api/tasks/9999/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:58723/api/tasks/9999/integration-job)
 - 2026-11-01T12:26:29Z · needs_input
 - 2026-11-01T12:35:42Z · message_queued at 2026-11-01T12:35:42.056Z
+- 2026-11-01T12:35:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
