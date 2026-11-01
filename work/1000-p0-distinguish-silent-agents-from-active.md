@@ -11,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T16:43:27Z"
+updated_at: "2026-11-01T16:47:19Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T15:34:30.949Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -78,3 +78,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T16:38:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T16:40:46Z · body
 - 2026-11-01T16:43:27Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T16:47:19Z · handoff_deferred: 1 queued message(s) must be read before review
