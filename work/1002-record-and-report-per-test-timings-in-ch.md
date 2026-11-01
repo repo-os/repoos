@@ -3,6 +3,9 @@ id: 1002
 title: Record and report per-test timings in check history
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 priority: p2
 area: [core, cli, web]
 assigned_to: ai
@@ -11,7 +14,10 @@ branch: feat/record-and-report-per-test-timings-in-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T17:36:22Z"
+updated_at: "2026-11-01T17:42:39Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T17:42:39.030Z\",\"kind\":\"usage-limit\"}]"
+engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
 ---
 ## Problem
 RepoOS stores per-test-file durations and repoos checks timings reports the ten slowest files, but individual Vitest case timings are only visible in detailed raw output. There is no structured per-test history to answer which cases are slow, whether one case regressed, or how test and hook time differ. Raw output may be truncated and is inconvenient to compare across runs.
@@ -39,12 +45,12 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 "route": "/checks?tab=runs",
 "highlight": ".cr-test-timings table",
 "steps": [
-  {
-    "click": "tr.cr-expandable"
-  },
-  {
-    "waitMs": 400
-  }
+{
+"click": "tr.cr-expandable"
+},
+{
+"waitMs": 400
+}
 ],
 "state": "checks:timings"
 }
@@ -65,3 +71,5 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T17:33:41Z · body
 - 2026-11-01T17:36:12Z · body
 - 2026-11-01T17:36:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T17:42:39Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-01T17:42:39Z · engineer crash recovery: switched cursor + composer-2.5 → codex + gpt-6-luna after 1/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
