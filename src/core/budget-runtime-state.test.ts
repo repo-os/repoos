@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { rmSync } from "node:fs";
+import { pairPauseInfo } from "./budget-allowlist.js";
 import { loadConfig } from "./config.js";
 import {
   applyAutomaticPauses,
@@ -112,5 +113,20 @@ describe("budget runtime pauses (#0998)", () => {
     const config = loadConfig(root);
     expect(config.budget?.allowlist?.[0]?.pausedModels?.[0]?.model).toBe("go");
     expect(readFileSync(join(root, "repoos.toml"), "utf8")).toBe(toml);
+  });
+
+  it("treats an expired runtime pause as resumed without rewriting the file", () => {
+    const root = tempRoot();
+    const until = "2020-01-01T00:00:00.000Z";
+    recordAutomaticAllowlist(root, [
+      row({
+        pausedModels: [{ model: "go", pausedReason: "out of usage since 10:30", pausedUntil: until }],
+      }),
+    ]);
+    const before = readFileSync(budgetRuntimeStatePath(root), "utf8");
+    const rows = hydrateAllowlistRuntime(root, [row()]);
+    const now = Date.parse("2026-11-01T00:00:00.000Z");
+    expect(pairPauseInfo(rows, "opencode", "go", now).paused).toBe(false);
+    expect(readFileSync(budgetRuntimeStatePath(root), "utf8")).toBe(before);
   });
 });

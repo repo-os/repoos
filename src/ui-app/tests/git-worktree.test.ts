@@ -849,6 +849,12 @@ describe("main dirty paths for close-out (#0713)", () => {
       writeFileSync(join(root, "repoos.toml"), `maxActiveTasks = 4\n\n${head}`);
       expect(await mainDirtyFilesForCloseOut(root)).toEqual(["repoos.toml"]);
 
+      writeFileSync(
+        join(root, "repoos.toml"),
+        `${head}paused = true\npausedReason = "shipping"\npausedModels = [{ model = "go", pausedReason = "out of usage since 10:30" }]\n`,
+      );
+      expect(await mainDirtyFilesForCloseOut(root)).toEqual(["repoos.toml"]);
+
       writeFileSync(join(root, "repoos.toml"), "[[budget.allowlist\n");
       expect(await mainDirtyFilesForCloseOut(root)).toEqual(["repoos.toml"]);
 
