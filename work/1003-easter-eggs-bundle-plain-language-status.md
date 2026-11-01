@@ -234,3 +234,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-01T20:01:17Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T20:56:28Z · body
 - 2026-11-01T21:00:25Z · handoff_deferred: 5 queued message(s) must be read before review
+- 2026-11-01T21:00:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
