@@ -23,7 +23,7 @@
  * cross-CLI retry is bounded rather than a generic global fallback.
  */
 import type { AgentModelAllowRow, Task } from "./types.js";
-import { availableAllowPairs } from "./budget-allowlist.js";
+import { availableAllowPairs, pairPauseInfo } from "./budget-allowlist.js";
 
 /** Crashes for one agent+model before an automatic failover. */
 export const DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD = 3;
@@ -286,8 +286,47 @@ export function planEngineerCrashRecovery(input: EngineerCrashPlanInput): Engine
       crash.kind === "usage-limit",
   );
   const crashes = countEngineerCrashes(input.crashes, input.pair, nowIso, windowMs);
-  if (!quotaExhausted && crashes < threshold) {
+  const pausedNow = pairPauseInfo(
+    [...input.allowlist],
+    input.pair.cli,
+    input.pair.model,
+    input.now,
+  ).paused;
+  if (!quotaExhausted && crashes < threshold && !pausedNow) {
     return { action: "resume", pair: input.pair, crashes, threshold, windowMs };
+  }
+  if (!quotaExhausted && crashes < threshold && pausedNow) {
+    // A paused pair must not be retried — fail over immediately (#0993).
+    const block = failoverBlock(input.task, input.pair);
+    if (block) {
+      return {
+        action: "surface",
+        reason: block.kind,
+        detail: block.detail,
+        crashes,
+        threshold,
+        windowMs,
+      };
+    }
+    const to = nextFailoverPair(input.allowlist, input.pair, input.now);
+    if (!to) {
+      return {
+        action: "surface",
+        reason: "no-allowed-pair",
+        detail: "no unpaused budget-allowlist pair other than the failing one is available",
+        crashes,
+        threshold,
+        windowMs,
+      };
+    }
+    return {
+      action: "failover",
+      from: input.pair,
+      to,
+      crashes,
+      threshold,
+      windowMs,
+    };
   }
   // A provider quota is an explicit temporary outage: honor ordinary human
   // pins in every other case, but let the task move off the exhausted pair.

@@ -484,6 +484,7 @@ export function buildDriverBrief(input: DriverBriefInput): DriverBrief {
     blockedValidations: input.blockedValidations ?? [],
     heldTasks: input.tasks
       .filter((t) => {
+        if (t.status === "done") return false;
         if (!t.isHeld || t.isArchived) return false;
         if (t.holdUntil) {
           const until = Date.parse(t.holdUntil);
