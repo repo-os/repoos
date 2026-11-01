@@ -1141,8 +1141,24 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           markdown: "## Verdict\ngood to go.\n\nThe latest pass is ready to merge.\n",
         },
         history: [
-          { pass: 1, at: olderAt, state: "ok", verdict: "good to go", agent: "reviewer", cli: "cursor", model: "composer" },
-          { pass: 2, at: latestAt, state: "ok", verdict: "good to go", agent: "reviewer", cli: "codex", model: "gpt-5" },
+          {
+            pass: 1,
+            at: olderAt,
+            state: "ok",
+            verdict: "good to go",
+            agent: "reviewer",
+            cli: "cursor",
+            model: "composer",
+          },
+          {
+            pass: 2,
+            at: latestAt,
+            state: "ok",
+            verdict: "good to go",
+            agent: "reviewer",
+            cli: "codex",
+            model: "gpt-5",
+          },
         ],
       };
       break;
