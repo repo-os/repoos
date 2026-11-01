@@ -1,15 +1,15 @@
 ---
 id: 1004
-title: Audit retained worktrees for done or archived tasks
+title: Make retained worktree cleanup safe and actionable
 type: chore
 status: inbox
 priority: p2
 area: [core, server]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-01T15:50:52Z"
+updated_at: "2026-11-01T15:54:14Z"
 ---
 ## Problem
 
@@ -36,3 +36,4 @@ Use `repoos gc --dry-run` and RepoOS status as evidence, not as permission to de
 ## Activity
 
 - 2026-11-01T15:50:52Z · created · njachowski@gmail.com
+- 2026-11-01T15:54:14Z · title
