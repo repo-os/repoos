@@ -1880,6 +1880,16 @@ describe("heldTasks computed (#0960)", () => {
         updated_at: "2026-10-05T00:00:00Z",
       }),
     });
+    es.emit("task.created", {
+      type: "task.created",
+      // Done tasks never belong on the Held list (#0993).
+      task: makeTask({
+        id: "0006",
+        status: "done",
+        isHeld: true,
+        updated_at: "2026-10-06T00:00:00Z",
+      }),
+    });
 
     expect(repo.heldTasks.map((t) => t.id)).toEqual(["0005", "0001"]);
   });

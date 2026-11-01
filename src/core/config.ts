@@ -70,6 +70,10 @@ import {
   DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
   MIN_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
 } from "./engineer-crash-recovery.js";
+import {
+  DEFAULT_ACTIVE_WITHOUT_ENGINEER_RECOVER_MS,
+  MIN_ACTIVE_WITHOUT_ENGINEER_RECOVER_MS,
+} from "./active-without-engineer-recovery.js";
 import { parseModelRouting } from "./model-routing/config.js";
 import { parseCheckPlanConfig } from "./check-plan.js";
 import { ctoActionsSchemaDescription } from "./cto-actions.js";
@@ -294,6 +298,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     stalenessMs: 5 * 60 * 1000,
     autoTransition: true,
     phantomDetectMs: 3 * 60 * 1000,
+    activeWithoutEngineerRecoverMs: DEFAULT_ACTIVE_WITHOUT_ENGINEER_RECOVER_MS,
     engineerCrashFailoverThreshold: DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
     engineerCrashFailoverWindowMs: DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
     autoPauseOnUsageLimit: true,
@@ -1902,6 +1907,13 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof phantomDetectMs === "number" && phantomDetectMs >= 15_000) {
       cfg.watchdog = { ...cfg.watchdog, phantomDetectMs };
     }
+    const activeWithoutEngineerRecoverMs = parsed["watchdog.activeWithoutEngineerRecoverMs"];
+    if (
+      typeof activeWithoutEngineerRecoverMs === "number" &&
+      activeWithoutEngineerRecoverMs >= MIN_ACTIVE_WITHOUT_ENGINEER_RECOVER_MS
+    ) {
+      cfg.watchdog = { ...cfg.watchdog, activeWithoutEngineerRecoverMs };
+    }
     const crashFailoverThreshold = parsed["watchdog.engineerCrashFailoverThreshold"];
     if (typeof crashFailoverThreshold === "number" && crashFailoverThreshold >= 1) {
       cfg.watchdog = {
@@ -2889,6 +2901,23 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "(milliseconds) before RepoOS clears it and restarts the same agent. " +
         "A running check, test, or remote-validation wait is never treated as gone. " +
         "Minimum 15000. Automatic restarts are limited to 3 per task per hour.",
+    },
+    {
+      key: "watchdog.activeWithoutEngineerRecoverMs",
+      label: "Active without engineer recovery window",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      group: "general",
+      min: MIN_ACTIVE_WITHOUT_ENGINEER_RECOVER_MS,
+      step: 60_000,
+      default: DEFAULT_ACTIVE_WITHOUT_ENGINEER_RECOVER_MS,
+      description:
+        "How long an active task may have no live engineer (milliseconds) before RepoOS " +
+        "automatically restarts it on the next allowlisted, non-paused agent pair. " +
+        "Held and human-assigned tasks are never restarted. Default 600000 (10 minutes); " +
+        "minimum 60000 (1 minute). When recovery fails, the task is flagged for a human " +
+        "and a notice is recorded.",
     },
     {
       key: "watchdog.engineerCrashFailoverThreshold",
@@ -4268,6 +4297,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "watchdog.stalenessMs",
   "watchdog.autoTransition",
   "watchdog.phantomDetectMs",
+  "watchdog.activeWithoutEngineerRecoverMs",
   "watchdog.engineerCrashFailoverThreshold",
   "watchdog.autoPauseOnUsageLimit",
   "watchdog.engineerCrashFailoverWindowMs",

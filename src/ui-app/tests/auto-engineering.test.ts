@@ -103,7 +103,9 @@ describe("AutoEngineeringOrchestrator", () => {
         mockTask("003", "ready"),
       ];
 
-      const result = await orchestrator.reconcile(config, tasks, "active-to-review");
+      const result = await orchestrator.reconcile(config, tasks, "active-to-review", {
+        isRunning: (id) => id === "001" || id === "002",
+      });
 
       expect(result.triggered).toBe(true);
       expect(result.outcome).toBe("no-capacity");
@@ -221,7 +223,9 @@ describe("AutoEngineeringOrchestrator", () => {
         mockTask("004", "ready"),
       ];
 
-      await orchestrator.reconcile(config, tasks, "active-to-review");
+      await orchestrator.reconcile(config, tasks, "active-to-review", {
+        isRunning: (id) => id === "001" || id === "002",
+      });
 
       const decision = orchestrator.getLastDecision();
       expect(decision?.activeCount).toBe(2);
@@ -248,22 +252,30 @@ describe("AutoEngineeringOrchestrator", () => {
   });
 
   describe("hold inertness (#0960)", () => {
-    it("excludes a held active task from the active count", async () => {
+    it("excludes tasks without a live engineer from the active count (#0993)", async () => {
       const config = mockConfig(true, 2);
       const activeHeld = mockTask("001", "active");
       activeHeld.isHeld = true;
       activeHeld.holdReason = "waiting on design";
       const activeFree = mockTask("002", "active");
+      const activeDead = mockTask("004", "active");
       const ready = mockTask("003", "ready");
 
-      await orchestrator.reconcile(config, [activeHeld, activeFree, ready], "active-to-review");
+      await orchestrator.reconcile(
+        config,
+        [activeHeld, activeFree, activeDead, ready],
+        "active-to-review",
+        {
+          isRunning: (id) => id === "002",
+          isQueued: () => false,
+          isHandoffInFlight: () => false,
+        },
+      );
 
       const decision = orchestrator.getLastDecision();
-      // The held active task holds no slot, so only 002 counts.
       expect(decision?.activeCount).toBe(1);
       expect(decision?.maxActiveTasks).toBe(2);
       expect(decision?.availableSlots).toBe(1);
-      // The free slot is handed to the ready task.
       expect(decision?.selectedIds).toEqual(["003"]);
     });
 
@@ -336,7 +348,9 @@ describe("AutoEngineeringOrchestrator", () => {
         mockTask("004", "ready"),
       ];
 
-      await orchestrator.reconcile(config, tasks, "active-to-review");
+      await orchestrator.reconcile(config, tasks, "active-to-review", {
+        isRunning: (id) => ["001", "002", "003"].includes(id),
+      });
 
       const decision = orchestrator.getLastDecision();
       expect(decision?.maxActiveTasks).toBe(3);
@@ -349,7 +363,9 @@ describe("AutoEngineeringOrchestrator", () => {
       const config = mockConfig(true, 10);
       const tasks = [mockTask("001", "active"), mockTask("002", "ready")];
 
-      await orchestrator.reconcile(config, tasks, "startup");
+      await orchestrator.reconcile(config, tasks, "startup", {
+        isRunning: (id) => id === "001",
+      });
 
       const decision = orchestrator.getLastDecision();
       expect(decision?.maxActiveTasks).toBe(10);
