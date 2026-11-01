@@ -282,7 +282,7 @@ describe("ingestCloseOutOutcome (#0640)", () => {
     expect(s.notices).toHaveLength(1);
     expect(s.notices[0]).toMatchObject({
       kind: "closeOutSucceeded",
-      title: "Move to done: #0633 landed",
+      title: "Move to done: #0633 merged into main",
       detail: "Merged and published to main.",
       link: "/work?task=0633",
       createdAt: "2026-10-03T17:00:00.000Z",
@@ -344,8 +344,8 @@ describe("ingestCloseOutOutcome (#0640)", () => {
     s.ingestCloseOutOutcome(closeOut({ finishedAt: "2026-10-03T17:00:00.000Z" }));
     s.ingestCloseOutOutcome(closeOut({ taskId: "0644", finishedAt: "2026-10-03T18:00:00.000Z" }));
     expect(s.activeNotices).toHaveLength(2);
-    expect(s.activeNotices[0].title).toBe("Move to done: #0644 landed");
-    expect(s.activeNotices[1].title).toBe("Move to done: #0633 landed");
+    expect(s.activeNotices[0].title).toBe("Move to done: #0644 merged into main");
+    expect(s.activeNotices[1].title).toBe("Move to done: #0633 merged into main");
   });
 
   it("a dismissed run stays gone when re-delivered, but a retry with a new finish time is new", () => {
@@ -483,7 +483,7 @@ describe("close-out channel wiring (#0640)", () => {
     useNoticesStore().ingestCloseOutOutcome(closeOut());
     await flush();
     expect(FakeNotification.instances).toHaveLength(1);
-    expect(FakeNotification.instances[0].title).toBe("Move to done: #0633 landed");
+    expect(FakeNotification.instances[0].title).toBe("Move to done: #0633 merged into main");
   });
 
   it("does not push when the per-type toggle is off (independent from release kinds)", async () => {
