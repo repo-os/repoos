@@ -285,7 +285,11 @@ to tell the human. If you did, say so plainly. Otherwise leave it alone and say
 nothing.
 
 **Exception: Move to done blocked by `repoos.toml` (human-authorized
-2026-10-18).** `repoos done <id>` refuses with "main has N uncommitted file(s)
+2026-10-18).** Automatic quota and usage pauses are not this case: they live in
+the gitignored `.repoos/budget-runtime.json` (#0998) and do not dirty
+`repoos.toml`. A leftover `repoos.toml` diff that is only those automatic
+pause fields is ignored by the dirty-main check and is not checkpoint-committed.
+`repoos done <id>` refuses with "main has N uncommitted file(s)
 blocking close-out" when the human's settings edit is the only dirty file on
 main (the human picks a setting in the UI; it stays uncommitted). In that case,
 and only then, a driver may commit `repoos.toml` on main itself, with its

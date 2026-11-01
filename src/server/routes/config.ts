@@ -28,6 +28,12 @@ import {
 } from "../../core/dev-targets.js";
 import { normalizeAllowlistRows } from "../../core/budget-allowlist.js";
 import {
+  allowlistWithoutAutomaticPauses,
+  automaticPausesIn,
+  clearAutomaticPauses,
+  recordAutomaticAllowlist,
+} from "../../core/budget-runtime-state.js";
+import {
   MAX_ROUTING_TIMEOUT_MS,
   MIN_ROUTING_TIMEOUT_MS,
   ROUTING_ROLES,
@@ -324,6 +330,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   let devTargetsUnchanged = false;
   /** Set when a budget-allowlist PATCH already matches what's on disk. */
   let budgetAllowlistUnchanged = false;
+  /** True when a PATCH changed only automatic pauses (no repoos.toml write). */
+  let budgetRuntimeUpdated = false;
   /** Set when a budget-allowlist PATCH clears the last `[[budget.allowlist]]` row. */
   let dropBudgetAllowlistRows = false;
   if (body.builtInAgents !== undefined) {
@@ -482,15 +490,22 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       return json(res, 400, { error: parsed.error });
     }
     const onDisk = loadConfig(config.root).budget?.allowlist ?? [];
-    const unchanged = JSON.stringify(onDisk) === JSON.stringify(parsed.rows);
-    if (unchanged) {
+    const tracked = allowlistWithoutAutomaticPauses(parsed.rows);
+    const diskTracked = allowlistWithoutAutomaticPauses(onDisk);
+    const tomlSame = JSON.stringify(diskTracked) === JSON.stringify(tracked);
+    const runtimeSame =
+      JSON.stringify(automaticPausesIn(onDisk)) === JSON.stringify(automaticPausesIn(parsed.rows));
+    if (tomlSame && runtimeSame) {
       budgetAllowlistUnchanged = true;
-    } else if (parsed.rows.length === 0) {
+    } else if (tracked.length === 0) {
       // Clearing every row: `patchTomlConfig` only strips `[[…]]` blocks for a
-      // non-empty row list, so drop them explicitly.
+      // non-empty row list, so drop them explicitly. Automatic pauses go with them.
+      clearAutomaticPauses(config.root);
       dropBudgetAllowlistRows = true;
     } else {
-      patch["budget.allowlist"] = parsed.rows;
+      recordAutomaticAllowlist(config.root, parsed.rows);
+      budgetRuntimeUpdated = !runtimeSame;
+      if (!tomlSame) patch["budget.allowlist"] = tracked;
     }
   }
 
@@ -888,6 +903,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     !devTargetsUnchanged &&
     !dropDevTargetRows &&
     !budgetAllowlistUnchanged &&
+    !budgetRuntimeUpdated &&
     !dropBudgetAllowlistRows &&
     !onlyEmptyWhisperKey
   ) {

@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 756475
-last_close_out_gate_at: "2026-11-01T14:58:20.128Z"
 id: "0998"
 title: Stop runtime model pause updates from blocking close-out as dirty config
 type: bug
-status: review
+status: done
 priority: p1
 area: [core, server]
+merged_commit: 1e20d492d47157bb1a01e6206fbb945796e4909e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
 model_override: composer-2.5
 created_at: "2026-11-01T09:46:53Z"
 updated_at: "2026-11-01T14:58:20Z"
+last_close_out_gate_ms: 756475
+last_close_out_gate_at: "2026-11-01T14:58:20.128Z"
 last_check_failure: "repoos check at 2026-11-01T13:59:35.581Z: repoos check failed: tests — dir: undefined,"
 handoff_signal_retry_count: 1
 dev_error_count: 2
