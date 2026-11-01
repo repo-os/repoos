@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T21:19:43.254Z: repoos check failed: ◆ Check plan"
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
@@ -242,3 +244,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-01T21:16:28Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T21:16:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T21:16:28Z · message_delivered: 1 message(s)
+
