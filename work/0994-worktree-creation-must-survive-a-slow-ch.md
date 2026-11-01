@@ -2,7 +2,7 @@
 id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
-status: review
+status: active
 priority: p1
 area: core
 assigned_to: ai
