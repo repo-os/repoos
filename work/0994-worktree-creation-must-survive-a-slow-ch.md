@@ -131,3 +131,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T12:02:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T12:02:56Z · message_delivered: 1 message(s)
 - 2026-11-01T12:15:41Z · message_queued at 2026-11-01T12:15:41.737Z
+- 2026-11-01T12:15:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
