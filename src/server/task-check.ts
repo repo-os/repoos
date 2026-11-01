@@ -183,11 +183,12 @@ export class TaskCheckManager {
           "the previous check attempt did not pass")
         : null;
     const id = `${taskId}-${kind}-${++this.seq}`;
+    const startedAt = new Date().toISOString();
     const run: TaskCheckRun = {
       id,
       taskId,
       kind,
-      startedAt: new Date().toISOString(),
+      startedAt,
       finishedAt: null,
       durationMs: null,
       running: true,
@@ -206,7 +207,7 @@ export class TaskCheckManager {
       stepName: null,
       attempt,
       attemptReason,
-      lastProgressAt: run.startedAt,
+      lastProgressAt: startedAt,
     };
     const list = history;
     list.push(run);
