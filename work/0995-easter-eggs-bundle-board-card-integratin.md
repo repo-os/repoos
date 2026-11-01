@@ -3,9 +3,6 @@ id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T10:38:14Z"
+updated_at: "2026-11-01T10:38:17Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T10:34:21.808Z: repoos check failed: ui verification: capture of /work?shotState=closeOut:uploading failed — screenshot: Timeout 30000ms exceeded."
 handoff_signal_retry_count: 2
@@ -219,3 +216,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T10:35:42Z · needs_input
 - 2026-11-01T10:37:44Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-01T10:38:14Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-01T10:38:17Z · needs_input
