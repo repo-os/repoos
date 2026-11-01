@@ -2,7 +2,7 @@
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
-status: review
+status: active
 priority: p0
 area: [web, server, core]
 assigned_to: ai
