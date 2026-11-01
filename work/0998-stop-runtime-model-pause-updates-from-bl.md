@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
 created_at: "2026-11-01T09:46:53Z"
-updated_at: "2026-11-01T09:56:29Z"
+updated_at: "2026-11-01T09:57:10Z"
 ---
 ## Problem
 Nick repeatedly sees FAIL Main clean because repoos.toml is dirty, usually only from model allowlist pause/quota bookkeeping. During the 2026-11-01 recovery, automatic pausedModels.pausedUntil updates dirtied main repeatedly while #0993 was trying to close out. evaluateMainCleanCheck in src/core/landable.ts blocks any dirty file; the /done enqueue guard in src/server/routes/tasks.ts rejects before the publication-stage automatic config checkpoint can help. Runtime updates therefore force human commits and make an otherwise healthy pipeline look broken.
