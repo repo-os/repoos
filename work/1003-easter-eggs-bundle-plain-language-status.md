@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T18:45:36Z"
+updated_at: "2026-11-01T18:51:22Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived.
@@ -119,23 +119,23 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 ```json
 [
 {
-  "label": "Mission Control four panels in a balanced 2×2 grid",
-  "target": "default",
-  "route": "/",
-  "highlight": ".dash-grid"
+"label": "Mission Control four panels in a balanced 2×2 grid",
+"target": "default",
+"route": "/",
+"highlight": ".dash-grid"
 },
 {
-  "label": "Agents tab with default agents followed by custom agents",
-  "target": "default",
-  "route": "/agents?tab=default",
-  "highlight": ".agents-tab-content"
+"label": "Agents tab with default agents followed by custom agents",
+"target": "default",
+"route": "/agents?tab=default",
+"highlight": ".agents-tab-content"
 },
 {
-  "label": "Review report with latest pass marker and reviewer agent",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".review-history-table",
-  "state": "drawer:reviewPasses"
+"label": "Review report with latest pass marker and reviewer agent",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".review-history-table",
+"state": "drawer:reviewPasses"
 }
 ]
 ```
@@ -181,3 +181,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T18:41:01Z · status inbox→ready
 - 2026-11-01T18:41:08Z · status ready→active, branch
 - 2026-11-01T18:45:36Z · body
+- 2026-11-01T18:51:22Z · message_queued at 2026-11-01T18:51:22.930Z
