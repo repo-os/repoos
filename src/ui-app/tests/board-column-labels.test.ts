@@ -9,7 +9,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, DOMWrapper } from "@vue/test-utils";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { reactive } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import * as apiMod from "../src/api";
@@ -247,7 +247,7 @@ describe("DashboardView column labels", () => {
     expect(wrapper.findAll(".dash-grid > *")).toHaveLength(4);
 
     const styles = readFileSync(
-      fileURLToPath(new URL("../src/style.css", import.meta.url)),
+      resolve(process.cwd(), "src/style.css"),
       "utf8",
     );
     expect(styles).toMatch(
