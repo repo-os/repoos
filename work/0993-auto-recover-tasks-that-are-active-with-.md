@@ -11,7 +11,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-11-01T01:33:12Z"
+updated_at: "2026-11-01T02:09:28Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — } >"
 last_handoff_failure_sha: 5309ba0816dd650b4561d23091e48844828f163e
 ---
@@ -87,3 +87,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-11-01T00:07:15Z · message_delivered: 2 message(s)
 - 2026-11-01T01:25:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T01:33:12Z · note: handoff requested (ui-review)
+- 2026-11-01T02:09:28Z · note: ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:55195/settings?tab=watchdog)
