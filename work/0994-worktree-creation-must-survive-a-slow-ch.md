@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
@@ -64,3 +65,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T23:09:36Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-10-31T23:22:59Z · note: adopted orphaned engineer pid 84641
 - 2026-11-01T00:51:05Z · message_queued at 2026-11-01T00:51:05.318Z
+
