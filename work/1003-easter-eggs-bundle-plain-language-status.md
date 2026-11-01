@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T22:07:51Z"
+updated_at: "2026-11-01T22:15:44Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T22:06:01.306Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control 2×2 panels (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:58741/); [missing-target] Review pass selection and freshness (target \"default\"): highlight .review-history-wrap matched nothing on /work?task=1003&tab=review (http://127.0.0.1:58741/work?shotState=drawer:landable)"
 dev_error_count: 1
@@ -114,33 +114,33 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 ```json
 [
 {
-  "label": "Mission Control 2×2 panels",
-  "target": "default",
-  "route": "/",
-  "highlight": ".dash-grid",
-  "steps": [
-    {
-      "waitFor": ".dash-grid"
-    }
-  ]
+"label": "Mission Control 2×2 panels",
+"target": "default",
+"route": "/",
+"highlight": ".dash-grid",
+"steps": [
+  {
+    "waitFor": ".dash-grid"
+  }
+]
 },
 {
-  "label": "Agents tab with default and custom sections",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agents-tab-content"
+"label": "Agents tab with default and custom sections",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-tab-content"
 },
 {
-  "label": "Review pass selection and freshness",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".review-history-wrap",
-  "state": "drawer:reviewPasses",
-  "steps": [
-    {
-      "waitFor": ".review-history-wrap"
-    }
-  ]
+"label": "Review pass selection and freshness",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".review-history-wrap",
+"state": "drawer:reviewPasses",
+"steps": [
+  {
+    "waitFor": ".review-history-wrap"
+  }
+]
 }
 ]
 ```
@@ -257,3 +257,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-01T21:30:47Z · body
 - 2026-11-01T22:05:57Z · note: ui verification failed (2 issue(s)): [missing-target] Mission Control 2×2 panels (target "default"): loading state detected: loading text "Loading…" on / (http://127.0.0.1:58741/); [missing-target] Review pass selection and freshness (target "default"): highlight .review-history-wrap matched nothing on /work?task=1003&tab=review (http://127.0.0.1:58741/work?shotState=drawer:landable)
 - 2026-11-01T22:07:51Z · body
+- 2026-11-01T22:15:44Z · message_queued at 2026-11-01T22:15:44.445Z
