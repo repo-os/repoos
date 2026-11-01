@@ -338,6 +338,25 @@ export function releasedAtFromActivity(body: string): string | null {
   return releasedAt;
 }
 
+/**
+ * Every transition into `done` from another status (`status ready→done`).
+ * A bookkeeping rewrite that stays done (`status done→done, release:…`) is
+ * not a new completion (#0995).
+ */
+const DONE_AT_ACTIVITY = /^- (\d{4}-\d{2}-\d{2}T[^\s]+) · status (?!done→)\S+→done(?:[,\s]|$)/gmu;
+
+/**
+ * Timestamp of the last time a task reached `done`, from its activity log
+ * (#0995). Falls back to null when no such line exists (legacy or hand-written
+ * files). A later bookkeeping write does not change this — only another
+ * `…→done` transition would.
+ */
+export function doneAtFromActivity(body: string): string | null {
+  let doneAt: string | null = null;
+  for (const match of body.matchAll(DONE_AT_ACTIVITY)) doneAt = match[1];
+  return doneAt;
+}
+
 function deriveIdFromFilename(file: string): string {
   const name = basename(file).replace(/\.[^.]+$/, "");
   const m = name.match(/^(\d{2,})/);

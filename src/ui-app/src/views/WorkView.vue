@@ -138,14 +138,16 @@ async function openFromTaskParam(raw: string): Promise<void> {
   // `/work?task=0755&tab=changes` lands on the Changes tab.
   const tab = tabFromQuery(route.query.tab);
   if (tab) ui.activeTab = tab;
-  if (
-    typeof window !== "undefined" &&
-    ["drawer:statusDetails", "drawer:held"].includes(
-      readShotPreviewFixtureFromLocation(window.location) ?? "",
-    )
-  ) {
-    ui.activeTab = "debug";
-    ui.debugView = "status";
+  if (typeof window !== "undefined") {
+    const shot = readShotPreviewFixtureFromLocation(window.location);
+    const statusShot =
+      shot === "drawer:statusDetails" ||
+      shot === "drawer:held" ||
+      (tab === "debug" && shot === "closeOut:uploading");
+    if (statusShot) {
+      ui.activeTab = "debug";
+      ui.debugView = "status";
+    }
   }
   await clearTaskParam();
 }

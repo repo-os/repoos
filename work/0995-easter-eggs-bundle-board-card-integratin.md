@@ -1,12 +1,13 @@
 ---
-updated_at: "2026-11-01T13:40:45Z"
-review_passes: 1
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
 status: review
 needs_input: true
 needs_input_reason: dev-error
+hold: true
+hold_reason: Enable remote engineer self-checks before restarting validation
+hold_at: "2026-11-01T09:44:38.193Z"
 priority: p3
 area: web
 assigned_to: ai
@@ -15,9 +16,9 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-last_check_failure: "repoos check at 2026-11-01T12:26:29.985Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:58723/api/tasks/9999/integration-job (http://127.0.0.1:58723/api/tasks/9999/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:58723/api/tasks/9999/integration-job)"
+updated_at: "2026-11-01T13:39:38Z"
 handoff_signal_retry_count: 2
-dev_error_count: 3
+dev_error_count: 2
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -208,41 +209,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T09:41:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T09:44:38Z · engineer stopped by request
 - 2026-11-01T09:44:38Z · held, held-reason, held-at
-- 2026-11-01T09:46:22Z · released
-- 2026-11-01T09:46:23Z · needs_input
-- 2026-11-01T09:46:23Z · message_delivered: 1 message(s)
-- 2026-11-01T09:46:50Z · note: adopted orphaned engineer pid 22768
-- 2026-11-01T10:03:53Z · body
-- 2026-11-01T10:07:02Z · needs_input
-- 2026-11-01T10:35:42Z · needs_input
-- 2026-11-01T10:37:44Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-01T10:38:14Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-01T10:38:17Z · needs_input
-- 2026-11-01T11:06:09Z · watchdog: restarting engineer after 28m with no live process
-- 2026-11-01T11:15:42Z · message_queued at 2026-11-01T11:15:42.367Z
-- 2026-11-01T11:15:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-01T11:20:43Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-01T11:22:00Z · body
-- 2026-11-01T11:48:04Z · body
-- 2026-11-01T11:50:46Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-01T11:53:01Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-01T11:53:22Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-01T11:53:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-01T11:53:22Z · needs_input
-- 2026-11-01T11:53:23Z · needs_input
-- 2026-11-01T11:53:23Z · message_delivered: 1 message(s)
-- 2026-11-01T11:53:47Z · needs_input
-- 2026-11-01T12:26:26Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:58723/api/tasks/9999/integration-job (http://127.0.0.1:58723/api/tasks/9999/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:58723/api/tasks/9999/integration-job)
-- 2026-11-01T12:26:29Z · needs_input
-- 2026-11-01T12:35:42Z · message_queued at 2026-11-01T12:35:42.056Z
-- 2026-11-01T12:35:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-01T12:40:42Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-01T12:41:34Z · body
-- 2026-11-01T12:44:11Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-01T12:44:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-01T12:44:11Z · message_delivered: 1 message(s)
-- 2026-11-01T12:44:30Z · needs_input
 - 2026-11-01T13:39:38Z · status active→review
-- 2026-11-01T13:39:38Z · note: Task body is underspecified: E5: empty Problem, Desired UX, Notes for AI
-- 2026-11-01T13:40:45Z · note: review pass 1: good to go
-
