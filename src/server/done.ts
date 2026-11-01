@@ -274,7 +274,11 @@ function runProcess(
     child.on("error", (err: NodeJS.ErrnoException) => finish(null, err));
     child.on("close", (code: number | null) => {
       void (async () => {
-        if (child.pid && process.platform !== "win32" && (termination || processGroupAlive(child.pid))) {
+        if (
+          child.pid &&
+          process.platform !== "win32" &&
+          (termination || processGroupAlive(child.pid))
+        ) {
           termination ??= terminateProcessGroupAndWait(child.pid);
           await termination;
         }
