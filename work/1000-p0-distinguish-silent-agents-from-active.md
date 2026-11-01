@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T20:01:32Z"
+updated_at: "2026-11-01T20:36:47Z"
 last_check_failure: "repoos check at 2026-11-01T19:50:06.862Z: repoos check failed: ◆ Check plan"
 review_passes: 2
 review_rounds: 1
