@@ -38,12 +38,11 @@ describe("needs-input core helpers", () => {
     ).toBe(false);
   });
 
-  it("clears provider-failure and degenerate-output when engineering resumes (#0716)", () => {
+  it("clears provider-failure, degenerate-output, dev-error, and watchdog-stuck when engineering resumes (#0716, #0993)", () => {
     expect(needsInputClearsOnNewEngineerRun("provider-failure")).toBe(true);
     expect(needsInputClearsOnNewEngineerRun("degenerate-output")).toBe(true);
-    // A `dev-error` is cleared by a clean TURN, not by merely starting one
-    // (#0613 start semantics, #0869): an unrelated crash flag survives a start.
-    expect(needsInputClearsOnNewEngineerRun("dev-error")).toBe(false);
+    expect(needsInputClearsOnNewEngineerRun("dev-error")).toBe(true);
+    expect(needsInputClearsOnNewEngineerRun("watchdog-stuck")).toBe(true);
     expect(needsInputClearsOnNewEngineerRun(undefined)).toBe(true);
   });
 

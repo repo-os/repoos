@@ -11,8 +11,9 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-11-01T09:02:36Z"
-review_passes: 1
+updated_at: "2026-11-01T02:40:55Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — } >"
+last_handoff_failure_sha: 5309ba0816dd650b4561d23091e48844828f163e
 ---
 ## Problem
 
@@ -47,8 +48,8 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 {
 "label": "Active-without-engineer recovery window setting",
 "target": "default",
-"route": "/settings?tab=general",
-"highlight": "[id=\"setting-watchdog.activeWithoutEngineerRecoverMs\"]"
+"route": "/settings?tab=watchdog",
+"highlight": "[data-setting-key=\"watchdog.activeWithoutEngineerRecoverMs\"]"
 }
 ]
 ```
@@ -84,17 +85,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-11-01T00:05:15Z · note: ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:56263/settings?tab=watchdog)
 - 2026-11-01T00:05:15Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:56263/settings?tab=watchdog)
 - 2026-11-01T00:07:15Z · message_delivered: 2 message(s)
-- 2026-11-01T01:25:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-01T01:33:12Z · note: handoff requested (ui-review)
-- 2026-11-01T02:09:28Z · note: ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:55195/settings?tab=watchdog)
-- 2026-11-01T02:09:29Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:55195/settings?tab=watchdog)
-- 2026-11-01T02:10:59Z · body
-- 2026-11-01T02:11:07Z · note: handoff requested (ui-review)
-- 2026-11-01T02:40:56Z · status active→review
-- 2026-11-01T02:41:01Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (f134266a1) during finalization (#0734)
-- 2026-11-01T02:42:21Z · note: review pass 1: good to go
-- 2026-11-01T08:33:41Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 53971, alive), #0994 check (pid 49829, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 10s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-01T08:43:29Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-01T08:43:50Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 53971, alive), #0994 check (pid 49829, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 13s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-01T08:54:05Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-01T09:02:36Z · note: Nick explicitly approved restarting Move to done and landing if remote validation passes. Duplicate local tests stopped; server remote validator restarted; thinkpad, bee and mini passed prerequisite probes.
+- 2026-11-01T02:40:55Z · status active→review

@@ -209,7 +209,7 @@ describe("underspecified flag on task start (#0613)", () => {
   it("preserves an unrelated needs_input reason during start", async () => {
     const fx = makeFixture(
       "ready",
-      "hotfix: true\nneeds_input: true\nneeds_input_reason: dev-error\n",
+      "hotfix: true\nneeds_input: true\nneeds_input_reason: handoff-failed\n",
     );
     try {
       const ctx = makeCtx(fx);
@@ -219,7 +219,7 @@ describe("underspecified flag on task start (#0613)", () => {
       expect(readTaskFile(fx)).toMatchObject({
         status: "active",
         needsInput: true,
-        needsInputReason: "dev-error",
+        needsInputReason: "handoff-failed",
       });
       expect(ctx.logger.task).toHaveBeenCalledWith(
         "0558",
