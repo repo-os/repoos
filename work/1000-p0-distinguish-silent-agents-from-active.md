@@ -82,3 +82,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T16:47:19Z · agent exited with an error (cursor) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-01T16:47:19Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-01T16:47:23Z · needs_input
+- 2026-11-01T16:47:23Z · message_delivered: 1 message(s)
