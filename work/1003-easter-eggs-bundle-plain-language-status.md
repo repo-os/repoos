@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T15:39:06Z"
+updated_at: "2026-11-01T15:39:07Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
@@ -50,8 +50,7 @@ Across user-facing UI, notifications, CLI messages, and user documentation, use 
 - Test: the existing `repoos landable` CLI command and API route remain compatible.
 
 ### Notes for AI
-
-Limit the change to user-facing text. Internal code comments and technical descriptions may retain “landed” where it is precise and not presented as product copy.
+Change user-facing merge-status and merge-eligibility wording throughout product surfaces. Preserve technical command names, API routes/fields, internal identifiers, and unrelated literal uses such as a browser landing on a route. Choose a natural variation of “merged into main” that accurately describes the specific state; do not imply a merge happened when it did not.
 
 ## Screenshots
 
@@ -70,3 +69,5 @@ Limit the change to user-facing text. Internal code comments and technical descr
 - 2026-11-01T15:39:06Z · note: bundle edit E2
 - 2026-11-01T15:39:06Z · body: E2 · Replace “landed” in user-facing merge messages (added 4, removed 2)
 - 2026-11-01T15:39:06Z · note: bundle edit E2
+- 2026-11-01T15:39:07Z · body: E2 · Replace “landed” in user-facing merge messages (added 1, removed 1)
+- 2026-11-01T15:39:07Z · note: bundle edit E2
