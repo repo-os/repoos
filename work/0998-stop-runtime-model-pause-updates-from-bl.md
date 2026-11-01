@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
 created_at: "2026-11-01T09:46:53Z"
-updated_at: "2026-11-01T10:13:30Z"
+updated_at: "2026-11-01T10:13:38Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
