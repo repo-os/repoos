@@ -2,22 +2,32 @@
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
-status: ready
+status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
+hold: true
+hold_reason: Nick requested stop duplicate local checks and restart with remote validation
+hold_at: "2026-11-01T08:59:50.410Z"
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
-model_override: composer-2.5
+model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T16:40:12Z"
+updated_at: "2026-11-01T08:59:50Z"
+handoff_signal_retry_count: 2
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T06:53:32.418Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
 - [ ] **E2 · Page skeletons match their pages** (web) — each page's loading skeleton should mirror the real layout (e.g. /work has 6 status columns, /inputs has 3), not a generic block. Source: human report.
 - [ ] **E3 · Done column sorts by when the task reached done** (web) — the Done column currently sorts by `updated_at`, which any later write bumps (activity notes, flag clears, release records), so old done tasks jump back to the top. Sort Done by the timestamp of the last `status …→done` line in the task's activity log. Source: human report (#0970 sits at the top of Done though it reached done on 28 Oct).
 - [ ] **E4 · Open any past review pass from the Review tab** (web) — the pass table lists every review pass but the rows are plain text and the body always shows the latest report. Make each row open that pass's stored report (`.repoos/reviews/<id>/<pass>.md`). Source: human report (#0970 has two stored passes).
+- [ ] **E5 · Human-readable duration controls in Settings** (web) — Audit all Settings duration inputs and replace raw milliseconds with clearly labelled seconds or minutes wherever those units are easier to understand and edit. Cover Phantom runner detect window (180000 ms = 3 minutes) and Active without engineer recovery window (600000 ms = 10 minutes) from the attached screenshot. Also inspect engineer crash failover window, CTO idle nudge threshold/cooldown, close-out timeout, local check queue/heartbeat/reclaim timeouts, Playwright queue timeout, routing decision timeout, and any other duration controls present when implemented. Choose sensible units per field; milliseconds may remain only where genuinely useful for subsecond tuning. Keep repoos.toml/API storage units and behavior unchanged; convert values, defaults, bounds, steps, validation and help text consistently at the UI boundary. Optional secondary text may show the equivalent milliseconds/config value. Preserve fractional values and existing precise config values without silent rounding, handle zero/disabled semantics, and ensure opening/saving unchanged settings does not alter values. Record the audit decisions and declare Settings shots showing the two reported cases and representative additional controls.. Source: Nick report, 2026-11-01; Screenshot 2026-11-01 at 15.19.14.png attached to this task. Humans should see and edit understandable durations, with ms only as optional config detail..
 
 ## E1 · Card integrating text clamp
 
@@ -35,10 +45,6 @@ At most three lines on the card, ellipsis when it overflows. The full text is on
 
 ### Notes for AI
 Web only; do not change what the server sends. Use the existing styled tooltip (`data-tip`) if a hover explanation is wanted, never `title`.
-
-## Screenshots
-
-![Board card while Moving to done: the integrating status wraps to nine lines](/api/tasks/0995/attachments/att_1cc7d0b4-2156-4094-a835-ff3ea4a136a7.png)
 
 ## E2 · Page skeletons match their pages
 ### Problem
@@ -90,6 +96,46 @@ Clicking (or keyboard-activating) a pass row shows that pass's report in the bod
 ### Notes for AI
 Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-history-table` markup in `TaskDrawer.vue`. Read-only; do not change how reports are written.
 
+
+## E5 · Human-readable duration controls in Settings
+
+### Problem
+
+
+### Desired UX
+
+
+### Acceptance criteria
+
+- Test: Cover loading 180000 ms as 3 minutes and 600000 ms as 10 minutes, editing and saving back to milliseconds, unchanged-value round trips (including fractional/non-round durations), converted min/max/step validation, defaults and zero/disabled values. Verify every audited Settings duration control has an explicit readable unit and consistent help text.
+
+### Notes for AI
+
+
+
+## Shots
+```json
+[
+{
+"label": "Integrating progress clamped to three lines",
+"target": "default",
+"route": "/work?shotState=closeOut:uploading",
+"highlight": ".tc-hint--progress-clamp"
+},
+{
+"label": "Full close-out progress in Status details",
+"target": "default",
+"route": "/work?task=9999&tab=debug&shotState=closeOut:uploading",
+"highlight": ".debug-status-detail"
+}
+]
+```
+
+## Screenshots
+
+![Board card while Moving to done: the integrating status wraps to nine lines](/api/tasks/0995/attachments/att_1cc7d0b4-2156-4094-a835-ff3ea4a136a7.png)
+![E5: Settings duration inputs show 180000 and 600000 milliseconds; use human-readable seconds or minutes](/api/tasks/0995/attachments/att_59d24fc0-338c-4db9-88eb-114005679215.png)
+
 ## Activity
 
 - 2026-10-31T13:08:01Z · created · njachowski@gmail.com
@@ -104,3 +150,46 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-10-31T16:23:04Z · body: E4 · Open any past review pass from the Review tab (added)
 - 2026-10-31T16:40:07Z · cli_override, model_override
 - 2026-10-31T16:40:12Z · status inbox→ready
+- 2026-10-31T20:32:11Z · status ready→active, branch
+- 2026-10-31T20:55:15Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 16330, alive), #0994 check (pid 35800, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T20:58:15Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T21:01:00Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 63569, alive), #0994 check (pid 35800, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T21:01:15Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T21:01:30Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T21:02:00Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T21:10:30Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 63569, alive), #0994 check (pid 85677, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T21:11:15Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T21:18:23Z · engineer stopped by request
+- 2026-10-31T22:26:48Z · message_queued at 2026-10-31T22:26:48.251Z
+- 2026-10-31T22:42:12Z · model_override
+- 2026-10-31T23:23:00Z · note: adopted orphaned engineer pid 65794
+- 2026-10-31T23:34:10Z · body
+- 2026-10-31T23:34:37Z · body
+- 2026-11-01T00:45:02Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
+- 2026-11-01T00:45:02Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-01T00:45:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T00:45:06Z · message_delivered: 1 message(s)
+- 2026-11-01T00:49:13Z · body
+- 2026-11-01T01:16:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T01:16:33Z · needs_input
+- 2026-11-01T01:21:51Z · message_queued at 2026-11-01T01:21:51.121Z
+- 2026-11-01T01:27:30Z · note: adopted orphaned engineer pid 32404
+- 2026-11-01T01:27:41Z · message_queued at 2026-11-01T01:27:41.651Z
+- 2026-11-01T02:29:58Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0994 check (pid 41853, alive), #0993 check (pid 61737, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-01T02:30:28Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-01T03:10:02Z · phantom runner detected: no live process, restarted
+- 2026-11-01T03:10:03Z · note: phantom runner detected: no live process, restarted
+- 2026-11-01T04:42:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:42:36Z · message_delivered: 2 message(s)
+- 2026-11-01T04:44:26Z · body
+- 2026-11-01T04:44:29Z · note: adopted orphaned engineer pid 91926
+- 2026-11-01T06:44:32Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-01T06:53:32Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-01T08:14:06Z · body: Items (added 1); E5 · Human-readable duration controls in Settings (added)
+- 2026-11-01T08:14:06Z · note: bundle add E5
+- 2026-11-01T08:14:23Z · screenshots
+- 2026-11-01T08:24:18Z · message_queued at 2026-11-01T08:24:18.067Z
+- 2026-11-01T08:24:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-01T08:29:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T08:59:50Z · engineer stopped by request
+- 2026-11-01T08:59:50Z · held, held-reason, held-at

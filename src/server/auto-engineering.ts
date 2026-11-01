@@ -18,6 +18,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
+import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "./agents.js";
 import { getGitWorker } from "./git-worker.js";
 import {
@@ -391,7 +392,7 @@ export class AutoEngineeringOrchestrator {
 
     let pmResult;
     try {
-      pmResult = await runPrompt(pm, prompt, { cwd: config.root });
+      pmResult = await runPrompt(pm, prompt, { cwd: config.root, ...repoAgentRunTmpOpts(config) });
     } catch (e) {
       return this.finishDeterministic(
         trigger,

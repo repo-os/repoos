@@ -1,17 +1,18 @@
 ---
+updated_at: "2026-11-01T02:42:22Z"
+review_passes: 1
 id: "0993"
 title: Auto-recover tasks that are active with no live engineer
 type: bug
-status: ready
+status: review
 priority: p1
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
-model_override: composer-2.5
+model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-10-31T16:40:06Z"
 ---
 ## Problem
 
@@ -40,6 +41,18 @@ Seen on #0970 (done, branch merged to main): an engineer session that outlived t
 ## Also: holds on done tasks
 The board's Held list shows done tasks (seen: #0899 and #0849, both status done with a bare hold: true and no reason, owner or time, so the hold predates the structured hold fields). A hold on a done task controls nothing. Acceptance: (1) moving a task to done clears hold and its reason, until, by and at fields; (2) a one-time migration clears hold on tasks that are already done; (3) the UI Held list and the driver brief exclude done tasks even if a stale hold remains; (4) tests for each.
 
+## Shots
+```json
+[
+{
+"label": "Active-without-engineer recovery window setting",
+"target": "default",
+"route": "/settings?tab=general",
+"highlight": "[id=\"setting-watchdog.activeWithoutEngineerRecoverMs\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-31T10:08:41Z · created · njachowski@gmail.com
@@ -47,3 +60,37 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-10-31T12:22:38Z · status inbox→ready
 - 2026-10-31T13:04:46Z · body: Also: holds on done tasks (added)
 - 2026-10-31T16:40:06Z · cli_override, model_override
+- 2026-10-31T17:47:24Z · status ready→active, branch
+- 2026-10-31T18:10:25Z · note: adopted orphaned engineer pid 58658
+- 2026-10-31T18:12:05Z · note: adopted orphaned engineer pid 58658
+- 2026-10-31T19:01:10Z · body
+- 2026-10-31T19:01:30Z · body
+- 2026-10-31T19:45:25Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 17200, alive), #0994 check (pid 64804, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T19:59:55Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T20:15:11Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 83935, alive), #0994 check (pid 97854, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T20:26:12Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T20:27:05Z · body
+- 2026-10-31T20:57:30Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T20:58:00Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T22:32:52Z · note: handoff requested (ui-review)
+- 2026-10-31T23:09:32Z · handoff failed · ui-review handoff failed at check · repoos check failed: tests — } >
+- 2026-10-31T23:10:48Z · message_queued at 2026-10-31T23:10:48.146Z
+- 2026-10-31T23:18:24Z · engineer stopped by request
+- 2026-10-31T23:18:29Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-10-31T23:19:39Z · model_override
+- 2026-10-31T23:21:33Z · message_queued at 2026-10-31T23:21:33.854Z
+- 2026-10-31T23:26:46Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — ui-review handoff failed at check · repoos check failed: tests — } > · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-10-31T23:26:46Z · note: handoff requested (cli)
+- 2026-11-01T00:05:15Z · note: ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:56263/settings?tab=watchdog)
+- 2026-11-01T00:05:15Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:56263/settings?tab=watchdog)
+- 2026-11-01T00:07:15Z · message_delivered: 2 message(s)
+- 2026-11-01T01:25:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T01:33:12Z · note: handoff requested (ui-review)
+- 2026-11-01T02:09:28Z · note: ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:55195/settings?tab=watchdog)
+- 2026-11-01T02:09:29Z · handoff failed · ui-review handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Active-without-engineer recovery window setting (target "default"): highlight [data-setting-key="watchdog.activeWithoutEngineerRecoverMs"] matched nothing on /settings?tab=watchdog (http://127.0.0.1:55195/settings?tab=watchdog)
+- 2026-11-01T02:10:59Z · body
+- 2026-11-01T02:11:07Z · note: handoff requested (ui-review)
+- 2026-11-01T02:40:56Z · status active→review
+- 2026-11-01T02:41:01Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (f134266a1) during finalization (#0734)
+- 2026-11-01T02:42:21Z · note: review pass 1: good to go
+

@@ -135,13 +135,18 @@ const detail = computed(() => {
 }
 .ui-recovery-restart {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin-top: 4px;
+  width: 100%;
   min-width: 0;
 }
+/* The command takes the full modal width; Copy wraps beneath it instead of
+   squeezing the command into a narrow column. */
 .ui-recovery-restart code {
-  flex: 1;
+  flex: 1 1 100%;
+  display: block;
   min-width: 0;
   overflow-wrap: anywhere;
   font-size: 12px;

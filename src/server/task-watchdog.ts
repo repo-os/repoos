@@ -713,10 +713,22 @@ export class TaskWatchdog {
   private async handleStalledCleanExit(task: Task): Promise<boolean> {
     const signal = readEngineerCleanExitSignal(task.body);
     const classification = classifyDeadAgentReason(task, this.runner);
+    const queuedInRunner =
+      typeof this.runner.queuedMessageSummary === "function"
+        ? (this.runner.queuedMessageSummary().find((q) => q.id === task.id)?.count ?? 0)
+        : 0;
+    const queuedMessages = Math.max(signal.deferred, queuedInRunner);
     const exitKind =
-      signal.clean || classification.kind === "exited-without-handoff" ? "clean" : "unknown";
+      signal.clean || classification.kind === "exited-without-handoff" || queuedInRunner > 0
+        ? "clean"
+        : "unknown";
     const closingOut = isTaskClosingOut(this.config.root, this.config.cacheDir, task.id);
     const handedOff = await handoffSinceLastCommit(this.config, task);
+    // A human message queued for this task lives in the runner, not in the
+    // clean-exit signal, so the signal's deferred count can be zero while a
+    // message waits. Treat it as a deferred handoff so the engineer is resumed
+    // to read it, instead of skipping the task as "no clean-exit signal" (the
+    // gap that left #0994 active with an undelivered message for hours).
     const plan = planEngineerStallResume({
       status: task.status,
       isArchived: task.isArchived,
@@ -733,8 +745,8 @@ export class TaskWatchdog {
       closingOut,
       handoffRequested: false,
       exitKind,
-      handoffDeferred: signal.deferred > 0,
-      queuedMessages: signal.deferred,
+      handoffDeferred: queuedMessages > 0,
+      queuedMessages,
       handoffSinceLastCommit: handedOff,
       resumes: parseEngineerStallResumeLog(task.extra?.[ENGINEER_STALL_RESUME_LOG_KEY]),
       now: Date.now(),
@@ -745,8 +757,8 @@ export class TaskWatchdog {
 
     const context: EngineerStallRecoveryContext = {
       exitKind,
-      handoffDeferred: signal.deferred > 0,
-      queuedMessages: signal.deferred,
+      handoffDeferred: queuedMessages > 0,
+      queuedMessages,
       handoffSinceLastCommit: handedOff,
     };
     // Fire-and-forget, like the reviewer retry: a resume runs bootstrap and a

@@ -11,6 +11,7 @@ import {
   type SupportBundle,
 } from "../../core/support-bundle.js";
 import { redactText, RedactionLeakError } from "../../core/redact.js";
+import { repoAgentRunTmpOpts } from "../../core/agent-run-tmpdir.js";
 import { resolvePmAgent, runPrompt, recordOneShotSession } from "../agents.js";
 import { loadBuildInfo } from "./helpers.js";
 import { isBun } from "../../core/runtime.js";
@@ -201,7 +202,11 @@ export const generateBugReport: RouteHandler = async (ctx, req, res) => {
   const buildInfo = loadBuildInfo();
   const prompt = bugReportPrompt(redactText(text), buildInfo, type);
   try {
-    const result = await runPrompt(pm, prompt, { cwd: ctx.config.root, timeoutMs: 60_000 });
+    const result = await runPrompt(pm, prompt, {
+      cwd: ctx.config.root,
+      ...repoAgentRunTmpOpts(ctx.config),
+      timeoutMs: 60_000,
+    });
     recordOneShotSession(ctx.config.root, pm, result, { sessionType: "support", taskId: null });
     if (!result.ok || !result.output) {
       return json(res, 200, {

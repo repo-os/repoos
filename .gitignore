@@ -49,3 +49,9 @@ inputs/.attachments/
 
 # Crush CLI local data dir
 .crush/
+
+# RepoOS derived index cache
+.repoos/*
+
+# Local env overrides
+.env*.local
