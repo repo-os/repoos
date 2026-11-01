@@ -3,13 +3,16 @@ id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX"
 priority: p0
 area: [web, server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T12:22:23Z"
+updated_at: "2026-11-01T12:22:25Z"
 ---
 ## Problem
 Active task cards can show `STUCK · SILENT` while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
@@ -36,3 +39,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 
 - 2026-11-01T12:22:22Z · created · njachowski@gmail.com
 - 2026-11-01T12:22:23Z · screenshots
+- 2026-11-01T12:22:25Z · needs_input
