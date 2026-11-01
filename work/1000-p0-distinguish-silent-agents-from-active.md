@@ -3,9 +3,6 @@ id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (1 in 30m): a human-set task override (github copilot + default) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p0
 area: [web, server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T18:52:07Z"
+updated_at: "2026-11-01T18:52:15Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
@@ -117,3 +114,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T18:46:13Z · engineer crash recovery: surfaced instead of switching — a human-set task override (github copilot + default) is pinned, so RepoOS did not replace it (1/3 crashes in 30m)
 - 2026-11-01T18:52:06Z · cli_override, model_override
 - 2026-11-01T18:52:07Z · model_override
+- 2026-11-01T18:52:15Z · needs_input
