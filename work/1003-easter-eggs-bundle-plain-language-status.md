@@ -13,7 +13,6 @@ review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
 updated_at: "2026-11-01T21:00:26Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-01T19:34:32.531Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived.
