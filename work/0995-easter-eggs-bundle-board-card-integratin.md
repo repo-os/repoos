@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
@@ -148,3 +149,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T01:16:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T01:16:33Z · needs_input
 - 2026-11-01T01:21:51Z · message_queued at 2026-11-01T01:21:51.121Z
+
