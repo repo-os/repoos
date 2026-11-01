@@ -11,16 +11,12 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T19:37:14Z"
+updated_at: "2026-11-01T19:39:05Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-01T19:34:32.531Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
-- [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived.
-- [ ] **E2 · Replace “landed” and “landable” merge wording** (web) — use plain-language variants of “merged into main” for completed merges and “ready to merge” for eligible changes.
-- [ ] **E3 · Mission Control panels use a balanced 2×2 layout** (web) — show the four panels in two columns and two rows, with equal medium heights between the current short and tall panels. Source: Nick, 2026-11-01 screenshot.
-- [ ] **E4 · Combine default and custom agents in one tab** (web) — Rename the Default Agents tab to Agents, remove the Custom Agents tab, and render its section below Default Agents in the Agents tab. Source: Nick, 2026-11-02 screenshot.
-- [ ] **E5 · Make review-pass selection and reviewer identity clear** (web) — place the Latest indicator on the Good to go callout row, highlight the selected pass, mark an older selected pass “Not latest” in a distinct color, and show the reviewer coding agent (for example, Cursor or Codex) instead of the generic “reviewer” label. Source: Nick, 2026-11-02 screenshots.
+- [ ] **E1 · Replace ‘wedged’ with heartbeat wording** (web) — describe a live check with an overdue heartbeat as ‘No recent heartbeat’ and show when its last heartbeat arrived.\n- [ ] **E2 · Replace ‘landed’ and ‘landable’ merge wording** (web) — use plain-language variants of ‘merged into main’ for completed merges and ‘ready to merge’ for eligible changes.\n- [ ] **E3 · Mission Control panels use a balanced 2×2 layout** (web) — show the four panels in two columns and two rows, with equal medium heights between the current short and tall panels.\n- [ ] **E4 · Combine default and custom agents in one tab** (web) — rename Default Agents to Agents, remove the Custom Agents tab, and render its section below Default Agents in the Agents tab.\n- [ ] **E5 · Make review-pass selection and reviewer identity clear** (web) — place Latest on the Good to go row, highlight the selected pass, mark an older pass Not latest, and show the reviewer coding agent.\n- [ ] **E6 · Preview task agent assignments on hover** (web) — hovering the task card robot icon shows a compact, readable table of the task’s PM, engineer, and reviewer agent/model assignments without opening the edit panel; clicking the icon continues to open the editor, and keyboard/touch users retain an accessible way to view assignments.
 
 ## E1 · Replace “wedged” with heartbeat wording
 
@@ -111,23 +107,23 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 ```json
 [
 {
-  "label": "Mission Control 2×2 panels",
-  "target": "default",
-  "route": "/",
-  "highlight": ".dash-grid"
+"label": "Mission Control 2×2 panels",
+"target": "default",
+"route": "/",
+"highlight": ".dash-grid"
 },
 {
-  "label": "Agents tab with default and custom sections",
-  "target": "default",
-  "route": "/agents",
-  "highlight": ".agents-tab-content"
+"label": "Agents tab with default and custom sections",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-tab-content"
 },
 {
-  "label": "Review pass selection and freshness",
-  "target": "default",
-  "route": "/work?task=1003&tab=review",
-  "highlight": ".review-history-wrap",
-  "state": "drawer:landable"
+"label": "Review pass selection and freshness",
+"target": "default",
+"route": "/work?task=1003&tab=review",
+"highlight": ".review-history-wrap",
+"state": "drawer:landable"
 }
 ]
 ```
@@ -195,3 +191,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T19:34:36Z · needs_input
 - 2026-11-01T19:34:36Z · message_delivered: 1 message(s)
 - 2026-11-01T19:37:14Z · body
+- 2026-11-01T19:39:05Z · body: Items (added 1, removed 5)
