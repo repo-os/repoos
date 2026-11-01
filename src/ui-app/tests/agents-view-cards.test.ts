@@ -102,10 +102,8 @@ describe("AgentsView agent cards", () => {
       .map((el) => el.text());
     expect(names).toEqual(["pm", "engineer", "reviewer"]);
     const customAgentsPanel = wrapper.findAll(".agent-tab-panel")[1]!;
+    expect(wrapper.findAll(".agent-tab-panel")[0]!.text()).toContain("Default agents");
     expect(customAgentsPanel.text()).toContain("Custom agents");
-    expect(wrapper.findAll(".agent-tab-panel")[0]!.text().indexOf("Default agents")).toBeLessThan(
-      customAgentsPanel.text().indexOf("Custom agents"),
-    );
     expect((customAgentsPanel.find(".agent-card input").element as HTMLInputElement).value).toBe(
       "data analyst",
     );
