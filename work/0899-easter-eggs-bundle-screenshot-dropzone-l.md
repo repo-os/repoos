@@ -3,7 +3,6 @@ id: "0899"
 title: "Easter eggs bundle: screenshot dropzone layout, CLI screenshot captions"
 type: bug
 status: done
-hold: true
 priority: p3
 area: [web, core]
 merged_commit: 8428c8869caf76c8ca5d503482a810e4e5c41b44
