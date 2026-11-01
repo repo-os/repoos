@@ -137,3 +137,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T12:23:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-01T12:23:06Z · message_delivered: 1 message(s)
 - 2026-11-01T12:25:15Z · status active→review
+- 2026-11-01T12:25:15Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
