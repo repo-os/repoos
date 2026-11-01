@@ -11,7 +11,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-11-01T11:05:57Z"
+updated_at: "2026-11-01T11:15:41Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T07:59:36.226Z: repoos check failed: tests — onKeydown: [Function: invoker] {"
 handoff_signal_retry_count: 2
@@ -117,3 +117,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T10:36:13Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
 - 2026-11-01T10:37:44Z · needs_input
 - 2026-11-01T11:05:57Z · watchdog: restarting engineer after 28m with no live process
+- 2026-11-01T11:15:41Z · message_queued at 2026-11-01T11:15:41.605Z
