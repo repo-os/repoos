@@ -17,7 +17,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T00:49:13Z"
+updated_at: "2026-11-01T01:16:33Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T00:45:02.297Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -102,18 +102,18 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 ```json
 [
 {
-  "label": "Board card integrating line clamped to three lines",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-hint--progress-clamp",
-  "state": "closeOut:uploading"
+"label": "Board card integrating line clamped to three lines",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-hint--progress-clamp",
+"state": "closeOut:uploading"
 },
 {
-  "label": "Status details shows the full integrating line",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".debug-status-text",
-  "state": "closeOut:uploading"
+"label": "Status details shows the full integrating line",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-status-text",
+"state": "closeOut:uploading"
 }
 ]
 ```
@@ -152,3 +152,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T00:45:06Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T00:45:06Z · message_delivered: 1 message(s)
 - 2026-11-01T00:49:13Z · body
+- 2026-11-01T01:16:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
