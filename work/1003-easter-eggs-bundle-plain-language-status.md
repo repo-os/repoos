@@ -192,3 +192,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T19:34:36Z · message_delivered: 1 message(s)
 - 2026-11-01T19:37:14Z · body
 - 2026-11-01T19:39:05Z · body: Items (added 1, removed 5)
+- 2026-11-01T19:39:05Z · message_queued at 2026-11-01T19:39:05.625Z
