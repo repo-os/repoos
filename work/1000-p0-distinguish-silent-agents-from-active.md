@@ -11,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T15:08:11Z"
+updated_at: "2026-11-01T15:12:28Z"
 ---
 ## Problem
 Active task cards can show STUCK · SILENT while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
@@ -30,10 +30,6 @@ Task cards show the actual phase and evidence: agent working/silent, local check
 ## Notes for AI
 Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #0921/#0925 (check slots/cancellation), #0993 (active task recovery), and #0999 (automatic task bookkeeping dirtying main). This is a focused UI/server observability and safe-recovery fix; preserve actual active check output and remote run state as separate signals. Screenshot attached as reproduction evidence.
 
-## Screenshots
-
-![Task cards mark validation waits as stuck silent](/api/tasks/1000/attachments/att_641e1119-5965-4f51-902b-49e47c38c424.png)
-
 ## Shots
 ```json
 [
@@ -46,6 +42,10 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 }
 ]
 ```
+
+## Screenshots
+
+![Task cards mark validation waits as stuck silent](/api/tasks/1000/attachments/att_641e1119-5965-4f51-902b-49e47c38c424.png)
 
 ## Activity
 
@@ -61,3 +61,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T14:55:33Z · body
 - 2026-11-01T15:08:11Z · message_queued at 2026-11-01T15:08:11.058Z
 - 2026-11-01T15:08:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-01T15:12:28Z · body
