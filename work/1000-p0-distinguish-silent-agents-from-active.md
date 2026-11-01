@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T23:48:01.607Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 updated_at: "2026-11-01T23:43:37Z"
 review_passes: 6
 id: 1000
@@ -11,7 +13,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-last_check_failure: "repoos check at 2026-11-01T23:04:14.181Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0a907db8 to a188b7db) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
 dev_error_count: 5
@@ -183,4 +184,5 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T23:31:02Z · body
 - 2026-11-01T23:42:18Z · status active→review
 - 2026-11-01T23:43:37Z · note: review pass 6: good to go
+
 
