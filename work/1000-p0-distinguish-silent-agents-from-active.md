@@ -11,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T14:49:10Z"
+updated_at: "2026-11-01T14:55:33Z"
 ---
 ## Problem
 Active task cards can show STUCK · SILENT while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
@@ -34,6 +34,19 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 
 ![Task cards mark validation waits as stuck silent](/api/tasks/1000/attachments/att_641e1119-5965-4f51-902b-49e47c38c424.png)
 
+## Shots
+```json
+[
+{
+  "label": "Task card shows live check progress instead of stuck silent",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".tc-hint",
+  "state": "checks:progress"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-01T12:22:22Z · created · njachowski@gmail.com
@@ -45,3 +58,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T14:47:29Z · status ready→active, needs_input, branch
 - 2026-11-01T14:48:31Z · engineer stopped by request
 - 2026-11-01T14:49:06Z · cli_override, model_override
+- 2026-11-01T14:55:33Z · body
