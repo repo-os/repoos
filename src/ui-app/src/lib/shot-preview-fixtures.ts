@@ -99,9 +99,16 @@ let pinnedIntegration: IntegrationPipelineSnapshot | null = null;
 
 /** Run history pinned for the step timing report capture (#0970). */
 let pinnedCheckRuns: CheckRunRow[] | null = null;
+let pinnedTestCasesByRun: Map<number, import("../types").CheckRunTestCaseRow[]> | null = null;
 
 export function shotFixturePinnedCheckRuns(): CheckRunRow[] | null {
   return pinnedCheckRuns;
+}
+
+export function shotFixturePinnedTestCases(
+  runId: number,
+): import("../types").CheckRunTestCaseRow[] | null {
+  return pinnedTestCasesByRun?.get(runId) ?? null;
 }
 
 /** System resource stats pinned for the Control dashboard GC capture (#0923). */
@@ -667,6 +674,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   pinnedIntegration = null;
   pinnedSystemStats = null;
   pinnedCheckRuns = null;
+  pinnedTestCasesByRun = null;
   pinnedRemoteStatus = null;
   for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
   switch (fixture) {
@@ -814,6 +822,15 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           skippedSteps:
             fixture === "checks:reuse" ? ["tests", "rendered-contrast"] : ["rendered-contrast"],
           failedTests: [],
+          testsDone: fixture === "checks:reuse" ? null : 412,
+          testsTotal: fixture === "checks:reuse" ? null : 412,
+          testFileTimings:
+            fixture === "checks:timings"
+              ? [
+                  { file: "src/ui-app/tests/check-store.test.ts", durationMs: 4200 },
+                  { file: "src/ui-app/tests/agent-drivers.test.ts", durationMs: 3100 },
+                ]
+              : undefined,
           detail:
             fixture === "checks:reuse"
               ? "reused check 9822 — same clean commit and main base"
@@ -829,6 +846,45 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           ],
         },
       ];
+      if (fixture === "checks:timings") {
+        pinnedTestCasesByRun = new Map([
+          [
+            970,
+            [
+              {
+                file: "src/ui-app/tests/check-store.test.ts",
+                name: "check-run store > stores per-test cases",
+                caseId: "shot-case-slow",
+                retry: 0,
+                durationMs: 8900,
+                result: "passed",
+                runId: 970,
+                startedAt: nowIso(),
+                taskId: "0970",
+                phase: "pre-review",
+                machine: "local",
+                remote: false,
+                scope: "changed:main",
+              },
+              {
+                file: "src/ui-app/tests/agent-drivers.test.ts",
+                name: "agent drivers > survives concurrent turns",
+                caseId: "shot-case-mid",
+                retry: 1,
+                durationMs: 5200,
+                result: "passed",
+                runId: 970,
+                startedAt: nowIso(),
+                taskId: "0970",
+                phase: "pre-review",
+                machine: "local",
+                remote: false,
+                scope: "changed:main",
+              },
+            ],
+          ],
+        ]);
+      }
       break;
     }
     case "checks:progress": {
