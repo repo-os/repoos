@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac0bcf6f to 6efab112) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: ac0bcf6fec874d70cd6ea9c90e836175372fd557
 id: 1002
 title: Record and report per-test timings in check history
 type: feature
@@ -143,3 +145,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T23:10:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-01T23:19:09Z · body
 - 2026-11-01T23:22:13Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from ac0bcf6f to 6efab112) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
