@@ -78,6 +78,46 @@ describe("check-run store", () => {
     raw.close();
   });
 
+  it("stores per-test cases, lists slowest, and prunes with run retention (#1002)", () => {
+    const { s } = store();
+    const id = s.record(
+      row({
+        testCaseTimings: [
+          {
+            file: "a.test.ts",
+            name: "suite > fast",
+            caseId: "c-fast",
+            retry: 0,
+            durationMs: 5,
+            result: "passed",
+          },
+          {
+            file: "b.test.ts",
+            name: "suite > slow",
+            caseId: "c-slow",
+            retry: 0,
+            durationMs: 9000,
+            result: "passed",
+          },
+          {
+            file: "b.test.ts",
+            name: "suite > slow",
+            caseId: "c-slow",
+            retry: 1,
+            durationMs: 8000,
+            result: "passed",
+          },
+        ],
+      }),
+    );
+    expect(id).not.toBeNull();
+    expect(s.testCaseCountForRun(id!)).toBe(3);
+    const listed = s.listSlowTestCases({ runId: id!, limit: 2 });
+    expect(listed.cases).toHaveLength(2);
+    expect(listed.cases[0]!.durationMs).toBe(9000);
+    expect(listed.hasMore).toBe(true);
+  });
+
   it("records and lists rows newest-first", () => {
     const { s } = store();
     s.record(row({ taskId: "0501", startedAt: "2026-09-28T09:00:00Z" }));
