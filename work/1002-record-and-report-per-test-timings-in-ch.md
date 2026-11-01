@@ -3,9 +3,6 @@ id: 1002
 title: Record and report per-test timings in check history
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 priority: p2
 area: [core, cli, web]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T17:42:39Z"
+updated_at: "2026-11-01T17:42:42Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T17:42:39.030Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
@@ -73,3 +70,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T17:36:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T17:42:39Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
 - 2026-11-01T17:42:39Z · engineer crash recovery: switched cursor + composer-2.5 → codex + gpt-6-luna after 1/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-01T17:42:42Z · needs_input
