@@ -876,11 +876,8 @@ Stuck twice.
   });
 
   it("still surfaces a genuinely dead task with a stale worktree and an empty registry", async () => {
-    // Regression guard for the fix above: the worktree-mtime check must only
-    // SUPPRESS a false surface, never mask a real one. `committedWork`'s own
-    // setup commit has a fresh mtime (it just ran), which would otherwise
-    // spuriously look like live activity and pass this test for the wrong
-    // reason — backdate every file so the worktree is genuinely stale too.
+    // With #0993, a long-idle active task with no engineer is restarted before the
+    // old auto-surface-to-review path runs. Same stale worktree setup as before.
     const fx = makeGitFx(600_000, { committedWork: true });
     try {
       const wt =
@@ -896,8 +893,8 @@ Stuck twice.
       await watchdog.checkNow();
 
       const body = readFileSync(fx.taskPath, "utf8");
-      expect(body).toContain("watchdog: auto-surfaced stuck task");
-      expect(parseTaskAt(fx).status).toBe("review"); // committedWork → dirty worktree → review
+      expect(body).toContain("watchdog: restarting engineer after 10m with no live process");
+      expect(parseTaskAt(fx).status).toBe("active");
     } finally {
       fx.clean();
     }

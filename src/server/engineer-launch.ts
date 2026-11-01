@@ -155,6 +155,31 @@ export async function relaunchEngineerOnActiveTask(
     ...(opts.force ? { bypassHold: true } : {}),
   });
 
+  if (
+    !spawnRes.ok &&
+    spawnRes.reason?.includes("recorded live engineer") &&
+    typeof runner.reconcileDeadAgents === "function"
+  ) {
+    runner.reconcileDeadAgents();
+    const retry = runner.start(liveBeforeSpawn, branch, agent, {
+      cwd,
+      contextPack: pack.content,
+      resumePreamble: preamble,
+      freshSession: opts.freshSession === true,
+      ...(opts.fromCrashRecovery ? { fromCrashRecovery: true } : {}),
+      ...(opts.force ? { bypassHold: true } : {}),
+    });
+    if (retry.ok) {
+      await index.refreshBranchesAsync();
+      return {
+        ok: true,
+        pid: retry.pid,
+        queued: retry.queued,
+        pauseNote: pauseNote ?? undefined,
+      };
+    }
+  }
+
   if (!spawnRes.ok) {
     return { ok: false, reason: spawnRes.reason ?? "could not start engineer" };
   }

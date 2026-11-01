@@ -115,6 +115,17 @@ describe("engineer crash recovery policy (#0869)", () => {
       expect: { action: "resume", pair: PAIR, crashes: 2 },
     },
     {
+      name: "a paused pair fails over immediately instead of resuming (#0993)",
+      input: {
+        crashes: recordsFor(PAIR, 1),
+        allowlist: [
+          { cli: "codex", models: ["gpt-5"], paused: true },
+          { cli: "opencode", models: ["big-pickle"] },
+        ],
+      },
+      expect: { action: "failover", from: PAIR, to: { cli: "opencode", model: "big-pickle" } },
+    },
+    {
       name: "at the threshold the next unpaused allowlist pair is chosen",
       input: { crashes: recordsFor(PAIR, THRESHOLD) },
       expect: { action: "failover", from: PAIR, to: { cli: "opencode", model: "big-pickle" } },
