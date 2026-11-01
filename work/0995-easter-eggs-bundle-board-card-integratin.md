@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-01T13:40:45Z"
-review_passes: 1
+last_close_out_gate_ms: 794009
+last_close_out_gate_at: "2026-11-01T14:05:12.112Z"
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
@@ -15,6 +15,8 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
+updated_at: "2026-11-01T14:05:12Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-01T12:26:29.985Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:58723/api/tasks/9999/integration-job (http://127.0.0.1:58723/api/tasks/9999/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:58723/api/tasks/9999/integration-job)"
 handoff_signal_retry_count: 2
 dev_error_count: 3
@@ -245,4 +247,5 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T13:39:38Z · status active→review
 - 2026-11-01T13:39:38Z · note: Task body is underspecified: E5: empty Problem, Desired UX, Notes for AI
 - 2026-11-01T13:40:45Z · note: review pass 1: good to go
+- 2026-11-01T14:05:12Z · close-out gate completed in 794s
 
