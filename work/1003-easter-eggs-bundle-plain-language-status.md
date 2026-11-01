@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T16:06:58Z"
+updated_at: "2026-11-01T16:07:00Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
@@ -84,6 +84,7 @@ Rename the “Default Agents” tab to “Agents”. Remove the separate “Cust
 - Test: Agents settings has one Agents tab with Default Agents followed by Custom Agents; there is no separate Custom Agents tab.
 
 ### Notes for AI
+Use the attached screenshot as layout context. Its Cursor model-refresh timeout banner is incidental and is not part of this item.
 
 ## Screenshots
 
@@ -123,3 +124,5 @@ Rename the “Default Agents” tab to “Agents”. Remove the separate “Cust
 - 2026-11-01T16:06:57Z · note: bundle edit E4
 - 2026-11-01T16:06:58Z · body: E4 · Combine default and custom agents in one tab (added 1)
 - 2026-11-01T16:06:58Z · note: bundle edit E4
+- 2026-11-01T16:07:00Z · body: E4 · Combine default and custom agents in one tab (added 1)
+- 2026-11-01T16:07:00Z · note: bundle edit E4
