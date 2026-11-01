@@ -11,7 +11,7 @@ import {
   readBudgetRuntimeState,
   recordAutomaticAllowlist,
 } from "./budget-runtime-state.js";
-import type { AgentModelAllowRow } from "./budget-allowlist.js";
+import type { AgentModelAllowRow } from "./types.js";
 
 const roots: string[] = [];
 afterEach(() => {
