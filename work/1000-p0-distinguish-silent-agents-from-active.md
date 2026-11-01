@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: github copilot
-review_cli_override: opencode
+review_cli_override: codex
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T18:18:19Z"
+updated_at: "2026-11-01T18:18:20Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
 dev_error_count: 3
@@ -103,3 +103,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T18:15:46Z · body
 - 2026-11-01T18:18:13Z · cli_override, model_override
 - 2026-11-01T18:18:19Z · review_cli_override
+- 2026-11-01T18:18:20Z · review_cli_override
