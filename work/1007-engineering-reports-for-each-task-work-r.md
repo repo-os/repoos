@@ -3,16 +3,13 @@ id: 1007
 title: Engineering reports for each task work round
 type: feature
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-01T18:38:07Z"
+updated_at: "2026-11-01T18:38:31Z"
 ---
 ## Problem
 
@@ -35,7 +32,12 @@ Each report starts with a TL;DR, then explains what changed and why, approaches 
 - Add a Report / Chat toggle in the task Dev tab and a table of reports with at least round/pass, time, engineer/coding agent, and model. Selecting a row opens the report in a presentation consistent with the Review tab’s reports.
 - Test report creation and reviewer delivery, deterministic diff summaries, retries and multiple rounds, missing or stale reports, word limits, and report selection in the UI. Document the lifecycle and report format.
 
+## Notes for AI
+Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer prompt construction, and task Dev and Review tabs before choosing storage or UI changes. Keep one immutable report per engineering round and tie it to the exact source diff the reviewer sees. Use RepoOS-managed task/report APIs and lifecycle hooks; do not hand-edit work task files or infer Git line counts from agent prose. Make the report durable in the repository after close-out, and ensure report generation cannot make a passing source check appear to validate a different tree. Preserve reports across review feedback rounds and keep legacy tasks without reports reviewable. Update the engineering and reviewer instructions plus user docs. Run the scoped check before handoff.
+
+
 ## Activity
 
 - 2026-11-01T18:38:06Z · created · njachowski@gmail.com
 - 2026-11-01T18:38:07Z · needs_input
+- 2026-11-01T18:38:31Z · needs_input, body: Notes for AI (added)
