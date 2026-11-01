@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T18:51:22Z"
+updated_at: "2026-11-01T18:51:23Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived.
@@ -182,3 +182,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T18:41:08Z · status ready→active, branch
 - 2026-11-01T18:45:36Z · body
 - 2026-11-01T18:51:22Z · message_queued at 2026-11-01T18:51:22.930Z
+- 2026-11-01T18:51:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
