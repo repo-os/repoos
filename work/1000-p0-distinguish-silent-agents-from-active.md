@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
+debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
+debug_tldr_at: "2026-11-01T19:22:17Z"
+debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p0
 area: [web, server, core]
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T19:21:47Z"
+updated_at: "2026-11-01T19:22:17Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-01T18:07:02.430Z: repoos check failed: ◆ Check plan"
