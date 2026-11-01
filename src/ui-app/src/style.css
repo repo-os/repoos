@@ -2342,6 +2342,55 @@
   font-size: 8.5px;
   line-height: 1.2;
 }
+.tc-agent-preview {
+  position: fixed;
+  z-index: 300;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--violet-border-tint);
+  border-radius: 10px;
+  background: var(--panel-solid);
+  color: var(--txt);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 42%);
+  pointer-events: auto;
+}
+.tc-agent-preview table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  text-align: left;
+}
+.tc-agent-preview th,
+.tc-agent-preview td {
+  min-width: 0;
+  padding: 5px 7px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+}
+.tc-agent-preview thead th {
+  color: var(--txt-faint);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tc-agent-preview tbody th {
+  width: 25%;
+  color: var(--txt-dim);
+  font-weight: 600;
+}
+.tc-agent-preview tbody td:nth-child(2) {
+  color: var(--violet);
+  font-weight: 600;
+}
+.tc-agent-preview tbody tr:last-child th,
+.tc-agent-preview tbody tr:last-child td {
+  border-bottom: 0;
+}
 .tc-agent-btn {
   display: inline-flex;
   align-items: center;

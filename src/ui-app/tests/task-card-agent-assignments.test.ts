@@ -110,11 +110,12 @@ async function mountCard(pinia: Pinia, task: Task) {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
 describe("TaskCard agent assignments panel (0455)", () => {
-  it("renders a robot beside the metadata and reveals CLI/model rows only on click", async () => {
+  it("previews assignments on hover and keeps click-to-edit behavior", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     FakeEventSource.instances = [];
@@ -138,10 +139,24 @@ describe("TaskCard agent assignments panel (0455)", () => {
 
     expect(wrapper.find(".tc-agent-btn").exists()).toBe(true);
     expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
-    // Hover does nothing; a deliberate click opens the compact table.
     await wrapper.find(".tc-agent-btn").trigger("mouseenter");
     await flush();
+    const preview = document.body.querySelector("[data-test-id='task-agent-preview']");
+    expect(preview).not.toBeNull();
+    expect(preview?.textContent).toContain("PM");
+    expect(preview?.textContent).toContain("Engineer");
+    expect(preview?.textContent).toContain("Reviewer");
+    expect(preview?.textContent).toContain("opencode-go/nimo-v2.5");
     expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
+    expect(document.body.querySelector(".am-modal")).toBeNull();
+
+    vi.useFakeTimers();
+    await wrapper.find(".tc-agent-btn").trigger("mouseleave");
+    await vi.advanceTimersByTimeAsync(130);
+    await flush();
+    expect(document.body.querySelector("[data-test-id='task-agent-preview']")).toBeNull();
+
+    // A click (including the touch activation path) still opens the editor panel.
     await wrapper.find(".tc-agent-btn").trigger("click");
     await flush();
 
@@ -154,6 +169,29 @@ describe("TaskCard agent assignments panel (0455)", () => {
     expect(text[1]).toContain("opencode-go/nimo-v2.5");
     expect(text[2]).toContain("RV");
     expect(text[2]).toContain("opencode-go/deepseek-v4.1-flash");
+    wrapper.unmount();
+  });
+
+  it("shows the same read-only assignment preview on keyboard focus", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask({ cliOverride: "codex", modelOverride: "gpt-5" });
+    stubFetch(task);
+    await useRepoStore().init();
+    const wrapper = await mountCard(pinia, task);
+
+    await wrapper.find(".tc-agent-btn").trigger("focus");
+    await flush();
+    const preview = document.body.querySelector("[data-test-id='task-agent-preview']");
+    expect(preview?.textContent).toContain("Engineer");
+    expect(preview?.textContent).toContain("codex");
+    expect(preview?.textContent).toContain("gpt-5");
+    expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
+
+    wrapper.unmount();
+    document.body.querySelector("[data-test-id='task-agent-preview']")?.remove();
   });
 
   it("toggles open and closed only from the robot button", async () => {

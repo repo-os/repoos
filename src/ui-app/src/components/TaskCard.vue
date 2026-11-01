@@ -95,6 +95,7 @@ interface AgentAssignment {
   label: "PM" | "EN" | "RV";
   cli: string;
   model: string;
+  agent: string;
   baseCli: string;
   baseModel: string;
 }
@@ -110,7 +111,15 @@ const agentAssignments = computed(() => {
     modelOverride: string | null | undefined,
   ): AgentAssignment => {
     const a = resolveEffectiveAgent(enabled, { agentOverride, cliOverride, modelOverride }, key);
-    return { key, label, cli: a.cli, model: a.model, baseCli: a.baseCli, baseModel: a.baseModel };
+    return {
+      key,
+      label,
+      cli: a.cli,
+      model: a.model,
+      agent: a.name,
+      baseCli: a.baseCli,
+      baseModel: a.baseModel,
+    };
   };
   return [
     resolve("pm", "PM", t.pmAgentOverride, t.pmCliOverride, t.pmModelOverride),
@@ -124,6 +133,46 @@ const agentPanelOpen = ref(false);
 function toggleAgentPanel(): void {
   agentPanelOpen.value = !agentPanelOpen.value;
 }
+
+const agentPreviewOpen = ref(false);
+const agentPreviewStyle = ref<Record<string, string>>({});
+const agentPreviewId = `task-agent-preview-${props.task.id}`;
+let agentPreviewDismissTimer: ReturnType<typeof setTimeout> | null = null;
+function clearAgentPreviewDismiss(): void {
+  if (agentPreviewDismissTimer) clearTimeout(agentPreviewDismissTimer);
+  agentPreviewDismissTimer = null;
+}
+function showAgentPreview(event: FocusEvent | MouseEvent): void {
+  clearAgentPreviewDismiss();
+  const button = event.currentTarget;
+  if (!(button instanceof HTMLElement)) return;
+  const rect = button.getBoundingClientRect();
+  const margin = 12;
+  const width = Math.min(360, Math.max(220, window.innerWidth - margin * 2));
+  const left = Math.max(margin, Math.min(rect.right - width, window.innerWidth - width - margin));
+  const estimatedHeight = 160;
+  const above = rect.top >= estimatedHeight + margin;
+  agentPreviewStyle.value = {
+    left: `${left}px`,
+    top: `${above ? rect.top - 8 : rect.bottom + 8}px`,
+    transform: above ? "translateY(-100%)" : "none",
+    width: `${width}px`,
+  };
+  agentPreviewOpen.value = true;
+}
+function scheduleAgentPreviewDismiss(): void {
+  clearAgentPreviewDismiss();
+  agentPreviewDismissTimer = setTimeout(() => {
+    agentPreviewOpen.value = false;
+    agentPreviewDismissTimer = null;
+  }, 120);
+}
+function openAgentAssignments(): void {
+  clearAgentPreviewDismiss();
+  agentPreviewOpen.value = false;
+  toggleAgentPanel();
+}
+onBeforeUnmount(() => clearAgentPreviewDismiss());
 
 const assignmentModalOpen = ref(false);
 const assignmentModalRole = ref<AssignmentRole | null>(null);
@@ -1243,9 +1292,15 @@ async function openDebuggerFromError(): Promise<void> {
           class="tc-agent-btn"
           :class="{ open: agentPanelOpen, 'ml-auto': !worktreeFrozen, 'ml-1': worktreeFrozen }"
           :aria-expanded="agentPanelOpen"
+          :aria-controls="`task-agent-panel-${task.id}`"
+          :aria-describedby="agentPreviewOpen ? agentPreviewId : undefined"
           aria-label="Show or hide agent assignments for this task"
           title="Show agent assignments"
-          @click.stop="toggleAgentPanel"
+          @mouseenter="showAgentPreview"
+          @mouseleave="scheduleAgentPreviewDismiss"
+          @focus="showAgentPreview"
+          @blur="scheduleAgentPreviewDismiss"
+          @click.stop="openAgentAssignments"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
             <rect
@@ -1269,6 +1324,40 @@ async function openDebuggerFromError(): Promise<void> {
             />
           </svg>
         </button>
+        <Teleport to="body">
+          <div
+            v-if="agentPreviewOpen"
+            :id="agentPreviewId"
+            class="tc-agent-preview"
+            :style="agentPreviewStyle"
+            role="tooltip"
+            aria-label="Task agent assignments preview"
+            data-test-id="task-agent-preview"
+            @mouseenter="clearAgentPreviewDismiss"
+            @mouseleave="scheduleAgentPreviewDismiss"
+          >
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Role</th>
+                  <th scope="col">Agent</th>
+                  <th scope="col">Model</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in agentAssignments" :key="a.key">
+                  <th scope="row">
+                    {{
+                      a.key === "engineer" ? "Engineer" : a.key === "reviewer" ? "Reviewer" : "PM"
+                    }}
+                  </th>
+                  <td>{{ a.cli }}</td>
+                  <td>{{ a.model }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Teleport>
       </div>
 
       <div v-if="hint" class="mt-[13px]">
@@ -1348,7 +1437,12 @@ async function openDebuggerFromError(): Promise<void> {
     <!-- A full-width, unframed assignment table. The robot opens it; each
          row opens the same agent/model picker used everywhere else. -->
     <transition name="tc-agent-panel">
-      <div v-if="agentPanelOpen" class="tc-agent-panel" @click.stop>
+      <div
+        v-if="agentPanelOpen"
+        :id="`task-agent-panel-${task.id}`"
+        class="tc-agent-panel"
+        @click.stop
+      >
         <button
           v-for="a in agentAssignments"
           :key="a.key"
