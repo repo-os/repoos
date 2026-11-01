@@ -3,6 +3,9 @@ id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p0
 area: [web, server, core]
 assigned_to: ai
@@ -12,6 +15,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
 updated_at: "2026-11-01T15:34:30Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T15:34:30.949Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Active task cards can show STUCK · SILENT while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
@@ -67,3 +72,5 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T15:16:40Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T15:30:18Z · body
 - 2026-11-01T15:34:30Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T15:34:30Z · agent exited with an error (cursor) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-01T15:34:30Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
