@@ -3,9 +3,6 @@ id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p0
 area: [web, server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T16:47:19Z"
+updated_at: "2026-11-01T16:47:23Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T16:47:19.566Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -84,3 +81,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T16:47:19Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T16:47:19Z · agent exited with an error (cursor) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-01T16:47:19Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-01T16:47:23Z · needs_input
