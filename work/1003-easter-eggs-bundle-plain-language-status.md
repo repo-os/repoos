@@ -128,6 +128,9 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 ]
 ```
 
+## E6 · Preview task agent assignments on hover
+## Problem\n\nThe robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.\n\n## Desired UX\n\nHovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.\n\n## Acceptance criteria\n\n- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.\n- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.\n- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.\n- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.\n\n## Notes for AI\n\nUse the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only.
+
 ## Screenshots
 
 ![Screenshot-2026-11-01-at-23.30.22](/api/tasks/1003/attachments/att_1cfc9082-f10e-43ff-8458-3edfc582e276.png)
@@ -137,9 +140,7 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 ![Agents settings reference: combine default and custom agent sections](/api/tasks/1003/attachments/att_003c5df7-edd1-40f2-bc8f-271510dca214.png)
 ![Review passes: move Latest into the callout row and identify the reviewer agent](/api/tasks/1003/attachments/att_44a3ed0f-5b52-49b1-bb92-0ff74721dcc1.png)
 ![Review pass selection: highlight the selected older pass and mark it Not latest](/api/tasks/1003/attachments/att_a1a8b279-092b-4e5f-aed7-1b9cb717ef19.png)
-
-## E6 · Preview task agent assignments on hover
-## Problem\n\nThe robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.\n\n## Desired UX\n\nHovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.\n\n## Acceptance criteria\n\n- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.\n- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.\n- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.\n- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.\n\n## Notes for AI\n\nUse the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only.
+![Task card robot icon and current agent-assignment editor/tooltip](/api/tasks/1003/attachments/att_0f6fb580-128d-467e-9f85-6f67571e1220.png)
 
 ## Activity
 
@@ -197,3 +198,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T19:39:05Z · body: Items (added 1, removed 5)
 - 2026-11-01T19:39:05Z · message_queued at 2026-11-01T19:39:05.625Z
 - 2026-11-01T19:39:06Z · body: E6 · Preview task agent assignments on hover (added); Problem\n\nThe robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.\n\n## Desired UX\n\nHovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.\n\n## Acceptance criteria\n\n- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.\n- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.\n- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.\n- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.\n\n## Notes for AI\n\nUse the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only. (added)
+- 2026-11-01T19:39:06Z · screenshots
