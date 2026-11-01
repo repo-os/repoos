@@ -2,16 +2,16 @@
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
-model_override: composer-2.5
+model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-10-31T16:40:12Z"
+updated_at: "2026-10-31T23:34:37Z"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
@@ -90,6 +90,19 @@ Clicking (or keyboard-activating) a pass row shows that pass's report in the bod
 ### Notes for AI
 Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-history-table` markup in `TaskDrawer.vue`. Read-only; do not change how reports are written.
 
+## Shots
+```json
+[
+{
+  "label": "Board card: integrating progress clamped to three lines",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"task-card-agent-hint\"].tc-hint--progress-clamp",
+  "state": "closeOut:uploading"
+}
+]
+```
+
 ## Activity
 
 - 2026-10-31T13:08:01Z · created · njachowski@gmail.com
@@ -104,3 +117,18 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-10-31T16:23:04Z · body: E4 · Open any past review pass from the Review tab (added)
 - 2026-10-31T16:40:07Z · cli_override, model_override
 - 2026-10-31T16:40:12Z · status inbox→ready
+- 2026-10-31T20:32:11Z · status ready→active, branch
+- 2026-10-31T20:55:15Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0993 check (pid 16330, alive), #0994 check (pid 35800, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T20:58:15Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T21:01:00Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 63569, alive), #0994 check (pid 35800, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T21:01:15Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T21:01:30Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T21:02:00Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T21:10:30Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #0995 check (pid 63569, alive), #0994 check (pid 85677, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-10-31T21:11:15Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-10-31T21:18:23Z · engineer stopped by request
+- 2026-10-31T22:26:48Z · message_queued at 2026-10-31T22:26:48.251Z
+- 2026-10-31T22:42:12Z · model_override
+- 2026-10-31T23:23:00Z · note: adopted orphaned engineer pid 65794
+- 2026-10-31T23:34:10Z · body
+- 2026-10-31T23:34:37Z · body
