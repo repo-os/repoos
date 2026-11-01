@@ -2,7 +2,7 @@
 id: 1001
 title: Remote changed-test selection must retain its base ref
 type: bug
-status: active
+status: review
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/remote-changed-test-selection-must-retai
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T14:19:48Z"
-updated_at: "2026-11-01T16:32:51Z"
+updated_at: "2026-11-01T16:49:35Z"
 ---
 ## Problem
 Remote validation receives the task commit but may not have the requested base ref such as main. scripts/select-test-files.mjs then cannot compute a merge base and safely falls back to the entire suite. On 2026-11-01, #0998's remote runner reported that main was not a valid object and expanded a scoped check to all 645 test files. This wastes many minutes and large bundle uploads on ordinary changes.
@@ -49,3 +49,4 @@ Inspect scripts/select-test-files.mjs, scripts/run-tests.mjs, src/server/remote-
 - 2026-11-01T16:11:17Z · message_delivered: 1 message(s)
 - 2026-11-01T16:28:34Z · note: adopted orphaned engineer pid 59230
 - 2026-11-01T16:32:51Z · body
+- 2026-11-01T16:49:35Z · status active→review
