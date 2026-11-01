@@ -11,7 +11,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T17:31:22Z"
+updated_at: "2026-11-01T17:31:23Z"
 ---
 ## Problem
 RepoOS stores per-test-file durations and repoos checks timings reports the ten slowest files, but individual Vitest case timings are only visible in detailed raw output. There is no structured per-test history to answer which cases are slow, whether one case regressed, or how test and hook time differ. Raw output may be truncated and is inconvenient to compare across runs.
@@ -40,3 +40,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T17:05:56Z · cli_override, model_override
 - 2026-11-01T17:06:26Z · note: adopted orphaned engineer pid 31403
 - 2026-11-01T17:31:22Z · message_queued at 2026-11-01T17:31:22.849Z
+- 2026-11-01T17:31:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
