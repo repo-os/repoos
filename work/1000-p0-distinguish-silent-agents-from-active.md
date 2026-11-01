@@ -2,14 +2,14 @@
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
-status: review
+status: active
 priority: p0
 area: [web, server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T23:15:20Z"
+updated_at: "2026-11-01T23:15:21Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T23:04:14.181Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0a907db8 to a188b7db) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 5
