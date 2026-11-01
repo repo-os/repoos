@@ -52,7 +52,9 @@ export function remoteTelemetryMismatch(
   if (registeredRun) return null;
   const lock = hostLockJobsForTask(hosts, taskId);
   if (!lock) return null;
-  const verb = lock.holding ? "holds an SSH validation slot" : "is queued for an SSH validation slot";
+  const verb = lock.holding
+    ? "holds an SSH validation slot"
+    : "is queued for an SSH validation slot";
   return (
     `Host ${lock.host} still ${verb} for #${taskId} (${lock.phase}, ${lock.ageSecs}s) ` +
     "but the runner registry shows idle — investigate before restarting."

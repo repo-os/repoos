@@ -3513,7 +3513,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     }
     if (
       ctx.taskChecks &&
-      taskHasBlockingCheckOrRemote(id, (taskId) => ctx.taskChecks!.getRuns(taskId), ctx.remoteValidator)
+      taskHasBlockingCheckOrRemote(
+        id,
+        (taskId) => ctx.taskChecks!.getRuns(taskId),
+        ctx.remoteValidator,
+      )
     ) {
       return json(res, 409, {
         error: `Task #${id} has a check or remote validation in flight — wait for it to finish before pausing the agent`,

@@ -170,7 +170,8 @@ export function autoRepairHint(opts: {
   }
   if (task.status === "active") {
     const signal = retryCountFrom(task, "handoffSignal");
-    if (signal) return retryHint("handoffSignal", signal, lastActivity, now, { suppressAgentStuck });
+    if (signal)
+      return retryHint("handoffSignal", signal, lastActivity, now, { suppressAgentStuck });
   }
   return null;
 }

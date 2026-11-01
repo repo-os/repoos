@@ -93,11 +93,7 @@ function checkHeartbeating(
   return idle !== null && idle < stallMs;
 }
 
-function checkStalled(
-  check: ActiveTaskCheckSnapshot,
-  nowMs: number,
-  stallMs: number,
-): boolean {
+function checkStalled(check: ActiveTaskCheckSnapshot, nowMs: number, stallMs: number): boolean {
   if (!check.running) return false;
   const anchor = check.lastProgressAt ?? check.startedAt;
   const idle = msSince(anchor, nowMs);
@@ -217,8 +213,7 @@ export function resolveActiveEngineerCardHint(input: ActiveTaskCardInput): Activ
     };
   }
 
-  const activity =
-    input.agentSilentMs !== null ? formatCardDuration(input.agentSilentMs) : null;
+  const activity = input.agentSilentMs !== null ? formatCardDuration(input.agentSilentMs) : null;
   return {
     label: activity ? `coding · active ${activity} ago` : "coding",
     title: "Agent is making code changes — click to watch the session",
