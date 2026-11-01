@@ -1,7 +1,7 @@
 ---
 id: "0002"
 title: CLI schedule
-enabled: true
+enabled: false
 cadence: daily
 timezone: UTC
 time_of_day: "09:00"
@@ -20,6 +20,6 @@ last_task_id: ""
 last_error: ""
 last_occurrence_key: ""
 created_at: "2026-10-31T23:03:55.134Z"
-updated_at: "2026-10-31T23:03:55.134Z"
+updated_at: "2026-11-01T15:57:35.540Z"
 ---
 Spec
