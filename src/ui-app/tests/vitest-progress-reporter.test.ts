@@ -60,7 +60,7 @@ describe("vitest progress reporter", () => {
       id: "case-1",
       fullName: "suite > works",
       module: { moduleId: `${process.cwd()}/case.test.ts` },
-      result: () => ({ state: "passed" }),
+      result: () => ({ state: "pass" }),
       diagnostic: () => ({ duration: 42, retryCount: 1 }),
     };
     reporter.onTestCaseResult(testCase);
@@ -68,6 +68,27 @@ describe("vitest progress reporter", () => {
     expect(caseLines).toHaveLength(1);
     expect(caseLines[0]).toContain('"retry":1');
     expect(caseLines[0]).toContain('"durationMs":42');
+    expect(caseLines[0]).toContain('"result":"passed"');
+  });
+
+  it("records failed and skipped Vitest cases with stable outcomes", () => {
+    const reporter = new RepoOSProgressReporter();
+    const makeCase = (id: string, state: string) => ({
+      id,
+      fullName: `suite > ${id}`,
+      module: { moduleId: `${process.cwd()}/cases.test.ts` },
+      result: () => ({ state }),
+      diagnostic: () => ({ duration: state === "skip" ? undefined : 7 }),
+    });
+    reporter.onTestCaseResult(makeCase("failed", "fail"));
+    reporter.onTestCaseResult(makeCase("skipped", "skip"));
+    const cases = lines
+      .filter((line) => line.startsWith("::repoos-test-case::"))
+      .map((line) => JSON.parse(line.slice("::repoos-test-case::".length)));
+    expect(cases.map((item) => [item.result, item.durationMs])).toEqual([
+      ["failed", 7],
+      ["skipped", 0],
+    ]);
   });
 
   it("accumulates file counts across vitest passes via base offsets", () => {
