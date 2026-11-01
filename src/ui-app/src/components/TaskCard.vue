@@ -497,7 +497,12 @@ const stalledCheck = computed(() => {
 const cancelCheckBusy = ref(false);
 async function cancelStalledCheck(): Promise<void> {
   if (cancelCheckBusy.value || !stalledCheck.value) return;
-  if (!window.confirm(`Cancel the stalled check for task #${props.task.id}? RepoOS will verify it has stopped before allowing a restart.`)) return;
+  if (
+    !window.confirm(
+      `Cancel the stalled check for task #${props.task.id}? RepoOS will verify it has stopped before allowing a restart.`,
+    )
+  )
+    return;
   cancelCheckBusy.value = true;
   try {
     await repo.cancelStalledCheck(props.task.id);

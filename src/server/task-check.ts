@@ -284,10 +284,14 @@ export class TaskCheckManager {
     const run = [...(this.runsByTask.get(taskId) ?? [])].reverse().find((item) => item.running);
     if (!run) return { ok: false, detail: `No running check is registered for #${taskId}` };
     const cancel = this.cancelByRun.get(run.id);
-    if (!cancel) return { ok: false, detail: `The running ${run.kind} check has no safe cancellation handle` };
+    if (!cancel)
+      return { ok: false, detail: `The running ${run.kind} check has no safe cancellation handle` };
     const stopped = await cancel();
     if (!stopped || run.running) {
-      return { ok: false, detail: `RepoOS could not verify that the ${run.kind} check has stopped` };
+      return {
+        ok: false,
+        detail: `RepoOS could not verify that the ${run.kind} check has stopped`,
+      };
     }
     return { ok: true, detail: `The ${run.kind} check stopped and was recorded as cancelled` };
   }

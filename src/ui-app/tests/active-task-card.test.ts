@@ -63,7 +63,7 @@ describe("resolveActiveEngineerCardHint (#0994 local check)", () => {
     expect(hint.blocksAgentInterrupt).toBe(true);
   });
 
-  it.each([null, "not-a-timestamp"]) (
+  it.each([null, "not-a-timestamp"])(
     "fails closed as stalled when the running check heartbeat is %s",
     (lastProgressAt) => {
       const hint = resolveActiveEngineerCardHint({
