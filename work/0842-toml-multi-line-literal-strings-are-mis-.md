@@ -14,7 +14,7 @@ model_override: openrouter/deepseek/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-10-19T05:12:40Z"
-updated_at: "2026-11-01T09:01:54Z"
+updated_at: "2026-11-01T09:56:25Z"
 last_close_out_gate_ms: 298196
 last_close_out_gate_at: "2026-10-19T19:16:58.434Z"
 review_passes: 5
@@ -218,3 +218,4 @@ Start from `src/core/config.ts` (dev target parsing near `parseDevTargets`) and 
 - 2026-11-01T04:47:47Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T07:01:09Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T09:01:54Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T09:56:25Z · message_dropped: 1 queued message(s) discarded — task is done
