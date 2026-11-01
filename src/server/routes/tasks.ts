@@ -3951,6 +3951,21 @@ export const getTaskReview: RouteHandler = (ctx, _req, res, params) => {
   });
 };
 
+/** Read-only body for one numbered review pass (#0995 E4). */
+export const getTaskReviewPass: RouteHandler = (ctx, _req, res, params) => {
+  const { reviews } = ctx;
+  const id = params.param1;
+  const pass = parseInt(params.param2, 10);
+  if (!Number.isFinite(pass) || pass < 1) {
+    return json(res, 400, { error: "Invalid review pass number" });
+  }
+  const report = reviews.readPass(id, pass);
+  if (!report) {
+    return json(res, 404, { error: `Review pass #${pass} not found for task #${id}` });
+  }
+  return json(res, 200, { ok: true, review: report });
+};
+
 export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => {
   const { config, index } = ctx;
   const id = params.param1;
