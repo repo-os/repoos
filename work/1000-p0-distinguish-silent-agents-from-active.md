@@ -1,10 +1,11 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-01T17:40:34.412Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 priority: p0
 area: [web, server, core]
 assigned_to: ai
@@ -13,9 +14,12 @@ branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T17:31:28Z"
-dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T16:47:19.566Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-01T17:42:24Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T17:40:34.412Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
+dev_error_count: 3
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T17:42:24.330Z\",\"kind\":\"usage-limit\"}]"
+engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
 ---
 ## Problem
 Active task cards can show STUCK · SILENT while a scoped check or remote validation is still running or waiting for a result. On 2026-11-01, #0994 showed silent while its local check log continued through the test suite (109/645 tests observed); #0998 showed silent while its engineer awaited a validation tool call and an SSH process to thinkpad remained open, even though runner status reported thinkpad idle. The current presentation conflates agent output silence, check progress, remote queue/run state, and a truly hung process. That can prompt an unsafe restart while work is still running and hides a remote validation hang when runner telemetry disagrees.
@@ -89,4 +93,5 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T17:06:25Z · note: adopted orphaned engineer pid 96893
 - 2026-11-01T17:15:12Z · body
 - 2026-11-01T17:31:28Z · body
-
+- 2026-11-01T17:42:24Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-01T17:42:24Z · engineer crash recovery: switched cursor + composer-2.5 → codex + gpt-6-luna after 1/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
