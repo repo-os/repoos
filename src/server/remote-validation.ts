@@ -2119,8 +2119,7 @@ export async function remoteChangedTestScope(
   if (verify.status !== 0) {
     return {
       scoped: false,
-      warning:
-        `could not resolve changed ref "${ref}" for remote tests — running the full suite on the runner, not a scoped self-check`,
+      warning: `could not resolve changed ref "${ref}" for remote tests — running the full suite on the runner, not a scoped self-check`,
     };
   }
   let head = candidateSha?.trim();
@@ -2140,16 +2139,18 @@ export async function remoteChangedTestScope(
   if (mergeBase.status !== 0 || !/^[0-9a-f]{40}$/.test(baseSha)) {
     return {
       scoped: false,
-      warning:
-        `could not compute merge-base between HEAD and "${ref}" for remote tests — running the full suite on the runner`,
+      warning: `could not compute merge-base between HEAD and "${ref}" for remote tests — running the full suite on the runner`,
     };
   }
-  const ancestor = await runGit(worktreePath, ["merge-base", "--is-ancestor", baseSha, head], 15_000);
+  const ancestor = await runGit(
+    worktreePath,
+    ["merge-base", "--is-ancestor", baseSha, head],
+    15_000,
+  );
   if (ancestor.status !== 0) {
     return {
       scoped: false,
-      warning:
-        `changed-test base ${baseSha.slice(0, 12)} is not an ancestor of the candidate — running the full suite on the runner`,
+      warning: `changed-test base ${baseSha.slice(0, 12)} is not an ancestor of the candidate — running the full suite on the runner`,
     };
   }
   return { scoped: true, ref: baseSha, baseSha };
