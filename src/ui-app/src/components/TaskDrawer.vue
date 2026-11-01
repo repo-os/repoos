@@ -62,6 +62,7 @@ import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import { useNow } from "../composables/useNow";
 import { integrationActiveCopy, integrationQueuedCopy } from "../lib/integration-pipeline-ui";
 import { isHoldActive } from "../../../core/task-selection.js";
+import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import { Clock3 } from "lucide-vue-next";
 import {
   needsInputBannerText,
@@ -3195,7 +3196,7 @@ async function loadIntegrationConflictResolution(taskId: string): Promise<void> 
 watch(
   () => [ui.active?.id, inPipeline.value] as const,
   ([id, inPipe]) => {
-    if (!id || !inPipe) {
+    if (!id || !inPipe || id === SHOT_PREVIEW_FIXTURE_TASK_ID) {
       integrationConflictResolution.value = null;
       return;
     }
