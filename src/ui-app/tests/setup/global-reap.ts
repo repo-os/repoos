@@ -25,7 +25,12 @@
 import { mkdtempSync, rmSync, utimesSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { killSpawnedLogs, reapStaleFixtures, STALE_FIXTURE_AGE_MS, defaultOsTmpdir } from "../helpers";
+import {
+  killSpawnedLogs,
+  reapStaleFixtures,
+  STALE_FIXTURE_AGE_MS,
+  defaultOsTmpdir,
+} from "../helpers";
 
 /**
  * Every file's isolated tmpdir (see tmp-isolation.ts) lives under this run's
