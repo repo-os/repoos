@@ -95,6 +95,7 @@ import {
   type EngineerStallRecoveryContext,
 } from "./engineer-crash-recovery.js";
 import { relaunchEngineerOnActiveTask } from "./engineer-launch.js";
+import { recoverActiveTasksWithoutEngineer } from "./active-without-engineer-recovery.js";
 import {
   IDENTICAL_HANDOFF_FAILURES_REASON,
   assessHandoffFailureLoop,
@@ -547,6 +548,16 @@ export class TaskWatchdog {
       clearExpiredHoldPauses(
         [...this.index.getTasks("active"), ...this.index.getTasks("review")],
         this.runner,
+      );
+      await recoverActiveTasksWithoutEngineer(
+        {
+          config: this.config,
+          index: this.index,
+          runner: this.runner,
+          logger: (this.logger ?? { task: () => {} }) as Logger,
+          launch: this.launch,
+        },
+        { now: stalenessNow },
       );
       // The `active` status is scanned for the dead/stalled ENGINEER shape
       // (#0180). The `review` status is scanned too (#0286): a task whose
@@ -1079,7 +1090,7 @@ export class TaskWatchdog {
   }
 }
 
-function lastStatusTransitionTime(body: string, status: string): number | null {
+export function lastStatusTransitionTime(body: string, status: string): number | null {
   const lines = body.split("\n");
   const activityIndex = lines.findIndex((line) => line.trim() === "## Activity");
   if (activityIndex === -1) return null;

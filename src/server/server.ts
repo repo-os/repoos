@@ -105,6 +105,7 @@ import {
 import { readQueueMarkers } from "../core/local-queue-marker.js";
 import { STATUSES } from "../core/types.js";
 import { isHoldActive } from "../core/task-selection.js";
+import { countEngineerCapUsage } from "../core/engineer-slot.js";
 import { shouldRunAutomaticTaskLifecycle } from "./task-transitions.js";
 import { readBuildMeta } from "../core/build.js";
 import { injectBuildHashIntoUiIndex } from "../core/ui-index.js";
@@ -198,6 +199,7 @@ import { PHANTOM_RATE_LIMITED_NOTE, PHANTOM_RESTARTED_NOTE } from "./phantom-run
 import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { runAreaMigrationPass } from "./area-migration.js";
 import { runTaskBodyMigrationPass } from "./task-body-migration.js";
+import { runDoneHoldMigrationPass } from "./done-hold-migration.js";
 import { sweepUnderspecifiedTasks } from "./task-underspecified-flag.js";
 import { FreeformRunManager, liveFreeformRunIds } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
@@ -1781,11 +1783,18 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             config,
             index.getTasks(),
             "dependency-merged",
+            {
+              isRunning: (id) => runner.isRunning(id),
+              isQueued: (id) => runner.isQueued(id),
+              isHandoffInFlight: (id) => runner.isHandoffInFlight(id),
+            },
           );
           if (result.triggered) {
-            const activeCount = index
-              .getTasks()
-              .filter((task) => task.status === "active" && !isHoldActive(task)).length;
+            const activeCount = countEngineerCapUsage(index.getTasks(), {
+              isRunning: (id) => runner.isRunning(id),
+              isQueued: (id) => runner.isQueued(id),
+              isHandoffInFlight: (id) => runner.isHandoffInFlight(id),
+            });
             const maxActiveTasks = config.maxActiveTasks ?? 3;
             emitEvent({
               type: "auto-engineering.state",
@@ -2282,10 +2291,34 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       });
     }
   };
+  const runDoneHoldMigration = async (): Promise<void> => {
+    try {
+      if (!isControlPlane) return;
+      if (process.env.VITEST === "true") return;
+      if (process.env.REPOOS_SKIP_DONE_HOLD_MIGRATION === "1") return;
+      const outcome = runDoneHoldMigrationPass(config, (absPaths) =>
+        commitFiles(config.root, absPaths, "docs: clear hold on done tasks (#0993)"),
+      );
+      if (!outcome.attempted) return;
+      if (!outcome.committed) {
+        logger.system("warn", "done-hold migration (#0993): commit failed", {
+          rewritten: outcome.rewritten,
+        });
+      } else if (outcome.rewritten > 0) {
+        logger.system("info", "done-hold migration (#0993)", { rewritten: outcome.rewritten });
+      }
+      await index.refreshAllAsync();
+    } catch (error) {
+      logger.system("warn", "done-hold migration failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
   void indexReady.then(
     async () => {
       await runAreaMigration();
       await runTaskBodyMigration();
+      await runDoneHoldMigration();
     },
     () => {},
   );

@@ -24,6 +24,25 @@ export function notifyAttentionAgentStalled(taskId: string): void {
   bumpAttention?.();
 }
 
+/** Active task could not be restarted after the no-engineer window (#0993). */
+export function notifyAttentionEngineerRecoveryFailed(
+  taskId: string,
+  title: string,
+  reason: string,
+): void {
+  if (!attentionEvents) return;
+  const at = new Date().toISOString();
+  attentionEvents.record({
+    id: `engineerRecoveryFailed:${taskId}:${at}`,
+    kind: "engineerRecoveryFailed",
+    taskId,
+    message: `#${taskId} · ${title} — engineer recovery failed`,
+    detail: reason.slice(0, 240) || "Could not restart the engineer.",
+    at,
+  });
+  bumpAttention?.();
+}
+
 /** One durable bell item per exhausted model pair, even when many tasks fail. */
 export function notifyAttentionProviderUsageLimit(
   cli: string,

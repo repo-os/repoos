@@ -430,6 +430,7 @@ describe("buildDriverBrief — held tasks (#0960)", () => {
           }),
           taskInput({ id: "0003", status: "active", isHeld: true, isArchived: true }),
           taskInput({ id: "0004", status: "active" }),
+          taskInput({ id: "0007", status: "done", isHeld: true }),
         ],
       }),
     );
