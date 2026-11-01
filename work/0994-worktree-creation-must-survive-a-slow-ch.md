@@ -129,3 +129,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T11:53:16Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T12:01:51Z · body
 - 2026-11-01T12:02:55Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T12:02:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
