@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T15:43:21Z"
+updated_at: "2026-11-01T15:43:22Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
@@ -57,7 +57,7 @@ Change user-facing merge-status and merge-eligibility wording throughout product
 ## E3 · Mission Control panels use a balanced 2×2 layout
 
 ### Problem
-
+Mission Control currently puts Feature releases, Live activity, and Needs a decision in one row, with Needs your attention below. The panels have uneven heights, making the page harder to scan and compare.
 
 ### Desired UX
 
@@ -92,3 +92,5 @@ Change user-facing merge-status and merge-eligibility wording throughout product
 - 2026-11-01T15:43:05Z · body: Items (added 1); E3 · Mission Control panels use a balanced 2×2 layout (added)
 - 2026-11-01T15:43:05Z · note: bundle add E3
 - 2026-11-01T15:43:21Z · body: Items (added 1, removed 1)
+- 2026-11-01T15:43:22Z · body: E3 · Mission Control panels use a balanced 2×2 layout (added 1)
+- 2026-11-01T15:43:22Z · note: bundle edit E3
