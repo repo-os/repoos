@@ -5,6 +5,9 @@ type: chore
 status: active
 needs_input: true
 needs_input_reason: dev-error
+hold: true
+hold_reason: Enable remote engineer self-checks before restarting validation
+hold_at: "2026-11-01T09:44:38.193Z"
 priority: p3
 area: web
 assigned_to: ai
@@ -205,3 +208,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T09:41:23Z · message_queued at 2026-11-01T09:41:23.276Z
 - 2026-11-01T09:41:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T09:44:38Z · engineer stopped by request
+- 2026-11-01T09:44:38Z · held, held-reason, held-at
