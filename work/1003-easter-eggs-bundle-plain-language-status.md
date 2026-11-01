@@ -11,12 +11,18 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T19:39:06Z"
+updated_at: "2026-11-01T19:39:20Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-01T19:34:32.531Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
-- [ ] **E1 · Replace ‘wedged’ with heartbeat wording** (web) — describe a live check with an overdue heartbeat as ‘No recent heartbeat’ and show when its last heartbeat arrived.\n- [ ] **E2 · Replace ‘landed’ and ‘landable’ merge wording** (web) — use plain-language variants of ‘merged into main’ for completed merges and ‘ready to merge’ for eligible changes.\n- [ ] **E3 · Mission Control panels use a balanced 2×2 layout** (web) — show the four panels in two columns and two rows, with equal medium heights between the current short and tall panels.\n- [ ] **E4 · Combine default and custom agents in one tab** (web) — rename Default Agents to Agents, remove the Custom Agents tab, and render its section below Default Agents in the Agents tab.\n- [ ] **E5 · Make review-pass selection and reviewer identity clear** (web) — place Latest on the Good to go row, highlight the selected pass, mark an older pass Not latest, and show the reviewer coding agent.\n- [ ] **E6 · Preview task agent assignments on hover** (web) — hovering the task card robot icon shows a compact, readable table of the task’s PM, engineer, and reviewer agent/model assignments without opening the edit panel; clicking the icon continues to open the editor, and keyboard/touch users retain an accessible way to view assignments.
+- [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived.
+- [ ] **E2 · Replace “landed” and “landable” merge wording** (web) — use plain-language variants of “merged into main” for completed merges and “ready to merge” for eligible changes.
+- [ ] **E3 · Mission Control panels use a balanced 2×2 layout** (web) — show the four panels in two columns and two rows, with equal medium heights between the current short and tall panels.
+- [ ] **E4 · Combine default and custom agents in one tab** (web) — rename Default Agents to Agents, remove the Custom Agents tab, and render its section below Default Agents in the Agents tab.
+- [ ] **E5 · Make review-pass selection and reviewer identity clear** (web) — place Latest on the Good to go row, highlight the selected pass, mark an older pass Not latest, and show the reviewer coding agent.
+- [ ] **E6 · Preview task agent assignments on hover** (web) — hovering the task card robot icon shows a compact, readable table of the task’s PM, engineer, and reviewer agent/model assignments without opening the edit panel; clicking the icon continues to open the editor, and keyboard/touch users retain an accessible way to view assignments.
+
 
 ## E1 · Replace “wedged” with heartbeat wording
 
@@ -200,3 +206,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T19:39:06Z · body: E6 · Preview task agent assignments on hover (added); Problem\n\nThe robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.\n\n## Desired UX\n\nHovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.\n\n## Acceptance criteria\n\n- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.\n- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.\n- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.\n- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.\n\n## Notes for AI\n\nUse the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only. (added)
 - 2026-11-01T19:39:06Z · screenshots
 - 2026-11-01T19:39:06Z · message_queued at 2026-11-01T19:39:06.840Z
+- 2026-11-01T19:39:20Z · body: Items (added 6, removed 1)
