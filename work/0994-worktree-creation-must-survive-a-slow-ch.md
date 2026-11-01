@@ -17,7 +17,6 @@ last_check_failure: "repoos check at 2026-11-01T07:59:36.226Z: repoos check fail
 handoff_signal_retry_count: 2
 review_passes: 1
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T10:35:43.595Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
