@@ -71,3 +71,4 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T14:13:14Z · model_override
 - 2026-11-01T14:19:14Z · body
 - 2026-11-01T14:21:35Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T14:21:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
