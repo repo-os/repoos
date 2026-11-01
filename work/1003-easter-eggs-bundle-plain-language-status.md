@@ -9,11 +9,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T15:43:00Z"
+updated_at: "2026-11-01T15:43:05Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
 - [ ] **E2 · Replace “landed” and “landable” merge wording** (web) — use plain-language variants of “merged into main” for completed merges and “ready to merge” for eligible changes. Source: Nick's terminology feedback, 2026-11-01.
+- [ ] **E3 · Mission Control panels use a balanced 2×2 layout** (web) — Render Feature releases, Live activity, Needs a decision, and Needs your attention as a two-column by two-row layout at desktop widths, with all four panels the same medium height (between the current short and tall panels) and content scrolling inside each panel.. Source: Nick, 2026-11-01 screenshot.
 
 
 ## E1 · Replace “wedged” with heartbeat wording
@@ -52,6 +53,21 @@ Across user-facing UI, notifications, CLI messages, and user documentation, use 
 ### Notes for AI
 Change user-facing merge-status and merge-eligibility wording throughout product surfaces. Preserve technical command names, API routes/fields, internal identifiers, and unrelated literal uses such as a browser landing on a route. Choose a natural variation of “merged into main” that accurately describes the specific state; do not imply a merge happened when it did not.
 
+
+## E3 · Mission Control panels use a balanced 2×2 layout
+
+### Problem
+
+
+### Desired UX
+
+
+### Acceptance criteria
+
+- Test: Mission Control lays out all four panels in a 2×2 grid with equal heights at desktop widths; responsive narrow layouts remain readable.
+
+### Notes for AI
+
 ## Screenshots
 
 ![Screenshot-2026-11-01-at-23.30.22](/api/tasks/1003/attachments/att_1cfc9082-f10e-43ff-8458-3edfc582e276.png)
@@ -73,3 +89,5 @@ Change user-facing merge-status and merge-eligibility wording throughout product
 - 2026-11-01T15:39:07Z · body: E2 · Replace “landed” in user-facing merge messages (added 1, removed 1)
 - 2026-11-01T15:39:07Z · note: bundle edit E2
 - 2026-11-01T15:43:00Z · screenshots
+- 2026-11-01T15:43:05Z · body: Items (added 1); E3 · Mission Control panels use a balanced 2×2 layout (added)
+- 2026-11-01T15:43:05Z · note: bundle add E3
