@@ -120,7 +120,9 @@ describe("budget runtime pauses (#0998)", () => {
     const until = "2020-01-01T00:00:00.000Z";
     recordAutomaticAllowlist(root, [
       row({
-        pausedModels: [{ model: "go", pausedReason: "out of usage since 10:30", pausedUntil: until }],
+        pausedModels: [
+          { model: "go", pausedReason: "out of usage since 10:30", pausedUntil: until },
+        ],
       }),
     ]);
     const before = readFileSync(budgetRuntimeStatePath(root), "utf8");
