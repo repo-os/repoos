@@ -78,3 +78,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T02:40:44Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T04:42:35Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T04:47:50Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-01T04:47:50Z · message_delivered: 3 message(s)
