@@ -203,3 +203,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T09:31:57Z · needs_input
 - 2026-11-01T09:31:57Z · message_delivered: 1 message(s)
 - 2026-11-01T09:41:23Z · message_queued at 2026-11-01T09:41:23.276Z
+- 2026-11-01T09:41:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
