@@ -12,7 +12,7 @@ branch: feat/auto-recover-tasks-that-are-active-with-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T10:08:41Z"
-updated_at: "2026-11-01T09:45:05Z"
+updated_at: "2026-11-01T09:46:20Z"
 last_close_out_gate_ms: 764324
 last_close_out_gate_at: "2026-11-01T09:45:05.747Z"
 review_passes: 1
@@ -102,4 +102,4 @@ The board's Held list shows done tasks (seen: #0899 and #0849, both status done 
 - 2026-11-01T08:54:05Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T09:02:36Z · note: Nick explicitly approved restarting Move to done and landing if remote validation passes. Duplicate local tests stopped; server remote validator restarted; thinkpad, bee and mini passed prerequisite probes.
 - 2026-11-01T09:45:05Z · close-out gate completed in 764s
-
+- 2026-11-01T09:46:20Z · status done→done, release:success
