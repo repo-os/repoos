@@ -3,12 +3,6 @@ id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: "Scoped check failed (15 unrelated test files plus ui-smoke \"Work page board not rendered\"), so the agent couldn't hand off — retry `repoos check --changed main` on the runner and inspect the ui-smoke failure."
-debug_tldr_at: "2026-11-01T00:45:22Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p3
 area: web
 assigned_to: ai
@@ -153,3 +147,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T00:45:06Z · message_delivered: 1 message(s)
 - 2026-11-01T00:49:13Z · body
 - 2026-11-01T01:16:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T01:16:33Z · needs_input
