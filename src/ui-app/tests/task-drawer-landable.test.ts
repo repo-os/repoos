@@ -373,7 +373,7 @@ describe("review pass selection and identity (#1003)", () => {
     await flush();
     expect(wrapper.find(".review-card").text()).toContain("Latest selection details.");
 
-    resolveOlder(json({ ok: true, review: older }));
+    resolveOlder(await json({ ok: true, review: older }));
     await flush();
     expect(wrapper.find(".review-card").text()).toContain("Latest selection details.");
     expect(wrapper.find(".review-card").text()).not.toContain("Older selection details.");
