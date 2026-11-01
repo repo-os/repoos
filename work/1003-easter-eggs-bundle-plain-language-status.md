@@ -119,9 +119,9 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 "route": "/",
 "highlight": ".dash-grid",
 "steps": [
-  {
-    "waitFor": ".dash-grid"
-  }
+{
+  "waitFor": ".dash-grid"
+}
 ]
 },
 {
@@ -137,9 +137,9 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 "highlight": ".review-history-wrap",
 "state": "drawer:reviewPasses",
 "steps": [
-  {
-    "waitFor": ".review-history-wrap"
-  }
+{
+  "waitFor": ".review-history-wrap"
+}
 ]
 }
 ]
@@ -258,3 +258,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-01T22:05:57Z · note: ui verification failed (2 issue(s)): [missing-target] Mission Control 2×2 panels (target "default"): loading state detected: loading text "Loading…" on / (http://127.0.0.1:58741/); [missing-target] Review pass selection and freshness (target "default"): highlight .review-history-wrap matched nothing on /work?task=1003&tab=review (http://127.0.0.1:58741/work?shotState=drawer:landable)
 - 2026-11-01T22:07:51Z · body
 - 2026-11-01T22:15:44Z · message_queued at 2026-11-01T22:15:44.445Z
+- 2026-11-01T22:15:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
