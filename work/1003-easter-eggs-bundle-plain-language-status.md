@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T19:00:44Z"
+updated_at: "2026-11-01T19:20:31Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived.
@@ -88,16 +88,6 @@ Rename the “Default Agents” tab to “Agents”. Remove the separate “Cust
 ### Notes for AI
 Use the attached screenshot as layout context. Its Cursor model-refresh timeout banner is incidental and is not part of this item.
 
-## Screenshots
-
-![Screenshot-2026-11-01-at-23.30.22](/api/tasks/1003/attachments/att_1cfc9082-f10e-43ff-8458-3edfc582e276.png)
-![Screenshot-2026-11-01-at-23.31.44](/api/tasks/1003/attachments/att_6dfbfffd-07f3-4c0f-8e59-f8a6df429326.png)
-![Screenshot-2026-11-01-at-23.30.58](/api/tasks/1003/attachments/att_b17f9b26-3b1a-4276-9c56-124c2c78c9b9.png)
-![Mission Control panels have uneven heights and a 3+1 layout](/api/tasks/1003/attachments/att_5f8b6a2b-d1b4-469c-bb0f-bdfe98eddb91.png)
-![Agents settings reference: combine default and custom agent sections](/api/tasks/1003/attachments/att_003c5df7-edd1-40f2-bc8f-271510dca214.png)
-![Review passes: move Latest into the callout row and identify the reviewer agent](/api/tasks/1003/attachments/att_44a3ed0f-5b52-49b1-bb92-0ff74721dcc1.png)
-![Review pass selection: highlight the selected older pass and mark it Not latest](/api/tasks/1003/attachments/att_a1a8b279-092b-4e5f-aed7-1b9cb717ef19.png)
-
 ## E5 · Make review-pass selection and reviewer identity clear
 ### Problem
 
@@ -139,6 +129,16 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 }
 ]
 ```
+
+## Screenshots
+
+![Screenshot-2026-11-01-at-23.30.22](/api/tasks/1003/attachments/att_1cfc9082-f10e-43ff-8458-3edfc582e276.png)
+![Screenshot-2026-11-01-at-23.31.44](/api/tasks/1003/attachments/att_6dfbfffd-07f3-4c0f-8e59-f8a6df429326.png)
+![Screenshot-2026-11-01-at-23.30.58](/api/tasks/1003/attachments/att_b17f9b26-3b1a-4276-9c56-124c2c78c9b9.png)
+![Mission Control panels have uneven heights and a 3+1 layout](/api/tasks/1003/attachments/att_5f8b6a2b-d1b4-469c-bb0f-bdfe98eddb91.png)
+![Agents settings reference: combine default and custom agent sections](/api/tasks/1003/attachments/att_003c5df7-edd1-40f2-bc8f-271510dca214.png)
+![Review passes: move Latest into the callout row and identify the reviewer agent](/api/tasks/1003/attachments/att_44a3ed0f-5b52-49b1-bb92-0ff74721dcc1.png)
+![Review pass selection: highlight the selected older pass and mark it Not latest](/api/tasks/1003/attachments/att_a1a8b279-092b-4e5f-aed7-1b9cb717ef19.png)
 
 ## Activity
 
@@ -185,3 +185,4 @@ Keep the Latest marker on the right side of the Good to go callout row. Select t
 - 2026-11-01T18:51:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T18:55:45Z · note: adopted orphaned engineer pid 52726
 - 2026-11-01T19:00:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T19:20:31Z · body
