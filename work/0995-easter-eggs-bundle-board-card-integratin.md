@@ -237,3 +237,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T12:40:42Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T12:41:34Z · body
 - 2026-11-01T12:44:11Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T12:44:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
