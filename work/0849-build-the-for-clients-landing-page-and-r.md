@@ -3,7 +3,6 @@ id: "0849"
 title: Build the For Clients landing page and Resend project enquiry form
 type: feature
 status: done
-hold: true
 priority: p2
 area: landing
 merged_commit: 2a50973ca69234b6053078affa897f3ea0d7291b
