@@ -330,6 +330,8 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
   let devTargetsUnchanged = false;
   /** Set when a budget-allowlist PATCH already matches what's on disk. */
   let budgetAllowlistUnchanged = false;
+  /** True when a PATCH changed only automatic pauses (no repoos.toml write). */
+  let budgetRuntimeUpdated = false;
   /** Set when a budget-allowlist PATCH clears the last `[[budget.allowlist]]` row. */
   let dropBudgetAllowlistRows = false;
   if (body.builtInAgents !== undefined) {
@@ -502,6 +504,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
       dropBudgetAllowlistRows = true;
     } else {
       recordAutomaticAllowlist(config.root, parsed.rows);
+      budgetRuntimeUpdated = !runtimeSame;
       if (!tomlSame) patch["budget.allowlist"] = tracked;
     }
   }
@@ -900,6 +903,7 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
     !devTargetsUnchanged &&
     !dropDevTargetRows &&
     !budgetAllowlistUnchanged &&
+    !budgetRuntimeUpdated &&
     !dropBudgetAllowlistRows &&
     !onlyEmptyWhisperKey
   ) {
