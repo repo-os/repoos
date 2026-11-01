@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T12:41:34Z"
+updated_at: "2026-11-01T12:44:11Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-01T12:26:29.985Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:58723/api/tasks/9999/integration-job (http://127.0.0.1:58723/api/tasks/9999/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:58723/api/tasks/9999/integration-job)"
 handoff_signal_retry_count: 2
@@ -236,3 +236,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T12:35:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T12:40:42Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T12:41:34Z · body
+- 2026-11-01T12:44:11Z · handoff_deferred: 1 queued message(s) must be read before review
