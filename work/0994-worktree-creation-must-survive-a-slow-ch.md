@@ -135,3 +135,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T12:20:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-01T12:21:15Z · body
 - 2026-11-01T12:23:05Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T12:23:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
