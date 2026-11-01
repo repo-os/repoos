@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-01T19:38:25Z"
-review_passes: 1
 id: 1002
 title: Record and report per-test timings in check history
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, cli, web]
 assigned_to: ai
@@ -13,6 +11,10 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
+updated_at: "2026-11-01T19:38:26Z"
+review_rounds: 1
+routing_switches: 1
+review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
@@ -100,4 +102,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T18:38:24Z · body
 - 2026-11-01T19:37:17Z · status active→review
 - 2026-11-01T19:38:24Z · note: review pass 1: needs some work
-
+- 2026-11-01T19:38:26Z · status review→active
