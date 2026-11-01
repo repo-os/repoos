@@ -3,9 +3,6 @@ id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "crash recovery could not start the engineer: Could not create the task worktree: not a git repository. The task stayed active with its worktree intact."
 priority: p1
 area: core
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-11-01T07:01:01Z"
+updated_at: "2026-11-01T07:33:28Z"
 handoff_signal_retry_count: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T00:45:52.761Z: repoos check failed: tests — }"
@@ -87,3 +84,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T06:26:37Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-01T06:26:37Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-01T06:53:34Z · engineer crash recovery: start failed — Could not create the task worktree: not a git repository
+- 2026-11-01T07:33:28Z · needs_input
