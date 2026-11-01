@@ -297,4 +297,85 @@ describe("review pass selection and identity (#1003)", () => {
     expect(wrapper.find(".review-card").text()).toContain("Older review details.");
     expect(wrapper.find(".review-pass-freshness").classes()).toContain("is-old");
   });
+
+  it("ignores an older pass response after a newer selection", async () => {
+    const latest = {
+      id: "0001",
+      at: "2026-11-02T10:00:00.000Z",
+      agent: "reviewer",
+      cli: "codex",
+      model: "gpt-5",
+      branch: "feat/landable",
+      state: "ok",
+      markdown: "## Verdict\ngood to go.\n\nLatest selection details.\n",
+    };
+    const older = {
+      ...latest,
+      at: "2026-11-01T10:00:00.000Z",
+      markdown: "## Verdict\ngood to go.\n\nOlder selection details.\n",
+    };
+    const wrapper = await mountDrawer(
+      setup(),
+      reviewTask(),
+      {
+        ok: true,
+        taskId: "0001",
+        landable: false,
+        checks: [],
+        summary: { pass: 0, warn: 0, fail: 0 },
+      },
+      {
+        ok: true,
+        running: false,
+        enabled: true,
+        review: latest,
+        history: [
+          {
+            pass: 2,
+            at: latest.at,
+            state: "ok",
+            verdict: "good to go",
+            agent: "reviewer",
+            cli: "codex",
+            model: "gpt-5",
+          },
+          {
+            pass: 1,
+            at: older.at,
+            state: "ok",
+            verdict: "good to go",
+            agent: "reviewer",
+            cli: "codex",
+            model: "gpt-5",
+          },
+        ],
+        lines: [],
+      },
+    );
+
+    let resolveOlder!: (response: {
+      ok: boolean;
+      status: number;
+      json: () => Promise<unknown>;
+    }) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string) => {
+        const pass = Number(url.match(/\/review\/passes\/(\d+)/)?.[1]);
+        if (pass === 1) return new Promise((resolve) => (resolveOlder = resolve));
+        return Promise.resolve(json({ ok: true, review: latest }));
+      }),
+    );
+
+    const rows = wrapper.findAll(".review-history-row");
+    await rows[1]!.trigger("click");
+    await rows[0]!.trigger("click");
+    await flush();
+    expect(wrapper.find(".review-card").text()).toContain("Latest selection details.");
+
+    resolveOlder(json({ ok: true, review: older }));
+    await flush();
+    expect(wrapper.find(".review-card").text()).toContain("Latest selection details.");
+    expect(wrapper.find(".review-card").text()).not.toContain("Older selection details.");
+  });
 });

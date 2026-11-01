@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, onBeforeUnmount, watch } from "vue";
+import { computed, ref, onMounted, onUnmounted, onBeforeUnmount, watch, nextTick } from "vue";
 import type { Task } from "../types";
 import { FileText, User } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
@@ -142,7 +142,7 @@ function clearAgentPreviewDismiss(): void {
   if (agentPreviewDismissTimer) clearTimeout(agentPreviewDismissTimer);
   agentPreviewDismissTimer = null;
 }
-function showAgentPreview(event: FocusEvent | MouseEvent): void {
+async function showAgentPreview(event: FocusEvent | MouseEvent): Promise<void> {
   clearAgentPreviewDismiss();
   const button = event.currentTarget;
   if (!(button instanceof HTMLElement)) return;
@@ -150,15 +150,21 @@ function showAgentPreview(event: FocusEvent | MouseEvent): void {
   const margin = 12;
   const width = Math.min(360, Math.max(220, window.innerWidth - margin * 2));
   const left = Math.max(margin, Math.min(rect.right - width, window.innerWidth - width - margin));
-  const estimatedHeight = 160;
-  const above = rect.top >= estimatedHeight + margin;
   agentPreviewStyle.value = {
     left: `${left}px`,
-    top: `${above ? rect.top - 8 : rect.bottom + 8}px`,
-    transform: above ? "translateY(-100%)" : "none",
+    top: `${Math.max(margin, Math.min(rect.bottom + 8, window.innerHeight - margin))}px`,
+    transform: "none",
     width: `${width}px`,
   };
   agentPreviewOpen.value = true;
+  await nextTick();
+  const preview = document.getElementById(agentPreviewId);
+  if (!preview || !agentPreviewOpen.value) return;
+  const height = Math.min(preview.getBoundingClientRect().height, window.innerHeight - margin * 2);
+  const above = rect.top >= height + margin + 8;
+  const preferredTop = above ? rect.top - height - 8 : rect.bottom + 8;
+  const top = Math.max(margin, Math.min(preferredTop, window.innerHeight - height - margin));
+  agentPreviewStyle.value = { ...agentPreviewStyle.value, top: `${top}px` };
 }
 function scheduleAgentPreviewDismiss(): void {
   clearAgentPreviewDismiss();
