@@ -25,7 +25,15 @@ function checkSnapshot(run: TaskCheckRun): ActiveTaskCheckSnapshot {
     running: true,
     startedAt: run.startedAt,
     lastProgressAt: run.lastProgressAt ?? run.startedAt,
-    progressLabel: checkProgressLabel(run),
+    progressLabel: checkProgressLabel({
+      stepsDone: run.stepsDone ?? null,
+      stepsTotal: run.stepsTotal ?? null,
+      currentStep: run.currentStep ?? null,
+      stepName: run.stepName ?? null,
+      testsDone: run.testsDone ?? null,
+      testsTotal: run.testsTotal ?? null,
+      testsPass: run.testsPass ?? null,
+    }),
     scopeLabel,
     machine: run.machine ?? null,
   };
