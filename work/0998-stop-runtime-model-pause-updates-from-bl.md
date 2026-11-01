@@ -3,16 +3,19 @@ id: "0998"
 title: Stop runtime model pause updates from blocking close-out as dirty config
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p1
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
 created_at: "2026-11-01T09:46:53Z"
-updated_at: "2026-11-01T10:36:16Z"
+updated_at: "2026-11-01T10:41:47Z"
 handoff_signal_retry_count: 1
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T10:35:43.230Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T10:35:43.230Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T10:38:18.097Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Nick repeatedly sees FAIL Main clean because repoos.toml is dirty, usually only from model allowlist pause/quota bookkeeping. During the 2026-11-01 recovery, automatic pausedModels.pausedUntil updates dirtied main repeatedly while #0993 was trying to close out. evaluateMainCleanCheck in src/core/landable.ts blocks any dirty file; the /done enqueue guard in src/server/routes/tasks.ts rejects before the publication-stage automatic config checkpoint can help. Runtime updates therefore force human commits and make an otherwise healthy pipeline look broken.
@@ -48,3 +51,5 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T10:36:13Z · engineer crash recovery: resuming cursor + grok-4.7-low (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
 - 2026-11-01T10:36:16Z · needs_input
 - 2026-11-01T10:36:16Z · message_delivered: 1 message(s)
+- 2026-11-01T10:38:18Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-01T10:41:47Z · engineer crash recovery: resuming cursor + grok-4.7-low (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
