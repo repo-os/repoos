@@ -790,7 +790,12 @@ candidate in the validate phase and into live `main` at publish), so a *conflict
 in any of them resolves to main's copy instead of failing the close-out. And the
 publish-time dirty-main guard treats a dirty file under any of the five (plus
 `repoos.toml`) as routine, server-written churn it may auto-checkpoint — a dirty
-file anywhere else still fails closed.
+file anywhere else still fails closed. Automatic quota/usage pauses are not
+part of that `repoos.toml` checkpoint (#0998): they are stored in the gitignored
+`.repoos/budget-runtime.json`. A `repoos.toml` whose only uncommitted change is
+those automatic pause fields is omitted from the dirty-main list, so it is
+neither a close-out blocker nor checkpoint-committed. A human settings edit,
+a human pause, an unknown key, or a parse failure still blocks.
 
 Before that classification, publish asks `git merge-tree` which of main's dirty
 paths the merge would actually overwrite (#0820). Only those are stashed — a

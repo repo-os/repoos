@@ -831,6 +831,34 @@ describe("main dirty paths for close-out (#0713)", () => {
       clean();
     }
   });
+
+  it("omits repoos.toml when the only change is an automatic usage pause (#0998)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const head = `maxActiveTasks = 2\n\n[[budget.allowlist]]\ncli = "opencode"\nmodels = ["go"]\n`;
+      writeFileSync(join(root, "repoos.toml"), head);
+      git(root, ["add", "repoos.toml"]);
+      git(root, ["commit", "-m", "config"]);
+
+      writeFileSync(
+        join(root, "repoos.toml"),
+        `${head}pausedModels = [{ model = "go", pausedReason = "out of usage since 10:30" }]\n`,
+      );
+      expect(await mainDirtyFilesForCloseOut(root)).toEqual([]);
+
+      writeFileSync(join(root, "repoos.toml"), `maxActiveTasks = 4\n\n${head}`);
+      expect(await mainDirtyFilesForCloseOut(root)).toEqual(["repoos.toml"]);
+
+      writeFileSync(join(root, "repoos.toml"), "[[budget.allowlist\n");
+      expect(await mainDirtyFilesForCloseOut(root)).toEqual(["repoos.toml"]);
+
+      writeFileSync(join(root, "src-wip.ts"), "export {}\n");
+      writeFileSync(join(root, "repoos.toml"), head);
+      expect(await mainDirtyFilesForCloseOut(root)).toEqual(["src-wip.ts"]);
+    } finally {
+      clean();
+    }
+  });
 });
 
 describe("dirtyFiles / commitDirtyFiles (0204)", () => {

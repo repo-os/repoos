@@ -65,6 +65,7 @@ import {
   type NativeLaunchMode,
 } from "./types.js";
 import { agentModelAllowRows } from "./budget-allowlist.js";
+import { hydrateAllowlistRuntime } from "./budget-runtime-state.js";
 import {
   DEFAULT_ENGINEER_CRASH_FAILOVER_THRESHOLD,
   DEFAULT_ENGINEER_CRASH_FAILOVER_WINDOW_MS,
@@ -2355,7 +2356,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // [[budget.allowlist]] (#0764) — the agent-driver allowlist. Malformed rows
     // are dropped with a warning rather than failing config load (the safe
     // behaviour is the unrestricted default, so a typo never blocks the server).
-    const budgetAllowlist = agentModelAllowRows(parsed["budget.allowlist"]);
+    const budgetAllowlist = hydrateAllowlistRuntime(
+      root,
+      agentModelAllowRows(parsed["budget.allowlist"]),
+    );
     if (budgetAllowlist.length) cfg.budget = { allowlist: budgetAllowlist };
     // [model_routing] (#0791) — adaptive agent/model routing. Default off; a
     // malformed value is dropped with a warning and never blocks server boot.
