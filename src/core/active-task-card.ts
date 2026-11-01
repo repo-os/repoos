@@ -30,6 +30,7 @@ export interface ActiveTaskRemoteSnapshot {
     stage: string | null;
     startedAt: string;
     elapsedMs: number;
+    lastProgressAt: string;
   } | null;
   queue: {
     host: string;
@@ -105,9 +106,8 @@ function remoteRunHeartbeating(
   nowMs: number,
   stallMs: number,
 ): boolean {
-  const idle = msSince(run.startedAt, nowMs);
-  if (run.stage && idle !== null && idle < stallMs) return true;
-  return run.elapsedMs < stallMs;
+  const idle = msSince(run.lastProgressAt, nowMs);
+  return idle !== null && idle < stallMs;
 }
 
 /**
@@ -158,6 +158,16 @@ export function resolveActiveEngineerCardHint(input: ActiveTaskCardInput): Activ
       label: `remote ${remote.run.kind} · ${stage} · ${elapsed}`,
       title: `Remote validation on ${remote.run.host} — ${stage} for ${elapsed}. Agent output may be quiet while waiting.`,
       cls: "tc-moving",
+      blocksAgentInterrupt: true,
+    };
+  }
+  if (remote?.run) {
+    const idle = msSince(remote.run.lastProgressAt, input.nowMs);
+    const silent = formatCardDuration(idle ?? stallMs);
+    return {
+      label: `remote validation stalled · ${silent}`,
+      title: `Remote validation on ${remote.run.host} (${remote.run.kind}, ${remote.run.stage ?? "running"}) has reported no progress for ${silent}. Check the Runners page and confirm the run has ended through RepoOS before restarting.`,
+      cls: "tc-stuck",
       blocksAgentInterrupt: true,
     };
   }
