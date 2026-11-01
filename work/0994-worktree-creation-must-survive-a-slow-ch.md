@@ -118,3 +118,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-11-01T10:37:44Z · needs_input
 - 2026-11-01T11:05:57Z · watchdog: restarting engineer after 28m with no live process
 - 2026-11-01T11:15:41Z · message_queued at 2026-11-01T11:15:41.605Z
+- 2026-11-01T11:15:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
