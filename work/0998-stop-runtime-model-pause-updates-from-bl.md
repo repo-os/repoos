@@ -8,8 +8,9 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stop-runtime-model-pause-updates-from-bl
+model_override: composer-2.5
 created_at: "2026-11-01T09:46:53Z"
-updated_at: "2026-11-01T14:08:11Z"
+updated_at: "2026-11-01T14:13:14Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T13:59:35.581Z: repoos check failed: tests — dir: undefined,"
 handoff_signal_retry_count: 1
@@ -67,3 +68,4 @@ Use RepoOS workflow and a dedicated task worktree. This is lifecycle/config pers
 - 2026-11-01T14:05:17Z · message_queued at 2026-11-01T14:05:17.003Z
 - 2026-11-01T14:05:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-01T14:08:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T14:13:14Z · model_override
