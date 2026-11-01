@@ -71,22 +71,26 @@ describe("vitest progress reporter", () => {
     expect(caseLines[0]).toContain('"result":"passed"');
   });
 
-  it("records failed and skipped Vitest cases with stable outcomes", () => {
+  it("records failed, skipped, pending, and todo Vitest cases with stable outcomes", () => {
     const reporter = new RepoOSProgressReporter();
     const makeCase = (id: string, state: string) => ({
       id,
       fullName: `suite > ${id}`,
       module: { moduleId: `${process.cwd()}/cases.test.ts` },
       result: () => ({ state }),
-      diagnostic: () => ({ duration: state === "skip" ? undefined : 7 }),
+      diagnostic: () => ({ duration: ["skip", "pending", "todo"].includes(state) ? undefined : 7 }),
     });
     reporter.onTestCaseResult(makeCase("failed", "fail"));
     reporter.onTestCaseResult(makeCase("skipped", "skip"));
+    reporter.onTestCaseResult(makeCase("pending", "pending"));
+    reporter.onTestCaseResult(makeCase("todo", "todo"));
     const cases = lines
       .filter((line) => line.startsWith("::repoos-test-case::"))
       .map((line) => JSON.parse(line.slice("::repoos-test-case::".length)));
     expect(cases.map((item) => [item.result, item.durationMs])).toEqual([
       ["failed", 7],
+      ["skipped", 0],
+      ["skipped", 0],
       ["skipped", 0],
     ]);
   });

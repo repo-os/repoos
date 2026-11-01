@@ -33,16 +33,17 @@ export default class RepoOSProgressReporter {
 
   onTestCaseResult(testCase) {
     const result = testCase.result?.();
-    if (!result || result.state === "pending" || result.state === "todo") return;
+    if (!result) return;
     const diagnostic = testCase.diagnostic?.();
-    const durationMs = diagnostic?.duration ?? (result.state === "skip" ? 0 : undefined);
+    const isSkipped = ["skip", "skipped", "pending", "todo"].includes(result.state);
+    const durationMs = diagnostic?.duration ?? (isSkipped ? 0 : undefined);
     if (!Number.isFinite(durationMs) || durationMs < 0) return;
     const outcome =
       result.state === "pass" || result.state === "passed"
         ? "passed"
         : result.state === "fail" || result.state === "failed"
           ? "failed"
-          : result.state === "skip" || result.state === "skipped"
+          : isSkipped
             ? "skipped"
             : null;
     if (!outcome) return;
