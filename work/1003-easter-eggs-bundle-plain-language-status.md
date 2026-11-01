@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T15:43:22Z"
+updated_at: "2026-11-01T15:43:23Z"
 ---
 ## Items
 - [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
@@ -67,6 +67,7 @@ At desktop widths, arrange the four panels in a 2×2 grid. Give all four equal m
 - Test: Mission Control lays out all four panels in a 2×2 grid with equal heights at desktop widths; responsive narrow layouts remain readable.
 
 ### Notes for AI
+The four panels are Feature releases, Live activity, Needs a decision, and Needs your attention. Preserve their existing content, refresh behavior, and independent scrolling while changing the grid and sizing.
 
 ## Screenshots
 
@@ -96,3 +97,5 @@ At desktop widths, arrange the four panels in a 2×2 grid. Give all four equal m
 - 2026-11-01T15:43:22Z · note: bundle edit E3
 - 2026-11-01T15:43:22Z · body: E3 · Mission Control panels use a balanced 2×2 layout (added 1)
 - 2026-11-01T15:43:22Z · note: bundle edit E3
+- 2026-11-01T15:43:23Z · body: E3 · Mission Control panels use a balanced 2×2 layout (added 1)
+- 2026-11-01T15:43:23Z · note: bundle edit E3
