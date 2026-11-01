@@ -12,7 +12,7 @@ branch: feat/remote-changed-test-selection-must-retai
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T14:19:48Z"
-updated_at: "2026-11-01T17:01:22Z"
+updated_at: "2026-11-01T17:03:38Z"
 last_close_out_gate_ms: 279838
 last_close_out_gate_at: "2026-11-01T17:01:22.335Z"
 review_passes: 1
@@ -57,4 +57,4 @@ Inspect scripts/select-test-files.mjs, scripts/run-tests.mjs, src/server/remote-
 - 2026-11-01T16:49:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-01T16:50:18Z · note: review pass 1: good to go
 - 2026-11-01T17:01:22Z · close-out gate completed in 280s
-
+- 2026-11-01T17:03:38Z · status done→done, release:success
