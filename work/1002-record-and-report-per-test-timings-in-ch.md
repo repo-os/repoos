@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-01T21:07:44Z"
+review_passes: 3
 id: 1002
 title: Record and report per-test timings in check history
 type: feature
@@ -11,9 +13,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T21:07:44Z"
 last_check_failure: "repoos check at 2026-11-01T20:29:53.500Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
-review_passes: 2
 review_rounds: 1
 routing_switches: 1
 handoff_signal_retry_count: 1
@@ -122,3 +122,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T20:42:42Z · body
 - 2026-11-01T21:06:59Z · status active→review
 - 2026-11-01T21:07:44Z · note: review pass 3: needs some work
+
