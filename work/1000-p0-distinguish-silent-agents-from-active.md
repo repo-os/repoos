@@ -3,16 +3,13 @@ id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Missing or malformed check heartbeats are shown as cancellable stalls, but the cancel endpoint rejects them."
 priority: p0
 area: [web, server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T22:55:41Z"
+updated_at: "2026-11-01T22:55:47Z"
 review_passes: 5
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 2fb9cde64350a418ce539aa739486dbb774b91c7
@@ -169,3 +166,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T22:47:30Z · needs_input
 - 2026-11-01T22:55:39Z · status review→active
 - 2026-11-01T22:55:39Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-01T22:55:47Z · needs_input
