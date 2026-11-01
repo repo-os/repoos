@@ -105,9 +105,10 @@ function run(
   timeoutMs: number,
   env?: NodeJS.ProcessEnv,
   onChunk?: (text: string) => void,
+  registerCancel?: (cancel: () => Promise<boolean>) => void,
 ): Promise<RunResult> {
   return new Promise((finish) => {
-    const child = spawn(cmd, args, { cwd, env: env ?? process.env });
+    const child = spawn(cmd, args, { cwd, env: env ?? process.env, detached: process.platform !== "win32" });
     let stdout = "";
     let stderr = "";
     let settled = false;
@@ -130,6 +131,25 @@ function run(
     });
     child.on("error", (error: NodeJS.ErrnoException) => done(null, error));
     child.on("close", (code) => done(code));
+    registerCancel?.(() => new Promise<boolean>((resolve) => {
+      if (settled || !child.pid) return resolve(settled);
+      try {
+        if (process.platform === "win32") child.kill("SIGTERM");
+        else process.kill(-child.pid, "SIGTERM");
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ESRCH") return resolve(false);
+      }
+      const verify = setTimeout(() => {
+        if (settled) return resolve(true);
+        try {
+          if (process.platform === "win32") child.kill("SIGKILL");
+          else process.kill(-child.pid!, "SIGKILL");
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ESRCH") return resolve(false);
+        }
+      }, 1500);
+      child.once("close", () => { clearTimeout(verify); resolve(true); });
+    }));
     timer = setTimeout(() => child.kill("SIGKILL"), timeoutMs);
   });
 }
@@ -208,6 +228,7 @@ async function runCheck(
    * Absent → resolved here (legacy behavior).
    */
   changedBase?: string | null,
+  registerCancel?: (cancel: () => Promise<boolean>) => void,
 ): Promise<RunResult> {
   const checkArgs = spawnedRepoosCheckArgs(config, remoteGateOutcome, "pre-review");
   // Prefer the assigned worktree's compiled CLI. A globally linked `repoos`
@@ -260,6 +281,7 @@ async function runCheck(
       LOCAL_CHECK_TIMEOUT_MS,
       env,
       onChunk,
+      registerCancel,
     );
     if (last.status === 0) return last;
     if (!last.error || (last.error.code !== "ENOENT" && last.error.code !== "EACCES")) return last;
@@ -714,6 +736,7 @@ async function runHandoffFinalization(
       remoteOutcome,
       task.id,
       changedBase,
+      checkHandle ? (cancel) => checkHandle.setCancel(cancel) : undefined,
     );
     checkHandle?.done(check.status);
     const checkOutput = `${check.stdout}\n${check.stderr}`;

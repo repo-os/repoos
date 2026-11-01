@@ -62,6 +62,25 @@ describe("resolveActiveEngineerCardHint (#0994 local check)", () => {
     expect(hint.cls).toBe("tc-stuck");
     expect(hint.blocksAgentInterrupt).toBe(true);
   });
+
+  it.each([null, "not-a-timestamp"]) (
+    "fails closed as stalled when the running check heartbeat is %s",
+    (lastProgressAt) => {
+      const hint = resolveActiveEngineerCardHint({
+        nowMs: NOW,
+        agentSilentMs: 9 * 60 * 1000,
+        check: check({ lastProgressAt }),
+        remote: null,
+        localQueueLabel: null,
+        localQueueTitle: null,
+        remotePoolQueueLabel: null,
+        remotePoolQueueTitle: null,
+        busyChild: null,
+      });
+      expect(hint.label).toMatch(/^check stalled/);
+      expect(hint.cls).toBe("tc-stuck");
+    },
+  );
 });
 
 describe("resolveActiveEngineerCardHint (#0998 remote wait)", () => {

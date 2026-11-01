@@ -108,6 +108,17 @@ function run(
 }
 
 describe("TaskCheckManager durable cancelled runs (#0564)", () => {
+  it("does not report cancellation as verified until the registered process exits", async () => {
+    const { m } = manager();
+    const handle = m.start("1000", "handoff-finalize", () => {});
+    handle.setCancel(async () => {
+      handle.done(null);
+      return true;
+    });
+    await expect(m.cancel("1000")).resolves.toMatchObject({ ok: true });
+    expect(m.getRuns("1000")[0]).toMatchObject({ running: false, code: null });
+  });
+
   it("does NOT record a durable row when the child exited on its own", () => {
     const { m, store } = manager();
     const h = run(m);

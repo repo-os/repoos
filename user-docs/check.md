@@ -463,6 +463,11 @@ A waiting check says so, in three places:
   `checking · …` with step/test progress and keeps **Pause work** disabled until
   the gate finishes — agent output can go quiet without tripping `stuck · silent`
   (#1000).
+- A check with no valid progress heartbeat for three minutes is shown as
+  `check stalled`. The card offers **Cancel stalled check** after an explicit
+  confirmation; RepoOS signals the registered process group, escalates to
+  `SIGKILL` if needed, and enables pause/restart only after process exit is
+  observed. A missing or malformed heartbeat is treated as stalled evidence.
 - **The run record** stores the wait (`waited: { reason, ms }`) alongside the
   steps, so a finished run still says "this one sat 26 minutes before it
   started".
@@ -470,7 +475,7 @@ A waiting check says so, in three places:
 Queue markers are a separate, non-blocking waiting state, with the reason and
 start time. Engineers keep waiting and hand off after the check passes; a
 normal queue wait does not set `needs_input`. Only an abnormal wait requests
-input: a dead slot holder, a holder without a heartbeat for **30 minutes**, or
+  input: a dead slot holder, a holder without a heartbeat for **30 minutes**, or
 a wait exceeding the handoff deadline. The flag and waiting badge clear when
 the gate acquires its slot. Pressure waits follow the configured pressure
 guard and only escalate when they exceed the handoff deadline.
