@@ -118,6 +118,31 @@ describe("check-run store", () => {
     expect(listed.hasMore).toBe(true);
   });
 
+  it("clears provisional case rows when the final run update has no cases (#1002)", () => {
+    const { s } = store();
+    const id = s.record(
+      row({
+        testCaseTimings: [
+          {
+            file: "provisional.test.ts",
+            name: "suite > retried case",
+            caseId: "case-1",
+            retry: 0,
+            durationMs: 25,
+            result: "passed",
+          },
+        ],
+      }),
+    );
+    expect(id).not.toBeNull();
+    expect(s.testCaseCountForRun(id!)).toBe(1);
+
+    s.update(id!, row({ testCaseTimings: [] }));
+
+    expect(s.testCaseCountForRun(id!)).toBe(0);
+    expect(s.listSlowTestCases({ runId: id! }).cases).toEqual([]);
+  });
+
   it("records and lists rows newest-first", () => {
     const { s } = store();
     s.record(row({ taskId: "0501", startedAt: "2026-09-28T09:00:00Z" }));
