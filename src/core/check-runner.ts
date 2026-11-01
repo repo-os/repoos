@@ -163,7 +163,11 @@ export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
     });
     child.on("close", (code, signal) => {
       void (async () => {
-        if (child.pid && process.platform !== "win32" && (termination || processGroupAlive(child.pid))) {
+        if (
+          child.pid &&
+          process.platform !== "win32" &&
+          (termination || processGroupAlive(child.pid))
+        ) {
           termination ??= terminateProcessGroupAndWait(child.pid);
           try {
             await termination;

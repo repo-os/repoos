@@ -164,23 +164,21 @@ export function runHandoffCommand(
       closeResolve();
       void finalize(code);
     });
-    registerCancel?.(
-      async () => {
-        if (settled) return true;
-        if (!child.pid) return settled;
-        cancellationRequested = true;
-        if (process.platform === "win32") {
-          child.kill("SIGTERM");
-          await childClose;
-          return settled;
-        }
-        termination ??= terminateProcessGroupAndWait(child.pid);
-        await termination;
-        if (!childClosed) await childClose;
-        await finalize(closeCode);
+    registerCancel?.(async () => {
+      if (settled) return true;
+      if (!child.pid) return settled;
+      cancellationRequested = true;
+      if (process.platform === "win32") {
+        child.kill("SIGTERM");
+        await childClose;
         return settled;
-      },
-    );
+      }
+      termination ??= terminateProcessGroupAndWait(child.pid);
+      await termination;
+      if (!childClosed) await childClose;
+      await finalize(closeCode);
+      return settled;
+    });
     timer = setTimeout(() => {
       timedOut = true;
       if (!child.pid) return;
