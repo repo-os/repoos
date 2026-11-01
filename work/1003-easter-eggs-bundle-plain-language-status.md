@@ -38,8 +38,7 @@ Keep internal identifiers and code comments as appropriate; this item concerns t
 ## E2 · Replace “landed” in user-facing merge messages
 
 ### Problem
-
-“Landed” is ambiguous in user-facing notifications and summaries. Users should be told plainly where the task's changes went.
+User-facing copy uses “landed,” “landable,” and related forms to describe merge success or eligibility. These terms are jargon and do not say plainly whether work is already in main or can be merged there.
 
 ### Desired UX
 
@@ -65,3 +64,5 @@ Limit the change to user-facing text. Internal code comments and technical descr
 - 2026-11-01T15:37:17Z · created · njachowski@gmail.com
 - 2026-11-01T15:37:19Z · screenshots
 - 2026-11-01T15:39:05Z · body: Items (added 1, removed 2)
+- 2026-11-01T15:39:05Z · body: E2 · Replace “landed” in user-facing merge messages (added 1, removed 1)
+- 2026-11-01T15:39:05Z · note: bundle edit E2
