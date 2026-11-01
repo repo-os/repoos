@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
@@ -12,7 +11,8 @@ branch: feat/easter-eggs-bundle-card-integrating-text
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
-updated_at: "2026-11-01T04:42:36Z"
+updated_at: "2026-11-01T04:44:26Z"
+handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
 ## Items
@@ -96,18 +96,16 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 ```json
 [
 {
-"label": "Board card integrating line clamped to three lines",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-hint--progress-clamp",
-"state": "closeOut:uploading"
+  "label": "Integrating progress clamped to three lines",
+  "target": "default",
+  "route": "/work?shotState=closeOut:uploading",
+  "highlight": ".tc-hint--progress-clamp"
 },
 {
-"label": "Status details shows the full integrating line",
-"target": "default",
-"route": "/work?task=9999&tab=debug",
-"highlight": ".debug-status-text",
-"state": "closeOut:uploading"
+  "label": "Full close-out progress in Status details",
+  "target": "default",
+  "route": "/work?task=9999&tab=debug&shotState=closeOut:uploading",
+  "highlight": ".debug-status-detail"
 }
 ]
 ```
@@ -157,4 +155,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T03:10:03Z · note: phantom runner detected: no live process, restarted
 - 2026-11-01T04:42:35Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-01T04:42:36Z · message_delivered: 2 message(s)
-
+- 2026-11-01T04:44:26Z · body
