@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T23:04:14.181Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 0a907db8 to a188b7db) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
@@ -15,7 +17,6 @@ last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check �
 last_handoff_failure_sha: 2fb9cde64350a418ce539aa739486dbb774b91c7
 review_rounds: 2
 routing_switches: 1
-last_check_failure: "repoos check at 2026-11-01T19:50:06.862Z: repoos check failed: ◆ Check plan"
 dev_error_count: 5
 engineer_failover: "{\"cli\":\"codex\",\"model\":\"gpt-6-luna\"}"
 ---
@@ -173,3 +174,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T23:00:47Z · CTO nudge: held — remote validation is running
 - 2026-11-01T23:01:20Z · body
 - 2026-11-01T23:04:13Z · message_queued at 2026-11-01T23:04:13.874Z
+
