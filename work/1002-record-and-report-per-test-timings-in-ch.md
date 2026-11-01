@@ -14,7 +14,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-01T23:05:42Z"
+updated_at: "2026-11-01T23:05:44Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-01T21:27:03.891Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 review_rounds: 2
