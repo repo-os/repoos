@@ -16,7 +16,6 @@ check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T10:34:21.808Z: repoos check failed: ui verification: capture of /work?shotState=closeOut:uploading failed — screenshot: Timeout 30000ms exceeded."
 handoff_signal_retry_count: 2
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"grok-4.7-low\",\"at\":\"2026-11-01T10:37:44.567Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
