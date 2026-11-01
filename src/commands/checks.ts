@@ -82,7 +82,9 @@ function cmdChecksTimings(args: string[]): void {
       flags.runId != null
         ? `run #${flags.runId}`
         : `last ${result.recentRuns ?? flags.recentRuns} run(s)`;
-    console.log(`Slowest test cases · ${scope} · limit ${result.limit} offset ${result.offset}`);
+    console.log(
+      `Slowest test cases (including beforeEach/afterEach hooks) · ${scope} · limit ${result.limit} offset ${result.offset}`,
+    );
     if (!result.cases.length) {
       console.log("  (no recorded cases — run repoos check after upgrading)");
       return;

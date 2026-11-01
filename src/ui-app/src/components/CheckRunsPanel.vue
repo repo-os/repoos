@@ -477,7 +477,11 @@ function outcomeLabel(r: CheckRunRow): string {
                   class="cr-test-timings"
                   aria-label="Slow test cases"
                 >
-                  <h4>Slow test cases</h4>
+                  <h4>Slow test cases · includes per-test hooks</h4>
+                  <p class="cr-count">
+                    Case duration includes its beforeEach and afterEach hooks. File totals also
+                    include suite-level hooks and other module work.
+                  </p>
                   <table class="cr-table">
                     <thead>
                       <tr>
