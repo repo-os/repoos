@@ -20,6 +20,7 @@ import { useUiStore } from "../src/stores/ui";
 import { integrationMedianChip } from "../src/lib/integration-pipeline-ui";
 import { shotProblems } from "../src/lib/shot-rows";
 import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
+import { activeEngineerCardHint } from "../src/lib/active-task-card";
 
 describe("shot preview board fixtures (#0743)", () => {
   it.each(["card:held", "drawer:held"] as const)("seeds an intentional hold for %s", (fixture) => {
@@ -232,6 +233,16 @@ describe("shot preview board fixtures (#0743)", () => {
       lastProgressAt: expect.any(String),
     });
     expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+    const hint = activeEngineerCardHint({
+      taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+      nowMs: Date.now(),
+      lastActivityAt: repo.agentActivityAt[SHOT_PREVIEW_FIXTURE_TASK_ID] ?? null,
+      taskChecks: repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID],
+      remoteActivity: null,
+      resourceQueueMarkers: repo.resourceQueueMarkers,
+    });
+    expect(hint.label).toContain("checking");
+    expect(hint.label).toContain("109/645");
   });
 
   it("seeds an active coding run for board card indicator shots (#0787)", () => {

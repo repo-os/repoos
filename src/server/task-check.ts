@@ -140,6 +140,7 @@ export function parseCheckProgress(output: string): CheckProgressRecord | null {
 export interface TaskCheckHandle {
   readonly id: string;
   chunk(text: string): void;
+  setCancel(cancel: () => Promise<boolean>): void;
   done(code: number | null): void;
 }
 
@@ -148,6 +149,7 @@ export class TaskCheckManager {
   private seq = 0;
   private repoRoot: string | null;
   private cacheDir: string;
+  private cancelByRun = new Map<string, () => Promise<boolean>>();
 
   /**
    * `repoRoot` enables durable-history recording (#0564) for the one outcome
@@ -218,6 +220,7 @@ export class TaskCheckManager {
 
     return {
       id,
+      setCancel: (cancel) => this.cancelByRun.set(id, cancel),
       chunk: (text: string) => {
         const clean = stripAnsi(text);
         run.output += clean;
@@ -243,6 +246,7 @@ export class TaskCheckManager {
         onEvent(run, "output", clean);
       },
       done: (code: number | null) => {
+        this.cancelByRun.delete(id);
         run.running = false;
         run.finishedAt = new Date().toISOString();
         run.durationMs = Math.max(0, Date.parse(run.finishedAt) - Date.parse(run.startedAt));
@@ -273,6 +277,19 @@ export class TaskCheckManager {
         }
       },
     };
+  }
+
+  /** Cancel only the live process registered for this check and await its exit. */
+  async cancel(taskId: string): Promise<{ ok: boolean; detail: string }> {
+    const run = [...(this.runsByTask.get(taskId) ?? [])].reverse().find((item) => item.running);
+    if (!run) return { ok: false, detail: `No running check is registered for #${taskId}` };
+    const cancel = this.cancelByRun.get(run.id);
+    if (!cancel) return { ok: false, detail: `The running ${run.kind} check has no safe cancellation handle` };
+    const stopped = await cancel();
+    if (!stopped || run.running) {
+      return { ok: false, detail: `RepoOS could not verify that the ${run.kind} check has stopped` };
+    }
+    return { ok: true, detail: `The ${run.kind} check stopped and was recorded as cancelled` };
   }
 
   /** Past + in-progress runs for a task, oldest first. */

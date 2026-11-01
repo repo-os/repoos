@@ -490,11 +490,31 @@ const agentInterruptBlocked = computed(() => {
   // starting/resuming remains blocked until the remote state is reconciled.
   return activeEngineerCardBlocksInterrupt(evidence) && !mismatchOnly;
 });
+const stalledCheck = computed(() => {
+  const hint = activeEngineerEvidence.value;
+  return hint.cls === "tc-stuck" && hint.label.startsWith("check stalled");
+});
+const cancelCheckBusy = ref(false);
+async function cancelStalledCheck(): Promise<void> {
+  if (cancelCheckBusy.value || !stalledCheck.value) return;
+  if (!window.confirm(`Cancel the stalled check for task #${props.task.id}? RepoOS will verify it has stopped before allowing a restart.`)) return;
+  cancelCheckBusy.value = true;
+  try {
+    await repo.cancelStalledCheck(props.task.id);
+  } catch (error) {
+    repo.onError(error);
+  } finally {
+    cancelCheckBusy.value = false;
+  }
+}
 
 const suppressAgentStuckHint = computed(
   () =>
     activeEngineerCardBlocksInterrupt(activeEngineerEvidence.value) &&
-    activeEngineerEvidence.value.cls !== "tc-stuck",
+    (activeEngineerEvidence.value.cls !== "tc-stuck" ||
+      activeEngineerEvidence.value.label.startsWith("check stalled") ||
+      activeEngineerEvidence.value.label.startsWith("remote validation stalled") ||
+      activeEngineerEvidence.value.label.includes("telemetry mismatch")),
 );
 
 /** An accepted start/send is waiting for a free maxConcurrentAgents slot —
@@ -1421,7 +1441,7 @@ async function openDebuggerFromError(): Promise<void> {
     </transition>
 
     <div
-      v-if="action || cardDoneError || staleEvidenceOnly"
+      v-if="action || cardDoneError || staleEvidenceOnly || stalledCheck"
       data-test-id="task-card-action-footer"
       class="tc-foot tc-actions tc-card-footer !ml-0 w-full"
     >
@@ -1467,6 +1487,17 @@ async function openDebuggerFromError(): Promise<void> {
               ? "Working…"
               : action?.label
         }}
+      </button>
+      <button
+        v-if="stalledCheck"
+        type="button"
+        data-test-id="task-card-cancel-stalled-check"
+        class="tc-card-footer-action flex w-full items-center justify-center gap-2 border-t px-4 py-[9px] font-mono text-xs font-semibold text-[var(--warning)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+        :disabled="cancelCheckBusy || busy"
+        title="Explicitly cancel this stalled check; RepoOS verifies process exit before enabling pause or restart."
+        @click.stop="cancelStalledCheck"
+      >
+        {{ cancelCheckBusy ? "Cancelling check…" : "Cancel stalled check" }}
       </button>
       <div v-if="staleEvidenceOnly" class="w-full border-t border-[var(--border)] p-2">
         <p class="px-2 pb-2 text-center font-mono text-[10px] text-[var(--txt-dim)]">

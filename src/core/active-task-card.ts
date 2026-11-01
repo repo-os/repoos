@@ -89,16 +89,16 @@ function checkHeartbeating(
   stallMs: number,
 ): boolean {
   if (!check.running) return false;
-  const anchor = check.lastProgressAt ?? check.startedAt;
-  const idle = msSince(anchor, nowMs);
+  const idle = msSince(check.lastProgressAt, nowMs);
   return idle !== null && idle < stallMs;
 }
 
 function checkStalled(check: ActiveTaskCheckSnapshot, nowMs: number, stallMs: number): boolean {
   if (!check.running) return false;
-  const anchor = check.lastProgressAt ?? check.startedAt;
-  const idle = msSince(anchor, nowMs);
-  return idle !== null && idle >= stallMs;
+  // A running check without a valid heartbeat cannot establish progress.
+  // Fail closed so it is surfaced as stalled instead of agent silence.
+  const idle = msSince(check.lastProgressAt, nowMs);
+  return idle === null || idle >= stallMs;
 }
 
 function remoteRunHeartbeating(
@@ -191,8 +191,7 @@ export function resolveActiveEngineerCardHint(input: ActiveTaskCardInput): Activ
   }
 
   if (check?.running && checkStalled(check, input.nowMs, stallMs)) {
-    const anchor = check.lastProgressAt ?? check.startedAt;
-    const silent = formatCardDuration(msSince(anchor, input.nowMs) ?? stallMs);
+    const silent = formatCardDuration(msSince(check.lastProgressAt, input.nowMs) ?? stallMs);
     const progress = check.progressLabel ?? "no recent progress";
     return {
       label: `check stalled · ${silent}`,

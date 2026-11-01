@@ -23,6 +23,7 @@ import {
   extractOneShotReportText,
   type PromptResult,
 } from "../agents.js";
+import { DEFAULT_CHECK_STALL_MS } from "../../core/active-task-card.js";
 import { taskHasBlockingCheckOrRemote } from "../active-task-card.js";
 import { resolveRoutedAgent } from "../model-routing-wiring.js";
 import {
@@ -2490,6 +2491,16 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   let existing = index.getTask(id);
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
+  }
+  if (action === "cancel-check") {
+    const run = ctx.taskChecks?.getRuns(id).filter((check) => check.running).at(-1);
+    const lastProgress = run?.lastProgressAt ? Date.parse(run.lastProgressAt) : Number.NaN;
+    if (!run) return json(res, 409, { error: `No running check is registered for #${id}` });
+    if (!Number.isFinite(lastProgress) || Date.now() - lastProgress < DEFAULT_CHECK_STALL_MS) {
+      return json(res, 409, { error: `The check is still progressing; cancellation is available after ${DEFAULT_CHECK_STALL_MS / 60_000} minutes without a valid heartbeat` });
+    }
+    const cancelled = await ctx.taskChecks!.cancel(id);
+    return json(res, cancelled.ok ? 200 : 409, cancelled);
   }
   if (
     existing.assignee === "human" &&

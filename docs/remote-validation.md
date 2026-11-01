@@ -27,6 +27,11 @@ controls:
   A running remote job remains live according to its last output heartbeat,
   independent of total run age; a stale heartbeat is shown as a stalled remote
   validation and keeps restart blocked until RepoOS confirms the run is over.
+  Local task-card checks use the same separation: recent output shows the
+  current step, while an absent, invalid, or three-minute-old heartbeat is
+  shown as stalled. The card's explicit cancellation action is available only
+  for a stalled registered local check and waits for verified process exit
+  before pause or restart can proceed.
   For an unregistered host-lock mismatch, an already-running engineer can be
   paused safely while start/resume remains blocked; inspect the Runners page
   and wait for RepoOS to reconcile the lock before starting another worker.
