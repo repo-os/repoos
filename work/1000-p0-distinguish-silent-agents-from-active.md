@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-01T19:50:06.862Z: repoos check failed: ◆ Check plan"
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T19:34:33Z"
+updated_at: "2026-11-01T19:59:38Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-01T19:50:06.862Z: repoos check failed: ◆ Check plan"
 review_passes: 2
 review_rounds: 1
 dev_error_count: 5
@@ -38,11 +38,11 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 ```json
 [
 {
-  "label": "Task card shows live check progress instead of stuck silent",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-hint",
-  "state": "checks:progress"
+"label": "Task card shows live check progress instead of stuck silent",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-hint",
+"state": "checks:progress"
 }
 ]
 ```
@@ -129,4 +129,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T19:33:20Z · review_cli_override, review_model_override
 - 2026-11-01T19:33:43Z · status review→active
 - 2026-11-01T19:34:33Z · body
-
+- 2026-11-01T19:59:38Z · body
