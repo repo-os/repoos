@@ -2,7 +2,7 @@
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
-status: active
+status: review
 priority: p0
 area: [web, server, core]
 assigned_to: ai
@@ -126,3 +126,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T19:31:47Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-01T19:31:52Z · message_delivered: 1 message(s)
 - 2026-11-01T19:32:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T19:32:29Z · status active→review
