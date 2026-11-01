@@ -37,6 +37,7 @@ import { resolveEffectiveAgent } from "../lib/effective-agent";
 import { closeOutAttemptStartedAt, isStaleDoneError } from "../lib/closeOutAttempt";
 import {
   integrationActiveCopy,
+  integrationProgressCardLabel,
   integrationPipelineRole,
   integrationPipelineStalled,
   integrationQueuedCopy,
@@ -369,6 +370,8 @@ interface CardHint {
   label: string;
   title: string;
   cls: string;
+  /** Full integrating copy for Status details (#0995); card `label` may be reordered. */
+  fullLabel?: string;
 }
 
 /** True once Move to done has been clicked and the close-out job for this
@@ -585,9 +588,10 @@ const hint = computed<CardHint | null>(() => {
       const slow = slowCheck.value;
       if (role === "active") {
         const copy = integrationActiveCopy(snap, now.value);
-        const label = slow && !copy.stalled ? `${copy.label} · slow` : copy.label;
+        const fullLabel = slow && !copy.stalled ? `${copy.label} · slow` : copy.label;
         return {
-          label,
+          label: integrationProgressCardLabel(fullLabel),
+          fullLabel,
           title: copy.stalled
             ? copy.title
             : slow
@@ -1049,6 +1053,29 @@ function cancelDirty(): void {
   dirtyTask.value = null;
 }
 
+function onCardHintClick(): void {
+  const h = hint.value;
+  if (!h) return;
+  if (h.cls === "tc-coding" || h.cls === "tc-stuck") {
+    void openAgent();
+    return;
+  }
+  if (h.cls === "tc-pm-working") {
+    void openPm();
+    return;
+  }
+  if (h.cls === "tc-moving") {
+    void openTaskStatusDetails();
+  }
+}
+
+/** Open Debug → Status details with the full close-out progress line (#0995). */
+async function openTaskStatusDetails(): Promise<void> {
+  await ui.openTask(props.task);
+  ui.activeTab = "debug";
+  ui.debugView = "status";
+}
+
 /** Open the drawer on the Agent tab to watch the live session. */
 async function openAgent(): Promise<void> {
   await ui.openTask(props.task);
@@ -1248,15 +1275,14 @@ async function openDebuggerFromError(): Promise<void> {
         <span
           class="tc-hint"
           data-test-id="task-card-agent-hint"
-          :class="hint.cls"
-          :title="hint.title"
-          @click.stop="
-            hint.cls === 'tc-coding' || hint.cls === 'tc-stuck'
-              ? openAgent()
-              : hint.cls === 'tc-pm-working'
-                ? openPm()
-                : undefined
-          "
+          :class="[hint.cls, hint.cls === 'tc-moving' ? 'tc-hint--progress-clamp' : '']"
+          :title="hint.cls === 'tc-moving' ? undefined : hint.title"
+          :data-tip="hint.cls === 'tc-moving' ? hint.title : undefined"
+          tabindex="0"
+          role="button"
+          @click.stop="onCardHintClick"
+          @keydown.enter.stop="onCardHintClick"
+          @keydown.space.prevent.stop="onCardHintClick"
         >
           <ActivityIndicator v-if="hint.cls === 'tc-coding'" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-pm-working'" activity="agent" />

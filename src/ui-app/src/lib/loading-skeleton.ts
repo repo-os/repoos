@@ -1,5 +1,29 @@
 /** Shapes `PageSkeleton` can draw while a route's data is still loading. */
-export type LoadingSkeletonKind = "board" | "cards" | "table" | "rows" | "targets" | "deployments";
+export type LoadingSkeletonKind =
+  | "board"
+  | "inputBoard"
+  | "dashboard"
+  | "cards"
+  | "table"
+  | "rows"
+  | "targets"
+  | "deployments";
+
+/** Every routed path the app shell can open while the repo index loads. */
+export const LOADING_SKELETON_ROUTES = [
+  "/",
+  "/work",
+  "/inputs",
+  "/stories",
+  "/checks",
+  "/releases",
+  "/deployments",
+  "/dev",
+  "/secrets",
+  "/agents",
+  "/settings",
+  "/repo",
+] as const;
 
 /**
  * Pick a skeleton that matches the route being opened. `/work` is the board;
@@ -8,10 +32,14 @@ export type LoadingSkeletonKind = "board" | "cards" | "table" | "rows" | "target
 export function loadingSkeletonKind(path: string): LoadingSkeletonKind {
   const route = path.split("?")[0] ?? "/";
   if (route === "/work" || route.startsWith("/work/")) return "board";
+  if (route === "/inputs") return "inputBoard";
+  if (route === "/") return "dashboard";
   if (route === "/checks" || route === "/secrets") return "table";
   if (route === "/agents" || route === "/releases") return "cards";
   if (route === "/dev") return "targets";
   if (route === "/deployments") return "deployments";
+  if (route === "/stories" || route === "/settings" || route === "/repo") return "rows";
+  if (route.startsWith("/tasks/") || route.startsWith("/repo/")) return "rows";
   return "rows";
 }
 

@@ -7,7 +7,9 @@ import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
 import TaskCard from "../src/components/TaskCard.vue";
 import { useRepoStore } from "../src/stores/repo";
+import { useUiStore } from "../src/stores/ui";
 import type { IntegrationPipelineSnapshot, Task } from "../src/types";
+import { flush, json } from "./component-test-helpers";
 
 const task = (id: string): Task =>
   ({
@@ -152,5 +154,45 @@ describe("TaskCard integration pipeline (#0740)", () => {
       "task-card-pipeline-retry",
     ]);
     expect(buttons[0]!.text()).toBe("Cancel");
+  });
+
+  it("clamps integrating copy and opens Debug status details on click (#0995 E1)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/api/tasks/0730")) return json(task("0730"));
+        return json({ ok: true });
+      }),
+    );
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    repo.integration = pipeline({
+      active: {
+        taskId: "0730",
+        stage: "check",
+        failed: false,
+        startedAt: "2026-10-07T13:00:00.000Z",
+        lastProgressAt: "2026-10-07T13:02:25.000Z",
+        detail:
+          "uploading bundle to thinkpad · 88 MB / 204 MB (43%) · 3.7 MB/s · ~32s left · attempt 1 · 128s in stage · full bundle (mirror empty) · 4m 00s",
+      },
+    });
+    const wrapper = mount(TaskCard, {
+      props: { task: task("0730"), dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    const hint = wrapper.get('[data-test-id="task-card-agent-hint"]');
+    expect(hint.classes()).toContain("tc-hint--progress-clamp");
+    expect(hint.attributes("title")).toBeUndefined();
+    const text = hint.text();
+    expect(text.indexOf("(43%)")).toBeGreaterThan(-1);
+    expect(text.indexOf("(43%)")).toBeLessThan(text.indexOf("3.7 MB/s"));
+    expect(text).toContain("full bundle (mirror empty)");
+    await hint.trigger("click");
+    await flush();
+    expect(ui.active?.id).toBe("0730");
+    expect(ui.activeTab).toBe("debug");
+    expect(ui.debugView).toBe("status");
   });
 });

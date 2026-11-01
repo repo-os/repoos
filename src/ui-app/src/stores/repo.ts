@@ -28,6 +28,7 @@ import {
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import { useNow } from "../composables/useNow";
 import { isHoldActive } from "../../../core/task-selection.js";
+import { doneAtFromActivity } from "../../../core/task.js";
 import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
   AgentOutputEntry,
@@ -561,12 +562,20 @@ const TASK_PRIORITY_RANK: Record<string, number> = { p0: 0, p1: 1, p2: 2, p3: 3 
 
 /** Sort a task list by the given mode. Used by the story panel; the work board's
  *  "Priority level" mode keeps backend order per column and only uses the other
- *  modes here via `byStatus()`. */
-export function sortTasks(tasks: Task[], order: SortOrder): Task[] {
+ *  modes here via `byStatus()`. When `columnStatus` is `done` and order is
+ *  `recent`, sorts by the last activity-log transition into done (#0995). */
+export function sortTasks(tasks: Task[], order: SortOrder, columnStatus?: string): Task[] {
   const copy = [...tasks];
   switch (order) {
     case "recent":
       return copy.sort((a, b) => {
+        if (columnStatus === "done") {
+          const ua = doneAtFromActivity(a.body) ?? a.updated_at ?? a.created_at ?? "";
+          const ub = doneAtFromActivity(b.body) ?? b.updated_at ?? b.created_at ?? "";
+          if (!ua) return ub ? 1 : 0;
+          if (!ub) return -1;
+          return ub.localeCompare(ua);
+        }
         if (!a.updated_at) return b.updated_at ? 1 : 0;
         if (!b.updated_at) return -1;
         return b.updated_at.localeCompare(a.updated_at);
@@ -965,7 +974,7 @@ export const useRepoStore = defineStore("repo", () => {
     // live in `archivedTasks` instead.
     const filtered = tasks.value.filter((t) => t.status === s && !t.isArchived);
     if (sortOrder.value === "current") return filtered;
-    return sortTasks(filtered, sortOrder.value);
+    return sortTasks(filtered, sortOrder.value, s);
   };
 
   /** Archived tasks (#0657) for the work queue's collapsible Archived list. */
