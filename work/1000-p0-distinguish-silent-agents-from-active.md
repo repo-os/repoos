@@ -11,7 +11,7 @@ branch: feat/p0-distinguish-silent-agents-from-active
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-01T17:06:25Z"
+updated_at: "2026-11-01T17:15:12Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T16:47:19.566Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -85,3 +85,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T16:47:23Z · message_delivered: 1 message(s)
 - 2026-11-01T17:00:03Z · body
 - 2026-11-01T17:06:25Z · note: adopted orphaned engineer pid 96893
+- 2026-11-01T17:15:12Z · body
