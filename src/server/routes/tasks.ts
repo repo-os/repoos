@@ -3529,6 +3529,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         id,
         (taskId) => ctx.taskChecks!.getRuns(taskId),
         ctx.remoteValidator,
+        { includeTelemetryMismatch: false },
       )
     ) {
       return json(res, 409, {
