@@ -13,7 +13,6 @@ model_override: grok-4.7-low
 created_at: "2026-10-31T13:08:01Z"
 updated_at: "2026-11-01T01:16:33Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-01T00:45:02.297Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 - [ ] **E1 · Card integrating text clamp** (web) — the board card's live integrating/progress line wraps to about nine lines; clamp it to at most three with an ellipsis and let a click open the task panel for the full text. Source: human report with screenshot (#0990 card).
