@@ -3,6 +3,8 @@ id: "0995"
 title: "Easter eggs bundle: card integrating text, skeleton shapes, Done column order"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
 priority: p3
 area: web
 assigned_to: ai
@@ -227,3 +229,4 @@ Start from `listReviewPasses` (`src/core/review-passes.js`) and the `review-hist
 - 2026-11-01T11:53:01Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-01T11:53:22Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-01T11:53:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T11:53:22Z · needs_input
