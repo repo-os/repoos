@@ -3,8 +3,7 @@
  * Anything else — human settings, human pauses, comments, unknown keys, or a
  * parse failure — stays a close-out blocker.
  */
-import { agentModelAllowRows } from "./budget-allowlist.js";
-import { allowlistWithoutAutomaticPauses } from "./budget-runtime-state.js";
+import { isAutomaticPauseReason } from "./budget-runtime-state.js";
 import { parseFlatToml } from "./config.js";
 
 function commentLines(text: string): string[] {
@@ -25,11 +24,31 @@ function looseLines(text: string): string[] {
     .filter((line) => !/^[A-Za-z0-9_.-]+\s*=/.test(line));
 }
 
+function stripAutomaticPauseFields(row: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...row };
+  if (isAutomaticPauseReason(typeof next.pausedReason === "string" ? next.pausedReason : undefined)) {
+    delete next.paused;
+    delete next.pausedUntil;
+    delete next.pausedReason;
+  }
+  if (Array.isArray(next.pausedModels)) {
+    const kept = next.pausedModels.filter((pause) => {
+      if (!pause || typeof pause !== "object") return true;
+      const reason = (pause as { pausedReason?: unknown }).pausedReason;
+      return !isAutomaticPauseReason(typeof reason === "string" ? reason : undefined);
+    });
+    if (kept.length) next.pausedModels = kept;
+    else delete next.pausedModels;
+  }
+  return next;
+}
+
 function normalized(text: string): string {
   const parsed = parseFlatToml(text);
-  if (parsed["budget.allowlist"] !== undefined) {
-    parsed["budget.allowlist"] = allowlistWithoutAutomaticPauses(
-      agentModelAllowRows(parsed["budget.allowlist"]),
+  const rows = parsed["budget.allowlist"];
+  if (Array.isArray(rows)) {
+    parsed["budget.allowlist"] = rows.map((row) =>
+      row && typeof row === "object" ? stripAutomaticPauseFields(row as Record<string, unknown>) : row,
     );
   }
   return JSON.stringify(parsed);

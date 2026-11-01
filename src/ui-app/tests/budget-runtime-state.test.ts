@@ -3,16 +3,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { rmSync } from "node:fs";
-import { pairPauseInfo } from "./budget-allowlist.js";
-import { loadConfig } from "./config.js";
+import { pairPauseInfo } from "../../core/budget-allowlist.js";
+import { loadConfig } from "../../core/config.js";
 import {
   applyAutomaticPauses,
   budgetRuntimeStatePath,
   hydrateAllowlistRuntime,
   readBudgetRuntimeState,
   recordAutomaticAllowlist,
-} from "./budget-runtime-state.js";
-import type { AgentModelAllowRow } from "./types.js";
+} from "../../core/budget-runtime-state.js";
+import type { AgentModelAllowRow } from "../../core/types.js";
 
 const roots: string[] = [];
 afterEach(() => {

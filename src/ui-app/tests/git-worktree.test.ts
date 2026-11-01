@@ -858,6 +858,12 @@ describe("main dirty paths for close-out (#0713)", () => {
       writeFileSync(join(root, "repoos.toml"), "[[budget.allowlist\n");
       expect(await mainDirtyFilesForCloseOut(root)).toEqual(["repoos.toml"]);
 
+      writeFileSync(join(root, "repoos.toml"), `${head}notARealSetting = true\n`);
+      expect(await mainDirtyFilesForCloseOut(root)).toEqual(["repoos.toml"]);
+
+      writeFileSync(join(root, "repoos.toml"), `# human note\n${head}`);
+      expect(await mainDirtyFilesForCloseOut(root)).toEqual(["repoos.toml"]);
+
       writeFileSync(join(root, "src-wip.ts"), "export {}\n");
       writeFileSync(join(root, "repoos.toml"), head);
       expect(await mainDirtyFilesForCloseOut(root)).toEqual(["src-wip.ts"]);
