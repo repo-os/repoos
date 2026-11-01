@@ -5,7 +5,12 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import App from "../src/App.vue";
-import { loadingPageHeader, loadingSkeletonKind } from "../src/lib/loading-skeleton";
+import {
+  loadingPageHeader,
+  loadingSkeletonKind,
+  LOADING_SKELETON_ROUTES,
+} from "../src/lib/loading-skeleton";
+import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../src/lib/work-board-columns";
 
 const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
 
@@ -22,12 +27,36 @@ describe("repo loading skeleton", () => {
     expect(loadingSkeletonKind("/work?task=0972")).toBe("board");
     expect(loadingSkeletonKind("/stories")).toBe("rows");
     expect(loadingSkeletonKind("/settings")).toBe("rows");
-    expect(loadingSkeletonKind("/inputs")).toBe("rows");
-    expect(loadingSkeletonKind("/")).toBe("rows");
+    expect(loadingSkeletonKind("/inputs")).toBe("inputBoard");
+    expect(loadingSkeletonKind("/")).toBe("dashboard");
     expect(loadingSkeletonKind("/checks")).toBe("table");
     expect(loadingSkeletonKind("/agents")).toBe("cards");
     expect(loadingSkeletonKind("/dev")).toBe("targets");
     expect(loadingSkeletonKind("/deployments")).toBe("deployments");
+  });
+
+  it("maps every standard route to an explicit skeleton kind", () => {
+    const routerSrc = readFileSync(resolve(__dirname, "../src/router.ts"), "utf8");
+    const paths = [...routerSrc.matchAll(/path:\s*"([^"]+)"/g)].map((m) => m[1]!);
+    const pages = paths.filter(
+      (path) =>
+        path !== "/login" &&
+        path !== "/repo/working-diff" &&
+        !path.includes(":") &&
+        !path.includes("*"),
+    );
+    expect(pages.sort()).toEqual([...LOADING_SKELETON_ROUTES].sort());
+    expect(loadingSkeletonKind("/repo/working-diff")).toBe("rows");
+    expect(loadingSkeletonKind("/tasks/0001/diff")).toBe("rows");
+    expect(loadingSkeletonKind("/repo/commits/abc")).toBe("rows");
+    for (const path of pages) {
+      expect(loadingSkeletonKind(path), path).toBeTruthy();
+    }
+  });
+
+  it("uses six work columns and three input columns", () => {
+    expect(WORK_BOARD_COLUMN_COUNT).toBe(6);
+    expect(INPUT_BOARD_COLUMN_COUNT).toBe(3);
   });
 
   it("gives every standard page a title to keep above its skeleton", () => {

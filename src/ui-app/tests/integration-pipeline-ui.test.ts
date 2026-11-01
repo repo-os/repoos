@@ -7,6 +7,7 @@ import {
   integrationMedianDuration,
   integrationMedianTip,
   integrationPipelineStalled,
+  integrationProgressCardLabel,
   integrationQueuedCopy,
 } from "../src/lib/integration-pipeline-ui";
 import type { CloseOutOutcomeEvent, IntegrationPipelineSnapshot } from "../src/types";
@@ -114,6 +115,14 @@ describe("integration-pipeline-ui (#0740)", () => {
     const copy = integrationActiveCopy(pipeline, now);
     expect(copy.stalled).toBe(false);
     expect(copy.label).toMatch(/^integrating · uploading bundle 27 MB · 45s/);
+  });
+
+  it("puts stage and percent first on card labels (#0995 E1)", () => {
+    const label =
+      "integrating · uploading bundle to thinkpad · 88 MB / 204 MB (43%) · 3.7 MB/s · ~32s left · 4m 00s";
+    const card = integrationProgressCardLabel(label);
+    expect(card.indexOf("(43%)")).toBeLessThan(card.indexOf("3.7 MB/s"));
+    expect(card.startsWith("integrating · uploading bundle to thinkpad · (43%)")).toBe(true);
   });
 });
 

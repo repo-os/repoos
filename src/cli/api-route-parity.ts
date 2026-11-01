@@ -143,6 +143,7 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   re("GET", /^\/api\/tasks\/([^/]+)\/integration-job$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/worktree-handoff\/discard$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/review$/.source),
+  re("GET", /^\/api\/tasks\/([^/]+)\/review\/passes\/([^/]+)$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/message$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/pm\/message$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/pm\/interrupt$/.source),

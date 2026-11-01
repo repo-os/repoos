@@ -27,6 +27,15 @@ import Switch from "../components/ui/switch.vue";
 import ScreenshotViewer from "../components/ScreenshotViewer.vue";
 import ScreenshotExpandButton from "../components/ScreenshotExpandButton.vue";
 import { pendingToShots } from "../lib/screenshot-viewer";
+import {
+  DURATION_HELP,
+  durationBound,
+  durationUnitFor,
+  durationUnitLabel,
+  formatDurationMs,
+  parseDurationMs,
+  type DurationUnit,
+} from "../lib/duration-setting";
 import AuthSettingsPanel from "../components/AuthSettingsPanel.vue";
 import DevTargetsSettings from "../components/DevTargetsSettings.vue";
 import SettingsImportExport from "../components/SettingsImportExport.vue";
@@ -1001,6 +1010,31 @@ function arrayPlaceholder(key: string): string {
   return ARRAY_PLACEHOLDERS[key] ?? "value1, value2";
 }
 
+function fieldDurationUnit(f: { key: string; default?: unknown }): DurationUnit | null {
+  return durationUnitFor(f.key, Number(f.default ?? 0));
+}
+
+function durationShown(f: { key: string; default?: unknown }, raw: unknown): string {
+  const unit = fieldDurationUnit(f);
+  const ms = raw == null || raw === "" ? Number(f.default ?? 0) : Number(raw);
+  if (!unit || !Number.isFinite(ms)) return raw == null ? "" : String(raw);
+  return formatDurationMs(ms, unit);
+}
+
+function onDurationInput(f: { key: string; default?: unknown }, text: string): void {
+  const unit = fieldDurationUnit(f);
+  if (!unit) {
+    form[f.key] = text === "" ? f.default : Number(text);
+    return;
+  }
+  if (text === "") {
+    form[f.key] = f.default;
+    return;
+  }
+  const ms = parseDurationMs(text, unit);
+  form[f.key] = Number.isFinite(ms) ? ms : f.default;
+}
+
 /** Normalize a form value to the shape sent in a Settings PATCH body. */
 function valueForSave(f: ConfigField, raw: unknown): unknown {
   let val = raw;
@@ -1457,7 +1491,10 @@ onUnmounted(() => {
                   <div :id="`setting-${f.key}`" class="setting-row">
                     <div class="setting-info">
                       <div class="setting-label">{{ f.label }}</div>
-                      <div class="setting-desc">{{ f.description }}</div>
+                      <div class="setting-desc">
+                        {{ f.description }}
+                        <template v-if="fieldDurationUnit(f)"> {{ DURATION_HELP }}</template>
+                      </div>
                     </div>
                     <span
                       v-if="f.restartRequired"
@@ -1490,6 +1527,34 @@ onUnmounted(() => {
                         :disabled="config.saving"
                         @update:checked="(v: boolean) => (form[f.key] = v)"
                       />
+                      <span
+                        v-else-if="f.type === 'number' && fieldDurationUnit(f)"
+                        class="duration-field"
+                      >
+                        <Input
+                          :model-value="durationShown(f, form[f.key])"
+                          type="number"
+                          :min="
+                            durationBound(
+                              typeof f.min === 'number' ? f.min : 0,
+                              fieldDurationUnit(f)!,
+                            )
+                          "
+                          :step="
+                            durationBound(
+                              typeof f.step === 'number' ? f.step : 1000,
+                              fieldDurationUnit(f)!,
+                            )
+                          "
+                          :aria-label="`${f.label} in ${durationUnitLabel(fieldDurationUnit(f)!)}`"
+                          style="width: 110px"
+                          :disabled="config.saving"
+                          @update:model-value="(v) => onDurationInput(f, String(v))"
+                        />
+                        <span class="duration-unit">{{
+                          durationUnitLabel(fieldDurationUnit(f)!)
+                        }}</span>
+                      </span>
                       <Input
                         v-else-if="f.type === 'number'"
                         :model-value="form[f.key] == null ? '' : String(form[f.key])"
@@ -2128,7 +2193,10 @@ onUnmounted(() => {
               >
                 <div class="setting-info">
                   <div class="setting-label">{{ f.label }}</div>
-                  <div class="setting-desc">{{ f.description }}</div>
+                  <div class="setting-desc">
+                    {{ f.description }}
+                    <template v-if="fieldDurationUnit(f)"> {{ DURATION_HELP }}</template>
+                  </div>
                 </div>
                 <span
                   v-if="f.restartRequired"
@@ -2151,6 +2219,31 @@ onUnmounted(() => {
                     :placeholder="arrayPlaceholder(f.key)"
                     @update:model-value="(v) => (form[f.key] = v)"
                   />
+                  <span
+                    v-else-if="f.type === 'number' && fieldDurationUnit(f)"
+                    class="duration-field"
+                  >
+                    <Input
+                      :model-value="durationShown(f, form[f.key])"
+                      type="number"
+                      :min="
+                        durationBound(typeof f.min === 'number' ? f.min : 0, fieldDurationUnit(f)!)
+                      "
+                      :step="
+                        durationBound(
+                          typeof f.step === 'number' ? f.step : 1000,
+                          fieldDurationUnit(f)!,
+                        )
+                      "
+                      :aria-label="`${f.label} in ${durationUnitLabel(fieldDurationUnit(f)!)}`"
+                      style="width: 110px"
+                      :disabled="config.saving"
+                      @update:model-value="(v) => onDurationInput(f, String(v))"
+                    />
+                    <span class="duration-unit">{{
+                      durationUnitLabel(fieldDurationUnit(f)!)
+                    }}</span>
+                  </span>
                   <Input
                     v-else-if="f.type === 'number'"
                     :model-value="form[f.key] == null ? '' : String(form[f.key])"
