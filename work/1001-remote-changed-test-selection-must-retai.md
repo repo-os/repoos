@@ -2,14 +2,14 @@
 id: 1001
 title: Remote changed-test selection must retain its base ref
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T14:19:48Z"
-updated_at: "2026-11-01T14:19:48Z"
+updated_at: "2026-11-01T14:20:17Z"
 ---
 ## Problem
 Remote validation receives the task commit but may not have the requested base ref such as main. scripts/select-test-files.mjs then cannot compute a merge base and safely falls back to the entire suite. On 2026-11-01, #0998's remote runner reported that main was not a valid object and expanded a scoped check to all 645 test files. This wastes many minutes and large bundle uploads on ordinary changes.
@@ -31,3 +31,5 @@ Inspect scripts/select-test-files.mjs, scripts/run-tests.mjs, src/server/remote-
 ## Activity
 
 - 2026-11-01T14:19:48Z · created · njachowski@gmail.com
+- 2026-11-01T14:20:17Z · status inbox→ready
+- 2026-11-01T14:20:17Z · note: Nick requested the remote changed-test base-ref fix.
