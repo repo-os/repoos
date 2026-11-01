@@ -26,7 +26,9 @@ function looseLines(text: string): string[] {
 
 function stripAutomaticPauseFields(row: Record<string, unknown>): Record<string, unknown> {
   const next = { ...row };
-  if (isAutomaticPauseReason(typeof next.pausedReason === "string" ? next.pausedReason : undefined)) {
+  if (
+    isAutomaticPauseReason(typeof next.pausedReason === "string" ? next.pausedReason : undefined)
+  ) {
     delete next.paused;
     delete next.pausedUntil;
     delete next.pausedReason;
@@ -48,7 +50,9 @@ function normalized(text: string): string {
   const rows = parsed["budget.allowlist"];
   if (Array.isArray(rows)) {
     parsed["budget.allowlist"] = rows.map((row) =>
-      row && typeof row === "object" ? stripAutomaticPauseFields(row as Record<string, unknown>) : row,
+      row && typeof row === "object"
+        ? stripAutomaticPauseFields(row as Record<string, unknown>)
+        : row,
     );
   }
   return JSON.stringify(parsed);
