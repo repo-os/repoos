@@ -1,9 +1,8 @@
 ---
-handoff_signal_retry_count: 2
 id: "0994"
 title: Worktree creation must survive a slow checkout and be safe to retry
 type: bug
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/worktree-creation-must-survive-a-slow-ch
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-10-31T12:59:31Z"
-updated_at: "2026-11-01T00:56:20Z"
+updated_at: "2026-11-01T01:01:34Z"
+handoff_signal_retry_count: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T00:45:52.761Z: repoos check failed: tests — }"
 review_passes: 1
@@ -66,4 +66,4 @@ Do not weaken the one-writer-per-worktree rule (docs/agent-run-operations.md, #0
 - 2026-10-31T23:22:59Z · note: adopted orphaned engineer pid 84641
 - 2026-11-01T00:51:05Z · message_queued at 2026-11-01T00:51:05.318Z
 - 2026-11-01T00:56:20Z · message_queued at 2026-11-01T00:56:20.747Z
-
+- 2026-11-01T01:01:34Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
