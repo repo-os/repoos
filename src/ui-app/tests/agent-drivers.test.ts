@@ -310,6 +310,9 @@ describe("model-aware driver commands", () => {
     });
     expect(command.args).not.toContain("--output-format");
     expect(command.args).toContain("--yolo");
+    expect(command.args).toContain("--sync-session=off");
+    expect(command.args).not.toContain("--no-remote");
+    expect(command.args).not.toContain("--no-remote-export");
   });
 });
 

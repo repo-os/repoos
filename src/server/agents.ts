@@ -3205,6 +3205,8 @@ const CODEX_ENGINEERING_ARGS = ["--dangerously-bypass-approvals-and-sandbox"];
  * --allow-all-urls). Deliberate: the repo is in git, and a permission denial
  * fails the task outright. Role prompts describe intended scope but the flag
  * does not enforce read-only behavior.
+ * Session sync is disabled with the current `--sync-session=off` flag. The old
+ * `--no-remote` and `--no-remote-export` flags were removed by Copilot CLI.
  */
 function copilotArgs(): string[] {
   return [
@@ -3212,8 +3214,7 @@ function copilotArgs(): string[] {
     "json",
     "--no-ask-user",
     "--no-auto-update",
-    "--no-remote",
-    "--no-remote-export",
+    "--sync-session=off",
     "--yolo",
   ];
 }
@@ -4092,8 +4093,7 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
         ...extra,
         "--no-ask-user",
         "--no-auto-update",
-        "--no-remote",
-        "--no-remote-export",
+        "--sync-session=off",
         "--yolo",
       ],
     };
