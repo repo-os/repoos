@@ -2,7 +2,7 @@
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — no engineering report for this round, and the only hover/focus captures predate the final hover CSS."
@@ -14,7 +14,7 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T23:53:24Z"
+updated_at: "2026-11-02T23:53:53Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
@@ -165,3 +165,5 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T20:38:14Z · body
 - 2026-11-02T23:53:17Z · model_override
 - 2026-11-02T23:53:24Z · review_cli_override, review_model_override
+- 2026-11-02T23:53:53Z · status review→active
+- 2026-11-02T23:53:53Z · note: please fix bugs and write engineer report before handoff
