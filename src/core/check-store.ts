@@ -572,7 +572,9 @@ export class CheckStore {
 
   private replaceTestCases(runId: number, cases: TestCaseTiming[]): void {
     if (!this.available || !this.db || !Number.isFinite(runId)) return;
-    const merged = mergeTestCaseTimings(cases).slice(0, MAX_TEST_CASES_PER_RUN);
+    const merged = mergeTestCaseTimings(cases)
+      .sort((a, b) => b.durationMs - a.durationMs)
+      .slice(0, MAX_TEST_CASES_PER_RUN);
     try {
       const del = this.db.prepare("DELETE FROM check_run_test_cases WHERE run_id = ?");
       del.run(runId);

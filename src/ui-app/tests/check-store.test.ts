@@ -118,6 +118,25 @@ describe("check-run store", () => {
     expect(listed.hasMore).toBe(true);
   });
 
+  it("keeps the slowest cases when the per-run history cap is reached (#1002)", () => {
+    const { s } = store();
+    const testCaseTimings = Array.from({ length: 25_001 }, (_, i) => ({
+      file: `suite-${i}.test.ts`,
+      name: `case ${i}`,
+      caseId: `case-${i}`,
+      retry: 0,
+      durationMs: i,
+      result: "passed" as const,
+    }));
+    const id = s.record(row({ testCaseTimings }));
+
+    expect(id).not.toBeNull();
+    expect(s.testCaseCountForRun(id!)).toBe(25_000);
+    const slowest = s.listSlowTestCases({ runId: id!, limit: 1 });
+    expect(slowest.cases[0]?.durationMs).toBe(25_000);
+    expect(slowest.cases[0]?.caseId).toBe("case-25000");
+  });
+
   it("clears provisional case rows when the final run update has no cases (#1002)", () => {
     const { s } = store();
     const id = s.record(
