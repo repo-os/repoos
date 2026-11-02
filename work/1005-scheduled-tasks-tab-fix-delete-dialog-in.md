@@ -14,7 +14,7 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T23:53:53Z"
+updated_at: "2026-11-02T23:53:55Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
