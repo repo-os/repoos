@@ -76,3 +76,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T12:55:54Z · body
 - 2026-11-02T12:58:05Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T12:58:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T12:58:06Z · message_delivered: 1 message(s)
