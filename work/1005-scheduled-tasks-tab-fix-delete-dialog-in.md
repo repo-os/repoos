@@ -12,7 +12,7 @@ cli_override: github copilot
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T17:16:53Z"
+updated_at: "2026-11-02T17:54:40Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-02T16:24:55.241Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Delete schedule dialog with working actions (target \"default\"): click [data-testid^=\"schedule-card-\"] .schedule-actions button:last-child: click: Error: strict mode violation: locator('[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child') resolved to 8 elements: on /agents?tab=scheduled (http://127.0.0.1:51188/agents?tab=scheduled); [missing-target] Delete schedule dialog with working actions (target \"defa… (truncated)"
@@ -49,10 +49,10 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": ".schedule-list > .schedule-card:first-child",
 "steps": [
 {
-  "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
+"click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
 },
 {
-  "click": ".delete-confirm-actions button:first-child"
+"click": ".delete-confirm-actions button:first-child"
 }
 ]
 },
@@ -63,10 +63,10 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": "[role=\"dialog\"]",
 "steps": [
 {
-  "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
+"click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
 },
 {
-  "hover": ".delete-confirm-actions button:first-child"
+"hover": ".delete-confirm-actions button:first-child"
 }
 ]
 },
@@ -77,10 +77,10 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": "[role=\"dialog\"]",
 "steps": [
 {
-  "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
+"click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
 },
 {
-  "hover": ".delete-confirm-actions button:last-child"
+"hover": ".delete-confirm-actions button:last-child"
 }
 ]
 }
@@ -126,3 +126,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T16:57:41Z · CTO nudge: held — remote validation is running
 - 2026-11-02T17:06:52Z · body
 - 2026-11-02T17:16:53Z · body
+- 2026-11-02T17:54:40Z · handoff failed · handoff recovery attempted · finalization failed
