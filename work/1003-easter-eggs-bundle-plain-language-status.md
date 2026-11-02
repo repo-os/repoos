@@ -3,9 +3,6 @@ id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — The Feature releases panel remains shorter than the other desktop panels.
 priority: p3
 area: web
 assigned_to: ai
@@ -408,3 +405,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T03:09:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-02T03:14:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T03:16:17Z · engineer stopped by request
+- 2026-11-02T03:16:17Z · needs_input
