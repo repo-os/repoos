@@ -6,13 +6,16 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: the opencode agent timed out after 900s
+debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
+debug_tldr_at: "2026-11-02T19:47:48Z"
+debug_tldr_key: review-failed|the opencode agent timed out after 900s
 priority: p0
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-failed-card-text-dead-click-target
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T19:47:25Z"
+updated_at: "2026-11-02T19:47:48Z"
 ---
 ## Problem
 
