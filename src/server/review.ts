@@ -438,13 +438,19 @@ export function landablePromptSection(
  * The mission handed to the review agent. Deliberately narrow: what to look
  * at, what to write, and a hard boundary on what it may not touch.
  */
-async function engineeringReportMatchesReviewTree(
+export async function engineeringReportMatchesReviewTree(
   config: RepoOSConfig,
   task: Task,
   workdir: string,
 ): Promise<boolean> {
   const report = listEngineeringReports({ ...config, root: workdir }, task.id).at(-1);
   if (!report) return false;
+  const ancestry = await runGit(
+    workdir,
+    ["merge-base", "--is-ancestor", report.sourceSha, "HEAD"],
+    10_000,
+  );
+  if (ancestry.status !== 0) return false;
   const changed = await runGit(
     workdir,
     ["diff", "--name-only", `${report.sourceSha}..HEAD`],
