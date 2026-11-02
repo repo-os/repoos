@@ -10,8 +10,9 @@ created_by: njachowski@gmail.com
 branch: ""
 cli_override: github copilot
 review_cli_override: codex
+review_model_override: gpt-6-luna
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T13:27:55Z"
+updated_at: "2026-11-02T13:27:57Z"
 ---
 ## Problem
 
@@ -70,3 +71,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T04:30:30Z · status inbox→ready
 - 2026-11-02T13:27:50Z · cli_override
 - 2026-11-02T13:27:55Z · review_cli_override
+- 2026-11-02T13:27:57Z · review_model_override
