@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-failed-card-text-dead-click-target
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T18:52:01Z"
+updated_at: "2026-11-02T18:55:24Z"
 ---
 ## Problem
 
@@ -45,6 +45,48 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 ![29](/api/tasks/0997/attachments/att_6f099625-7021-4e83-9d99-14555ec705c8.png)
 ![30](/api/tasks/0997/attachments/att_6305a077-4556-468c-b473-8df56584b8e4.png)
 
+## Shots
+```json
+[
+{
+  "label": "Failed card: status line shows the recorded crash reason on hover",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "steps": [
+    {
+      "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    },
+    {
+      "waitMs": 700
+    }
+  ],
+  "state": "card:agentFailed"
+},
+{
+  "label": "Restart work opens the shared body-teleported restart dialog",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"restart-task-dialog\"]",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
+    },
+    {
+      "click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
+    },
+    {
+      "waitFor": "[data-test-id=\"restart-task-dialog\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "state": "card:agentFailed"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-01T07:03:42Z · created · njachowski@gmail.com
@@ -55,3 +97,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T18:38:54Z · status ready→active
 - 2026-11-02T18:52:01Z · message_queued at 2026-11-02T18:52:01.022Z
 - 2026-11-02T18:52:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-02T18:55:24Z · body
