@@ -9,6 +9,7 @@ import {
   isShotPreviewFixtureId,
 } from "../../../core/shot-fixtures.js";
 import type { ActivityAnimationStyle } from "../../../core/activity-animation.js";
+import type { TaskSchedule } from "../../../core/schedule.js";
 import type { useConfigStore } from "../stores/config";
 import type { useRepoStore } from "../stores/repo";
 import { useNoticesStore } from "../stores/notices";
@@ -544,6 +545,75 @@ export function shotFixtureDevTargets(
         },
         canStopHolder: true,
       },
+    },
+  ];
+}
+
+/**
+ * Two deterministic schedules for the `schedule:seeded` capture fixture
+ * (#1005). Returns null for any other fixture, so the panel keeps its real
+ * server data. One weekly row (with a last result and a linked task, so every
+ * card detail and the action column render) beside one daily row.
+ */
+export function shotFixtureSchedules(fixture: ShotPreviewFixtureId | null): TaskSchedule[] | null {
+  if (fixture !== "schedule:seeded") return null;
+  const now = new Date().toISOString();
+  return [
+    {
+      id: "0001",
+      title: "Weekly doc audit",
+      enabled: true,
+      cadence: "weekly",
+      timezone: "Asia/Singapore",
+      timeOfDay: "09:00",
+      runAt: "",
+      dayOfWeek: 1,
+      taskTitle: "Audit docs",
+      taskType: "chore",
+      taskArea: "docs",
+      taskPriority: "p2",
+      taskAssignedTo: "ai",
+      taskStatus: "ready",
+      autoStartAgent: false,
+      body: "## Problem\nDrift\n",
+      nextRunPreview: "Mon, 9:00 AM",
+      nextRunAt: null,
+      lastRunAt: "",
+      lastResult: "success",
+      lastTaskId: "",
+      lastError: "",
+      lastOccurrenceKey: "",
+      createdAt: now,
+      updatedAt: now,
+      path: "schedules/0001-weekly-doc-audit.md",
+    },
+    {
+      id: "0002",
+      title: "Daily health check",
+      enabled: true,
+      cadence: "daily",
+      timezone: "UTC",
+      timeOfDay: "06:30",
+      runAt: "",
+      dayOfWeek: null,
+      taskTitle: "Check health",
+      taskType: "chore",
+      taskArea: "ops",
+      taskPriority: "p3",
+      taskAssignedTo: "ai",
+      taskStatus: "ready",
+      autoStartAgent: false,
+      body: "## Problem\nHealth\n",
+      nextRunPreview: "Daily, 6:30 AM",
+      nextRunAt: null,
+      lastRunAt: "",
+      lastResult: "",
+      lastTaskId: "",
+      lastError: "",
+      lastOccurrenceKey: "",
+      createdAt: now,
+      updatedAt: now,
+      path: "schedules/0002-daily-health-check.md",
     },
   ];
 }

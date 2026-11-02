@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
 import { useRepoStore } from "../src/stores/repo";
+import type { Health } from "../src/types";
 import type { TaskSchedule } from "../../core/schedule.js";
 
 vi.mock("vue-router", () => ({
@@ -336,5 +337,47 @@ describe("schedule CRUD from the panel", () => {
     expect(source).toMatch(
       /@media \(max-width: 760px\)[\s\S]*?\.schedule-actions\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap/,
     );
+  });
+});
+
+describe("schedule dialog layering and capture fixture (#1005)", () => {
+  it("teleports the editor drawer to body with a marked overlay layer", async () => {
+    const repo = useRepoStore();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.schedules = [];
+    const wrapper = mountPanel();
+    await flushPromises();
+    await wrapper.get('[data-testid="new-schedule"]').trigger("click");
+    await flushPromises();
+
+    const el = drawer();
+    expect(el).toBeTruthy();
+    // Radix does not portal DialogContent itself: without the Teleport the
+    // fixed-position drawer renders inline and breaks the shared
+    // dismissable-layer ordering for any dialog layered above it.
+    expect(el!.parentElement).toBe(document.body);
+    const layerId = el!.getAttribute("data-overlay-layer");
+    expect(layerId).toMatch(/^overlay-/);
+    const scrim = document.body.querySelector(".overlay");
+    expect(scrim?.getAttribute("data-overlay-layer")).toBe(layerId);
+  });
+
+  it("renders the schedule:seeded capture fixture without calling the API", async () => {
+    const repo = useRepoStore();
+    repo.health = { isPreviewBuild: true } as unknown as Health;
+    repo.schedules = [];
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=schedule:seeded");
+    try {
+      mountPanel();
+      await flushPromises();
+      const cards = document.body.querySelectorAll(".schedule-card");
+      expect(cards).toHaveLength(2);
+      expect(document.body.querySelector('[data-testid="schedule-card-0001"]')).toBeTruthy();
+      expect(document.body.querySelector('[data-testid="schedule-card-0002"]')).toBeTruthy();
+      expect(repo.refreshSchedules).not.toHaveBeenCalled();
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
   });
 });

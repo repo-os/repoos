@@ -23,6 +23,10 @@ import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
 import PageSkeleton from "./PageSkeleton.vue";
+import {
+  readShotPreviewFixtureFromLocation,
+  shotFixtureSchedules,
+} from "../lib/shot-preview-fixtures";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -312,6 +316,19 @@ function consumeShotEditorOpen(): void {
 watch(() => ui.scheduleEditorShotOpen, consumeShotEditorOpen);
 
 onMounted(() => {
+  // Preview captures seed deterministic rows via `?shotState=schedule:seeded`
+  // (#1005, same early-return shape as DevView's `dev:failed`): a capture must
+  // not depend on real `schedules/` rows existing on the preview board, and a
+  // live fetch would overwrite the seeded rows right after they paint.
+  if (repo.health?.isPreviewBuild) {
+    const fixture = shotFixtureSchedules(readShotPreviewFixtureFromLocation(window.location));
+    if (fixture) {
+      repo.schedules = fixture;
+      loading.value = false;
+      consumeShotEditorOpen();
+      return;
+    }
+  }
   void repo.refreshSchedules().finally(() => {
     loading.value = false;
   });
@@ -405,146 +422,158 @@ onMounted(() => {
       </article>
     </div>
 
-    <Dialog :open="editorOpen" @update:open="setEditorOpen">
-      <DialogOverlay />
-      <DialogContent
-        data-testid="schedule-editor-drawer"
-        :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
-        @open-auto-focus="onOpenAutoFocus"
-      >
-        <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
+    <!-- Body-teleported like every other modal dialog (#0575): Radix does not
+      portal DialogContent itself, and an inline fixed-position drawer layer
+      breaks the shared dismissable-layer ordering — the layer underneath
+      inherits an inline `pointer-events: none` no stylesheet can override,
+      which is exactly the dead-buttons symptom this panel's delete
+      confirmation showed. -->
+    <Teleport to="body">
+      <Dialog :open="editorOpen" @update:open="setEditorOpen">
+        <DialogOverlay />
+        <DialogContent
+          data-testid="schedule-editor-drawer"
+          :style="{ width: ui.drawerWidth + 'px', 'max-width': '100vw' }"
+          @open-auto-focus="onOpenAutoFocus"
+        >
+          <div class="drawer-resize" @mousedown.prevent="ui.startResize"></div>
 
-        <div class="drawer-head">
-          <div class="drawer-head-title">
-            <DialogTitle>{{ editingId ? "Edit schedule" : "New schedule" }}</DialogTitle>
-            <DialogDescription class="sr-only">
-              {{
-                editingId ? "Edit a scheduled task template" : "Create a scheduled task template"
-              }}
-            </DialogDescription>
+          <div class="drawer-head">
+            <div class="drawer-head-title">
+              <DialogTitle>{{ editingId ? "Edit schedule" : "New schedule" }}</DialogTitle>
+              <DialogDescription class="sr-only">
+                {{
+                  editingId ? "Edit a scheduled task template" : "Create a scheduled task template"
+                }}
+              </DialogDescription>
+            </div>
+            <DialogClose class="close-x" data-testid="schedule-editor-close">
+              <X class="size-[15px]" />
+            </DialogClose>
           </div>
-          <DialogClose class="close-x" data-testid="schedule-editor-close">
-            <X class="size-[15px]" />
-          </DialogClose>
-        </div>
 
-        <div class="drawer-body">
-          <div class="field">
-            <label for="sched-title">Schedule name</label>
-            <Input id="sched-title" v-model="form.title" placeholder="Weekly doc audit" />
-          </div>
-          <div class="field">
-            <label>Cadence</label>
-            <Select v-model="form.cadence">
-              <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectViewport>
-                  <SelectItem value="once">One-time</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                </SelectViewport>
-              </SelectContent>
-            </Select>
-          </div>
-          <div class="field">
-            <label for="sched-timezone">Timezone (IANA)</label>
-            <Input
-              id="sched-timezone"
-              v-model="form.timezone"
-              placeholder="Asia/Singapore"
-              :aria-invalid="timezoneError ? 'true' : undefined"
-            />
-            <p v-if="timezoneError" class="ff-error">{{ timezoneError }}</p>
-          </div>
-          <div v-if="form.cadence !== 'once'" class="field">
-            <label for="sched-time">Local time (HH:MM)</label>
-            <Input id="sched-time" v-model="form.timeOfDay" placeholder="09:00" />
-          </div>
-          <div v-if="form.cadence === 'once'" class="field">
-            <label for="sched-run-at">Run at (ISO)</label>
-            <Input id="sched-run-at" v-model="form.runAt" placeholder="2026-10-20T09:00:00Z" />
-          </div>
-          <div v-if="form.cadence === 'weekly'" class="field">
-            <label>Day of week</label>
-            <Select v-model="form.dayOfWeek">
-              <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectViewport>
-                  <SelectItem :value="0">Sunday</SelectItem>
-                  <SelectItem :value="1">Monday</SelectItem>
-                  <SelectItem :value="2">Tuesday</SelectItem>
-                  <SelectItem :value="3">Wednesday</SelectItem>
-                  <SelectItem :value="4">Thursday</SelectItem>
-                  <SelectItem :value="5">Friday</SelectItem>
-                  <SelectItem :value="6">Saturday</SelectItem>
-                </SelectViewport>
-              </SelectContent>
-            </Select>
-          </div>
-          <p class="ff-notice" data-testid="schedule-next-preview">
-            Next run preview:
-            <strong>{{ preview }}</strong>
-          </p>
-          <div class="field">
-            <label for="sched-task-title">Task title</label>
-            <Input
-              id="sched-task-title"
-              v-model="form.taskTitle"
-              placeholder="Same as schedule name"
-            />
-          </div>
-          <div class="field">
-            <label for="sched-body">Task specification</label>
-            <textarea
-              id="sched-body"
-              v-model="form.body"
-              class="ff-textarea"
-              rows="6"
-              placeholder="## Problem&#10;…"
-            />
-          </div>
-          <div class="field-row">
+          <div class="drawer-body">
             <div class="field">
-              <label for="sched-type">Type</label>
-              <Input id="sched-type" v-model="form.taskType" />
+              <label for="sched-title">Schedule name</label>
+              <Input id="sched-title" v-model="form.title" placeholder="Weekly doc audit" />
             </div>
             <div class="field">
-              <label for="sched-area">Area</label>
-              <Input id="sched-area" v-model="form.taskArea" />
+              <label>Cadence</label>
+              <Select v-model="form.cadence">
+                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport>
+                    <SelectItem value="once">One-time</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-          <div class="field-row">
             <div class="field">
-              <label for="sched-priority">Priority</label>
-              <Input id="sched-priority" v-model="form.taskPriority" />
+              <label for="sched-timezone">Timezone (IANA)</label>
+              <Input
+                id="sched-timezone"
+                v-model="form.timezone"
+                placeholder="Asia/Singapore"
+                :aria-invalid="timezoneError ? 'true' : undefined"
+              />
+              <p v-if="timezoneError" class="ff-error">{{ timezoneError }}</p>
+            </div>
+            <div v-if="form.cadence !== 'once'" class="field">
+              <label for="sched-time">Local time (HH:MM)</label>
+              <Input id="sched-time" v-model="form.timeOfDay" placeholder="09:00" />
+            </div>
+            <div v-if="form.cadence === 'once'" class="field">
+              <label for="sched-run-at">Run at (ISO)</label>
+              <Input id="sched-run-at" v-model="form.runAt" placeholder="2026-10-20T09:00:00Z" />
+            </div>
+            <div v-if="form.cadence === 'weekly'" class="field">
+              <label>Day of week</label>
+              <Select v-model="form.dayOfWeek">
+                <SelectTrigger class="h-[34px] w-full rounded-[9px] px-[11px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectViewport>
+                    <SelectItem :value="0">Sunday</SelectItem>
+                    <SelectItem :value="1">Monday</SelectItem>
+                    <SelectItem :value="2">Tuesday</SelectItem>
+                    <SelectItem :value="3">Wednesday</SelectItem>
+                    <SelectItem :value="4">Thursday</SelectItem>
+                    <SelectItem :value="5">Friday</SelectItem>
+                    <SelectItem :value="6">Saturday</SelectItem>
+                  </SelectViewport>
+                </SelectContent>
+              </Select>
+            </div>
+            <p class="ff-notice" data-testid="schedule-next-preview">
+              Next run preview:
+              <strong>{{ preview }}</strong>
+            </p>
+            <div class="field">
+              <label for="sched-task-title">Task title</label>
+              <Input
+                id="sched-task-title"
+                v-model="form.taskTitle"
+                placeholder="Same as schedule name"
+              />
             </div>
             <div class="field">
-              <label for="sched-assignee">Assignee</label>
-              <Input id="sched-assignee" v-model="form.taskAssignedTo" placeholder="ai or human" />
+              <label for="sched-body">Task specification</label>
+              <textarea
+                id="sched-body"
+                v-model="form.body"
+                class="ff-textarea"
+                rows="6"
+                placeholder="## Problem&#10;…"
+              />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="sched-type">Type</label>
+                <Input id="sched-type" v-model="form.taskType" />
+              </div>
+              <div class="field">
+                <label for="sched-area">Area</label>
+                <Input id="sched-area" v-model="form.taskArea" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="sched-priority">Priority</label>
+                <Input id="sched-priority" v-model="form.taskPriority" />
+              </div>
+              <div class="field">
+                <label for="sched-assignee">Assignee</label>
+                <Input
+                  id="sched-assignee"
+                  v-model="form.taskAssignedTo"
+                  placeholder="ai or human"
+                />
+              </div>
+            </div>
+            <div class="field">
+              <label for="sched-status">Initial status</label>
+              <Input id="sched-status" v-model="form.taskStatus" />
+            </div>
+            <div class="field inline-toggle">
+              <label>Start engineer automatically</label>
+              <Switch v-model:checked="form.autoStartAgent" />
+            </div>
+            <p v-if="formError" class="ff-error">{{ formError }}</p>
+            <div class="btn-row" style="margin-top: 20px">
+              <Button variant="outline" @click="editorOpen = false">Cancel</Button>
+              <Button :disabled="!formIsValid" data-testid="schedule-save" @click="saveSchedule">
+                Save schedule
+              </Button>
             </div>
           </div>
-          <div class="field">
-            <label for="sched-status">Initial status</label>
-            <Input id="sched-status" v-model="form.taskStatus" />
-          </div>
-          <div class="field inline-toggle">
-            <label>Start engineer automatically</label>
-            <Switch v-model:checked="form.autoStartAgent" />
-          </div>
-          <p v-if="formError" class="ff-error">{{ formError }}</p>
-          <div class="btn-row" style="margin-top: 20px">
-            <Button variant="outline" @click="editorOpen = false">Cancel</Button>
-            <Button :disabled="!formIsValid" data-testid="schedule-save" @click="saveSchedule">
-              Save schedule
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </Teleport>
 
     <DeleteConfirmDialog
       :open="!!deleteTarget"
