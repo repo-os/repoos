@@ -3,6 +3,9 @@ id: "0997"
 title: "Agent-failed card text, dead click target, and unclickable restart modal"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p0
 area: web
 assigned_to: ai
@@ -156,3 +159,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T19:32:20Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T19:32:21Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T19:47:25Z · note: review pass 1: failed — no usable report
+- 2026-11-02T19:47:25Z · needs_input
