@@ -575,7 +575,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     // because its task record was momentarily missing. Fail closed: keep a
     // live directory until a task record proves the work is resolved. A
     // vanished directory has no working tree to protect — only its branch ref
-    // can carry unmerged data — so the content proof below decides.
+    // can carry unmerged data — so the content proof here decides.
     if (!task) {
       if (existsSync(w.path)) {
         retain({ ...meta, reason: "no task record for branch — lifecycle state unknown" });
