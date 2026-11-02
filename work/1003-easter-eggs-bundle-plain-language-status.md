@@ -3,9 +3,6 @@ id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
 status: active
-hold: true
-hold_reason: "#1009 actual remote upload still full; pause while mirror-base selection is corrected"
-hold_at: "2026-11-02T03:55:35.956Z"
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T03:55:35Z"
+updated_at: "2026-11-02T04:16:25Z"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
@@ -414,3 +411,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T03:53:15Z · message_delivered: 1 message(s)
 - 2026-11-02T03:55:35Z · engineer stopped by request
 - 2026-11-02T03:55:35Z · held, held-reason, held-at
+- 2026-11-02T04:16:25Z · released
