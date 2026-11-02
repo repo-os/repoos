@@ -3,9 +3,6 @@ id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
 status: active
-needs_input: true
-needs_input_reason: check-wait
-needs_input_detail: "waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 3s"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/make-retained-worktree-cleanup-safe-and-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T14:56:57Z"
+updated_at: "2026-11-02T14:59:49Z"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -77,10 +74,10 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 "highlight": ".gc-preview",
 "steps": [
 {
-  "click": "button.gc-action"
+"click": "button.gc-action"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "system:worktreeGc"
@@ -112,3 +109,7 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T14:42:58Z · body
 - 2026-11-02T14:56:38Z · body
 - 2026-11-02T14:56:57Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-02T14:57:27Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-02T14:58:42Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-02T14:58:57Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-02T14:59:49Z · handoff_deferred: 3 queued message(s) must be read before review
