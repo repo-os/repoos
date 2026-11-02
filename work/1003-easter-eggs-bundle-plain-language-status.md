@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T04:50:54Z"
+updated_at: "2026-11-02T04:53:32Z"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
@@ -119,88 +119,16 @@ Keep the selected pass highlight visible while its report is loading and after i
 ```json
 [
 {
-"label": "Checks show a live slot with no recent heartbeat",
-"target": "default",
-"route": "/checks?shotState=checks:waiting",
-"highlight": ".ck-local-slot"
+  "label": "Mission Control balanced four-panel layout",
+  "target": "default",
+  "route": "/",
+  "highlight": ".dash-grid"
 },
 {
-"label": "Mission Control panels in a balanced two by two layout",
-"target": "default",
-"route": "/",
-"highlight": ".dash-grid",
-"steps": [
-{
-"waitFor": ".dash-grid"
-}
-],
-"viewportWidth": 1280,
-"viewportHeight": 900
-},
-{
-"label": "Agents tab shows default agents followed by custom agents",
-"target": "default",
-"route": "/agents?tab=default",
-"highlight": ".agents-tab-content",
-"steps": [
-{
-"waitFor": ".agents-tab-content"
-}
-],
-"assert": [
-{
-"text": "Default agents"
-},
-{
-"text": "Custom agents"
-}
-],
-"viewportWidth": 1280,
-"viewportHeight": 2160
-},
-{
-"label": "Review pass history shows the selected latest pass and reviewer",
-"target": "default",
-"route": "/work?task=9999&tab=review&shotState=drawer:reviewPasses",
-"highlight": ".review-history-table",
-"steps": [
-{
-"waitFor": ".review-history-table"
-}
-],
-"assert": [
-{
-"text": "Latest"
-},
-{
-"text": "Codex"
-}
-]
-},
-{
-"label": "Task agent assignment preview fits a narrow viewport",
-"target": "default",
-"route": "/work?shotState=board:severalWorkingCards",
-"highlight": "[data-test-id=\"task-agent-preview\"]",
-"steps": [
-{
-"hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
-},
-{
-"waitMs": 250
-}
-],
-"assert": [
-{
-"text": "Engineer"
-},
-{
-"text": "Reviewer"
-}
-],
-"state": "board:severalWorkingCards",
-"viewportWidth": 390,
-"viewportHeight": 400
+  "label": "Agents settings with default and custom sections",
+  "target": "default",
+  "route": "/settings?tab=agents",
+  "highlight": "#settings-panel-agents"
 }
 ]
 ```
@@ -417,3 +345,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T04:30:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T04:37:05Z · body
 - 2026-11-02T04:50:54Z · body
+- 2026-11-02T04:53:32Z · body
