@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-02T09:01:58Z"
+review_passes: 3
 id: 1007
 title: Engineering reports for each task work round
 type: feature
@@ -12,13 +14,11 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T09:01:58Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 2
 ---
 ## Problem
 
@@ -155,3 +155,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T09:01:13Z · status active→review
 - 2026-11-02T09:01:57Z · note: review pass 3: needs some work
 - 2026-11-02T09:01:58Z · needs_input
+
