@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-02T13:18:45.518Z: repoos check failed: rendered-contrast — timed out — timed out after 600s"
 id: 1010
 title: "Easter eggs bundle: clearer held task cards"
 type: chore
@@ -12,7 +10,9 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-clearer-held-task-car
 model_override: gpt-6.1-terra
 created_at: "2026-11-02T04:38:23Z"
-updated_at: "2026-11-02T12:58:06Z"
+updated_at: "2026-11-02T13:25:37Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T13:18:45.518Z: repoos check failed: rendered-contrast — timed out — timed out after 600s"
 ---
 ## Problem
 Held task cards show a yellow Held chip and repeat “HELD” at the lower left. Their green “Restart work” button is also misleading: a held task is intentionally inert and should not look like ordinary restartable work.
@@ -79,4 +79,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T12:58:05Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T12:58:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T12:58:06Z · message_delivered: 1 message(s)
-
+- 2026-11-02T13:25:37Z · body
