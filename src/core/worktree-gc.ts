@@ -108,31 +108,38 @@ export interface SweepOptions {
 }
 
 /** Read durable close-out records directly so every sweep caller gets the same
- * protection, including the CLI where no server coordinator is available. */
-function activeCloseOutIds(config: RepoOSConfig): Set<string> {
+ * protection, including the CLI where no server coordinator is available.
+ *
+ * `known` is false when the store itself cannot be read or parsed. The caller
+ * must then skip cleanup: an unreadable record could belong to any task, so no
+ * candidate or feature worktree can be proven inactive. A missing directory is
+ * `known: true` with no records. */
+function activeCloseOutIds(config: RepoOSConfig): { ids: Set<string>; known: boolean } {
   // integration-job.ts persists here independently of the configurable cacheDir.
   const dir = join(config.root, ".repoos", "integration-jobs");
-  const active = new Set<string>();
+  const ids = new Set<string>();
+  let files: string[];
   try {
-    for (const file of readdirSync(dir)) {
-      if (!file.endsWith(".json")) continue;
-      try {
-        const job = JSON.parse(readFileSync(`${dir}/${file}`, "utf8")) as {
-          taskId?: unknown;
-          phase?: unknown;
-        };
-        if (typeof job.taskId === "string" && job.phase !== "done" && job.phase !== "failed") {
-          active.add(job.taskId);
-        }
-      } catch {
-        // A malformed job record cannot establish that its candidate is safe.
-        active.add(file.slice(0, -5));
-      }
-    }
-  } catch {
-    // No job directory means no recorded close-outs.
+    files = readdirSync(dir);
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return { ids, known: true };
+    return { ids, known: false };
   }
-  return active;
+  for (const file of files) {
+    if (!file.endsWith(".json")) continue;
+    try {
+      const job = JSON.parse(readFileSync(`${dir}/${file}`, "utf8")) as {
+        taskId?: unknown;
+        phase?: unknown;
+      };
+      if (typeof job.taskId !== "string") return { ids, known: false };
+      if (job.phase !== "done" && job.phase !== "failed") ids.add(job.taskId);
+    } catch {
+      // A malformed job record cannot establish that any candidate is safe.
+      return { ids, known: false };
+    }
+  }
+  return { ids, known: true };
 }
 
 function gitRun(
@@ -200,10 +207,6 @@ function isInside(dir: string, candidate: string): boolean {
   return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
-function refHasPath(root: string, ref: string, path: string): boolean {
-  return gitRun(root, ["cat-file", "-e", `${ref}:${path}`], { timeout: 4000 }).status === 0;
-}
-
 /** True when `path` is a task file (`<workDir>/*.md`), the only bookkeeping
  * files whose canonical content always lives on main. */
 function isTaskFilePath(path: string, workDir: string): boolean {
@@ -232,18 +235,23 @@ function compareContributionSince(
   workDir: string,
   base: string,
 ): Representation {
-  const diff = gitRun(root, ["diff", "--name-only", "-z", base, branch]);
+  const diff = gitRun(root, ["diff", "--name-only", "-z", "--no-renames", base, branch]);
   if (diff.status !== 0) return { represented: false, differing: [], uniqueTaskFiles: [] };
   const changed = diff.stdout.split("\0").filter(Boolean);
   if (changed.length === 0) {
     return { represented: true, differing: [], uniqueTaskFiles: [] };
   }
-  const uniqueTaskFiles = changed.filter(
-    (path) =>
-      isTaskFilePath(path, workDir) &&
-      refHasPath(root, branch, path) &&
-      !refHasPath(root, mainBranch, path),
-  );
+  // Task files are canonical-wins only when the branch's bytes are exactly
+  // main's. A changed task file whose content differs — or that main does not
+  // have — may hold unique data, so it keeps the worktree. A branch deletion
+  // (no branch-side bytes) carries nothing to preserve.
+  const uniqueTaskFiles = changed.filter((path) => {
+    if (!isTaskFilePath(path, workDir)) return false;
+    const branchFile = gitRunBytes(root, ["show", `${branch}:${path}`]);
+    if (branchFile === null) return false;
+    const mainFile = gitRunBytes(root, ["show", `${mainBranch}:${path}`]);
+    return mainFile === null || Buffer.compare(branchFile, mainFile) !== 0;
+  });
   const sourcePaths = changed.filter((path) => !isTaskFilePath(path, workDir));
   if (uniqueTaskFiles.length > 0 || sourcePaths.length === 0) {
     return {
@@ -254,13 +262,24 @@ function compareContributionSince(
   }
   // Compare main with the branch only over the paths this contribution touched,
   // so a main that has simply moved ahead does not look like divergence. Chunk
-  // the pathspec to stay well clear of the OS argument limit.
+  // the pathspec to stay well clear of the OS argument limit. Rename detection
+  // is OFF: a rename must be checked as both the addition and the deletion, or
+  // an old file main still has could disappear from the comparison.
   const differing: string[] = [];
   const CHUNK = 100;
   for (let i = 0; i < sourcePaths.length; i += CHUNK) {
     const compare = gitRun(
       root,
-      ["diff", "--name-only", "-z", mainBranch, branch, "--", ...sourcePaths.slice(i, i + CHUNK)],
+      [
+        "diff",
+        "--name-only",
+        "-z",
+        "--no-renames",
+        mainBranch,
+        branch,
+        "--",
+        ...sourcePaths.slice(i, i + CHUNK),
+      ],
       { timeout: 15000 },
     );
     if (compare.status !== 0) return { represented: false, differing: [], uniqueTaskFiles: [] };
@@ -294,8 +313,11 @@ function isAncestorOf(root: string, ancestor: string, descendant: string): boole
  *  2. Otherwise, every non-task path the branch changed since the merge base
  *     must be byte-identical in main.
  *
- * In both cases a task file the branch added but main does not have is unique
- * data and keeps the worktree; task files main already has are canonical-wins.
+ * In both cases a task file the branch added, or modified to different bytes
+ * than main's canonical copy, is unique data and keeps the worktree. Rename
+ * detection is disabled so a rename is checked as both an addition and a
+ * deletion. Cleanup is skipped entirely when the task index or the durable
+ * close-out-job state cannot be read.
  */
 function branchRepresentedInMain(
   root: string,
@@ -380,9 +402,17 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     prunedMetadata: false,
     errors: [],
   };
+  const finish = (): GcReport => {
+    report.summary = {
+      candidates: report.removedWorktrees.length,
+      retained: report.retained.length,
+      external: report.external.length,
+    };
+    return report;
+  };
   if (!isGitRepo(root)) {
     report.errors.push("not a git repository");
-    return report;
+    return finish();
   }
   // A close-out cancellation normally reaps the detached check group before
   // removing its candidate. If the server itself was interrupted mid-stop,
@@ -392,15 +422,6 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
   const wtDir = worktreesDir(root);
   const mainBranch = currentBranch(root) ?? "main";
   const workDir = config.workDir || "work";
-  const activeJobIds = opts.activeJobIds ?? activeCloseOutIds(config);
-
-  // branch -> task, for the "is this worktree still live" check (full mode only).
-  const taskByBranch = new Map<string, Task>();
-  const tasks = opts.tasks ?? buildIndex(config).tasks;
-  const taskById = new Map(tasks.map((t) => [t.id, t]));
-  if (opts.mode === "full") {
-    for (const t of tasks) if (t.branch) taskByBranch.set(t.branch, t);
-  }
 
   const infos = listWorktrees(root);
   const scoped = infos.filter((w) => !w.isMain && !w.isBare && isInside(wtDir, w.path));
@@ -412,6 +433,39 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       reason: "outside RepoOS's managed worktree directory",
     });
   }
+
+  // Lifecycle state must be established before anything is removed. A close-out
+  // record we cannot read could belong to any task, and an unreadable task index
+  // would make every branch look like it has no live task — both must fail
+  // closed by skipping cleanup entirely. Read the durable store even when the
+  // caller supplies ids: the caller's in-memory set can be stale or partial.
+  const closeOuts = activeCloseOutIds(config);
+  if (!closeOuts.known) {
+    report.errors.push("close-out job state could not be read — cleanup skipped");
+    return finish();
+  }
+  const activeJobIds = new Set([...(opts.activeJobIds ?? []), ...closeOuts.ids]);
+
+  // branch -> task, for the "is this worktree still live" check (full mode only).
+  const taskByBranch = new Map<string, Task>();
+  let tasks: Task[];
+  if (opts.tasks) {
+    tasks = opts.tasks;
+  } else {
+    try {
+      tasks = buildIndex(config).tasks;
+    } catch (e) {
+      report.errors.push(
+        `task index could not be built (${(e as Error).message}) — cleanup skipped`,
+      );
+      return finish();
+    }
+  }
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
+  if (opts.mode === "full") {
+    for (const t of tasks) if (t.branch) taskByBranch.set(t.branch, t);
+  }
+
   const mergedIntoMain =
     opts.mode === "full" ? mergedBranches(root, mainBranch) : new Set<string>();
 
@@ -559,7 +613,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     if (!represented) {
       const reason =
         uniqueTaskFiles.length > 0
-          ? `task file${uniqueTaskFiles.length === 1 ? "" : "s"} not on ${mainBranch}: ${uniqueTaskFiles
+          ? `task file content not represented in ${mainBranch}: ${uniqueTaskFiles
               .slice(0, 5)
               .join(", ")}`
           : differing.length > 0
@@ -616,12 +670,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     pruneWorktrees(root);
     report.prunedMetadata = true;
   }
-  report.summary = {
-    candidates: report.removedWorktrees.length,
-    retained: report.retained.length,
-    external: report.external.length,
-  };
-  return report;
+  return finish();
 }
 
 /** Number of registered git worktrees, including the main checkout. */

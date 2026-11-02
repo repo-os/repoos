@@ -331,10 +331,109 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
       expect(report.retained).toContainEqual(
         expect.objectContaining({
           branch: "feat/unique-task",
-          reason: expect.stringContaining("task file not on"),
+          reason: expect.stringContaining("task file content not represented"),
         }),
       );
       expect(branches(root).has("feat/unique-task")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps a done branch whose modified task file differs from main", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      write(root, "work/0001-done.md", "canonical v1\n");
+      commitAll(root, "task v1");
+      worktreeWithFiles(root, main, "feat/edited-task", {
+        "work/0001-done.md": "branch-only task note\n",
+      });
+      // Main advances the same task file to different content.
+      write(root, "work/0001-done.md", "canonical v2\n");
+      commitAll(root, "task v2");
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/edited-task", "done")],
+      });
+
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "feat/edited-task",
+          reason: expect.stringContaining("task file content not represented"),
+        }),
+      );
+      expect(branches(root).has("feat/edited-task")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps a renamed source deletion even when main has the new path", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      write(root, "src/old.ts", "export const value = 1;\n");
+      commitAll(root, "old file");
+      git(root, ["branch", "feat/renamed", main]);
+      const wt = ensureWorktree(root, "feat/renamed").path;
+      write(wt, "src/new.ts", "export const value = 1;\n");
+      rmSync(join(wt, "src/old.ts"));
+      commitAll(wt, "rename old to new");
+
+      // Main independently adds the new path but still has the old file.
+      write(root, "src/new.ts", "export const value = 1;\n");
+      commitAll(root, "main adds new path");
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/renamed", "done")],
+      });
+
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "feat/renamed",
+          reason: expect.stringContaining("src/old.ts"),
+        }),
+      );
+      expect(branches(root).has("feat/renamed")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("skips cleanup when close-out job metadata cannot be read", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      mergedWorktree(root, main, "feat/done");
+      mkdirSync(join(root, ".repoos", "integration-jobs"), { recursive: true });
+      writeFileSync(join(root, ".repoos", "integration-jobs", "bad.json"), "{ not json");
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/done", "done")],
+      });
+
+      expect(report.removedWorktrees).toHaveLength(0);
+      expect(report.errors.join(" ")).toMatch(/close-out job state could not be read/);
+      expect(branches(root).has("feat/done")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("skips cleanup when the task index cannot be built", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      mergedWorktree(root, main, "feat/done");
+      // `workDir` is a file, so buildIndex's directory walk throws.
+      write(root, "not-a-dir", "x\n");
+      const config = { ...cfg(root), workDir: "not-a-dir" } as RepoOSConfig;
+
+      const report = sweepStaleWorktrees(config, { mode: "full" });
+
+      expect(report.removedWorktrees).toHaveLength(0);
+      expect(report.errors.join(" ")).toMatch(/task index could not be built/);
+      expect(branches(root).has("feat/done")).toBe(true);
     } finally {
       clean();
     }

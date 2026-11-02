@@ -671,6 +671,7 @@ describe("status --json shape", () => {
       "candidates",
       "count",
       "counts",
+      "errors",
       "external",
       "managedCount",
       "retained",

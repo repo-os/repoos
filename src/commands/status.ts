@@ -166,6 +166,8 @@ export interface StatusSnapshot {
     }>;
     /** Registered worktrees outside RepoOS's managed directory (never touched). */
     external: Array<{ branch: string; path: string; reason: string }>;
+    /** Why a sweep could not proceed, e.g. unreadable lifecycle state. */
+    errors: string[];
     /** Counts mirror `gc --dry-run`, so the two views agree by construction. */
     counts: { candidates: number; retained: number; external: number };
   };
@@ -527,6 +529,7 @@ export async function collectStatus(
       ...(k.dirtyPaths ? { dirtyPaths: k.dirtyPaths } : {}),
     })),
     external: gc.external.map((e) => ({ branch: e.branch, path: e.path, reason: e.reason })),
+    errors: gc.errors,
     counts: gc.summary,
   };
 
@@ -907,6 +910,9 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
   }
   for (const e of ws.external) {
     sub(c.dim("external  ") + c.dim(e.branch || "(detached)") + c.dim(`  — ${e.reason}`));
+  }
+  for (const e of ws.errors) {
+    sub(c.red("error     ") + c.red(e));
   }
   if (wtCounts.candidates > 0) {
     sub(c.dim("          run ") + c.cyan("repoos gc") + c.dim(" to reclaim the candidates"));

@@ -138,6 +138,7 @@ function fakeStatus(root: string): StatusSnapshot {
       candidates: [],
       retained: [],
       external: [],
+      errors: [],
       counts: { candidates: 0, retained: 0, external: 0 },
     },
     tunnel: { configured: false, tunnelName: null, running: false, hostnames: [] },
