@@ -277,3 +277,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-01T23:51:48Z · body
 - 2026-11-02T00:11:42Z · message_queued at 2026-11-02T00:11:42.311Z
 - 2026-11-02T00:25:49Z · status active→review
+- 2026-11-02T00:25:49Z · note: Task body is underspecified: E5: missing Notes for AI; E6: missing Problem, Desired UX, Acceptance criteria, Notes for AI
