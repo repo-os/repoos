@@ -95,3 +95,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T05:04:16Z · body
 - 2026-11-02T05:13:38Z · handoff failed · remote validation failed: test failure: tests/server-git-blocking-guard.test.ts > server git blocking guard > does not import and call synchronous Git read helpers from server code on bee — fix it in the feature branch and re-run the gate
 - 2026-11-02T05:13:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/server-git-blocking-guard.test.ts > server git blocking guard > does not import and call synchronous Git read helpers from server code on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-11-02T05:13:40Z · note: handoff requested (cli)
