@@ -2,7 +2,7 @@
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -326,3 +326,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T01:58:31Z · body
 - 2026-11-02T02:01:59Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T02:02:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T02:02:00Z · status active→review
