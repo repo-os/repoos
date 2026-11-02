@@ -2,7 +2,7 @@
 id: "0999"
 title: Keep automatic watchdog bookkeeping from blocking close-out
 type: bug
-status: active
+status: review
 priority: p1
 area: [core, server]
 assigned_to: ai
@@ -59,3 +59,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T03:52:53Z · released
 - 2026-11-02T03:53:00Z · message_delivered: 1 message(s)
 - 2026-11-02T03:53:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T03:53:30Z · status active→review
