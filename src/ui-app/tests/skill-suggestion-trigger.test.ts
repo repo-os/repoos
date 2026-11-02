@@ -73,10 +73,12 @@ function makeFixture(repoosToml?: string): Fixture {
   // before them would swallow the rest into `pressureGuard`.
   const toml = `${repoosToml ?? ""}\n[pressureGuard]\nenabled = false\n`;
   writeFileSync(join(root, "repoos.toml"), toml);
+  writeFileSync(join(root, ".gitignore"), ".repoos/\n");
   git(root, ["init", "-q"]);
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
-  git(root, ["commit", "--allow-empty", "-m", "init"]);
+  git(root, ["add", ".gitignore"]);
+  git(root, ["commit", "-m", "init"]);
   const worktrees = join(dirname(root), `${basename(root)}-worktrees`);
   return {
     root,
@@ -172,6 +174,12 @@ async function taskWithWorktree(
   const worktree = join(fx.worktrees, branch);
   git(fx.root, ["worktree", "add", "-q", "-b", branch, worktree]);
   writeFileSync(join(worktree, "implementation.txt"), "implemented\n");
+  const draftDir = join(worktree, ".repoos", "engineering-report-drafts");
+  mkdirSync(draftDir, { recursive: true });
+  writeFileSync(
+    join(draftDir, `${id}.md`),
+    "## TL;DR\nSummary.\n\n## Work and rationale\nImplemented.\n\n## Approaches tried\nTested.\n\n## Challenges and blockers\nNone.\n\n## Key learnings\nKeep coverage.\n",
+  );
   const patched = await api(server, "PATCH", `/api/tasks/${id}`, { branch });
   expect(patched.status).toBe(200);
   return { id, absPath: created.body.absPath as string, branch };

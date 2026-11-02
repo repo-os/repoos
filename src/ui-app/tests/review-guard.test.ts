@@ -8,6 +8,7 @@
  * sibling task file in) are still asserted here directly, and the routing
  * tests below assert that no route reaches `review` without it.
  */
+import { seedEngineeringReport } from "./engineering-report-fixture";
 import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -512,6 +513,7 @@ describe("file-watch direct edit into review (0507: routed to the finalization)"
 
   it("commits the worker's work and moves to review, running the full check", async () => {
     const fx = makeFixture();
+    seedEngineeringReport(fx.worktree, "0210");
     try {
       uncommittedChange(fx);
       const index = new LiveIndex(fx.config);

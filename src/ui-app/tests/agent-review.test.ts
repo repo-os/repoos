@@ -151,6 +151,11 @@ async function taskWithWorktree(
   // (and rejects empty worktrees). Give it an implementation file so the PATCH
   // behaves like a trusted handoff and genuinely lands in review.
   writeFileSync(join(worktree, "implementation.txt"), "implemented\n");
+  mkdirSync(join(worktree, ".repoos", "engineering-report-drafts"), { recursive: true });
+  writeFileSync(
+    join(worktree, ".repoos", "engineering-report-drafts", `${id}.md`),
+    "## TL;DR\nSummary.\n\n## Work and rationale\nImplemented.\n\n## Approaches tried\nTested.\n\n## Challenges and blockers\nNone.\n\n## Key learnings\nKeep coverage.\n",
+  );
   const patched = await api(server, "PATCH", `/api/tasks/${id}`, { branch });
   expect(patched.status).toBe(200);
   return { id, absPath: created.body.absPath as string, branch, worktree };
@@ -373,7 +378,7 @@ describe("agent review before human sign-off (#0101)", () => {
     });
   }, 90_000);
 
-  it("reviews again after a human returns a task to engineering, even when HEAD has not changed", async () => {
+  it("reviews again after a human returns a task for a new engineering round", async () => {
     const fx = makeFixture(printReport);
     await withServer(fx, async (server) => {
       const task = await taskWithWorktree(server, fx, "Review each handoff");
@@ -385,6 +390,11 @@ describe("agent review before human sign-off (#0101)", () => {
       const returned = await api(server, "PATCH", `/api/tasks/${task.id}`, { status: "active" });
       expect(returned.status).toBe(200);
       expect(returned.body.status, readFileSync(task.absPath, "utf8")).toBe("active");
+      writeFileSync(join(task.worktree, "implementation.txt"), "revised implementation\n");
+      writeFileSync(
+        join(task.worktree, ".repoos", "engineering-report-drafts", `${task.id}.md`),
+        "## TL;DR\nRevision.\n\n## Work and rationale\nUpdated.\n\n## Approaches tried\nTested.\n\n## Challenges and blockers\nNone.\n\n## Key learnings\nKeep coverage.\n",
+      );
       await requestReview(server, task.id, task.absPath);
       await waitFor(
         () => /^review_passes: 2$/m.test(readFileSync(task.absPath, "utf8")),
