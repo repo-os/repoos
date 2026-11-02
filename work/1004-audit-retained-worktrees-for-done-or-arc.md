@@ -3,12 +3,6 @@ id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
-debug_tldr: The review agent timed out after 900 seconds — retry the review with a different reviewer agent.
-debug_tldr_at: "2026-11-02T19:18:24Z"
-debug_tldr_key: review-failed|the opencode agent timed out after 900s
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T23:51:53Z"
+updated_at: "2026-11-02T23:52:15Z"
 last_check_failure: "repoos check at 2026-11-02T17:37:43.905Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
 review_passes: 1
@@ -151,3 +145,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T19:17:59Z · needs_input
 - 2026-11-02T19:51:42Z · body
 - 2026-11-02T23:51:53Z · review_cli_override, review_model_override
+- 2026-11-02T23:52:15Z · needs_input (review-failed) cleared for review again by hello@repoos.org
