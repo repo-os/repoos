@@ -332,10 +332,10 @@ describe("schedule CRUD from the panel", () => {
       "utf8",
     );
     expect(source).toMatch(
-      /@media \(max-width: 760px\)[\s\S]*?\.schedule-card-details\s*\{\s*flex-direction:\s*column/,
+      /@media \(max-width: 900px\)[\s\S]*?\.schedule-card-details\s*\{\s*flex-direction:\s*column/,
     );
     expect(source).toMatch(
-      /@media \(max-width: 760px\)[\s\S]*?\.schedule-actions\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap/,
+      /@media \(max-width: 900px\)[\s\S]*?\.schedule-actions\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap/,
     );
   });
 });

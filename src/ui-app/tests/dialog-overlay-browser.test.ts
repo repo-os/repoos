@@ -99,10 +99,22 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           [confirm, "confirm"],
           [cancel, "cancel"],
         ] as const) {
+          const before = await locator.evaluate((el) => {
+            const style = getComputedStyle(el);
+            return { bg: style.backgroundColor, border: style.borderColor };
+          });
           await locator.hover();
           expect(await locator.evaluate((el) => getComputedStyle(el).filter)).toBe(
             "brightness(1.12)",
           );
+          // #1005 round 3: brightness alone was ~5/255 — the hover must move
+          // the background and border to a visibly distinct state.
+          const after = await locator.evaluate((el) => {
+            const style = getComputedStyle(el);
+            return { bg: style.backgroundColor, border: style.borderColor };
+          });
+          expect(after.bg, `${action} hover background shifts`).not.toBe(before.bg);
+          expect(after.border, `${action} hover border shifts`).not.toBe(before.border);
           const box = await locator.boundingBox();
           expect(box).toBeTruthy();
           await page.mouse.click(box!.x + 8, box!.y + 8);
@@ -118,7 +130,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
     });
 
     it("stacks schedule details and keeps actions usable through the mid-width range", async () => {
-      const page = await browser.newPage({ viewport: { width: 761, height: 600 } });
+      const page = await browser.newPage({ viewport: { width: 901, height: 600 } });
       try {
         await page.setContent(
           `<style>${scheduleStyles}</style>
@@ -133,18 +145,18 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
             </div>
           </article>`,
         );
-        const directionAt761 = await page
+        const directionAt901 = await page
           .locator(".schedule-card-details")
           .evaluate((el) => getComputedStyle(el).flexDirection);
-        expect(directionAt761).toBe("row");
+        expect(directionAt901).toBe("row");
 
-        await page.setViewportSize({ width: 760, height: 600 });
-        const layoutAt760 = await page.locator(".schedule-card-details").evaluate((el) => ({
+        await page.setViewportSize({ width: 900, height: 600 });
+        const layoutAt900 = await page.locator(".schedule-card-details").evaluate((el) => ({
           detailsDirection: getComputedStyle(el).flexDirection,
           actionsDirection: getComputedStyle(el.querySelector(".schedule-actions")!).flexDirection,
           actionsWrap: getComputedStyle(el.querySelector(".schedule-actions")!).flexWrap,
         }));
-        expect(layoutAt760).toEqual({
+        expect(layoutAt900).toEqual({
           detailsDirection: "column",
           actionsDirection: "row",
           actionsWrap: "wrap",
