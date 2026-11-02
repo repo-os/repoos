@@ -47,7 +47,7 @@ export interface LandableResult {
 }
 
 /** Where a dirty file on main comes from — the ownership split drivers need. */
-export type MainDirtyOwner = "repoos.toml" | "reminders/" | "schedules/" | "unknown";
+export type MainDirtyOwner = "repoos.toml" | "work/" | "reminders/" | "schedules/" | "unknown";
 
 export interface MainDirtyFile {
   path: string;
@@ -141,9 +141,11 @@ export function isOwnTaskFileConflict(path: string, taskId: string, workDir: str
 /** Owner of one dirty path on main, by the repo's managed directories. */
 export function mainDirtyOwner(
   path: string,
-  dirs: Pick<LandableBookkeepingDirs, "remindersDir" | "schedulesDir">,
+  dirs: Pick<LandableBookkeepingDirs, "workDir" | "remindersDir" | "schedulesDir">,
 ): MainDirtyOwner {
   if (path === CONFIG_PATH) return "repoos.toml";
+  const work = `${dirs.workDir.replace(/\/+$/, "")}/`;
+  if (path.startsWith(work)) return "work/";
   const reminders = `${dirs.remindersDir.replace(/\/+$/, "")}/`;
   if (path.startsWith(reminders)) return "reminders/";
   const schedules = `${dirs.schedulesDir.replace(/\/+$/, "")}/`;
@@ -153,7 +155,7 @@ export function mainDirtyOwner(
 
 export function classifyMainDirtyFiles(
   paths: string[],
-  dirs: Pick<LandableBookkeepingDirs, "remindersDir" | "schedulesDir">,
+  dirs: Pick<LandableBookkeepingDirs, "workDir" | "remindersDir" | "schedulesDir">,
 ): MainDirtyFile[] {
   return paths.map((path) => ({ path, owner: mainDirtyOwner(path, dirs) }));
 }
@@ -424,7 +426,7 @@ export function evaluateTaskScopeCheck(facts: {
 
 export function evaluateMainCleanCheck(
   facts: LandableFacts["mainDirty"],
-  dirs: Pick<LandableBookkeepingDirs, "remindersDir" | "schedulesDir">,
+  dirs: Pick<LandableBookkeepingDirs, "workDir" | "remindersDir" | "schedulesDir">,
 ): LandableCheck {
   const label = "Main clean";
   if (facts.checkFailed) {
