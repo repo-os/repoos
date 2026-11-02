@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 579871
-last_close_out_gate_at: "2026-11-02T17:03:41.578Z"
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, server, web]
+merged_commit: 955b7945d412064b585a5a0e5f4cd37f6b4f5e1d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
 updated_at: "2026-11-02T17:03:41Z"
+last_close_out_gate_ms: 579871
+last_close_out_gate_at: "2026-11-02T17:03:41.578Z"
 review_passes: 10
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2

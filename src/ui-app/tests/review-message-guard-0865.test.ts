@@ -2,6 +2,7 @@
  * #0865 — engineer messages vs in-flight review, and handoff deferral when a
  * queue survives the end of an engineer turn.
  */
+import { seedEngineeringReport } from "./engineering-report-fixture";
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -100,6 +101,7 @@ async function taskWithWorktree(
   const worktree = join(fx.worktrees, branch);
   git(fx.root, ["worktree", "add", "-q", "-b", branch, worktree]);
   writeFileSync(join(worktree, "implementation.txt"), "ok\n");
+  seedEngineeringReport(worktree, id);
   const patched = await api(server, "PATCH", `/api/tasks/${id}`, { branch });
   expect(patched.status).toBe(200);
   return { id, absPath: created.body.absPath as string };

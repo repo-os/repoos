@@ -13,6 +13,7 @@
  * is satisfied by a fake `repoos` binary on PATH that exits 0, mirroring
  * handoff.test.ts, so the only difference between the two cases is the hold.
  */
+import { seedEngineeringReport } from "./engineering-report-fixture";
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -96,6 +97,7 @@ function writeTask(held: boolean): Fx {
   execFileSync("git", ["worktree", "add", "-q", worktree, BRANCH], { cwd: root });
   // Change the worktree so handoffTask has something to commit.
   writeFileSync(join(worktree, "source.txt"), "implemented\n");
+  seedEngineeringReport(worktree, ID);
   return { root, clean: () => rmSync(root, { recursive: true, force: true }) };
 }
 
