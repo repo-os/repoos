@@ -142,6 +142,12 @@ export async function finalizeEngineeringReport(args: {
     ...(files.length ? files : ["- No changed files."]),
   ].join("\n");
   const markdown = `${narrative}\n\n${summary}`;
+  const reportWords = words(markdown);
+  if (reportWords > MAX_WORDS)
+    return {
+      report: null,
+      error: `Engineering report including its generated change summary must contain at most 1,000 words (final report has ${reportWords}); shorten the draft and request handoff again.`,
+    };
   const reports = listEngineeringReports(config, taskId);
   const sameSource = reports.find((report) => report.sourceSha === sourceSha);
   if (sameSource) {
@@ -162,7 +168,7 @@ export async function finalizeEngineeringReport(args: {
     branch,
     baseSha: base.stdout.trim(),
     sourceSha,
-    wordCount: narrativeWords,
+    wordCount: reportWords,
     markdown,
   };
   mkdirSync(dir, { recursive: true });
