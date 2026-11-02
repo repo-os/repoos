@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-clearer-held-task-car
 model_override: gpt-6.1-terra
 created_at: "2026-11-02T04:38:23Z"
-updated_at: "2026-11-02T12:48:23Z"
+updated_at: "2026-11-02T12:55:46Z"
 ---
 ## Problem
 Held task cards show a yellow Held chip and repeat “HELD” at the lower left. Their green “Restart work” button is also misleading: a held task is intentionally inert and should not look like ordinary restartable work.
@@ -49,11 +49,11 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 ```json
 [
 {
-  "label": "Held task card with release action",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".tc-held",
-  "state": "card:held"
+"label": "Held task card with release action",
+"target": "default",
+"route": "/work",
+"highlight": ".tc-held",
+"state": "card:held"
 }
 ]
 ```
@@ -72,3 +72,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T12:46:35Z · status inbox→ready
 - 2026-11-02T12:46:41Z · status ready→active, branch
 - 2026-11-02T12:48:23Z · body
+- 2026-11-02T12:55:46Z · message_queued at 2026-11-02T12:55:46.740Z
