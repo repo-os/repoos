@@ -1396,9 +1396,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Control-plane only, and opt-out via env.
   if (isControlPlane && process.env.REPOOS_NO_WORKTREE_GC !== "1") {
     // Wait for the async index build to settle first. The sweep itself runs in
-    // the dedicated Git worker so it cannot block the HTTP event loop.
+    // the dedicated Git worker so it cannot block the HTTP event loop. If the
+    // index build FAILED, skip the sweep: an empty task list would make every
+    // branch look like it has no live task, and cleanup is fail-closed (#1004).
     void indexReady
-      .catch(() => {})
       .then(async () => {
         const activeJobIds = new Set(
           jobCoordinator
@@ -1413,7 +1414,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           log: (level, msg, meta) => logger.system(level, `boot ${msg}`, meta),
         });
       })
-      .catch((e) => logger.system("warn", `boot worktree gc failed: ${(e as Error).message}`));
+      .catch((e) => logger.system("warn", `boot worktree gc skipped: ${(e as Error).message}`));
   }
 
   const autoEngineering = new AutoEngineeringOrchestrator(

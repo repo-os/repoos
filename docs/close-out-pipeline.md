@@ -844,6 +844,12 @@ same automatic, fail-closed rules at boot, after every close-out, and from
   in main, only commits added after that close-out need comparing, so WIP
   self-check checkpoints whose content already shipped are reclaimable. If main
   later changed those files differently, the branch is not proven and stays.
+  Rename detection is disabled for the comparison, so a rename is checked as
+  both its addition and its deletion.
+- Committed `work/*.md` changes are handled the same way: the branch's bytes
+  must match main's canonical copy exactly. A task file the branch adds, or
+  modifies to different bytes than main, may hold unique data and keeps the
+  worktree. A branch deletion carries nothing to preserve.
 - `work/*.md` dirt does **not** by itself block cleanup, but it is only
   discarded when every dirty task file's working-tree bytes are exactly main's
   canonical bytes (or the file was deleted). Unique task data keeps the
@@ -853,6 +859,10 @@ same automatic, fail-closed rules at boot, after every close-out, and from
   unmerged source changes, and dirty files outside `work/*.md` are **always
   retained** with a reason. A task marked done/archived does not make its
   branch disposable; the content proof does.
+- If the task index cannot be built, or the durable close-out-job records
+  cannot be read, the sweep **skips cleanup entirely** and reports an error.
+  An empty or partial lifecycle view must never make an active task or a live
+  close-out look absent.
 - Scope boundary is paths inside `worktreesDir(root)` only. Other coding
   agents' worktrees (e.g. `~/.codex/worktrees/*`) are reported as **external**
   and are never inspected (`git status` is not run there) or removed — there is
