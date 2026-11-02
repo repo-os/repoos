@@ -209,3 +209,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:53:39Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-02T14:53:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T14:53:39Z · status active→review
+- 2026-11-02T14:53:39Z · message_delivered: 2 message(s)
