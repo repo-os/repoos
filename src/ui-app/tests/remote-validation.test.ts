@@ -31,6 +31,7 @@ import {
   prepareCandidateUpload,
   parseMirrorProbeOutput,
   mirrorProbeCommand,
+  MIRROR_BASE_REF,
   parseValidateScriptMirrorSupport,
   isRunnerBundleTransportMismatch,
   validateScriptArgs,
@@ -810,6 +811,64 @@ describe("prepareCandidateUpload (#0717)", () => {
     }
   });
 
+  it("uses the common ancestor of cached candidate and runner main when no scope ref exists", async () => {
+    const { root, baseSha, candidateSha } = makeScopedRepo();
+    try {
+      const git = (...args: string[]): string =>
+        execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
+      git("checkout", "-q", "main");
+      writeFileSync(join(root, "main.txt"), "runner main advanced\n");
+      git("add", ".");
+      git("commit", "-qm", "advance runner main");
+      const mainSha = git("rev-parse", "HEAD");
+
+      const mirrorPath = join(root, "runner.git");
+      git("init", "-q", "--bare", mirrorPath);
+      git(
+        "-C",
+        mirrorPath,
+        "fetch",
+        root,
+        `+${candidateSha}:refs/repoos/candidate`,
+        `+${mainSha}:refs/heads/main`,
+      );
+
+      const probe = execFileSync("sh", ["-c", mirrorProbeCommand(mirrorPath)], {
+        encoding: "utf8",
+      });
+      const mirror = parseMirrorProbeOutput(probe);
+      expect(mirror.refs["refs/repoos/candidate"]).toBe(candidateSha);
+      expect(mirror.refs["refs/repoos/scope"]).toBeUndefined();
+      expect(mirror.refs[MIRROR_BASE_REF]).toBe(baseSha);
+
+      const bundlePath = join(root, "candidate.bundle");
+      const exec = realBundleExec({ probeMirror: vi.fn(async () => mirror) });
+      const result = await prepareCandidateUpload(exec, {
+        host: HOST,
+        bundlePath,
+        remoteBundle: "~/.repoos-x.bundle",
+        worktreePath: root,
+        candidateSha,
+        changedRef: "main",
+        changedBaseSha: mainSha,
+        mirrorPath: MIRROR,
+        emit: () => {},
+      });
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.partial).toBe(true);
+      expect(result.baseSha).toBe(baseSha);
+      expect(result.bundleBytes).toBeLessThan(10_000);
+      const options = (exec.bundleRepo as ReturnType<typeof vi.fn>).mock.calls[0]?.[2] as {
+        excludeRefs?: string[];
+      };
+      expect(options.excludeRefs).toEqual([baseSha]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("falls back to the full bundle when the host reports no mirror", async () => {
     const { root, candidateSha } = makeRepo();
     try {
@@ -1435,12 +1494,13 @@ describe("validate.sh compatibility (#0725)", () => {
 });
 
 describe("remote mirror helpers (#0717)", () => {
-  it("parses a MIRROR=1 probe with both refs", () => {
-    const out = "MIRROR=1\n" + "a".repeat(40) + "\n" + "b".repeat(40) + "\n";
+  it("parses candidate, scope and common-base refs from a MIRROR=1 probe", () => {
+    const out = "MIRROR=1\n" + "a".repeat(40) + "\n-\n" + "c".repeat(40) + "\n";
     const state = parseMirrorProbeOutput(out);
     expect(state.exists).toBe(true);
     expect(state.refs["refs/repoos/candidate"]).toBe("a".repeat(40));
-    expect(state.refs["refs/repoos/scope"]).toBe("b".repeat(40));
+    expect(state.refs["refs/repoos/scope"]).toBeUndefined();
+    expect(state.refs[MIRROR_BASE_REF]).toBe("c".repeat(40));
   });
 
   it("treats a missing mirror or a failed probe as no mirror", () => {

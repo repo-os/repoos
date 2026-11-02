@@ -206,6 +206,8 @@ function remotePathShellWord(path: string): string {
 export const MIRROR_CANDIDATE_REF = "refs/repoos/candidate";
 /** Ref the validated changed-test base travels under on the host mirror (#1001). */
 export const MIRROR_SCOPE_REF = "refs/repoos/scope";
+/** Common ancestor between the cached candidate and runner main. */
+export const MIRROR_BASE_REF = "refs/repoos/base";
 /** Tag validate.sh materializes inside the runner checkout for `--changed`. */
 export const RUNNER_CHANGED_BASE_REF = "refs/tags/repoos-changed-base";
 
@@ -228,26 +230,36 @@ export function mirrorProbeCommand(mirrorPath: string): string {
   const mirror = remotePathShellWord(mirrorPath);
   const refs = [MIRROR_CANDIDATE_REF, MIRROR_SCOPE_REF];
   const checks = refs
-    .map((r) => `git -C ${mirror} rev-parse --verify --quiet ${shellQuote(r)} 2>/dev/null || true`)
+    .map(
+      (r) => `(git -C ${mirror} rev-parse --verify --quiet ${shellQuote(r)} 2>/dev/null || echo -)`,
+    )
     .join("; ");
-  return `if [ -d ${mirror} ]; then echo MIRROR=1; ` + `${checks}; else echo MIRROR=0; fi`;
+  // Older mirrors may have only the candidate ref and the runner's main tip.
+  // Return their common ancestor as another candidate base so stale task
+  // branches can still send only their missing commits instead of a full
+  // history bundle. Fall back to the previous scope ref when main is absent.
+  const base =
+    `(git -C ${mirror} merge-base ${shellQuote(MIRROR_CANDIDATE_REF)} refs/heads/main 2>/dev/null` +
+    ` || git -C ${mirror} merge-base ${shellQuote(MIRROR_CANDIDATE_REF)} ${shellQuote(MIRROR_SCOPE_REF)} 2>/dev/null` +
+    " || echo -)";
+  return `if [ -d ${mirror} ]; then echo MIRROR=1; ${checks}; ${base}; else echo MIRROR=0; fi`;
 }
 
 /** Parse {@link mirrorProbeCommand} output into a {@link RemoteMirrorState}. */
 export function parseMirrorProbeOutput(
   output: string,
-  refs: string[] = [MIRROR_CANDIDATE_REF, MIRROR_SCOPE_REF],
+  refs: string[] = [MIRROR_CANDIDATE_REF, MIRROR_SCOPE_REF, MIRROR_BASE_REF],
 ): RemoteMirrorState {
   const trimmed = output.trim();
   if (!trimmed.includes("MIRROR=1")) return { exists: false, refs: {} };
   const shas = trimmed
     .split("\n")
     .map((l) => l.trim())
-    .filter((l) => /^[0-9a-f]{40}$/.test(l));
+    .filter((line) => line && line !== "MIRROR=1");
   const result: Record<string, string> = {};
   refs.forEach((ref, i) => {
     const sha = shas[i];
-    if (sha) result[ref] = sha;
+    if (sha && /^[0-9a-f]{40}$/.test(sha)) result[ref] = sha;
   });
   return { exists: true, refs: result };
 }
