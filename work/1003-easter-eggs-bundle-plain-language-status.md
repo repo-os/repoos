@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T06:16:59.720Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:59953/work?shotState=drawer:reviewWithBranch)"
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
@@ -18,7 +20,6 @@ last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-last_check_failure: "repoos check at 2026-11-01T22:06:01.306Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control 2×2 panels (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:58741/); [missing-target] Review pass selection and freshness (target \"default\"): highlight .review-history-wrap matched nothing on /work?task=1003&tab=review (http://127.0.0.1:58741/work?shotState=drawer:landable)"
 dev_error_count: 1
 ---
 ## Items
@@ -368,3 +369,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T05:36:26Z · message_delivered: 1 message(s)
 - 2026-11-02T05:49:29Z · body
 - 2026-11-02T06:16:56Z · note: ui verification failed (1 issue(s)): [missing-target] Review pass selection and latest status (target "default"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:59953/work?shotState=drawer:reviewWithBranch)
+
