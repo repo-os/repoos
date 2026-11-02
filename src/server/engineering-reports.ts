@@ -28,14 +28,19 @@ export interface EngineeringReportLoad {
   errors: string[];
 }
 
-function isEngineeringReport(value: unknown): value is EngineeringReport {
+function isEngineeringReport(
+  value: unknown,
+  taskId: string,
+  round: number,
+): value is EngineeringReport {
   if (!value || typeof value !== "object") return false;
   const report = value as Record<string, unknown>;
   return (
     typeof report.taskId === "string" &&
+    report.taskId === taskId &&
     typeof report.round === "number" &&
     Number.isInteger(report.round) &&
-    report.round > 0 &&
+    report.round === round &&
     typeof report.at === "string" &&
     typeof report.agent === "string" &&
     typeof report.model === "string" &&
@@ -50,7 +55,9 @@ function isEngineeringReport(value: unknown): value is EngineeringReport {
 /**
  * Read every stored report for a task, keeping malformed files visible instead
  * of silently dropping them. A corrupt round must never look like an absent
- * one: callers surface `errors` and fail closed where history matters.
+ * one: callers surface `errors` and fail closed where history matters. A
+ * report whose `taskId` or `round` does not match its location is rejected too
+ * — a misplaced file must not appear in another task's history.
  */
 export function loadEngineeringReports(
   config: RepoOSConfig,
@@ -59,14 +66,26 @@ export function loadEngineeringReports(
   const dir = reportDir(config, taskId);
   if (!existsSync(dir)) return { reports: [], errors: [] };
   const errors: string[] = [];
-  const reports = readdirSync(dir)
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch (error) {
+    return {
+      reports: [],
+      errors: [`could not read report directory ${dir}: ${(error as Error).message}`],
+    };
+  }
+  const reports = names
     .filter((name) => /^round-\d+\.json$/.test(name))
     .sort((a, b) => Number(a.match(/\d+/)?.[0]) - Number(b.match(/\d+/)?.[0]))
     .flatMap((name) => {
+      const expectedRound = Number(name.match(/^round-(\d+)\.json$/)?.[1]);
       try {
         const parsed: unknown = JSON.parse(readFileSync(join(dir, name), "utf8"));
-        if (!isEngineeringReport(parsed)) {
-          errors.push(`${name}: not a valid engineering report`);
+        if (!isEngineeringReport(parsed, taskId, expectedRound)) {
+          errors.push(
+            `${name}: report identity does not match its task directory or round (expected taskId ${taskId}, round ${expectedRound})`,
+          );
           return [];
         }
         return [parsed];
@@ -109,7 +128,14 @@ export async function resolveEngineeringReportBase(args: {
       ["merge-base", "--is-ancestor", prior.sourceSha, args.sourceSha],
       10_000,
     );
-    if (ancestor.status === 0) return { baseSha: prior.sourceSha };
+    if (ancestor.status !== 0)
+      return {
+        error:
+          `the previous engineering report's source commit (${prior.sourceSha}) is not an ancestor of this round's ` +
+          "source, so a round-relative diff base cannot be determined (was the branch rebased or reset?). " +
+          "Restore the branch history that contains the reviewed round before requesting handoff.",
+      };
+    return { baseSha: prior.sourceSha };
   }
   const base = await runGit(args.workdir, ["merge-base", args.baseBranch, args.sourceSha], 10_000);
   return base.status === 0
@@ -175,6 +201,11 @@ export async function finalizeEngineeringReport(args: {
     return {
       report: null,
       error: `Engineering report is missing required sections: ${missingSections.join(", ")}.`,
+    };
+  if (sectionPositions[0] !== 0)
+    return {
+      report: null,
+      error: "Engineering report must begin with ## TL;DR; remove any text before it.",
     };
   if (
     sectionPositions.some(
