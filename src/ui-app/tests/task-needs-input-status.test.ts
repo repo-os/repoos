@@ -168,6 +168,66 @@ describe("needs_input status labels on the board card (#0511)", () => {
     expect(wrapper.find(".tc-hint").text()).toContain("Needs your input");
   });
 
+  it("uses the recorded failure reason for the status-line tooltip", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.reviews = {};
+    const detail =
+      "crash recovery could not start the engineer: Could not create the task worktree: not a git repository";
+    const task = makeTask({
+      status: "active",
+      needsInput: true,
+      needsInputReason: "dev-error",
+      needsInputDetail: detail,
+    });
+    const wrapper = mountCard(task);
+    const hint = wrapper.find(".tc-hint");
+    expect(hint.classes()).toContain("tc-needs-input");
+    // The concrete cause, not the generic "The agent exited with an error."
+    expect(hint.attributes("data-tip")).toBe(detail);
+    expect(hint.attributes("title")).toBeUndefined();
+  });
+
+  it("falls back to the banner line when no detail was recorded", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.reviews = {};
+    const task = makeTask({
+      status: "active",
+      needsInput: true,
+      needsInputReason: "dev-error",
+    });
+    const wrapper = mountCard(task);
+    expect(wrapper.find(".tc-hint").attributes("data-tip")).toBe("The agent exited with an error.");
+  });
+
+  it("opens Status details when the needs-input status line is clicked", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.reviews = {};
+    const task = makeTask({
+      status: "active",
+      needsInput: true,
+      needsInputReason: "dev-error",
+      needsInputDetail: "crash recovery could not start the engineer",
+    });
+    const ui = useUiStore();
+    const opened = vi.spyOn(ui, "openTask").mockResolvedValue();
+    const wrapper = mountCard(task);
+
+    await wrapper.find(".tc-hint").trigger("click");
+    expect(opened).toHaveBeenCalledWith(task);
+    expect(ui.activeTab).toBe("debug");
+    expect(ui.debugView).toBe("status");
+
+    opened.mockClear();
+    await wrapper.find(".tc-hint").trigger("keydown.enter");
+    expect(opened).toHaveBeenCalledWith(task);
+  });
+
   it("shows review passed when dev-error needs_input is stale on a review task", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
