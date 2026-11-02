@@ -134,3 +134,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T19:02:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T19:02:01Z · status active→review
 - 2026-11-02T19:02:02Z · message_delivered: 1 message(s)
+- 2026-11-02T19:02:02Z · note: handoff requested (cli)
