@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: "03115468ec0ad5e57474778a02ddfb4f3ca366f4"
 id: 1007
 title: Engineering reports for each task work round
 type: feature
@@ -218,3 +220,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:54:03Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T14:54:57Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T14:56:38Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+
