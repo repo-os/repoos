@@ -122,3 +122,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T06:48:15Z · body
 - 2026-11-02T06:50:04Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T06:50:06Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-02T06:50:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
