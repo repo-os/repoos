@@ -4,8 +4,8 @@ title: Engineering reports for each task work round
 type: feature
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — A rewritten branch can produce a cumulative summary instead of a round-specific one.
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -14,7 +14,7 @@ branch: feat/engineering-reports-for-each-task-work-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T15:31:16Z"
+updated_at: "2026-11-02T15:31:17Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
