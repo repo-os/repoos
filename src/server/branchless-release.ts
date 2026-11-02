@@ -26,6 +26,60 @@ export interface CheckResult {
   output?: string;
 }
 
+interface CandidateResult {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+  /** Only a missing executable justifies trying another CLI candidate. */
+  missingExecutable: boolean;
+}
+
+type RunCandidate = (cmd: string, args: string[], root: string) => Promise<CandidateResult>;
+
+function runCandidate(cmd: string, args: string[], root: string): Promise<CandidateResult> {
+  return new Promise((resolve) => {
+    execFile(
+      cmd,
+      args,
+      { cwd: root, encoding: "utf8", timeout: 600_000, maxBuffer: 10 * 1024 * 1024 },
+      (error, stdout, stderr) => {
+        resolve({
+          status: error ? (typeof error.code === "number" ? error.code : null) : 0,
+          stdout,
+          stderr: [stderr, error && typeof error.code !== "number" ? error.message : ""]
+            .filter(Boolean)
+            .join("\n"),
+          missingExecutable: error?.code === "ENOENT",
+        });
+      },
+    );
+  });
+}
+
+/** Retry another executable only when spawning the candidate failed. Never
+ * rerun a full check after a real check failure or timeout. */
+export async function runCheckCandidates(
+  candidates: string[][],
+  root: string,
+  execute: RunCandidate = runCandidate,
+): Promise<CheckResult> {
+  let last: CandidateResult | null = null;
+  for (const [cmd, ...args] of candidates) {
+    const result = await execute(cmd!, args, root);
+    last = result;
+    if (result.status === 0) return { ok: true };
+    if (!result.missingExecutable) break;
+  }
+  const output = [last?.stdout, last?.stderr]
+    .filter((x): x is string => typeof x === "string" && x.trim() !== "")
+    .join("\n")
+    .trim()
+    .split("\n")
+    .slice(-15)
+    .join("\n");
+  return { ok: false, output: output || "no output captured" };
+}
+
 /** Real check runner: prefers the local build's own CLI, same preference order as the close-out pipeline. */
 export async function runCheckOnRoot(root: string): Promise<CheckResult> {
   const cfg = loadConfig(root);
@@ -40,35 +94,7 @@ export async function runCheckOnRoot(root: string): Promise<CheckResult> {
         ["repoos", "check", ...checkArgs],
         ["bun", "run", "repoos", "check", ...checkArgs],
       ];
-  let last: { stdout: string; stderr: string } | null = null;
-  for (const [cmd, ...args] of candidates) {
-    const r = await new Promise<{ status: number | null; stdout: string; stderr: string }>(
-      (resolve) => {
-        execFile(
-          cmd,
-          args,
-          { cwd: root, encoding: "utf8", timeout: 600_000, maxBuffer: 10 * 1024 * 1024 },
-          (error, stdout, stderr) => {
-            resolve({
-              status: error ? (typeof error.code === "number" ? error.code : null) : 0,
-              stdout,
-              stderr,
-            });
-          },
-        );
-      },
-    );
-    last = { stdout: r.stdout, stderr: r.stderr };
-    if (r.status === 0) return { ok: true };
-  }
-  const output = [last?.stdout, last?.stderr]
-    .filter((x): x is string => typeof x === "string" && x.trim() !== "")
-    .join("\n")
-    .trim()
-    .split("\n")
-    .slice(-15)
-    .join("\n");
-  return { ok: false, output: output || "no output captured" };
+  return runCheckCandidates(candidates, root);
 }
 
 export interface ReleaseBranchlessResult {
