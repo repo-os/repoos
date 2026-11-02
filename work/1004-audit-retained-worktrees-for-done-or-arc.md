@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-02T17:37:43.905Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
@@ -12,7 +14,6 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
 updated_at: "2026-11-02T17:26:05Z"
-last_check_failure: "repoos check at 2026-11-02T17:25:33.480Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
 review_passes: 1
 ---
@@ -136,4 +137,5 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T17:10:03Z · body
 - 2026-11-02T17:11:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-02T17:26:05Z · CTO nudge: held — remote validation is running
+
 
