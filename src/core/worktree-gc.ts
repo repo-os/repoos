@@ -81,6 +81,12 @@ export interface GcReport {
   removedBranches: string[];
   /** Stale entries left in place with an actionable reason. */
   retained: GcEntry[];
+  /**
+   * @deprecated Compatibility alias for {@link retained}. The Control page
+   * preview shipped in older builds reads `keptDirty`; new callers should use
+   * `retained` (and `external`).
+   */
+  keptDirty: GcEntry[];
   /** Registered worktrees outside RepoOS's managed directory. */
   external: GcExternal[];
   /** Counts mirror the arrays above so callers cannot disagree about them. */
@@ -397,12 +403,14 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     removedWorktrees: [],
     removedBranches: [],
     retained: [],
+    keptDirty: [],
     external: [],
     summary: { candidates: 0, retained: 0, external: 0 },
     prunedMetadata: false,
     errors: [],
   };
   const finish = (): GcReport => {
+    report.keptDirty = report.retained;
     report.summary = {
       candidates: report.removedWorktrees.length,
       retained: report.retained.length,

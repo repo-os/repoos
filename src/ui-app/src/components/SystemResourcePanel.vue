@@ -13,10 +13,8 @@ const { systemStats, runningIds, queuedIds } = storeToRefs(repo);
 const killingPid = ref<number | null>(null);
 type GcPreview = {
   report: {
-    removedWorktrees: Array<{ branch: string; path: string; reason?: string }>;
-    retained: Array<{ branch: string; path: string; reason: string }>;
-    external: Array<{ branch: string; path: string; reason: string }>;
-    summary?: { candidates: number; retained: number; external: number };
+    removedWorktrees: Array<{ branch: string; path: string }>;
+    keptDirty: Array<{ branch: string; reason: string }>;
   };
   activeCloseOutTaskIds: string[];
   blocked: boolean;
@@ -39,37 +37,9 @@ function worktreeGcFixturePreview(): GcPreview {
   return {
     report: {
       removedWorktrees: [
-        {
-          branch: "repoos/integrate/0042",
-          path: "../repoos-worktrees/integrate-0042",
-          reason: "throwaway close-out candidate",
-        },
-        {
-          branch: "feat/done-clean",
-          path: "../repoos-worktrees/feat/done-clean",
-          reason: "merged into main and clean",
-        },
+        { branch: "repoos/integrate/0042", path: "../repoos-worktrees/integrate-0042" },
       ],
-      retained: [
-        {
-          branch: "repoos/integrate/0043",
-          path: "../repoos-worktrees/integrate-0043",
-          reason: "close-out job still active",
-        },
-        {
-          branch: "feat/live",
-          path: "../repoos-worktrees/feat/live",
-          reason: "task agent still active",
-        },
-      ],
-      external: [
-        {
-          branch: "codex/chat-diagnostics",
-          path: "~/.codex/worktrees/codex-chat-diagnostics/repoos",
-          reason: "outside RepoOS's managed worktree directory",
-        },
-      ],
-      summary: { candidates: 2, retained: 2, external: 1 },
+      keptDirty: [{ branch: "repoos/integrate/0043", reason: "close-out job still active" }],
     },
     activeCloseOutTaskIds: [],
     blocked: false,
@@ -419,23 +389,16 @@ const serveMessage = computed(() => {
           <div v-if="gcPreview" class="gc-preview" aria-live="polite">
             <strong>Cleanup preview</strong>
             <span
-              >{{
-                gcPreview.report.summary?.candidates ?? gcPreview.report.removedWorktrees.length
+              >{{ gcPreview.report.removedWorktrees.length }} worktree{{
+                gcPreview.report.removedWorktrees.length === 1 ? "" : "s"
               }}
-              safe to remove ·
-              {{ gcPreview.report.summary?.retained ?? gcPreview.report.retained.length }} retained
-              · {{ gcPreview.report.summary?.external ?? gcPreview.report.external.length }} outside
-              RepoOS</span
+              would be removed.</span
             >
-            <span v-for="item in gcPreview.report.removedWorktrees" :key="`remove-${item.path}`"
-              >Remove {{ item.branch || item.path
-              }}<template v-if="item.reason"> — {{ item.reason }}</template></span
+            <span v-for="item in gcPreview.report.removedWorktrees" :key="item.path"
+              >Remove {{ item.branch || item.path }}</span
             >
-            <span v-for="item in gcPreview.report.retained" :key="`keep-${item.path}`"
+            <span v-for="item in gcPreview.report.keptDirty" :key="item.path"
               >Keep {{ item.branch || item.path }} — {{ item.reason }}</span
-            >
-            <span v-for="item in gcPreview.report.external" :key="`external-${item.path}`"
-              >External {{ item.branch || item.path }} — {{ item.reason }}</span
             >
             <span v-if="gcPreview.blocked" class="gc-blocked"
               >Disabled while close-out{{
@@ -614,9 +577,8 @@ const serveMessage = computed(() => {
       @update:open="gcConfirmOpen = $event"
       @confirm="cleanWorktrees"
     >
-      This removes the safe cleanup candidates listed in the preview. Worktrees kept for active
-      close-outs, human-assigned work, unmerged changes or unique dirty files remain in place, and
-      worktrees outside RepoOS's managed directory are never touched.
+      This removes the worktrees listed in the preview. Worktrees kept for active close-outs or
+      unmerged work remain in place.
     </DeleteConfirmDialog>
   </Card>
 </template>
