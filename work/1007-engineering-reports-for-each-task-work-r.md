@@ -2,7 +2,7 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -45,10 +45,10 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 "highlight": "[data-test-id=\"engineering-report-history\"]",
 "steps": [
 {
-  "click": "button[data-test-id=\"engineering-report-tab\"]"
+"click": "button[data-test-id=\"engineering-report-tab\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
