@@ -2,7 +2,7 @@
 id: 1002
 title: Record and report per-test timings in check history
 type: feature
-status: active
+status: review
 needs_merge: true
 priority: p2
 area: [core, cli, web]
@@ -12,7 +12,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-02T00:07:26Z"
+updated_at: "2026-11-02T01:43:19Z"
 last_check_failure: "repoos check at 2026-11-01T23:26:11.154Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 5
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ac0bcf6f to 6efab112) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -154,3 +154,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-01T23:39:48Z · body
 - 2026-11-02T00:05:53Z · needs_merge
 - 2026-11-02T00:07:24Z · message_queued at 2026-11-02T00:07:24.410Z
+- 2026-11-02T01:43:19Z · status active→review
