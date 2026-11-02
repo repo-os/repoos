@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T07:47:06Z"
+updated_at: "2026-11-02T07:54:03Z"
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -483,3 +483,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T07:45:44Z · note: ui verification failed (1 issue(s)): [assertion] Review pass selection and latest status: selector .review-history-table text does not contain "Latest" (saw "passwhenagentmodelverdict#202/11/2026, 18:00:00Codexgpt-5good to go#101/11/2026, 18:00:00Cursorcomposergood to go") (captured http://127.0.0.1:55161/work?shotState=drawer:reviewPasses) (http://127.0.0.1:55161/work?shotState=drawer:reviewPasses)
 - 2026-11-02T07:45:44Z · handoff failed · check failed after 2 automatic retries · ui verification failed (1 issue(s)): [assertion] Review pass selection and latest status: selector .review-history-table text does not contain "Latest" (saw "passwhenagentmodelverdict#202/11/2026, 18:00:00Codexgpt-5good to go#101/11/2026, 18:00:00Cursorcomposergood to go") (captured http://127.0.0.1:55161/work?shotState=drawer:reviewPasses) (http://127.0.0.1:55161/work?shotState=drawer:reviewPasses)
 - 2026-11-02T07:45:44Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-02T07:54:03Z · message_queued at 2026-11-02T07:54:03.937Z
