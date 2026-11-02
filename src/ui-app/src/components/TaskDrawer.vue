@@ -3118,6 +3118,7 @@ async function selectReviewPass(pass: number): Promise<void> {
     const r = await api<{ ok: boolean; review: ReviewReport | null }>(
       `/api/tasks/${id}/review/passes/${pass}`,
     );
+    if (!r.ok || !r.review) throw new Error("Review pass response did not include a report.");
     if (
       ui.active?.id === id &&
       selectedReviewPass.value === pass &&
@@ -6421,54 +6422,54 @@ watch(
                     </dd>
                   </dl>
                 </div>
-                <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
-                  <div class="review-history-toolbar">
-                    <span v-if="reviewPassLoading" class="review-history-loading">Loading…</span>
-                  </div>
-                  <table class="review-history-table" aria-label="Feature review pass records">
-                    <thead>
-                      <tr>
-                        <th class="ta-left">pass</th>
-                        <th class="ta-left">when</th>
-                        <th class="ta-left">agent</th>
-                        <th class="ta-left">model</th>
-                        <th class="ta-left">verdict</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="h in reviewHistoryRows"
-                        :key="h.pass"
-                        class="review-history-row"
-                        :class="{
-                          'is-selected':
-                            selectedReviewPass === h.pass ||
-                            (selectedReviewPass === null && h.pass === latestReviewPass),
-                        }"
-                        tabindex="0"
-                        role="button"
-                        :aria-pressed="
-                          selectedReviewPass === h.pass ||
-                          (selectedReviewPass === null && h.pass === latestReviewPass)
-                        "
-                        @click="selectReviewPass(h.pass)"
-                        @keydown.enter.prevent="selectReviewPass(h.pass)"
-                        @keydown.space.prevent="selectReviewPass(h.pass)"
-                      >
-                        <td class="ta-left review-history-pass">#{{ h.pass }}</td>
-                        <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
-                        <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
-                        <td class="ta-left review-history-model">{{ h.model }}</td>
-                        <td class="ta-left">{{ h.verdict }}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
                 <div class="md-card review-card">
                   <div class="md-rendered" v-html="reviewHtml"></div>
                 </div>
               </template>
             </template>
+            <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
+              <div class="review-history-toolbar">
+                <span v-if="reviewPassLoading" class="review-history-loading">Loading…</span>
+              </div>
+              <table class="review-history-table" aria-label="Feature review pass records">
+                <thead>
+                  <tr>
+                    <th class="ta-left">pass</th>
+                    <th class="ta-left">when</th>
+                    <th class="ta-left">agent</th>
+                    <th class="ta-left">model</th>
+                    <th class="ta-left">verdict</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="h in reviewHistoryRows"
+                    :key="h.pass"
+                    class="review-history-row"
+                    :class="{
+                      'is-selected':
+                        selectedReviewPass === h.pass ||
+                        (selectedReviewPass === null && h.pass === latestReviewPass),
+                    }"
+                    tabindex="0"
+                    role="button"
+                    :aria-pressed="
+                      selectedReviewPass === h.pass ||
+                      (selectedReviewPass === null && h.pass === latestReviewPass)
+                    "
+                    @click="selectReviewPass(h.pass)"
+                    @keydown.enter.prevent="selectReviewPass(h.pass)"
+                    @keydown.space.prevent="selectReviewPass(h.pass)"
+                  >
+                    <td class="ta-left review-history-pass">#{{ h.pass }}</td>
+                    <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
+                    <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
+                    <td class="ta-left review-history-model">{{ h.model }}</td>
+                    <td class="ta-left">{{ h.verdict }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <p class="review-hint">Findings only — you decide whether this task is done.</p>
           </section>
 

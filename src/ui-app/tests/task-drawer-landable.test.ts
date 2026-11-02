@@ -433,6 +433,8 @@ describe("review pass selection and identity (#1003)", () => {
 
     expect(wrapper.find(".review-failed").text()).toBe("Older pass failed to run.");
     expect(wrapper.text()).not.toContain("Latest report.");
+    expect(wrapper.find(".verdict-callout").exists()).toBe(false);
+    expect(wrapper.findAll(".review-history-row")[1]?.classes()).toContain("is-selected");
   });
 
   it("shows a retry path after a review-pass fetch fails", async () => {
@@ -474,7 +476,7 @@ describe("review pass selection and identity (#1003)", () => {
       lines: [],
     });
     const fetchMock = vi.fn(async (url: string) => {
-      if (url.includes("/review/passes/1")) throw new Error("network unavailable");
+      if (url.includes("/review/passes/1")) return json({ ok: false, review: null });
       return json({ ok: true, review: latest });
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -482,6 +484,9 @@ describe("review pass selection and identity (#1003)", () => {
     await wrapper.findAll(".review-history-row")[1]!.trigger("click");
     await flush();
     expect(wrapper.find('[role="alert"]').text()).toContain("Could not load this review pass.");
+    expect(wrapper.findAll(".review-history-row")[1]?.classes()).toContain("is-selected");
+    expect(wrapper.find(".review-pass-loading").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Latest report.");
 
     fetchMock.mockImplementation(async () =>
       json({ ok: true, review: { ...latest, markdown: "Recovered pass." } }),
