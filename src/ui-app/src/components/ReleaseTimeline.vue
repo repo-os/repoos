@@ -74,9 +74,6 @@ function releaseDate(value: string | null | undefined): string {
 </template>
 
 <style scoped>
-.release-panel {
-  margin-bottom: 18px;
-}
 .release-count {
   background: var(--green-tint);
   color: var(--green);
