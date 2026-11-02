@@ -405,3 +405,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T02:35:21Z · note: highlight .ck-local-slot matched nothing on /checks?shotState=checks:waiting
 - 2026-11-02T02:59:16Z · status review→active
 - 2026-11-02T03:09:04Z · message_queued at 2026-11-02T03:09:04.149Z
+- 2026-11-02T03:09:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
