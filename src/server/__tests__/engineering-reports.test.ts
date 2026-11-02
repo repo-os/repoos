@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { finalizeEngineeringReport, listEngineeringReports } from "../engineering-reports.js";
-import { reviewMission } from "../review.js";
+import { engineeringReportMatchesReviewTree, reviewMission } from "../review.js";
 
 const narrative = `## TL;DR\nRecorded a concise summary.\n\n## Work and rationale\nChanged the implementation to preserve task context.\n\n## Approaches tried\nCompared the existing persistence patterns and selected tracked artifacts.\n\n## Challenges and blockers\nThe handoff gate must bind this report to the checked source tree.\n\n## Key learnings\nKeep generated Git facts separate from engineer-authored narrative.`;
 
@@ -196,5 +196,42 @@ describe("engineering reports", () => {
     });
     expect(result.report?.markdown).toContain("A src/added.ts: +2 / −0");
     expect(result.report?.markdown).toContain("D src/old.ts: +0 / −2");
+  });
+
+  it("requires report source ancestry even when a rewritten HEAD has the same tree", async () => {
+    writeFileSync(join(root, "src", "old.ts"), "checked implementation\n");
+    git("add .");
+    git('commit -m "checked report source"');
+    const sourceSha = git("rev-parse HEAD");
+    const reportDir = join(root, "work", "engineering-reports", "T1");
+    mkdirSync(reportDir, { recursive: true });
+    writeFileSync(join(root, "work", "T1.md"), "task bookkeeping\n");
+    writeFileSync(
+      join(reportDir, "round-1.json"),
+      `${JSON.stringify({
+        taskId: "T1",
+        round: 1,
+        at: new Date(0).toISOString(),
+        agent: "codex",
+        model: "test-model",
+        branch: "feat/report",
+        baseSha: sourceSha,
+        sourceSha,
+        wordCount: 1,
+        markdown: "Report",
+      })}\n`,
+    );
+    git("add .");
+    git('commit -m "record report"');
+    const config = { root, cacheDir: ".repoos", workDir: "work" } as any;
+    const task = { id: "T1", path: "work/T1.md" } as any;
+
+    expect(await engineeringReportMatchesReviewTree(config, task, root)).toBe(true);
+
+    const sameTree = git("rev-parse HEAD^{tree}");
+    const rewrittenHead = git(`commit-tree ${sameTree} -m "rewritten unrelated history"`);
+    git(`reset --hard ${rewrittenHead}`);
+    expect(git("rev-parse HEAD^{tree}")).toBe(sameTree);
+    expect(await engineeringReportMatchesReviewTree(config, task, root)).toBe(false);
   });
 });
