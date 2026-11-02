@@ -165,3 +165,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-02T00:38:28Z · body
 - 2026-11-02T00:40:58Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T00:40:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T00:40:59Z · message_delivered: 1 message(s)
