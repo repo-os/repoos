@@ -103,8 +103,9 @@ screen (#0324): the serve process (port, PID, uptime from
 printed first and loud when stale, since a stale build is this repo's #1
 time-waster), board counts with every `active` task's branch, worktree path
 and last activity (a task whose worktree is missing is flagged), worktree
-count vs `worktreeWarnThreshold` plus everything `repoos gc --dry-run` would
-collect (same sweep, so the numbers match by construction), a one-line tunnel
+count vs `worktreeWarnThreshold` plus the same candidate / retained / external
+breakdown `repoos gc --dry-run` reports (same sweep, so the numbers match by
+construction), a one-line tunnel
 summary (configured / running / published hostnames), and the main
 checkout's git state (branch, clean/dirty, ahead/behind `main`).
 

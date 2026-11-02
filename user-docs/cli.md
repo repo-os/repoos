@@ -859,9 +859,16 @@ are the source of truth — so this is safe to run any time.
 
 ### `repoos gc [--yes|--dry-run]`
 
-Reclaims leaked task worktrees and branches. Conservative by default: it only
-removes worktrees that are merged and clean, and reports anything holding real
-uncommitted or unmerged work rather than deleting it.
+Reclaims leaked task worktrees and branches, using the same automatic and
+fail-closed policy as the server's boot/close-out sweep. It only removes
+throwaway close-out candidates and worktrees for resolved tasks whose content
+is provably already in main; active, human-assigned, unmerged, and uniquely
+dirty work is kept and reported with a reason. Worktrees outside RepoOS's
+managed directory are listed as **external** and never touched.
+
+`--dry-run` shows the candidate / retained / external breakdown without
+changing anything. `--yes` is accepted as a compatibility alias; the default
+run already applies the safe candidates.
 
 ### `repoos tunnel <subcommand>`
 

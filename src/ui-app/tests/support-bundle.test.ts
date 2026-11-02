@@ -131,7 +131,15 @@ function fakeStatus(root: string): StatusSnapshot {
       buildAt: null,
     },
     board: { taskCount: 1, counts: { inbox: 1 } as never, active: [] },
-    worktrees: { count: 1, warnThreshold: 20, leaked: [], kept: [] },
+    worktrees: {
+      count: 1,
+      managedCount: 1,
+      warnThreshold: 20,
+      candidates: [],
+      retained: [],
+      external: [],
+      counts: { candidates: 0, retained: 0, external: 0 },
+    },
     tunnel: { configured: false, tunnelName: null, running: false, hostnames: [] },
     git: {
       branch: "main",

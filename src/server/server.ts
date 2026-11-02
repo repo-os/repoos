@@ -1387,12 +1387,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     console.log(`Resuming interrupted job for task ${job.taskId} from phase ${job.phase}`);
   }
 
-  // Boot-time worktree GC: prune orphaned `repoos/integrate/*` candidate
-  // worktrees left by failed/interrupted close-out jobs, plus stale worktree
-  // metadata. Deliberately conservative — it never touches `feat/*` task
-  // worktrees; `repoos gc` is the path for those. Fire-and-forget so it stays
-  // off `server.listen()`'s critical path (same shape as the remote-validation
-  // reconcile above). Control-plane only, and opt-out via env.
+  // Boot-time worktree GC: reclaim throwaway `repoos/integrate/*` candidates
+  // left by failed/interrupted close-out jobs, plus stale metadata AND resolved
+  // task worktrees whose branch content is provably represented in main (#1004).
+  // Active/review/human-assigned work, unmerged changes and unique dirty files
+  // are always retained. Fire-and-forget so it stays off `server.listen()`'s
+  // critical path (same shape as the remote-validation reconcile above).
+  // Control-plane only, and opt-out via env.
   if (isControlPlane && process.env.REPOOS_NO_WORKTREE_GC !== "1") {
     // Wait for the async index build to settle first. The sweep itself runs in
     // the dedicated Git worker so it cannot block the HTTP event loop.
@@ -1408,6 +1409,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         await sweepAndWarnAsync(config, {
           activeJobIds,
           threshold: config.worktreeWarnThreshold,
+          tasks: index.getTasks(),
           log: (level, msg, meta) => logger.system(level, `boot ${msg}`, meta),
         });
       })
@@ -3452,7 +3454,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         dryRun: true,
         removedWorktrees: [],
         removedBranches: [],
-        keptDirty: [],
+        retained: [],
+        external: [],
+        summary: { candidates: 0, retained: 0, external: 0 },
         prunedMetadata: false,
         errors: [],
       } as ReturnType<typeof sweepStaleWorktrees>);
