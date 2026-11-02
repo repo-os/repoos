@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 619265
-last_close_out_gate_at: "2026-11-02T14:03:00.889Z"
 id: 1010
 title: "Easter eggs bundle: clearer held task cards"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 9b9b13a52a04b7a888cfe48642fd0acc8644b0e1
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-clearer-held-task-car
 model_override: gpt-6.1-terra
 created_at: "2026-11-02T04:38:23Z"
 updated_at: "2026-11-02T14:03:00Z"
+last_close_out_gate_ms: 619265
+last_close_out_gate_at: "2026-11-02T14:03:00.889Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-02T13:18:45.518Z: repoos check failed: rendered-contrast — timed out — timed out after 600s"
 ---
