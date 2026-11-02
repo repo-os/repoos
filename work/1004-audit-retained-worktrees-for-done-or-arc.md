@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-02T16:10:56.482Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Worktree cleanup preview separates safe candidates, retained reasons, and external worktrees (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:50331/?shotState=system%3AworktreeGc)"
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
@@ -13,7 +11,9 @@ branch: feat/make-retained-worktree-cleanup-safe-and-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T16:10:53Z"
+updated_at: "2026-11-02T16:13:47Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T16:10:56.482Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Worktree cleanup preview separates safe candidates, retained reasons, and external worktrees (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:50331/?shotState=system%3AworktreeGc)"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -70,19 +70,25 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 ```json
 [
 {
-"label": "Worktree cleanup preview separates safe candidates, retained reasons, and external worktrees",
-"target": "default",
-"route": "/",
-"highlight": ".gc-preview",
-"steps": [
-{
-"click": "button.gc-action"
-},
-{
-"waitMs": 300
-}
-],
-"state": "system:worktreeGc"
+  "label": "Worktree cleanup preview separates safe candidates, retained reasons, and external worktrees",
+  "target": "default",
+  "route": "/",
+  "highlight": ".gc-preview",
+  "steps": [
+    {
+      "waitFor": "button.gc-action"
+    },
+    {
+      "click": "button.gc-action"
+    },
+    {
+      "waitFor": ".gc-preview"
+    },
+    {
+      "waitMs": 2000
+    }
+  ],
+  "state": "system:worktreeGc"
 }
 ]
 ```
@@ -119,4 +125,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T14:59:50Z · message_delivered: 3 message(s)
 - 2026-11-02T16:10:53Z · note: ui verification failed (1 issue(s)): [missing-target] Worktree cleanup preview separates safe candidates, retained reasons, and external worktrees (target "default"): loading state detected: loading text "Loading…" on / (http://127.0.0.1:50331/?shotState=system%3AworktreeGc)
 - 2026-11-02T16:10:53Z · handoff failed · handoff recovery attempted · finalization failed
-
+- 2026-11-02T16:13:47Z · body
