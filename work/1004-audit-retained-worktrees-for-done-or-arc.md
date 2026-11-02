@@ -11,7 +11,7 @@ branch: feat/make-retained-worktree-cleanup-safe-and-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T14:38:12Z"
+updated_at: "2026-11-02T14:41:53Z"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -37,6 +37,34 @@ Make cleanup run automatically for worktrees that RepoOS can prove are safe to r
 ## Notes for AI
 Use the 2026-11-01 findings as evidence, then re-check every live task and worktree before implementation. Do not delete a branch merely because its task says done or archived; prove its relevant tree is represented in main. Use RepoOS commands for task lifecycle changes. Preserve the four non-RepoOS worktrees and the active/human work listed above.
 
+## Audit — 2026-11-02
+Live audit re-run 2026-11-02 with the new sweep. Registered worktrees: 21 total, 18 managed, 3 external. Disposition: 0 safe candidates, 17 retained, 3 external. The 28 clean merged worktrees from 2026-11-01 are already gone; this is the protected residue.
+
+| Task | Status | Ahead of main | Dirty paths (repo-relative) | Changed source paths / reason | Disposition |
+| --- | --- | --- | --- | --- | --- |
+| #0898 | done | 3 | — | AGENTS.md, docs/driver-notes.md, scripts/run-tests.mjs, … (46 paths not in main) | retained: post-merge delta not byte-represented |
+| #0830 | done | 1 | — | AGENTS.md, docs/close-out-pipeline.md, docs/previews.md, repoos.toml, … | retained: post-merge delta not byte-represented |
+| #1007 | active | 16 | src/server/__tests__/engineering-reports.test.ts, src/server/handoff.ts | — | retained: agent still active |
+| #0535 | done | 0 | work/0534-authorize-every-telegram-message-against.md | — | retained: dirty task file has unique data |
+| #0794 | ready (human) | 0 | — | — | retained: human-assigned |
+| #1004 | active | 0 | — | — | retained: agent still active (this task) |
+| #0593 | done | 0 | work/0591-width-aware-cli-layout-shared-layout-hel.md | — | retained: dirty task file has unique data |
+| #0598 | done | 0 | work/0595-failure-tl-dr-for-move-to-done-errors.md | — | retained: dirty task file has unique data |
+| #1009 | active (archived) | 0 | src/ui-app/tests/remote-validation.test.ts | — | retained: agent still active; archive is not proof |
+| #0596 | done | 0 | work/0589-record-failing-test-names-for-remote-che.md, work/0592-skip-check-gate-with-actionable-reminder.md | — | retained: dirty task files have unique data |
+| #0652 | ready (archived) | 4 | — | AGENTS.md, docs/close-out-pipeline.md, src/commands/check.ts, src/core/check-cache.ts, … | retained: archive metadata is not proof; content not represented |
+| #0594 | done | 1 | — | src/commands/shot.ts, src/core/shot-page.ts, src/core/shot-plan.ts, src/server/shot-capture.ts | retained: post-merge commit was cherry-picked as #0597; no recorded merge proof to isolate it |
+| #0960 | done | 0 | work/0960-task-hold-one-durable-documented-state-t.md | — | retained: dirty task file has unique data |
+| #0664 | done | 9 | .githooks/pre-commit, .repoos/canary.txt, LICENSE.md, install.sh, justfile, landing/**, macos/**, … | — | retained: unexplained dirty repository files |
+| #0834 | done | 1 | — | src/cli/api-route-parity.ts, src/cli/help.ts, src/commands/control-api.ts, src/core/config.ts, … | retained: post-merge delta not byte-represented |
+| #0840 | done | 5 | — | src/core/agent-contract.ts, src/core/shot-fixtures.ts, src/server/ui-handoff-gate.ts, src/ui-app/src/components/ActivityIndicator.vue, … | retained: post-merge delta not byte-represented |
+| #0600 | done | 0 | work/0599-fix-the-gitignore-generated-by-repoos-in.md | — | retained: dirty task file has unique data |
+
+External (never inspected or removed): `codex/chat-diagnostics`, `codex/unsandboxed-engineering`, `codex/dependency-confirm-dialog` under `~/.codex/worktrees/`. `/private/tmp/pre-merge-0960` is no longer registered; if it reappears it is external and untouched.
+
+No current worktree is provably safe to remove. Future merged-and-clean worktrees for resolved tasks are reclaimed automatically at boot/close-out, and `repoos gc --dry-run` / `repoos status` report the same candidate / retained / external counts.
+
+
 ## Activity
 
 - 2026-11-01T15:50:52Z · created · njachowski@gmail.com
@@ -56,3 +84,4 @@ Use the 2026-11-01 findings as evidence, then re-check every live task and workt
 - 2026-11-02T14:37:22Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-02T14:37:23Z · message_queued at 2026-11-02T14:37:23.065Z
 - 2026-11-02T14:38:12Z · body
+- 2026-11-02T14:41:53Z · body: Audit — 2026-11-02 (added)
