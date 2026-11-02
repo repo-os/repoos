@@ -2,7 +2,7 @@
 id: 1010
 title: "Easter eggs bundle: clearer held task cards"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: ""
 model_override: gpt-6.1-terra
 created_at: "2026-11-02T04:38:23Z"
-updated_at: "2026-11-02T12:46:31Z"
+updated_at: "2026-11-02T12:46:35Z"
 ---
 ## Problem
 Held task cards show a yellow Held chip and repeat “HELD” at the lower left. Their green “Restart work” button is also misleading: a held task is intentionally inert and should not look like ordinary restartable work.
@@ -56,3 +56,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T12:44:05Z · screenshots
 - 2026-11-02T12:44:24Z · body: Additional task-panel and report layout fixes (removed 1); Requested fixes (added)
 - 2026-11-02T12:46:31Z · model_override
+- 2026-11-02T12:46:35Z · status inbox→ready
