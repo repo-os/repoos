@@ -284,3 +284,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T00:32:46Z · status review→active
 - 2026-11-02T00:32:49Z · CTO nudge: held — remote validation is running
 - 2026-11-02T00:33:17Z · body: E5 · Make review-pass selection and reviewer identity clear (added 9, removed 7)
+- 2026-11-02T00:33:17Z · message_queued at 2026-11-02T00:33:17.881Z
