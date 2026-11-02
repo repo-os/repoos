@@ -212,3 +212,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:53:39Z · message_delivered: 2 message(s)
 - 2026-11-02T14:53:40Z · note: handoff requested (cli)
 - 2026-11-02T14:54:03Z · status active→review
+- 2026-11-02T14:54:03Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
