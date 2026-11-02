@@ -270,6 +270,44 @@ describe("schedule CRUD from the panel", () => {
     expect(repo.schedules).toEqual([]);
   });
 
+  it("prevents duplicate deletes and keeps failures in the confirmation", async () => {
+    const repo = useRepoStore();
+    const schedule = makeSchedule();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.schedules = [schedule];
+    repo.deleteSchedule = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("schedule service unavailable"))
+      .mockImplementationOnce(async () => {
+        repo.schedules = [];
+      });
+
+    const wrapper = mountPanel();
+    await flushPromises();
+    const card = wrapper.get('[data-testid="schedule-card-0001"]');
+    pointerClick(buttons(card.element, (text) => text.trim() === "Delete")!);
+    await flushPromises();
+
+    let modal = document.body.querySelector(".delete-confirm-modal")!;
+    const confirm = buttons(modal, (text) => text.trim() === "Delete schedule")!;
+    pointerClick(confirm);
+    pointerClick(confirm);
+    expect(repo.deleteSchedule).toHaveBeenCalledTimes(1);
+    await flushPromises();
+
+    modal = document.body.querySelector(".delete-confirm-modal")!;
+    expect(modal.querySelector('[role="alert"]')?.textContent).toContain(
+      "schedule service unavailable",
+    );
+    expect(repo.schedules).toEqual([schedule]);
+
+    pointerClick(buttons(modal, (text) => text.trim() === "Delete schedule")!);
+    await flushPromises();
+    expect(repo.deleteSchedule).toHaveBeenCalledTimes(2);
+    expect(document.body.querySelector(".delete-confirm-modal")).toBeNull();
+    expect(repo.schedules).toEqual([]);
+  });
+
   it("places schedule details beside the action column", async () => {
     const repo = useRepoStore();
     repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
@@ -293,10 +331,10 @@ describe("schedule CRUD from the panel", () => {
       "utf8",
     );
     expect(source).toMatch(
-      /@media \(max-width: 640px\)[\s\S]*?\.schedule-card-details\s*\{\s*flex-direction:\s*column/,
+      /@media \(max-width: 760px\)[\s\S]*?\.schedule-card-details\s*\{\s*flex-direction:\s*column/,
     );
     expect(source).toMatch(
-      /@media \(max-width: 640px\)[\s\S]*?\.schedule-actions\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap/,
+      /@media \(max-width: 760px\)[\s\S]*?\.schedule-actions\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap/,
     );
   });
 });
