@@ -386,6 +386,22 @@ const remoteActivity = computed(() => {
   return id ? (repo.taskRemoteActivity[id] ?? null) : null;
 });
 
+const activeWorkLabel = computed(() => {
+  const task = ui.active;
+  if (!task) return "";
+  const activity = remoteActivity.value;
+  if (activity?.run) {
+    const elapsed = formatDuration(
+      Math.max(0, checkNow.value - Date.parse(activity.run.startedAt)),
+    );
+    return `remote ${activity.run.kind} · ${activity.run.stage ?? "running"} · ${elapsed}`;
+  }
+  if (activity?.queue) {
+    return `queued · runner · #${activity.queue.position} · ${formatDuration(activity.queue.waitedMs)}`;
+  }
+  return repo.pmWorkingFor(task.id) ? "PM working" : "Engineer working";
+});
+
 function remotePhaseText(ms: number | null | undefined): string {
   return ms == null ? "" : formatDuration(ms);
 }
@@ -788,7 +804,11 @@ const drawerStatusSummary = computed(() => {
   ].includes(key);
   const checkRun = activeCheckRun.value ?? lastCheckRun.value;
   const where = scopeWhere(checkRun?.scope, checkMachine.value ?? checkRun?.machine);
-  const tone = isError ? "fail" : key === "checksRunning" ? "running" : "neutral";
+  const tone = isError
+    ? "fail"
+    : ["checksRunning", "workRunning"].includes(key)
+      ? "running"
+      : "neutral";
   let lines: [string, string, string];
   if (key === "checksRunning" && localCheckWait.value) {
     lines = [
@@ -812,7 +832,7 @@ const drawerStatusSummary = computed(() => {
   } else if (key === "reviewerRunning") {
     lines = ["Reviewer running", "Review", "Reviewer is working…"];
   } else if (key === "workRunning") {
-    lines = ["Work running", "This task", "Work is running…"];
+    lines = [activeWorkLabel.value, "", ""];
   } else if (key === "reviewFailed") {
     lines = ["Review failed", "Review report", shortDetails.reviewFailed || "No complete report"];
   } else if (key === "notLandable") {
@@ -5141,21 +5161,20 @@ watch(
               </Button>
               <Button
                 v-if="
-                  !isHumanTask && ui.active.status === 'active' && !repo.isRunning(ui.active.id)
+                  !isHumanTask &&
+                  ui.active.status === 'active' &&
+                  !repo.isRunning(ui.active.id) &&
+                  !handoffBusy
                 "
+                data-test-id="task-drawer-request-review"
                 variant="status"
                 :style="{ '--tone': statusColor('review') }"
-                :disabled="ui.saving || handoffBusy"
-                :title="
-                  handoffBusy
-                    ? 'RepoOS is already running the handoff finalization for this task'
-                    : 'Ask RepoOS to commit, run the checks, and move this task to review'
-                "
+                :disabled="ui.saving"
+                title="Ask RepoOS to commit, run the checks, and move this task to review"
                 @click="setStatus('review')"
               >
-                <ActivityIndicator v-if="handoffBusy" />
-                <Send v-else class="size-3.5" />
-                {{ handoffBusy ? "Running checks…" : "Review" }}
+                <Send class="size-3.5" />
+                Review
               </Button>
               <Button
                 v-if="!isHumanTask && ui.active.status === 'active' && repo.isRunning(ui.active.id)"
@@ -5525,8 +5544,13 @@ watch(
               'is-error': drawerStatusSummary.isError,
               'is-running': drawerStatusSummary.tone === 'running',
               'is-fail': drawerStatusSummary.tone === 'fail',
+              'is-compact': !drawerStatusSummary.lines[1],
             }"
-            aria-label="Task status. Open Status details."
+            :aria-label="
+              drawerStatusSummary.key === 'workRunning'
+                ? `Work running: ${drawerStatusSummary.lines[0]}. Open Status details.`
+                : 'Task status. Open Status details.'
+            "
             @click="openStatusDetails"
             @keydown.enter.prevent="openStatusDetails"
             @keydown.space.prevent="openStatusDetails"
@@ -5535,7 +5559,7 @@ watch(
               <span class="drawer-status-mark" aria-hidden="true" />
               {{ drawerStatusSummary.lines[0] }}
             </span>
-            <span class="drawer-status-row drawer-status-l2">{{
+            <span v-if="drawerStatusSummary.lines[1]" class="drawer-status-row drawer-status-l2">{{
               drawerStatusSummary.lines[1]
             }}</span>
             <span v-if="drawerStatusSummary.lines[2]" class="drawer-status-row drawer-status-l3">{{
@@ -7675,6 +7699,11 @@ watch(
   cursor: pointer;
 }
 
+.drawer-status-summary.is-compact {
+  grid-template-rows: auto;
+  gap: 0;
+}
+
 .drawer-task-filename {
   display: block;
   flex: 0 1 auto;
@@ -7725,6 +7754,20 @@ watch(
 
 .drawer-status-summary.is-running .drawer-status-mark {
   background: var(--cyan);
+  animation: drawer-status-running-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes drawer-status-running-pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-status-summary.is-running .drawer-status-mark {
+    animation: none;
+  }
 }
 
 .drawer-status-summary.is-fail .drawer-status-mark {
