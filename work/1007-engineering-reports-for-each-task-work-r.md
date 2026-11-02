@@ -2,7 +2,7 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -170,3 +170,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T11:55:47Z · watchdog: restarting engineer after 18m with no live process
 - 2026-11-02T12:12:39Z · message_delivered: 2 message(s)
 - 2026-11-02T12:13:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T12:13:13Z · status active→review
