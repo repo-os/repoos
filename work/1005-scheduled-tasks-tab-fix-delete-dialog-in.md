@@ -2,14 +2,14 @@
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-01T16:13:04Z"
+updated_at: "2026-11-02T04:30:30Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 
 - 2026-11-01T16:13:02Z · created · njachowski@gmail.com
 - 2026-11-01T16:13:04Z · screenshots
+- 2026-11-02T04:30:30Z · status inbox→ready
