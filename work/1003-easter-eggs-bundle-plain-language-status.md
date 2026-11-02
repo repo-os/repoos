@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T02:19:57Z"
+updated_at: "2026-11-02T02:23:21Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
 review_passes: 3
@@ -396,3 +396,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T02:18:08Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T02:19:23Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T02:19:57Z · status active→review
+- 2026-11-02T02:23:21Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1003 (pid 85529)
