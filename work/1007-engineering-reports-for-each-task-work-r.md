@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-02T16:03:07Z"
+review_passes: 8
 id: 1007
 title: Engineering reports for each task work round
 type: feature
@@ -14,8 +16,6 @@ branch: feat/engineering-reports-for-each-task-work-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T16:03:07Z"
-review_passes: 7
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 routing_switches: 1
@@ -237,3 +237,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T15:59:42Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T16:03:07Z · note: review pass 8: needs some work
 - 2026-11-02T16:03:07Z · needs_input
+
