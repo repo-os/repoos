@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 925093
-last_close_out_gate_at: "2026-11-02T00:01:10.745Z"
 id: 1000
 title: "P0: distinguish silent agents from active checks and hung remote validation"
 type: bug
-status: review
+status: done
 priority: p0
 area: [web, server, core]
+merged_commit: a188b7dbbb71d582f2aeff1c7cc2ea6e728b2f6f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
 updated_at: "2026-11-02T00:01:10Z"
+last_close_out_gate_ms: 925093
+last_close_out_gate_at: "2026-11-02T00:01:10.745Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-01T23:48:01.607Z: repoos check failed: ui verification failed: a browser capture is already in flight for this task"
 review_passes: 6

@@ -127,10 +127,11 @@ export function retryHint(
   retryCount: number,
   lastActivity: string | undefined,
   now: number,
+  opts?: { suppressAgentStuck?: boolean },
 ): RetryHint {
   const text = RETRY_TEXT[kind];
   const ms = silentMs(now, lastActivity);
-  if (ms !== null && ms >= STUCK_SILENCE_MS) {
+  if (ms !== null && ms >= STUCK_SILENCE_MS && !opts?.suppressAgentStuck) {
     return {
       label: `stuck · silent ${formatDuration(ms)}`,
       title: text.stuckTitle,
@@ -156,19 +157,21 @@ export function autoRepairHint(opts: {
   running: boolean;
   lastActivity: string | undefined;
   now: number;
+  suppressAgentStuck?: boolean;
 }): RetryHint | null {
-  const { task, running, lastActivity, now } = opts;
+  const { task, running, lastActivity, now, suppressAgentStuck } = opts;
   if (!running) return null;
   if (task.status === "review") {
     const merge = retryCountFrom(task, "mergeConflict");
-    if (merge) return retryHint("mergeConflict", merge, lastActivity, now);
+    if (merge) return retryHint("mergeConflict", merge, lastActivity, now, { suppressAgentStuck });
     const check = retryCountFrom(task, "check");
-    if (check) return retryHint("check", check, lastActivity, now);
+    if (check) return retryHint("check", check, lastActivity, now, { suppressAgentStuck });
     return null;
   }
   if (task.status === "active") {
     const signal = retryCountFrom(task, "handoffSignal");
-    if (signal) return retryHint("handoffSignal", signal, lastActivity, now);
+    if (signal)
+      return retryHint("handoffSignal", signal, lastActivity, now, { suppressAgentStuck });
   }
   return null;
 }
