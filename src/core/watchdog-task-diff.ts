@@ -4,10 +4,13 @@ const AUTOMATIC_ACTIVITY = [
   /^- \d{4}-\d{2}-\d{2}T[^\s]+ · watchdog: check wait escalated · waiting: .+ · next step: investigate the abnormal wait; the flag clears when the check starts$/,
   /^- \d{4}-\d{2}-\d{2}T[^\s]+ · watchdog: check wait ended or recovered — cleared needs_input$/,
 ];
+const CLOSE_OUT_RETRY_ACTIVITY =
+  /^- \d{4}-\d{2}-\d{2}T[^\s]+ · note: close-out failed — restored review status for retry \(#0838\)$/;
 const AUTOMATIC_FIELDS = new Set([
   "needs_input",
   "needs_input_reason",
   "needs_input_detail",
+  "status",
   "updated_at",
 ]);
 
@@ -32,19 +35,26 @@ function frontmatterIsWellFormed(content: string): boolean {
 }
 
 /** True only when a tracked task-file delta is a watchdog check-wait record. */
-export function isWatchdogCheckWaitTaskDelta(before: string, after: string, taskPath: string): boolean {
+export function isWatchdogCheckWaitTaskDelta(
+  before: string,
+  after: string,
+  taskPath: string,
+): boolean {
   const oldDoc = parseDocument(before);
   const newDoc = parseDocument(after);
   if (!oldDoc.hadFrontmatter || !newDoc.hadFrontmatter) return false;
   if (!frontmatterIsWellFormed(before) || !frontmatterIsWellFormed(after)) return false;
-  const id = taskPath.split("/").at(-1)?.match(/^(\d+)-.*\.md$/)?.[1];
-  if (!id || String(oldDoc.data.id ?? "").padStart(id.length, "0") !== id || String(newDoc.data.id ?? "").padStart(id.length, "0") !== id) return false;
+  const id = taskPath.split("/").at(-1)?.split("-")[0];
+  if (!id || String(oldDoc.data.id ?? "") !== id || String(newDoc.data.id ?? "") !== id)
+    return false;
 
   const keys = new Set([...Object.keys(oldDoc.data), ...Object.keys(newDoc.data)]);
   let changed = false;
+  const changedFields = new Set<string>();
   for (const key of keys) {
     if (JSON.stringify(oldDoc.data[key]) === JSON.stringify(newDoc.data[key])) continue;
     if (!AUTOMATIC_FIELDS.has(key)) return false;
+    changedFields.add(key);
     changed = true;
   }
   if (!changed) return false;
@@ -54,7 +64,23 @@ export function isWatchdogCheckWaitTaskDelta(before: string, after: string, task
   const oldBody = oldDoc.body.replace(/\n+$/, "");
   const newBody = newDoc.body.replace(/\n+$/, "");
   if (!newBody.startsWith(`${oldBody}\n`)) return false;
-  const added = newBody.slice(oldBody.length + 1).split("\n").filter(Boolean);
-  if (added.length === 0 || !added.every((line) => AUTOMATIC_ACTIVITY.some((pattern) => pattern.test(line)))) return false;
-  return true;
+  const added = newBody
+    .slice(oldBody.length + 1)
+    .split("\n")
+    .filter(Boolean);
+  if (added.length === 0) return false;
+  if (added.every((line) => AUTOMATIC_ACTIVITY.some((pattern) => pattern.test(line)))) {
+    return [...changedFields].every((key) => key !== "status");
+  }
+  return (
+    ((added.length === 1 && CLOSE_OUT_RETRY_ACTIVITY.test(added[0]!)) ||
+      (added.length === 3 &&
+        added[0] === "## Activity" &&
+        added[1] === "" &&
+        CLOSE_OUT_RETRY_ACTIVITY.test(added[2]!))) &&
+    changedFields.size > 0 &&
+    [...changedFields].every((key) => key === "status" || key === "updated_at") &&
+    oldDoc.data.status !== "done" &&
+    newDoc.data.status === "review"
+  );
 }
