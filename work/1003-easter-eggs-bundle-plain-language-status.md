@@ -14,8 +14,6 @@ created_at: "2026-11-01T15:37:17Z"
 updated_at: "2026-11-02T08:42:26Z"
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_passes: 4
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -493,3 +491,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T08:02:40Z · body
 - 2026-11-02T08:17:21Z · body
 - 2026-11-02T08:42:26Z · status active→review
+
