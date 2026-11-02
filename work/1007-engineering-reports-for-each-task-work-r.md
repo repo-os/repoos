@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-02T14:58:16Z"
+review_passes: 6
 id: 1007
 title: Engineering reports for each task work round
 type: feature
@@ -14,10 +16,8 @@ branch: feat/engineering-reports-for-each-task-work-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T14:58:16Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: "03115468ec0ad5e57474778a02ddfb4f3ca366f4"
-review_passes: 5
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 routing_switches: 1
@@ -221,3 +221,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:54:57Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T14:56:38Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-02T14:58:16Z · note: review pass 6: needs some work
+
