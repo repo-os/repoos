@@ -59,3 +59,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T03:52:53Z · released
 - 2026-11-02T03:53:00Z · message_delivered: 1 message(s)
 - 2026-11-02T03:53:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T03:53:31Z · note: handoff requested (cli)
