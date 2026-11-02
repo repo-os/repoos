@@ -6145,6 +6145,7 @@ watch(
                   :aria-pressed="selectedEngineeringRound === report.round"
                   @click="selectedEngineeringRound = report.round"
                   @keydown.enter="selectedEngineeringRound = report.round"
+                  @keydown.space.prevent="selectedEngineeringRound = report.round"
                 >
                   <td>Round {{ report.round }}</td>
                   <td>{{ fmtTime(report.at) }}</td>

@@ -3992,7 +3992,7 @@ export function missionFor(
     "Run this fail-safe checklist IN ORDER. Do not stop until it is fully checked off:",
     "",
     "1. Read the task file and implement what it describes.",
-    "   Before your final handoff, write an engineer-authored report draft to `${config.cacheDir}/engineering-report-drafts/<task-id>.md`.",
+    `   Before your final handoff, write an engineer-authored report draft to ${config.cacheDir}/engineering-report-drafts/<task-id>.md.`,
     "   Start with `## TL;DR`, then include `## Work and rationale`, `## Approaches tried`, `## Challenges and blockers`, and `## Key learnings`.",
     "   Target 500–600 words; keep the draft at or below 1,000 words. Do not include file counts: RepoOS generates those from Git.",
     "   Explain actual decisions and outcomes from this session. After checks pass, leave the report draft for RepoOS to finalize and bind to the checked tree.",
