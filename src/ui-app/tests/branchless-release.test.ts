@@ -13,6 +13,7 @@ import { parseTask } from "../../core/task.js";
 import {
   releaseBranchless,
   isBranchlessReleaseEligible,
+  runCheckCandidates,
   type CheckResult,
 } from "../../server/branchless-release.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
@@ -134,5 +135,59 @@ describe("releaseBranchless", () => {
     } finally {
       clean();
     }
+  });
+});
+
+describe("runCheckCandidates", () => {
+  it("falls back only when the preferred executable is missing", async () => {
+    const calls: string[] = [];
+    const result = await runCheckCandidates(
+      [["local-repoos"], ["repoos"]],
+      "/repo",
+      async (cmd) => {
+        calls.push(cmd);
+        return cmd === "local-repoos"
+          ? { status: null, stdout: "", stderr: "local-repoos not found", missingExecutable: true }
+          : { status: 0, stdout: "", stderr: "", missingExecutable: false };
+      },
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(calls).toEqual(["local-repoos", "repoos"]);
+  });
+
+  it("does not rerun the full check after a failed check", async () => {
+    const calls: string[] = [];
+    const result = await runCheckCandidates(
+      [["local-repoos"], ["repoos"]],
+      "/repo",
+      async (cmd) => {
+        calls.push(cmd);
+        return { status: 1, stdout: "", stderr: "test failed", missingExecutable: false };
+      },
+    );
+
+    expect(result).toEqual({ ok: false, output: "test failed" });
+    expect(calls).toEqual(["local-repoos"]);
+  });
+
+  it("does not retry a timed-out check and reports the timeout", async () => {
+    const calls: string[] = [];
+    const result = await runCheckCandidates(
+      [["local-repoos"], ["repoos"]],
+      "/repo",
+      async (cmd) => {
+        calls.push(cmd);
+        return {
+          status: null,
+          stdout: "",
+          stderr: "Command timed out after 600000ms",
+          missingExecutable: false,
+        };
+      },
+    );
+
+    expect(result).toEqual({ ok: false, output: "Command timed out after 600000ms" });
+    expect(calls).toEqual(["local-repoos"]);
   });
 });
