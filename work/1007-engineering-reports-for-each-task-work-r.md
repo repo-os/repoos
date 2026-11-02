@@ -2,7 +2,7 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — A new engineering round can pass handoff without producing its required report.
@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 model_override: gpt-6.1-terra
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T12:45:37Z"
+updated_at: "2026-11-02T12:46:02Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -180,3 +180,5 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T12:16:09Z · note: review pass 4: needs some work
 - 2026-11-02T12:16:09Z · needs_input
 - 2026-11-02T12:45:37Z · model_override
+- 2026-11-02T12:46:02Z · status review→active
+- 2026-11-02T12:46:02Z · note: try to carefully read the review and fix all the bugs then send it back for a green review, pretty please...
