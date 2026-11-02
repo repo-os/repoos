@@ -73,3 +73,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T12:46:41Z · status ready→active, branch
 - 2026-11-02T12:48:23Z · body
 - 2026-11-02T12:55:46Z · message_queued at 2026-11-02T12:55:46.740Z
+- 2026-11-02T12:55:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
