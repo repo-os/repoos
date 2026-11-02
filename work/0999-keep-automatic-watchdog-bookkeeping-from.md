@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/keep-automatic-watchdog-bookkeeping-from
 created_at: "2026-11-01T11:58:54Z"
-updated_at: "2026-11-02T04:57:19Z"
+updated_at: "2026-11-02T04:58:43Z"
 last_close_out_gate_ms: 713938
 last_close_out_gate_at: "2026-11-02T04:57:19.207Z"
 review_passes: 2
@@ -85,4 +85,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T04:39:57Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-02T04:40:32Z · note: review pass 2: good to go
 - 2026-11-02T04:57:19Z · close-out gate completed in 714s
-
+- 2026-11-02T04:58:43Z · status done→done, release:success
