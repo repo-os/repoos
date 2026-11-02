@@ -153,3 +153,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T19:29:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T19:29:04Z · message_delivered: 1 message(s)
 - 2026-11-02T19:32:20Z · status active→review
+- 2026-11-02T19:32:20Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
