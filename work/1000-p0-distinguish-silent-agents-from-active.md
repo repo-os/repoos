@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/p0-distinguish-silent-agents-from-active
 created_at: "2026-11-01T12:22:22Z"
-updated_at: "2026-11-02T00:01:10Z"
+updated_at: "2026-11-02T00:02:42Z"
 last_close_out_gate_ms: 925093
 last_close_out_gate_at: "2026-11-02T00:01:10.745Z"
 check_retry_count: 1
@@ -188,4 +188,4 @@ Read #0719/#0721 (agent output timestamp), #0678, #0799 (close-out heartbeat), #
 - 2026-11-01T23:42:18Z · status active→review
 - 2026-11-01T23:43:37Z · note: review pass 6: good to go
 - 2026-11-02T00:01:10Z · close-out gate completed in 925s
-
+- 2026-11-02T00:02:42Z · status done→done, release:success
