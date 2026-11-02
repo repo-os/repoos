@@ -129,6 +129,35 @@ describe("engineering reports", () => {
     expect(listEngineeringReports(config, "T1")).toHaveLength(0);
   });
 
+  it("enforces the word limit after adding the generated file summary", async () => {
+    const baseSha = git("rev-parse HEAD");
+    for (let index = 0; index < 140; index++) {
+      writeFileSync(join(root, "src", `generated-report-file-${index}.ts`), "line\n");
+    }
+    git("add .");
+    git('commit -m "many changed files"');
+    const sourceSha = git("rev-parse HEAD");
+    const draftDir = join(root, ".repoos", "engineering-report-drafts");
+    mkdirSync(draftDir, { recursive: true });
+    writeFileSync(join(draftDir, "T1.md"), `${narrative} ${"lesson ".repeat(700)}`);
+    const config = { root, cacheDir: ".repoos" } as any;
+    const result = await finalizeEngineeringReport({
+      config,
+      taskId: "T1",
+      workdir: root,
+      branch: "feat/report",
+      agent: "codex",
+      model: "test-model",
+      baseSha,
+      sourceSha,
+    });
+
+    expect(result.report).toBeNull();
+    expect(result.error).toContain("including its generated change summary");
+    expect(result.error).toContain("final report has");
+    expect(listEngineeringReports(config, "T1")).toHaveLength(0);
+  });
+
   it("fails clearly when the engineer draft is missing", async () => {
     const baseSha = git("rev-parse HEAD");
     const result = await finalizeEngineeringReport({
