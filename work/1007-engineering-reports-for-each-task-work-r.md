@@ -2,7 +2,7 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/engineering-reports-for-each-task-work-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T16:29:39Z"
+updated_at: "2026-11-02T16:30:19Z"
 review_passes: 9
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -253,3 +253,5 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T16:26:39Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 13s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T16:28:46Z · note: review pass 9: needs some work
 - 2026-11-02T16:29:24Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-02T16:30:19Z · status review→active
+- 2026-11-02T16:30:19Z · note: Review pass 9: two small fixes, see .repoos/reviews/1007/9.md
