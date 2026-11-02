@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T16:24:55.241Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Delete schedule dialog with working actions (target \"default\"): click [data-testid^=\"schedule-card-\"] .schedule-actions button:last-child: click: Error: strict mode violation: locator('[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child') resolved to 8 elements: on /agents?tab=scheduled (http://127.0.0.1:51188/agents?tab=scheduled); [missing-target] Delete schedule dialog with working actions (target \"defa… (truncated)"
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
@@ -90,3 +92,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T15:48:09Z · message_delivered: 1 message(s)
 - 2026-11-02T16:04:03Z · body
 - 2026-11-02T16:24:51Z · note: ui verification failed (2 issue(s)): [missing-target] Delete schedule dialog with working actions (target "default"): click [data-testid^="schedule-card-"] .schedule-actions button:last-child: click: Error: strict mode violation: locator('[data-testid^="schedule-card-"] .schedule-actions button:last-child') resolved to 8 elements: on /agents?tab=scheduled (http://127.0.0.1:51188/agents?tab=scheduled); [missing-target] Delete schedule dialog with working actions (target "default"): highlight [rol
+
