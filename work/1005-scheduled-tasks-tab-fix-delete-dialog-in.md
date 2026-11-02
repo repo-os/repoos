@@ -143,3 +143,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T19:53:17Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T19:55:47Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T20:07:01Z · message_queued at 2026-11-02T20:07:01.104Z
+- 2026-11-02T20:07:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
