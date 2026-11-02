@@ -42,3 +42,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T02:19:38Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T02:32:41Z · body
 - 2026-11-02T02:36:37Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-02T02:36:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
