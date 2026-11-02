@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T09:10:35Z"
+updated_at: "2026-11-02T09:13:08Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_rounds: 2
@@ -117,124 +117,164 @@ Keep the selected pass highlight visible while its report is loading and after i
 ```json
 [
 {
-"label": "Mission Control 2×2 panels at desktop width",
-"target": "default",
-"route": "/?shotState=integration:median15",
-"highlight": ".dash-grid",
-"steps": [
-{
-"waitFor": ".dash-grid"
-}
-],
-"assert": [
-{
-"selector": ".dash-grid",
-"label": "Mission Control panels",
-"text": "Feature releases"
-}
-],
-"viewportWidth": 1280,
-"viewportHeight": 1000
+  "label": "Mission Control 2×2 panels at desktop width",
+  "target": "default",
+  "route": "/?shotState=integration:median15",
+  "highlight": ".dash-grid",
+  "steps": [
+    {
+      "waitFor": ".dash-grid"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".dash-grid > *",
+      "label": "Four dashboard panels render",
+      "count": 4
+    },
+    {
+      "selector": ".dash-grid",
+      "label": "Feature releases panel renders",
+      "text": "Feature releases"
+    },
+    {
+      "selector": ".dash-grid",
+      "label": "Live activity panel renders",
+      "text": "Live activity"
+    },
+    {
+      "selector": ".dash-grid",
+      "label": "Decision panel renders",
+      "text": "Needs a decision"
+    },
+    {
+      "selector": ".dash-grid",
+      "label": "Attention panel renders",
+      "text": "Needs your attention"
+    }
+  ],
+  "viewportWidth": 1280,
+  "viewportHeight": 1000
 },
 {
-"label": "Mission Control panels at narrow width",
-"target": "default",
-"route": "/?shotState=integration:median15",
-"highlight": ".dash-grid",
-"steps": [
-{
-"waitFor": ".dash-grid"
-}
-],
-"assert": [
-{
-"selector": ".dash-grid",
-"label": "Responsive Mission Control panels",
-"text": "Feature releases"
-}
-],
-"viewportWidth": 390,
-"viewportHeight": 900
+  "label": "Mission Control panels stack at narrow width",
+  "target": "default",
+  "route": "/?shotState=integration:median15",
+  "highlight": ".dash-grid",
+  "steps": [
+    {
+      "waitFor": ".dash-grid"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".dash-grid > *",
+      "label": "Four responsive dashboard panels render",
+      "count": 4
+    },
+    {
+      "selector": ".dash-grid",
+      "label": "Feature releases panel renders",
+      "text": "Feature releases"
+    },
+    {
+      "selector": ".dash-grid",
+      "label": "Live activity panel renders",
+      "text": "Live activity"
+    },
+    {
+      "selector": ".dash-grid",
+      "label": "Decision panel renders",
+      "text": "Needs a decision"
+    },
+    {
+      "selector": ".dash-grid",
+      "label": "Attention panel renders",
+      "text": "Needs your attention"
+    }
+  ],
+  "viewportWidth": 390,
+  "viewportHeight": 1200
 },
 {
-"label": "Agents tab with Default Agents and Custom Agents sections",
-"target": "default",
-"route": "/agents?tab=default",
-"highlight": ".agents-tab-content",
-"steps": [
-{
-"waitFor": ".agents-tab-content"
-}
-],
-"assert": [
-{
-"selector": ".agents-tab-content",
-"label": "Default agents section",
-"text": "Default agents"
+  "label": "Agents tab with Custom Agents below Default Agents",
+  "target": "default",
+  "route": "/agents?tab=default",
+  "highlight": ".agents-tab-content",
+  "steps": [
+    {
+      "waitFor": ".agents-tab-content"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".agents-tab-content > .agent-tab-panel:nth-child(1)",
+      "label": "Default Agents section is first",
+      "text": "Default agents"
+    },
+    {
+      "selector": ".agents-tab-content > .agent-tab-panel:nth-child(2)",
+      "label": "Custom Agents section follows Default Agents",
+      "text": "Custom agents"
+    }
+  ],
+  "viewportWidth": 1280,
+  "viewportHeight": 2160
 },
 {
-"selector": ".agents-tab-content",
-"label": "Custom agents section",
-"text": "Custom agents"
-}
-],
-"viewportWidth": 1280,
-"viewportHeight": 2160
+  "label": "Review pass selection and latest status",
+  "target": "default",
+  "route": "/work?task=9999&tab=review",
+  "highlight": ".review-history-table",
+  "steps": [
+    {
+      "waitFor": ".review-history-table"
+    }
+  ],
+  "assert": [
+    {
+      "selector": ".review-history-table",
+      "label": "Reviewer coding agent is identified",
+      "text": "Codex"
+    },
+    {
+      "selector": ".review-pass-freshness",
+      "label": "Latest status belongs to the good-to-go callout",
+      "text": "Latest"
+    }
+  ],
+  "state": "drawer:reviewPasses",
+  "viewportWidth": 1280,
+  "viewportHeight": 1000
 },
 {
-"label": "Review pass selection and latest status",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".review-history-table",
-"steps": [
-{
-"waitFor": ".review-history-table"
-}
-],
-"assert": [
-{
-"selector": ".review-history-table",
-"label": "Reviewer coding agent",
-"text": "Codex"
-},
-{
-"selector": ".review-pass-freshness",
-"label": "Selected pass freshness",
-"text": "Latest"
-}
-],
-"state": "drawer:reviewPasses",
-"viewportWidth": 1280,
-"viewportHeight": 1000
-},
-{
-"label": "Task agent assignment preview on hover",
-"target": "default",
-"route": "/work",
-"highlight": "[data-test-id=\"task-agent-preview\"]",
-"steps": [
-{
-"hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
-},
-{
-"waitFor": "[data-test-id=\"task-agent-preview\"]"
-}
-],
-"assert": [
-{
-"selector": "[data-test-id=\"task-agent-preview\"]",
-"label": "Engineer assignment",
-"text": "Engineer"
-},
-{
-"selector": "[data-test-id=\"task-agent-preview\"]",
-"label": "Reviewer assignment",
-"text": "Reviewer"
-}
-],
-"state": "board:severalWorkingCards",
-"viewportWidth": 390,
-"viewportHeight": 700
+  "label": "Task agent assignment preview on hover",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"task-agent-preview\"]",
+  "steps": [
+    {
+      "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+    },
+    {
+      "waitFor": "[data-test-id=\"task-agent-preview\"]"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-test-id=\"task-agent-preview\"]",
+      "label": "Preview includes role assignments",
+      "text": "Engineer"
+    },
+    {
+      "selector": "[data-test-id=\"task-agent-preview\"]",
+      "label": "Preview includes reviewer assignment",
+      "text": "Reviewer"
+    }
+  ],
+  "state": "board:severalWorkingCards",
+  "viewportWidth": 390,
+  "viewportHeight": 700
 }
 ]
 ```
@@ -496,3 +536,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T09:10:26Z · status review→active
 - 2026-11-02T09:10:26Z · note: Final correction round requested by Nick after review pass 5; address every concrete reviewer finding and capture fresh complete evidence before handoff.
 - 2026-11-02T09:10:35Z · needs_input
+- 2026-11-02T09:13:08Z · body
