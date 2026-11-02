@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T05:55:15Z"
+updated_at: "2026-11-02T05:57:39Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/server-git-blocking-guard.test.ts > server git blocking guard > does not import and call synchronous Git read helpers from server code on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: a938fca1ef665f849ed5b2218661ef0bdb7cb252
 ---
@@ -41,18 +41,11 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 ```json
 [
 {
-"label": "Engineering report history in the task Dev tab",
-"target": "default",
-"route": "/work?task=1007&tab=agent",
-"highlight": "[data-test-id=\"engineering-report-history\"]",
-"steps": [
-{
-"click": "button[data-test-id=\"engineering-report-tab\"]"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "Task Dev tab with engineering report history",
+  "target": "default",
+  "route": "/work?task=1007&tab=dev",
+  "highlight": "[data-test-id=\"engineering-report-history\"]",
+  "state": "drawer:reviewWithBranch"
 }
 ]
 ```
@@ -105,3 +98,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T05:41:38Z · body
 - 2026-11-02T05:45:04Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T05:55:15Z · body
+- 2026-11-02T05:57:39Z · body
