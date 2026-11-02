@@ -128,3 +128,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T17:16:53Z · body
 - 2026-11-02T17:54:40Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-02T17:59:41Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-02T17:59:41Z · note: handoff requested (cli)
