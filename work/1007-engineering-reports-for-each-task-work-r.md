@@ -12,7 +12,7 @@ branch: feat/engineering-reports-for-each-task-work-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T17:03:41Z"
+updated_at: "2026-11-02T17:05:57Z"
 last_close_out_gate_ms: 579871
 last_close_out_gate_at: "2026-11-02T17:03:41.578Z"
 review_passes: 10
@@ -263,4 +263,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T16:46:19Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T16:50:23Z · note: review pass 10: good to go
 - 2026-11-02T17:03:41Z · close-out gate completed in 580s
-
+- 2026-11-02T17:05:57Z · status done→done, release:success
