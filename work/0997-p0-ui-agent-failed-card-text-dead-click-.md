@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-failed-card-text-dead-click-target
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T19:32:21Z"
+updated_at: "2026-11-02T19:47:25Z"
 ---
 ## Problem
 
@@ -155,3 +155,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T19:32:20Z · status active→review
 - 2026-11-02T19:32:20Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T19:32:21Z · note: shots: skipped — 6 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T19:47:25Z · note: review pass 1: failed — no usable report
