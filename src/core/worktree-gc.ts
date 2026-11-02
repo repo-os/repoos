@@ -18,9 +18,9 @@
  * content is provably represented in the canonical main checkout, OR it is
  * clean/merged, OR its only dirt is `work/*.md` files whose working-tree bytes
  * are exactly main's canonical bytes. Anything active, human-assigned,
- * unmerged, or holding unexplained/unique files is kept with an actionable
- * reason. Archived metadata alone is never proof: an archived-but-unmerged
- * branch stays.
+ * unmerged, lacking a task record (lifecycle unknown), or holding
+ * unexplained/unique files is kept with an actionable reason. Archived
+ * metadata alone is never proof: an archived-but-unmerged branch stays.
  *
  * Scope boundary: this ONLY ever removes worktrees whose path is inside
  * `worktreesDir(root)` (the `<root>-worktrees/` sibling directory that
@@ -226,6 +226,19 @@ interface Representation {
   differing: string[];
   /** Task files added on the branch but absent from main (unique data). */
   uniqueTaskFiles: string[];
+}
+
+/** Actionable retention reason for a branch that is not proven redundant. */
+function notRepresentedReason(proof: Representation, mainBranch: string): string {
+  if (proof.uniqueTaskFiles.length > 0) {
+    return `task file content not represented in ${mainBranch}: ${proof.uniqueTaskFiles
+      .slice(0, 5)
+      .join(", ")}`;
+  }
+  if (proof.differing.length > 0) {
+    return `changes not in ${mainBranch}: ${proof.differing.slice(0, 5).join(", ")}`;
+  }
+  return "commits not represented in main";
 }
 
 /**
@@ -556,14 +569,37 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       continue;
     }
 
+    // No task record means the lifecycle is unknown, not inactive. The index
+    // can be stale or partial (a just-created task, a file the watcher has not
+    // seen yet), and an active agent or close-out must never lose its worktree
+    // because its task record was momentarily missing. Fail closed: keep a
+    // live directory until a task record proves the work is resolved. A
+    // vanished directory has no working tree to protect — only its branch ref
+    // can carry unmerged data — so the content proof below decides.
+    if (!task) {
+      if (existsSync(w.path)) {
+        retain({ ...meta, reason: "no task record for branch — lifecycle state unknown" });
+        continue;
+      }
+      const proof = mergedIntoMain.has(branch)
+        ? { represented: true, differing: [] as string[], uniqueTaskFiles: [] as string[] }
+        : branchRepresentedInMain(root, mainBranch, branch, workDir, null);
+      if (!proof.represented) {
+        retain({ ...meta, reason: notRepresentedReason(proof, mainBranch) });
+        continue;
+      }
+      remove({ ...meta, reason: "stale metadata for a vanished directory" }, false, true);
+      continue;
+    }
+
     // A task that is not resolved keeps its worktree no matter what git says.
     // Archived is orthogonal to status: an archived bare task is eligible only
     // after the same representation proof below, never on archive metadata
     // alone. Human-assigned work is always retained (#1004).
-    const closed = !!task && task.status !== "active" && task.status !== "review";
+    const closed = task.status !== "active" && task.status !== "review";
     const resolved =
       closed && (task.status === "done" || (task.isArchived === true && task.assignee === "ai"));
-    if (task && !resolved) {
+    if (!resolved) {
       const reason =
         task.status === "active" || task.status === "review"
           ? "task agent still active"
@@ -575,7 +611,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       retain({ ...meta, reason });
       continue;
     }
-    if (task && resolved && task.assignee === "human") {
+    if (task.assignee === "human") {
       // Done human-owned work is still human-owned; a done close-out is the
       // only RepoOS workflow that resolves it, and even then we do not delete a
       // worktree the human may still be inspecting.
@@ -583,9 +619,9 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       continue;
     }
 
-    // At this point the task is resolved (done, or archived+AI), or there is no
-    // task record. `merged` is the cheap ancestry proof; `representation` is
-    // the stronger content proof for squash/rebase/WIP-checkpoint branches.
+    // At this point the task is resolved (done, or archived+AI) and AI-owned.
+    // `merged` is the cheap ancestry proof; `representation` is the stronger
+    // content proof for squash/rebase/WIP-checkpoint branches.
     const merged = mergedIntoMain.has(branch);
     const dirtyPaths = worktreeDirtyPaths(w.path);
     const commitsAhead = merged ? 0 : commitCountAhead(root, mainBranch, branch);
@@ -611,7 +647,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
         mainBranch,
         branch,
         workDir,
-        task?.mergedCommit ?? null,
+        task.mergedCommit ?? null,
       );
       represented = proof.represented;
       differing = proof.differing;
@@ -619,18 +655,10 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     }
 
     if (!represented) {
-      const reason =
-        uniqueTaskFiles.length > 0
-          ? `task file content not represented in ${mainBranch}: ${uniqueTaskFiles
-              .slice(0, 5)
-              .join(", ")}`
-          : differing.length > 0
-            ? `changes not in ${mainBranch}: ${differing.slice(0, 5).join(", ")}`
-            : "commits not represented in main";
       retain(
         withProgress({
           ...meta,
-          reason,
+          reason: notRepresentedReason({ represented, differing, uniqueTaskFiles }, mainBranch),
           ...(dirtyPaths.length > 0 ? { dirtyPaths } : {}),
         }),
       );
