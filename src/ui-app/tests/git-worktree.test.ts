@@ -884,25 +884,25 @@ describe("main dirty paths for close-out (#0713)", () => {
 
       writeFileSync(
         path,
-        `---\nid: "0999"\ntitle: Watchdog task\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: waiting\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`,
+        `---\nid: "0999"\ntitle: Watchdog task\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: "waiting: checks for 10 minutes"\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`,
       );
       expect(await mainDirtyFilesForCloseOut(root)).toEqual([]);
 
       writeFileSync(
         path,
-        `---\nid: "0999"\ntitle: Human edit\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: waiting\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`,
+        `---\nid: "0999"\ntitle: Human edit\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: "waiting: checks for 10 minutes"\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`,
       );
       expect(await mainDirtyFilesForCloseOut(root)).toEqual(["work/0999-watchdog-task.md"]);
 
       writeFileSync(
         path,
-        `---\nid: "0999"\ntitle: Human edit\ncustom_machine_field: yes\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: waiting\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`,
+        `---\nid: "0999"\ntitle: Human edit\ncustom_machine_field: yes\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: "waiting: checks for 10 minutes"\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`,
       );
       expect(await mainDirtyFilesForCloseOut(root)).toEqual(["work/0999-watchdog-task.md"]);
 
       writeFileSync(
         path,
-        `---\nid: "0999"\ntitle: Human edit\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: waiting\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n- 2026-11-01T00:11:00Z · human note\n`,
+        `---\nid: "0999"\ntitle: Human edit\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: "waiting: checks for 10 minutes"\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n- 2026-11-01T00:11:00Z · human note\n`,
       );
       expect(await mainDirtyFilesForCloseOut(root)).toEqual(["work/0999-watchdog-task.md"]);
 
