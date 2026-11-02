@@ -54,6 +54,47 @@ describe("vitest progress reporter", () => {
     expect(timingLines[0]).toContain('"file":"slow.test.ts","durationMs":1234');
   });
 
+  it("records finished test cases with retry index", () => {
+    const reporter = new RepoOSProgressReporter();
+    const testCase = {
+      id: "case-1",
+      fullName: "suite > works",
+      module: { moduleId: `${process.cwd()}/case.test.ts` },
+      result: () => ({ state: "pass" }),
+      diagnostic: () => ({ duration: 42, retryCount: 1 }),
+    };
+    reporter.onTestCaseResult(testCase);
+    const caseLines = lines.filter((line) => line.startsWith("::repoos-test-case::"));
+    expect(caseLines).toHaveLength(1);
+    expect(caseLines[0]).toContain('"retry":1');
+    expect(caseLines[0]).toContain('"durationMs":42');
+    expect(caseLines[0]).toContain('"result":"passed"');
+  });
+
+  it("records failed, skipped, pending, and todo Vitest cases with stable outcomes", () => {
+    const reporter = new RepoOSProgressReporter();
+    const makeCase = (id: string, state: string) => ({
+      id,
+      fullName: `suite > ${id}`,
+      module: { moduleId: `${process.cwd()}/cases.test.ts` },
+      result: () => ({ state }),
+      diagnostic: () => ({ duration: ["skip", "pending", "todo"].includes(state) ? undefined : 7 }),
+    });
+    reporter.onTestCaseResult(makeCase("failed", "fail"));
+    reporter.onTestCaseResult(makeCase("skipped", "skip"));
+    reporter.onTestCaseResult(makeCase("pending", "pending"));
+    reporter.onTestCaseResult(makeCase("todo", "todo"));
+    const cases = lines
+      .filter((line) => line.startsWith("::repoos-test-case::"))
+      .map((line) => JSON.parse(line.slice("::repoos-test-case::".length)));
+    expect(cases.map((item) => [item.result, item.durationMs])).toEqual([
+      ["failed", 7],
+      ["skipped", 0],
+      ["skipped", 0],
+      ["skipped", 0],
+    ]);
+  });
+
   it("accumulates file counts across vitest passes via base offsets", () => {
     const pass1 = new RepoOSProgressReporter();
     pass1.onTestRunStart([{ id: "a" }, { id: "b" }, { id: "c" }]);

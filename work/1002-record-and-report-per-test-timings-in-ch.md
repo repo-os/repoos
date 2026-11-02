@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 666543
-last_close_out_gate_at: "2026-11-02T01:57:15.005Z"
 id: 1002
 title: Record and report per-test timings in check history
 type: feature
-status: review
+status: done
 needs_merge: true
 priority: p2
 area: [core, cli, web]
+merged_commit: a1ffde503393d5bbf1fe273f14d90e39fb3da80a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/record-and-report-per-test-timings-in-ch
@@ -15,6 +14,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
 updated_at: "2026-11-02T01:57:15Z"
+last_close_out_gate_ms: 666543
+last_close_out_gate_at: "2026-11-02T01:57:15.005Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-01T23:26:11.154Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2

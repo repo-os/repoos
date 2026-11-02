@@ -354,6 +354,28 @@ milliseconds; they exclude collection and environment setup and are not additive
 wall-clock time when files run concurrently. Older history rows show no file
 samples. Timing capture does not change whether a test passes.
 
+### Individual test-case timings
+
+Each finished Vitest case also emits a structured `::repoos-test-case::` record
+(file, full name, stable case id, retry index, duration, pass/fail/skip). These
+land in `check_run_test_cases` in `.repoos/checks.db`, keyed to the check run.
+They are independent of the truncated step output log.
+
+- **File total vs case time:** a file row is Vitest's module total (tests plus
+  hooks in that file). A case row is Vitest's test-case duration: it includes
+  that case's `beforeEach` and `afterEach` hooks as well as the test body. It
+  does not include file collection or environment setup, or suite-level hooks
+  that Vitest does not attribute to the case. Case times in one file do not add
+  up to the file total because file totals also include suite-level hooks and
+  other module work, and files may execute concurrently.
+- **Compare runs:** `repoos checks timings --tests --run-id <id>` lists the
+  slowest cases for one run; omit `--run-id` to search the last ten runs.
+  `--recent-runs`, `--limit`, `--offset`, and `--json` paginate and export a
+  stable JSON object. The Checks **Runs** tab loads the top cases when you expand
+  a run (without pulling every case into the table).
+- **Retention:** case rows are deleted when their check run falls out of the
+  same bounded history as `check_runs` (newest 1000 runs).
+
 ### Cross-cutting steps
 
 A step with **no** `whenChanged` runs whatever changed. That is how you keep a
