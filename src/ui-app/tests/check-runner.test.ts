@@ -21,6 +21,7 @@ import {
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { processGroupAlive } from "../../core/process-group.js";
 import { loadConfig } from "../../core/config.js";
 import { resolveCheckPlan, type CheckPlan } from "../../core/check-plan.js";
 import {
@@ -654,6 +655,25 @@ describe("runCommand — the subprocess primitive", () => {
     // Resolved promptly rather than waiting out the grandchild's own 30s.
     expect(res.durationMs).toBeLessThan(10_000);
   });
+
+  it.skipIf(process.platform === "win32")(
+    "confirms the process group is gone before a timeout resolves",
+    async () => {
+      let leaderPid: number | null = null;
+      const res = await runCommand({
+        command: `echo group:$$; (trap '' TERM; sleep 30) & wait`,
+        timeoutMs: 500,
+        echo: false,
+        onChunk(chunk) {
+          const match = chunk.match(/group:(\d+)/);
+          if (match) leaderPid = Number(match[1]);
+        },
+      });
+      expect(res.status).toBe("timeout");
+      expect(leaderPid).not.toBeNull();
+      expect(processGroupAlive(leaderPid!)).toBe(false);
+    },
+  );
 });
 
 /**

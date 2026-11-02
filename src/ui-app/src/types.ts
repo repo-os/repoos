@@ -959,6 +959,7 @@ export interface TaskCheckRun {
   stepName?: string | null;
   attempt?: number | null;
   attemptReason?: string | null;
+  lastProgressAt?: string | null;
 }
 
 /** One durable check run (#0564) — a row of the Runs tab / check history. */
@@ -1054,10 +1055,13 @@ export interface RemoteTaskActivity {
     kind: RemoteRunKind;
     startedAt: string;
     elapsedMs: number;
+    lastProgressAt: string;
     stage: string | null;
     phases: RemoteRunPhaseTiming[];
   } | null;
   queue: RemoteQueuedRunInfo | null;
+  /** Host-lock vs registry disagreement (#1000). */
+  telemetryMismatch?: string | null;
 }
 
 export interface RemoteHostStatusView {

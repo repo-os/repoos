@@ -24,6 +24,7 @@
 import { spawn } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { join, relative } from "node:path";
+import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import {
   mergeBranch,
@@ -252,12 +253,17 @@ function runProcess(
   opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv },
 ): Promise<RunResult> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: opts.cwd, env: opts.env });
+    const child = spawn(cmd, args, {
+      cwd: opts.cwd,
+      env: opts.env,
+      detached: process.platform !== "win32",
+    });
     let stdout = "";
     let stderr = "";
     let timer: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
     let timedOut = false;
+    let termination: Promise<void> | undefined;
     const finish = (status: number | null, error?: NodeJS.ErrnoException): void => {
       if (settled) return;
       settled = true;
@@ -267,10 +273,26 @@ function runProcess(
     child.stdout.on("data", (d: Buffer) => (stdout += d.toString("utf8")));
     child.stderr.on("data", (d: Buffer) => (stderr += d.toString("utf8")));
     child.on("error", (err: NodeJS.ErrnoException) => finish(null, err));
-    child.on("close", (code: number | null) => finish(code));
+    child.on("close", (code: number | null) => {
+      void (async () => {
+        if (
+          child.pid &&
+          process.platform !== "win32" &&
+          (termination || processGroupAlive(child.pid))
+        ) {
+          termination ??= terminateProcessGroupAndWait(child.pid);
+          await termination;
+        }
+        finish(code);
+      })();
+    });
     timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      if (child.pid && process.platform !== "win32") {
+        termination ??= terminateProcessGroupAndWait(child.pid);
+      } else {
+        child.kill("SIGKILL");
+      }
     }, opts.timeout);
   });
 }

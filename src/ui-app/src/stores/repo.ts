@@ -1953,10 +1953,12 @@ export const useRepoStore = defineStore("repo", () => {
         output: "",
         scope: e.scope,
         machine: e.machine,
+        lastProgressAt: e.at,
       });
     } else if (e.type === "task-check.output") {
       const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
       if (run) {
+        run.lastProgressAt = e.at;
         run.output += e.chunk;
         const marker = "::repoos-check-progress::";
         const at = run.output.lastIndexOf(marker);
@@ -2128,7 +2130,12 @@ export const useRepoStore = defineStore("repo", () => {
         runs: TaskCheckRun[];
         remote?: RemoteTaskActivity | null;
       }>(`/api/tasks/${taskId}/checks`);
-      if (!opts?.remoteOnly) taskChecks.value[taskId] = r.runs;
+      const keepProgressShot =
+        taskId === SHOT_PREVIEW_FIXTURE_TASK_ID &&
+        typeof window !== "undefined" &&
+        isShotPreviewCaptureActive(window.location) &&
+        readShotPreviewFixtureFromLocation(window.location) === "checks:progress";
+      if (!opts?.remoteOnly && !keepProgressShot) taskChecks.value[taskId] = r.runs;
       // A drawer shot fixture pins its remote detail; a preview board's real
       // 404/empty response must not wipe the seeded state (#0897).
       taskRemoteActivity.value[taskId] =
@@ -2802,6 +2809,16 @@ export const useRepoStore = defineStore("repo", () => {
       throw new Error(message);
     }
     acknowledgeHumanTaskAction(t.id);
+  }
+
+  async function cancelStalledCheck(taskId: string): Promise<void> {
+    const result = await api<{ ok: boolean; detail?: string; error?: string }>(
+      `/api/tasks/${taskId}/cancel-check`,
+      { method: "POST" },
+    );
+    if (!result.ok) throw new Error(result.error ?? result.detail ?? "could not cancel the check");
+    pushToast(result.detail ?? "Check cancelled", "info");
+    await refreshTaskChecks(taskId);
   }
 
   /** Active/review -> ready: stop any live agent/review, keep the worktree. */
@@ -4315,6 +4332,7 @@ export const useRepoStore = defineStore("repo", () => {
     seedStartWorkPending,
     startWork,
     pauseWork,
+    cancelStalledCheck,
     abandonWork,
     reopenTask,
     archiveTask,

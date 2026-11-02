@@ -9,13 +9,7 @@ import { useNoticesStore } from "../stores/notices";
 import { recordOrigin, takeOrigin } from "../lib/flip";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff } from "../lib/reviewFreshness";
-import {
-  autoRepairHint,
-  formatActivity,
-  formatDuration,
-  silentMs,
-  STUCK_SILENCE_MS,
-} from "../lib/retryHints";
+import { autoRepairHint } from "../lib/retryHints";
 import {
   needsInputBannerText,
   needsInputStatusLabel,
@@ -44,6 +38,7 @@ import {
 } from "../lib/integration-pipeline-ui";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
+import { activeEngineerCardHint, activeEngineerCardBlocksInterrupt } from "../lib/active-task-card";
 import { useNow } from "../composables/useNow";
 import { isHoldActive } from "../../../core/task-selection.js";
 import { Clock3 } from "lucide-vue-next";
@@ -204,6 +199,27 @@ function shouldGlide(): boolean {
 const GLIDE_DURATION_MS = 480;
 const GLIDE_EASING = "cubic-bezier(.22,1,.36,1)";
 
+const CARD_REMOTE_POLL_MS = 5_000;
+// `<script setup>` executes per card instance; keeping the handle in a ref
+// makes the independent mount/update/unmount lifecycle explicit.
+const cardRemotePoll = ref<ReturnType<typeof setInterval> | undefined>(undefined);
+
+function stopCardRemotePoll(): void {
+  if (cardRemotePoll.value !== undefined) {
+    clearInterval(cardRemotePoll.value);
+    cardRemotePoll.value = undefined;
+  }
+}
+
+function syncCardRemotePoll(id: string, status: string, running: boolean): void {
+  stopCardRemotePoll();
+  if (status !== "active" || !running) return;
+  void repo.refreshTaskChecks(id, { remoteOnly: true });
+  cardRemotePoll.value = setInterval(() => {
+    void repo.refreshTaskChecks(id, { remoteOnly: true });
+  }, CARD_REMOTE_POLL_MS);
+}
+
 onMounted(() => {
   // Hydrate check runs so a reload mid-handoff still reads "running checks"
   // instead of "paused" (SSE only delivers events from now on).
@@ -211,7 +227,18 @@ onMounted(() => {
   if (props.task.status === "active" && repo.taskChecks[id] === undefined) {
     void repo.refreshTaskChecks(id);
   }
+  syncCardRemotePoll(id, props.task.status, repo.isRunning(id));
 });
+
+watch(
+  () => [props.task.id, props.task.status, repo.isRunning(props.task.id)] as const,
+  ([id, status, running]) => {
+    if (status === "active" && running) {
+      void repo.refreshTaskChecks(id);
+    }
+    syncCardRemotePoll(id, status, running);
+  },
+);
 
 /**
  * Optional glide (#0292): when this card mounted into its new column because
@@ -264,7 +291,12 @@ function syncNowTimer(): void {
   const integrating =
     props.task.status === "review" &&
     integrationPipelineRole(repo.integration, props.task.id) === "active";
-  const ms = integrating ? 1_000 : 15_000;
+  const liveEngineer =
+    props.task.status === "active" &&
+    repo.isRunning(props.task.id) &&
+    ((repo.taskChecks[props.task.id] ?? []).some((r) => r.running) ||
+      !!repo.taskRemoteActivity[props.task.id]);
+  const ms = integrating || liveEngineer ? 1_000 : 15_000;
   if (nowTimer !== undefined) clearInterval(nowTimer);
   nowTimer = setInterval(() => {
     now.value = Date.now();
@@ -272,11 +304,21 @@ function syncNowTimer(): void {
 }
 onMounted(() => syncNowTimer());
 watch(
-  () => [props.task.status, repo.integration?.active?.taskId, repo.integration?.queue],
+  () =>
+    [
+      props.task.status,
+      props.task.id,
+      repo.integration?.active?.taskId,
+      repo.integration?.queue,
+      repo.isRunning(props.task.id),
+      (repo.taskChecks[props.task.id] ?? []).some((r) => r.running),
+      repo.taskRemoteActivity[props.task.id],
+    ] as const,
   () => syncNowTimer(),
 );
 onUnmounted(() => {
   clearInterval(nowTimer);
+  stopCardRemotePoll();
 });
 
 /** The task's most recent agent activity timestamp, if known. */
@@ -412,41 +454,73 @@ async function retryStalledPipeline(): Promise<void> {
   }
 }
 
+/** Live engineer evidence for card copy and interrupt guards (#1000). */
+const activeEngineerEvidence = computed(() =>
+  activeEngineerCardHint({
+    taskId: props.task.id,
+    nowMs: now.value,
+    lastActivityAt: lastActivityFor(props.task.id),
+    taskChecks: repo.taskChecks[props.task.id],
+    remoteActivity: repo.taskRemoteActivity[props.task.id],
+    resourceQueueMarkers: repo.resourceQueueMarkers,
+  }),
+);
+
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
- *  normal "coding" hint when it's still producing output. */
-function codingOrStuckHint(taskId: string): CardHint {
-  const localQueued = localQueueHintForTask(repo.resourceQueueMarkers, taskId, new Date(now.value));
-  if (localQueued) {
-    return { label: localQueued.label, title: localQueued.title, cls: "tc-queued" };
-  }
-  const queued = remotePoolQueueHintForTaskChecks(repo.taskChecks[taskId]);
-  if (queued) {
-    return { label: queued.label, title: queued.title, cls: "tc-queued" };
-  }
-  const lastActivity = lastActivityFor(taskId);
-  const ms = silentMs(now.value, lastActivity);
-  if (ms !== null && ms >= STUCK_SILENCE_MS) {
-    const lastOut = lastActivity
-      ? new Date(lastActivity).toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        })
-      : null;
-    const lastOutNote = lastOut ? ` Last output ${lastOut}.` : "";
-    return {
-      label: `stuck · silent ${formatDuration(ms)}`,
-      title: `agent process is still running but hasn't produced output in a while — it may be hung.${lastOutNote} Click to inspect, or restart work.`,
-      cls: "tc-stuck",
-    };
-  }
-  const activity = formatActivity(now.value, lastActivity);
+ *  normal "coding" hint when it's still producing output. Check progress,
+ *  remote validation, and queue waits suppress a false stuck label (#1000). */
+function codingOrStuckHint(_taskId: string): CardHint {
+  const resolved = activeEngineerEvidence.value;
   return {
-    label: activity ? `coding · active ${activity}` : "coding",
-    title: "agent is making code changes — click to watch the session",
-    cls: "tc-coding",
+    label: resolved.label,
+    title: resolved.title,
+    cls: resolved.cls,
   };
 }
+
+const agentInterruptBlocked = computed(() => {
+  if (props.task.status !== "active" || !repo.isRunning(props.task.id)) return false;
+  const evidence = activeEngineerEvidence.value;
+  const mismatchOnly =
+    !!repo.taskRemoteActivity[props.task.id]?.telemetryMismatch &&
+    !(repo.taskChecks[props.task.id] ?? []).some((run) => run.running) &&
+    !repo.taskRemoteActivity[props.task.id]?.run &&
+    !repo.taskRemoteActivity[props.task.id]?.queue;
+  // Pausing the engineer is safe during an unregistered host-lock mismatch;
+  // starting/resuming remains blocked until the remote state is reconciled.
+  return activeEngineerCardBlocksInterrupt(evidence) && !mismatchOnly;
+});
+const stalledCheck = computed(() => {
+  const hint = activeEngineerEvidence.value;
+  return hint.cls === "tc-stuck" && hint.label.startsWith("check stalled");
+});
+const cancelCheckBusy = ref(false);
+async function cancelStalledCheck(): Promise<void> {
+  if (cancelCheckBusy.value || !stalledCheck.value) return;
+  if (
+    !window.confirm(
+      `Cancel the stalled check for task #${props.task.id}? RepoOS will verify it has stopped before allowing a restart.`,
+    )
+  )
+    return;
+  cancelCheckBusy.value = true;
+  try {
+    await repo.cancelStalledCheck(props.task.id);
+  } catch (error) {
+    repo.onError(error);
+  } finally {
+    cancelCheckBusy.value = false;
+  }
+}
+
+const suppressAgentStuckHint = computed(
+  () =>
+    activeEngineerCardBlocksInterrupt(activeEngineerEvidence.value) &&
+    (activeEngineerEvidence.value.cls !== "tc-stuck" ||
+      activeEngineerEvidence.value.label.startsWith("check stalled") ||
+      activeEngineerEvidence.value.label.startsWith("remote validation stalled") ||
+      activeEngineerEvidence.value.label.includes("telemetry mismatch")),
+);
 
 /** An accepted start/send is waiting for a free maxConcurrentAgents slot —
  *  it will spawn on its own once a running agent exits. */
@@ -639,6 +713,7 @@ const hint = computed<CardHint | null>(() => {
           running: true,
           lastActivity: lastActivityFor(t.id),
           now: now.value,
+          suppressAgentStuck: suppressAgentStuckHint.value,
         }) ?? codingOrStuckHint(t.id)
       );
     }
@@ -695,6 +770,7 @@ const hint = computed<CardHint | null>(() => {
           running: true,
           lastActivity: lastActivityFor(t.id),
           now: now.value,
+          suppressAgentStuck: suppressAgentStuckHint.value,
         }) ?? codingOrStuckHint(t.id)
       );
     }
@@ -768,6 +844,7 @@ const doneErrorRetryHint = computed(() =>
     running: repo.isRunning(props.task.id),
     lastActivity: lastActivityFor(props.task.id),
     now: now.value,
+    suppressAgentStuck: suppressAgentStuckHint.value,
   }),
 );
 
@@ -784,6 +861,9 @@ const doneErrorStale = computed(() => {
 
 const FIX_DISABLED_WHILE_CLOSE_OUT =
   "Close-out is running — wait for it to finish before sending to Debugger";
+
+const BLOCK_AGENT_INTERRUPT =
+  "A check or remote validation is in flight — wait for RepoOS to confirm it has ended before pausing or restarting the agent.";
 
 const IN_PIPELINE: CardAction = {
   label: "Moving to done…",
@@ -905,6 +985,7 @@ const startWorkPending = computed(() => repo.isStartWorkPending(props.task.id));
 
 async function runAction(): Promise<void> {
   if (busy.value || startWorkPending.value || !action.value) return;
+  if (agentInterruptBlocked.value) return;
   if (props.task.status === "review" && repo.reviewFor(props.task.id)?.running) return;
   const overrideDependencies = isLaunchAction.value
     ? await confirmDependencyOverride(props.task.blockedBy)
@@ -1365,7 +1446,7 @@ async function openDebuggerFromError(): Promise<void> {
     </transition>
 
     <div
-      v-if="action || cardDoneError || staleEvidenceOnly"
+      v-if="action || cardDoneError || staleEvidenceOnly || stalledCheck"
       data-test-id="task-card-action-footer"
       class="tc-foot tc-actions tc-card-footer !ml-0 w-full"
     >
@@ -1377,17 +1458,20 @@ async function openDebuggerFromError(): Promise<void> {
           busy ||
           startWorkPending ||
           inPipeline ||
+          agentInterruptBlocked ||
           (task.status === 'review' &&
             (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))
         "
         :title="
-          inPipeline
-            ? action.title
-            : task.status === 'review' && repo.reviewFor(task.id)?.running
-              ? 'Waiting for automatic review to finish.'
-              : task.status === 'review' && repo.isRunning(task.id)
-                ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
-                : action.title
+          agentInterruptBlocked
+            ? BLOCK_AGENT_INTERRUPT
+            : inPipeline
+              ? action.title
+              : task.status === 'review' && repo.reviewFor(task.id)?.running
+                ? 'Waiting for automatic review to finish.'
+                : task.status === 'review' && repo.isRunning(task.id)
+                  ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
+                  : action.title
         "
         @click.stop="runAction"
       >
@@ -1408,6 +1492,17 @@ async function openDebuggerFromError(): Promise<void> {
               ? "Working…"
               : action?.label
         }}
+      </button>
+      <button
+        v-if="stalledCheck"
+        type="button"
+        data-test-id="task-card-cancel-stalled-check"
+        class="tc-card-footer-action flex w-full items-center justify-center gap-2 border-t px-4 py-[9px] font-mono text-xs font-semibold text-[var(--warning)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--border-bright)]"
+        :disabled="cancelCheckBusy || busy"
+        title="Explicitly cancel this stalled check; RepoOS verifies process exit before enabling pause or restart."
+        @click.stop="cancelStalledCheck"
+      >
+        {{ cancelCheckBusy ? "Cancelling check…" : "Cancel stalled check" }}
       </button>
       <div v-if="staleEvidenceOnly" class="w-full border-t border-[var(--border)] p-2">
         <p class="px-2 pb-2 text-center font-mono text-[10px] text-[var(--txt-dim)]">

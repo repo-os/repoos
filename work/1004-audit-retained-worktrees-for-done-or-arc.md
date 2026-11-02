@@ -2,14 +2,14 @@
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-01T15:54:19Z"
+updated_at: "2026-11-01T19:43:56Z"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -44,3 +44,4 @@ Use the 2026-11-01 findings as evidence, then re-check every live task and workt
 - 2026-11-01T15:54:16Z · body: Desired UX (added 1, removed 1)
 - 2026-11-01T15:54:17Z · body: Acceptance criteria (added 9, removed 7)
 - 2026-11-01T15:54:19Z · body: Notes for AI (added 1, removed 1)
+- 2026-11-01T19:43:56Z · status inbox→ready
