@@ -43,18 +43,18 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 ```json
 [
 {
-  "label": "Engineering report history in the task Dev tab",
-  "target": "default",
-  "route": "/work?task=1007&tab=agent",
-  "highlight": "[data-test-id=\"engineering-report-tab\"]",
-  "steps": [
-    {
-      "click": "[data-test-id=\"engineering-report-tab\"]"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Engineering report history in the task Dev tab",
+"target": "default",
+"route": "/work?task=1007&tab=agent",
+"highlight": "[data-test-id=\"engineering-report-tab\"]",
+"steps": [
+  {
+    "click": "[data-test-id=\"engineering-report-tab\"]"
+  },
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```
