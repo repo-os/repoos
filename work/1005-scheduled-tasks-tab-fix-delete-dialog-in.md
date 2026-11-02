@@ -14,7 +14,6 @@ review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
 updated_at: "2026-11-02T16:04:03Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-02T15:48:05.456Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
