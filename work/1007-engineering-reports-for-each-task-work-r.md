@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-02T08:43:07Z"
+review_passes: 2
 id: 1007
 title: Engineering reports for each task work round
 type: feature
@@ -9,10 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T08:43:07Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 last_check_failure: "repoos check at 2026-11-02T07:06:52.240Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:49479/api/tasks/9999/engineering-reports (http://127.0.0.1:49479/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:49479/api/tasks/9999/engineering-reports)"
 ---
 ## Problem
@@ -141,3 +141,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T08:40:06Z · body
 - 2026-11-02T08:42:11Z · status active→review
 - 2026-11-02T08:43:07Z · note: review pass 2: needs some work
+
