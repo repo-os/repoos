@@ -5988,15 +5988,9 @@
   border-top: 1px dashed var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   flex-wrap: wrap;
-}
-/* Archive sits next to Delete; the auto margin absorbs the free space so the
-   optional Hotfix button stays right-aligned instead of Archive floating to the
-   middle of the space-between row. */
-.delete-zone-archive {
-  margin-right: auto;
 }
 .delete-prompt {
   font-size: 12px;
