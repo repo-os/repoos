@@ -191,3 +191,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T13:49:30Z · body
 - 2026-11-02T13:56:05Z · body
 - 2026-11-02T14:09:28Z · status active→review
+- 2026-11-02T14:09:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
