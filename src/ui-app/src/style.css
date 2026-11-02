@@ -13566,6 +13566,13 @@
   padding: 24px;
   margin-top: 8px;
 }
+.delete-confirm-actions > button:hover {
+  filter: brightness(1.12);
+}
+.delete-confirm-actions > button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
 
 /* Archive confirmation (#0657). Body-teleported like every other confirm
    modal; reuses the delete-confirm shell and adds the optional reason field. */

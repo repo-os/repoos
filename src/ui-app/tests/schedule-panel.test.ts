@@ -24,10 +24,24 @@ function drawer(): HTMLElement | null {
   return document.body.querySelector('[data-testid="schedule-editor-drawer"]');
 }
 
+function editorButton(testId: string): HTMLButtonElement {
+  return document.body.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)!;
+}
+
 function buttons(root: ParentNode, label: (t: string) => boolean): HTMLButtonElement | undefined {
   return Array.from(root.querySelectorAll("button")).find((b) => label(b.textContent ?? "")) as
     | HTMLButtonElement
     | undefined;
+}
+
+function pointerClick(button: HTMLButtonElement): void {
+  button.dispatchEvent(
+    new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 1 }),
+  );
+  button.dispatchEvent(
+    new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 1 }),
+  );
+  button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 }
 
 function makeSchedule(over: Partial<TaskSchedule> = {}): TaskSchedule {
@@ -87,7 +101,7 @@ describe("schedule editor drawer (#0841)", () => {
     expect(el!.querySelector(".drawer-resize")).toBeTruthy();
     expect(el!.querySelector(".drawer-head")!.textContent).toContain("New schedule");
 
-    await wrapper.get('[data-testid="schedule-editor-close"]').trigger("click");
+    editorButton("schedule-editor-close").click();
     await flushPromises();
     expect(drawer()).toBeNull();
 
@@ -136,21 +150,21 @@ describe("schedule editor drawer (#0841)", () => {
     expect(previewEl.textContent).not.toBe("—");
     expect(previewEl.textContent!.length).toBeGreaterThan(3);
 
-    const saveBtn = wrapper.get('[data-testid="schedule-save"]');
-    expect((saveBtn.element as HTMLButtonElement).disabled).toBe(true);
+    const saveBtn = editorButton("schedule-save");
+    expect(saveBtn.disabled).toBe(true);
 
     const titleInput = drawer()!.querySelector("#sched-title") as HTMLInputElement;
     titleInput.value = "Weekly audit";
     titleInput.dispatchEvent(new Event("input"));
     await flushPromises();
-    expect((saveBtn.element as HTMLButtonElement).disabled).toBe(false);
+    expect(saveBtn.disabled).toBe(false);
 
     const tzInput = drawer()!.querySelector("#sched-timezone") as HTMLInputElement;
     tzInput.value = "Not/A_Zone";
     tzInput.dispatchEvent(new Event("input"));
     await flushPromises();
     expect(previewEl.textContent).toMatch(/valid IANA/i);
-    expect((saveBtn.element as HTMLButtonElement).disabled).toBe(true);
+    expect(saveBtn.disabled).toBe(true);
   });
 });
 
@@ -182,7 +196,7 @@ describe("schedule CRUD from the panel", () => {
     titleInput.dispatchEvent(new Event("input"));
     await flushPromises();
 
-    await wrapper.get('[data-testid="schedule-save"]').trigger("click");
+    editorButton("schedule-save").click();
     await flushPromises();
     expect(repo.createSchedule).toHaveBeenCalled();
     repo.schedules = [created];
@@ -193,7 +207,7 @@ describe("schedule CRUD from the panel", () => {
     editBtn!.click();
     await flushPromises();
     expect(drawer()!.querySelector(".drawer-head")!.textContent).toContain("Edit schedule");
-    await wrapper.get('[data-testid="schedule-editor-close"]').trigger("click");
+    editorButton("schedule-editor-close").click();
     await flushPromises();
 
     const card = wrapper.get('[data-testid="schedule-card-0099"]');
@@ -217,5 +231,54 @@ describe("schedule CRUD from the panel", () => {
     confirmBtn.click();
     await flushPromises();
     expect(repo.deleteSchedule).toHaveBeenCalledWith("0099");
+  });
+
+  it("cancels or confirms a schedule deletion through pointer interactions", async () => {
+    const repo = useRepoStore();
+    const schedule = makeSchedule();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.schedules = [schedule];
+    repo.deleteSchedule = vi.fn().mockImplementation(async () => {
+      repo.schedules = [];
+    });
+
+    const wrapper = mountPanel();
+    await flushPromises();
+    const card = wrapper.get('[data-testid="schedule-card-0001"]');
+    const deleteSchedule = buttons(card.element, (text) => text.trim() === "Delete")!;
+
+    pointerClick(deleteSchedule);
+    await flushPromises();
+    let modal = document.body.querySelector(".delete-confirm-modal")!;
+    expect(modal.getAttribute("data-overlay-layer")).toMatch(/^overlay-/);
+    const cancel = buttons(modal, (text) => text.trim() === "Cancel")!;
+    pointerClick(cancel);
+    await flushPromises();
+    expect(document.body.querySelector(".delete-confirm-modal")).toBeNull();
+    expect(repo.deleteSchedule).not.toHaveBeenCalled();
+    expect(repo.schedules).toEqual([schedule]);
+
+    pointerClick(deleteSchedule);
+    await flushPromises();
+    modal = document.body.querySelector(".delete-confirm-modal")!;
+    pointerClick(buttons(modal, (text) => text.trim() === "Delete schedule")!);
+    await flushPromises();
+    expect(repo.deleteSchedule).toHaveBeenCalledWith("0001");
+    expect(document.body.querySelector(".delete-confirm-modal")).toBeNull();
+    expect(repo.schedules).toEqual([]);
+  });
+
+  it("places schedule details beside the action column", async () => {
+    const repo = useRepoStore();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.schedules = [makeSchedule()];
+    const wrapper = mountPanel();
+    await flushPromises();
+
+    const card = wrapper.get('[data-testid="schedule-card-0001"]');
+    const details = card.get(".schedule-card-details");
+    expect(details.get(".schedule-kv").element.parentElement).toBe(details.element);
+    expect(details.get(".schedule-actions").element.parentElement).toBe(details.element);
+    expect(details.findAll(".schedule-actions button")).toHaveLength(3);
   });
 });

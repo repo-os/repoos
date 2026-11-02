@@ -334,32 +334,34 @@ onMounted(() => {
             @update:checked="(v) => toggleEnabled(row, v)"
           />
         </div>
-        <dl class="kv-rows schedule-kv">
-          <dt>Cadence</dt>
-          <dd>{{ cadenceLabel(row) }} ({{ row.timezone }})</dd>
-          <dt>Next run</dt>
-          <dd>{{ row.nextRunPreview }}</dd>
-          <dt>Last run</dt>
-          <dd>{{ row.lastRunAt ? new Date(row.lastRunAt).toLocaleString() : "—" }}</dd>
-          <dt>Last result</dt>
-          <dd class="kv-wrap">{{ lastResultLabel(row) }}</dd>
-          <dt>Latest task</dt>
-          <dd>
-            <button
-              v-if="row.lastTaskId"
-              type="button"
-              class="linkish"
-              @click="openTask(row.lastTaskId)"
-            >
-              #{{ row.lastTaskId }}
-            </button>
-            <span v-else>—</span>
-          </dd>
-        </dl>
-        <div class="schedule-actions">
-          <Button variant="outline" size="sm" @click="runNow(row)">Run now</Button>
-          <Button variant="outline" size="sm" @click="openEdit(row)">Edit</Button>
-          <Button variant="outline" size="sm" @click="deleteTarget = row">Delete</Button>
+        <div class="schedule-card-details">
+          <dl class="kv-rows schedule-kv">
+            <dt>Cadence</dt>
+            <dd>{{ cadenceLabel(row) }} ({{ row.timezone }})</dd>
+            <dt>Next run</dt>
+            <dd>{{ row.nextRunPreview }}</dd>
+            <dt>Last run</dt>
+            <dd>{{ row.lastRunAt ? new Date(row.lastRunAt).toLocaleString() : "—" }}</dd>
+            <dt>Last result</dt>
+            <dd class="kv-wrap">{{ lastResultLabel(row) }}</dd>
+            <dt>Latest task</dt>
+            <dd>
+              <button
+                v-if="row.lastTaskId"
+                type="button"
+                class="linkish"
+                @click="openTask(row.lastTaskId)"
+              >
+                #{{ row.lastTaskId }}
+              </button>
+              <span v-else>—</span>
+            </dd>
+          </dl>
+          <div class="schedule-actions">
+            <Button variant="outline" size="sm" @click="runNow(row)">Run now</Button>
+            <Button variant="outline" size="sm" @click="openEdit(row)">Edit</Button>
+            <Button variant="outline" size="sm" @click="deleteTarget = row">Delete</Button>
+          </div>
         </div>
       </article>
     </div>
@@ -547,7 +549,12 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+.schedule-card-details {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
 }
 .schedule-id {
   margin-left: 8px;
@@ -556,12 +563,26 @@ onMounted(() => {
 }
 .schedule-kv {
   --kv-label-w: 7.5rem;
-  margin-bottom: 12px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
 }
 .schedule-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+}
+@media (max-width: 640px) {
+  .schedule-card-details {
+    flex-direction: column;
+  }
+  .schedule-actions {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 .linkish {
   background: none;

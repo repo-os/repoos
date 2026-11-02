@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from "vue";
-import { DialogContent, type DialogContentProps } from "radix-vue";
+import { useAttrs, type HTMLAttributes } from "vue";
+import { DialogContent, DialogPortal, type DialogContentProps } from "radix-vue";
 import { cn } from "@/lib/utils";
 import { landedInAnotherLayer, useOverlayLayerId } from "./layer";
 
@@ -9,6 +9,8 @@ interface Props extends DialogContentProps {
 }
 
 const props = defineProps<Props>();
+defineOptions({ inheritAttrs: false });
+const attrs = useAttrs();
 const layerId = useOverlayLayerId();
 
 /**
@@ -23,12 +25,14 @@ function onInteractOutside(event: Event): void {
 </script>
 
 <template>
-  <DialogContent
-    v-bind="props"
-    :class="cn('drawer-wrap drawer', props.class)"
-    :data-overlay-layer="layerId"
-    @interact-outside="onInteractOutside"
-  >
-    <slot />
-  </DialogContent>
+  <DialogPortal>
+    <DialogContent
+      v-bind="{ ...attrs, ...props }"
+      :class="cn('drawer-wrap drawer', props.class)"
+      :data-overlay-layer="layerId"
+      @interact-outside="onInteractOutside"
+    >
+      <slot />
+    </DialogContent>
+  </DialogPortal>
 </template>
