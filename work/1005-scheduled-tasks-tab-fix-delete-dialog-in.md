@@ -9,10 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: github copilot
-review_cli_override: codex
-review_model_override: gpt-6-luna
+review_cli_override: opencode
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T13:27:57Z"
+updated_at: "2026-11-02T15:17:26Z"
 ---
 ## Problem
 
@@ -72,3 +71,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T13:27:50Z · cli_override
 - 2026-11-02T13:27:55Z · review_cli_override
 - 2026-11-02T13:27:57Z · review_model_override
+- 2026-11-02T15:17:26Z · review_cli_override, review_model_override
