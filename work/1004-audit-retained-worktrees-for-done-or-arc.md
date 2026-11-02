@@ -2,7 +2,7 @@
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
@@ -127,4 +127,3 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T17:55:50Z · body
 - 2026-11-02T17:58:40Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T17:58:40Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
-- 2026-11-02T17:58:40Z · status active→review
