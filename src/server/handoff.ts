@@ -400,6 +400,21 @@ interface ResolvedWorktree {
   worktreeTask: Task;
 }
 
+/** Only an unfinished handoff can reuse its committed report. */
+export function canReuseEngineeringReport(
+  task: Task,
+  reportAt: string,
+  draft: string | null,
+): boolean {
+  if (task.status === "review") return true;
+  if (!draft) return false;
+  const reportTime = Date.parse(reportAt);
+  if (!Number.isFinite(reportTime)) return false;
+  return ![...task.body.matchAll(/^- (\S+) · status [^\s]+→review\s*$/gm)].some(
+    (match) => Date.parse(match[1]!) >= Math.floor(reportTime / 1000) * 1000,
+  );
+}
+
 function fail(step: HandoffStep, detail: string): HandoffResult {
   return { ok: false, step, detail };
 }
@@ -619,6 +634,10 @@ async function runHandoffFinalization(
       ? readFileSync(reportDraft, "utf8").trim()
       : null;
     for (const report of [...reports].reverse()) {
+      // A retry retains its draft until both status updates succeed. A report
+      // from a completed handoff must not satisfy a later engineering round,
+      // even if that round has not changed source files yet.
+      if (!canReuseEngineeringReport(task, report.at, pendingNarrative)) continue;
       const sourceIsAncestor = await runGit(
         workdir,
         ["merge-base", "--is-ancestor", report.sourceSha, "HEAD"],
