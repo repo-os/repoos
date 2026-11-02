@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-02T23:56:25Z"
+review_passes: 2
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
@@ -13,10 +15,8 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T23:56:25Z"
 last_check_failure: "repoos check at 2026-11-02T17:37:43.905Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
-review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -147,3 +147,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T23:51:53Z · review_cli_override, review_model_override
 - 2026-11-02T23:52:15Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-02T23:56:25Z · note: review pass 3: needs some work
+
