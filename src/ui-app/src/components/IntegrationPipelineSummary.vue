@@ -157,8 +157,8 @@ function queueWait(ms: number): string {
               : holder.wedged
                 ? "alive · No recent heartbeat"
                 : "alive"
-          }} ·
-          held {{ formatDuration(holder.ageMs) }} · last heartbeat
+          }}
+          · held {{ formatDuration(holder.ageMs) }} · last heartbeat
           {{ formatDuration(holder.heartbeatAgeMs) }} ago</template
         ><template v-else>free</template>
       </span>
