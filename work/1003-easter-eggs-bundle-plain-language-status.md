@@ -2,7 +2,7 @@
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — E2 copy remains jargon, and required E3/E4 visual states are not demonstrated."
@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T09:04:36Z"
+updated_at: "2026-11-02T09:10:26Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_rounds: 2
@@ -496,4 +496,5 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T08:42:26Z · status active→review
 - 2026-11-02T08:46:30Z · note: review pass 5: needs some work
 - 2026-11-02T08:46:31Z · needs_input
-
+- 2026-11-02T09:10:26Z · status review→active
+- 2026-11-02T09:10:26Z · note: Final correction round requested by Nick after review pass 5; address every concrete reviewer finding and capture fresh complete evidence before handoff.
