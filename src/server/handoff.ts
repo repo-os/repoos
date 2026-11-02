@@ -81,7 +81,11 @@ import {
   branchAddsBuildableProjectMarker,
 } from "../core/check-buildable-project.js";
 import { buildLastCheckFailureSummary } from "../core/check-failure-summary.js";
-import { finalizeEngineeringReport, listEngineeringReports } from "./engineering-reports.js";
+import {
+  finalizeEngineeringReport,
+  listEngineeringReports,
+  resolveEngineeringReportBase,
+} from "./engineering-reports.js";
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
@@ -934,18 +938,28 @@ async function runHandoffFinalization(
     }
     const source = await worktreeState(workdir, config);
     const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
-    const baseResult = await runGit(workdir, ["merge-base", baseBranch, source.head], 10_000);
     const codingAgent = resolveAgentForTask(config, task);
-    if (baseResult.status !== 0 || !codingAgent) {
-      return fail("review", "could not resolve report base tree or coding agent metadata");
+    if (!codingAgent) {
+      return fail("review", "could not resolve the coding agent metadata for the report");
     }
     // A retry of an unfinished handoff may reuse its already-written report.
     // A new engineering round (including one after review feedback) must not:
     // even with an unchanged source tree it appends its own immutable report.
+    const reports = listEngineeringReports({ ...config, root: workdir }, task.id);
     const pendingDraft = existsSync(reportDraft) ? readFileSync(reportDraft, "utf8").trim() : null;
-    const retriedReport = [...listEngineeringReports({ ...config, root: workdir }, task.id)]
+    const retriedReport = [...reports]
       .reverse()
       .find((report) => canReuseEngineeringReport(task, report.at, pendingDraft));
+    // Later rounds diff from the previous round's source tree, not the branch
+    // merge-base, so their summary does not replay all earlier rounds.
+    const base = await resolveEngineeringReportBase({
+      workdir,
+      baseBranch,
+      sourceSha: source.head,
+      reports,
+      retryRound: retriedReport?.round,
+    });
+    if ("error" in base) return fail("review", base.error);
     const finalized = await finalizeEngineeringReport({
       config: { ...config, root: workdir },
       taskId: task.id,
@@ -953,9 +967,10 @@ async function runHandoffFinalization(
       branch: task.branch,
       agent: codingAgent.cli,
       model: codingAgent.model,
-      baseSha: baseResult.stdout.trim(),
+      baseSha: base.baseSha,
       sourceSha: source.head,
       retryRound: retriedReport?.round,
+      taskPath: task.path,
     });
     if (!finalized.report)
       return fail("review", finalized.error ?? "engineering report could not be finalized");

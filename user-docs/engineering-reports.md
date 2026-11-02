@@ -23,10 +23,13 @@ Required narrative sections, in order:
 4. `## Challenges and blockers`
 5. `## Key learnings`
 
-The server appends `## Generated change summary`, computed from the handoff base
-and checked source commit using Git rename detection. It includes changed paths,
-status, and deterministic additions/deletions; engineers must not author those
-counts. Report metadata records round, time, coding agent, model, branch, base
+The server appends `## Generated change summary`, computed from the round's base
+and checked source commit using Git rename detection. The first round diffs from
+the branch merge-base; later rounds diff from the previous round's source tree,
+so a round summary describes only that round instead of replaying earlier work.
+Report files and the task's own markdown are excluded from the generated list.
+It includes changed paths, status, and deterministic additions/deletions;
+engineers must not author those counts. Report metadata records round, time, coding agent, model, branch, base
 tree, and checked source commit. Review prompts include the newest report and
 ask reviewers to consider the rationale, experiments, and stated limitations.
 The Dev tab's Report view lists rounds and opens the selected report. If a stored

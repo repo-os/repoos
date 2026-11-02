@@ -4166,21 +4166,26 @@ const selectedEngineeringReport = computed(
 const engineeringReportHtml = computed(() =>
   selectedEngineeringReport.value ? renderMarkdown(selectedEngineeringReport.value.markdown) : "",
 );
+// Every load bumps the generation. A response is applied only when it belongs
+// to the newest load for the task still open in the drawer, so a slow older
+// request can never overwrite newer history — even when the task id and branch
+// are unchanged and only its status moved.
+let engineeringReportGeneration = 0;
 async function loadEngineeringReports(taskId: string): Promise<void> {
+  const generation = ++engineeringReportGeneration;
+  const stillCurrent = () => generation === engineeringReportGeneration && ui.active?.id === taskId;
   try {
     const response = await api<{ reports?: EngineeringReportRow[]; errors?: string[] }>(
       `/api/tasks/${taskId}/engineering-reports`,
     );
-    // A slow response for a previously selected task must never replace the
-    // history of the task the drawer is showing now.
-    if (ui.active?.id !== taskId) return;
+    if (!stillCurrent()) return;
     engineeringReports.value = response.reports ?? [];
     engineeringReportsError.value = response.errors?.length
       ? `Some report history could not be read: ${response.errors.join("; ")}`
       : "";
     selectedEngineeringRound.value = engineeringReports.value.at(-1)?.round ?? null;
   } catch (error) {
-    if (ui.active?.id !== taskId) return;
+    if (!stillCurrent()) return;
     engineeringReports.value = [];
     selectedEngineeringRound.value = null;
     engineeringReportsError.value = `Engineering reports could not be loaded: ${

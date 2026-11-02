@@ -250,4 +250,77 @@ describe("engineering report history", () => {
     wrapper.unmount();
     vi.unstubAllGlobals();
   });
+
+  it("ignores a stale same-task load after the task status changes", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    vi.stubGlobal(
+      "EventSource",
+      class {
+        addEventListener(): void {}
+        close(): void {}
+      },
+    );
+    type ReportResponse = {
+      ok: boolean;
+      status: number;
+      json: () => Promise<unknown>;
+    };
+    let resolveFirst!: (value: ReportResponse) => void;
+    const firstResponse = new Promise<ReportResponse>((resolve) => {
+      resolveFirst = resolve;
+    });
+    let reportCalls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index")) return json({ tasks: [task], counts: {}, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/api/tasks/1007/engineering-reports")) {
+          reportCalls += 1;
+          if (reportCalls === 1) return firstResponse;
+          return json({
+            ok: true,
+            reports: [{ ...reports[1]!, round: 3, markdown: "Newer status report body." }],
+          });
+        }
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        throw new Error(`unexpected fetch: ${url}`);
+      }),
+    );
+
+    const repo = useRepoStore();
+    await repo.init();
+    const ui = useUiStore();
+    ui.open(task);
+    ui.activeTab = "agent";
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    await router.push("/");
+    await router.isReady();
+    const wrapper = mount(TaskDrawer, {
+      global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
+    });
+    for (let i = 0; i < 5; i++) await nextTick();
+    await wrapper.get('[data-test-id="engineering-report-tab"]').trigger("click");
+
+    ui.syncActive({ ...task, status: "review" } as Task);
+    for (let i = 0; i < 10; i++) await nextTick();
+    expect(wrapper.text()).toContain("Newer status report body.");
+
+    resolveFirst(
+      await json({
+        ok: true,
+        reports: [{ ...reports[0]!, markdown: "Stale earlier status report body." }],
+      }),
+    );
+    for (let i = 0; i < 10; i++) await nextTick();
+
+    expect(wrapper.text()).toContain("Newer status report body.");
+    expect(wrapper.text()).not.toContain("Stale earlier status report body.");
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
 });
