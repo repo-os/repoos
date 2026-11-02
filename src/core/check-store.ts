@@ -117,20 +117,13 @@ const MAX_ROWS = 1000;
 /** Cap per-run case rows so one suite cannot blow the store. */
 const MAX_TEST_CASES_PER_RUN = 25_000;
 
-function compareStableText(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
-/** Retain longest cases first; use stable fields to break cap-boundary ties. */
-function compareTestCaseRetention(a: TestCaseTiming, b: TestCaseTiming): number {
-  return (
-    b.durationMs - a.durationMs ||
-    compareStableText(a.file, b.file) ||
-    compareStableText(a.name, b.name) ||
-    compareStableText(a.caseId, b.caseId) ||
-    a.retry - b.retry ||
-    compareStableText(a.result, b.result)
-  );
+/** Retain longest cases first, preserving event order for duration ties. */
+function slowestTestCases(cases: TestCaseTiming[]): TestCaseTiming[] {
+  return cases
+    .map((testCase, index) => ({ testCase, index }))
+    .sort((a, b) => b.testCase.durationMs - a.testCase.durationMs || a.index - b.index)
+    .slice(0, MAX_TEST_CASES_PER_RUN)
+    .map(({ testCase }) => testCase);
 }
 
 /** Default page size for slow-case listings (CLI and API). */
@@ -588,9 +581,7 @@ export class CheckStore {
 
   private replaceTestCases(runId: number, cases: TestCaseTiming[]): void {
     if (!this.available || !this.db || !Number.isFinite(runId)) return;
-    const merged = mergeTestCaseTimings(cases)
-      .sort(compareTestCaseRetention)
-      .slice(0, MAX_TEST_CASES_PER_RUN);
+    const merged = slowestTestCases(mergeTestCaseTimings(cases));
     try {
       const del = this.db.prepare("DELETE FROM check_run_test_cases WHERE run_id = ?");
       del.run(runId);
