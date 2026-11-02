@@ -48,12 +48,12 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "route": "/agents?tab=scheduled",
 "highlight": ".schedule-list > .schedule-card:first-child",
 "steps": [
-  {
-    "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
-  },
-  {
-    "click": ".delete-confirm-actions button:first-child"
-  }
+{
+  "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
+},
+{
+  "click": ".delete-confirm-actions button:first-child"
+}
 ]
 },
 {
@@ -62,12 +62,12 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "route": "/agents?tab=scheduled",
 "highlight": "[role=\"dialog\"]",
 "steps": [
-  {
-    "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
-  },
-  {
-    "hover": ".delete-confirm-actions button:first-child"
-  }
+{
+  "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
+},
+{
+  "hover": ".delete-confirm-actions button:first-child"
+}
 ]
 },
 {
@@ -76,12 +76,12 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "route": "/agents?tab=scheduled",
 "highlight": "[role=\"dialog\"]",
 "steps": [
-  {
-    "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
-  },
-  {
-    "hover": ".delete-confirm-actions button:last-child"
-  }
+{
+  "click": ".schedule-list > .schedule-card:first-child .schedule-actions button:last-child"
+},
+{
+  "hover": ".delete-confirm-actions button:last-child"
+}
 ]
 }
 ]
