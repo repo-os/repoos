@@ -381,4 +381,114 @@ describe("review pass selection and identity (#1003)", () => {
     expect(wrapper.find(".verdict-callout").text()).not.toContain("Not latest");
     expect(wrapper.findAll(".review-history-row")[0]?.classes()).toContain("is-selected");
   });
+
+  it("shows the selected failed pass instead of the latest report", async () => {
+    const latest = {
+      id: "0001",
+      at: "2026-11-02T10:00:00.000Z",
+      agent: "reviewer",
+      cli: "codex",
+      model: "gpt-5",
+      branch: "feat/landable",
+      state: "ok",
+      markdown: "## Verdict\ngood to go.\n\nLatest report.\n",
+    };
+    const older = { ...latest, state: "failed", markdown: "Older pass failed to run." };
+    const wrapper = await mountDrawer(
+      setup(),
+      reviewTask(),
+      FAILING,
+      {
+        ok: true,
+        running: false,
+        enabled: true,
+        review: latest,
+        history: [
+          {
+            pass: 1,
+            at: older.at,
+            state: "failed",
+            verdict: "failed",
+            agent: "reviewer",
+            cli: "codex",
+            model: "gpt-5",
+          },
+          {
+            pass: 2,
+            at: latest.at,
+            state: "ok",
+            verdict: "good to go",
+            agent: "reviewer",
+            cli: "codex",
+            model: "gpt-5",
+          },
+        ],
+        lines: [],
+      },
+      { 1: older },
+    );
+
+    await wrapper.findAll(".review-history-row")[0]!.trigger("click");
+    await flush();
+
+    expect(wrapper.find(".review-failed").text()).toBe("Older pass failed to run.");
+    expect(wrapper.text()).not.toContain("Latest report.");
+  });
+
+  it("shows a retry path after a review-pass fetch fails", async () => {
+    const latest = {
+      id: "0001",
+      at: "2026-11-02T10:00:00.000Z",
+      agent: "reviewer",
+      cli: "codex",
+      model: "gpt-5",
+      branch: "feat/landable",
+      state: "ok",
+      markdown: "## Verdict\ngood to go.\n\nLatest report.\n",
+    };
+    const wrapper = await mountDrawer(setup(), reviewTask(), FAILING, {
+      ok: true,
+      running: false,
+      enabled: true,
+      review: latest,
+      history: [
+        {
+          pass: 1,
+          at: "2026-11-01T10:00:00.000Z",
+          state: "ok",
+          verdict: "good to go",
+          agent: "reviewer",
+          cli: "codex",
+          model: "gpt-5",
+        },
+        {
+          pass: 2,
+          at: latest.at,
+          state: "ok",
+          verdict: "good to go",
+          agent: "reviewer",
+          cli: "codex",
+          model: "gpt-5",
+        },
+      ],
+      lines: [],
+    });
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("/review/passes/1")) throw new Error("network unavailable");
+      return json({ ok: true, review: latest });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await wrapper.findAll(".review-history-row")[0]!.trigger("click");
+    await flush();
+    expect(wrapper.find('[role="alert"]').text()).toContain("Could not load this review pass.");
+
+    fetchMock.mockImplementation(async () =>
+      json({ ok: true, review: { ...latest, markdown: "Recovered pass." } }),
+    );
+    await wrapper.find('[role="alert"] button').trigger("click");
+    await flush();
+    expect(wrapper.find(".review-card").text()).toContain("Recovered pass.");
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+  });
 });
