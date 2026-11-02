@@ -480,7 +480,7 @@ describe("engineering report handoff retries", () => {
       );
       writeFileSync(
         join(fx.bin, "repoos"),
-        ["#!/usr/bin/env node", 'process.stdout.write("All checks passed.\\n");'].join("\n"),
+        ["#!/usr/bin/env bun", 'process.stdout.write("All checks passed.\\n");'].join("\n"),
         { mode: 0o755 },
       );
       const oldPath = process.env.PATH ?? "";
