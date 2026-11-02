@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T09:19:36Z"
+updated_at: "2026-11-02T09:27:03Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_rounds: 2
@@ -123,34 +123,34 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".dash-grid",
 "steps": [
 {
-  "waitFor": ".dash-grid"
+"waitFor": ".dash-grid"
 }
 ],
 "assert": [
 {
-  "selector": ".dash-grid > *",
-  "label": "Four dashboard panels render",
-  "count": 4
+"selector": ".dash-grid > *",
+"label": "Four dashboard panels render",
+"count": 4
 },
 {
-  "selector": ".dash-grid",
-  "label": "Feature releases panel renders",
-  "text": "Feature releases"
+"selector": ".dash-grid",
+"label": "Feature releases panel renders",
+"text": "Feature releases"
 },
 {
-  "selector": ".dash-grid",
-  "label": "Live activity panel renders",
-  "text": "Live activity"
+"selector": ".dash-grid",
+"label": "Live activity panel renders",
+"text": "Live activity"
 },
 {
-  "selector": ".dash-grid",
-  "label": "Decision panel renders",
-  "text": "Needs a decision"
+"selector": ".dash-grid",
+"label": "Decision panel renders",
+"text": "Needs a decision"
 },
 {
-  "selector": ".dash-grid",
-  "label": "Attention panel renders",
-  "text": "Needs your attention"
+"selector": ".dash-grid",
+"label": "Attention panel renders",
+"text": "Needs your attention"
 }
 ],
 "viewportWidth": 1280,
@@ -163,34 +163,34 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".dash-grid",
 "steps": [
 {
-  "waitFor": ".dash-grid"
+"waitFor": ".dash-grid"
 }
 ],
 "assert": [
 {
-  "selector": ".dash-grid > *",
-  "label": "Four responsive dashboard panels render",
-  "count": 4
+"selector": ".dash-grid > *",
+"label": "Four responsive dashboard panels render",
+"count": 4
 },
 {
-  "selector": ".dash-grid",
-  "label": "Feature releases panel renders",
-  "text": "Feature releases"
+"selector": ".dash-grid",
+"label": "Feature releases panel renders",
+"text": "Feature releases"
 },
 {
-  "selector": ".dash-grid",
-  "label": "Live activity panel renders",
-  "text": "Live activity"
+"selector": ".dash-grid",
+"label": "Live activity panel renders",
+"text": "Live activity"
 },
 {
-  "selector": ".dash-grid",
-  "label": "Decision panel renders",
-  "text": "Needs a decision"
+"selector": ".dash-grid",
+"label": "Decision panel renders",
+"text": "Needs a decision"
 },
 {
-  "selector": ".dash-grid",
-  "label": "Attention panel renders",
-  "text": "Needs your attention"
+"selector": ".dash-grid",
+"label": "Attention panel renders",
+"text": "Needs your attention"
 }
 ],
 "viewportWidth": 390,
@@ -203,19 +203,19 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".agents-tab-content",
 "steps": [
 {
-  "waitFor": ".agents-tab-content"
+"waitFor": ".agents-tab-content"
 }
 ],
 "assert": [
 {
-  "selector": ".agents-tab-content > .agent-tab-panel:nth-child(1)",
-  "label": "Default Agents section is first",
-  "text": "Default agents"
+"selector": ".agents-tab-content > .agent-tab-panel:nth-child(1)",
+"label": "Default Agents section is first",
+"text": "Default agents"
 },
 {
-  "selector": ".agents-tab-content > .agent-tab-panel:nth-child(2)",
-  "label": "Custom Agents section follows Default Agents",
-  "text": "Custom agents"
+"selector": ".agents-tab-content > .agent-tab-panel:nth-child(2)",
+"label": "Custom Agents section follows Default Agents",
+"text": "Custom agents"
 }
 ],
 "viewportWidth": 1280,
@@ -228,19 +228,19 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".review-history-table",
 "steps": [
 {
-  "waitFor": ".review-history-table"
+"waitFor": ".review-history-table"
 }
 ],
 "assert": [
 {
-  "selector": ".review-history-table",
-  "label": "Reviewer coding agent is identified",
-  "text": "Codex"
+"selector": ".review-history-table",
+"label": "Reviewer coding agent is identified",
+"text": "Codex"
 },
 {
-  "selector": ".review-pass-freshness",
-  "label": "Latest status belongs to the good-to-go callout",
-  "text": "Latest"
+"selector": ".review-pass-freshness",
+"label": "Latest status belongs to the good-to-go callout",
+"text": "Latest"
 }
 ],
 "state": "drawer:reviewPasses",
@@ -254,22 +254,22 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": "[data-test-id=\"task-agent-preview\"]",
 "steps": [
 {
-  "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+"hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
 },
 {
-  "waitFor": "[data-test-id=\"task-agent-preview\"]"
+"waitFor": "[data-test-id=\"task-agent-preview\"]"
 }
 ],
 "assert": [
 {
-  "selector": "[data-test-id=\"task-agent-preview\"]",
-  "label": "Preview includes role assignments",
-  "text": "Engineer"
+"selector": "[data-test-id=\"task-agent-preview\"]",
+"label": "Preview includes role assignments",
+"text": "Engineer"
 },
 {
-  "selector": "[data-test-id=\"task-agent-preview\"]",
-  "label": "Preview includes reviewer assignment",
-  "text": "Reviewer"
+"selector": "[data-test-id=\"task-agent-preview\"]",
+"label": "Preview includes reviewer assignment",
+"text": "Reviewer"
 }
 ],
 "state": "board:severalWorkingCards",
@@ -539,3 +539,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T09:13:08Z · body
 - 2026-11-02T09:19:35Z · message_queued at 2026-11-02T09:19:35.790Z
 - 2026-11-02T09:19:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-02T09:27:03Z · CTO nudge: held — an undelivered message is already queued
