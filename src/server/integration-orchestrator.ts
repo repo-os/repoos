@@ -3793,7 +3793,6 @@ export class CloseOutOrchestrator {
         // that the merge then has to reconcile.
         const churnDirs = bookkeepingDirs(this.config);
         const bookkeepingDirsForChurn = [
-          churnDirs.workDir,
           churnDirs.inputsDir,
           churnDirs.storiesDir,
           churnDirs.remindersDir,

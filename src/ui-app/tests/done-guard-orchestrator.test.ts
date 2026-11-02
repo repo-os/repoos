@@ -168,17 +168,14 @@ describe("publish-time dirty-main guard (#0211)", () => {
     }
   });
 
-  it("auto-checkpoints and publishes when the only dirty files are task bookkeeping under work/ (#0271 follow-up)", async () => {
-    // Confirmed live: #0293's close-out was refused at publish time because
-    // an UNRELATED task's work/*.md file — a routine activity-log stamp —
-    // was dirty on main. That's the same class of write commitTaskFile
-    // makes constantly elsewhere in the system; blocking a merge on it
-    // just to require a human retry is unnecessary friction, unlike a
-    // dirty file OUTSIDE work/ (still refused above), which is genuinely
-    // ambiguous.
+  it("publishes past a watchdog check-wait activity delta without checkpointing the task file", async () => {
     const { root, clean } = makeRepo();
     try {
       mkdirSync(join(root, "work"), { recursive: true });
+      const taskPath = join(root, "work", "0099-other-task.md");
+      writeFileSync(taskPath, `---\nid: "0099"\ntitle: Other task\nneeds_input: false\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n`);
+      git(root, ["add", "work/0099-other-task.md"]);
+      git(root, ["commit", "-m", "seed task"]);
       const branch = "repoos/integrate/T3";
       const wt = ensureWorktree(root, branch);
       expect(wt.ok).toBe(true);
@@ -198,9 +195,9 @@ describe("publish-time dirty-main guard (#0211)", () => {
         candidateSha,
       });
 
-      // An UNRELATED task file dirty on main at publish time — the exact
-      // #0293 shape.
-      writeFileSync(join(root, "work", "0099-other-task.md"), "---\nid: 0099\n---\nstamp\n");
+      // The watchdog's check-wait escalation changes only its state fields
+      // and appends the exact machine-generated activity entry.
+      writeFileSync(taskPath, `---\nid: "0099"\ntitle: Other task\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: "waiting: checks for 10 minutes"\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`);
 
       const orchestrator = new CloseOutOrchestrator(
         { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
@@ -212,11 +209,9 @@ describe("publish-time dirty-main guard (#0211)", () => {
       const result = await orchestrator.processNext();
 
       expect(result.ok).toBe(true);
-      // The checkpoint commit landed on main, and the candidate merged on
-      // top of it — main advanced past its pre-publish SHA either way.
       expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
-      expect(git(root, ["status", "--porcelain"])).toBe("");
-      expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+      expect(git(root, ["status", "--porcelain"])).toContain("work/0099-other-task.md");
+      expect(git(root, ["log", "--oneline", "-5"])).not.toMatch(/checkpoint bookkeeping\/config/);
     } finally {
       clean();
     }
