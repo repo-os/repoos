@@ -31,6 +31,39 @@ export default class RepoOSProgressReporter {
     this.#emit();
   }
 
+  onTestCaseResult(testCase) {
+    const result = testCase.result?.();
+    if (!result) return;
+    const diagnostic = testCase.diagnostic?.();
+    const isSkipped = ["skip", "skipped", "pending", "todo"].includes(result.state);
+    const durationMs = diagnostic?.duration ?? (isSkipped ? 0 : undefined);
+    if (!Number.isFinite(durationMs) || durationMs < 0) return;
+    const outcome =
+      result.state === "pass" || result.state === "passed"
+        ? "passed"
+        : result.state === "fail" || result.state === "failed"
+          ? "failed"
+          : isSkipped
+            ? "skipped"
+            : null;
+    if (!outcome) return;
+    const moduleRef = testCase.module;
+    const file = relative(process.cwd(), moduleRef?.moduleId ?? moduleRef?.id ?? "").replaceAll(
+      "\\",
+      "/",
+    );
+    if (!file) return;
+    const payload = {
+      file,
+      name: testCase.fullName,
+      caseId: testCase.id,
+      retry: Number.isInteger(diagnostic?.retryCount) ? diagnostic.retryCount : 0,
+      durationMs,
+      result: outcome,
+    };
+    process.stdout.write(`::repoos-test-case::${JSON.stringify(payload)}\n`);
+  }
+
   #emit() {
     const testsDone = this.#baseDone + this.#completed.size;
     const testsTotal = this.#baseTotal + this.#passFileCount;
