@@ -2,14 +2,14 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T08:40:06Z"
+updated_at: "2026-11-02T08:42:11Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -139,3 +139,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T08:28:04Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T08:28:04Z · message_delivered: 1 message(s)
 - 2026-11-02T08:40:06Z · body
+- 2026-11-02T08:42:11Z · status active→review
