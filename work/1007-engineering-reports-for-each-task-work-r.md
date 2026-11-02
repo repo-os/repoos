@@ -2,14 +2,14 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T12:13:14Z"
+updated_at: "2026-11-02T12:15:13Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -170,4 +170,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T12:12:39Z · message_delivered: 2 message(s)
 - 2026-11-02T12:13:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T12:13:14Z · note: handoff requested (cli)
-
+- 2026-11-02T12:15:13Z · status active→review
