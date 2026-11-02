@@ -13,6 +13,7 @@ import { parseTask } from "../../core/task.js";
 import {
   releaseBranchless,
   isBranchlessReleaseEligible,
+  branchlessReleaseTimeoutMs,
   runCheckCandidates,
   type CheckResult,
 } from "../../server/branchless-release.js";
@@ -139,6 +140,28 @@ describe("releaseBranchless", () => {
 });
 
 describe("runCheckCandidates", () => {
+  it("uses the configured close-out budget for branch-less release checks", () => {
+    expect(branchlessReleaseTimeoutMs({ closeOut: { timeoutMs: 7_200_000 } } as RepoOSConfig)).toBe(
+      7_200_000,
+    );
+    expect(branchlessReleaseTimeoutMs({ closeOut: { timeoutMs: 0 } } as RepoOSConfig)).toBe(0);
+    expect(branchlessReleaseTimeoutMs({} as RepoOSConfig)).toBe(60 * 60_000);
+  });
+
+  it("passes the configured budget to the check command", async () => {
+    let seenTimeout = 0;
+    await runCheckCandidates(
+      [["repoos"]],
+      "/repo",
+      async (_cmd, _args, _root, timeoutMs) => {
+        seenTimeout = timeoutMs;
+        return { status: 0, stdout: "", stderr: "", missingExecutable: false };
+      },
+      7_200_000,
+    );
+    expect(seenTimeout).toBe(7_200_000);
+  });
+
   it("falls back only when the preferred executable is missing", async () => {
     const calls: string[] = [];
     const result = await runCheckCandidates(

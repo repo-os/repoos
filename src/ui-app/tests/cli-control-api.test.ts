@@ -615,6 +615,29 @@ describe("control API CLI", () => {
     killSpawns(fx);
   }, 30_000);
 
+  it("keeps the branch-less done request open for the configured release check budget", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const closeOutTimeout = vi
+      .spyOn(RepoOsApi.prototype, "closeOutTimeoutMs", "get")
+      .mockReturnValue(600_000);
+    const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
+      status: 400,
+      body: { error: "check failed" },
+    });
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await cmdDone(["--json", "1009"])).toBe(1);
+    expect(request).toHaveBeenCalledWith(
+      "POST",
+      "/api/tasks/1009/done",
+      { commitDirty: false },
+      { timeoutMs: 660_000 },
+    );
+    err.mockRestore();
+    closeOutTimeout.mockRestore();
+    health.mockRestore();
+    request.mockRestore();
+  });
+
   it("landable API serves the checklist for a task", async () => {
     const fx = makeFixture(false);
     await withServer(fx.root, async (s) => {
