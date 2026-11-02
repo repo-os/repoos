@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-02T04:38:23Z"
-updated_at: "2026-11-02T04:38:24Z"
+updated_at: "2026-11-02T04:38:38Z"
 ---
 ## Problem
 Held task cards show a yellow Held chip and repeat “HELD” at the lower left. Their green “Restart work” button is also misleading: a held task is intentionally inert and should not look like ordinary restartable work.
@@ -32,8 +32,12 @@ Keep the yellow Held chip as the state indicator and remove the redundant lower-
 
 ![Held task cards currently repeat the Held state as a chip and lower-left label, while showing a green Restart work button.](/api/tasks/1010/attachments/att_4dfea477-d78d-45e9-93e7-5bb25474a00d.png)
 
+## Notes for AI
+Inspect the task card rendering and held-task action handlers. Reuse the existing hold-release API/command semantics rather than introducing a direct status mutation. Keep the release action distinct from a forced restart: clearing the hold should allow RepoOS's ordinary guarded dispatch to decide whether work can resume. The screenshot attachment shows three held cards and the duplicated state text/action.
+
 ## Activity
 
 - 2026-11-02T04:38:23Z · created · njachowski@gmail.com
 - 2026-11-02T04:38:24Z · screenshots
 - 2026-11-02T04:38:24Z · needs_input
+- 2026-11-02T04:38:38Z · body: Notes for AI (added)
