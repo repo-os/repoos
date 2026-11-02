@@ -2,7 +2,7 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — The handoff screenshot is stale, and review can falsely mark a report current after its source commit leaves the branch."
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T09:04:35Z"
+updated_at: "2026-11-02T09:11:04Z"
 review_passes: 3
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -155,4 +155,5 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T09:01:13Z · status active→review
 - 2026-11-02T09:01:57Z · note: review pass 3: needs some work
 - 2026-11-02T09:01:58Z · needs_input
-
+- 2026-11-02T09:11:04Z · status review→active
+- 2026-11-02T09:11:04Z · note: Final correction round requested by Nick after review pass 3; fix the source/report identity defect and refresh review evidence.
