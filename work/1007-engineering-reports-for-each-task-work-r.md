@@ -44,9 +44,9 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 "route": "/work?task=1007&tab=agent",
 "highlight": ".engineering-report-view",
 "steps": [
-  {
-    "click": "[data-test-id=\\\"engineering-report-tab\\\"]"
-  }
+{
+  "click": "[data-test-id=\\\"engineering-report-tab\\\"]"
+}
 ]
 }
 ]
@@ -61,3 +61,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T02:14:13Z · status ready→active, branch
 - 2026-11-02T02:25:09Z · body
 - 2026-11-02T02:30:50Z · message_queued at 2026-11-02T02:30:50.063Z
+- 2026-11-02T02:30:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
