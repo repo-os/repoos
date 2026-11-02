@@ -2,7 +2,7 @@
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
