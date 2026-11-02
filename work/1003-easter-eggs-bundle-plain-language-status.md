@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-02T02:27:55Z"
-review_passes: 4
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
@@ -16,6 +14,8 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
+updated_at: "2026-11-02T02:35:21Z"
+review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
 review_rounds: 2
@@ -402,4 +402,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T02:23:21Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1003 (pid 85529)
 - 2026-11-02T02:27:54Z · note: review pass 4: needs some work
 - 2026-11-02T02:27:55Z · needs_input
-
+- 2026-11-02T02:35:21Z · note: highlight .ck-local-slot matched nothing on /checks?shotState=checks:waiting
