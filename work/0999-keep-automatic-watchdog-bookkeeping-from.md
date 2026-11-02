@@ -2,7 +2,7 @@
 id: "0999"
 title: Keep automatic watchdog bookkeeping from blocking close-out
 type: bug
-status: review
+status: active
 priority: p1
 area: [core, server]
 assigned_to: ai
