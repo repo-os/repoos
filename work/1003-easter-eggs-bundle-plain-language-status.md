@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T00:32:49Z"
+updated_at: "2026-11-02T00:33:17Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -98,20 +98,20 @@ Use the attached screenshot as layout context. Its Cursor model-refresh timeout 
 
 ## E5 · Make review-pass selection and reviewer identity clear
 ### Problem
-
-The Review tab shows Latest on a separate row below the green Good to go callout, making the active selection unclear. Selecting an older review pass does not clearly communicate that it is not the latest. The reviewer column also displays the generic word “reviewer” instead of the coding agent that produced the review.
+The Review tab can make the selected report and its freshness unclear. The latest marker should describe the displayed report, and the reviewer identity should identify the coding agent that produced it.
 
 ### Desired UX
-
-Keep the Latest marker on the right side of the Good to go callout row. Select the latest pass by default and visibly highlight whichever pass is selected. When an older pass is selected, change the callout marker to “Not latest” using a distinct color. Show the reviewer coding agent (for example, Cursor or Codex) in the reviewer column; keep the model in its separate column.
+Select the newest review pass by default and visibly highlight whichever pass is selected. Keep a Latest marker on the Good to go callout row when the selected pass is newest; show Not latest there for an older selected pass. Show the reviewer coding agent (for example, Cursor or Codex) in the reviewer column, with its model in the separate model column.
 
 ### Acceptance criteria
+- Test: the newest pass is selected by default and its row is visibly highlighted.
+- Test: selecting another pass highlights that row and updates the report details and callout freshness marker together.
+- Test: the Good to go callout shows Latest for the newest pass and Not latest for an older selected pass.
+- Test: the reviewer column names the coding agent and the model remains in its separate column.
+- Test: a late response for an earlier selection cannot replace the currently selected pass report or freshness marker.
 
-- The latest pass is selected by default, visibly highlighted, and marked Latest in the callout row.
-- Selecting an older pass highlights that row and changes the callout marker to Not latest with a distinct visual treatment.
-- The selected pass controls the displayed review details; the Latest marker does not remain when an older pass is selected.
-- The reviewer column displays the recorded coding agent identity instead of the generic “reviewer” role label, while preserving the model column.
-- Tests cover default selection, switching between latest and older passes, reviewer identity, and responsive/accessibility behavior.
+### Notes for AI
+Keep the selected pass highlight visible while its report is loading and after it loads. Tie report content, selected row, reviewer identity, and Latest/Not latest marker to the same selected pass. Preserve the existing latest-report behavior when no historical pass is selected.
 
 ## Shots
 ```json
@@ -283,3 +283,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T00:32:45Z · message_delivered: 1 message(s)
 - 2026-11-02T00:32:46Z · status review→active
 - 2026-11-02T00:32:49Z · CTO nudge: held — remote validation is running
+- 2026-11-02T00:33:17Z · body: E5 · Make review-pass selection and reviewer identity clear (added 9, removed 7)
