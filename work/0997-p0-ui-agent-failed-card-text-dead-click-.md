@@ -150,3 +150,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T19:12:01Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T19:23:41Z · body
 - 2026-11-02T19:29:03Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-02T19:29:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
