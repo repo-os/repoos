@@ -2,14 +2,14 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T12:46:03Z"
+updated_at: "2026-11-02T14:09:28Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T02:14:13Z · status ready→active, branch
 - 2026-11-02T07:51:12Z · status active→review
 - 2026-11-02T12:46:03Z · status review→active
+- 2026-11-02T14:09:28Z · status active→review
