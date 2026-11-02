@@ -11,7 +11,7 @@ branch: feat/make-retained-worktree-cleanup-safe-and-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T14:59:49Z"
+updated_at: "2026-11-02T14:59:50Z"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -114,3 +114,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T14:58:57Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T14:59:49Z · handoff_deferred: 3 queued message(s) must be read before review
 - 2026-11-02T14:59:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T14:59:50Z · message_delivered: 3 message(s)
