@@ -5,6 +5,12 @@ import { webkit, type Browser } from "@playwright/test";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const css = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
+const releaseTimelineCss = readFileSync(
+  resolve(__dirname, "../src/components/ReleaseTimeline.vue"),
+  "utf8",
+)
+  .split("<style scoped>")[1]
+  .split("</style>")[0];
 const inputsCss = readFileSync(resolve(__dirname, "../src/views/InputsView.vue"), "utf8")
   .split("<style scoped>")[1]
   .split("</style>")[0];
@@ -67,6 +73,23 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
     });
     afterAll(async () => {
       await browser?.close();
+    });
+
+    it("renders Mission Control panels at equal heights (WebKit)", async () => {
+      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+      try {
+        await page.setContent(
+          `<style>${css}\n${releaseTimelineCss}</style><div class="dash-grid"><div class="release-panel">Feature releases</div><div>Live activity</div><div>Needs a decision</div><div>Needs your attention</div></div>`,
+        );
+        const heights = await page.locator(".dash-grid > div").evaluateAll((panels) =>
+          panels.map((panel) => panel.getBoundingClientRect().height),
+        );
+        expect(heights).toHaveLength(4);
+        expect(new Set(heights).size).toBe(1);
+        expect(heights[0]).toBe(340);
+      } finally {
+        await page.close();
+      }
     });
 
     it.each([480, 620, 1120])(
