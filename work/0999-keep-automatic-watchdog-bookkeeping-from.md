@@ -33,3 +33,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-01T17:04:48Z · status inbox→ready
 - 2026-11-02T01:48:49Z · status ready→active, branch
 - 2026-11-02T01:57:19Z · message_queued at 2026-11-02T01:57:19.107Z
+- 2026-11-02T01:57:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
