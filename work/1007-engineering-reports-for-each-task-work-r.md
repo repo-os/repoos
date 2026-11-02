@@ -2,7 +2,7 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Invalid model reference: gpt-6.1-terra"
@@ -200,4 +200,3 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:14:41Z · note: Review pass 5 found three blocking issues; returning to engineering for a focused correction round.
 - 2026-11-02T14:14:50Z · needs_input
 - 2026-11-02T14:14:50Z · agent exited with an error (opencode) · error: Invalid model reference: gpt-6.1-terra
-- 2026-11-02T14:14:51Z · status active→review
