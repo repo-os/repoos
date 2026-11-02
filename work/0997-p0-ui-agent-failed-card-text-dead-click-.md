@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-failed-card-text-dead-click-target
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T18:38:54Z"
+updated_at: "2026-11-02T18:52:01Z"
 ---
 ## Problem
 
@@ -53,3 +53,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T04:31:13Z · title, branch
 - 2026-11-02T15:17:51Z · status inbox→ready
 - 2026-11-02T18:38:54Z · status ready→active
+- 2026-11-02T18:52:01Z · message_queued at 2026-11-02T18:52:01.022Z
