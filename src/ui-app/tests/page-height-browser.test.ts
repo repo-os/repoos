@@ -81,9 +81,9 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
         await page.setContent(
           `<style>${css}\n${releaseTimelineCss}</style><div class="dash-grid"><div class="release-panel">Feature releases</div><div>Live activity</div><div>Needs a decision</div><div>Needs your attention</div></div>`,
         );
-        const heights = await page.locator(".dash-grid > div").evaluateAll((panels) =>
-          panels.map((panel) => panel.getBoundingClientRect().height),
-        );
+        const heights = await page
+          .locator(".dash-grid > div")
+          .evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().height));
         expect(heights).toHaveLength(4);
         expect(new Set(heights).size).toBe(1);
         expect(heights[0]).toBe(340);
