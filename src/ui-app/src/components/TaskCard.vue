@@ -155,6 +155,7 @@ async function showAgentPreview(event: FocusEvent | MouseEvent): Promise<void> {
     top: `${Math.max(margin, Math.min(rect.bottom + 8, window.innerHeight - margin))}px`,
     transform: "none",
     width: `${width}px`,
+    maxHeight: `${Math.max(0, window.innerHeight - margin * 2)}px`,
   };
   agentPreviewOpen.value = true;
   await nextTick();

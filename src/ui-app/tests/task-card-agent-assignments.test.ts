@@ -194,6 +194,64 @@ describe("TaskCard agent assignments panel (0455)", () => {
     document.body.querySelector("[data-test-id='task-agent-preview']")?.remove();
   });
 
+  it("keeps the assignment preview within a short viewport", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask();
+    stubFetch(task);
+    await useRepoStore().init();
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 320 });
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 160 });
+    const originalRect = HTMLElement.prototype.getBoundingClientRect;
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+      function (this: HTMLElement) {
+        if (this.classList.contains("tc-agent-btn")) {
+          return {
+            x: 290,
+            y: 145,
+            top: 145,
+            right: 312,
+            bottom: 160,
+            left: 290,
+            width: 22,
+            height: 15,
+            toJSON: () => ({}),
+          };
+        }
+        if (this.classList.contains("tc-agent-preview")) {
+          return {
+            x: 0,
+            y: 0,
+            top: 0,
+            right: 296,
+            bottom: 220,
+            left: 0,
+            width: 296,
+            height: 220,
+            toJSON: () => ({}),
+          };
+        }
+        return originalRect.call(this);
+      },
+    );
+
+    const wrapper = await mountCard(pinia, task);
+    await wrapper.find(".tc-agent-btn").trigger("mouseenter");
+    await flush();
+
+    const preview = document.body.querySelector<HTMLElement>("[data-test-id='task-agent-preview']");
+    expect(preview).not.toBeNull();
+    expect(preview?.style.top).toBe("12px");
+    expect(preview?.style.left).toBe("12px");
+    expect(preview?.style.maxHeight).toBe("136px");
+    expect(preview?.style.width).toBe("296px");
+    wrapper.unmount();
+    preview?.remove();
+  });
+
   it("toggles open and closed only from the robot button", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
