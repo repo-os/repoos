@@ -131,3 +131,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T17:59:41Z · note: handoff requested (cli)
 - 2026-11-02T18:01:39Z · message_queued at 2026-11-02T18:01:39.245Z
 - 2026-11-02T18:15:38Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1005.md
+- 2026-11-02T18:15:38Z · message_delivered: 1 message(s)
