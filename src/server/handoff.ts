@@ -615,6 +615,9 @@ async function runHandoffFinalization(
   // miss precisely the retry this path must recover.
   const reportAtHead = async () => {
     const reports = listEngineeringReports({ ...config, root: workdir }, task.id);
+    const pendingNarrative = existsSync(reportDraft)
+      ? readFileSync(reportDraft, "utf8").trim()
+      : null;
     for (const report of [...reports].reverse()) {
       const sourceIsAncestor = await runGit(
         workdir,
@@ -631,8 +634,10 @@ async function runHandoffFinalization(
       const paths = changed.stdout.trim().split("\n").filter(Boolean);
       const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${report.round}.json`;
       const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${task.id}-`;
+      const reportNarrative = report.markdown.split("\n\n## Generated change summary", 1)[0];
       if (
         paths.includes(reportPath) &&
+        (!pendingNarrative || reportNarrative === pendingNarrative) &&
         paths.every(
           (path) => path === reportPath || (path.startsWith(ownTaskPath) && path.endsWith(".md")),
         )
