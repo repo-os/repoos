@@ -4,6 +4,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
 import { useRepoStore } from "../src/stores/repo";
 import type { TaskSchedule } from "../../core/schedule.js";
@@ -277,8 +279,24 @@ describe("schedule CRUD from the panel", () => {
 
     const card = wrapper.get('[data-testid="schedule-card-0001"]');
     const details = card.get(".schedule-card-details");
-    expect(details.get(".schedule-kv").element.parentElement).toBe(details.element);
+    const rows = Array.from(details.get(".schedule-kv").element.children);
+    expect(rows).toHaveLength(5);
+    for (const row of rows) {
+      expect(row.querySelector("dt")).toBeTruthy();
+      expect(row.querySelector("dd")).toBeTruthy();
+    }
     expect(details.get(".schedule-actions").element.parentElement).toBe(details.element);
     expect(details.findAll(".schedule-actions button")).toHaveLength(3);
+
+    const source = readFileSync(
+      resolve(__dirname, "../src/components/ScheduledTasksPanel.vue"),
+      "utf8",
+    );
+    expect(source).toMatch(
+      /@media \(max-width: 640px\)[\s\S]*?\.schedule-card-details\s*\{\s*flex-direction:\s*column/,
+    );
+    expect(source).toMatch(
+      /@media \(max-width: 640px\)[\s\S]*?\.schedule-actions\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap/,
+    );
   });
 });

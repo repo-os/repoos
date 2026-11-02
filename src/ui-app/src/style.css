@@ -13566,10 +13566,10 @@
   padding: 24px;
   margin-top: 8px;
 }
-.delete-confirm-actions > button:hover {
+.delete-confirm-actions button:hover:not(:disabled) {
   filter: brightness(1.12);
 }
-.delete-confirm-actions > button:focus-visible {
+.delete-confirm-actions button:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }

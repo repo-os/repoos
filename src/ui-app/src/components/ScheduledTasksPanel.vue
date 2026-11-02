@@ -336,26 +336,36 @@ onMounted(() => {
         </div>
         <div class="schedule-card-details">
           <dl class="kv-rows schedule-kv">
-            <dt>Cadence</dt>
-            <dd>{{ cadenceLabel(row) }} ({{ row.timezone }})</dd>
-            <dt>Next run</dt>
-            <dd>{{ row.nextRunPreview }}</dd>
-            <dt>Last run</dt>
-            <dd>{{ row.lastRunAt ? new Date(row.lastRunAt).toLocaleString() : "—" }}</dd>
-            <dt>Last result</dt>
-            <dd class="kv-wrap">{{ lastResultLabel(row) }}</dd>
-            <dt>Latest task</dt>
-            <dd>
-              <button
-                v-if="row.lastTaskId"
-                type="button"
-                class="linkish"
-                @click="openTask(row.lastTaskId)"
-              >
-                #{{ row.lastTaskId }}
-              </button>
-              <span v-else>—</span>
-            </dd>
+            <div>
+              <dt>Cadence</dt>
+              <dd>{{ cadenceLabel(row) }} ({{ row.timezone }})</dd>
+            </div>
+            <div>
+              <dt>Next run</dt>
+              <dd>{{ row.nextRunPreview }}</dd>
+            </div>
+            <div>
+              <dt>Last run</dt>
+              <dd>{{ row.lastRunAt ? new Date(row.lastRunAt).toLocaleString() : "—" }}</dd>
+            </div>
+            <div>
+              <dt>Last result</dt>
+              <dd class="kv-wrap">{{ lastResultLabel(row) }}</dd>
+            </div>
+            <div>
+              <dt>Latest task</dt>
+              <dd>
+                <button
+                  v-if="row.lastTaskId"
+                  type="button"
+                  class="linkish"
+                  @click="openTask(row.lastTaskId)"
+                >
+                  #{{ row.lastTaskId }}
+                </button>
+                <span v-else>—</span>
+              </dd>
+            </div>
           </dl>
           <div class="schedule-actions">
             <Button variant="outline" size="sm" @click="runNow(row)">Run now</Button>
