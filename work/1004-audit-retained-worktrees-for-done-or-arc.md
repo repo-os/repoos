@@ -2,7 +2,7 @@
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/make-retained-worktree-cleanup-safe-and-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T13:28:35Z"
+updated_at: "2026-11-02T16:47:02Z"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -50,3 +50,4 @@ Use the 2026-11-01 findings as evidence, then re-check every live task and workt
 - 2026-11-02T13:28:18Z · cli_override
 - 2026-11-02T13:28:24Z · model_override
 - 2026-11-02T13:28:35Z · status ready→active, branch
+- 2026-11-02T16:47:02Z · status active→review
