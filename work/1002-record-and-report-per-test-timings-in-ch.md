@@ -12,7 +12,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-02T01:09:57Z"
+updated_at: "2026-11-02T01:13:24Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-01T23:26:11.154Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -170,3 +170,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-02T00:50:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-02T00:55:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T01:09:57Z · body
+- 2026-11-02T01:13:24Z · handoff_deferred: 1 queued message(s) must be read before review
