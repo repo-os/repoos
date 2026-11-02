@@ -13,7 +13,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-02T01:58:43Z"
+updated_at: "2026-11-02T02:00:47Z"
 last_close_out_gate_ms: 666543
 last_close_out_gate_at: "2026-11-02T01:57:15.005Z"
 review_passes: 7
@@ -180,3 +180,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-02T01:43:53Z · note: review pass 7: good to go
 - 2026-11-02T01:57:15Z · close-out gate completed in 667s
 - 2026-11-02T01:58:43Z · status done→done, release:success
+- 2026-11-02T02:00:47Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (bed555dd7) during finalization (#0734)
