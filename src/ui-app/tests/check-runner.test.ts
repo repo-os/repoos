@@ -615,6 +615,19 @@ describe("runCommand — the subprocess primitive", () => {
     expect(res.status).toBe("timeout");
   });
 
+  it("honors the internal no-timeouts override for CLI release checks", async () => {
+    const previous = process.env.REPOOS_CHECK_NO_TIMEOUTS;
+    process.env.REPOOS_CHECK_NO_TIMEOUTS = "1";
+    try {
+      const res = await runCommand({ command: "sleep 0.1", timeoutMs: 1, echo: false });
+      expect(res.status).toBe("passed");
+      expect(res.durationMs).toBeGreaterThanOrEqual(50);
+    } finally {
+      if (previous === undefined) delete process.env.REPOOS_CHECK_NO_TIMEOUTS;
+      else process.env.REPOOS_CHECK_NO_TIMEOUTS = previous;
+    }
+  });
+
   it("reports a command that cannot be spawned", async () => {
     const res = await runCommand({
       command: "definitely-not-a-real-tool-xyz arg",

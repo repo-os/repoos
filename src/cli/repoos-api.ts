@@ -75,10 +75,6 @@ export class RepoOsApi {
     this.session = readCliSession(this.root, this.config.cacheDir);
   }
 
-  get closeOutTimeoutMs(): number {
-    return this.config.closeOut?.timeoutMs ?? 0;
-  }
-
   private localToken(): string | null {
     return readLocalCliToken(this.root, this.config.cacheDir);
   }
