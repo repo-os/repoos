@@ -48,12 +48,12 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 "route": "/work?task=9999&tab=agent",
 "highlight": "[data-test-id=\"engineering-report-tab\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"engineering-report-tab\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "[data-test-id=\"engineering-report-tab\"]"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "drawer:reviewWithBranch"
 }
@@ -118,3 +118,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T06:35:57Z · note: ui verification failed (2 issue(s)): [missing-target] Task Dev tab with engineering report history (target "default"): state "drawer:reviewWithBranch" did not render on target "default" — /work?task=1007&tab=dev has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:61925/work?task=1007&tab=dev&shotState=drawer%3AreviewWithBranch); [missing-target] Task Dev tab with engineering report history (target "default"): highlight [data-test-id="en
 - 2026-11-02T06:37:04Z · body
 - 2026-11-02T06:45:04Z · message_queued at 2026-11-02T06:45:04.466Z
+- 2026-11-02T06:45:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
