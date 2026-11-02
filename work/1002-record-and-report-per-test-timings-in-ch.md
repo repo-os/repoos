@@ -12,7 +12,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-02T00:40:58Z"
+updated_at: "2026-11-02T00:40:59Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-01T23:26:11.154Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -164,3 +164,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-02T00:32:48Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T00:38:28Z · body
 - 2026-11-02T00:40:58Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-02T00:40:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
