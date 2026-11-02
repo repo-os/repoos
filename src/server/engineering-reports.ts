@@ -78,13 +78,19 @@ export async function finalizeEngineeringReport(args: {
     "## Challenges and blockers",
     "## Key learnings",
   ];
-  const missingSections = requiredSections.filter(
-    (section) => !new RegExp(`^${section}$`, "mi").test(narrative),
+  const sectionPositions = requiredSections.map((section) =>
+    narrative.search(new RegExp(`^${section}$`, "mi")),
   );
+  const missingSections = requiredSections.filter((_, index) => sectionPositions[index] < 0);
   if (missingSections.length)
     return {
       report: null,
       error: `Engineering report is missing required sections: ${missingSections.join(", ")}.`,
+    };
+  if (sectionPositions.some((position, index) => index > 0 && position <= sectionPositions[index - 1]!))
+    return {
+      report: null,
+      error: "Engineering report sections must appear in the required order, starting with TL;DR.",
     };
   const base = await runGit(workdir, ["rev-parse", `${baseSha}^{tree}`], 10_000);
   const head = await runGit(workdir, ["rev-parse", `${sourceSha}^{tree}`], 10_000);

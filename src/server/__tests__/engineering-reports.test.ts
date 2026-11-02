@@ -74,4 +74,37 @@ describe("engineering reports", () => {
     expect(tooLong.error).toContain("1–1,000 words");
     expect(listEngineeringReports(config, "T1")).toHaveLength(2);
   });
+
+  it("requires every narrative section in the prescribed order", async () => {
+    const baseSha = git("rev-parse HEAD");
+    writeFileSync(join(root, "src", "old.ts"), "changed\n");
+    git("add .");
+    git('commit -m "implementation"');
+    const sourceSha = git("rev-parse HEAD");
+    const cacheDir = ".repoos";
+    const draftDir = join(root, cacheDir, "engineering-report-drafts");
+    mkdirSync(draftDir, { recursive: true });
+    const config = { root, cacheDir } as any;
+    const args = {
+      config,
+      taskId: "T1",
+      workdir: root,
+      branch: "feat/report",
+      agent: "codex",
+      model: "test-model",
+      baseSha,
+      sourceSha,
+    };
+    writeFileSync(join(draftDir, "T1.md"), narrative.replace("## TL;DR", "## Work and rationale"));
+    const missing = await finalizeEngineeringReport(args);
+    expect(missing.error).toContain("missing required sections");
+    const reordered = narrative
+      .replace("## TL;DR", "## TEMP SECTION")
+      .replace("## Work and rationale", "## TL;DR")
+      .replace("## TEMP SECTION", "## Work and rationale");
+    writeFileSync(join(draftDir, "T1.md"), reordered);
+    const unordered = await finalizeEngineeringReport(args);
+    expect(unordered.error).toContain("required order");
+    expect(listEngineeringReports(config, "T1")).toHaveLength(0);
+  });
 });

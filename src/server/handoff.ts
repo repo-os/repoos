@@ -817,54 +817,6 @@ async function runHandoffFinalization(
     const drift = await describeStateDrift(workdir, config, task.id, before, after);
     if (drift) return fail("check", drift);
 
-    // Reports are optional for legacy tasks. New engineer runs leave a draft;
-    // finalize it only after the exact source commit passed the gate.
-    const reportDraft = join(
-      workdir,
-      config.cacheDir,
-      "engineering-report-drafts",
-      `${task.id}.md`,
-    );
-    if (existsSync(reportDraft)) {
-      const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
-      const baseResult = await runGit(workdir, ["merge-base", baseBranch, before.head], 10_000);
-      const codingAgent = resolveAgentForTask(config, task);
-      if (baseResult.status !== 0 || !codingAgent) {
-        return fail("review", "could not resolve report base tree or coding agent metadata");
-      }
-      const finalized = await finalizeEngineeringReport({
-        config: { ...config, root: workdir },
-        taskId: task.id,
-        workdir,
-        branch: task.branch,
-        agent: codingAgent.cli,
-        model: codingAgent.model,
-        baseSha: baseResult.stdout.trim(),
-        sourceSha: before.head,
-      });
-      if (!finalized.report)
-        return fail("review", finalized.error ?? "engineering report could not be finalized");
-      rmSync(reportDraft, { force: true });
-      const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${finalized.report.round}.json`;
-      const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
-      if (staged.status !== 0)
-        return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
-      const reportCommit = await runGit(
-        workdir,
-        [
-          "commit",
-          "-m",
-          `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
-        ],
-        20_000,
-      );
-      if (reportCommit.status !== 0)
-        return fail(
-          "review",
-          `could not commit finalized engineering report: ${concise(reportCommit)}`,
-        );
-    }
-
     if (!opts.skipChecks) {
       // #0734: use the CANONICAL task body for declarations (task.body), not a
       // possibly-stale worktree copy — a `## Shots` edit on the board must be
@@ -896,6 +848,57 @@ async function runHandoffFinalization(
           return fail("verify", detail);
         }
       }
+    }
+
+    // Reports are optional for legacy tasks. New engineer runs leave a draft;
+    // finalize it only after every handoff gate (including UI evidence) passed.
+    // Keeping this after the final gate means a retryable evidence failure does
+    // not consume the draft or create a report for a handoff that never happened.
+    const reportDraft = join(
+      workdir,
+      config.cacheDir,
+      "engineering-report-drafts",
+      `${task.id}.md`,
+    );
+    if (existsSync(reportDraft)) {
+      const source = await worktreeState(workdir, config);
+      const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
+      const baseResult = await runGit(workdir, ["merge-base", baseBranch, source.head], 10_000);
+      const codingAgent = resolveAgentForTask(config, task);
+      if (baseResult.status !== 0 || !codingAgent) {
+        return fail("review", "could not resolve report base tree or coding agent metadata");
+      }
+      const finalized = await finalizeEngineeringReport({
+        config: { ...config, root: workdir },
+        taskId: task.id,
+        workdir,
+        branch: task.branch,
+        agent: codingAgent.cli,
+        model: codingAgent.model,
+        baseSha: baseResult.stdout.trim(),
+        sourceSha: source.head,
+      });
+      if (!finalized.report)
+        return fail("review", finalized.error ?? "engineering report could not be finalized");
+      const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${finalized.report.round}.json`;
+      const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
+      if (staged.status !== 0)
+        return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
+      const reportCommit = await runGit(
+        workdir,
+        [
+          "commit",
+          "-m",
+          `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
+        ],
+        20_000,
+      );
+      if (reportCommit.status !== 0)
+        return fail(
+          "review",
+          `could not commit finalized engineering report: ${concise(reportCommit)}`,
+        );
+      rmSync(reportDraft, { force: true });
     }
   } else {
     // Keep the step sequence honest for a UI that renders "Running checks…":
