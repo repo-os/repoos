@@ -2,7 +2,7 @@
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
@@ -148,3 +148,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T19:08:32Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1004 check (pid 30400, alive), #1004 check (pid 31780, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T19:09:32Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T19:22:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T19:22:08Z · status active→review
