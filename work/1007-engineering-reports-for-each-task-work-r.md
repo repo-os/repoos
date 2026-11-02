@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T02:41:16Z"
+updated_at: "2026-11-02T02:45:17Z"
 ---
 ## Problem
 
@@ -64,3 +64,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T02:30:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-02T02:35:50Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T02:41:16Z · body
+- 2026-11-02T02:45:17Z · handoff_deferred: 1 queued message(s) must be read before review
