@@ -4,8 +4,8 @@ title: Engineering reports for each task work round
 type: feature
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 8 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The added handoff test invokes Node unconditionally, breaking Bun-only environments."
 priority: p2
 area: [core, server, web]
 assigned_to: ai
