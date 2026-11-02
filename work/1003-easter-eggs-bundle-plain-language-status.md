@@ -488,3 +488,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T07:59:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T08:00:07Z · body
 - 2026-11-02T08:02:07Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-02T08:02:07Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
