@@ -107,14 +107,33 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
           expect(await locator.evaluate((el) => getComputedStyle(el).filter)).toBe(
             "brightness(1.12)",
           );
-          // #1005 round 3: brightness alone was ~5/255 — the hover must move
-          // the background and border to a visibly distinct state.
+          // #1005 round 4: brightness alone was ~5/255 — the hover must move
+          // the background and border to a visibly distinct state (22% wash
+          // + currentColor border, not a faint border-bright tint).
           const after = await locator.evaluate((el) => {
             const style = getComputedStyle(el);
             return { bg: style.backgroundColor, border: style.borderColor };
           });
           expect(after.bg, `${action} hover background shifts`).not.toBe(before.bg);
           expect(after.border, `${action} hover border shifts`).not.toBe(before.border);
+          // Magnitude guard: a token swap (e.g. transparent -> tint) can pass
+          // a not-equal check while remaining invisible. Require a mean
+          // per-channel shift of at least 8/255 so the hover reads on screen.
+          const shift = await locator.evaluate(
+            (el, pair: { b: { bg: string }; a: { bg: string } }) => {
+              const parse = (s: string): [number, number, number] => {
+                const m = s.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0];
+                return [m[0] ?? 0, m[1] ?? 0, m[2] ?? 0];
+              };
+              const [br, bg2, bb] = parse(pair.b.bg);
+              const [ar, ag, ab] = parse(pair.a.bg);
+              return (Math.abs(br - ar) + Math.abs(bg2 - ag) + Math.abs(bb - ab)) / 3;
+            },
+            { b: before, a: after },
+          );
+          expect(shift, `${action} hover shift is visible (>=8/255 mean)`).toBeGreaterThanOrEqual(
+            8,
+          );
           const box = await locator.boundingBox();
           expect(box).toBeTruthy();
           await page.mouse.click(box!.x + 8, box!.y + 8);
