@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T05:00:36Z"
+updated_at: "2026-11-02T05:04:16Z"
 ---
 ## Problem
 
@@ -39,18 +39,18 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 ```json
 [
 {
-"label": "Engineering report history in Dev tab",
-"target": "default",
-"route": "/work?task=1007&tab=agent",
-"highlight": ".engineering-report-view",
-"steps": [
-{
-"click": "[data-test-id=\"engineering-report-tab\"]"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "Engineering report history in the task Dev tab",
+  "target": "default",
+  "route": "/work?task=1007&tab=agent",
+  "highlight": "[data-test-id=\"engineering-report-history\"]",
+  "steps": [
+    {
+      "click": "button[data-test-id=\"engineering-report-tab\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -90,3 +90,6 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T04:49:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T04:49:16Z · message_delivered: 1 message(s)
 - 2026-11-02T05:00:36Z · body
+- 2026-11-02T05:02:23Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-02T05:03:38Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-02T05:04:16Z · body
