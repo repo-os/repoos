@@ -192,6 +192,16 @@ export function remoteMirrorPath(root: string): string {
   return `~/.repoos-cache/${base}-${suffix}.git`;
 }
 
+/**
+ * Render a remote path as one shell word. Tilde expansion does not happen
+ * inside a quoted argument, so preserve the home-relative prefix as an
+ * explicit quoted $HOME segment and quote the remainder independently.
+ */
+function remotePathShellWord(path: string): string {
+  if (path.startsWith("~/")) return `"$HOME"/${shellQuote(path.slice(2))}`;
+  return shellQuote(path);
+}
+
 /** Ref the candidate commit travels under; a stable name validate.sh knows. */
 export const MIRROR_CANDIDATE_REF = "refs/repoos/candidate";
 /** Ref the validated changed-test base travels under on the host mirror (#1001). */
@@ -215,17 +225,12 @@ export const EMPTY_REMOTE_MIRROR: RemoteMirrorState = { exists: false, refs: {} 
  * a mirror costs one round-trip before bundling.
  */
 export function mirrorProbeCommand(mirrorPath: string): string {
+  const mirror = remotePathShellWord(mirrorPath);
   const refs = [MIRROR_CANDIDATE_REF, MIRROR_SCOPE_REF];
   const checks = refs
-    .map(
-      (r) =>
-        `git -C ${shellQuote(mirrorPath)} rev-parse --verify --quiet ${shellQuote(r)} 2>/dev/null`,
-    )
+    .map((r) => `git -C ${mirror} rev-parse --verify --quiet ${shellQuote(r)} 2>/dev/null`)
     .join("; ");
-  return (
-    `if [ -d ${shellQuote(mirrorPath)} ]; then echo MIRROR=1; ` +
-    `${checks}; else echo MIRROR=0; fi`
-  );
+  return `if [ -d ${mirror} ]; then echo MIRROR=1; ` + `${checks}; else echo MIRROR=0; fi`;
 }
 
 /** Parse {@link mirrorProbeCommand} output into a {@link RemoteMirrorState}. */
@@ -2230,7 +2235,7 @@ export function validateScriptArgs(
   if (ref || mirrorPath) parts.push(ref ? shellQuote(ref) : "''");
   // Mirror path is appended last so an older installed validate.sh (which reads
   // only $4 as the changed ref) still receives a valid positional layout.
-  if (mirrorPath) parts.push(shellQuote(mirrorPath));
+  if (mirrorPath) parts.push(remotePathShellWord(mirrorPath));
   const captureEnv = browserCapture
     ? `REPOOS_BROWSER_CAPTURE_MODE=${shellQuote(browserCapture.operation)} ` +
       `REPOOS_BROWSER_CAPTURE_TASK=${shellQuote(browserCapture.taskId)} ` +

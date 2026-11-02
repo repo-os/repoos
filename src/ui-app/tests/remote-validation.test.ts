@@ -30,6 +30,7 @@ import {
   EMPTY_REMOTE_MIRROR,
   prepareCandidateUpload,
   parseMirrorProbeOutput,
+  mirrorProbeCommand,
   parseValidateScriptMirrorSupport,
   isRunnerBundleTransportMismatch,
   validateScriptArgs,
@@ -1419,7 +1420,7 @@ describe("validate.sh compatibility (#0725)", () => {
       expect(legacyCall).toBe(`/opt/repoos/validate.sh ~/.b ${candidateSha} ~/.art 'main'`);
       expect(legacyCall).not.toContain("repoos-cache");
       expect(validateScriptArgs("~/.b", candidateSha, "~/.art", "main", "~/.mirror")).toContain(
-        "~/.mirror",
+        `"$HOME"/'.mirror'`,
       );
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -1455,6 +1456,35 @@ describe("remote mirror helpers (#0717)", () => {
     expect(a).not.toBe(b);
     expect(remoteMirrorPath("/Users/x/opex")).toBe(a);
   });
+
+  it("resolves a home-relative mirror path consistently when HOME contains spaces", () => {
+    const home = mkdtempSync(join(tmpdir(), "repoos mirror home "));
+    const mirrorPath = remoteMirrorPath("/Users/x/a repo; [test]");
+    const absoluteMirror = join(home, mirrorPath.slice(2));
+    try {
+      mkdirSync(absoluteMirror, { recursive: true });
+      const probe = execFileSync("sh", ["-c", `${mirrorProbeCommand(mirrorPath)}; true`], {
+        encoding: "utf8",
+        env: { ...process.env, HOME: home },
+      });
+      expect(probe).toContain("MIRROR=1");
+
+      const args = validateScriptArgs(
+        "~/.bundle",
+        "a".repeat(40),
+        "~/.artifacts",
+        undefined,
+        mirrorPath,
+      ).replace(/^\/opt\/repoos\/validate\.sh /, "");
+      const passedMirror = execFileSync("sh", ["-c", `set -- ${args}; printf '%s' "$5"`], {
+        encoding: "utf8",
+        env: { ...process.env, HOME: home },
+      });
+      expect(passedMirror).toBe(absoluteMirror);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
 });
 
 // 2026-10-07: handoff/close-out pass a mirror path but no changed ref. The mirror
@@ -1464,12 +1494,12 @@ describe("validateScriptArgs positional layout", () => {
   const sha = "a".repeat(40);
   it("keeps the mirror path in $5 when there is no changed ref", () => {
     expect(validateScriptArgs("~/.b", sha, "~/.art", undefined, "~/.mirror")).toBe(
-      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art '' '~/.mirror'`,
+      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art '' "$HOME"/'.mirror'`,
     );
   });
   it("keeps the changed ref in $4 and the mirror in $5", () => {
     expect(validateScriptArgs("~/.b", sha, "~/.art", "main", "~/.mirror")).toBe(
-      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art 'main' '~/.mirror'`,
+      `/opt/repoos/validate.sh ~/.b ${sha} ~/.art 'main' "$HOME"/'.mirror'`,
     );
   });
   it("sends the legacy 3-argument call when neither is set", () => {
