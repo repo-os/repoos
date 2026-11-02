@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T05:49:29Z"
+updated_at: "2026-11-02T06:16:56Z"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
@@ -367,3 +367,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T05:36:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T05:36:26Z · message_delivered: 1 message(s)
 - 2026-11-02T05:49:29Z · body
+- 2026-11-02T06:16:56Z · note: ui verification failed (1 issue(s)): [missing-target] Review pass selection and latest status (target "default"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:59953/work?shotState=drawer:reviewWithBranch)
