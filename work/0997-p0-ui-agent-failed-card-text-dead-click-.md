@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-failed-card-text-dead-click-target
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T19:23:41Z"
+updated_at: "2026-11-02T19:29:03Z"
 ---
 ## Problem
 
@@ -149,3 +149,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T19:09:02Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T19:12:01Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T19:23:41Z · body
+- 2026-11-02T19:29:03Z · handoff_deferred: 1 queued message(s) must be read before review
