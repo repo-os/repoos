@@ -19,6 +19,7 @@ import {
   localMachineName,
   resetCheckStore,
 } from "../../core/check-store.js";
+import type { TestCaseTiming } from "../../core/test-case-timings.js";
 import { previousFailedTestsForRun } from "../../commands/check.js";
 import { mainCheckoutRoot } from "../../core/git.js";
 
@@ -76,6 +77,116 @@ describe("check-run store", () => {
     raw.exec("UPDATE check_runs SET step_timings = 'broken' WHERE id = 1");
     expect(migrated.list()[1]!.steps).toEqual([]);
     raw.close();
+  });
+
+  it("stores per-test cases, lists slowest, and prunes with run retention (#1002)", () => {
+    const { s } = store();
+    const id = s.record(
+      row({
+        testCaseTimings: [
+          {
+            file: "a.test.ts",
+            name: "suite > fast",
+            caseId: "c-fast",
+            retry: 0,
+            durationMs: 5,
+            result: "passed",
+          },
+          {
+            file: "b.test.ts",
+            name: "suite > slow",
+            caseId: "c-slow",
+            retry: 0,
+            durationMs: 9000,
+            result: "passed",
+          },
+          {
+            file: "b.test.ts",
+            name: "suite > slow",
+            caseId: "c-slow",
+            retry: 1,
+            durationMs: 8000,
+            result: "passed",
+          },
+        ],
+      }),
+    );
+    expect(id).not.toBeNull();
+    expect(s.testCaseCountForRun(id!)).toBe(3);
+    const listed = s.listSlowTestCases({ runId: id!, limit: 2 });
+    expect(listed.cases).toHaveLength(2);
+    expect(listed.cases[0]!.durationMs).toBe(9000);
+    expect(listed.hasMore).toBe(true);
+  });
+
+  it("keeps the slowest cases when the per-run history cap is reached (#1002)", () => {
+    const { s } = store();
+    const testCaseTimings: TestCaseTiming[] = Array.from({ length: 24_999 }, (_, i) => ({
+      file: `suite-${i}.test.ts`,
+      name: `case ${i}`,
+      caseId: `case-${i}`,
+      retry: 0,
+      durationMs: i,
+      result: "passed" as const,
+    }));
+    testCaseTimings.push(
+      {
+        file: "late-suite.test.ts",
+        name: "suite > later failed case",
+        caseId: "case-later-failed",
+        retry: 0,
+        durationMs: 25_000,
+        result: "failed" as const,
+      },
+      {
+        file: "late-suite.test.ts",
+        name: "suite > later slow case",
+        caseId: "case-later-slow",
+        retry: 0,
+        durationMs: 24_999,
+        result: "passed" as const,
+      },
+    );
+    const id = s.record(row({ testCaseTimings }));
+
+    expect(id).not.toBeNull();
+    expect(s.testCaseCountForRun(id!)).toBe(25_000);
+    const slowest = s.listSlowTestCases({ runId: id!, limit: 1 });
+    expect(slowest.cases[0]).toMatchObject({
+      caseId: "case-later-failed",
+      durationMs: 25_000,
+      result: "failed",
+    });
+    const tied = s.listSlowTestCases({ runId: id!, limit: 2 });
+    expect(tied.cases.map(({ caseId }) => caseId)).toEqual([
+      "case-later-failed",
+      "case-later-slow",
+    ]);
+  });
+
+  it("clears provisional case rows when the final run update has no cases (#1002)", () => {
+    const { s } = store();
+    const id = s.record(
+      row({
+        testCaseTimings: [
+          {
+            file: "provisional.test.ts",
+            name: "suite > retried case",
+            caseId: "case-1",
+            retry: 0,
+            durationMs: 25,
+            result: "passed",
+          },
+        ],
+      }),
+    );
+    expect(id).not.toBeNull();
+    expect(s.testCaseCountForRun(id!)).toBe(1);
+
+    s.update(id!, row({ testCaseTimings: [] }));
+
+    expect(s.testCaseCountForRun(id!)).toBe(0);
+    expect(s.listSlowTestCases({ runId: id! }).cases).toEqual([]);
   });
 
   it("records and lists rows newest-first", () => {

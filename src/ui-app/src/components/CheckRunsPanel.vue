@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { summarizeStepTimings } from "../../../core/check-timings.js";
+import { formatSlowestTestFiles } from "../../../core/test-file-timings.js";
 import { RefreshCw } from "lucide-vue-next";
 import { api } from "../api";
-import { shotFixturePinnedCheckRuns } from "../lib/shot-preview-fixtures";
+import {
+  shotFixturePinnedCheckRuns,
+  shotFixturePinnedTestCases,
+} from "../lib/shot-preview-fixtures";
 import Button from "./ui/button.vue";
 import PageSkeleton from "./PageSkeleton.vue";
 import FailedTestsList from "./FailedTestsList.vue";
 import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
-import type { CheckRunRow } from "../types";
+import type { CheckRunRow, CheckRunTestCaseRow } from "../types";
 
 /**
  * The Runs tab (#0564): a sortable history of check runs across all tasks —
@@ -34,19 +38,57 @@ const runs = ref<CheckRunRow[]>([]);
 const stepStats = computed(() => summarizeStepTimings(runs.value));
 /** Rows expanded to show step timings or failure details. */
 const expanded = ref<Set<number>>(new Set());
+const testCasesByRun = ref<Map<number, CheckRunTestCaseRow[]>>(new Map());
+const testCasesLoading = ref<Set<number>>(new Set());
+const testCasesError = ref<Map<number, string>>(new Map());
 
 function isExpandable(r: CheckRunRow): boolean {
   return (
     !!r.steps?.length ||
+    !!r.testFileTimings?.length ||
+    (r.testsDone != null && r.testsDone > 0) ||
     (r.outcome === "fail" &&
       (r.failedTests.length > 0 || !!r.isolationNote || !!r.detail || !!r.failedStep))
   );
 }
 
+async function loadTestCases(runId: number): Promise<void> {
+  if (testCasesByRun.value.has(runId) || testCasesLoading.value.has(runId)) return;
+  const pinned = shotFixturePinnedTestCases(runId);
+  if (pinned) {
+    const next = new Map(testCasesByRun.value);
+    next.set(runId, pinned);
+    testCasesByRun.value = next;
+    return;
+  }
+  testCasesLoading.value = new Set(testCasesLoading.value).add(runId);
+  testCasesError.value.delete(runId);
+  try {
+    const res = await api<{
+      ok: boolean;
+      cases: CheckRunTestCaseRow[];
+    }>(`/api/check-run-test-cases?runId=${runId}&limit=20`);
+    const next = new Map(testCasesByRun.value);
+    next.set(runId, res.cases ?? []);
+    testCasesByRun.value = next;
+  } catch (e) {
+    const next = new Map(testCasesError.value);
+    next.set(runId, e instanceof Error ? e.message : "Could not load test timings.");
+    testCasesError.value = next;
+  } finally {
+    const next = new Set(testCasesLoading.value);
+    next.delete(runId);
+    testCasesLoading.value = next;
+  }
+}
+
 function toggleRow(r: CheckRunRow): void {
   const next = new Set(expanded.value);
   if (next.has(r.id)) next.delete(r.id);
-  else next.add(r.id);
+  else {
+    next.add(r.id);
+    void loadTestCases(r.id);
+  }
   expanded.value = next;
 }
 const loading = ref(true);
@@ -410,6 +452,56 @@ function outcomeLabel(r: CheckRunRow): string {
                   ><template v-if="r.detail"> — {{ r.detail }}</template
                   ><template v-else> (no individual tests were recorded).</template>
                 </p>
+                <section
+                  v-if="r.testFileTimings?.length"
+                  class="cr-test-timings"
+                  aria-label="Slow test files"
+                >
+                  <h4>Slow test files</h4>
+                  <p class="cr-count">
+                    Per-file totals include hook time in that file; they are not the sum of
+                    individual cases.
+                  </p>
+                  <pre class="cr-mono-block">{{
+                    formatSlowestTestFiles(r.testFileTimings, 10)
+                  }}</pre>
+                </section>
+                <section v-if="testCasesLoading.has(r.id)" class="cr-test-timings" aria-busy="true">
+                  <p class="cr-count">Loading slow test cases…</p>
+                </section>
+                <section v-else-if="testCasesError.has(r.id)" class="cr-test-timings" role="status">
+                  <p class="cr-err">{{ testCasesError.get(r.id) }}</p>
+                </section>
+                <section
+                  v-else-if="(testCasesByRun.get(r.id) ?? []).length"
+                  class="cr-test-timings"
+                  aria-label="Slow test cases"
+                >
+                  <h4>Slow test cases · includes per-test hooks</h4>
+                  <p class="cr-count">
+                    Case duration includes its beforeEach and afterEach hooks. File totals also
+                    include suite-level hooks and other module work.
+                  </p>
+                  <table class="cr-table">
+                    <thead>
+                      <tr>
+                        <th>Duration</th>
+                        <th>Result</th>
+                        <th>Test</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(tc, idx) in testCasesByRun.get(r.id)" :key="idx">
+                        <td>{{ fmtDuration(tc.durationMs) }}</td>
+                        <td>
+                          {{ tc.result
+                          }}<template v-if="tc.retry > 0"> · retry {{ tc.retry }}</template>
+                        </td>
+                        <td class="mono cr-wrap">{{ tc.file }} › {{ tc.name }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
                 <p v-if="r.isolationNote" class="cr-isolation" data-test-id="isolation-note">
                   Isolation re-run: {{ r.isolationNote }}. A pass alone does not prove a flake under
                   load.
@@ -620,5 +712,22 @@ function outcomeLabel(r: CheckRunRow): string {
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+.cr-test-timings {
+  margin-top: 12px;
+}
+.cr-test-timings h4 {
+  font-size: 13px;
+  margin: 0 0 6px;
+}
+.cr-mono-block {
+  font-family: var(--mono);
+  font-size: 12px;
+  margin: 0;
+  white-space: pre-wrap;
+}
+.cr-wrap {
+  white-space: normal;
+  word-break: break-word;
 }
 </style>
