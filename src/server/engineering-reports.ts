@@ -22,19 +22,64 @@ const words = (text: string): number =>
 const reportDir = (config: RepoOSConfig, taskId: string) =>
   join(config.root, config.workDir || "work", "engineering-reports", taskId);
 
-export function listEngineeringReports(config: RepoOSConfig, taskId: string): EngineeringReport[] {
+export interface EngineeringReportLoad {
+  reports: EngineeringReport[];
+  /** Unreadable or malformed report files, named so callers can surface them. */
+  errors: string[];
+}
+
+function isEngineeringReport(value: unknown): value is EngineeringReport {
+  if (!value || typeof value !== "object") return false;
+  const report = value as Record<string, unknown>;
+  return (
+    typeof report.taskId === "string" &&
+    typeof report.round === "number" &&
+    Number.isInteger(report.round) &&
+    report.round > 0 &&
+    typeof report.at === "string" &&
+    typeof report.agent === "string" &&
+    typeof report.model === "string" &&
+    typeof report.branch === "string" &&
+    typeof report.baseSha === "string" &&
+    typeof report.sourceSha === "string" &&
+    typeof report.wordCount === "number" &&
+    typeof report.markdown === "string"
+  );
+}
+
+/**
+ * Read every stored report for a task, keeping malformed files visible instead
+ * of silently dropping them. A corrupt round must never look like an absent
+ * one: callers surface `errors` and fail closed where history matters.
+ */
+export function loadEngineeringReports(
+  config: RepoOSConfig,
+  taskId: string,
+): EngineeringReportLoad {
   const dir = reportDir(config, taskId);
-  if (!existsSync(dir)) return [];
-  return readdirSync(dir)
+  if (!existsSync(dir)) return { reports: [], errors: [] };
+  const errors: string[] = [];
+  const reports = readdirSync(dir)
     .filter((name) => /^round-\d+\.json$/.test(name))
     .sort((a, b) => Number(a.match(/\d+/)?.[0]) - Number(b.match(/\d+/)?.[0]))
     .flatMap((name) => {
       try {
-        return [JSON.parse(readFileSync(join(dir, name), "utf8")) as EngineeringReport];
-      } catch {
+        const parsed: unknown = JSON.parse(readFileSync(join(dir, name), "utf8"));
+        if (!isEngineeringReport(parsed)) {
+          errors.push(`${name}: not a valid engineering report`);
+          return [];
+        }
+        return [parsed];
+      } catch (error) {
+        errors.push(`${name}: ${(error as Error).message}`);
         return [];
       }
     });
+  return { reports, errors };
+}
+
+export function listEngineeringReports(config: RepoOSConfig, taskId: string): EngineeringReport[] {
+  return loadEngineeringReports(config, taskId).reports;
 }
 
 export function readEngineeringReport(
@@ -55,8 +100,15 @@ export async function finalizeEngineeringReport(args: {
   model: string;
   baseSha: string;
   sourceSha: string;
+  /**
+   * Round this call is retrying, when the previous handoff never completed.
+   * A fresh engineering round (for example after review feedback) passes
+   * nothing even when its source tree is unchanged, so it gets its own
+   * immutable report instead of reusing or failing on the earlier one.
+   */
+  retryRound?: number;
 }): Promise<{ report: EngineeringReport | null; error?: string }> {
-  const { config, taskId, workdir, branch, agent, model, baseSha, sourceSha } = args;
+  const { config, taskId, workdir, branch, agent, model, baseSha, sourceSha, retryRound } = args;
   const dir = reportDir(config, taskId);
   const draftPath = join(workdir, config.cacheDir, "engineering-report-drafts", `${taskId}.md`);
   if (!existsSync(draftPath))
@@ -149,15 +201,17 @@ export async function finalizeEngineeringReport(args: {
       error: `Engineering report including its generated change summary must contain at most 1,000 words (final report has ${reportWords}); shorten the draft and request handoff again.`,
     };
   const reports = listEngineeringReports(config, taskId);
-  const sameSource = reports.find((report) => report.sourceSha === sourceSha);
-  if (sameSource) {
-    if (sameSource.markdown.startsWith(narrative + "\n\n## Generated change summary"))
-      return { report: sameSource };
-    return {
-      report: null,
-      error: `An immutable engineering report already exists for checked commit ${sourceSha}; change the source before creating another round.`,
-    };
-  }
+  // Only an incomplete handoff may reuse its report. Everything else — a new
+  // round after review feedback included — appends an immutable round, even
+  // when the source tree did not move.
+  const retried =
+    retryRound === undefined ? null : reports.find((report) => report.round === retryRound);
+  if (
+    retried &&
+    retried.sourceSha === sourceSha &&
+    retried.markdown === `${narrative}\n\n${summary}`
+  )
+    return { report: retried };
   const round = reports.reduce((max, report) => Math.max(max, report.round), 0) + 1;
   const report: EngineeringReport = {
     taskId,

@@ -121,4 +121,133 @@ describe("engineering report history", () => {
     wrapper.unmount();
     vi.unstubAllGlobals();
   });
+
+  it("shows a load error instead of an empty report history", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    vi.stubGlobal(
+      "EventSource",
+      class {
+        addEventListener(): void {}
+        close(): void {}
+      },
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index")) return json({ tasks: [task], counts: {}, taskCount: 1 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/engineering-reports"))
+          return {
+            ok: false,
+            status: 500,
+            statusText: "Server Error",
+            json: async () => ({ error: "Engineering report history is unreadable: round-2.json" }),
+          };
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        throw new Error(`unexpected fetch: ${url}`);
+      }),
+    );
+
+    const repo = useRepoStore();
+    await repo.init();
+    const ui = useUiStore();
+    ui.open(task);
+    ui.activeTab = "agent";
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    await router.push("/");
+    await router.isReady();
+    const wrapper = mount(TaskDrawer, {
+      global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
+    });
+    for (let i = 0; i < 5; i++) await nextTick();
+
+    await wrapper.get('[data-test-id="engineering-report-tab"]').trigger("click");
+    expect(wrapper.get('[data-test-id="engineering-report-error"]').text()).toContain(
+      "Engineering report history is unreadable",
+    );
+    expect(wrapper.text()).not.toContain("No engineering reports have been recorded");
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
+
+  it("ignores a slow report response for a previously selected task", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    vi.stubGlobal(
+      "EventSource",
+      class {
+        addEventListener(): void {}
+        close(): void {}
+      },
+    );
+    const other: Task = { ...task, id: "1008", title: "Second task", path: "work/1008-fixture.md" };
+    type ReportResponse = {
+      ok: boolean;
+      status: number;
+      json: () => Promise<unknown>;
+    };
+    let resolveFirst!: (value: ReportResponse) => void;
+    const firstResponse = new Promise<ReportResponse>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const requested: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request) => {
+        const url = String(input);
+        requested.push(url);
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 2, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({ tasks: [task, other], counts: {}, taskCount: 2 });
+        if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.includes("/api/tasks/1007/engineering-reports")) return firstResponse;
+        if (url.includes("/api/tasks/1008/engineering-reports"))
+          return json({
+            ok: true,
+            reports: [
+              { ...reports[0]!, taskId: "1008", round: 7, markdown: "Second task report body." },
+            ],
+          });
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        throw new Error(`unexpected fetch: ${url}`);
+      }),
+    );
+
+    const repo = useRepoStore();
+    await repo.init();
+    const ui = useUiStore();
+    ui.open(task);
+    ui.activeTab = "agent";
+    const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    await router.push("/");
+    await router.isReady();
+    const wrapper = mount(TaskDrawer, {
+      global: { plugins: [pinia, router], stubs: { teleport: true, Transition: true } },
+    });
+    for (let i = 0; i < 5; i++) await nextTick();
+    await wrapper.get('[data-test-id="engineering-report-tab"]').trigger("click");
+
+    ui.open(other);
+    for (let i = 0; i < 10; i++) await nextTick();
+    expect(requested).toContain("/api/tasks/1008/engineering-reports");
+    expect(wrapper.text()).toContain("Second task report body.");
+
+    resolveFirst(
+      await json({
+        ok: true,
+        reports: [{ ...reports[0]!, markdown: "Stale first task report body." }],
+      }),
+    );
+    for (let i = 0; i < 5; i++) await nextTick();
+
+    expect(wrapper.text()).toContain("Second task report body.");
+    expect(wrapper.text()).not.toContain("Stale first task report body.");
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+  });
 });

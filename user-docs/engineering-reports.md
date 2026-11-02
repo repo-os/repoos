@@ -4,7 +4,8 @@ RepoOS stores one immutable engineering report per successful engineer handoff a
 `work/engineering-reports/<task-id>/round-<n>.json`. The artifact travels with
 the task branch and remains in the repository after close-out. A later fix after
 review feedback creates another numbered report; it never overwrites an earlier
-round.
+round, even when the new round did not change source files. Only a retry of an
+interrupted handoff reuses the report already written for that attempt.
 
 The engineer writes a draft under the worktree cache directory at
 `.repoos/engineering-report-drafts/<task-id>.md`. RepoOS finalizes it only after
@@ -28,4 +29,6 @@ status, and deterministic additions/deletions; engineers must not author those
 counts. Report metadata records round, time, coding agent, model, branch, base
 tree, and checked source commit. Review prompts include the newest report and
 ask reviewers to consider the rationale, experiments, and stated limitations.
-The Dev tab's Report view lists rounds and opens the selected report.
+The Dev tab's Report view lists rounds and opens the selected report. If a stored
+round cannot be read, the Report view and the reviewer prompt show the error
+instead of quietly hiding that round or presenting an older one as current.
