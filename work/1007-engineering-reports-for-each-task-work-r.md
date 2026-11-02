@@ -2,7 +2,7 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/engineering-reports-for-each-task-work-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T14:53:40Z"
+updated_at: "2026-11-02T14:54:03Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -211,3 +211,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:53:39Z · status active→review
 - 2026-11-02T14:53:39Z · message_delivered: 2 message(s)
 - 2026-11-02T14:53:40Z · note: handoff requested (cli)
+- 2026-11-02T14:54:03Z · status active→review
