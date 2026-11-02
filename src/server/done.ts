@@ -41,6 +41,7 @@ import { getGitWorker } from "./git-worker.js";
 
 export interface CheckSummary {
   testFileTimings?: import("../core/test-file-timings.js").TestFileTiming[];
+  testCaseTimings?: import("../core/test-case-timings.js").TestCaseTiming[];
   ok: boolean;
   /** Failing close-out stage — "build" | "check". */
   stage?: string;

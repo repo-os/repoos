@@ -331,8 +331,10 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "checks timings",
-        usage: "checks timings",
-        desc: "Show recent check durations and the slowest test files",
+        usage:
+          "checks timings [--tests] [--run-id ID] [--recent-runs N] [--limit N] [--offset N] [--json]",
+        desc: "Recent check durations, slowest test files, and slow individual test cases",
+        flags: "--tests · --run-id ID · --recent-runs N · --limit N · --offset N · --json",
       },
       {
         name: "checks slots",

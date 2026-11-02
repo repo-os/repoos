@@ -41,3 +41,39 @@ export const getCheckRuns: RouteHandler = (ctx, req, res) => {
     activeRuns: ctx.taskChecks?.runningRuns() ?? [],
   });
 };
+
+/** Slowest individual test cases for one run or recent runs (#1002). */
+export const getCheckRunTestCases: RouteHandler = (ctx, req, res) => {
+  let runId: number | undefined;
+  let recentRuns: number | undefined;
+  let limit: number | undefined;
+  let offset: number | undefined;
+  try {
+    const url = new URL(req.url ?? "/", "http://localhost");
+    const runRaw = url.searchParams.get("runId") ?? url.searchParams.get("run");
+    if (runRaw) {
+      const parsed = Number.parseInt(runRaw, 10);
+      if (Number.isFinite(parsed) && parsed > 0) runId = parsed;
+    }
+    const recentRaw = url.searchParams.get("recentRuns") ?? url.searchParams.get("recent");
+    if (recentRaw) {
+      const parsed = Number.parseInt(recentRaw, 10);
+      if (Number.isFinite(parsed) && parsed > 0) recentRuns = parsed;
+    }
+    const limitRaw = url.searchParams.get("limit");
+    if (limitRaw) {
+      const parsed = Number.parseInt(limitRaw, 10);
+      if (Number.isFinite(parsed) && parsed > 0) limit = parsed;
+    }
+    const offsetRaw = url.searchParams.get("offset");
+    if (offsetRaw) {
+      const parsed = Number.parseInt(offsetRaw, 10);
+      if (Number.isFinite(parsed) && parsed >= 0) offset = parsed;
+    }
+  } catch {
+    /* defaults */
+  }
+  const store = getCheckStore(ctx.config.root, ctx.config.cacheDir);
+  const result = store.listSlowTestCases({ runId, recentRuns, limit, offset });
+  return json(res, 200, { ok: true, ...result });
+};

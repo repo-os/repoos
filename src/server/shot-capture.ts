@@ -152,6 +152,7 @@ export async function captureEntryPage(
 
 /** In-flight captures, so duplicate review transitions never double-run. */
 const inFlight = new Set<string>();
+const captureWaiters = new Map<string, Set<() => void>>();
 
 /** Shared task-level reservation for local and runner browser evidence jobs. */
 export function reserveBrowserCapture(taskId: string): boolean {
@@ -161,7 +162,34 @@ export function reserveBrowserCapture(taskId: string): boolean {
 }
 
 export function releaseBrowserCapture(taskId: string): void {
-  inFlight.delete(taskId);
+  if (!inFlight.delete(taskId)) return;
+  const waiters = captureWaiters.get(taskId);
+  captureWaiters.delete(taskId);
+  for (const resolve of waiters ?? []) resolve();
+}
+
+/** Wait for the current capture to finish; callers must re-check/re-plan after waking. */
+export function waitForBrowserCapture(taskId: string, timeoutMs = 120_000): Promise<boolean> {
+  if (!inFlight.has(taskId)) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (released: boolean): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      const waiters = captureWaiters.get(taskId);
+      waiters?.delete(onRelease);
+      if (waiters?.size === 0) captureWaiters.delete(taskId);
+      resolve(released);
+    };
+    const onRelease = (): void => finish(true);
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    const waiters = captureWaiters.get(taskId) ?? new Set<() => void>();
+    waiters.add(onRelease);
+    captureWaiters.set(taskId, waiters);
+    // Close the race between the initial check and registering the waiter.
+    if (!inFlight.has(taskId)) onRelease();
+  });
 }
 
 /**
