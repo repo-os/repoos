@@ -3,12 +3,6 @@ id: "0997"
 title: "Agent-failed card text, dead click target, and unclickable restart modal"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the opencode agent timed out after 900s
-debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
-debug_tldr_at: "2026-11-02T19:47:48Z"
-debug_tldr_key: review-failed|the opencode agent timed out after 900s
 priority: p0
 area: web
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T23:54:06Z"
+updated_at: "2026-11-02T23:54:12Z"
 ---
 ## Problem
 
@@ -166,3 +160,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T19:47:25Z · note: review pass 1: failed — no usable report
 - 2026-11-02T19:47:25Z · needs_input
 - 2026-11-02T23:54:06Z · review_cli_override, review_model_override
+- 2026-11-02T23:54:12Z · needs_input (review-failed) cleared for review again by hello@repoos.org
