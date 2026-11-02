@@ -171,3 +171,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T12:13:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T12:13:14Z · note: handoff requested (cli)
 - 2026-11-02T12:15:13Z · status active→review
+- 2026-11-02T12:15:13Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
