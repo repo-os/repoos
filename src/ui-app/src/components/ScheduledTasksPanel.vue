@@ -315,22 +315,46 @@ function consumeShotEditorOpen(): void {
 
 watch(() => ui.scheduleEditorShotOpen, consumeShotEditorOpen);
 
+/**
+ * Deterministic rows for the `schedule:seeded` capture fixture (#1005), or
+ * null when no fixture is active. Read lazily (not once at mount): `repo`
+ * health lands in `App.onMounted`, which runs *after* this panel mounts, so a
+ * mount-time-only read misses the fixture on a cold capture load and the live
+ * fetch then wipes the seed — the capture's row selectors miss and the run
+ * times out. DevView survives the same race via polling; this panel has no
+ * poll, so the seed is (re-)applied when health lands and after the fetch.
+ */
+function previewSeededRows(): TaskSchedule[] | null {
+  if (!repo.health?.isPreviewBuild) return null;
+  return shotFixtureSchedules(readShotPreviewFixtureFromLocation(window.location));
+}
+
+function applyPreviewSeed(): boolean {
+  const rows = previewSeededRows();
+  if (!rows) return false;
+  repo.schedules = rows;
+  loading.value = false;
+  return true;
+}
+
+watch(
+  () => repo.health?.isPreviewBuild,
+  () => {
+    applyPreviewSeed();
+  },
+);
+
 onMounted(() => {
   // Preview captures seed deterministic rows via `?shotState=schedule:seeded`
   // (#1005, same early-return shape as DevView's `dev:failed`): a capture must
   // not depend on real `schedules/` rows existing on the preview board, and a
   // live fetch would overwrite the seeded rows right after they paint.
-  if (repo.health?.isPreviewBuild) {
-    const fixture = shotFixtureSchedules(readShotPreviewFixtureFromLocation(window.location));
-    if (fixture) {
-      repo.schedules = fixture;
-      loading.value = false;
-      consumeShotEditorOpen();
-      return;
-    }
+  if (applyPreviewSeed()) {
+    consumeShotEditorOpen();
+    return;
   }
   void repo.refreshSchedules().finally(() => {
-    loading.value = false;
+    if (!applyPreviewSeed()) loading.value = false;
   });
   consumeShotEditorOpen();
 });
