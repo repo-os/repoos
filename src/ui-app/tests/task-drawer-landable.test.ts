@@ -377,5 +377,8 @@ describe("review pass selection and identity (#1003)", () => {
     await flush();
     expect(wrapper.find(".review-card").text()).toContain("Latest selection details.");
     expect(wrapper.find(".review-card").text()).not.toContain("Older selection details.");
+    expect(wrapper.find(".verdict-callout").text()).toContain("Latest");
+    expect(wrapper.find(".verdict-callout").text()).not.toContain("Not latest");
+    expect(wrapper.findAll(".review-history-row")[0]?.classes()).toContain("is-selected");
   });
 });
