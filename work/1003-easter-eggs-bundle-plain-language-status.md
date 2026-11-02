@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-02T00:32:44Z"
+review_passes: 2
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
@@ -11,10 +13,8 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T00:32:44Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 last_check_failure: "repoos check at 2026-11-01T22:06:01.306Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control 2×2 panels (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:58741/); [missing-target] Review pass selection and freshness (target \"default\"): highlight .review-history-wrap matched nothing on /work?task=1003&tab=review (http://127.0.0.1:58741/work?shotState=drawer:landable)"
 dev_error_count: 1
 ---
@@ -279,3 +279,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T00:25:49Z · status active→review
 - 2026-11-02T00:25:49Z · note: Task body is underspecified: E5: missing Notes for AI; E6: missing Problem, Desired UX, Acceptance criteria, Notes for AI
 - 2026-11-02T00:32:44Z · note: review pass 2: needs some work
+
