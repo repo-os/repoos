@@ -19,6 +19,7 @@ import {
   localMachineName,
   resetCheckStore,
 } from "../../core/check-store.js";
+import type { TestCaseTiming } from "../../core/test-case-timings.js";
 import { previousFailedTestsForRun } from "../../commands/check.js";
 import { mainCheckoutRoot } from "../../core/git.js";
 
@@ -120,7 +121,7 @@ describe("check-run store", () => {
 
   it("keeps the slowest cases when the per-run history cap is reached (#1002)", () => {
     const { s } = store();
-    const testCaseTimings = Array.from({ length: 24_998 }, (_, i) => ({
+    const testCaseTimings: TestCaseTiming[] = Array.from({ length: 24_998 }, (_, i) => ({
       file: `suite-${i}.test.ts`,
       name: `case ${i}`,
       caseId: `case-${i}`,
