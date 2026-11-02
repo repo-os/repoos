@@ -3,6 +3,9 @@ id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
 status: active
+hold: true
+hold_reason: "#1009 actual remote upload still full; pause while mirror-base selection is corrected"
+hold_at: "2026-11-02T03:55:35.956Z"
 priority: p3
 area: web
 assigned_to: ai
@@ -410,3 +413,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T03:53:09Z · released
 - 2026-11-02T03:53:15Z · message_delivered: 1 message(s)
 - 2026-11-02T03:55:35Z · engineer stopped by request
+- 2026-11-02T03:55:35Z · held, held-reason, held-at
