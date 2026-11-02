@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T01:36:42Z"
+updated_at: "2026-11-02T01:38:09Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -117,33 +117,30 @@ Keep the selected pass highlight visible while its report is loading and after i
 ```json
 [
 {
-"label": "Mission Control 2×2 panels",
-"target": "default",
-"route": "/",
-"highlight": ".dash-grid",
-"steps": [
-{
-"waitFor": ".dash-grid"
-}
-]
+  "label": "Checks show stale heartbeat status",
+  "target": "default",
+  "route": "/checks?shotState=checks:waiting",
+  "highlight": ".check-slot"
 },
 {
-"label": "Agents tab with default and custom sections",
-"target": "default",
-"route": "/agents",
-"highlight": ".agents-tab-content"
+  "label": "Review pass history shows latest selection and reviewer",
+  "target": "default",
+  "route": "/work?task=9999&tab=review&shotState=drawer:reviewPasses",
+  "highlight": ".review-history-table"
 },
 {
-"label": "Review pass selection and freshness",
-"target": "default",
-"route": "/work?task=9999&tab=review",
-"highlight": ".review-history-wrap",
-"state": "drawer:reviewPasses",
-"steps": [
-{
-"waitFor": ".review-history-wrap"
-}
-]
+  "label": "Task card agent assignments preview on hover",
+  "target": "default",
+  "route": "/work?shotState=board:severalWorkingCards",
+  "highlight": "[data-test-id=\"task-agent-preview\"]",
+  "steps": [
+    {
+      "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+    },
+    {
+      "waitMs": 250
+    }
+  ]
 }
 ]
 ```
@@ -323,3 +320,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T01:36:00Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-02T01:36:07Z · needs_input
 - 2026-11-02T01:36:09Z · message_queued at 2026-11-02T01:36:09.769Z
+- 2026-11-02T01:38:09Z · body
