@@ -138,13 +138,12 @@ function activeCloseOutIds(config: RepoOSConfig): Set<string> {
 function gitRun(
   cwd: string,
   args: string[],
-  opts: { input?: string; timeout?: number } = {},
+  opts: { timeout?: number } = {},
 ): { status: number | null; stdout: string; stderr: string } {
   const run = spawnSync("git", args, {
     cwd,
     encoding: "utf8",
     timeout: opts.timeout ?? 8000,
-    input: opts.input,
   });
   return { status: run.status, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };
 }
@@ -185,10 +184,6 @@ function worktreeDirtyPaths(path: string): string[] | null {
     }
   }
   return paths;
-}
-
-function mergedBranchesInto(root: string, base: string): Set<string> {
-  return mergedBranches(root, base);
 }
 
 /** Resolve symlinks (macOS `/var` -> `/private/var`) so path containment checks line up. */
@@ -418,7 +413,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     });
   }
   const mergedIntoMain =
-    opts.mode === "full" ? mergedBranchesInto(root, mainBranch) : new Set<string>();
+    opts.mode === "full" ? mergedBranches(root, mainBranch) : new Set<string>();
 
   const retain = (entry: GcEntry): void => {
     report.retained.push(entry);
