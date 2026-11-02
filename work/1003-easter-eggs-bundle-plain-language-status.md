@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T05:06:36Z"
+updated_at: "2026-11-02T05:16:54Z"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
@@ -350,3 +350,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T04:53:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T04:53:44Z · message_delivered: 1 message(s)
 - 2026-11-02T05:06:36Z · body
+- 2026-11-02T05:16:54Z · handoff failed · remote validation failed: test failure: tests/git-maintenance.test.ts > commit-graph maintenance > removes stale index locks and keeps locks held by a live git process on mini — fix it in the feature branch and re-run the gate
