@@ -183,6 +183,16 @@ describe("engineering reports", () => {
     expect(loaded.errors).toHaveLength(2);
     expect(loaded.errors[0]).toContain("round-2.json");
     expect(loaded.errors[1]).toContain("round-3.json");
+
+    const mission = reviewMission(
+      { id: "T1", title: "test", body: "Spec", branch: "feat/report", extra: {} } as any,
+      {} as any,
+      root,
+      "main",
+      { root, cacheDir: ".repoos", workDir: "work", review: {} } as any,
+    );
+    expect(mission).toContain("REPORT HISTORY ERROR");
+    expect(mission).toContain("round-2.json");
   });
 
   it("requires every narrative section in the prescribed order", async () => {
