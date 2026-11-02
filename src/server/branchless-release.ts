@@ -43,14 +43,14 @@ type RunCandidate = (
   timeoutMs: number,
 ) => Promise<CandidateResult>;
 
-const DEFAULT_BRANCHLESS_RELEASE_TIMEOUT_MS = 60 * 60_000;
 const MAX_CHECK_OUTPUT_BYTES = 10 * 1024 * 1024;
 
-export function branchlessReleaseTimeoutMs(config: RepoOSConfig): number {
-  const configured = config.closeOut?.timeoutMs;
-  if (typeof configured === "number" && configured > 0) return configured;
-  if (configured === 0) return 0;
-  return DEFAULT_BRANCHLESS_RELEASE_TIMEOUT_MS;
+export function branchlessReleaseTimeoutMs(_config: RepoOSConfig): number {
+  // A branch-less CLI release runs synchronously on main. It has no merge job
+  // to retry, and a timeout used to leave the check tree alive while refusing
+  // the release. Let the full check finish; individual checks still report
+  // real failures and explicit cancellation remains available to the caller.
+  return 0;
 }
 
 function runCandidate(
@@ -63,6 +63,7 @@ function runCandidate(
     const child = spawn(cmd, args, {
       cwd: root,
       detached: process.platform !== "win32",
+      env: { ...process.env, REPOOS_CHECK_NO_TIMEOUTS: "1" },
       stdio: ["ignore", "pipe", "pipe"],
     });
     const stdout: Buffer[] = [];
@@ -120,7 +121,7 @@ export async function runCheckCandidates(
   candidates: string[][],
   root: string,
   execute: RunCandidate = runCandidate,
-  timeoutMs = DEFAULT_BRANCHLESS_RELEASE_TIMEOUT_MS,
+  timeoutMs = 0,
 ): Promise<CheckResult> {
   let last: CandidateResult | null = null;
   for (const [cmd, ...args] of candidates) {

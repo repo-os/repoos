@@ -85,7 +85,12 @@ export interface CommandResult {
  */
 export function runCommand(opts: RunCommandOptions): Promise<CommandResult> {
   const started = Date.now();
-  const timeoutMs = opts.timeoutMs && opts.timeoutMs > 0 ? opts.timeoutMs : undefined;
+  const timeoutMs =
+    process.env.REPOOS_CHECK_NO_TIMEOUTS === "1"
+      ? undefined
+      : opts.timeoutMs && opts.timeoutMs > 0
+        ? opts.timeoutMs
+        : undefined;
 
   return new Promise((resolve) => {
     let chunks = "";

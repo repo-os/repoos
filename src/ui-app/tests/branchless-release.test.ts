@@ -140,15 +140,15 @@ describe("releaseBranchless", () => {
 });
 
 describe("runCheckCandidates", () => {
-  it("uses the configured close-out budget for branch-less release checks", () => {
+  it("does not impose a wall-clock timeout on branch-less release checks", () => {
     expect(branchlessReleaseTimeoutMs({ closeOut: { timeoutMs: 7_200_000 } } as RepoOSConfig)).toBe(
-      7_200_000,
+      0,
     );
     expect(branchlessReleaseTimeoutMs({ closeOut: { timeoutMs: 0 } } as RepoOSConfig)).toBe(0);
-    expect(branchlessReleaseTimeoutMs({} as RepoOSConfig)).toBe(60 * 60_000);
+    expect(branchlessReleaseTimeoutMs({} as RepoOSConfig)).toBe(0);
   });
 
-  it("passes the configured budget to the check command", async () => {
+  it("passes the no-timeout setting to the check command", async () => {
     let seenTimeout = 0;
     await runCheckCandidates(
       [["repoos"]],
@@ -157,9 +157,9 @@ describe("runCheckCandidates", () => {
         seenTimeout = timeoutMs;
         return { status: 0, stdout: "", stderr: "", missingExecutable: false };
       },
-      7_200_000,
+      0,
     );
-    expect(seenTimeout).toBe(7_200_000);
+    expect(seenTimeout).toBe(0);
   });
 
   it("falls back only when the preferred executable is missing", async () => {

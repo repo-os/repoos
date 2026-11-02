@@ -615,11 +615,8 @@ describe("control API CLI", () => {
     killSpawns(fx);
   }, 30_000);
 
-  it("keeps the branch-less done request open for the configured release check budget", async () => {
+  it("does not time out the branch-less done request", async () => {
     const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
-    const closeOutTimeout = vi
-      .spyOn(RepoOsApi.prototype, "closeOutTimeoutMs", "get")
-      .mockReturnValue(600_000);
     const request = vi.spyOn(RepoOsApi.prototype, "request").mockResolvedValue({
       status: 400,
       body: { error: "check failed" },
@@ -630,10 +627,9 @@ describe("control API CLI", () => {
       "POST",
       "/api/tasks/1009/done",
       { commitDirty: false },
-      { timeoutMs: 660_000 },
+      { timeoutMs: 0 },
     );
     err.mockRestore();
-    closeOutTimeout.mockRestore();
     health.mockRestore();
     request.mockRestore();
   });
