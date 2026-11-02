@@ -151,8 +151,8 @@ function queueWait(ms: number): string {
         slot {{ holder.slot }} ·
         <template v-if="holder.pid"
           >{{ holder.meta?.taskId ? `#${holder.meta.taskId}` : "check" }} PID {{ holder.pid }} ·
-          {{ holder.dead ? "dead, reclaiming" : holder.wedged ? "wedged" : "alive" }} · held
-          {{ formatDuration(holder.ageMs) }} · heartbeat
+          {{ holder.dead ? "dead, reclaiming" : holder.wedged ? "No recent heartbeat" : "alive" }} ·
+          held {{ formatDuration(holder.ageMs) }} · last heartbeat
           {{ formatDuration(holder.heartbeatAgeMs) }} ago</template
         ><template v-else>free</template>
       </span>
