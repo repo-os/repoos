@@ -13576,12 +13576,13 @@
 .delete-confirm-actions button:hover:not(:disabled),
 .restart-actions button:hover:not(:disabled) {
   filter: brightness(1.12);
-  /* #1005 round 3: brightness alone shifts outlined buttons ~5/255 — invisible
-     in captures. A wash in the action's own text color plus a brightened
-     border reads on every variant (outline Cancel, destructive confirm) while
-     keeping each action's hue identity (red text stays red). */
-  border-color: var(--border-bright);
-  background-color: color-mix(in srgb, currentColor 14%, transparent);
+  /* #1005 round 4: brightness alone shifts outlined buttons ~5/255 — invisible
+     in captures, and a border-bright wash fades the outline instead of
+     strengthening it. Tint in the action's own text color at 22% plus a
+     currentColor border reads on every variant (outline Cancel, destructive
+     confirm) while keeping each action's hue identity (red text stays red). */
+  border-color: currentColor;
+  background-color: color-mix(in srgb, currentColor 22%, transparent);
 }
 .cc-modal-actions button:focus-visible,
 .delete-confirm-actions button:focus-visible,
