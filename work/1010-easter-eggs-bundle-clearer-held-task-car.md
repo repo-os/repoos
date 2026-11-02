@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-02T13:51:45Z"
-review_passes: 1
 id: 1010
 title: "Easter eggs bundle: clearer held task cards"
 type: chore
@@ -12,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-clearer-held-task-car
 model_override: gpt-6.1-terra
 created_at: "2026-11-02T04:38:23Z"
-last_check_failure: "repoos check at 2026-11-02T13:18:45.518Z: repoos check failed: rendered-contrast — timed out — timed out after 600s"
+updated_at: "2026-11-02T13:49:12Z"
 ---
 ## Problem
 Held task cards show a yellow Held chip and repeat “HELD” at the lower left. Their green “Restart work” button is also misleading: a held task is intentionally inert and should not look like ordinary restartable work.
@@ -39,18 +37,6 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - In the review tab's engineering report view, place the report-pass table above the report content, near the Report/Chat toggle. It must not end up below the report at the bottom of a long panel. Use the attached report-layout screenshot as reference.
 - Add or update UI coverage for the modal spacing, task action order, and report-table position. Verify responsive layout and preserve keyboard accessibility.
 
-## Shots
-```json
-[
-{
-"label": "Held task card with release action",
-"target": "default",
-"route": "/work",
-"highlight": ".tc-held",
-"state": "card:held"
-}
-]
-```
 
 ## Screenshots
 
@@ -72,14 +58,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T12:46:31Z · model_override
 - 2026-11-02T12:46:35Z · status inbox→ready
 - 2026-11-02T12:46:41Z · status ready→active, branch
-- 2026-11-02T12:48:23Z · body
-- 2026-11-02T12:55:46Z · message_queued at 2026-11-02T12:55:46.740Z
-- 2026-11-02T12:55:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-02T12:55:54Z · body
-- 2026-11-02T12:58:05Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-02T12:58:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-02T12:58:06Z · message_delivered: 1 message(s)
-- 2026-11-02T13:25:37Z · body
 - 2026-11-02T13:49:12Z · status active→review
-- 2026-11-02T13:51:45Z · note: review pass 1: good to go
-
