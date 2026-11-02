@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T17:25:33.480Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
@@ -14,7 +16,6 @@ created_at: "2026-11-01T15:50:52Z"
 updated_at: "2026-11-02T17:11:05Z"
 review_rounds: 1
 review_passes: 1
-last_check_failure: "repoos check at 2026-11-02T16:10:56.482Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Worktree cleanup preview separates safe candidates, retained reasons, and external worktrees (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:50331/?shotState=system%3AworktreeGc)"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -135,3 +136,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T17:07:17Z · note: handoff requested (ui-review)
 - 2026-11-02T17:10:03Z · body
 - 2026-11-02T17:11:05Z · CTO nudge: held — handoff gate is running
+
