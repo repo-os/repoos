@@ -23,7 +23,7 @@ import {
  * funnels through it; the shared body below is what both entry points run.
  */
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
@@ -81,6 +81,7 @@ import {
   branchAddsBuildableProjectMarker,
 } from "../core/check-buildable-project.js";
 import { buildLastCheckFailureSummary } from "../core/check-failure-summary.js";
+import { finalizeEngineeringReport } from "./engineering-reports.js";
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
@@ -815,6 +816,54 @@ async function runHandoffFinalization(
     }
     const drift = await describeStateDrift(workdir, config, task.id, before, after);
     if (drift) return fail("check", drift);
+
+    // Reports are optional for legacy tasks. New engineer runs leave a draft;
+    // finalize it only after the exact source commit passed the gate.
+    const reportDraft = join(
+      workdir,
+      config.cacheDir,
+      "engineering-report-drafts",
+      `${task.id}.md`,
+    );
+    if (existsSync(reportDraft)) {
+      const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
+      const baseResult = await runGit(workdir, ["merge-base", baseBranch, before.head], 10_000);
+      const codingAgent = resolveAgentForTask(config, task);
+      if (baseResult.status !== 0 || !codingAgent) {
+        return fail("review", "could not resolve report base tree or coding agent metadata");
+      }
+      const finalized = await finalizeEngineeringReport({
+        config: { ...config, root: workdir },
+        taskId: task.id,
+        workdir,
+        branch: task.branch,
+        agent: codingAgent.cli,
+        model: codingAgent.model,
+        baseSha: baseResult.stdout.trim(),
+        sourceSha: before.head,
+      });
+      if (!finalized.report)
+        return fail("review", finalized.error ?? "engineering report could not be finalized");
+      rmSync(reportDraft, { force: true });
+      const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${finalized.report.round}.json`;
+      const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
+      if (staged.status !== 0)
+        return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
+      const reportCommit = await runGit(
+        workdir,
+        [
+          "commit",
+          "-m",
+          `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
+        ],
+        20_000,
+      );
+      if (reportCommit.status !== 0)
+        return fail(
+          "review",
+          `could not commit finalized engineering report: ${concise(reportCommit)}`,
+        );
+    }
 
     if (!opts.skipChecks) {
       // #0734: use the CANONICAL task body for declarations (task.body), not a

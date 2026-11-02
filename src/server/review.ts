@@ -31,7 +31,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
-import { commitTaskFile } from "../core/git.js";
+import { commitTaskFile, runGit } from "../core/git.js";
 import { MAX_AUTO_REVIEW_ROUNDS, needsInputClearsOnSuccessfulReview } from "../core/needs-input.js";
 import {
   EVIDENCE_GAP_ONLY_MARKER,
@@ -94,6 +94,7 @@ import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
 import { resolvedUiVerification } from "../core/ui-verification-config.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
+import { listEngineeringReports } from "./engineering-reports.js";
 import {
   gatherReviewVerification,
   gatherReviewVerificationWithoutWorktree,
@@ -278,6 +279,8 @@ export interface ReviewMissionOptions {
    * space. `null` means the server could not compute it for this pass.
    */
   landable?: LandableResult | null;
+  /** Server verified report source consistency with the code under review. */
+  engineeringReportMatches?: boolean;
 }
 
 /** One-line provenance for a command-target capture (#0765), for the mission summary. */
@@ -435,6 +438,26 @@ export function landablePromptSection(
  * The mission handed to the review agent. Deliberately narrow: what to look
  * at, what to write, and a hard boundary on what it may not touch.
  */
+async function engineeringReportMatchesReviewTree(
+  config: RepoOSConfig,
+  task: Task,
+  workdir: string,
+): Promise<boolean> {
+  const report = listEngineeringReports({ ...config, root: workdir }, task.id).at(-1);
+  if (!report) return false;
+  const changed = await runGit(
+    workdir,
+    ["diff", "--name-only", `${report.sourceSha}..HEAD`],
+    10_000,
+  );
+  if (changed.status !== 0) return false;
+  const reportDir = `${config.workDir || "work"}/engineering-reports/${task.id}/`;
+  return changed.stdout
+    .split("\n")
+    .filter(Boolean)
+    .every((path) => path.startsWith(reportDir) || path === task.path);
+}
+
 export function reviewMission(
   task: Task,
   agent: Agent,
@@ -454,6 +477,8 @@ export function reviewMission(
   const repeatedClassThreshold = reviewHumanFlagThreshold(config);
   const repeatedClasses = priorPasses >= repeatedClassThreshold;
   const earlierReportsDir = join(config.root, config.cacheDir || ".repoos", "reviews", task.id);
+  const engineeringReports = listEngineeringReports({ ...config, root: workdir }, task.id);
+  const engineeringReport = engineeringReports.at(-1);
   const parts: string[] = [];
   if (role) parts.push(role, "");
   parts.push(
@@ -486,6 +511,24 @@ export function reviewMission(
     spec || "(the task file has no body)",
     "",
     ...(storyContext ? [storyContext, ""] : []),
+    "## Engineering report (required review context)",
+    "",
+    ...(engineeringReport
+      ? [
+          `Engineering round ${engineeringReport.round} · ${engineeringReport.at} · ${engineeringReport.agent} · ${engineeringReport.model}`,
+          `Report source commit: \`${engineeringReport.sourceSha}\`; report base tree: \`${engineeringReport.baseSha}\`.`,
+          options.engineeringReportMatches === false
+            ? "STALE REPORT: code has changed since this report's source commit. Do not treat its rationale or change summary as evidence; identify the missing current-round report in Edge cases."
+            : "The server verified that this report source matches the reviewed code tree, apart from report and task bookkeeping.",
+          "Read the report below and consider the engineer's rationale, experiments, blockers, and limitations in your verdict.",
+          "Confirm the source commit is the reviewed implementation tree; if the report is missing or does not match the reviewed diff, say so under Edge cases and do not treat its claims as evidence.",
+          "",
+          engineeringReport.markdown,
+        ]
+      : [
+          "No engineering report is available for this task. This is allowed for legacy work; review the diff and state that rationale/experiment context was unavailable.",
+        ]),
+    "",
     "## Check gate at handoff",
     "",
     `Handoff check outcome: **${handoffCheck}**.`,
@@ -1180,6 +1223,11 @@ export class ReviewManager {
         handoffCheck: handoffCheckOutcomeForTask(this.config, task.id),
         uiVerification: await taskUiVerificationMode(this.config, task),
         landable,
+        engineeringReportMatches: await engineeringReportMatchesReviewTree(
+          this.config,
+          task,
+          workdir,
+        ),
       });
       const uiNote = await this.uiVerificationSummary(task);
       const mission = uiNote
@@ -1260,6 +1308,11 @@ export class ReviewManager {
         uiVerification: await taskUiVerificationMode(this.config, task),
         deltaSinceApprovedSha: approvedSha,
         landable,
+        engineeringReportMatches: await engineeringReportMatchesReviewTree(
+          this.config,
+          task,
+          workdir,
+        ),
       });
       const uiNote = await this.uiVerificationSummary(task);
       const mission = uiNote

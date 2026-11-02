@@ -1,0 +1,30 @@
+# Engineering reports
+
+RepoOS stores one immutable engineering report per successful engineer handoff at
+`work/engineering-reports/<task-id>/round-<n>.json`. The artifact travels with
+the task branch and remains in the repository after close-out. A later fix after
+review feedback creates another numbered report; it never overwrites an earlier
+round.
+
+The engineer writes a draft under the worktree cache directory at
+`.repoos/engineering-report-drafts/<task-id>.md`. RepoOS finalizes it only after
+the handoff check passes and confirms that the checked source commit has not
+changed. A missing draft remains reviewable for legacy tasks. A draft over 1,000
+words or missing a required section blocks that handoff with an actionable error;
+shorten or complete the draft and hand off again. Aim for 500–600 words.
+
+Required narrative sections, in order:
+
+1. `## TL;DR`
+2. `## Work and rationale`
+3. `## Approaches tried`
+4. `## Challenges and blockers`
+5. `## Key learnings`
+
+The server appends `## Generated change summary`, computed from the handoff base
+and checked source commit using Git rename detection. It includes changed paths,
+status, and deterministic additions/deletions; engineers must not author those
+counts. Report metadata records round, time, coding agent, model, branch, base
+tree, and checked source commit. Review prompts include the newest report and
+ask reviewers to consider the rationale, experiments, and stated limitations.
+The Dev tab's Report view lists rounds and opens the selected report.
