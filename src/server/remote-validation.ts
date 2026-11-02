@@ -228,7 +228,7 @@ export function mirrorProbeCommand(mirrorPath: string): string {
   const mirror = remotePathShellWord(mirrorPath);
   const refs = [MIRROR_CANDIDATE_REF, MIRROR_SCOPE_REF];
   const checks = refs
-    .map((r) => `git -C ${mirror} rev-parse --verify --quiet ${shellQuote(r)} 2>/dev/null`)
+    .map((r) => `git -C ${mirror} rev-parse --verify --quiet ${shellQuote(r)} 2>/dev/null || true`)
     .join("; ");
   return `if [ -d ${mirror} ]; then echo MIRROR=1; ` + `${checks}; else echo MIRROR=0; fi`;
 }

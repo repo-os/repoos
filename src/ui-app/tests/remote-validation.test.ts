@@ -1462,12 +1462,31 @@ describe("remote mirror helpers (#0717)", () => {
     const mirrorPath = remoteMirrorPath("/Users/x/a repo; [test]");
     const absoluteMirror = join(home, mirrorPath.slice(2));
     try {
-      mkdirSync(absoluteMirror, { recursive: true });
-      const probe = execFileSync("sh", ["-c", `${mirrorProbeCommand(mirrorPath)}; true`], {
+      execFileSync("git", ["init", "--bare", absoluteMirror], { stdio: "ignore" });
+      const blobSha = execFileSync(
+        "git",
+        ["--git-dir", absoluteMirror, "hash-object", "-w", "--stdin"],
+        {
+          encoding: "utf8",
+          input: "candidate ref only",
+        },
+      ).trim();
+      execFileSync("git", [
+        "--git-dir",
+        absoluteMirror,
+        "update-ref",
+        "refs/repoos/candidate",
+        blobSha,
+      ]);
+
+      const probe = execFileSync("sh", ["-c", mirrorProbeCommand(mirrorPath)], {
         encoding: "utf8",
         env: { ...process.env, HOME: home },
       });
-      expect(probe).toContain("MIRROR=1");
+      const state = parseMirrorProbeOutput(probe);
+      expect(state.exists).toBe(true);
+      expect(state.refs["refs/repoos/candidate"]).toBe(blobSha);
+      expect(state.refs["refs/repoos/scope"]).toBeUndefined();
 
       const args = validateScriptArgs(
         "~/.bundle",
