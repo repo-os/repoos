@@ -3,9 +3,12 @@ import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { finalizeEngineeringReport, listEngineeringReports } from "../engineering-reports.js";
-import { engineeringReportMatchesReviewTree, reviewMission } from "../review.js";
-import { canReuseEngineeringReport } from "../handoff.js";
+import {
+  finalizeEngineeringReport,
+  listEngineeringReports,
+} from "../../server/engineering-reports.js";
+import { engineeringReportMatchesReviewTree, reviewMission } from "../../server/review.js";
+import { canReuseEngineeringReport } from "../../server/handoff.js";
 
 const narrative = `## TL;DR\nRecorded a concise summary.\n\n## Work and rationale\nChanged the implementation to preserve task context.\n\n## Approaches tried\nCompared the existing persistence patterns and selected tracked artifacts.\n\n## Challenges and blockers\nThe handoff gate must bind this report to the checked source tree.\n\n## Key learnings\nKeep generated Git facts separate from engineer-authored narrative.`;
 
