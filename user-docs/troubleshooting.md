@@ -144,7 +144,7 @@ normal — and it is never honored when `NODE_ENV=production`.
 If a task you moved to `review` is back in `active`, that's usually one of two
 deliberate self-corrections:
 
-- the **reviewer auto-bounced** it with findings (new commits landed while it
+- the **reviewer auto-bounced** it with findings (new commits were added while it
   was in review, or the first review wasn't "good to go"), or
 - a **merge conflict** was handed to an engineer to repair in the branch.
 

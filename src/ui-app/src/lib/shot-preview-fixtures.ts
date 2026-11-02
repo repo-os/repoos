@@ -1192,6 +1192,47 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         deletions: 8,
       });
       break;
+    case "drawer:reviewPasses": {
+      ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
+      const latestAt = "2026-11-02T10:00:00.000Z";
+      const olderAt = "2026-11-01T10:00:00.000Z";
+      repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        running: false,
+        enabled: true,
+        lines: [],
+        report: {
+          id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          at: latestAt,
+          agent: "reviewer",
+          cli: "codex",
+          model: "gpt-5",
+          branch: "feat/shot-fixture",
+          state: "ok",
+          markdown: "## Verdict\ngood to go.\n\nThe latest pass is ready to merge.\n",
+        },
+        history: [
+          {
+            pass: 1,
+            at: olderAt,
+            state: "ok",
+            verdict: "good to go",
+            agent: "reviewer",
+            cli: "cursor",
+            model: "composer",
+          },
+          {
+            pass: 2,
+            at: latestAt,
+            state: "ok",
+            verdict: "good to go",
+            agent: "reviewer",
+            cli: "codex",
+            model: "gpt-5",
+          },
+        ],
+      };
+      break;
+    }
     case "drawer:statusReviewFailed":
       ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
       repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID] = {

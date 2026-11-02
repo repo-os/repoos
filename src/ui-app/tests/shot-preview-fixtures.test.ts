@@ -496,6 +496,7 @@ describe("shot preview board fixtures (#0743)", () => {
 
   it.each([
     ["drawer:statusReviewFailed", "review"],
+    ["drawer:reviewPasses", "review"],
     ["drawer:statusHandoffFailed", "active"],
     ["drawer:statusChecksRunning", "active"],
     ["drawer:statusConfirmingHandoff", "active"],
@@ -509,7 +510,10 @@ describe("shot preview board fixtures (#0743)", () => {
     const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
     expect(task?.status).toBe(status);
     expect(task?.branch).toBe("feat/shot-fixture");
-    if (fixture === "drawer:statusReviewFailed" || fixture === "drawer:statusDetails") {
+    if (fixture === "drawer:reviewPasses") {
+      expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.cli).toBe("codex");
+      expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.history).toHaveLength(2);
+    } else if (fixture === "drawer:statusReviewFailed" || fixture === "drawer:statusDetails") {
       expect(repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID]?.report?.state).toBe("incomplete");
       if (fixture === "drawer:statusDetails") {
         expect(document.documentElement.getAttribute("data-repoos-shot-state")).toBe(

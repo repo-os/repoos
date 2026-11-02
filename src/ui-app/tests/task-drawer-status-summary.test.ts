@@ -188,7 +188,7 @@ describe("task drawer status summary (#0952)", () => {
     const wrapper = await mountDrawer(pinia, reviewTask());
 
     const summary = wrapper.find(".drawer-status-summary");
-    expect(summary.find(".drawer-status-l1").text()).toContain("Not landable");
+    expect(summary.find(".drawer-status-l1").text()).toContain("Not ready to merge");
     expect(summary.find(".drawer-status-l2").text()).toBe("Merge with main");
     expect(summary.find(".drawer-status-l3").exists()).toBe(false);
     expect(summary.find(".drawer-info-popover").exists()).toBe(false);
@@ -407,12 +407,12 @@ describe("task drawer status summary (#0952)", () => {
 
     const statusDetails = wrapper.find('[aria-label="Task status details"]');
     expect(statusDetails.exists()).toBe(true);
-    expect(statusDetails.text()).toContain("Not landable");
+    expect(statusDetails.text()).toContain("Merge readiness checklist");
     expect(statusDetails.text()).toContain("Merge with main");
     expect(statusDetails.text()).toContain("src/core/types.ts conflicts with main");
     const landableTime = statusDetails
       .findAll(".debug-status-detail")
-      .find((row) => row.text().includes("Not landable"))!
+      .find((row) => row.text().includes("Merge readiness checklist"))!
       .find(".debug-status-time");
     expect(landableTime.exists()).toBe(true);
     expect(landableTime.attributes("datetime")).toBe(repo.landableFetchedAtFor("0001"));

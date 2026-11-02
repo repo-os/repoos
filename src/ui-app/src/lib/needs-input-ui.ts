@@ -97,7 +97,7 @@ export const NEEDS_INPUT_SUGGESTION_LABELS: Record<string, string> = {
   "needs-human-step":
     "Split the human-only verification into its own task, or rewrite the acceptance criteria so agents are not asked to prove device or account outcomes.",
   "closeout-worktree-dirty":
-    "The merge already landed. Inspect the kept worktree if you want its uncommitted files, or Clear worktree to force-remove it and delete the merged branch.",
+    "The branch is already merged into main. Inspect the kept worktree if you want its uncommitted files, or Clear worktree to force-remove it and delete the merged branch.",
   questions: "Open the PM tab to answer — your reply is sent with the questions attached.",
 };
 

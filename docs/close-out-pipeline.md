@@ -63,11 +63,11 @@ release soak), a few patterns recur. Full CLI table and incident notes:
   `git checkout main -- repoos.toml`. Implement commits and engineer WIP checkpoints
   never stage `repoos.toml` unless the task explicitly scoped config work.
 
-## Landing pre-checks: `repoos landable <id>` (#0867)
+## Merge-readiness checks: `repoos landable <id>` (#0867)
 
 Before approving a task in `review` and before pressing **Move to done**, run
 `repoos landable <id>` (or read the same checklist in the task drawer next to
-the button). It is the single read-only answer to "can this branch land?", and
+the button). It is the single read-only answer to "is this branch ready to merge?", and
 exits `0` only when every check passes. `--json` prints one stable object:
 `{ taskId, branch, headSha, lockSha, landable, checks: [{ id, label, status,
 detail, nextStep? }], summary: { pass, warn, fail } }`.
@@ -99,7 +99,7 @@ in its prompt and must rely on it instead of re-running `repoos landable` or
 creation denied, missing tool) belong under `Could not verify (environment)`;
 they do not count as findings or review rounds. With no code findings, such a
 report is treated as `good to go`; actual failing checklist facts remain
-authoritative and still block landing.
+authoritative and still block the merge.
 
 ## Running the control-plane server: choose one owner
 

@@ -205,7 +205,7 @@ describe("ChecksView default tab (#0738)", () => {
     wrapper.unmount();
   });
 
-  async function mountChecks(initialPath: string) {
+  async function mountChecks(initialPath: string, holders: unknown[] = []) {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
@@ -218,6 +218,7 @@ describe("ChecksView default tab (#0738)", () => {
             pipeline: { empty: true, active: null, queue: [], at: "" },
           });
         if (path.includes("/api/remote-validation/status")) return jsonResponse(idleRemote());
+        if (path.includes("/api/local-check-slots")) return jsonResponse({ holders, queue: [] });
         if (path.includes("/api/health")) return jsonResponse({ ok: true, root: "/tmp" });
         if (path.includes("/api/test-run"))
           return jsonResponse({ ok: true, running: false, output: "" });
@@ -292,6 +293,36 @@ describe("ChecksView default tab (#0738)", () => {
     expect(wrapper.find(".ck-local-slots").exists()).toBe(true);
     expect(wrapper.text()).toContain("No local check slots are currently in use.");
   });
+
+  it("describes a live stale check by its last heartbeat, while a fresh heartbeat stays clear", async () => {
+    const { wrapper } = await mountChecks("/checks?tab=now", [
+      {
+        slot: 1,
+        pid: 123,
+        ageMs: 90_000,
+        heartbeatAgeMs: 80_000,
+        wedged: true,
+        dead: false,
+        meta: { taskId: "1003" },
+      },
+      {
+        slot: 2,
+        pid: 456,
+        ageMs: 12_000,
+        heartbeatAgeMs: 2_000,
+        wedged: false,
+        dead: false,
+        meta: { taskId: "1004" },
+      },
+    ]);
+    const slots = wrapper.findAll(".ck-local-slot");
+    expect(slots[0]?.text()).toContain("No recent heartbeat");
+    expect(slots[0]?.text()).toContain("last seen 1m 20s ago");
+    expect(slots[0]?.text()).toContain("alive");
+    expect(slots[1]?.text()).not.toContain("No recent heartbeat");
+    expect(slots[1]?.text()).toContain("heartbeat 2.0s ago");
+    wrapper.unmount();
+  });
 });
 
 describe("IntegrationPipelineSummary (#0738)", () => {
@@ -308,5 +339,40 @@ describe("IntegrationPipelineSummary (#0738)", () => {
     expect(text).toContain("check");
     expect(text).toContain("#0738");
     expect(text).toContain("#0739");
+  });
+
+  it("describes stale live-slot heartbeats without implying the holder exited", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse({
+          holders: [
+            {
+              slot: 0,
+              pid: 123,
+              ageMs: 90_000,
+              heartbeatAgeMs: 80_000,
+              dead: false,
+              wedged: true,
+              meta: { taskId: "1003" },
+            },
+          ],
+          queue: [],
+        }),
+      ),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    useRepoStore().integration = pipelineActive("1003");
+    const wrapper = mount(IntegrationPipelineSummary, {
+      global: { plugins: [pinia] },
+    });
+    await flushPromises();
+    const text = wrapper.text();
+    expect(text).toContain("No recent heartbeat");
+    expect(text).toContain("last heartbeat 1m 20s ago");
+    expect(text).toContain("alive");
+    expect(text).not.toContain("wedged");
+    wrapper.unmount();
   });
 });

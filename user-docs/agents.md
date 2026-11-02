@@ -111,10 +111,11 @@ that is a CLI limitation rather than an indication that RepoOS lost the run.
 
 ## The Agents page
 
-The page is organised into tabs:
+The **Agents** tab groups the lifecycle roles RepoOS ships with under **Default
+agents**, followed by **Custom agents** for your own roles.
 
-- **Default Agents** — the lifecycle roles RepoOS ships with.
-- **Custom Agents** — your own roles.
+Other tabs:
+
 - **Build Your Team** — built-in agents and chat assistants (see below).
 - **Scheduled Tasks** — recurring or one-time task templates that create ordinary
   `work/*.md` tasks on a cadence (see `docs/scheduled-tasks.md`).
@@ -159,7 +160,7 @@ sandbox even when networking is enabled.
 Commands run with your user's normal access, including access outside the task
 worktree. A worktree separates Git changes; it is not a security boundary. Use
 this mode for trusted projects and task prompts, and review changes before
-landing them. Read-only/advisory Codex roles retain their existing permissions.
+merging them into main. Read-only/advisory Codex roles retain their existing permissions.
 Existing running turns keep their launch permissions; the change applies to new
 engineering turns and resumed follow-ups after the server loads the new build.
 

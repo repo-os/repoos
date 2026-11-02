@@ -34,6 +34,10 @@ describe("AgentsView agent cards", () => {
 
     expect(wrapper.find(".agents-page-title").text()).toBe("Agents");
     expect(wrapper.find(".agent-tabs").exists()).toBe(true);
+    expect(wrapper.findAll(".agent-tabs .tab-btn").map((tab) => tab.text())).toContain("Agents");
+    expect(wrapper.findAll(".agent-tabs .tab-btn").map((tab) => tab.text())).not.toContain(
+      "Custom Agents",
+    );
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
     vi.unstubAllGlobals();
@@ -85,11 +89,24 @@ describe("AgentsView agent cards", () => {
     });
     await flush();
 
+    await wrapper.find(".agent-add input").setValue("data analyst");
+    await wrapper
+      .findAll("button")
+      .find((button) => button.text().includes("Add agent"))!
+      .trigger("click");
+    await flush();
+
     const names = wrapper
       .findAll(".agent-tab-panel")[0]
       .findAll(".agent-name")
       .map((el) => el.text());
     expect(names).toEqual(["pm", "engineer", "reviewer"]);
+    const customAgentsPanel = wrapper.findAll(".agent-tab-panel")[1]!;
+    expect(wrapper.findAll(".agent-tab-panel")[0]!.text()).toContain("Default agents");
+    expect(customAgentsPanel.text()).toContain("Custom agents");
+    expect((customAgentsPanel.find(".agent-card input").element as HTMLInputElement).value).toBe(
+      "data analyst",
+    );
 
     expect(wrapper.find(".agent-instr").exists()).toBe(false);
     expect(wrapper.find(".agent-skills-inline-summary").exists()).toBe(true);
