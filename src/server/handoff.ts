@@ -81,7 +81,7 @@ import {
   branchAddsBuildableProjectMarker,
 } from "../core/check-buildable-project.js";
 import { buildLastCheckFailureSummary } from "../core/check-failure-summary.js";
-import { finalizeEngineeringReport } from "./engineering-reports.js";
+import { finalizeEngineeringReport, listEngineeringReports } from "./engineering-reports.js";
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
@@ -605,7 +605,47 @@ async function runHandoffFinalization(
   // instead of orphaning it (#0521).
   const handoffDeadlineAt = Date.now() + HANDOFF_DEADLINE_MS;
 
+  const reportDraft = join(workdir, config.cacheDir, "engineering-report-drafts", `${task.id}.md`);
+  // The report commit is intentionally made before task status writes, so a
+  // failure in either status update can leave HEAD at that commit while the
+  // task is still active. Recognize that exact shape on retry: the commit must
+  // descend from the report's source commit and contain only that report plus
+  // the task's own bookkeeping file. The worktree status write can itself
+  // commit after the report, so requiring the report commit to be HEAD would
+  // miss precisely the retry this path must recover.
+  const reportAtHead = async () => {
+    const reports = listEngineeringReports({ ...config, root: workdir }, task.id);
+    for (const report of [...reports].reverse()) {
+      const sourceIsAncestor = await runGit(
+        workdir,
+        ["merge-base", "--is-ancestor", report.sourceSha, "HEAD"],
+        10_000,
+      );
+      if (sourceIsAncestor.status !== 0) continue;
+      const changed = await runGit(
+        workdir,
+        ["diff", "--name-only", `${report.sourceSha}..HEAD`],
+        10_000,
+      );
+      if (changed.status !== 0) continue;
+      const paths = changed.stdout.trim().split("\n").filter(Boolean);
+      const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${report.round}.json`;
+      const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${task.id}-`;
+      if (
+        paths.includes(reportPath) &&
+        paths.every(
+          (path) => path === reportPath || (path.startsWith(ownTaskPath) && path.endsWith(".md")),
+        )
+      ) {
+        return report;
+      }
+    }
+    return null;
+  };
+  let finalizedReport = await reportAtHead();
+
   if (task.status === "review" && worktreeTask.status === "review" && !opts.checkpointRecovery) {
+    if (finalizedReport) rmSync(reportDraft, { force: true });
     onProgress?.("done");
     return { ok: true, step: "done", detail: "handoff was already finalized" };
   }
@@ -854,13 +894,7 @@ async function runHandoffFinalization(
     // finalize it only after every handoff gate (including UI evidence) passed.
     // Keeping this after the final gate means a retryable evidence failure does
     // not consume the draft or create a report for a handoff that never happened.
-    const reportDraft = join(
-      workdir,
-      config.cacheDir,
-      "engineering-report-drafts",
-      `${task.id}.md`,
-    );
-    if (existsSync(reportDraft)) {
+    if (existsSync(reportDraft) && !finalizedReport) {
       const source = await worktreeState(workdir, config);
       const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
       const baseResult = await runGit(workdir, ["merge-base", baseBranch, source.head], 10_000);
@@ -880,25 +914,37 @@ async function runHandoffFinalization(
       });
       if (!finalized.report)
         return fail("review", finalized.error ?? "engineering report could not be finalized");
+      finalizedReport = finalized.report;
       const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${finalized.report.round}.json`;
       const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
       if (staged.status !== 0)
         return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
-      const reportCommit = await runGit(
+      const stagedDiff = await runGit(
         workdir,
-        [
-          "commit",
-          "-m",
-          `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
-        ],
-        20_000,
+        ["diff", "--cached", "--quiet", "--", reportPath],
+        10_000,
       );
-      if (reportCommit.status !== 0)
+      if (stagedDiff.status === 1) {
+        const reportCommit = await runGit(
+          workdir,
+          [
+            "commit",
+            "-m",
+            `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
+          ],
+          20_000,
+        );
+        if (reportCommit.status !== 0)
+          return fail(
+            "review",
+            `could not commit finalized engineering report: ${concise(reportCommit)}`,
+          );
+      } else if (stagedDiff.status !== 0) {
         return fail(
           "review",
-          `could not commit finalized engineering report: ${concise(reportCommit)}`,
+          `could not inspect finalized engineering report: ${concise(stagedDiff)}`,
         );
-      rmSync(reportDraft, { force: true });
+      }
     }
   } else {
     // Keep the step sequence honest for a UI that renders "Running checks…":
@@ -1030,6 +1076,11 @@ async function runHandoffFinalization(
   }
 
   clearHandoffFailureLoopMetadata(config, task);
+
+  // The draft is the retry record until every fallible status update above
+  // has completed. Removing it any earlier made a later handoff retry unable
+  // to reconstruct or recognize the report that was already committed.
+  if (finalizedReport) rmSync(reportDraft, { force: true });
 
   onProgress?.("done");
   return { ok: true, step: "done" };
