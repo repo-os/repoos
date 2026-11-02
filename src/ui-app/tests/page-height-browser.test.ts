@@ -75,22 +75,47 @@ describe.skipIf(!existsSync(webkit.executablePath()))(
       await browser?.close();
     });
 
-    it("renders Mission Control panels at equal heights (WebKit)", async () => {
-      const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-      try {
-        await page.setContent(
-          `<style>${css}\n${releaseTimelineCss}</style><div class="dash-grid"><div class="release-panel">Feature releases</div><div>Live activity</div><div>Needs a decision</div><div>Needs your attention</div></div>`,
-        );
-        const heights = await page
-          .locator(".dash-grid > div")
-          .evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().height));
-        expect(heights).toHaveLength(4);
-        expect(new Set(heights).size).toBe(1);
-        expect(heights[0]).toBe(340);
-      } finally {
-        await page.close();
-      }
-    });
+    it.each([
+      { width: 1280, columns: 2 },
+      { width: 390, columns: 1 },
+    ])(
+      "renders Mission Control with $columns columns at $width px and equal medium panels (WebKit)",
+      async ({ width, columns }) => {
+        const page = await browser.newPage({ viewport: { width, height: 900 } });
+        try {
+          await page.setContent(
+            `<style>${css}\n${releaseTimelineCss}</style><div class="dash-grid"><div class="release-panel">Feature releases</div><div>Live activity</div><div>Needs a decision</div><div>Needs your attention</div></div>`,
+          );
+          const geometry = await page.locator(".dash-grid").evaluate((grid) => {
+            const panels = Array.from(grid.children, (panel) => {
+              const { x, y, height } = panel.getBoundingClientRect();
+              return { x, y, height };
+            });
+            return {
+              columns: getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+              panels,
+            };
+          });
+          expect(geometry.columns).toBe(columns);
+          expect(geometry.panels).toHaveLength(4);
+          expect(new Set(geometry.panels.map((panel) => panel.height)).size).toBe(1);
+          expect(geometry.panels[0]!.height).toBe(340);
+          if (columns === 2) {
+            expect(geometry.panels[0]!.y).toBe(geometry.panels[1]!.y);
+            expect(geometry.panels[2]!.y).toBe(geometry.panels[3]!.y);
+            expect(geometry.panels[0]!.x).toBeLessThan(geometry.panels[1]!.x);
+            expect(geometry.panels[2]!.y).toBeGreaterThan(geometry.panels[0]!.y);
+          } else {
+            expect(geometry.panels[0]!.x).toBe(geometry.panels[1]!.x);
+            expect(geometry.panels[1]!.y).toBeGreaterThan(geometry.panels[0]!.y);
+            expect(geometry.panels[2]!.y).toBeGreaterThan(geometry.panels[1]!.y);
+            expect(geometry.panels[3]!.y).toBeGreaterThan(geometry.panels[2]!.y);
+          }
+        } finally {
+          await page.close();
+        }
+      },
+    );
 
     it.each([480, 620, 1120])(
       "keeps a populated sidebar inside the viewport at %spx height",

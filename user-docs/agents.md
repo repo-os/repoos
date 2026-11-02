@@ -160,7 +160,7 @@ sandbox even when networking is enabled.
 Commands run with your user's normal access, including access outside the task
 worktree. A worktree separates Git changes; it is not a security boundary. Use
 this mode for trusted projects and task prompts, and review changes before
-landing them. Read-only/advisory Codex roles retain their existing permissions.
+merging them into main. Read-only/advisory Codex roles retain their existing permissions.
 Existing running turns keep their launch permissions; the change applies to new
 engineering turns and resumed follow-ups after the server loads the new build.
 
