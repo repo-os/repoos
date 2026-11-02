@@ -149,3 +149,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T19:09:32Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T19:22:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T19:22:08Z · status active→review
+- 2026-11-02T19:22:08Z · message_delivered: 1 message(s)
