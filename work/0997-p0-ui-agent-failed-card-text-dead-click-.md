@@ -54,3 +54,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T15:17:51Z · status inbox→ready
 - 2026-11-02T18:38:54Z · status ready→active
 - 2026-11-02T18:52:01Z · message_queued at 2026-11-02T18:52:01.022Z
+- 2026-11-02T18:52:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
