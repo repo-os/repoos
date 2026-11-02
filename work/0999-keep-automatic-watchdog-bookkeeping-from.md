@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-02T04:40:32Z"
+review_passes: 2
 id: "0999"
 title: Keep automatic watchdog bookkeeping from blocking close-out
 type: bug
@@ -9,12 +11,10 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/keep-automatic-watchdog-bookkeeping-from
 created_at: "2026-11-01T11:58:54Z"
-updated_at: "2026-11-02T04:40:32Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/git-worktree.test.ts > main dirty paths for close-out (#0713) > ignores only appended watchdog check-wait bookkeeping in tracked task files on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 7257f67b7be904467382583adb410bd6bf579bc3
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 ---
 ## Problem
 Automatic watchdog bookkeeping in a tracked task file can dirty main while another task is trying to close out. On 2026-11-01, #0994 accumulated automatic check-wait escalation/recovery activity entries on main. The main-clean guard then blocked #0994 and #0998 even though these entries were RepoOS-generated status records, not source edits.
@@ -83,3 +83,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T04:39:56Z · status active→review
 - 2026-11-02T04:39:57Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-02T04:40:32Z · note: review pass 2: good to go
+
