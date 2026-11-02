@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/keep-automatic-watchdog-bookkeeping-from
 created_at: "2026-11-01T11:58:54Z"
-updated_at: "2026-11-02T03:54:42Z"
+updated_at: "2026-11-02T04:04:16Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -61,3 +61,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T03:53:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T03:53:31Z · note: handoff requested (cli)
 - 2026-11-02T03:54:42Z · message_queued at 2026-11-02T03:54:42.309Z
+- 2026-11-02T04:04:16Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/git-worktree.test.ts > main dirty paths for close-out (#0713) > ignores only appended watchdog check-wait bookkeeping in tracked task files on thinkpad — fix it in the feature branch and re-run the gate
