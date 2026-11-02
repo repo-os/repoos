@@ -3755,8 +3755,8 @@ export class CloseOutOrchestrator {
       // dirty path untouched, so a dirty file the branch does not change needs
       // no action at all. Decide BEFORE touching anything, with `git merge-tree`
       // (no working-tree side effect), then handle the two sets differently:
-      //   - untouched dirty files keep the existing policy (routine bookkeeping
-      //     / config churn is checkpoint-committed, anything else fails closed);
+      //   - untouched dirty files keep the existing policy (selected server
+      //     bookkeeping directories are checkpoint-committed; other paths fail closed);
       //   - the overwritten set is stashed immediately before the merge and
       //     always popped after it, so a merge git would have refused still
       //     lands and the local edit is reapplied on top.
@@ -3765,15 +3765,10 @@ export class CloseOutOrchestrator {
       const untouchedDirty = dirtyOnMain.filter((p) => !overwrittenByMerge.includes(p));
 
       if (untouchedDirty.length > 0) {
-        // Auto-checkpoint routine, server-written churn instead of blocking
-        // the merge on it (#0271 follow-up, confirmed live: #0293's close-out
-        // was refused because an UNRELATED task's `work/*.md` file — an
-        // activity-log stamp from a normal status/override change — was
-        // dirty on main at publish time). Every routine task write already
-        // auto-commits this exact way via `commitTaskFile`/`recordChange`
-        // elsewhere in the system; a task file being dirty for a moment
-        // between that write and this check is expected traffic on a busy
-        // board, not a signal something risky is in flight.
+        // Auto-checkpoint only the selected server-owned churn below. Tracked
+        // task files are handled earlier by mainDirtyFilesForCloseOut: only
+        // exact watchdog check-wait escalation/recovery deltas are omitted;
+        // human edits and unrecognized task changes stay in this blocker set.
         //
         // `repoos.toml` gets the same treatment: it's always written whole by
         // the settings API (agent config, maxActiveTasks, etc.), never
@@ -3783,7 +3778,7 @@ export class CloseOutOrchestrator {
         //
         // Scoped narrowly — and scoped to `untouchedDirty`: only when EVERY
         // path in this set is under one of the managed bookkeeping dirs
-        // (work/, inputs/, stories/, reminders/, schedules/) or is exactly
+        // (inputs/, stories/, reminders/, schedules/) or is exactly
         // `repoos.toml` — anything
         // else (source, other config, a stray build artifact) still fails
         // closed exactly as before, since that's genuinely ambiguous and worth

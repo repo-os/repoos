@@ -4,13 +4,10 @@ const AUTOMATIC_ACTIVITY = [
   /^- \d{4}-\d{2}-\d{2}T[^\s]+ · watchdog: check wait escalated · waiting: .+ · next step: investigate the abnormal wait; the flag clears when the check starts$/,
   /^- \d{4}-\d{2}-\d{2}T[^\s]+ · watchdog: check wait ended or recovered — cleared needs_input$/,
 ];
-const CLOSE_OUT_RETRY_ACTIVITY =
-  /^- \d{4}-\d{2}-\d{2}T[^\s]+ · note: close-out failed — restored review status for retry \(#0838\)$/;
 const AUTOMATIC_FIELDS = new Set([
   "needs_input",
   "needs_input_reason",
   "needs_input_detail",
-  "status",
   "updated_at",
 ]);
 
@@ -69,18 +66,5 @@ export function isWatchdogCheckWaitTaskDelta(
     .split("\n")
     .filter(Boolean);
   if (added.length === 0) return false;
-  if (added.every((line) => AUTOMATIC_ACTIVITY.some((pattern) => pattern.test(line)))) {
-    return [...changedFields].every((key) => key !== "status");
-  }
-  return (
-    ((added.length === 1 && CLOSE_OUT_RETRY_ACTIVITY.test(added[0]!)) ||
-      (added.length === 3 &&
-        added[0] === "## Activity" &&
-        added[1] === "" &&
-        CLOSE_OUT_RETRY_ACTIVITY.test(added[2]!))) &&
-    changedFields.size > 0 &&
-    [...changedFields].every((key) => key === "status" || key === "updated_at") &&
-    oldDoc.data.status !== "done" &&
-    newDoc.data.status === "review"
-  );
+  return added.every((line) => AUTOMATIC_ACTIVITY.some((pattern) => pattern.test(line)));
 }
