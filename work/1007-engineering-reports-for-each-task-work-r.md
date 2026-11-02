@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-02T14:13:46Z"
-review_passes: 5
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — retries and report loading can misidentify or hide engineering-round history.
@@ -15,6 +13,8 @@ created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 model_override: gpt-6.1-terra
 created_at: "2026-11-01T18:38:06Z"
+updated_at: "2026-11-02T14:14:41Z"
+review_passes: 5
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 routing_switches: 1
@@ -196,4 +196,5 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:13:46Z · note: review pass 5: needs some work
 - 2026-11-02T14:13:46Z · needs_input
 - 2026-11-02T14:13:46Z · needs_input
-
+- 2026-11-02T14:14:41Z · status review→active
+- 2026-11-02T14:14:41Z · note: Review pass 5 found three blocking issues; returning to engineering for a focused correction round.
