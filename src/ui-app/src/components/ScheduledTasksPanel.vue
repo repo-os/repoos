@@ -634,7 +634,7 @@ onMounted(() => {
   align-items: stretch;
   gap: 7px;
 }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .schedule-card-details {
     flex-direction: column;
   }
