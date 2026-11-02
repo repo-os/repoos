@@ -66,7 +66,7 @@ export const NOTICE_KIND_LABELS: Record<NoticeKind, string> = {
   releaseNotesReady: "Release notes ready",
   releaseSucceeded: "Release succeeded",
   releaseFailed: "Release failed",
-  closeOutSucceeded: "Move to done landed",
+  closeOutSucceeded: "Merged into main",
   closeOutFailed: "Move to done failed",
   closeOutTimedOut: "Move to done timed out",
   providerFailure: "Provider error",
@@ -183,16 +183,16 @@ function budgetFromTimeoutReason(reason: string): string | null {
   return m ? m[1] : null;
 }
 
-/** Title naming the task, e.g. "Move to done: #0633 landed". */
+/** Title naming the task, e.g. "Move to done: #0633 merged into main". */
 function closeOutTitle(o: CloseOutOutcomeEvent): string {
   const base = `Move to done: #${o.taskId}`;
-  if (o.outcome === "succeeded") return `${base} landed`;
+  if (o.outcome === "succeeded") return `${base} merged into main`;
   if (o.outcome === "failed") return `${base} failed`;
   const budget = budgetFromTimeoutReason(o.reason);
   return budget ? `${base} timed out after ${budget}` : `${base} timed out`;
 }
 
-/** Short detail: the first reason line; success names where the work landed. */
+/** Short detail: the first reason line; success names where the work was merged. */
 function closeOutDetail(o: CloseOutOutcomeEvent): string {
   if (o.outcome === "succeeded") return "Merged and published to main.";
   return (

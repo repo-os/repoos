@@ -565,7 +565,7 @@ watch([() => ui.debugCheckFocus, () => repo.taskChecks[props.task.id]], applyDeb
           <div class="debug-sync-text">
             <span class="debug-sync-title">Sync with main</span>
             <span class="debug-sync-sub">
-              Merge main into this task's branch to pick up fixes landed since it was cut.
+              Merge main into this task's branch to pick up fixes added since it was cut.
             </span>
           </div>
           <Button
