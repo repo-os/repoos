@@ -22,6 +22,7 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { TaskGitInfo } from "./types.js";
 import { isLinkedWorktreeRoot, worktreesDir, worktreesInheritEnv } from "./config.js";
 import { repoosTomlDiffIsAutomaticPauseOnly } from "./repoos-toml-runtime-diff.js";
+import { isWatchdogCheckWaitTaskDelta } from "./watchdog-task-diff.js";
 import { notifyGitMutation, onGitMutation } from "./git-activity.js";
 import { trackGitCall } from "./git-inflight.js";
 import {
@@ -2553,17 +2554,33 @@ export async function mainDirtyFilesForCloseOut(
     await dirtyFiles(root, { untrackedFiles: "all" }),
     dirs,
   );
-  if (!files.includes("repoos.toml")) return files;
+  const workDir = dirs.workDir ?? "work";
+  const taskPrefix = `${workDir.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "")}/`;
+  const taskFiles = files.filter((path) => isTaskBookkeepingPath(path, { workDir }));
+  const generatedTaskFiles: string[] = [];
+  for (const path of taskFiles) {
+    const head = await runGit(root, ["show", `HEAD:${path}`], 10_000);
+    if (head.status !== 0 || !path.startsWith(taskPrefix)) continue;
+    let current: string;
+    try {
+      current = readFileSync(join(root, path), "utf8");
+    } catch {
+      continue;
+    }
+    if (isWatchdogCheckWaitTaskDelta(head.stdout, current, path)) generatedTaskFiles.push(path);
+  }
+  const remaining = files.filter((path) => !generatedTaskFiles.includes(path));
+  if (!remaining.includes("repoos.toml")) return remaining;
   const head = await runGit(root, ["show", "HEAD:repoos.toml"], 10_000);
-  if (head.status !== 0) return files;
+  if (head.status !== 0) return remaining;
   let work: string;
   try {
     work = readFileSync(join(root, "repoos.toml"), "utf8");
   } catch {
-    return files;
+    return remaining;
   }
-  if (!repoosTomlDiffIsAutomaticPauseOnly(head.stdout, work)) return files;
-  return files.filter((path) => path !== "repoos.toml");
+  if (!repoosTomlDiffIsAutomaticPauseOnly(head.stdout, work)) return remaining;
+  return remaining.filter((path) => path !== "repoos.toml");
 }
 
 /** Repo-relative path is a committed task markdown file under `workDir` (board bookkeeping). */
