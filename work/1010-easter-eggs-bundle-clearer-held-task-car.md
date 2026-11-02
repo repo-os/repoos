@@ -3,6 +3,9 @@ id: 1010
 title: "Easter eggs bundle: clearer held task cards"
 type: chore
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Notes for AI"
 priority: p3
 area: web
 assigned_to: ai
@@ -33,3 +36,4 @@ Keep the yellow Held chip as the state indicator and remove the redundant lower-
 
 - 2026-11-02T04:38:23Z · created · njachowski@gmail.com
 - 2026-11-02T04:38:24Z · screenshots
+- 2026-11-02T04:38:24Z · needs_input
