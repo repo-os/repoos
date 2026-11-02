@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T02:14:13Z"
+updated_at: "2026-11-02T02:25:09Z"
 ---
 ## Problem
 
@@ -35,6 +35,22 @@ Each report starts with a TL;DR, then explains what changed and why, approaches 
 ## Notes for AI
 Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer prompt construction, and task Dev and Review tabs before choosing storage or UI changes. Keep one immutable report per engineering round and tie it to the exact source diff the reviewer sees. Use RepoOS-managed task/report APIs and lifecycle hooks; do not hand-edit work task files or infer Git line counts from agent prose. Make the report durable in the repository after close-out, and ensure report generation cannot make a passing source check appear to validate a different tree. Preserve reports across review feedback rounds and keep legacy tasks without reports reviewable. Update the engineering and reviewer instructions plus user docs. Run the scoped check before handoff.
 
+## Shots
+```json
+[
+{
+  "label": "Task engineering report history",
+  "target": "default",
+  "route": "/work?task=1007&tab=agent",
+  "highlight": ".engineering-report-view",
+  "steps": [
+    {
+      "click": "[data-test-id=\\\"engineering-report-tab\\\"]"
+    }
+  ]
+}
+]
+```
 
 ## Activity
 
@@ -43,3 +59,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-01T18:38:31Z · needs_input, body: Notes for AI (added)
 - 2026-11-01T18:38:54Z · status inbox→ready
 - 2026-11-02T02:14:13Z · status ready→active, branch
+- 2026-11-02T02:25:09Z · body
