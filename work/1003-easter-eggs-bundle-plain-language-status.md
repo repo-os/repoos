@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T00:33:17Z"
+updated_at: "2026-11-02T00:33:22Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -149,6 +149,22 @@ Keep the selected pass highlight visible while its report is loading and after i
 ```
 
 ## E6 · Preview task agent assignments on hover
+### Problem
+The robot icon on a task card currently exposes agent assignments through its click-to-edit panel. People who only want to check assignments must open the editor and then close it again.
+
+### Desired UX
+Hovering the robot icon shows a compact, read-only table with the task’s PM, engineer, and reviewer roles and each role’s assigned coding agent and model. The preview does not open the editor. Clicking the icon continues to open the assignment editor. Keyboard users can inspect the same preview by focusing the icon, and touch users can inspect assignments through the existing click-to-open editor.
+
+### Acceptance criteria
+- Test: pointer hover shows the PM, engineer, and reviewer agent and model assignments without opening the editor.
+- Test: moving the pointer away dismisses the preview, while clicking the icon still opens the assignment editor.
+- Test: keyboard focus exposes the same assignment information accessibly.
+- Test: touch activation provides access to the assignments through the editor.
+- The preview is readable, does not obscure the task title or essential controls, and stays within the viewport.
+
+### Notes for AI
+Keep the hover preview compact and read-only, with a clear role/agent/model hierarchy. Preserve the click-to-edit flow. Ensure focus and touch remain usable, and clamp the preview within short and narrow viewports.
+
 ## Problem
 
 The robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.
@@ -285,3 +301,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T00:32:49Z · CTO nudge: held — remote validation is running
 - 2026-11-02T00:33:17Z · body: E5 · Make review-pass selection and reviewer identity clear (added 9, removed 7)
 - 2026-11-02T00:33:17Z · message_queued at 2026-11-02T00:33:17.881Z
+- 2026-11-02T00:33:22Z · body: E6 · Preview task agent assignments on hover (added 12)
