@@ -45,10 +45,10 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 "highlight": ".engineering-report-view",
 "steps": [
 {
-  "click": "[data-test-id=\"engineering-report-tab\"]"
+"click": "[data-test-id=\"engineering-report-tab\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
@@ -88,3 +88,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T04:48:58Z · body
 - 2026-11-02T04:49:16Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T04:49:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T04:49:16Z · message_delivered: 1 message(s)
