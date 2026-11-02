@@ -3,6 +3,11 @@ import { computed, ref, watch } from "vue";
 import type { Task } from "../types";
 import { useRepoStore } from "../stores/repo";
 import Button from "./ui/button.vue";
+import Dialog from "./ui/dialog/root.vue";
+import DialogContent from "./ui/dialog/content.vue";
+import DialogDescription from "./ui/dialog/description.vue";
+import DialogOverlay from "./ui/dialog/overlay.vue";
+import DialogTitle from "./ui/dialog/title.vue";
 
 const props = withDefaults(defineProps<{ task: Task | null; overrideDependencies?: boolean }>(), {
   overrideDependencies: false,
@@ -72,56 +77,104 @@ function cancel(): void {
 </script>
 
 <template>
-  <div v-if="task" class="restart-overlay" @click.self="cancel">
-    <div class="restart-card" role="dialog" aria-modal="true">
-      <h3 class="restart-title">Restart task #{{ task.id }}?</h3>
-      <p class="restart-body">
-        This task's worktree has uncommitted changes from the last run
-        <span v-if="task.git?.worktreePath" class="restart-path mono">{{
-          task.git.worktreePath
-        }}</span
-        >.
-      </p>
-      <div v-if="dirtyFiles?.length" class="restart-lost">
-        <p class="restart-body">
-          <b>Start clean</b> would discard {{ dirtyFiles.length }} uncommitted file{{
-            dirtyFiles.length === 1 ? "" : "s"
-          }}:
-        </p>
-        <ul class="restart-lost-list">
-          <li v-for="f in shownFiles" :key="f" class="mono">{{ f }}</li>
-          <li v-if="hiddenCount > 0" class="dim">and {{ hiddenCount }} more</li>
-        </ul>
-      </div>
-      <p v-else-if="dirtyUnknown" class="restart-body dim">
-        The uncommitted files in that worktree could not be listed, so what
-        <b>Start clean</b> discards is unknown — treat it as everything there.
-      </p>
-      <p class="restart-body dim">
-        <b>Resume worktree</b> continues where the last run left off, keeping its changes.
-        <b>Start clean</b> discards the worktree — and any commits on this branch that aren't merged
-        into main — and begins from a fresh checkout.
-      </p>
-      <p v-if="startError" class="restart-error" role="alert">{{ startError }}</p>
-      <div class="restart-actions">
-        <Button variant="outline" size="sm" :disabled="busy" @click="cancel">Cancel</Button>
-        <Button variant="destructive" size="sm" :disabled="busy" @click="choose('clean')">
-          {{ busy ? "Working…" : "Start clean" }}
-        </Button>
-        <Button
-          v-if="startError"
-          variant="outline"
-          size="sm"
-          :disabled="busy"
-          @click="choose('fresh')"
-        >
-          Start fresh in this worktree
-        </Button>
-        <Button variant="accent" size="sm" :disabled="busy" @click="choose('resume')">
-          <span class="restart-play">▶</span>
-          Resume worktree
-        </Button>
-      </div>
-    </div>
-  </div>
+  <!--
+    Body-teleported shared dialog (#0997). The old hand-rolled fixed overlay
+    rendered inline in the board/drawer tree — a transformed or overflow-hidden
+    ancestor can trap it — and it carried no `data-overlay-layer`, so while any
+    Radix dialog was open <body> was click-transparent and its buttons never
+    received the click (#0575). The shared primitives supply the layer marker,
+    focus trap, Escape handling and outside-click dismissal.
+  -->
+  <Teleport to="body">
+    <Dialog
+      :open="!!task"
+      @update:open="
+        (open) => {
+          if (!open) cancel();
+        }
+      "
+    >
+      <DialogOverlay />
+      <DialogContent class="cc-modal restart-modal" data-test-id="restart-task-dialog">
+        <div class="cc-modal-head">
+          <DialogTitle>Restart task #{{ task?.id }}?</DialogTitle>
+          <button type="button" class="close-x" aria-label="Close" :disabled="busy" @click="cancel">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <DialogDescription class="sr-only">
+          Choose how to restart the engineer on task #{{ task?.id }}.
+        </DialogDescription>
+        <div class="cc-modal-body restart-body-copy">
+          <p>
+            This task's worktree has uncommitted changes from the last run
+            <span v-if="task?.git?.worktreePath" class="restart-path mono">{{
+              task.git.worktreePath
+            }}</span
+            >.
+          </p>
+          <div v-if="dirtyFiles?.length" class="restart-lost">
+            <p>
+              <b>Start clean</b> would discard {{ dirtyFiles.length }} uncommitted file{{
+                dirtyFiles.length === 1 ? "" : "s"
+              }}:
+            </p>
+            <ul class="restart-lost-list">
+              <li v-for="f in shownFiles" :key="f" class="mono">{{ f }}</li>
+              <li v-if="hiddenCount > 0" class="dim">and {{ hiddenCount }} more</li>
+            </ul>
+          </div>
+          <p v-else-if="dirtyUnknown" class="dim">
+            The uncommitted files in that worktree could not be listed, so what
+            <b>Start clean</b> discards is unknown — treat it as everything there.
+          </p>
+          <p class="dim">
+            <b>Resume worktree</b> continues where the last run left off, keeping its changes.
+            <b>Start clean</b> discards the worktree — and any commits on this branch that aren't
+            merged into main — and begins from a fresh checkout.
+          </p>
+          <p v-if="startError" class="restart-error" role="alert">{{ startError }}</p>
+        </div>
+        <div class="cc-modal-actions restart-actions">
+          <Button
+            variant="outline"
+            size="sm"
+            data-test-id="restart-cancel"
+            :disabled="busy"
+            @click="cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            data-test-id="restart-clean"
+            :disabled="busy"
+            @click="choose('clean')"
+          >
+            {{ busy ? "Working…" : "Start clean" }}
+          </Button>
+          <Button
+            v-if="startError"
+            variant="outline"
+            size="sm"
+            :disabled="busy"
+            @click="choose('fresh')"
+          >
+            Start fresh in this worktree
+          </Button>
+          <Button
+            variant="accent"
+            size="sm"
+            data-test-id="restart-resume"
+            :disabled="busy"
+            @click="choose('resume')"
+          >
+            <span class="restart-play">▶</span>
+            Resume worktree
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  </Teleport>
 </template>
