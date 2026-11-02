@@ -116,3 +116,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T14:59:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T14:59:50Z · message_delivered: 3 message(s)
 - 2026-11-02T16:10:53Z · note: ui verification failed (1 issue(s)): [missing-target] Worktree cleanup preview separates safe candidates, retained reasons, and external worktrees (target "default"): loading state detected: loading text "Loading…" on / (http://127.0.0.1:50331/?shotState=system%3AworktreeGc)
+- 2026-11-02T16:10:53Z · handoff failed · handoff recovery attempted · finalization failed
