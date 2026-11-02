@@ -255,6 +255,7 @@ describe("DashboardView column labels", () => {
     expect(styles).toMatch(
       /\.dash-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)[^}]*grid-auto-rows:\s*340px/s,
     );
+    expect(styles).toMatch(/\.dash-grid\s*>\s*div\s*\{[^}]*height:\s*100%;[^}]*margin:\s*0;/s);
     expect(styles).toMatch(
       /@media\s*\(max-width:\s*800px\)\s*\{\s*\.dash-grid\s*\{[^}]*grid-template-columns:\s*1fr/s,
     );
