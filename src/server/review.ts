@@ -532,7 +532,7 @@ export function reviewMission(
           engineeringReport.markdown,
         ]
       : [
-          "No engineering report is available for this task. This is allowed for legacy work; review the diff and state that rationale/experiment context was unavailable.",
+          "No engineering report is available. Legacy work handed off before engineering reports were introduced can lack one; do not assume this task is legacy. If this is a new engineering round, report the missing required context as a bug and do not approve it. For confirmed legacy work, state that rationale and experiment context was unavailable.",
         ]),
     "",
     "## Check gate at handoff",
