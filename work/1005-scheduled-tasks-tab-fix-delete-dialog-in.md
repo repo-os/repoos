@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
@@ -18,7 +20,6 @@ created_at: "2026-11-01T16:13:02Z"
 updated_at: "2026-11-02T20:24:48Z"
 review_passes: 3
 review_rounds: 2
-last_check_failure: "repoos check at 2026-11-02T16:24:55.241Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Delete schedule dialog with working actions (target \"default\"): click [data-testid^=\"schedule-card-\"] .schedule-actions button:last-child: click: Error: strict mode violation: locator('[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child') resolved to 8 elements: on /agents?tab=scheduled (http://127.0.0.1:51188/agents?tab=scheduled); [missing-target] Delete schedule dialog with working actions (target \"defa… (truncated)"
 dev_error_count: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-02T19:48:17.964Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -160,3 +161,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T20:24:13Z · note: review pass 3: needs some work
 - 2026-11-02T20:24:14Z · needs_input
 - 2026-11-02T20:24:48Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+
