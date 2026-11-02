@@ -428,7 +428,7 @@ describe("review pass selection and identity (#1003)", () => {
       { 1: older },
     );
 
-    await wrapper.findAll(".review-history-row")[0]!.trigger("click");
+    await wrapper.findAll(".review-history-row")[1]!.trigger("click");
     await flush();
 
     expect(wrapper.find(".review-failed").text()).toBe("Older pass failed to run.");
@@ -479,7 +479,7 @@ describe("review pass selection and identity (#1003)", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    await wrapper.findAll(".review-history-row")[0]!.trigger("click");
+    await wrapper.findAll(".review-history-row")[1]!.trigger("click");
     await flush();
     expect(wrapper.find('[role="alert"]').text()).toContain("Could not load this review pass.");
 
