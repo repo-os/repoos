@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
@@ -13,7 +11,9 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T02:15:05Z"
+updated_at: "2026-11-02T02:16:34Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -130,9 +130,9 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/",
 "highlight": ".dash-grid",
 "steps": [
-  {
-    "waitFor": ".dash-grid"
-  }
+{
+  "waitFor": ".dash-grid"
+}
 ],
 "viewportWidth": 1280,
 "viewportHeight": 900
@@ -143,17 +143,17 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/agents?tab=default",
 "highlight": ".agents-tab-content",
 "steps": [
-  {
-    "waitFor": ".agents-tab-content"
-  }
+{
+  "waitFor": ".agents-tab-content"
+}
 ],
 "assert": [
-  {
-    "text": "Default agents"
-  },
-  {
-    "text": "Custom agents"
-  }
+{
+  "text": "Default agents"
+},
+{
+  "text": "Custom agents"
+}
 ],
 "viewportWidth": 1280,
 "viewportHeight": 2160
@@ -164,17 +164,17 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/work?task=9999&tab=review&shotState=drawer:reviewPasses",
 "highlight": ".review-history-table",
 "steps": [
-  {
-    "waitFor": ".review-history-table"
-  }
+{
+  "waitFor": ".review-history-table"
+}
 ],
 "assert": [
-  {
-    "text": "Latest"
-  },
-  {
-    "text": "Codex"
-  }
+{
+  "text": "Latest"
+},
+{
+  "text": "Codex"
+}
 ]
 },
 {
@@ -183,20 +183,20 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/work?shotState=board:severalWorkingCards",
 "highlight": "[data-test-id=\"task-agent-preview\"]",
 "steps": [
-  {
-    "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
-  },
-  {
-    "waitMs": 250
-  }
+{
+  "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+},
+{
+  "waitMs": 250
+}
 ],
 "assert": [
-  {
-    "text": "Engineer"
-  },
-  {
-    "text": "Reviewer"
-  }
+{
+  "text": "Engineer"
+},
+{
+  "text": "Reviewer"
+}
 ],
 "state": "board:severalWorkingCards",
 "viewportWidth": 390,
@@ -392,4 +392,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T02:05:50Z · CTO nudge: held — handoff gate is running
 - 2026-11-02T02:06:21Z · body
 - 2026-11-02T02:15:05Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-11-02T02:16:34Z · body
