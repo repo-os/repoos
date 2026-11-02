@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import {
   SHOT_PREVIEW_FIXTURE_TASK_ID,
+  shotFixtureContainer,
   type ShotPreviewFixtureId,
 } from "../../core/shot-fixtures.js";
 import {
@@ -12,6 +13,7 @@ import {
   shotFixturePinnedIntegration,
   shotFixturePinnedRemoteStatus,
   shotFixturePinnedTaskRemoteActivity,
+  shotFixtureSchedules,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
 import { useNoticesStore } from "../src/stores/notices";
@@ -61,6 +63,24 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(cards).toHaveLength(6);
     expect(cards.every((task) => task.status === "active")).toBe(true);
     expect(repo.runningIds).toEqual(expect.arrayContaining(cards.map((task) => task.id)));
+  });
+
+  it("seeds two deterministic schedules for schedule:seeded (#1005)", () => {
+    expect(shotFixtureSchedules(null)).toBeNull();
+    expect(shotFixtureSchedules("schedule:newPanel")).toBeNull();
+    const rows = shotFixtureSchedules("schedule:seeded");
+    expect(rows).toHaveLength(2);
+    expect(rows!.map((row) => row.id)).toEqual(["0001", "0002"]);
+    for (const row of rows!) {
+      expect(row.title.length).toBeGreaterThan(0);
+      expect(row.nextRunPreview.length).toBeGreaterThan(0);
+      expect(row.path).toContain(row.id);
+    }
+  });
+
+  it("requires no dialog container for schedule:seeded (#1005)", () => {
+    expect(shotFixtureContainer("schedule:seeded")).toBeNull();
+    expect(shotFixtureContainer("schedule:newPanel")).toBe("dialog");
   });
 
   it("reads shotState from the location query", () => {
