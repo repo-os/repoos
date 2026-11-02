@@ -380,4 +380,29 @@ describe("schedule dialog layering and capture fixture (#1005)", () => {
       window.history.replaceState({}, "", "/");
     }
   });
+
+  it("seeds schedule:seeded rows when health lands after mount (#1005)", async () => {
+    // Cold capture load: the panel mounts before App.onMounted resolves health,
+    // so the mount-time read misses the fixture. The seed must still win over
+    // the live fetch once health lands — otherwise the capture's row selectors
+    // miss and the run times out.
+    const repo = useRepoStore();
+    repo.health = null;
+    repo.schedules = [];
+    repo.refreshSchedules = vi.fn().mockImplementation(async () => {
+      repo.schedules = [];
+    });
+    window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=schedule:seeded");
+    try {
+      mountPanel();
+      await flushPromises();
+      expect(document.body.querySelectorAll(".schedule-card")).toHaveLength(0);
+      repo.health = { isPreviewBuild: true } as unknown as Health;
+      await flushPromises();
+      expect(document.body.querySelectorAll(".schedule-card")).toHaveLength(2);
+      expect(document.body.querySelector('[data-testid="schedule-card-0001"]')).toBeTruthy();
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
+  });
 });
