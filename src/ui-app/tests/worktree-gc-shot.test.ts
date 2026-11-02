@@ -42,5 +42,7 @@ describe("worktree GC Control dashboard shot fixture (#0923)", () => {
     await flushPromises();
     expect(wrapper.get(".gc-preview").text()).toContain("repoos/integrate/0042");
     expect(wrapper.get(".gc-preview").text()).toContain("close-out job still active");
+    expect(wrapper.get(".gc-preview").text()).toContain("outside RepoOS");
+    expect(wrapper.get(".gc-preview").text()).toContain("codex/chat-diagnostics");
   });
 });

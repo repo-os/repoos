@@ -255,14 +255,17 @@ describe("collectStatus — server stopped", () => {
     expect(active.updatedAt).toBe("2026-09-03T11:00:00Z");
     expect(active.needsInput).toBe(false);
 
-    // worktrees: main + 1 registered; the merged done-task worktree is leaked
+    // worktrees: main + 1 registered; the merged done-task worktree is a candidate
     expect(s.worktrees.count).toBe(2);
+    expect(s.worktrees.managedCount).toBe(2);
     expect(s.worktrees.warnThreshold).toBeGreaterThan(0);
-    expect(s.worktrees.leaked.map((w) => w.branch)).toEqual(["feat/done"]);
+    expect(s.worktrees.candidates.map((w) => w.branch)).toEqual(["feat/done"]);
+    expect(s.worktrees.counts).toEqual({ candidates: 1, retained: 0, external: 0 });
 
-    // leak count matches what `repoos gc --dry-run` would report (same sweep)
+    // candidate count matches what `repoos gc --dry-run` would report (same sweep)
     const gcReport = sweepStaleWorktrees(fx.config, { mode: "full", dryRun: true });
-    expect(s.worktrees.leaked.length).toBe(gcReport.removedWorktrees.length);
+    expect(s.worktrees.candidates.length).toBe(gcReport.removedWorktrees.length);
+    expect(s.worktrees.counts).toEqual(gcReport.summary);
 
     // tunnel: nothing configured in the fixture
     expect(s.tunnel.configured).toBe(false);
@@ -389,7 +392,7 @@ describe("renderStatus", () => {
     expect(out).toContain("last lock"); // dead lock's facts are the diagnostic
     expect(out).toContain("#0001");
     expect(out).toContain("worktree missing");
-    expect(out).toContain("leaked");
+    expect(out).toContain("safe candidate");
     expect(out).toContain("not configured");
     expect(out).toContain(fx.branch);
     // header line comes first
@@ -665,9 +668,12 @@ describe("status --json shape", () => {
       "worktreePath",
     ]);
     expect(Object.keys(parsed.worktrees as object).sort()).toEqual([
+      "candidates",
       "count",
-      "kept",
-      "leaked",
+      "counts",
+      "external",
+      "managedCount",
+      "retained",
       "warnThreshold",
     ]);
     expect(Object.keys(parsed.tunnel as object).sort()).toEqual([
