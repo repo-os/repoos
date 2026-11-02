@@ -119,7 +119,7 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
     },
   );
 
-  it("removes done/absent/integrate/half-deleted worktrees, keeps live and unmerged", () => {
+  it("removes done/integrate/half-deleted worktrees, keeps live, unmerged, and untracked", () => {
     const { root, main, clean } = makeRepo();
     try {
       const doneWt = mergedWorktree(root, main, "feat/done");
@@ -144,10 +144,18 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
 
       const removed = new Set(report.removedWorktrees.map((w) => w.branch));
       expect(removed).toContain("feat/done");
-      expect(removed).toContain("feat/absent");
       expect(removed).toContain("repoos/integrate/0009");
       expect(removed).toContain("feat/gone");
 
+      // A merged branch with no task record is NOT a candidate: a missing
+      // record cannot establish that its task is resolved or inactive.
+      expect(removed).not.toContain("feat/absent");
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "feat/absent",
+          reason: "no task record for branch — lifecycle state unknown",
+        }),
+      );
       expect(report.retained.map((k) => k.branch)).toContain("feat/done-unmerged");
       expect(report.prunedMetadata).toBe(true);
       expect(report.summary).toEqual({
@@ -159,6 +167,7 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
       const left = branches(root);
       expect(left.has("feat/live")).toBe(true);
       expect(left.has("feat/done-unmerged")).toBe(true);
+      expect(left.has("feat/absent")).toBe(true);
       expect(left.has("feat/done")).toBe(false);
       expect(left.has("feat/gone")).toBe(false);
       expect(left.has("other/thing")).toBe(true); // out of scope, untouched
@@ -589,6 +598,31 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
         }),
       );
       expect(branches(root).has("feat/archived-active")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps a merged, clean worktree when its branch has no task record", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      mergedWorktree(root, main, "feat/orphan");
+
+      // The index is partial: another live task exists, so the list is not
+      // simply empty, but this branch cannot be matched to a task record.
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/some-other-task", "done")],
+      });
+
+      expect(report.removedWorktrees).toHaveLength(0);
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "feat/orphan",
+          reason: "no task record for branch — lifecycle state unknown",
+        }),
+      );
+      expect(branches(root).has("feat/orphan")).toBe(true);
     } finally {
       clean();
     }

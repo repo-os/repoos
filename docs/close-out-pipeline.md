@@ -859,6 +859,10 @@ same automatic, fail-closed rules at boot, after every close-out, and from
   unmerged source changes, and dirty files outside `work/*.md` are **always
   retained** with a reason. A task marked done/archived does not make its
   branch disposable; the content proof does.
+- A managed worktree whose branch has **no matching task record** is retained
+  too: a missing record is indistinguishable from a stale/partial index, and
+  content proof alone cannot establish that an agent or close-out is finished
+  with it. The reason says the lifecycle state is unknown.
 - If the task index cannot be built, or the durable close-out-job records
   cannot be read, the sweep **skips cleanup entirely** and reports an error.
   An empty or partial lifecycle view must never make an active task or a live
