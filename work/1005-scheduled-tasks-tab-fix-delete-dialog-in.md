@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
@@ -17,7 +15,9 @@ model_override: opencode-go/muse-spark-1.3-contributor
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T20:24:48Z"
+updated_at: "2026-11-02T20:33:01Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -161,4 +161,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T20:24:13Z · note: review pass 3: needs some work
 - 2026-11-02T20:24:14Z · needs_input
 - 2026-11-02T20:24:48Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
-
+- 2026-11-02T20:33:01Z · note: declared shot Scheduled task cards use a compact horizontal layout on target "default" cannot render: state "schedule:seeded" did not render on target "default" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
