@@ -2,20 +2,29 @@
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
-status: inbox
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-plain-language-status
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-01T16:07:00Z"
+updated_at: "2026-11-01T23:51:48Z"
+review_rounds: 1
+routing_switches: 1
+review_passes: 1
+last_check_failure: "repoos check at 2026-11-01T22:06:01.306Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control 2×2 panels (target \"default\"): loading state detected: loading text \"Loading…\" on / (http://127.0.0.1:58741/); [missing-target] Review pass selection and freshness (target \"default\"): highlight .review-history-wrap matched nothing on /work?task=1003&tab=review (http://127.0.0.1:58741/work?shotState=drawer:landable)"
+dev_error_count: 1
 ---
 ## Items
-- [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived. Source: Nick's UI feedback, 2026-11-01.
-- [ ] **E2 · Replace “landed” and “landable” merge wording** (web) — use plain-language variants of “merged into main” for completed merges and “ready to merge” for eligible changes. Source: Nick's terminology feedback, 2026-11-01.
-- [ ] **E3 · Mission Control panels use a balanced 2×2 layout** (web) — show the four panels in two columns and two rows, with equal medium heights between the current short and tall panels. Source: Nick, 2026-11-01 screenshot.
-- [ ] **E4 · Combine default and custom agents in one tab** (web) — Rename the Default Agents tab to Agents, remove the Custom Agents tab, and render its section below Default Agents in the Agents tab.. Source: Nick, 2026-11-02 screenshot.
+- [ ] **E1 · Replace “wedged” with heartbeat wording** (web) — describe a live check with an overdue heartbeat as “No recent heartbeat” and show when its last heartbeat arrived.
+- [ ] **E2 · Replace “landed” and “landable” merge wording** (web) — use plain-language variants of “merged into main” for completed merges and “ready to merge” for eligible changes.
+- [ ] **E3 · Mission Control panels use a balanced 2×2 layout** (web) — show the four panels in two columns and two rows, with equal medium heights between the current short and tall panels.
+- [ ] **E4 · Combine default and custom agents in one tab** (web) — rename Default Agents to Agents, remove the Custom Agents tab, and render its section below Default Agents in the Agents tab.
+- [ ] **E5 · Make review-pass selection and reviewer identity clear** (web) — place Latest on the Good to go row, highlight the selected pass, mark an older pass Not latest, and show the reviewer coding agent.
+- [ ] **E6 · Preview task agent assignments on hover** (web) — hovering the task card robot icon shows a compact, readable table of the task’s PM, engineer, and reviewer agent/model assignments without opening the edit panel; clicking the icon continues to open the editor, and keyboard/touch users retain an accessible way to view assignments.
 
 
 ## E1 · Replace “wedged” with heartbeat wording
@@ -86,6 +95,78 @@ Rename the “Default Agents” tab to “Agents”. Remove the separate “Cust
 ### Notes for AI
 Use the attached screenshot as layout context. Its Cursor model-refresh timeout banner is incidental and is not part of this item.
 
+## E5 · Make review-pass selection and reviewer identity clear
+### Problem
+
+The Review tab shows Latest on a separate row below the green Good to go callout, making the active selection unclear. Selecting an older review pass does not clearly communicate that it is not the latest. The reviewer column also displays the generic word “reviewer” instead of the coding agent that produced the review.
+
+### Desired UX
+
+Keep the Latest marker on the right side of the Good to go callout row. Select the latest pass by default and visibly highlight whichever pass is selected. When an older pass is selected, change the callout marker to “Not latest” using a distinct color. Show the reviewer coding agent (for example, Cursor or Codex) in the reviewer column; keep the model in its separate column.
+
+### Acceptance criteria
+
+- The latest pass is selected by default, visibly highlighted, and marked Latest in the callout row.
+- Selecting an older pass highlights that row and changes the callout marker to Not latest with a distinct visual treatment.
+- The selected pass controls the displayed review details; the Latest marker does not remain when an older pass is selected.
+- The reviewer column displays the recorded coding agent identity instead of the generic “reviewer” role label, while preserving the model column.
+- Tests cover default selection, switching between latest and older passes, reviewer identity, and responsive/accessibility behavior.
+
+## Shots
+```json
+[
+{
+"label": "Mission Control 2×2 panels",
+"target": "default",
+"route": "/",
+"highlight": ".dash-grid",
+"steps": [
+{
+"waitFor": ".dash-grid"
+}
+]
+},
+{
+"label": "Agents tab with default and custom sections",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-tab-content"
+},
+{
+"label": "Review pass selection and freshness",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".review-history-wrap",
+"state": "drawer:reviewPasses",
+"steps": [
+{
+"waitFor": ".review-history-wrap"
+}
+]
+}
+]
+```
+
+## E6 · Preview task agent assignments on hover
+## Problem
+
+The robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.
+
+## Desired UX
+
+Hovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.
+
+## Acceptance criteria
+
+- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.
+- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.
+- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.
+- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.
+
+## Notes for AI
+
+Use the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only.
+
 ## Screenshots
 
 ![Screenshot-2026-11-01-at-23.30.22](/api/tasks/1003/attachments/att_1cfc9082-f10e-43ff-8458-3edfc582e276.png)
@@ -93,6 +174,9 @@ Use the attached screenshot as layout context. Its Cursor model-refresh timeout 
 ![Screenshot-2026-11-01-at-23.30.58](/api/tasks/1003/attachments/att_b17f9b26-3b1a-4276-9c56-124c2c78c9b9.png)
 ![Mission Control panels have uneven heights and a 3+1 layout](/api/tasks/1003/attachments/att_5f8b6a2b-d1b4-469c-bb0f-bdfe98eddb91.png)
 ![Agents settings reference: combine default and custom agent sections](/api/tasks/1003/attachments/att_003c5df7-edd1-40f2-bc8f-271510dca214.png)
+![Review passes: move Latest into the callout row and identify the reviewer agent](/api/tasks/1003/attachments/att_44a3ed0f-5b52-49b1-bb92-0ff74721dcc1.png)
+![Review pass selection: highlight the selected older pass and mark it Not latest](/api/tasks/1003/attachments/att_a1a8b279-092b-4e5f-aed7-1b9cb717ef19.png)
+![Task card robot icon and current agent-assignment editor/tooltip](/api/tasks/1003/attachments/att_0f6fb580-128d-467e-9f85-6f67571e1220.png)
 
 ## Activity
 
@@ -126,3 +210,68 @@ Use the attached screenshot as layout context. Its Cursor model-refresh timeout 
 - 2026-11-01T16:06:58Z · note: bundle edit E4
 - 2026-11-01T16:07:00Z · body: E4 · Combine default and custom agents in one tab (added 1)
 - 2026-11-01T16:07:00Z · note: bundle edit E4
+- 2026-11-01T18:37:00Z · body: Items (added 4, removed 3)
+- 2026-11-01T18:37:00Z · screenshots
+- 2026-11-01T18:37:16Z · body: Items (added 2, removed 2)
+- 2026-11-01T18:37:16Z · screenshots
+- 2026-11-01T18:37:44Z · body: E5 · Make review-pass selection and reviewer identity clear (added)
+- 2026-11-01T18:40:54Z · review_cli_override, review_model_override
+- 2026-11-01T18:41:01Z · status inbox→ready
+- 2026-11-01T18:41:08Z · status ready→active, branch
+- 2026-11-01T18:45:36Z · body
+- 2026-11-01T18:51:22Z · message_queued at 2026-11-01T18:51:22.930Z
+- 2026-11-01T18:51:23Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-01T18:55:45Z · note: adopted orphaned engineer pid 52726
+- 2026-11-01T19:00:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T19:20:31Z · body
+- 2026-11-01T19:31:10Z · body
+- 2026-11-01T19:34:32Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T19:34:32Z · agent exited with an error (codex) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-01T19:34:32Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-01T19:34:36Z · needs_input
+- 2026-11-01T19:34:36Z · message_delivered: 1 message(s)
+- 2026-11-01T19:37:14Z · body
+- 2026-11-01T19:39:05Z · body: Items (added 1, removed 5)
+- 2026-11-01T19:39:05Z · message_queued at 2026-11-01T19:39:05.625Z
+- 2026-11-01T19:39:06Z · body: E6 · Preview task agent assignments on hover (added); Problem\n\nThe robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.\n\n## Desired UX\n\nHovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.\n\n## Acceptance criteria\n\n- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.\n- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.\n- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.\n- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.\n\n## Notes for AI\n\nUse the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only. (added)
+- 2026-11-01T19:39:06Z · screenshots
+- 2026-11-01T19:39:06Z · message_queued at 2026-11-01T19:39:06.840Z
+- 2026-11-01T19:39:20Z · body: Items (added 6, removed 1)
+- 2026-11-01T19:39:20Z · message_queued at 2026-11-01T19:39:20.870Z
+- 2026-11-01T19:39:21Z · body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added)
+- 2026-11-01T19:39:21Z · message_queued at 2026-11-01T19:39:21.926Z
+- 2026-11-01T19:40:05Z · body: Problem\n\nThe robot icon on a task card currently exposes the agent assignments through its click-to-edit panel. People who only want to check which agents are assigned must open the editor and then close it again.\n\n## Desired UX\n\nHovering the robot icon shows a compact, well-presented table with the task’s three role assignments (PM, engineer, reviewer), coding agent, and model. The preview is read-only. Clicking the icon still opens the assignment editor. Preserve an accessible way to inspect assignments for keyboard and touch users.\n\n## Acceptance criteria\n\n- Test: pointer hover on the robot icon reveals the three role/agent/model assignments without opening the editor.\n- Test: moving the pointer away dismisses the preview; clicking the icon still opens the assignment editor.\n- Test: keyboard focus and touch interaction provide an accessible way to view the same assignments.\n- The preview is readable, does not obscure the task title or essential controls, and remains within the viewport.\n\n## Notes for AI\n\nUse the attached screenshot as context. Match the visual hierarchy of the existing assignment editor while keeping the hover preview compact and read-only. (removed)
+- 2026-11-01T19:40:05Z · message_queued at 2026-11-01T19:40:05.977Z
+- 2026-11-01T19:40:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T20:01:02Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-01T20:01:17Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-01T20:56:28Z · body
+- 2026-11-01T21:00:25Z · handoff_deferred: 5 queued message(s) must be read before review
+- 2026-11-01T21:00:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T21:00:26Z · message_delivered: 5 message(s)
+- 2026-11-01T21:05:44Z · message_queued at 2026-11-01T21:05:44.219Z
+- 2026-11-01T21:05:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-01T21:07:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T21:12:43Z · body
+- 2026-11-01T21:16:28Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T21:16:28Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T21:16:28Z · message_delivered: 1 message(s)
+- 2026-11-01T21:30:47Z · body
+- 2026-11-01T22:05:57Z · note: ui verification failed (2 issue(s)): [missing-target] Mission Control 2×2 panels (target "default"): loading state detected: loading text "Loading…" on / (http://127.0.0.1:58741/); [missing-target] Review pass selection and freshness (target "default"): highlight .review-history-wrap matched nothing on /work?task=1003&tab=review (http://127.0.0.1:58741/work?shotState=drawer:landable)
+- 2026-11-01T22:07:51Z · body
+- 2026-11-01T22:15:44Z · message_queued at 2026-11-01T22:15:44.445Z
+- 2026-11-01T22:15:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-01T22:19:45Z · body
+- 2026-11-01T22:20:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-01T22:36:48Z · body
+- 2026-11-01T22:47:22Z · body
+- 2026-11-01T22:50:44Z · CTO nudge: held — handoff gate is running
+- 2026-11-01T22:50:51Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-01T22:50:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-01T22:50:51Z · message_delivered: 1 message(s)
+- 2026-11-01T23:23:57Z · status active→review
+- 2026-11-01T23:23:58Z · note: Task body is underspecified: E5: missing Notes for AI; E6: missing Problem, Desired UX, Acceptance criteria, Notes for AI
+- 2026-11-01T23:32:31Z · note: review pass 1: needs some work
+- 2026-11-01T23:32:33Z · status review→active
+- 2026-11-01T23:32:36Z · CTO nudge: held — remote validation is running
+- 2026-11-01T23:51:48Z · body

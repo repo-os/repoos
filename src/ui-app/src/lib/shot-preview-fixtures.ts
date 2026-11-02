@@ -759,6 +759,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           kind: "close-out",
           startedAt: seeded.status.hosts[0]!.activeRuns![0]!.startedAt,
           elapsedMs: 18 * 60_000,
+          lastProgressAt: new Date().toISOString(),
           stage: "run",
           phases: seeded.status.hosts[0]!.activeRuns![0]!.phases ?? [],
         },
@@ -888,30 +889,43 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     }
     case "checks:progress": {
-      ensureFixtureTask(repo, "review");
+      // Active engineer + heartbeating handoff check (#1000 shot): agent output
+      // can be quiet while the card shows `checking · …`, not `stuck · silent`.
+      ensureFixtureTask(repo, "active", {
+        title: "Handoff check in progress while agent waits",
+      });
+      if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
+        repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
+      }
+      repo.agentActivityAt = {
+        ...repo.agentActivityAt,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: new Date(Date.now() - 9 * 60_000).toISOString(),
+      };
+      const checkStarted = new Date(Date.now() - 10 * 60_000).toISOString();
+      const checkHeartbeat = new Date(Date.now() - 15_000).toISOString();
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
         {
           id: "shot-check-progress-page",
           taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
-          kind: "merge-gate",
-          startedAt: new Date(Date.now() - 4 * 60_000 - 10_000).toISOString(),
+          kind: "handoff-finalize",
+          startedAt: checkStarted,
           finishedAt: null,
           durationMs: null,
           running: true,
           passed: null,
           code: null,
           output: "",
-          scope: "full",
-          machine: "bee",
+          scope: "changed:main",
+          machine: "air",
           stepsDone: 5,
           stepsTotal: 12,
           currentStep: 6,
           stepName: "tests",
-          testsDone: 140,
-          testsTotal: 289,
+          testsDone: 109,
+          testsTotal: 645,
           testsPass: 1,
-          attempt: 2,
-          attemptReason: "previous attempt timed out after 420s",
+          lastProgressAt: checkHeartbeat,
+          attempt: 1,
         },
       ];
       break;

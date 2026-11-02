@@ -37,6 +37,7 @@ import { TestCaseTimingCollector, pushTimingOutputChunk } from "../core/test-cas
  */
 
 import { spawn } from "node:child_process";
+import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
 import { writeChildStdin } from "../core/child-stdin.js";
 import {
   bundleUploadLimitsFromConfig,
@@ -429,10 +430,14 @@ export interface RemoteTaskActivity {
     kind: RemoteRunKind;
     startedAt: string;
     elapsedMs: number;
+    /** Last output/progress heartbeat, independent of total run age. */
+    lastProgressAt: string;
     stage: string | null;
     phases: RemoteRunPhaseTiming[];
   } | null;
   queue: RemoteQueuedRunInfo | null;
+  /** Host-lock vs registry disagreement (#1000). */
+  telemetryMismatch?: string | null;
 }
 
 /** Derive a job kind from the check-run phase when a caller did not name one. */
@@ -623,6 +628,8 @@ export interface ActiveRemoteRunInfo {
   phase: CheckRunPhase;
   scope: string;
   startedAt: string;
+  /** Last output/progress heartbeat for the active stage. */
+  lastProgressAt?: string;
   /** e.g. `bundle`, `upload`, `queue`, `lock`, `run`, `install`, `test`. */
   stage: string | null;
   uploadBytes: number | null;
@@ -669,6 +676,7 @@ export class ActiveRemoteRunRegistry {
     }
     const prev = this.runs.get(taskId);
     const now = Date.now();
+    info = { ...info, lastProgressAt: new Date(now).toISOString() };
     const phases = (prev?.phases ?? info.phases ?? []).map((p) => ({ ...p }));
     const stage = info.stage ?? "run";
     const last = phases[phases.length - 1];
@@ -688,6 +696,12 @@ export class ActiveRemoteRunRegistry {
       startedAt: prev ? new Date(now).toISOString() : info.startedAt,
     });
     this.runs.set(taskId, { ...info, kind: info.kind ?? prev?.kind, phases });
+  }
+
+  /** Refresh the progress heartbeat when remote output advances within a stage. */
+  touch(taskId: string): void {
+    const run = this.runs.get(taskId);
+    if (run) run.lastProgressAt = new Date().toISOString();
   }
 }
 
@@ -711,6 +725,7 @@ export function taskActivityFromRegistry(
       kind: info.kind ?? remoteRunKindForPhase(info.phase),
       startedAt: info.startedAt,
       elapsedMs: Math.max(0, Date.now() - Date.parse(info.startedAt)),
+      lastProgressAt: info.lastProgressAt ?? info.startedAt,
       stage: info.stage,
       phases: info.phases ?? [],
     },
@@ -2049,10 +2064,11 @@ function runLocal(
   },
 ): Promise<RemoteExecResult> {
   return new Promise((resolve) => {
-    const child = spawn(cmd, args, { cwd: opts.cwd });
+    const child = spawn(cmd, args, { cwd: opts.cwd, detached: process.platform !== "win32" });
     let output = "";
     let timedOut = false;
     let settled = false;
+    let termination: Promise<void> | undefined;
     const done = (code: number | null): void => {
       if (settled) return;
       settled = true;
@@ -2060,7 +2076,12 @@ function runLocal(
       resolve({ code, output, timedOut });
     };
     opts.registerAbort?.(() => {
-      if (!settled) child.kill("SIGKILL");
+      if (settled) return;
+      if (child.pid && process.platform !== "win32") {
+        termination ??= terminateProcessGroupAndWait(child.pid);
+      } else {
+        child.kill("SIGKILL");
+      }
     });
     const onData = (b: Buffer): void => {
       const s = b.toString("utf8");
@@ -2073,10 +2094,26 @@ function runLocal(
       output += `\n[could not spawn ${cmd}: ${(e as Error).message}]\n`;
       done(null);
     });
-    child.on("close", (code) => done(code));
+    child.on("close", (code) => {
+      void (async () => {
+        if (
+          child.pid &&
+          process.platform !== "win32" &&
+          (termination || processGroupAlive(child.pid))
+        ) {
+          termination ??= terminateProcessGroupAndWait(child.pid);
+          await termination;
+        }
+        done(code);
+      })();
+    });
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill("SIGKILL");
+      if (child.pid && process.platform !== "win32") {
+        termination ??= terminateProcessGroupAndWait(child.pid);
+      } else {
+        child.kill("SIGKILL");
+      }
     }, opts.timeoutMs);
   });
 }
@@ -2989,6 +3026,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.clearIdleTimer();
     const startedAt = Date.now();
     const emit = (s: string): void => {
+      this.activeRunRegistry.touch(opts.taskId);
       pushTimingOutputChunk(s, fileTimingCollector, caseTimingCollector);
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
@@ -5993,6 +6031,7 @@ export class TailscaleRunner implements RemoteValidator {
           }
         };
         const emitStream = (s: string): void => {
+          this.activeRunRegistry.touch(opts.taskId);
           streamBuf += s;
           advanceStepStage();
           if (!gateFinished && remoteRunHasGateExit(streamBuf)) {
