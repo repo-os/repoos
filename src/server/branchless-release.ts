@@ -12,9 +12,10 @@
  * Never touches the job queue or the repository lock — there is no merge to
  * serialize against other close-outs, so those mechanisms don't apply.
  */
-import { execFile } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { terminateProcessGroupAndWait } from "../core/process-group.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { loadConfig } from "../core/config.js";
 import { spawnedRepoosCheckArgs } from "./pre-review-remote-gate.js";
@@ -32,27 +33,84 @@ interface CandidateResult {
   stderr: string;
   /** Only a missing executable justifies trying another CLI candidate. */
   missingExecutable: boolean;
+  timedOut?: boolean;
 }
 
-type RunCandidate = (cmd: string, args: string[], root: string) => Promise<CandidateResult>;
+type RunCandidate = (
+  cmd: string,
+  args: string[],
+  root: string,
+  timeoutMs: number,
+) => Promise<CandidateResult>;
 
-function runCandidate(cmd: string, args: string[], root: string): Promise<CandidateResult> {
+const DEFAULT_BRANCHLESS_RELEASE_TIMEOUT_MS = 60 * 60_000;
+const MAX_CHECK_OUTPUT_BYTES = 10 * 1024 * 1024;
+
+export function branchlessReleaseTimeoutMs(config: RepoOSConfig): number {
+  const configured = config.closeOut?.timeoutMs;
+  if (typeof configured === "number" && configured > 0) return configured;
+  if (configured === 0) return 0;
+  return DEFAULT_BRANCHLESS_RELEASE_TIMEOUT_MS;
+}
+
+function runCandidate(
+  cmd: string,
+  args: string[],
+  root: string,
+  timeoutMs: number,
+): Promise<CandidateResult> {
   return new Promise((resolve) => {
-    execFile(
-      cmd,
-      args,
-      { cwd: root, encoding: "utf8", timeout: 600_000, maxBuffer: 10 * 1024 * 1024 },
-      (error, stdout, stderr) => {
-        resolve({
-          status: error ? (typeof error.code === "number" ? error.code : null) : 0,
-          stdout,
-          stderr: [stderr, error && typeof error.code !== "number" ? error.message : ""]
-            .filter(Boolean)
-            .join("\n"),
-          missingExecutable: error?.code === "ENOENT",
-        });
-      },
-    );
+    const child = spawn(cmd, args, {
+      cwd: root,
+      detached: process.platform !== "win32",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const stdout: Buffer[] = [];
+    const stderr: Buffer[] = [];
+    let outputBytes = 0;
+    let timedOut = false;
+    let spawnError: NodeJS.ErrnoException | undefined;
+    let settled = false;
+    let termination: Promise<void> | null = null;
+    const append = (chunks: Buffer[], chunk: Buffer): void => {
+      chunks.push(chunk);
+      outputBytes += chunk.length;
+      while (outputBytes > MAX_CHECK_OUTPUT_BYTES && (stdout.length || stderr.length)) {
+        const oldest = stdout.length ? stdout.shift()! : stderr.shift()!;
+        outputBytes -= oldest.length;
+      }
+    };
+    child.stdout.on("data", (chunk: Buffer) => append(stdout, chunk));
+    child.stderr.on("data", (chunk: Buffer) => append(stderr, chunk));
+    const timer =
+      timeoutMs > 0
+        ? setTimeout(() => {
+            timedOut = true;
+            if (child.pid) termination = terminateProcessGroupAndWait(child.pid);
+          }, timeoutMs)
+        : undefined;
+    timer?.unref?.();
+    const finish = (status: number | null): void => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      resolve({
+        status: timedOut ? null : status,
+        stdout: Buffer.concat(stdout).toString("utf8"),
+        stderr: [Buffer.concat(stderr).toString("utf8"), spawnError?.message]
+          .filter(Boolean)
+          .join("\n"),
+        missingExecutable: spawnError?.code === "ENOENT",
+        timedOut,
+      });
+    };
+    child.once("error", (error: NodeJS.ErrnoException) => {
+      spawnError = error;
+      finish(null);
+    });
+    child.once("close", (code) => {
+      void (termination ?? Promise.resolve()).then(() => finish(code));
+    });
   });
 }
 
@@ -62,11 +120,13 @@ export async function runCheckCandidates(
   candidates: string[][],
   root: string,
   execute: RunCandidate = runCandidate,
+  timeoutMs = DEFAULT_BRANCHLESS_RELEASE_TIMEOUT_MS,
 ): Promise<CheckResult> {
   let last: CandidateResult | null = null;
   for (const [cmd, ...args] of candidates) {
-    const result = await execute(cmd!, args, root);
+    const result = await execute(cmd!, args, root, timeoutMs);
     last = result;
+    if (result.timedOut) break;
     if (result.status === 0) return { ok: true };
     if (!result.missingExecutable) break;
   }
@@ -77,7 +137,11 @@ export async function runCheckCandidates(
     .split("\n")
     .slice(-15)
     .join("\n");
-  return { ok: false, output: output || "no output captured" };
+  const timeoutDetail = last?.timedOut ? `check command timed out after ${timeoutMs}ms` : "";
+  return {
+    ok: false,
+    output: [timeoutDetail, output || "no output captured"].filter(Boolean).join("\n"),
+  };
 }
 
 /** Real check runner: prefers the local build's own CLI, same preference order as the close-out pipeline. */
@@ -94,7 +158,7 @@ export async function runCheckOnRoot(root: string): Promise<CheckResult> {
         ["repoos", "check", ...checkArgs],
         ["bun", "run", "repoos", "check", ...checkArgs],
       ];
-  return runCheckCandidates(candidates, root);
+  return runCheckCandidates(candidates, root, runCandidate, branchlessReleaseTimeoutMs(cfg));
 }
 
 export interface ReleaseBranchlessResult {

@@ -765,7 +765,13 @@ export async function cmdDone(args: string[]): Promise<number> {
         );
       return (result.status >= 200 && result.status < 300) || result.status === 409 ? 0 : 1;
     }
-    const started = await api.request("POST", `/api/tasks/${id}/done`, { commitDirty });
+    const closeOutTimeoutMs = api.closeOutTimeoutMs;
+    const started = await api.request(
+      "POST",
+      `/api/tasks/${id}/done`,
+      { commitDirty },
+      { timeoutMs: closeOutTimeoutMs > 0 ? closeOutTimeoutMs + 60_000 : undefined },
+    );
     if (started.status === 409 && started.body.needsCommit) {
       throw new RepoOsApiError(
         started.body.error ?? "close-out blocked on dirty tree",

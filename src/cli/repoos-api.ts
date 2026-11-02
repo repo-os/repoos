@@ -75,6 +75,10 @@ export class RepoOsApi {
     this.session = readCliSession(this.root, this.config.cacheDir);
   }
 
+  get closeOutTimeoutMs(): number {
+    return this.config.closeOut?.timeoutMs ?? 0;
+  }
+
   private localToken(): string | null {
     return readLocalCliToken(this.root, this.config.cacheDir);
   }
@@ -152,7 +156,7 @@ export class RepoOsApi {
     method: string,
     path: string,
     body?: unknown,
-    opts: { retryAuth?: boolean } = {},
+    opts: { retryAuth?: boolean; timeoutMs?: number } = {},
   ): Promise<{ status: number; body: ApiJson }> {
     const jsonBody = body !== undefined;
     const doFetch = async (): Promise<Response> => {
@@ -161,6 +165,8 @@ export class RepoOsApi {
           method,
           headers: this.buildHeaders(jsonBody),
           body: jsonBody ? JSON.stringify(body) : undefined,
+          signal:
+            opts.timeoutMs && opts.timeoutMs > 0 ? AbortSignal.timeout(opts.timeoutMs) : undefined,
         });
       } catch (err) {
         throw new RepoOsApiError(
