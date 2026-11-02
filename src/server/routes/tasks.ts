@@ -23,6 +23,8 @@ import {
   extractOneShotReportText,
   type PromptResult,
 } from "../agents.js";
+import { DEFAULT_CHECK_STALL_MS, isCheckHeartbeatStalled } from "../../core/active-task-card.js";
+import { taskHasBlockingCheckOrRemote } from "../active-task-card.js";
 import { resolveRoutedAgent } from "../model-routing-wiring.js";
 import {
   markPmWorking,
@@ -2490,6 +2492,20 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
   if (!existing) {
     return json(res, 404, { error: `Task #${id} not found` });
   }
+  if (action === "cancel-check") {
+    const run = ctx.taskChecks
+      ?.getRuns(id)
+      .filter((check) => check.running)
+      .at(-1);
+    if (!run) return json(res, 409, { error: `No running check is registered for #${id}` });
+    if (!isCheckHeartbeatStalled(run.lastProgressAt, Date.now(), DEFAULT_CHECK_STALL_MS)) {
+      return json(res, 409, {
+        error: `The check is still progressing; cancellation is available after ${DEFAULT_CHECK_STALL_MS / 60_000} minutes without a valid heartbeat`,
+      });
+    }
+    const cancelled = await ctx.taskChecks!.cancel(id);
+    return json(res, cancelled.ok ? 200 : 409, cancelled);
+  }
   if (
     existing.assignee === "human" &&
     action !== "archive" &&
@@ -2632,6 +2648,18 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (isEvidenceRefreshActive(id)) {
       return json(res, 409, {
         error: `Evidence refresh is in progress for #${id}; wait for it to finish before starting the engineer`,
+      });
+    }
+    if (
+      ctx.taskChecks &&
+      taskHasBlockingCheckOrRemote(
+        id,
+        (taskId) => ctx.taskChecks!.getRuns(taskId),
+        ctx.remoteValidator,
+      )
+    ) {
+      return json(res, 409, {
+        error: `Task #${id} has a check or remote validation in flight — wait for it to finish before starting the engineer`,
       });
     }
     const body = (await readBody(req)) as {
@@ -3508,6 +3536,19 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     if (existing.status !== "active") {
       return json(res, 400, {
         error: `Only active tasks can be paused (#${id} is ${existing.status})`,
+      });
+    }
+    if (
+      ctx.taskChecks &&
+      taskHasBlockingCheckOrRemote(
+        id,
+        (taskId) => ctx.taskChecks!.getRuns(taskId),
+        ctx.remoteValidator,
+        { includeTelemetryMismatch: false },
+      )
+    ) {
+      return json(res, 409, {
+        error: `Task #${id} has a check or remote validation in flight — wait for it to finish before pausing the agent`,
       });
     }
     const stopRes = runner.stop(id);
