@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, onBeforeUnmount, watch, nextTick } from "vue";
 import type { Task } from "../types";
+import { api, JSON_OPTS } from "../api";
 import { FileText, User } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
 import { useRepoStore } from "../stores/repo";
@@ -420,7 +421,7 @@ interface CardAction {
   label: string;
   title: string;
   icon: string;
-  variant: "start" | "pause" | "done" | "move";
+  variant: "start" | "pause" | "done" | "move" | "release";
 }
 
 const ACTIONS: Partial<Record<Task["status"], CardAction>> = {
@@ -462,6 +463,13 @@ const ACTIVE_RESTART: CardAction = {
   title: "Relaunch the agent on this task from where it left off",
   icon: "M8 5v14l11-7z",
   variant: "start",
+};
+
+const RELEASE_HOLD: CardAction = {
+  label: "Release hold",
+  title: "Clear the hold and allow normal task dispatch",
+  icon: "M12 2v10m-6.4-6.4a9 9 0 1 0 12.8 0",
+  variant: "release",
 };
 
 interface CardHint {
@@ -680,22 +688,7 @@ const worktreeFrozen = computed(
 const hint = computed<CardHint | null>(() => {
   const t = props.task;
   const pmWorking = repo.pmWorkingFor(t.id);
-  // #0960: a held task is inert for ALL automation — say so on the card rather
-  // than letting it read as idle. Held review/done tasks (close-out is
-  // human/driver-invoked) keep their normal status cue, so only the
-  // dispatch-affected states get the held hint.
-  if (
-    held.value &&
-    (t.status === "ready" || t.status === "inbox" || t.status === "active" || t.status === "draft")
-  ) {
-    return {
-      label: t.holdUntil ? "held · auto-releases" : "held",
-      title: `This task is held — automation will not start it.${
-        t.holdReason ? ` Reason: ${t.holdReason}.` : ""
-      } Release with "repoos unhold ${t.id}"${t.holdUntil ? ` or after ${t.holdUntil}` : ""}.`,
-      cls: "tc-held-hint",
-    };
-  }
+  if (held.value) return null;
   // The freeform-create PM agent is fleshing this draft out right now
   // (0335) — a draft otherwise looks identical to an idle one. Guarded on
   // `draft` so the indicator disappears the moment the promotion lands,
@@ -932,6 +925,7 @@ const IN_PIPELINE: CardAction = {
  *  demotes to `ready` — the running-agent set (repo.isRunning) is the signal. */
 const action = computed<CardAction | null>(() => {
   const t = props.task;
+  if (held.value) return RELEASE_HOLD;
   if (t.assignee === "human") return null;
   if (
     t.status === "review" &&
@@ -986,6 +980,7 @@ const actionFooterClass = computed(() => {
         "border-[var(--cyan-dim)] bg-[var(--cyan-dim)] text-[var(--cyan)] hover:brightness-125" +
         inert
       );
+    case "release":
     case "pause":
       return (
         "border-[var(--amber-tint)] bg-[var(--amber-tint)] text-[var(--amber)] hover:brightness-110" +
@@ -1007,8 +1002,9 @@ const actionFooterClass = computed(() => {
 /** True when the action would relaunch the agent (fresh start or resume from pause). */
 const isLaunchAction = computed(
   () =>
-    props.task.status === "ready" ||
-    (props.task.status === "active" && !repo.isRunning(props.task.id)),
+    !held.value &&
+    (props.task.status === "ready" ||
+      (props.task.status === "active" && !repo.isRunning(props.task.id))),
 );
 
 /** True when this fresh-done card still needs the human to acknowledge it (0278). */
@@ -1040,7 +1036,22 @@ function acknowledgeCreate(): void {
 const startWorkPending = computed(() => repo.isStartWorkPending(props.task.id));
 
 async function runAction(): Promise<void> {
-  if (busy.value || startWorkPending.value || !action.value) return;
+  if (busy.value || (!held.value && startWorkPending.value) || !action.value) return;
+  if (held.value) {
+    busy.value = true;
+    try {
+      const result = await api<{ task: Task }>(
+        `/api/tasks/${props.task.id}/unhold`,
+        JSON_OPTS("POST", {}),
+      );
+      Object.assign(props.task, result.task);
+    } catch (err) {
+      repo.onError(err);
+    } finally {
+      busy.value = false;
+    }
+    return;
+  }
   if (agentInterruptBlocked.value) return;
   if (props.task.status === "review" && repo.reviewFor(props.task.id)?.running) return;
   const overrideDependencies = isLaunchAction.value
@@ -1557,22 +1568,25 @@ async function openDebuggerFromError(): Promise<void> {
         :class="[actionFooterClass, reviewReady ? 'review-ready' : '']"
         :disabled="
           busy ||
-          startWorkPending ||
-          inPipeline ||
-          agentInterruptBlocked ||
-          (task.status === 'review' &&
-            (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))
+          (!held &&
+            (startWorkPending ||
+              inPipeline ||
+              agentInterruptBlocked ||
+              (task.status === 'review' &&
+                (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))))
         "
         :title="
-          agentInterruptBlocked
-            ? BLOCK_AGENT_INTERRUPT
-            : inPipeline
-              ? action.title
-              : task.status === 'review' && repo.reviewFor(task.id)?.running
-                ? 'Waiting for automatic review to finish.'
-                : task.status === 'review' && repo.isRunning(task.id)
-                  ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
-                  : action.title
+          held
+            ? action.title
+            : agentInterruptBlocked
+              ? BLOCK_AGENT_INTERRUPT
+              : inPipeline
+                ? action.title
+                : task.status === 'review' && repo.reviewFor(task.id)?.running
+                  ? 'Waiting for automatic review to finish.'
+                  : task.status === 'review' && repo.isRunning(task.id)
+                    ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
+                    : action.title
         "
         @click.stop="runAction"
       >
@@ -1587,7 +1601,7 @@ async function openDebuggerFromError(): Promise<void> {
           />
         </svg>
         {{
-          startWorkPending && task.status === "ready"
+          !held && startWorkPending && task.status === "ready"
             ? "Starting…"
             : busy
               ? "Working…"

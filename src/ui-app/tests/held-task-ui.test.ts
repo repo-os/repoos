@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import HoldTaskDialog from "../src/components/HoldTaskDialog.vue";
@@ -53,6 +53,9 @@ describe("held task UI", () => {
 
   it("requires a reason and emits the hold request with the optional date", async () => {
     const wrapper = mount(HoldTaskDialog, { props: { open: true } });
+    expect(wrapper.find(".cc-modal-head").exists()).toBe(true);
+    expect(wrapper.find(".cc-modal-body").findAll("label")).toHaveLength(2);
+    expect(wrapper.find(".cc-modal-actions").findAll("button")).toHaveLength(2);
     const submit = wrapper.findAll("button").find((button) => button.text().includes("Hold task"))!;
     expect(submit.attributes("disabled")).toBeDefined();
     await wrapper.find("textarea").setValue("Waiting for a dependency");
@@ -102,20 +105,50 @@ describe("held task UI", () => {
     wrapper.unmount();
   });
 
-  it("keeps the held status hint separate from the held chip on active cards", () => {
+  it.each(["active", "ready", "inbox", "draft", "review"] as const)(
+    "releases a held %s card without starting work",
+    async (status) => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      const heldTask = task({ status, isHeld: true });
+      const fetchMock = vi.fn(
+        async () =>
+          new Response(JSON.stringify({ task: { ...heldTask, isHeld: false } }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      const wrapper = mount(TaskCard, {
+        props: { task: heldTask, dragEnabled: false },
+        global: { plugins: [pinia], stubs: { ActivityIndicator: true } },
+      });
+      expect(wrapper.find(".tc-held").exists()).toBe(true);
+      expect(wrapper.find(".tc-held-hint").exists()).toBe(false);
+      const button = wrapper.find(".tc-card-footer-action");
+      expect(button.text()).toContain("Release hold");
+      expect(button.classes().join(" ")).toContain("var(--amber)");
+      await button.trigger("click");
+      await vi.waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/tasks/0042/unhold",
+          expect.objectContaining({ method: "POST", body: "{}" }),
+        ),
+      );
+      wrapper.unmount();
+    },
+  );
+
+  it("retains the restart action on an unheld active card", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const wrapper = mount(TaskCard, {
-      props: {
-        task: task({ status: "active", isHeld: true, holdReason: "Waiting for review" }),
-        dragEnabled: false,
-      },
+      props: { task: task({ status: "active" }), dragEnabled: false },
       global: { plugins: [pinia], stubs: { ActivityIndicator: true } },
     });
-
-    expect(wrapper.find(".tc-held").exists()).toBe(true);
-    expect(wrapper.find(".tc-held-hint").text()).toContain("held");
-    expect(wrapper.find(".tc-held-hint").classes()).not.toContain("tc-held");
+    expect(wrapper.find(".tc-card-footer-action").text()).toContain("Restart work");
     wrapper.unmount();
   });
+
+  afterEach(() => vi.unstubAllGlobals());
 });
