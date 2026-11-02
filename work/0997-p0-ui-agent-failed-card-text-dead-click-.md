@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-failed-card-text-dead-click-target
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T19:12:01Z"
+updated_at: "2026-11-02T19:23:41Z"
 ---
 ## Problem
 
@@ -38,12 +38,6 @@ Three linked UI faults on a failed task (#0994, after an engineer stopped with "
 Likely causes to check first: the restart confirmation is not body-teleported with `data-overlay-layer`, so a layer behind it takes the pointer (AGENTS.md #0575); the card status line is a plain `<div>` with no click handler; the tooltip reads the generic label instead of the reason. Related server work is in `src/server/task-watchdog.ts` (queued messages to a stopped engineer; see the uncommitted-to-approval note below).
 
 **Approval note:** a watchdog hotfix for "queued message to a stopped engineer never resumes" (`src/server/task-watchdog.ts`, `handleStalledCleanExit`) was written but not approved. It landed on main through the user's commit `7361989e3`. Confirm with the human whether to keep it before any further server change.
-
-## Screenshots
-
-![Board card and restart modal for #0994](/api/tasks/0997/attachments/att_f8aa23a2-1424-4a04-8973-2b1eacac126d.png)
-![29](/api/tasks/0997/attachments/att_6f099625-7021-4e83-9d99-14555ec705c8.png)
-![30](/api/tasks/0997/attachments/att_6305a077-4556-468c-b473-8df56584b8e4.png)
 
 ## Shots
 ```json
@@ -132,6 +126,12 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 ]
 ```
 
+## Screenshots
+
+![Board card and restart modal for #0994](/api/tasks/0997/attachments/att_f8aa23a2-1424-4a04-8973-2b1eacac126d.png)
+![29](/api/tasks/0997/attachments/att_6f099625-7021-4e83-9d99-14555ec705c8.png)
+![30](/api/tasks/0997/attachments/att_6305a077-4556-468c-b473-8df56584b8e4.png)
+
 ## Activity
 
 - 2026-11-01T07:03:42Z · created · njachowski@gmail.com
@@ -148,3 +148,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T19:04:47Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 2s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T19:09:02Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T19:12:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-02T19:23:41Z · body
