@@ -360,3 +360,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T05:16:54Z · handoff failed · remote validation failed: test failure: tests/git-maintenance.test.ts > commit-graph maintenance > removes stale index locks and keeps locks held by a live git process on mini — fix it in the feature branch and re-run the gate
 - 2026-11-02T05:22:14Z · body
 - 2026-11-02T05:30:04Z · message_queued at 2026-11-02T05:30:04.517Z
+- 2026-11-02T05:30:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
