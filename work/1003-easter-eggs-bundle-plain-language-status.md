@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 584683
-last_close_out_gate_at: "2026-11-02T12:27:52.588Z"
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 734203185ea2963d68dc12a3fb505d8030cb5481
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-plain-language-status
@@ -14,6 +13,8 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
 updated_at: "2026-11-02T12:27:52Z"
+last_close_out_gate_ms: 584683
+last_close_out_gate_at: "2026-11-02T12:27:52.588Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_rounds: 2
