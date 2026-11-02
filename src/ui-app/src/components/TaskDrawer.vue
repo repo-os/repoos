@@ -3092,6 +3092,7 @@ const taskRounds = computed(() => {
 const selectedReviewPass = ref<number | null>(null);
 const reviewPassBody = ref<ReviewReport | null>(null);
 const reviewPassLoading = ref(false);
+const reviewPassError = ref(false);
 let reviewPassRequest = 0;
 
 watch(
@@ -3101,6 +3102,7 @@ watch(
     selectedReviewPass.value = null;
     reviewPassBody.value = null;
     reviewPassLoading.value = false;
+    reviewPassError.value = false;
   },
 );
 
@@ -3111,6 +3113,7 @@ async function selectReviewPass(pass: number): Promise<void> {
   selectedReviewPass.value = pass;
   reviewPassBody.value = null;
   reviewPassLoading.value = true;
+  reviewPassError.value = false;
   try {
     const r = await api<{ ok: boolean; review: ReviewReport | null }>(
       `/api/tasks/${id}/review/passes/${pass}`,
@@ -3129,6 +3132,7 @@ async function selectReviewPass(pass: number): Promise<void> {
       reviewPassRequest === request
     ) {
       reviewPassBody.value = null;
+      reviewPassError.value = true;
     }
   } finally {
     if (
@@ -3139,6 +3143,11 @@ async function selectReviewPass(pass: number): Promise<void> {
       reviewPassLoading.value = false;
     }
   }
+}
+
+function retrySelectedReviewPass(): void {
+  const pass = selectedReviewPass.value;
+  if (pass !== null) void selectReviewPass(pass);
 }
 
 const displayedReviewReport = computed(() => {
@@ -6320,128 +6329,145 @@ watch(
                 }}</span>
               </div>
             </div>
-            <div v-if="review.report.state === 'failed'" class="review-failed">
-              {{ review.report.markdown }}
+            <div v-if="reviewPassError" class="review-pass-error" role="alert">
+              Could not load this review pass.
+              <button type="button" class="btn btn-sm" @click="retrySelectedReviewPass">
+                Try again
+              </button>
             </div>
-            <template v-else>
-              <div
-                v-if="review.report.state === 'incomplete'"
-                class="review-incomplete"
-                role="status"
-              >
-                Review finished without a parseable verdict. The partial report is below for
-                debugging — use <strong>Review again</strong> to rerun the reviewer.
+            <div
+              v-else-if="reviewPassLoading && selectedReviewPass !== null"
+              class="review-pass-loading"
+              role="status"
+            >
+              Loading review pass…
+            </div>
+            <template v-else-if="displayedReviewReport">
+              <div v-if="displayedReviewReport.state === 'failed'" class="review-failed">
+                {{ displayedReviewReport.markdown }}
               </div>
-              <div
-                v-else-if="verdict"
-                class="verdict-callout"
-                :class="`tone-${verdict.tone}`"
-                role="status"
-              >
-                <span class="verdict-dot"></span>
-                <span class="verdict-label">{{ verdict.label }}</span>
-                <span
-                  v-if="reviewHistoryRows.length > 0"
-                  class="review-pass-freshness"
-                  :class="{ 'is-old': !selectedReviewPassIsLatest }"
-                  >{{ selectedReviewPassIsLatest ? "Latest" : "Not latest" }}</span
+              <template v-else>
+                <div
+                  v-if="displayedReviewReport.state === 'incomplete'"
+                  class="review-incomplete"
+                  role="status"
                 >
-              </div>
-              <div
-                v-if="integrationConflictResolution"
-                class="resolution-provenance-wrap ff-notice"
-                role="status"
-              >
-                <p class="resolution-provenance-title">Integration conflict resolution</p>
-                <dl class="kv-rows resolution-provenance-kv">
-                  <dt>Feature review (immutable)</dt>
-                  <dd class="kv-wrap">
-                    <code>{{ integrationConflictResolution.approvedFeatureSha.slice(0, 12) }}</code>
-                    on main
-                    <code>{{ integrationConflictResolution.mainBaseSha.slice(0, 12) }}</code>
-                  </dd>
-                  <dt>Conflict paths</dt>
-                  <dd class="kv-wrap">
-                    {{ integrationConflictResolution.conflictPaths.join(", ") }}
-                  </dd>
-                  <dt>Resolution review</dt>
-                  <dd>
-                    <span
-                      v-if="integrationConflictResolution.resolutionReview.verdict === 'pending'"
-                    >
-                      Pending
-                    </span>
-                    <span v-else>
-                      {{ integrationConflictResolution.resolutionReview.verdict }}
-                      <template v-if="integrationConflictResolution.resolutionReview.reviewer">
-                        · {{ integrationConflictResolution.resolutionReview.reviewer }}
-                      </template>
-                      <template v-if="integrationConflictResolution.resolutionReview.at">
-                        · {{ repo.fmtDate(integrationConflictResolution.resolutionReview.at) }}
-                      </template>
-                    </span>
-                    <span
-                      v-if="integrationConflictResolution.resolutionReview.summary"
-                      class="resolution-provenance-summary"
-                    >
-                      — {{ integrationConflictResolution.resolutionReview.summary }}
-                    </span>
-                  </dd>
-                  <dt>Combined gate</dt>
-                  <dd>
-                    {{ integrationConflictResolution.gate.result }}
-                    <template v-if="integrationConflictResolution.gate.at">
-                      · {{ repo.fmtDate(integrationConflictResolution.gate.at) }}
-                    </template>
-                  </dd>
-                </dl>
-              </div>
-              <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
-                <div class="review-history-toolbar">
-                  <span v-if="reviewPassLoading" class="review-history-loading">Loading…</span>
+                  Review finished without a parseable verdict. The partial report is below for
+                  debugging — use <strong>Review again</strong> to rerun the reviewer.
                 </div>
-                <table class="review-history-table" aria-label="Feature review pass records">
-                  <thead>
-                    <tr>
-                      <th class="ta-left">pass</th>
-                      <th class="ta-left">when</th>
-                      <th class="ta-left">agent</th>
-                      <th class="ta-left">model</th>
-                      <th class="ta-left">verdict</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr
-                      v-for="h in reviewHistoryRows"
-                      :key="h.pass"
-                      class="review-history-row"
-                      :class="{
-                        'is-selected':
+                <div
+                  v-else-if="verdict"
+                  class="verdict-callout"
+                  :class="`tone-${verdict.tone}`"
+                  role="status"
+                >
+                  <span class="verdict-dot"></span>
+                  <span class="verdict-label">{{ verdict.label }}</span>
+                  <span
+                    v-if="reviewHistoryRows.length > 0"
+                    class="review-pass-freshness"
+                    :class="{ 'is-old': !selectedReviewPassIsLatest }"
+                    >{{ selectedReviewPassIsLatest ? "Latest" : "Not latest" }}</span
+                  >
+                </div>
+                <div
+                  v-if="integrationConflictResolution"
+                  class="resolution-provenance-wrap ff-notice"
+                  role="status"
+                >
+                  <p class="resolution-provenance-title">Integration conflict resolution</p>
+                  <dl class="kv-rows resolution-provenance-kv">
+                    <dt>Feature review (immutable)</dt>
+                    <dd class="kv-wrap">
+                      <code>{{
+                        integrationConflictResolution.approvedFeatureSha.slice(0, 12)
+                      }}</code>
+                      on main
+                      <code>{{ integrationConflictResolution.mainBaseSha.slice(0, 12) }}</code>
+                    </dd>
+                    <dt>Conflict paths</dt>
+                    <dd class="kv-wrap">
+                      {{ integrationConflictResolution.conflictPaths.join(", ") }}
+                    </dd>
+                    <dt>Resolution review</dt>
+                    <dd>
+                      <span
+                        v-if="integrationConflictResolution.resolutionReview.verdict === 'pending'"
+                      >
+                        Pending
+                      </span>
+                      <span v-else>
+                        {{ integrationConflictResolution.resolutionReview.verdict }}
+                        <template v-if="integrationConflictResolution.resolutionReview.reviewer">
+                          · {{ integrationConflictResolution.resolutionReview.reviewer }}
+                        </template>
+                        <template v-if="integrationConflictResolution.resolutionReview.at">
+                          · {{ repo.fmtDate(integrationConflictResolution.resolutionReview.at) }}
+                        </template>
+                      </span>
+                      <span
+                        v-if="integrationConflictResolution.resolutionReview.summary"
+                        class="resolution-provenance-summary"
+                      >
+                        — {{ integrationConflictResolution.resolutionReview.summary }}
+                      </span>
+                    </dd>
+                    <dt>Combined gate</dt>
+                    <dd>
+                      {{ integrationConflictResolution.gate.result }}
+                      <template v-if="integrationConflictResolution.gate.at">
+                        · {{ repo.fmtDate(integrationConflictResolution.gate.at) }}
+                      </template>
+                    </dd>
+                  </dl>
+                </div>
+                <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
+                  <div class="review-history-toolbar">
+                    <span v-if="reviewPassLoading" class="review-history-loading">Loading…</span>
+                  </div>
+                  <table class="review-history-table" aria-label="Feature review pass records">
+                    <thead>
+                      <tr>
+                        <th class="ta-left">pass</th>
+                        <th class="ta-left">when</th>
+                        <th class="ta-left">agent</th>
+                        <th class="ta-left">model</th>
+                        <th class="ta-left">verdict</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        v-for="h in reviewHistoryRows"
+                        :key="h.pass"
+                        class="review-history-row"
+                        :class="{
+                          'is-selected':
+                            selectedReviewPass === h.pass ||
+                            (selectedReviewPass === null && h.pass === latestReviewPass),
+                        }"
+                        tabindex="0"
+                        role="button"
+                        :aria-pressed="
                           selectedReviewPass === h.pass ||
-                          (selectedReviewPass === null && h.pass === latestReviewPass),
-                      }"
-                      tabindex="0"
-                      role="button"
-                      :aria-pressed="
-                        selectedReviewPass === h.pass ||
-                        (selectedReviewPass === null && h.pass === latestReviewPass)
-                      "
-                      @click="selectReviewPass(h.pass)"
-                      @keydown.enter.prevent="selectReviewPass(h.pass)"
-                      @keydown.space.prevent="selectReviewPass(h.pass)"
-                    >
-                      <td class="ta-left review-history-pass">#{{ h.pass }}</td>
-                      <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
-                      <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
-                      <td class="ta-left review-history-model">{{ h.model }}</td>
-                      <td class="ta-left">{{ h.verdict }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="md-card review-card">
-                <div class="md-rendered" v-html="reviewHtml"></div>
-              </div>
+                          (selectedReviewPass === null && h.pass === latestReviewPass)
+                        "
+                        @click="selectReviewPass(h.pass)"
+                        @keydown.enter.prevent="selectReviewPass(h.pass)"
+                        @keydown.space.prevent="selectReviewPass(h.pass)"
+                      >
+                        <td class="ta-left review-history-pass">#{{ h.pass }}</td>
+                        <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
+                        <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
+                        <td class="ta-left review-history-model">{{ h.model }}</td>
+                        <td class="ta-left">{{ h.verdict }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="md-card review-card">
+                  <div class="md-rendered" v-html="reviewHtml"></div>
+                </div>
+              </template>
             </template>
             <p class="review-hint">Findings only — you decide whether this task is done.</p>
           </section>
