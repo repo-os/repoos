@@ -5,15 +5,16 @@ type: bug
 status: inbox
 priority: p3
 area: [web, core]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-02T16:01:49Z"
+updated_at: "2026-11-02T16:06:24Z"
 ---
 ## Items
 
 - E1 · "Cancel stalled check" button shows and hides every few seconds (seen on #1007 in review)
+- E2 · Selected Review (and Engineer report) table row: the left accent bar overlaps the pass number
 
 ## E1 · Cancel stalled check flaps
 
@@ -30,6 +31,22 @@ The button shows only when the check has truly had no heartbeat for the threshol
 ### Notes for AI
 Narrow the root cause first (snapshot `lastProgressAt` null on refetch vs SSE). Keep client and server stall rules aligned.
 
+## E2 · Selected history row accent bar covers the pass number
+
+### Problem
+In the task drawer Review tab, the selected row of the review history table (e.g. `#8`) draws a vertical colored bar on its left edge that partly covers the pass number (see attached screenshot). The Engineer report rounds table added by #1007 uses the same row pattern and will have the same flaw.
+
+### Desired UX
+The pass/round number is fully readable on the selected row: add left padding to the first cell so the bar sits beside the text (or drop the bar and rely on the row highlight). Apply it to both the review and engineer-report tables, ideally via one shared style in `src/ui-app/src/style.css`.
+
+### Acceptance criteria
+- Selected row's first cell text is not overlapped by the bar in both tables, with no layout shift of other rows.
+- Declare a shot of the Review tab (`/work?task=<id>&tab=review`) highlighting the selected row.
+
+### Notes for AI
+Find the selected-row class in the review history table (grep TaskDrawer.vue / style.css for the row selected style). If #1007 has not landed yet, cover the report table once it is on main.
+
 ## Activity
 
 - 2026-11-02T16:01:49Z · created · njachowski@gmail.com
+- 2026-11-02T16:06:24Z · body: Items (added 1); E2 · Selected history row accent bar covers the pass number (added)
