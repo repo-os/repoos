@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-clearer-held-task-car
 model_override: gpt-6.1-terra
 created_at: "2026-11-02T04:38:23Z"
-updated_at: "2026-11-02T12:58:05Z"
+updated_at: "2026-11-02T12:58:06Z"
 ---
 ## Problem
 Held task cards show a yellow Held chip and repeat “HELD” at the lower left. Their green “Restart work” button is also misleading: a held task is intentionally inert and should not look like ordinary restartable work.
@@ -75,3 +75,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T12:55:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-02T12:55:54Z · body
 - 2026-11-02T12:58:05Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-02T12:58:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
