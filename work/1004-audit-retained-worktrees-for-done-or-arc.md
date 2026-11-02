@@ -11,7 +11,7 @@ branch: feat/make-retained-worktree-cleanup-safe-and-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T14:41:53Z"
+updated_at: "2026-11-02T14:42:58Z"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -64,6 +64,26 @@ External (never inspected or removed): `codex/chat-diagnostics`, `codex/unsandbo
 
 No current worktree is provably safe to remove. Future merged-and-clean worktrees for resolved tasks are reclaimed automatically at boot/close-out, and `repoos gc --dry-run` / `repoos status` report the same candidate / retained / external counts.
 
+## Shots
+```json
+[
+{
+  "label": "Worktree cleanup preview separates safe candidates, retained reasons, and external worktrees",
+  "target": "default",
+  "route": "/",
+  "highlight": ".gc-preview",
+  "steps": [
+    {
+      "click": "button.gc-action"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "state": "system:worktreeGc"
+}
+]
+```
 
 ## Activity
 
@@ -86,3 +106,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T14:38:12Z · body
 - 2026-11-02T14:41:53Z · body: Audit — 2026-11-02 (added)
 - 2026-11-02T14:41:53Z · message_queued at 2026-11-02T14:41:53.420Z
+- 2026-11-02T14:42:58Z · body
