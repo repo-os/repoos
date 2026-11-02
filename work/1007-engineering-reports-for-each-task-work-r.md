@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: 1007
 title: Engineering reports for each task work round
 type: feature
@@ -14,7 +16,6 @@ review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 review_passes: 2
-last_check_failure: "repoos check at 2026-11-02T07:06:52.240Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:49479/api/tasks/9999/engineering-reports (http://127.0.0.1:49479/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:49479/api/tasks/9999/engineering-reports)"
 ---
 ## Problem
 
@@ -145,3 +146,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T08:43:08Z · message_queued at 2026-11-02T08:43:08.298Z
 - 2026-11-02T08:43:08Z · status review→active
 - 2026-11-02T08:46:33Z · message_delivered: 1 message(s)
+
