@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-02T00:18:55Z"
-review_passes: 6
 id: 1002
 title: Record and report per-test timings in check history
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — Case retention can discard slow tests from large suites.
@@ -17,6 +15,8 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
+updated_at: "2026-11-02T00:25:47Z"
+review_passes: 6
 last_check_failure: "repoos check at 2026-11-01T23:26:11.154Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -158,4 +158,5 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-02T00:18:15Z · status active→review
 - 2026-11-02T00:18:54Z · note: review pass 6: needs some work
 - 2026-11-02T00:18:55Z · needs_input
-
+- 2026-11-02T00:25:47Z · status review→active
+- 2026-11-02T00:25:47Z · note: send-back — returned to active for engineer follow-up
