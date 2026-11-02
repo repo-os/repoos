@@ -12,7 +12,7 @@ cli_override: github copilot
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T15:48:09Z"
+updated_at: "2026-11-02T16:04:03Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"github copilot\",\"model\":\"default\",\"at\":\"2026-11-02T15:48:05.456Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -89,3 +89,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T15:48:05Z · engineer crash recovery: resuming github copilot + default (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-02T15:48:08Z · needs_input
 - 2026-11-02T15:48:09Z · message_delivered: 1 message(s)
+- 2026-11-02T16:04:03Z · body
