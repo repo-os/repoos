@@ -3,6 +3,9 @@ id: 1007
 title: Engineering reports for each task work round
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — retries and report loading can misidentify or hide engineering-round history.
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -191,4 +194,5 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:09:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T14:09:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T14:13:46Z · note: review pass 5: needs some work
+- 2026-11-02T14:13:46Z · needs_input
 - 2026-11-02T14:13:46Z · needs_input
