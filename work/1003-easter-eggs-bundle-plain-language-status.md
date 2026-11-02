@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T02:05:50Z"
+updated_at: "2026-11-02T02:06:21Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -117,30 +117,88 @@ Keep the selected pass highlight visible while its report is loading and after i
 ```json
 [
 {
-"label": "Checks show stale heartbeat status",
-"target": "default",
-"route": "/checks?shotState=checks:waiting",
-"highlight": ".ck-local-slot"
+  "label": "Checks show a live slot with no recent heartbeat",
+  "target": "default",
+  "route": "/checks?shotState=checks:waiting",
+  "highlight": ".ck-local-slot"
 },
 {
-"label": "Review pass history shows latest selection and reviewer",
-"target": "default",
-"route": "/work?task=9999&tab=review&shotState=drawer:reviewPasses",
-"highlight": ".review-history-table"
+  "label": "Mission Control panels in a balanced two by two layout",
+  "target": "default",
+  "route": "/",
+  "highlight": ".dash-grid",
+  "steps": [
+    {
+      "waitFor": ".dash-grid"
+    }
+  ],
+  "viewportWidth": 1280,
+  "viewportHeight": 900
 },
 {
-"label": "Task card agent assignments preview on hover",
-"target": "default",
-"route": "/work?shotState=board:severalWorkingCards",
-"highlight": "[data-test-id=\"task-agent-preview\"]",
-"steps": [
-{
-"hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+  "label": "Agents tab shows default agents followed by custom agents",
+  "target": "default",
+  "route": "/agents?tab=default",
+  "highlight": ".agents-tab-content",
+  "steps": [
+    {
+      "waitFor": ".agents-tab-content"
+    }
+  ],
+  "assert": [
+    {
+      "text": "Default agents"
+    },
+    {
+      "text": "Custom agents"
+    }
+  ],
+  "viewportWidth": 1280,
+  "viewportHeight": 2160
 },
 {
-"waitMs": 250
-}
-]
+  "label": "Review pass history shows the selected latest pass and reviewer",
+  "target": "default",
+  "route": "/work?task=9999&tab=review&shotState=drawer:reviewPasses",
+  "highlight": ".review-history-table",
+  "steps": [
+    {
+      "waitFor": ".review-history-table"
+    }
+  ],
+  "assert": [
+    {
+      "text": "Latest"
+    },
+    {
+      "text": "Codex"
+    }
+  ]
+},
+{
+  "label": "Task agent assignment preview fits a narrow viewport",
+  "target": "default",
+  "route": "/work?shotState=board:severalWorkingCards",
+  "highlight": "[data-test-id=\"task-agent-preview\"]",
+  "steps": [
+    {
+      "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+    },
+    {
+      "waitMs": 250
+    }
+  ],
+  "assert": [
+    {
+      "text": "Engineer"
+    },
+    {
+      "text": "Reviewer"
+    }
+  ],
+  "state": "board:severalWorkingCards",
+  "viewportWidth": 390,
+  "viewportHeight": 400
 }
 ]
 ```
@@ -330,3 +388,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T02:02:00Z · message_delivered: 1 message(s)
 - 2026-11-02T02:02:01Z · note: handoff requested (cli)
 - 2026-11-02T02:05:50Z · CTO nudge: held — handoff gate is running
+- 2026-11-02T02:06:21Z · body
