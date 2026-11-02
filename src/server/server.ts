@@ -3456,6 +3456,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         removedWorktrees: [],
         removedBranches: [],
         retained: [],
+        keptDirty: [],
         external: [],
         summary: { candidates: 0, retained: 0, external: 0 },
         prunedMetadata: false,
