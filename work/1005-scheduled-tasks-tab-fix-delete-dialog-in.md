@@ -2,7 +2,7 @@
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: github copilot
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T18:17:58Z"
+updated_at: "2026-11-02T18:17:59Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-02T16:24:55.241Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Delete schedule dialog with working actions (target \"default\"): click [data-testid^=\"schedule-card-\"] .schedule-actions button:last-child: click: Error: strict mode violation: locator('[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child') resolved to 8 elements: on /agents?tab=scheduled (http://127.0.0.1:51188/agents?tab=scheduled); [missing-target] Delete schedule dialog with working actions (target \"defa… (truncated)"
@@ -133,3 +133,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T18:15:38Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1005.md
 - 2026-11-02T18:15:38Z · message_delivered: 1 message(s)
 - 2026-11-02T18:17:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T18:17:59Z · status active→review
