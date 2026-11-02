@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/keep-automatic-watchdog-bookkeeping-from
 created_at: "2026-11-01T11:58:54Z"
-updated_at: "2026-11-02T02:40:27Z"
+updated_at: "2026-11-02T03:04:03Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -51,3 +51,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T02:39:40Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-02T02:40:26Z · note: review pass 1: needs some work
 - 2026-11-02T02:40:27Z · status review→active
+- 2026-11-02T03:04:03Z · message_queued at 2026-11-02T03:04:03.532Z
