@@ -2,7 +2,7 @@
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
-status: review
+status: active
 priority: p1
 area: web
 assigned_to: ai
@@ -12,9 +12,9 @@ model_override: opencode-go/muse-spark-1.3-contributor
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T19:31:01Z"
+updated_at: "2026-11-02T19:31:02Z"
+review_rounds: 2
 review_passes: 2
-review_rounds: 1
 last_check_failure: "repoos check at 2026-11-02T16:24:55.241Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Delete schedule dialog with working actions (target \"default\"): click [data-testid^=\"schedule-card-\"] .schedule-actions button:last-child: click: Error: strict mode violation: locator('[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child') resolved to 8 elements: on /agents?tab=scheduled (http://127.0.0.1:51188/agents?tab=scheduled); [missing-target] Delete schedule dialog with working actions (target \"defa… (truncated)"
 dev_error_count: 1
 ---
@@ -154,3 +154,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T19:22:22Z · status active→review
 - 2026-11-02T19:31:01Z · note: review pass 2: needs some work
 - 2026-11-02T19:31:01Z · message_queued at 2026-11-02T19:31:01.826Z
+- 2026-11-02T19:31:02Z · status review→active
