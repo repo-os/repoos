@@ -100,6 +100,9 @@ const FILE_CLI_MATCHERS: Matcher[] = [
 const UI_ONLY_MATCHERS: Matcher[] = [
   // Task-card-only explicit cancellation of a stalled, registered local check.
   re("POST", /^\/api\/tasks\/([^/]+)\/cancel-check$/.source),
+  // Read-only task engineering-report history used by the Dev tab.
+  re("GET", /^\/api\/tasks\/([^/]+)\/engineering-reports$/.source),
+  re("GET", /^\/api\/tasks\/([^/]+)\/engineering-reports\/([^/]+)$/.source),
   under("/api/auth/"),
   under("/api/hub/"),
   under("/api/telegram/"),
