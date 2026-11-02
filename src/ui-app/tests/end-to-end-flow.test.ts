@@ -7,6 +7,7 @@
  * pipeline: task creation, worktree setup, handoff (validate/check/commit/
  * review/main), and close-out (merge/build/check/done).
  */
+import { seedEngineeringReport } from "./engineering-report-fixture";
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -80,6 +81,7 @@ function makeFlowFixture(): FlowFixture {
     defaultStatus: "inbox",
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
+    agents: [{ name: "engineer", cli: "codex", model: "test", enabled: true }],
   };
 
   const branch = "feat/bump-version";
@@ -135,6 +137,7 @@ function makeFlowFixture(): FlowFixture {
   // Create the feature branch + worktree
   git(root, ["branch", branch]);
   git(root, ["worktree", "add", "-q", worktree, branch]);
+  seedEngineeringReport(worktree, "0001");
 
   // In the worktree, create the dist/cli/index.js (local repoos check)
   mkdirSync(join(worktree, "dist", "cli"), { recursive: true });

@@ -23,7 +23,7 @@ import {
  * funnels through it; the shared body below is what both entry points run.
  */
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
@@ -81,6 +81,11 @@ import {
   branchAddsBuildableProjectMarker,
 } from "../core/check-buildable-project.js";
 import { buildLastCheckFailureSummary } from "../core/check-failure-summary.js";
+import {
+  finalizeEngineeringReport,
+  listEngineeringReports,
+  resolveEngineeringReportBase,
+} from "./engineering-reports.js";
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
@@ -399,6 +404,21 @@ interface ResolvedWorktree {
   worktreeTask: Task;
 }
 
+/** Only an unfinished handoff can reuse its committed report. */
+export function canReuseEngineeringReport(
+  task: Task,
+  reportAt: string,
+  draft: string | null,
+): boolean {
+  if (task.status === "review") return true;
+  if (!draft) return false;
+  const reportTime = Date.parse(reportAt);
+  if (!Number.isFinite(reportTime)) return false;
+  return ![...task.body.matchAll(/^- (\S+) · status [^\s]+→review\s*$/gm)].some(
+    (match) => Date.parse(match[1]!) >= Math.floor(reportTime / 1000) * 1000,
+  );
+}
+
 function fail(step: HandoffStep, detail: string): HandoffResult {
   return { ok: false, step, detail };
 }
@@ -604,7 +624,56 @@ async function runHandoffFinalization(
   // instead of orphaning it (#0521).
   const handoffDeadlineAt = Date.now() + HANDOFF_DEADLINE_MS;
 
+  const reportDraft = join(workdir, config.cacheDir, "engineering-report-drafts", `${task.id}.md`);
+  // The report commit is intentionally made before task status writes, so a
+  // failure in either status update can leave HEAD at that commit while the
+  // task is still active. Recognize that exact shape on retry: the commit must
+  // descend from the report's source commit and contain only that report plus
+  // the task's own bookkeeping file. The worktree status write can itself
+  // commit after the report, so requiring the report commit to be HEAD would
+  // miss precisely the retry this path must recover.
+  const reportAtHead = async () => {
+    const reports = listEngineeringReports({ ...config, root: workdir }, task.id);
+    const pendingNarrative = existsSync(reportDraft)
+      ? readFileSync(reportDraft, "utf8").trim()
+      : null;
+    for (const report of [...reports].reverse()) {
+      // A retry retains its draft until both status updates succeed. A report
+      // from a completed handoff must not satisfy a later engineering round,
+      // even if that round has not changed source files yet.
+      if (!canReuseEngineeringReport(task, report.at, pendingNarrative)) continue;
+      const sourceIsAncestor = await runGit(
+        workdir,
+        ["merge-base", "--is-ancestor", report.sourceSha, "HEAD"],
+        10_000,
+      );
+      if (sourceIsAncestor.status !== 0) continue;
+      const changed = await runGit(
+        workdir,
+        ["diff", "--name-only", `${report.sourceSha}..HEAD`],
+        10_000,
+      );
+      if (changed.status !== 0) continue;
+      const paths = changed.stdout.trim().split("\n").filter(Boolean);
+      const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${report.round}.json`;
+      const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${task.id}-`;
+      const reportNarrative = report.markdown.split("\n\n## Generated change summary", 1)[0];
+      if (
+        paths.includes(reportPath) &&
+        (!pendingNarrative || reportNarrative === pendingNarrative) &&
+        paths.every(
+          (path) => path === reportPath || (path.startsWith(ownTaskPath) && path.endsWith(".md")),
+        )
+      ) {
+        return report;
+      }
+    }
+    return null;
+  };
+  let finalizedReport = await reportAtHead();
+
   if (task.status === "review" && worktreeTask.status === "review" && !opts.checkpointRecovery) {
+    if (finalizedReport) rmSync(reportDraft, { force: true });
     onProgress?.("done");
     return { ok: true, step: "done", detail: "handoff was already finalized" };
   }
@@ -854,6 +923,90 @@ async function runHandoffFinalization(
     onProgress?.("check");
   }
 
+  // Every new handoff requires a report. Finalize it only after every
+  // handoff gate (including UI evidence) passed.
+  // Keeping this after the final gate means a retryable evidence failure does
+  // not consume the draft or create a report for a handoff that never happened.
+  // The commit gate may have changed HEAD since the retry check at entry.
+  finalizedReport = await reportAtHead();
+  if (!finalizedReport && !opts.checkpointRecovery) {
+    if (!existsSync(reportDraft)) {
+      return fail(
+        "review",
+        `Engineering report draft is missing: ${config.cacheDir}/engineering-report-drafts/${task.id}.md`,
+      );
+    }
+    const source = await worktreeState(workdir, config);
+    const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
+    const codingAgent = resolveAgentForTask(config, task);
+    if (!codingAgent) {
+      return fail("review", "could not resolve the coding agent metadata for the report");
+    }
+    // A retry of an unfinished handoff may reuse its already-written report.
+    // A new engineering round (including one after review feedback) must not:
+    // even with an unchanged source tree it appends its own immutable report.
+    const reports = listEngineeringReports({ ...config, root: workdir }, task.id);
+    const pendingDraft = existsSync(reportDraft) ? readFileSync(reportDraft, "utf8").trim() : null;
+    const retriedReport = [...reports]
+      .reverse()
+      .find((report) => canReuseEngineeringReport(task, report.at, pendingDraft));
+    // Later rounds diff from the previous round's source tree, not the branch
+    // merge-base, so their summary does not replay all earlier rounds.
+    const base = await resolveEngineeringReportBase({
+      workdir,
+      baseBranch,
+      sourceSha: source.head,
+      reports,
+      retryRound: retriedReport?.round,
+    });
+    if ("error" in base) return fail("review", base.error);
+    const finalized = await finalizeEngineeringReport({
+      config: { ...config, root: workdir },
+      taskId: task.id,
+      workdir,
+      branch: task.branch,
+      agent: codingAgent.cli,
+      model: codingAgent.model,
+      baseSha: base.baseSha,
+      sourceSha: source.head,
+      retryRound: retriedReport?.round,
+      taskPath: task.path,
+    });
+    if (!finalized.report)
+      return fail("review", finalized.error ?? "engineering report could not be finalized");
+    finalizedReport = finalized.report;
+    const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${finalized.report.round}.json`;
+    const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
+    if (staged.status !== 0)
+      return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
+    const stagedDiff = await runGit(
+      workdir,
+      ["diff", "--cached", "--quiet", "--", reportPath],
+      10_000,
+    );
+    if (stagedDiff.status === 1) {
+      const reportCommit = await runGit(
+        workdir,
+        [
+          "commit",
+          "-m",
+          `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
+        ],
+        20_000,
+      );
+      if (reportCommit.status !== 0)
+        return fail(
+          "review",
+          `could not commit finalized engineering report: ${concise(reportCommit)}`,
+        );
+    } else if (stagedDiff.status !== 0) {
+      return fail(
+        "review",
+        `could not inspect finalized engineering report: ${concise(stagedDiff)}`,
+      );
+    }
+  }
+
   onProgress?.("review");
   if (
     !opts.checkpointRecovery &&
@@ -978,6 +1131,11 @@ async function runHandoffFinalization(
   }
 
   clearHandoffFailureLoopMetadata(config, task);
+
+  // The draft is the retry record until every fallible status update above
+  // has completed. Removing it any earlier made a later handoff retry unable
+  // to reconstruct or recognize the report that was already committed.
+  if (finalizedReport) rmSync(reportDraft, { force: true });
 
   onProgress?.("done");
   return { ok: true, step: "done" };

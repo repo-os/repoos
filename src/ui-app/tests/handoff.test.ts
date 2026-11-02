@@ -64,6 +64,7 @@ function makeFixture(checkExit = 0, extraFrontmatter = ""): Fixture {
   mkdirSync(bin, { recursive: true });
   writeFileSync(taskPath, taskText("active", extraFrontmatter));
   writeFileSync(join(root, "source.txt"), "base\n");
+  writeFileSync(join(root, ".gitignore"), ".repoos/\n");
   mkdirSync(join(root, "dist"), { recursive: true });
   writeFileSync(join(root, "dist", "app.js"), "built from main\n");
   writeFileSync(join(bin, "repoos"), `#!/bin/sh\nexit ${checkExit}\n`, { mode: 0o755 });
@@ -75,6 +76,11 @@ function makeFixture(checkExit = 0, extraFrontmatter = ""): Fixture {
   git(root, ["branch", "feat/handoff"]);
   git(root, ["worktree", "add", "-q", worktree, "feat/handoff"]);
   writeFileSync(join(worktree, "source.txt"), "implemented\n");
+  mkdirSync(join(worktree, ".repoos", "engineering-report-drafts"), { recursive: true });
+  writeFileSync(
+    join(worktree, ".repoos", "engineering-report-drafts", "0001.md"),
+    "## TL;DR\nSummary.\n\n## Work and rationale\nImplemented.\n\n## Approaches tried\nTested.\n\n## Challenges and blockers\nNone.\n\n## Key learnings\nKeep coverage.\n",
+  );
   return {
     root,
     worktree,
@@ -89,6 +95,7 @@ function makeFixture(checkExit = 0, extraFrontmatter = ""): Fixture {
       defaultStatus: "inbox",
       defaultAssignee: "unassigned",
       cacheDir: ".repoos",
+      agents: [{ name: "engineer", cli: "codex", model: "test", enabled: true }],
     },
     clean: () => {
       rmSync(root, { recursive: true, force: true });
@@ -124,6 +131,27 @@ function request(fx: Fixture, overrides: Record<string, string> = {}) {
 }
 
 describe("trusted server-side handoff", { timeout: 15_000 }, () => {
+  it.each(["missing", "deleted"])("blocks a %s report draft after checks", async (state) => {
+    const fx = makeFixture();
+    const oldPath = process.env.PATH;
+    process.env.PATH = `${fx.bin}:${oldPath ?? ""}`;
+    try {
+      const draft = join(fx.worktree, ".repoos", "engineering-report-drafts", "0001.md");
+      rmSync(draft);
+      if (state === "deleted") {
+        writeFileSync(draft, "temporary draft");
+        rmSync(draft);
+      }
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+      expect(result).toMatchObject({ ok: false, step: "review" });
+      expect(result.detail).toContain("Engineering report draft is missing");
+      expect(readTask(fx).status).toBe("active");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
   it("reuses a proven self-check, still invokes local guards and logs its id", async () => {
     const fx = makeFixture();
     const oldPath = process.env.PATH;
