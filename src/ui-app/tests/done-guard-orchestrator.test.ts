@@ -6,13 +6,14 @@
  * re-check main and surface an actionable failure instead of merging into a
  * dirty tree (or failing later with git's raw "would be overwritten" message).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree, listWorktrees, removeWorktree } from "../../core/git.js";
+import * as gitModule from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import {
@@ -219,6 +220,73 @@ describe("publish-time dirty-main guard (#0211)", () => {
       expect(git(root, ["status", "--porcelain"])).toContain("work/0099-other-task.md");
       expect(git(root, ["log", "--oneline", "-5"])).not.toMatch(/checkpoint bookkeeping\/config/);
     } finally {
+      clean();
+    }
+  });
+
+  it("blocks a human task edit that arrives during publish preparation", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const taskPath = join(root, "work", "0098-other-task.md");
+      writeFileSync(
+        taskPath,
+        `---\nid: "0098"\ntitle: Other task\n---\n\n## Problem\n\nOriginal body.\n`,
+      );
+      git(root, ["add", "work/0098-other-task.md"]);
+      git(root, ["commit", "-m", "seed task"]);
+
+      const branch = "repoos/integrate/T3-race";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T3-race", branch } as any);
+      coordinator.updateJob("T3-race", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+      writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
+
+      const originalOverwriteCheck = gitModule.dirtyPathsOverwrittenByMerge;
+      const overwriteSpy = vi
+        .spyOn(gitModule, "dirtyPathsOverwrittenByMerge")
+        .mockImplementation(async (...args) => {
+          const result = await originalOverwriteCheck(...args);
+          writeFileSync(
+            taskPath,
+            readFileSync(taskPath, "utf8").replace("Original body.", "Human edit during publish."),
+          );
+          return result;
+        });
+
+      try {
+        const orchestrator = new CloseOutOrchestrator(
+          { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+          coordinator,
+          createRepositoryLock(root),
+          createRootLock(root),
+        );
+
+        const result = await orchestrator.processNext();
+
+        expect(result.ok).toBe(false);
+        expect(result.reason).toContain("work/0098-other-task.md");
+        expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
+        expect(git(root, ["status", "--porcelain"])).toContain("work/0098-other-task.md");
+      } finally {
+        overwriteSpy.mockRestore();
+      }
+    } finally {
+      vi.restoreAllMocks();
       clean();
     }
   });

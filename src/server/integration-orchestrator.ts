@@ -3762,6 +3762,29 @@ export class CloseOutOrchestrator {
       //     lands and the local edit is reapplied on top.
       const overwrittenByMerge =
         dirtyOnMain.length > 0 ? await dirtyPathsOverwrittenByMerge(root, branch, dirtyOnMain) : [];
+      // The overwrite analysis can itself take time while task activity keeps
+      // arriving. Re-read immediately before checkpointing or merging so a new
+      // human task edit (including a previously recognized watchdog delta
+      // amended with human content) remains a named blocker.
+      let latestDirtyOnMain: string[];
+      try {
+        latestDirtyOnMain = await mainDirtyFilesForCloseOut(root, this.config);
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return {
+            ok: false,
+            reason: `could not verify main is clean immediately before publish (${err.message}). The candidate was NOT merged; retry, or commit/stash main's working tree first.`,
+          };
+        }
+        throw err;
+      }
+      const concurrentDirty = latestDirtyOnMain.filter((path) => !dirtyOnMain.includes(path));
+      if (concurrentDirty.length > 0) {
+        return {
+          ok: false,
+          reason: `main gained ${concurrentDirty.length} uncommitted file${concurrentDirty.length === 1 ? "" : "s"} during publish preparation: ${concurrentDirty.slice(0, 8).join(", ")}${concurrentDirty.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those paths on main and retry.`,
+        };
+      }
       const untouchedDirty = dirtyOnMain.filter((p) => !overwrittenByMerge.includes(p));
 
       if (untouchedDirty.length > 0) {
