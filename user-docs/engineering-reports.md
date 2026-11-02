@@ -9,7 +9,8 @@ round.
 The engineer writes a draft under the worktree cache directory at
 `.repoos/engineering-report-drafts/<task-id>.md`. RepoOS finalizes it only after
 the handoff check passes and confirms that the checked source commit has not
-changed. A missing draft remains reviewable for legacy tasks. A draft over 1,000
+changed. A missing draft blocks every new handoff; work already handed off before
+reports were introduced remains reviewable without one. A draft over 1,000
 words or missing a required section blocks that handoff with an actionable error;
 shorten or complete the draft and hand off again. Aim for 500–600 words.
 

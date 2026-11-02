@@ -158,6 +158,18 @@ describe("engineering reports", () => {
     expect(listEngineeringReports(config, "T1")).toHaveLength(0);
   });
 
+  it("does not assume a missing report belongs to legacy work", () => {
+    const mission = reviewMission(
+      { id: "T1", title: "test", body: "Spec", branch: "feat/report", extra: {} } as any,
+      {} as any,
+      root,
+      "main",
+      { root, cacheDir: ".repoos", workDir: "work", review: {} } as any,
+    );
+    expect(mission).toContain("do not assume this task is legacy");
+    expect(mission).toContain("new engineering round");
+  });
+
   it("fails clearly when the engineer draft is missing", async () => {
     const baseSha = git("rev-parse HEAD");
     const result = await finalizeEngineeringReport({
