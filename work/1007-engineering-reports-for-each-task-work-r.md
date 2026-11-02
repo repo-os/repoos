@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T04:46:17Z"
+updated_at: "2026-11-02T04:48:58Z"
 ---
 ## Problem
 
@@ -39,15 +39,18 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 ```json
 [
 {
-"label": "Task engineering report history",
-"target": "default",
-"route": "/work?task=1007&tab=agent",
-"highlight": ".engineering-report-view",
-"steps": [
-{
-"click": "[data-test-id=\\\"engineering-report-tab\\\"]"
-}
-]
+  "label": "Engineering report history in Dev tab",
+  "target": "default",
+  "route": "/work?task=1007&tab=agent",
+  "highlight": ".engineering-report-view",
+  "steps": [
+    {
+      "click": "[data-test-id=\"engineering-report-tab\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -82,3 +85,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T04:30:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T04:33:29Z · body
 - 2026-11-02T04:46:17Z · body
+- 2026-11-02T04:48:58Z · body
