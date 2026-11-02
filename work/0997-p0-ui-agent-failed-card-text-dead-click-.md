@@ -2,14 +2,14 @@
 id: "0997"
 title: "Agent-failed card text, dead click target, and unclickable restart modal"
 type: bug
-status: active
+status: review
 priority: p0
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-failed-card-text-dead-click-target
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T19:29:04Z"
+updated_at: "2026-11-02T19:32:20Z"
 ---
 ## Problem
 
@@ -152,3 +152,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-02T19:29:03Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T19:29:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T19:29:04Z · message_delivered: 1 message(s)
+- 2026-11-02T19:32:20Z · status active→review
