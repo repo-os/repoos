@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-02T07:06:52.240Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:49479/api/tasks/9999/engineering-reports (http://127.0.0.1:49479/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:49479/api/tasks/9999/engineering-reports)"
 id: 1007
 title: Engineering reports for each task work round
 type: feature
@@ -10,7 +12,6 @@ created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
 updated_at: "2026-11-02T07:06:48Z"
-last_check_failure: "repoos check at 2026-11-02T06:36:01.203Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Task Dev tab with engineering report history (target \"default\"): state \"drawer:reviewWithBranch\" did not render on target \"default\" — /work?task=1007&tab=dev has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:61925/work?task=1007&tab=dev&shotState=drawer%3AreviewWithBranch); [missing-target] Task Dev tab with engineering report history (target \"default\"): highli… (truncated)"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/server-git-blocking-guard.test.ts > server git blocking guard > does not import and call synchronous Git read helpers from server code on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: a938fca1ef665f849ed5b2218661ef0bdb7cb252
 ---
@@ -124,3 +125,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T06:50:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T06:50:07Z · message_delivered: 1 message(s)
 - 2026-11-02T07:06:48Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:49479/api/tasks/9999/engineering-reports (http://127.0.0.1:49479/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:49479/api/tasks/9999/engineering-reports)
+
