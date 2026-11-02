@@ -1,15 +1,15 @@
 ---
 id: "0997"
-title: "UI: agent-failed card text, dead click target, and unclickable restart modal"
+title: "Agent-failed card text, dead click target, and unclickable restart modal"
 type: bug
 status: inbox
 priority: p0
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: feat/ui-agent-failed-card-text-dead-click-tar
+branch: feat/agent-failed-card-text-dead-click-target
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-02T04:30:56Z"
+updated_at: "2026-11-02T04:31:13Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-01T07:03:42Z · created · njachowski@gmail.com
 - 2026-11-01T07:03:44Z · screenshots
 - 2026-11-02T04:30:56Z · title, branch
+- 2026-11-02T04:31:13Z · title, branch
