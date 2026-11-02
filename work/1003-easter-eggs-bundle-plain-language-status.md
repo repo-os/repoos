@@ -413,3 +413,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T03:55:35Z · held, held-reason, held-at
 - 2026-11-02T04:16:25Z · released
 - 2026-11-02T04:25:04Z · message_queued at 2026-11-02T04:25:04.182Z
+- 2026-11-02T04:25:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
