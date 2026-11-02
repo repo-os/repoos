@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
+debug_tldr: "Handoff was deferred because queued messages need attention — read them, then request review again."
+debug_tldr_at: "2026-11-02T17:59:08Z"
+debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/make-retained-worktree-cleanup-safe-and-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T17:58:40Z"
+updated_at: "2026-11-02T17:59:08Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-02T17:37:43.905Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
