@@ -2,7 +2,7 @@
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
-status: review
+status: active
 priority: p1
 area: web
 assigned_to: ai
