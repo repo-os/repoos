@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-clearer-held-task-car
 model_override: gpt-6.1-terra
 created_at: "2026-11-02T04:38:23Z"
-updated_at: "2026-11-02T12:55:46Z"
+updated_at: "2026-11-02T12:55:54Z"
 ---
 ## Problem
 Held task cards show a yellow Held chip and repeat “HELD” at the lower left. Their green “Restart work” button is also misleading: a held task is intentionally inert and should not look like ordinary restartable work.
@@ -37,14 +37,6 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - In the review tab's engineering report view, place the report-pass table above the report content, near the Report/Chat toggle. It must not end up below the report at the bottom of a long panel. Use the attached report-layout screenshot as reference.
 - Add or update UI coverage for the modal spacing, task action order, and report-table position. Verify responsive layout and preserve keyboard accessibility.
 
-
-## Screenshots
-
-![Held task cards currently repeat the Held state as a chip and lower-left label, while showing a green Restart work button.](/api/tasks/1010/attachments/att_4dfea477-d78d-45e9-93e7-5bb25474a00d.png)
-![Hold task modal spacing and padding](/api/tasks/1010/attachments/att_f9cd64ed-fd6d-4669-b0af-056a5cd1e5c8.png)
-![Engineering report pass table should appear before the report](/api/tasks/1010/attachments/att_fd7d1451-7bb1-4d1f-861e-b1b407c077c3.png)
-![Hold action should follow Archive task in the task panel](/api/tasks/1010/attachments/att_c755ebbc-74fa-4bcc-abba-0323b8588403.png)
-
 ## Shots
 ```json
 [
@@ -57,6 +49,13 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 }
 ]
 ```
+
+## Screenshots
+
+![Held task cards currently repeat the Held state as a chip and lower-left label, while showing a green Restart work button.](/api/tasks/1010/attachments/att_4dfea477-d78d-45e9-93e7-5bb25474a00d.png)
+![Hold task modal spacing and padding](/api/tasks/1010/attachments/att_f9cd64ed-fd6d-4669-b0af-056a5cd1e5c8.png)
+![Engineering report pass table should appear before the report](/api/tasks/1010/attachments/att_fd7d1451-7bb1-4d1f-861e-b1b407c077c3.png)
+![Hold action should follow Archive task in the task panel](/api/tasks/1010/attachments/att_c755ebbc-74fa-4bcc-abba-0323b8588403.png)
 
 ## Activity
 
@@ -74,3 +73,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T12:48:23Z · body
 - 2026-11-02T12:55:46Z · message_queued at 2026-11-02T12:55:46.740Z
 - 2026-11-02T12:55:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-02T12:55:54Z · body
