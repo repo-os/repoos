@@ -9,10 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/keep-automatic-watchdog-bookkeeping-from
 created_at: "2026-11-01T11:58:54Z"
-updated_at: "2026-11-02T04:41:33Z"
-review_passes: 2
-review_rounds: 1
-routing_switches: 1
+updated_at: "2026-11-02T02:39:39Z"
 ---
 ## Problem
 Automatic watchdog bookkeeping in a tracked task file can dirty main while another task is trying to close out. On 2026-11-01, #0994 accumulated automatic check-wait escalation/recovery activity entries on main. The main-clean guard then blocked #0994 and #0998 even though these entries were RepoOS-generated status records, not source edits.
@@ -35,51 +32,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-01T11:59:12Z · body: Problem (added 1, removed 11); Desired behavior (added 1, removed 1); Notes for AI (added 1, removed 1)
 - 2026-11-01T17:04:48Z · status inbox→ready
 - 2026-11-02T01:48:49Z · status ready→active, branch
-- 2026-11-02T01:57:19Z · message_queued at 2026-11-02T01:57:19.107Z
-- 2026-11-02T01:57:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-02T02:00:49Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-02T02:16:08Z · body
-- 2026-11-02T02:17:53Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-02T02:18:08Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-02T02:19:23Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-02T02:19:38Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-02T02:32:41Z · body
-- 2026-11-02T02:36:37Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-02T02:36:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-02T02:36:38Z · message_delivered: 1 message(s)
 - 2026-11-02T02:39:39Z · status active→review
-- 2026-11-02T02:39:40Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-02T02:40:26Z · note: review pass 1: needs some work
-- 2026-11-02T02:40:27Z · status review→active
-- 2026-11-02T03:04:03Z · message_queued at 2026-11-02T03:04:03.532Z
-- 2026-11-02T03:04:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-02T03:09:03Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-02T03:16:16Z · engineer stopped by request
-- 2026-11-02T03:17:52Z · held, held-reason, held-at
-- 2026-11-02T03:52:53Z · released
-- 2026-11-02T03:53:00Z · message_delivered: 1 message(s)
-- 2026-11-02T03:53:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-02T03:53:31Z · note: handoff requested (cli)
-- 2026-11-02T03:54:42Z · message_queued at 2026-11-02T03:54:42.309Z
-- 2026-11-02T04:04:16Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/git-worktree.test.ts > main dirty paths for close-out (#0713) > ignores only appended watchdog check-wait bookkeeping in tracked task files on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-11-02T04:04:16Z · message_delivered: 1 message(s)
-- 2026-11-02T04:04:35Z · note: adopted orphaned engineer pid 91820
-- 2026-11-02T04:06:48Z · note: adopted orphaned engineer pid 91820
-- 2026-11-02T04:13:35Z · engineer stopped by request
-- 2026-11-02T04:13:35Z · held, held-reason, held-at
-- 2026-11-02T04:13:49Z · note: handoff requested (cli)
-- 2026-11-02T04:15:51Z · released
-- 2026-11-02T04:25:03Z · message_queued at 2026-11-02T04:25:03.070Z
-- 2026-11-02T04:25:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-02T04:30:03Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-02T04:36:22Z · body
-- 2026-11-02T04:39:40Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-02T04:39:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-02T04:39:41Z · status active→review
-- 2026-11-02T04:39:41Z · message_delivered: 1 message(s)
-- 2026-11-02T04:39:42Z · note: handoff requested (cli)
-- 2026-11-02T04:39:56Z · status active→review
-- 2026-11-02T04:39:57Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-02T04:40:32Z · note: review pass 2: good to go
-
-

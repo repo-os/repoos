@@ -6,13 +6,14 @@
  * re-check main and surface an actionable failure instead of merging into a
  * dirty tree (or failing later with git's raw "would be overwritten" message).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree, listWorktrees, removeWorktree } from "../../core/git.js";
+import * as gitModule from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { createRepositoryLock, createRootLock } from "../../server/repo-lock.js";
 import {
@@ -168,17 +169,17 @@ describe("publish-time dirty-main guard (#0211)", () => {
     }
   });
 
-  it("auto-checkpoints and publishes when the only dirty files are task bookkeeping under work/ (#0271 follow-up)", async () => {
-    // Confirmed live: #0293's close-out was refused at publish time because
-    // an UNRELATED task's work/*.md file — a routine activity-log stamp —
-    // was dirty on main. That's the same class of write commitTaskFile
-    // makes constantly elsewhere in the system; blocking a merge on it
-    // just to require a human retry is unnecessary friction, unlike a
-    // dirty file OUTSIDE work/ (still refused above), which is genuinely
-    // ambiguous.
+  it("publishes past a watchdog check-wait activity delta without checkpointing the task file", async () => {
     const { root, clean } = makeRepo();
     try {
       mkdirSync(join(root, "work"), { recursive: true });
+      const taskPath = join(root, "work", "0099-other-task.md");
+      writeFileSync(
+        taskPath,
+        `---\nid: "0099"\ntitle: Other task\nneeds_input: false\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n`,
+      );
+      git(root, ["add", "work/0099-other-task.md"]);
+      git(root, ["commit", "-m", "seed task"]);
       const branch = "repoos/integrate/T3";
       const wt = ensureWorktree(root, branch);
       expect(wt.ok).toBe(true);
@@ -198,9 +199,12 @@ describe("publish-time dirty-main guard (#0211)", () => {
         candidateSha,
       });
 
-      // An UNRELATED task file dirty on main at publish time — the exact
-      // #0293 shape.
-      writeFileSync(join(root, "work", "0099-other-task.md"), "---\nid: 0099\n---\nstamp\n");
+      // The watchdog's check-wait escalation changes only its state fields
+      // and appends the exact machine-generated activity entry.
+      writeFileSync(
+        taskPath,
+        `---\nid: "0099"\ntitle: Other task\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: "waiting: checks for 10 minutes"\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`,
+      );
 
       const orchestrator = new CloseOutOrchestrator(
         { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
@@ -212,12 +216,77 @@ describe("publish-time dirty-main guard (#0211)", () => {
       const result = await orchestrator.processNext();
 
       expect(result.ok).toBe(true);
-      // The checkpoint commit landed on main, and the candidate merged on
-      // top of it — main advanced past its pre-publish SHA either way.
       expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
-      expect(git(root, ["status", "--porcelain"])).toBe("");
-      expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+      expect(git(root, ["status", "--porcelain"])).toContain("work/0099-other-task.md");
+      expect(git(root, ["log", "--oneline", "-5"])).not.toMatch(/checkpoint bookkeeping\/config/);
     } finally {
+      clean();
+    }
+  });
+
+  it("blocks a human task edit that arrives during publish preparation", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const taskPath = join(root, "work", "0098-other-task.md");
+      writeFileSync(
+        taskPath,
+        `---\nid: "0098"\ntitle: Other task\n---\n\n## Problem\n\nOriginal body.\n`,
+      );
+      git(root, ["add", "work/0098-other-task.md"]);
+      git(root, ["commit", "-m", "seed task"]);
+
+      const branch = "repoos/integrate/T3-race";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T3-race", branch } as any);
+      coordinator.updateJob("T3-race", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+      writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
+
+      const originalOverwriteCheck = gitModule.dirtyPathsOverwrittenByMerge;
+      const overwriteSpy = vi
+        .spyOn(gitModule, "dirtyPathsOverwrittenByMerge")
+        .mockImplementation(async (...args) => {
+          const result = await originalOverwriteCheck(...args);
+          writeFileSync(
+            taskPath,
+            readFileSync(taskPath, "utf8").replace("Original body.", "Human edit during publish."),
+          );
+          return result;
+        });
+
+      try {
+        const orchestrator = new CloseOutOrchestrator(
+          { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+          coordinator,
+          createRepositoryLock(root),
+          createRootLock(root),
+        );
+
+        const result = await orchestrator.processNext();
+
+        expect(result.ok).toBe(false);
+        expect(result.reason).toContain("work/0098-other-task.md");
+        expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
+        expect(git(root, ["status", "--porcelain"])).toContain("work/0098-other-task.md");
+      } finally {
+        overwriteSpy.mockRestore();
+      }
+    } finally {
+      vi.restoreAllMocks();
       clean();
     }
   });
