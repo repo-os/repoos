@@ -12,7 +12,6 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
 updated_at: "2026-11-02T07:11:52Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -481,3 +480,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T06:59:08Z · note: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target "default"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target "default"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [assertion] Re
 - 2026-11-02T06:59:39Z · body
 - 2026-11-02T07:11:52Z · body
+
