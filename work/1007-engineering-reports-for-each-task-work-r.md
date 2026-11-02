@@ -3,6 +3,9 @@ id: 1007
 title: Engineering reports for each task work round
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -225,3 +228,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T15:25:09Z · status active→review
 - 2026-11-02T15:25:10Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-02T15:31:16Z · note: review pass 7: needs some work
+- 2026-11-02T15:31:16Z · needs_input
