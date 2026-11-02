@@ -150,3 +150,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T20:17:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T20:17:34Z · status active→review
 - 2026-11-02T20:17:35Z · message_delivered: 1 message(s)
+- 2026-11-02T20:17:35Z · note: handoff requested (cli)
