@@ -245,3 +245,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T16:24:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T16:24:32Z · status active→review
 - 2026-11-02T16:24:33Z · message_delivered: 1 message(s)
+- 2026-11-02T16:24:33Z · note: handoff requested (cli)
