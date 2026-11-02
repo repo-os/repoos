@@ -2,14 +2,14 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T05:13:38Z"
+updated_at: "2026-11-02T05:13:40Z"
 ---
 ## Problem
 
@@ -44,12 +44,12 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 "route": "/work?task=1007&tab=agent",
 "highlight": "[data-test-id=\"engineering-report-history\"]",
 "steps": [
-  {
-    "click": "button[data-test-id=\"engineering-report-tab\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "click": "button[data-test-id=\"engineering-report-tab\"]"
+},
+{
+  "waitMs": 300
+}
 ]
 }
 ]
@@ -94,3 +94,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T05:03:38Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T05:04:16Z · body
 - 2026-11-02T05:13:38Z · handoff failed · remote validation failed: test failure: tests/server-git-blocking-guard.test.ts > server git blocking guard > does not import and call synchronous Git read helpers from server code on bee — fix it in the feature branch and re-run the gate
+- 2026-11-02T05:13:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/server-git-blocking-guard.test.ts > server git blocking guard > does not import and call synchronous Git read helpers from server code on bee — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
