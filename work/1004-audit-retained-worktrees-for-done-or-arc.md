@@ -14,7 +14,7 @@ branch: feat/make-retained-worktree-cleanup-safe-and-
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T19:02:50Z"
+updated_at: "2026-11-02T19:02:51Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-02T17:37:43.905Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
@@ -140,3 +140,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T19:02:02Z · note: handoff requested (cli)
 - 2026-11-02T19:02:32Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T19:02:50Z · status active→review
+- 2026-11-02T19:02:51Z · note: shots: skipped — Docs site skipped: no docs shot declared
