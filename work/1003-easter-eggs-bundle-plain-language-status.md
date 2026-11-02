@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
@@ -390,3 +392,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T02:05:50Z · CTO nudge: held — handoff gate is running
 - 2026-11-02T02:06:21Z · body
 - 2026-11-02T02:15:05Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
