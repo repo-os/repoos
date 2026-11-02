@@ -2,7 +2,7 @@
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T02:16:34Z"
+updated_at: "2026-11-02T02:19:57Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
 review_passes: 3
@@ -131,7 +131,7 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".dash-grid",
 "steps": [
 {
-  "waitFor": ".dash-grid"
+"waitFor": ".dash-grid"
 }
 ],
 "viewportWidth": 1280,
@@ -144,15 +144,15 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".agents-tab-content",
 "steps": [
 {
-  "waitFor": ".agents-tab-content"
+"waitFor": ".agents-tab-content"
 }
 ],
 "assert": [
 {
-  "text": "Default agents"
+"text": "Default agents"
 },
 {
-  "text": "Custom agents"
+"text": "Custom agents"
 }
 ],
 "viewportWidth": 1280,
@@ -165,15 +165,15 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".review-history-table",
 "steps": [
 {
-  "waitFor": ".review-history-table"
+"waitFor": ".review-history-table"
 }
 ],
 "assert": [
 {
-  "text": "Latest"
+"text": "Latest"
 },
 {
-  "text": "Codex"
+"text": "Codex"
 }
 ]
 },
@@ -184,18 +184,18 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": "[data-test-id=\"task-agent-preview\"]",
 "steps": [
 {
-  "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+"hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
 },
 {
-  "waitMs": 250
+"waitMs": 250
 }
 ],
 "assert": [
 {
-  "text": "Engineer"
+"text": "Engineer"
 },
 {
-  "text": "Reviewer"
+"text": "Reviewer"
 }
 ],
 "state": "board:severalWorkingCards",
@@ -393,3 +393,6 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T02:06:21Z · body
 - 2026-11-02T02:15:05Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-02T02:16:34Z · body
+- 2026-11-02T02:18:08Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-02T02:19:23Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-02T02:19:57Z · status active→review
