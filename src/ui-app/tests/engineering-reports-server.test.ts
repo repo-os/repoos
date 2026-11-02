@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -220,6 +220,118 @@ describe("engineering reports", () => {
     expect(summary).not.toContain("work/T1.md");
   });
 
+  it("fails the base lookup when a rewritten branch hides the prior round", async () => {
+    const baseSha = git("rev-parse HEAD");
+    writeFileSync(join(root, "src", "a.ts"), "round one\n");
+    git("add .");
+    git('commit -m "round one implementation"');
+    const firstSource = git("rev-parse HEAD");
+    const draftDir = join(root, ".repoos", "engineering-report-drafts");
+    mkdirSync(draftDir, { recursive: true });
+    writeFileSync(join(draftDir, "T1.md"), narrative);
+    const config = { root, cacheDir: ".repoos" } as any;
+    const first = await finalizeEngineeringReport({
+      config,
+      taskId: "T1",
+      workdir: root,
+      branch: "feat/report",
+      agent: "codex",
+      model: "test-model",
+      baseSha,
+      sourceSha: firstSource,
+    });
+    expect(first.report?.round).toBe(1);
+    const reportPath = join(root, "work", "engineering-reports", "T1", "round-1.json");
+    const savedReport = readFileSync(reportPath, "utf8");
+    git("add .");
+    git('commit -m "record round one report"');
+
+    // Rewrite the branch: the round-1 source commit is no longer an ancestor,
+    // but its report file survives on disk.
+    git(`reset --hard ${baseSha}`);
+    mkdirSync(join(root, "work", "engineering-reports", "T1"), { recursive: true });
+    writeFileSync(reportPath, savedReport);
+    writeFileSync(join(root, "src", "c.ts"), "rewritten round\n");
+    git("add .");
+    git('commit -m "rewritten round implementation"');
+    const rewrittenSource = git("rev-parse HEAD");
+
+    const result = await resolveEngineeringReportBase({
+      workdir: root,
+      baseBranch: "main",
+      sourceSha: rewrittenSource,
+      reports: listEngineeringReports(config, "T1"),
+    });
+    expect("error" in result).toBe(true);
+    if (!("error" in result)) throw new Error("expected a base resolution error");
+    expect(result.error).toContain("not an ancestor");
+    expect(result.error).toContain(firstSource);
+  });
+
+  it("rejects misplaced reports and surfaces directory read failures", () => {
+    const reportDir = join(root, "work", "engineering-reports", "T1");
+    mkdirSync(reportDir, { recursive: true });
+    const shape = {
+      at: new Date(0).toISOString(),
+      agent: "codex",
+      model: "test-model",
+      branch: "feat/report",
+      baseSha: "base",
+      sourceSha: "source",
+      wordCount: 1,
+      markdown: "Report",
+    };
+    // Valid shape, wrong task directory.
+    writeFileSync(
+      join(reportDir, "round-1.json"),
+      `${JSON.stringify({ ...shape, taskId: "OTHER", round: 1 })}\n`,
+    );
+    // Right task, wrong round for the filename.
+    writeFileSync(
+      join(reportDir, "round-2.json"),
+      `${JSON.stringify({ ...shape, taskId: "T1", round: 1 })}\n`,
+    );
+
+    const loaded = loadEngineeringReports({ root, cacheDir: ".repoos" } as any, "T1");
+    expect(loaded.reports).toHaveLength(0);
+    expect(loaded.errors).toHaveLength(2);
+    expect(loaded.errors[0]).toContain("identity does not match");
+    expect(loaded.errors[1]).toContain("identity does not match");
+
+    // A path that exists but is not a readable directory is a history error,
+    // not an empty history.
+    writeFileSync(join(root, "work", "engineering-reports", "T2"), "not a directory\n");
+    const unreadable = loadEngineeringReports({ root, cacheDir: ".repoos" } as any, "T2");
+    expect(unreadable.reports).toHaveLength(0);
+    expect(unreadable.errors[0]).toContain("could not read report directory");
+  });
+
+  it("rejects narrative before the TL;DR heading", async () => {
+    const baseSha = git("rev-parse HEAD");
+    writeFileSync(join(root, "src", "old.ts"), "implementation\n");
+    git("add .");
+    git('commit -m "implementation"');
+    const sourceSha = git("rev-parse HEAD");
+    const draftDir = join(root, ".repoos", "engineering-report-drafts");
+    mkdirSync(draftDir, { recursive: true });
+    writeFileSync(join(draftDir, "T1.md"), `Background first.\n\n${narrative}`);
+    const config = { root, cacheDir: ".repoos" } as any;
+
+    const result = await finalizeEngineeringReport({
+      config,
+      taskId: "T1",
+      workdir: root,
+      branch: "feat/report",
+      agent: "codex",
+      model: "test-model",
+      baseSha,
+      sourceSha,
+    });
+    expect(result.report).toBeNull();
+    expect(result.error).toContain("must begin with ## TL;DR");
+    expect(listEngineeringReports(config, "T1")).toHaveLength(0);
+  });
+
   it("surfaces malformed report files instead of silently dropping them", () => {
     const reportDir = join(root, "work", "engineering-reports", "T1");
     mkdirSync(reportDir, { recursive: true });
@@ -283,9 +395,9 @@ describe("engineering reports", () => {
     const missing = await finalizeEngineeringReport(args);
     expect(missing.error).toContain("missing required sections");
     const reordered = narrative
-      .replace("## TL;DR", "## TEMP SECTION")
-      .replace("## Work and rationale", "## TL;DR")
-      .replace("## TEMP SECTION", "## Work and rationale");
+      .replace("## Approaches tried", "## TEMP SECTION")
+      .replace("## Challenges and blockers", "## Approaches tried")
+      .replace("## TEMP SECTION", "## Challenges and blockers");
     writeFileSync(join(draftDir, "T1.md"), reordered);
     const unordered = await finalizeEngineeringReport(args);
     expect(unordered.error).toContain("required order");

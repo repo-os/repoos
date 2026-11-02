@@ -15,7 +15,7 @@ reports were introduced remains reviewable without one. A draft over 1,000
 words or missing a required section blocks that handoff with an actionable error;
 shorten or complete the draft and hand off again. Aim for 500–600 words.
 
-Required narrative sections, in order:
+Required narrative sections, in order, with nothing before the first heading:
 
 1. `## TL;DR`
 2. `## Work and rationale`
@@ -27,7 +27,10 @@ The server appends `## Generated change summary`, computed from the round's base
 and checked source commit using Git rename detection. The first round diffs from
 the branch merge-base; later rounds diff from the previous round's source tree,
 so a round summary describes only that round instead of replaying earlier work.
-Report files and the task's own markdown are excluded from the generated list.
+If a rebase or reset removes that source commit from the branch's history,
+RepoOS cannot compute a round-relative base and refuses the handoff instead of
+quietly producing a cumulative summary. Report files and the task's own markdown
+are excluded from the generated list.
 It includes changed paths, status, and deterministic additions/deletions;
 engineers must not author those counts. Report metadata records round, time, coding agent, model, branch, base
 tree, and checked source commit. Review prompts include the newest report and
