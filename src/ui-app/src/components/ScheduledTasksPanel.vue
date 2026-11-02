@@ -39,6 +39,8 @@ const error = ref("");
 const editorOpen = ref(false);
 const editingId = ref<string | null>(null);
 const deleteTarget = ref<TaskSchedule | null>(null);
+const deletingSchedule = ref(false);
+const deleteError = ref("");
 const preview = ref("—");
 const formError = ref("");
 
@@ -163,6 +165,33 @@ function openEdit(row: TaskSchedule): void {
   formError.value = "";
   editorOpen.value = true;
   refreshPreview();
+}
+
+function openDelete(row: TaskSchedule): void {
+  deleteError.value = "";
+  deleteTarget.value = row;
+}
+
+function setDeleteDialogOpen(open: boolean): void {
+  if (deletingSchedule.value) return;
+  if (!open) {
+    deleteError.value = "";
+    deleteTarget.value = null;
+  }
+}
+
+async function confirmDeleteSchedule(): Promise<void> {
+  if (!deleteTarget.value || deletingSchedule.value) return;
+  deletingSchedule.value = true;
+  deleteError.value = "";
+  try {
+    await repo.deleteSchedule(deleteTarget.value.id);
+    deleteTarget.value = null;
+  } catch (err) {
+    deleteError.value = err instanceof Error ? err.message : "Delete failed";
+  } finally {
+    deletingSchedule.value = false;
+  }
 }
 
 function refreshPreview(): void {
@@ -370,7 +399,7 @@ onMounted(() => {
           <div class="schedule-actions">
             <Button variant="outline" size="sm" @click="runNow(row)">Run now</Button>
             <Button variant="outline" size="sm" @click="openEdit(row)">Edit</Button>
-            <Button variant="outline" size="sm" @click="deleteTarget = row">Delete</Button>
+            <Button variant="outline" size="sm" @click="openDelete(row)">Delete</Button>
           </div>
         </div>
       </article>
@@ -519,20 +548,12 @@ onMounted(() => {
 
     <DeleteConfirmDialog
       :open="!!deleteTarget"
+      :busy="deletingSchedule"
       title="Delete schedule"
       confirm-label="Delete schedule"
-      @update:open="
-        (v) => {
-          if (!v) deleteTarget = null;
-        }
-      "
-      @confirm="
-        async () => {
-          if (!deleteTarget) return;
-          await repo.deleteSchedule(deleteTarget.id);
-          deleteTarget = null;
-        }
-      "
+      :error="deleteError"
+      @update:open="setDeleteDialogOpen"
+      @confirm="confirmDeleteSchedule"
     >
       {{ deleteTarget ? `Delete “${deleteTarget.title}” permanently?` : "" }}
     </DeleteConfirmDialog>
@@ -584,7 +605,7 @@ onMounted(() => {
   align-items: stretch;
   gap: 7px;
 }
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .schedule-card-details {
     flex-direction: column;
   }

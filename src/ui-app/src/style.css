@@ -13555,6 +13555,12 @@
   font-size: 13px;
   line-height: 1.55;
 }
+.delete-confirm-error {
+  margin: 12px 24px 0;
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.45;
+}
 .delete-confirm-desc strong {
   color: var(--txt);
   font-weight: 650;
@@ -13566,10 +13572,14 @@
   padding: 24px;
   margin-top: 8px;
 }
-.delete-confirm-actions button:hover:not(:disabled) {
+.cc-modal-actions button:hover:not(:disabled),
+.delete-confirm-actions button:hover:not(:disabled),
+.restart-actions button:hover:not(:disabled) {
   filter: brightness(1.12);
 }
-.delete-confirm-actions button:focus-visible {
+.cc-modal-actions button:focus-visible,
+.delete-confirm-actions button:focus-visible,
+.restart-actions button:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
