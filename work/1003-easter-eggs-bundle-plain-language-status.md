@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-02T12:17:30Z"
+review_passes: 6
 id: 1003
 title: "Easter eggs bundle: plain-language status and merge wording"
 type: chore
@@ -11,8 +13,6 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T12:17:30Z"
-review_passes: 5
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_rounds: 2
 routing_switches: 1
@@ -547,3 +547,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T11:11:58Z · message_queued at 2026-11-02T11:11:58.625Z
 - 2026-11-02T12:13:34Z · status active→review
 - 2026-11-02T12:17:30Z · note: review pass 6: good to go
+
