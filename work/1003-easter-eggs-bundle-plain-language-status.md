@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T06:30:44Z"
+updated_at: "2026-11-02T06:32:31Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T06:16:59.720Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:59953/work?shotState=drawer:reviewWithBranch)"
 review_passes: 4
@@ -475,3 +475,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T06:30:04Z · message_queued at 2026-11-02T06:30:04.411Z
 - 2026-11-02T06:30:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-02T06:30:44Z · body
+- 2026-11-02T06:32:31Z · handoff_deferred: 1 queued message(s) must be read before review
