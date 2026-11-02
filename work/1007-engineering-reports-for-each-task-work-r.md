@@ -11,7 +11,7 @@ branch: feat/engineering-reports-for-each-task-work-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T15:25:09Z"
+updated_at: "2026-11-02T15:25:10Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -223,3 +223,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T15:21:59Z · body
 - 2026-11-02T15:24:11Z · note: adopted orphaned engineer pid 22080
 - 2026-11-02T15:25:09Z · status active→review
+- 2026-11-02T15:25:10Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
