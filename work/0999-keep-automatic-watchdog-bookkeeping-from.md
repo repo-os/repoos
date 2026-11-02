@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/keep-automatic-watchdog-bookkeeping-from
 created_at: "2026-11-01T11:58:54Z"
-updated_at: "2026-11-02T02:32:41Z"
+updated_at: "2026-11-02T02:36:37Z"
 ---
 ## Problem
 Automatic watchdog bookkeeping in a tracked task file can dirty main while another task is trying to close out. On 2026-11-01, #0994 accumulated automatic check-wait escalation/recovery activity entries on main. The main-clean guard then blocked #0994 and #0998 even though these entries were RepoOS-generated status records, not source edits.
@@ -41,3 +41,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T02:19:23Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T02:19:38Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T02:32:41Z · body
+- 2026-11-02T02:36:37Z · handoff_deferred: 1 queued message(s) must be read before review
