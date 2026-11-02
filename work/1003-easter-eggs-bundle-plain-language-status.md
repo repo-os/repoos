@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T02:59:21Z"
+updated_at: "2026-11-02T03:09:04Z"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bc190c3434352b1fa5c3a1c7dfb63ed09d7560f8
@@ -404,3 +404,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T02:27:55Z · needs_input
 - 2026-11-02T02:35:21Z · note: highlight .ck-local-slot matched nothing on /checks?shotState=checks:waiting
 - 2026-11-02T02:59:16Z · status review→active
+- 2026-11-02T03:09:04Z · message_queued at 2026-11-02T03:09:04.149Z
