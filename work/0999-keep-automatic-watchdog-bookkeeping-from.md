@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 713938
-last_close_out_gate_at: "2026-11-02T04:57:19.207Z"
 id: "0999"
 title: Keep automatic watchdog bookkeeping from blocking close-out
 type: bug
-status: review
+status: done
 priority: p1
 area: [core, server]
+merged_commit: aa1bb212af49886681baf0dcc04332583d35c5cb
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/keep-automatic-watchdog-bookkeeping-from
 created_at: "2026-11-01T11:58:54Z"
 updated_at: "2026-11-02T04:57:19Z"
+last_close_out_gate_ms: 713938
+last_close_out_gate_at: "2026-11-02T04:57:19.207Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1

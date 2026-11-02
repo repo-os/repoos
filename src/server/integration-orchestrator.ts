@@ -3755,25 +3755,43 @@ export class CloseOutOrchestrator {
       // dirty path untouched, so a dirty file the branch does not change needs
       // no action at all. Decide BEFORE touching anything, with `git merge-tree`
       // (no working-tree side effect), then handle the two sets differently:
-      //   - untouched dirty files keep the existing policy (routine bookkeeping
-      //     / config churn is checkpoint-committed, anything else fails closed);
+      //   - untouched dirty files keep the existing policy (selected server
+      //     bookkeeping directories are checkpoint-committed; other paths fail closed);
       //   - the overwritten set is stashed immediately before the merge and
       //     always popped after it, so a merge git would have refused still
       //     lands and the local edit is reapplied on top.
       const overwrittenByMerge =
         dirtyOnMain.length > 0 ? await dirtyPathsOverwrittenByMerge(root, branch, dirtyOnMain) : [];
+      // The overwrite analysis can itself take time while task activity keeps
+      // arriving. Re-read immediately before checkpointing or merging so a new
+      // human task edit (including a previously recognized watchdog delta
+      // amended with human content) remains a named blocker.
+      let latestDirtyOnMain: string[];
+      try {
+        latestDirtyOnMain = await mainDirtyFilesForCloseOut(root, this.config);
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return {
+            ok: false,
+            reason: `could not verify main is clean immediately before publish (${err.message}). The candidate was NOT merged; retry, or commit/stash main's working tree first.`,
+          };
+        }
+        throw err;
+      }
+      const concurrentDirty = latestDirtyOnMain.filter((path) => !dirtyOnMain.includes(path));
+      if (concurrentDirty.length > 0) {
+        return {
+          ok: false,
+          reason: `main gained ${concurrentDirty.length} uncommitted file${concurrentDirty.length === 1 ? "" : "s"} during publish preparation: ${concurrentDirty.slice(0, 8).join(", ")}${concurrentDirty.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those paths on main and retry.`,
+        };
+      }
       const untouchedDirty = dirtyOnMain.filter((p) => !overwrittenByMerge.includes(p));
 
       if (untouchedDirty.length > 0) {
-        // Auto-checkpoint routine, server-written churn instead of blocking
-        // the merge on it (#0271 follow-up, confirmed live: #0293's close-out
-        // was refused because an UNRELATED task's `work/*.md` file — an
-        // activity-log stamp from a normal status/override change — was
-        // dirty on main at publish time). Every routine task write already
-        // auto-commits this exact way via `commitTaskFile`/`recordChange`
-        // elsewhere in the system; a task file being dirty for a moment
-        // between that write and this check is expected traffic on a busy
-        // board, not a signal something risky is in flight.
+        // Auto-checkpoint only the selected server-owned churn below. Tracked
+        // task files are handled earlier by mainDirtyFilesForCloseOut: only
+        // exact watchdog check-wait escalation/recovery deltas are omitted;
+        // human edits and unrecognized task changes stay in this blocker set.
         //
         // `repoos.toml` gets the same treatment: it's always written whole by
         // the settings API (agent config, maxActiveTasks, etc.), never
@@ -3783,7 +3801,7 @@ export class CloseOutOrchestrator {
         //
         // Scoped narrowly — and scoped to `untouchedDirty`: only when EVERY
         // path in this set is under one of the managed bookkeeping dirs
-        // (work/, inputs/, stories/, reminders/, schedules/) or is exactly
+        // (inputs/, stories/, reminders/, schedules/) or is exactly
         // `repoos.toml` — anything
         // else (source, other config, a stray build artifact) still fails
         // closed exactly as before, since that's genuinely ambiguous and worth
@@ -3793,7 +3811,6 @@ export class CloseOutOrchestrator {
         // that the merge then has to reconcile.
         const churnDirs = bookkeepingDirs(this.config);
         const bookkeepingDirsForChurn = [
-          churnDirs.workDir,
           churnDirs.inputsDir,
           churnDirs.storiesDir,
           churnDirs.remindersDir,

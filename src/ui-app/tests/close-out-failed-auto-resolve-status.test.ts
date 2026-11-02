@@ -121,13 +121,6 @@ describe("close-out auto-resolve failure keeps review (#0838)", () => {
         candidateSha,
       });
 
-      // Simulate the #0829 failure shape: auto-resolve of the task file failed
-      // on main and left a stale inbox copy dirty on disk.
-      writeFileSync(
-        absPath,
-        readFileSync(absPath, "utf8").replace("status: review", "status: inbox"),
-      );
-
       const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
       const orchestrator = new CloseOutOrchestrator(
         config,
@@ -142,6 +135,12 @@ describe("close-out auto-resolve failure keeps review (#0838)", () => {
       vi.spyOn(git, "mergeBranch").mockImplementation(async (mergeRoot, mergeBranchName, opts) => {
         if (failPublishOnce && mergeRoot === root && mergeBranchName === branch && !opts?.dryRun) {
           failPublishOnce = false;
+          // Model an auto-resolve race after the publish guard. A stale status
+          // lands during the failed merge and the recovery path restores review.
+          writeFileSync(
+            absPath,
+            readFileSync(absPath, "utf8").replace("status: review", "status: inbox"),
+          );
           return {
             merged: false,
             ff: false,
