@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { finalizeEngineeringReport, listEngineeringReports } from "../engineering-reports.js";
+import { reviewMission } from "../review.js";
 
 const narrative = `## TL;DR\nRecorded a concise summary.\n\n## Work and rationale\nChanged the implementation to preserve task context.\n\n## Approaches tried\nCompared the existing persistence patterns and selected tracked artifacts.\n\n## Challenges and blockers\nThe handoff gate must bind this report to the checked source tree.\n\n## Key learnings\nKeep generated Git facts separate from engineer-authored narrative.`;
 
@@ -53,6 +54,18 @@ describe("engineering reports", () => {
     expect(first.report?.wordCount).toBeGreaterThan(0);
     expect(listEngineeringReports(config, "T1")).toHaveLength(1);
     expect(existsSync(join(root, "work", "engineering-reports", "T1", "round-1.json"))).toBe(true);
+    const mission = reviewMission(
+      { id: "T1", title: "report test", body: "Task spec", branch: "feat/report", extra: {} } as any,
+      { instructions: "Review carefully." } as any,
+      root,
+      "main",
+      { ...config, review: {} } as any,
+      { engineeringReportMatches: false },
+    );
+    expect(mission).toContain("Engineering round 1");
+    expect(mission).toContain("STALE REPORT");
+    expect(mission).toContain("consider the engineer's rationale, experiments, blockers, and limitations");
+    expect(mission).toContain("Recorded a concise summary.");
     const retry = await finalizeEngineeringReport(args);
     expect(retry.report?.round).toBe(1);
     expect(listEngineeringReports(config, "T1")).toHaveLength(1);
@@ -106,5 +119,45 @@ describe("engineering reports", () => {
     const unordered = await finalizeEngineeringReport(args);
     expect(unordered.error).toContain("required order");
     expect(listEngineeringReports(config, "T1")).toHaveLength(0);
+  });
+
+  it("fails clearly when the engineer draft is missing", async () => {
+    const baseSha = git("rev-parse HEAD");
+    const result = await finalizeEngineeringReport({
+      config: { root, cacheDir: ".repoos" } as any,
+      taskId: "T1",
+      workdir: root,
+      branch: "feat/report",
+      agent: "codex",
+      model: "test-model",
+      baseSha,
+      sourceSha: baseSha,
+    });
+    expect(result.report).toBeNull();
+    expect(result.error).toContain("Engineering report draft is missing");
+  });
+
+  it("summarizes added and deleted files independently", async () => {
+    const baseSha = git("rev-parse HEAD");
+    rmSync(join(root, "src", "old.ts"));
+    writeFileSync(join(root, "src", "added.ts"), "new\nfile\n");
+    git("add -A");
+    git('commit -m "replace file"');
+    const sourceSha = git("rev-parse HEAD");
+    const draftDir = join(root, ".repoos", "engineering-report-drafts");
+    mkdirSync(draftDir, { recursive: true });
+    writeFileSync(join(draftDir, "T1.md"), narrative);
+    const result = await finalizeEngineeringReport({
+      config: { root, cacheDir: ".repoos" } as any,
+      taskId: "T1",
+      workdir: root,
+      branch: "feat/report",
+      agent: "codex",
+      model: "test-model",
+      baseSha,
+      sourceSha,
+    });
+    expect(result.report?.markdown).toContain("A src/added.ts: +2 / −0");
+    expect(result.report?.markdown).toContain("D src/old.ts: +0 / −2");
   });
 });
