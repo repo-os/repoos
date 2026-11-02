@@ -16,6 +16,7 @@
  *     detail RepoOS would otherwise invent is not one of its own progress
  *     lines (#0501 generalized).
  */
+import { seedEngineeringReport } from "./engineering-report-fixture";
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -429,6 +430,8 @@ describe("a failed handoff leaves the task active (#0507)", () => {
 describe("skip checks records the override (#0507)", () => {
   it("lands in review and writes the activity entry naming who skipped", async () => {
     const fx = fixture();
+    fx.config.agents = [{ name: "engineer", cli: "qwen", model: "test", enabled: true }];
+    seedEngineeringReport(fx.worktree, fx.task.id);
     const { finalizeReviewHandoff } = await import("../../server/handoff");
     const task = parseTask({
       content: readFileSync(fx.taskFile, "utf8"),

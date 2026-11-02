@@ -17,6 +17,7 @@
  *     (active/review) — the exact `stopPreviewIfLeft` path `done` relies on;
  *   - starting a second task's preview evicts the first (cap of 1, FIFO).
  */
+import { seedEngineeringReport } from "./engineering-report-fixture";
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { createServer as createTcpServer } from "node:net";
@@ -73,6 +74,7 @@ function makeFixture(count: number): Fixture {
     writeFileSync(join(wt.path, "notes.md"), `# ${branch}\n\nmarker-${i + 1}\n`);
     writeFileSync(join(wt.path, "preview-server.mjs"), SERVER_SCRIPT);
     const id = String(i + 1).padStart(4, "0");
+    seedEngineeringReport(wt.path, id);
     const task = `---
 id: "${id}"
 title: Task ${i + 1}

@@ -11,6 +11,7 @@
  * sleeps, so the test can write a hold to the task file mid-check. The control
  * (no hold) reaches review; with a mid-check hold the task stays `active`.
  */
+import { seedEngineeringReport } from "./engineering-report-fixture";
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -92,6 +93,7 @@ function writeTask(delay: number): Fx {
   execFileSync("git", ["branch", BRANCH], { cwd: root });
   execFileSync("git", ["worktree", "add", "-q", worktree, BRANCH], { cwd: root });
   writeFileSync(join(worktree, "source.txt"), "implemented\n");
+  seedEngineeringReport(worktree, ID);
   return { root, clean: () => rmSync(root, { recursive: true, force: true }) };
 }
 

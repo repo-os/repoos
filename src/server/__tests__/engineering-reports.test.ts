@@ -5,10 +5,27 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { finalizeEngineeringReport, listEngineeringReports } from "../engineering-reports.js";
 import { engineeringReportMatchesReviewTree, reviewMission } from "../review.js";
+import { canReuseEngineeringReport } from "../handoff.js";
 
 const narrative = `## TL;DR\nRecorded a concise summary.\n\n## Work and rationale\nChanged the implementation to preserve task context.\n\n## Approaches tried\nCompared the existing persistence patterns and selected tracked artifacts.\n\n## Challenges and blockers\nThe handoff gate must bind this report to the checked source tree.\n\n## Key learnings\nKeep generated Git facts separate from engineer-authored narrative.`;
 
 describe("engineering reports", () => {
+  it.each([
+    ["retry with draft", "active", "draft", "", true],
+    ["missing draft", "active", null, "", false],
+    [
+      "new round with identical draft",
+      "active",
+      "draft",
+      "- 2026-01-01T00:00:00Z · status active→review",
+      false,
+    ],
+    ["already finalized", "review", null, "", true],
+  ] as const)("distinguishes %s", (_name, status, draft, body, expected) => {
+    expect(
+      canReuseEngineeringReport({ status, body } as any, "2026-01-01T00:00:00.500Z", draft),
+    ).toBe(expected);
+  });
   let root: string;
   const git = (args: string) => execSync(`git -C "${root}" ${args}`, { encoding: "utf8" }).trim();
   beforeEach(() => {
