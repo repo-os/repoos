@@ -47,6 +47,8 @@ describe("TaskCard post-handoff checkpoint recovery hint (#0834)", () => {
 
     const hint = wrapper.get('[data-test-id="task-card-agent-hint"]');
     expect(hint.text()).toContain("re-reviewing checkpoint…");
+    expect(hint.attributes("title")).toContain("checkpoint commit(s) were added after handoff");
+    expect(hint.attributes("title")).not.toContain("landed after handoff");
   });
 
   it("drops the hint the moment recovery ends", async () => {

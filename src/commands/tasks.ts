@@ -425,7 +425,7 @@ function handoffRequestFromRunner(id: string): boolean {
  * through `POST /api/tasks/:id/done`, the real close-out pipeline — but this CLI
  * command never went through that route to begin with, so it silently flips the
  * flag with zero merge awareness. If the task has a `branch` that still exists
- * locally and is NOT an ancestor of main, that branch's code has not landed;
+ * locally and is NOT an ancestor of main, that branch's code is not merged into main;
  * refuse rather than mark it done from under the user. This intentionally fails
  * OPEN (allows the move) whenever it can't tell for sure — no branch recorded,
  * the branch was already deleted (the normal post-merge cleanup), or git can't
@@ -494,7 +494,7 @@ export function cmdMv(
         ),
       );
     }
-    // #0896: never reopen a task whose work already landed. A done task whose
+    // #0896: never reopen a task whose work is already merged. A done task whose
     // branch is merged into main is finished; moving it back (as a driver once did
     // from a stale loop prompt, #0879) restarts engineers on shipped work.
     if (status !== "done" && !opts.force && existingBeforeMv?.assignee !== "human") {
@@ -545,7 +545,7 @@ export function cmdMv(
             c.dim(
               `  "repoos mv done" only flips the status flag; it never merges code. ` +
                 `Use \`repoos done ${id}\` for the real close-out pipeline, or merge the branch into ${mainBranch} yourself first (see docs/close-out-pipeline.md), ` +
-                `or pass --force-not-merged if you have already landed the code some other way.`,
+                `or pass --force-not-merged if you have already merged the code some other way.`,
             ),
           );
           process.exitCode = 1;

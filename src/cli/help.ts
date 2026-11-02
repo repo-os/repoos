@@ -177,7 +177,7 @@ const GROUPS: readonly CommandGroup[] = [
       {
         name: "landable",
         usage: "landable <id> [--json] [--port N]",
-        desc: "Read-only landing pre-checks (verdict, lock, worktree, merge, scope, main) — exits non-zero when not landable (GET /api/tasks/:id/landable)",
+        desc: "Read-only checks before merging (verdict, lock, worktree, merge, scope, main) — exits non-zero when the task is not ready to merge (GET /api/tasks/:id/landable)",
         flags: "--json · --port",
       },
       {

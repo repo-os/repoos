@@ -664,9 +664,7 @@ it("hides unavailable Antigravity selectors on the default tab", async () => {
   // block; the default tab must not offer an undetected Antigravity.
   expect(wrapper.text()).not.toContain("Deprecated");
 
-  const defaultTab = wrapper
-    .findAll("button.tab-btn")
-    .find((button) => button.text() === "Default Agents");
+  const defaultTab = wrapper.findAll("button.tab-btn").find((button) => button.text() === "Agents");
   await defaultTab!.trigger("click");
   await flush();
   const defaultPanel = wrapper.findAll(".agent-tab-panel")[0];
@@ -748,7 +746,7 @@ it("offers an installed Antigravity to task agents but never to team agents", as
   await flush();
   await wrapper
     .findAll("button.tab-btn")
-    .find((button) => button.text() === "Default Agents")!
+    .find((button) => button.text() === "Agents")!
     .trigger("click");
   await flush();
   const optionsFor = (key: string): string[] =>

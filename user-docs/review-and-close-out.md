@@ -314,7 +314,7 @@ full set of checks.
 
 The task drawer keeps its header chip brief and places the selected status card
 below the preview row. When several conditions apply, it shows one status by
-priority: waiting for you, incomplete review, landing blockers, handoff error,
+priority: waiting for you, incomplete review, merge blockers, handoff error,
 exhausted checks, then active handoff/check/reviewer/work progress. Open **Debug
 → Status details** for the full checklist, failure text, timing, and guidance;
 the Review and Logs views retain their reports and output. The header keeps one
@@ -399,8 +399,8 @@ worktree, so it empties as soon as the conflict is resolved.
 A failed Move to done stays on the card until the task is retried successfully
 or you dismiss it with the **×** on the card. A page refresh no longer hides it.
 
-Every close-out also reports its outcome to the top-bar **notice bell** — landed,
-failed, or timed out — with the server's finish time, so you can see how a run
+Every close-out also reports its outcome to the top-bar **notice bell** — merged
+into main, failed, or timed out — with the server's finish time, so you can see how a run
 ended even if you closed the tab while it was working. See
 [Notices and notifications](/notifications) for the bell and its per-type sound
 and push toggles.
@@ -469,7 +469,7 @@ mistaken for real evidence (#0755). Tooltip and popover shots need a `hover` or
 `click` step plus a `state` fixture.
 **Stale captures (#0755):** each handoff capture stores the tree it ran on, and
 the Changes tab compares that to the branch HEAD the review will use. When they
-differ — a fix landed after the capture — the UI changes sub-tab shows a
+differ — a fix was added after the capture — the UI changes sub-tab shows a
 **Stale capture** alert and the shot reads `check`, never `matches`; re-run the
 handoff capture on the final tree. For a task already in review, use **Refresh
 evidence** in the Changes tab or run `repoos verify <id>`. RepoOS refreshes the

@@ -1696,8 +1696,8 @@ export async function cmdLandable(args: string[]): Promise<number> {
     if (opts.json) printJson(result);
     else {
       const verdict = result.landable
-        ? c.green(`#${id} is landable`)
-        : c.red(`#${id} is not landable yet`);
+        ? c.green(`#${id} is ready to merge`)
+        : c.red(`#${id} is not ready to merge yet`);
       console.log(`  ${verdict}`);
       for (const check of result.checks) {
         console.log(`    ${landableIcon(check.status)} ${c.bold(check.label)} — ${check.detail}`);
