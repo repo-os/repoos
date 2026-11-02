@@ -7,6 +7,7 @@ import {
   finalizeEngineeringReport,
   listEngineeringReports,
   loadEngineeringReports,
+  resolveEngineeringReportBase,
 } from "../../server/engineering-reports.js";
 import { engineeringReportMatchesReviewTree, reviewMission } from "../../server/review.js";
 import { canReuseEngineeringReport } from "../../server/handoff.js";
@@ -154,6 +155,69 @@ describe("engineering reports", () => {
     const retry = await finalizeEngineeringReport({ ...args, retryRound: 2 });
     expect(retry.report?.round).toBe(2);
     expect(listEngineeringReports(config, "T1")).toHaveLength(2);
+  });
+
+  it("diffs a later round from the previous round and omits round bookkeeping", async () => {
+    const baseSha = git("rev-parse HEAD");
+    const draftDir = join(root, ".repoos", "engineering-report-drafts");
+    mkdirSync(draftDir, { recursive: true });
+    const config = { root, cacheDir: ".repoos" } as any;
+
+    writeFileSync(join(root, "src", "a.ts"), "round one\n");
+    git("add .");
+    git('commit -m "round one implementation"');
+    const firstSource = git("rev-parse HEAD");
+    writeFileSync(join(draftDir, "T1.md"), narrative);
+    const first = await finalizeEngineeringReport({
+      config,
+      taskId: "T1",
+      workdir: root,
+      branch: "feat/report",
+      agent: "codex",
+      model: "test-model",
+      baseSha,
+      sourceSha: firstSource,
+    });
+    expect(first.report?.round).toBe(1);
+    expect(first.report?.markdown).toContain("A src/a.ts");
+
+    // Record the report plus the task's own status bookkeeping on the branch.
+    writeFileSync(join(root, "work", "T1.md"), "status: review\n");
+    git("add .");
+    git('commit -m "record round one report"');
+
+    writeFileSync(join(root, "src", "b.ts"), "round two\n");
+    git("add .");
+    git('commit -m "round two implementation"');
+    const secondSource = git("rev-parse HEAD");
+    const reports = listEngineeringReports(config, "T1");
+    const base = await resolveEngineeringReportBase({
+      workdir: root,
+      baseBranch: "main",
+      sourceSha: secondSource,
+      reports,
+    });
+    if ("error" in base) throw new Error(base.error);
+    expect(base.baseSha).toBe(firstSource);
+
+    writeFileSync(join(draftDir, "T1.md"), narrative.replace("preserve task context", "round two"));
+    const second = await finalizeEngineeringReport({
+      config,
+      taskId: "T1",
+      workdir: root,
+      branch: "feat/report",
+      agent: "codex",
+      model: "test-model",
+      baseSha: base.baseSha,
+      sourceSha: secondSource,
+      taskPath: "work/T1.md",
+    });
+    expect(second.report?.round).toBe(2);
+    const summary = second.report?.markdown.split("## Generated change summary")[1] ?? "";
+    expect(summary).toContain("A src/b.ts");
+    expect(summary).not.toContain("src/a.ts");
+    expect(summary).not.toContain("round-1.json");
+    expect(summary).not.toContain("work/T1.md");
   });
 
   it("surfaces malformed report files instead of silently dropping them", () => {

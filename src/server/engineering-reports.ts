@@ -82,6 +82,41 @@ export function listEngineeringReports(config: RepoOSConfig, taskId: string): En
   return loadEngineeringReports(config, taskId).reports;
 }
 
+/**
+ * Pick the diff base for a report round.
+ *
+ * Round 1 diffs from the branch merge-base. A later round diffs from the
+ * previous round's source tree, so its generated summary describes only this
+ * round instead of replaying every earlier round on the branch. A retry of an
+ * unfinished handoff keeps the base its report already recorded.
+ */
+export async function resolveEngineeringReportBase(args: {
+  workdir: string;
+  baseBranch: string;
+  sourceSha: string;
+  reports: EngineeringReport[];
+  retryRound?: number;
+}): Promise<{ baseSha: string } | { error: string }> {
+  const retried =
+    args.retryRound === undefined
+      ? undefined
+      : args.reports.find((report) => report.round === args.retryRound);
+  if (retried) return { baseSha: retried.baseSha };
+  const prior = args.reports.at(-1);
+  if (prior) {
+    const ancestor = await runGit(
+      args.workdir,
+      ["merge-base", "--is-ancestor", prior.sourceSha, args.sourceSha],
+      10_000,
+    );
+    if (ancestor.status === 0) return { baseSha: prior.sourceSha };
+  }
+  const base = await runGit(args.workdir, ["merge-base", args.baseBranch, args.sourceSha], 10_000);
+  return base.status === 0
+    ? { baseSha: base.stdout.trim() }
+    : { error: "could not resolve the engineering report base tree" };
+}
+
 export function readEngineeringReport(
   config: RepoOSConfig,
   taskId: string,
@@ -107,6 +142,8 @@ export async function finalizeEngineeringReport(args: {
    * immutable report instead of reusing or failing on the earlier one.
    */
   retryRound?: number;
+  /** The task's own markdown file, excluded from the generated code summary. */
+  taskPath?: string;
 }): Promise<{ report: EngineeringReport | null; error?: string }> {
   const { config, taskId, workdir, branch, agent, model, baseSha, sourceSha, retryRound } = args;
   const dir = reportDir(config, taskId);
@@ -180,10 +217,19 @@ export async function finalizeEngineeringReport(args: {
     .split("\n")
     .filter(Boolean)
     .map((line) => line.split("\t"));
-  const files = nameRows.map(([status, ...paths], index) => {
+  // Round bookkeeping sits between the previous round's source tree and this
+  // one's, so a later-round diff sees it even though it is not this round's
+  // work. Keep it out of the generated change summary.
+  const workDir = (config.workDir || "work").replace(/\\/g, "/").replace(/\/+$/, "");
+  const reportPrefix = `${workDir}/engineering-reports/${taskId}/`;
+  const taskPath = args.taskPath?.replace(/\\/g, "/");
+  const isBookkeeping = (path: string): boolean =>
+    path.startsWith(reportPrefix) || (taskPath !== undefined && path === taskPath);
+  const files = nameRows.flatMap(([status, ...paths], index) => {
+    if (paths.some(isBookkeeping)) return [];
     const path = paths.length === 2 ? `${paths[0]} → ${paths[1]}` : paths[0];
     const row = numRows[index];
-    return `- ${status} ${path}: +${row?.[0] ?? "0"} / −${row?.[1] ?? "0"}`;
+    return [`- ${status} ${path}: +${row?.[0] ?? "0"} / −${row?.[1] ?? "0"}`];
   });
   const summary = [
     "## Generated change summary",
