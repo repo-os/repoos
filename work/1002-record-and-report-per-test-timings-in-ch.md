@@ -171,3 +171,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-02T00:55:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-02T01:09:57Z · body
 - 2026-11-02T01:13:24Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-02T01:13:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
