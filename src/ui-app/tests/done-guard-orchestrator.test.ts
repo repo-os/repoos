@@ -173,7 +173,10 @@ describe("publish-time dirty-main guard (#0211)", () => {
     try {
       mkdirSync(join(root, "work"), { recursive: true });
       const taskPath = join(root, "work", "0099-other-task.md");
-      writeFileSync(taskPath, `---\nid: "0099"\ntitle: Other task\nneeds_input: false\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n`);
+      writeFileSync(
+        taskPath,
+        `---\nid: "0099"\ntitle: Other task\nneeds_input: false\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n`,
+      );
       git(root, ["add", "work/0099-other-task.md"]);
       git(root, ["commit", "-m", "seed task"]);
       const branch = "repoos/integrate/T3";
@@ -197,7 +200,10 @@ describe("publish-time dirty-main guard (#0211)", () => {
 
       // The watchdog's check-wait escalation changes only its state fields
       // and appends the exact machine-generated activity entry.
-      writeFileSync(taskPath, `---\nid: "0099"\ntitle: Other task\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: "waiting: checks for 10 minutes"\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`);
+      writeFileSync(
+        taskPath,
+        `---\nid: "0099"\ntitle: Other task\nneeds_input: true\nneeds_input_reason: check-wait\nneeds_input_detail: "waiting: checks for 10 minutes"\nupdated_at: "2026-11-01T00:10:00Z"\n---\n\n## Activity\n\n- 2026-11-01T00:00:00Z · created · user\n- 2026-11-01T00:10:00Z · watchdog: check wait escalated · waiting: checks for 10 minutes · next step: investigate the abnormal wait; the flag clears when the check starts\n`,
+      );
 
       const orchestrator = new CloseOutOrchestrator(
         { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
