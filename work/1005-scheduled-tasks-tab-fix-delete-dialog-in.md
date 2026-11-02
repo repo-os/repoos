@@ -11,11 +11,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
-model_override: opencode-go/muse-spark-1.3-contributor
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T20:38:14Z"
+updated_at: "2026-11-02T23:53:17Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
@@ -164,3 +163,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T20:33:01Z · note: declared shot Scheduled task cards use a compact horizontal layout on target "default" cannot render: state "schedule:seeded" did not render on target "default" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
 - 2026-11-02T20:33:02Z · note: shots: failed — declared shot Scheduled task cards use a compact horizontal layout on target "default" cannot render: state "schedule:seeded" did not render on target "default" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes)
 - 2026-11-02T20:38:14Z · body
+- 2026-11-02T23:53:17Z · model_override
