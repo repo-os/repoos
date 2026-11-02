@@ -94,7 +94,7 @@ import { extractTaskProofCommands } from "../core/task-proof-commands.js";
 import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
 import { resolvedUiVerification } from "../core/ui-verification-config.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
-import { listEngineeringReports } from "./engineering-reports.js";
+import { loadEngineeringReports } from "./engineering-reports.js";
 import {
   gatherReviewVerification,
   gatherReviewVerificationWithoutWorktree,
@@ -443,7 +443,10 @@ export async function engineeringReportMatchesReviewTree(
   task: Task,
   workdir: string,
 ): Promise<boolean> {
-  const report = listEngineeringReports({ ...config, root: workdir }, task.id).at(-1);
+  const loaded = loadEngineeringReports({ ...config, root: workdir }, task.id);
+  // A malformed later round must not let an older report claim the review tree.
+  if (loaded.errors.length) return false;
+  const report = loaded.reports.at(-1);
   if (!report) return false;
   const ancestry = await runGit(
     workdir,
@@ -483,8 +486,8 @@ export function reviewMission(
   const repeatedClassThreshold = reviewHumanFlagThreshold(config);
   const repeatedClasses = priorPasses >= repeatedClassThreshold;
   const earlierReportsDir = join(config.root, config.cacheDir || ".repoos", "reviews", task.id);
-  const engineeringReports = listEngineeringReports({ ...config, root: workdir }, task.id);
-  const engineeringReport = engineeringReports.at(-1);
+  const engineeringReportLoad = loadEngineeringReports({ ...config, root: workdir }, task.id);
+  const engineeringReport = engineeringReportLoad.reports.at(-1);
   const parts: string[] = [];
   if (role) parts.push(role, "");
   parts.push(
@@ -528,11 +531,21 @@ export function reviewMission(
             : "The server verified that this report source matches the reviewed code tree, apart from report and task bookkeeping.",
           "Read the report below and consider the engineer's rationale, experiments, blockers, and limitations in your verdict.",
           "Confirm the source commit is the reviewed implementation tree; if the report is missing or does not match the reviewed diff, say so under Edge cases and do not treat its claims as evidence.",
+          ...(engineeringReportLoad.errors.length
+            ? [
+                `REPORT HISTORY ERROR: ${engineeringReportLoad.errors.join("; ")}. The history is incomplete and cannot vouch for the reviewed tree; report this under Edge cases.`,
+              ]
+            : []),
           "",
           engineeringReport.markdown,
         ]
       : [
           "No engineering report is available. Legacy work handed off before engineering reports were introduced can lack one; do not assume this task is legacy. If this is a new engineering round, report the missing required context as a bug and do not approve it. For confirmed legacy work, state that rationale and experiment context was unavailable.",
+          ...(engineeringReportLoad.errors.length
+            ? [
+                `REPORT HISTORY ERROR: ${engineeringReportLoad.errors.join("; ")}. The stored reports could not be read, so this is not confirmed legacy work.`,
+              ]
+            : []),
         ]),
     "",
     "## Check gate at handoff",

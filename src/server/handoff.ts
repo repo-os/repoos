@@ -939,6 +939,13 @@ async function runHandoffFinalization(
     if (baseResult.status !== 0 || !codingAgent) {
       return fail("review", "could not resolve report base tree or coding agent metadata");
     }
+    // A retry of an unfinished handoff may reuse its already-written report.
+    // A new engineering round (including one after review feedback) must not:
+    // even with an unchanged source tree it appends its own immutable report.
+    const pendingDraft = existsSync(reportDraft) ? readFileSync(reportDraft, "utf8").trim() : null;
+    const retriedReport = [...listEngineeringReports({ ...config, root: workdir }, task.id)]
+      .reverse()
+      .find((report) => canReuseEngineeringReport(task, report.at, pendingDraft));
     const finalized = await finalizeEngineeringReport({
       config: { ...config, root: workdir },
       taskId: task.id,
@@ -948,6 +955,7 @@ async function runHandoffFinalization(
       model: codingAgent.model,
       baseSha: baseResult.stdout.trim(),
       sourceSha: source.head,
+      retryRound: retriedReport?.round,
     });
     if (!finalized.report)
       return fail("review", finalized.error ?? "engineering report could not be finalized");

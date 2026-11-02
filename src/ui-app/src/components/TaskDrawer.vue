@@ -4155,6 +4155,7 @@ interface EngineeringReportRow {
 }
 const devPane = ref<"chat" | "report">("chat");
 const engineeringReports = ref<EngineeringReportRow[]>([]);
+const engineeringReportsError = ref("");
 const selectedEngineeringRound = ref<number | null>(null);
 const selectedEngineeringReport = computed(
   () =>
@@ -4167,20 +4168,31 @@ const engineeringReportHtml = computed(() =>
 );
 async function loadEngineeringReports(taskId: string): Promise<void> {
   try {
-    const response = await api<{ reports: EngineeringReportRow[] }>(
+    const response = await api<{ reports?: EngineeringReportRow[]; errors?: string[] }>(
       `/api/tasks/${taskId}/engineering-reports`,
     );
+    // A slow response for a previously selected task must never replace the
+    // history of the task the drawer is showing now.
+    if (ui.active?.id !== taskId) return;
     engineeringReports.value = response.reports ?? [];
+    engineeringReportsError.value = response.errors?.length
+      ? `Some report history could not be read: ${response.errors.join("; ")}`
+      : "";
     selectedEngineeringRound.value = engineeringReports.value.at(-1)?.round ?? null;
-  } catch {
+  } catch (error) {
+    if (ui.active?.id !== taskId) return;
     engineeringReports.value = [];
     selectedEngineeringRound.value = null;
+    engineeringReportsError.value = `Engineering reports could not be loaded: ${
+      error instanceof Error ? error.message : String(error)
+    }`;
   }
 }
 watch(
   () => [ui.active?.id, ui.active?.status],
   ([id]) => {
     engineeringReports.value = [];
+    engineeringReportsError.value = "";
     selectedEngineeringRound.value = null;
     if (id) void loadEngineeringReports(id);
   },
@@ -6097,6 +6109,14 @@ watch(
             </button>
           </div>
           <section v-if="devPane === 'report'" class="engineering-report-view">
+            <p
+              v-if="engineeringReportsError"
+              class="ff-error"
+              role="alert"
+              data-test-id="engineering-report-error"
+            >
+              {{ engineeringReportsError }}
+            </p>
             <table
               v-if="engineeringReports.length"
               class="review-history-table"
@@ -6128,7 +6148,7 @@ watch(
                 </tr>
               </tbody>
             </table>
-            <p v-else class="review-hint">
+            <p v-else-if="!engineeringReportsError" class="review-hint">
               No engineering reports have been recorded for this task.
             </p>
             <div
