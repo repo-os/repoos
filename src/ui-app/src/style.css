@@ -6507,6 +6507,48 @@
   text-transform: uppercase;
   cursor: pointer;
 }
+.dev-report-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 3px;
+  margin: 2px 0 10px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-muted);
+}
+.dev-report-toggle button {
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--txt-dim);
+  background: transparent;
+  font-size: 11px;
+  cursor: pointer;
+}
+.dev-report-toggle button.active {
+  color: var(--txt);
+  background: var(--panel-solid);
+}
+.engineering-report-view {
+  min-height: 0;
+  overflow: auto;
+}
+.engineering-report-view .review-history-table {
+  margin-bottom: 12px;
+}
+.engineering-report-view tbody tr {
+  cursor: pointer;
+}
+.engineering-report-view tbody tr.selected {
+  background: var(--violet-dim);
+}
+.engineering-report-body {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
 .review-pane-tab:hover {
   color: var(--txt);
   background: var(--nav-hover-bg);

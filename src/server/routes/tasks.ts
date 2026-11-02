@@ -103,6 +103,7 @@ import {
   removeWorktree,
   deleteBranch,
   pruneWorktrees,
+  worktreePathForBranch,
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
@@ -115,6 +116,7 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateServerContext, serverResumePreamble } from "../context-pack.js";
 import { listReviewPasses } from "../../core/review-passes.js";
+import { listEngineeringReports, readEngineeringReport } from "../engineering-reports.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
 import {
@@ -4005,6 +4007,32 @@ export const getTaskReviewPass: RouteHandler = (ctx, _req, res, params) => {
     return json(res, 404, { error: `Review pass #${pass} not found for task #${id}` });
   }
   return json(res, 200, { ok: true, review: report });
+};
+
+export const getTaskEngineeringReports: RouteHandler = (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  const workdir = task.branch ? worktreePathForBranch(ctx.config.root, task.branch) : null;
+  const reports = workdir ? listEngineeringReports({ ...ctx.config, root: workdir }, task.id) : [];
+  return json(res, 200, {
+    ok: true,
+    reports: reports.length ? reports : listEngineeringReports(ctx.config, task.id),
+  });
+};
+
+export const getTaskEngineeringReport: RouteHandler = (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  const round = Number(params.param2);
+  if (!Number.isInteger(round) || round < 1)
+    return json(res, 400, { error: "Invalid engineering round" });
+  const workdir = task.branch ? worktreePathForBranch(ctx.config.root, task.branch) : null;
+  const report =
+    (workdir ? readEngineeringReport({ ...ctx.config, root: workdir }, task.id, round) : null) ??
+    readEngineeringReport(ctx.config, task.id, round);
+  return report
+    ? json(res, 200, { ok: true, report })
+    : json(res, 404, { error: `Engineering report round ${round} not found` });
 };
 
 export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => {
