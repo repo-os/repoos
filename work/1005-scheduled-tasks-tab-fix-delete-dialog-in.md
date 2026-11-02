@@ -2,7 +2,7 @@
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
-status: active
+status: review
 priority: p1
 area: web
 assigned_to: ai
@@ -148,3 +148,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T20:13:43Z · body
 - 2026-11-02T20:17:34Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-02T20:17:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T20:17:34Z · status active→review
