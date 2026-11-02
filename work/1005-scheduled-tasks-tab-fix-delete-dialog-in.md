@@ -10,8 +10,9 @@ created_by: njachowski@gmail.com
 branch: ""
 cli_override: github copilot
 review_cli_override: opencode
+review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T15:17:26Z"
+updated_at: "2026-11-02T15:17:28Z"
 ---
 ## Problem
 
@@ -72,3 +73,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T13:27:55Z · review_cli_override
 - 2026-11-02T13:27:57Z · review_model_override
 - 2026-11-02T15:17:26Z · review_cli_override, review_model_override
+- 2026-11-02T15:17:28Z · review_model_override
