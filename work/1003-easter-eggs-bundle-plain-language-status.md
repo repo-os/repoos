@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T06:18:27Z"
+updated_at: "2026-11-02T06:30:04Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T06:16:59.720Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:59953/work?shotState=drawer:reviewWithBranch)"
 review_passes: 4
@@ -120,124 +120,124 @@ Keep the selected pass highlight visible while its report is loading and after i
 ```json
 [
 {
-  "label": "Mission Control 2×2 panels at desktop width",
-  "target": "default",
-  "route": "/?shotState=integration:median15",
-  "highlight": ".dash-grid",
-  "steps": [
-    {
-      "waitFor": ".dash-grid"
-    }
-  ],
-  "assert": [
-    {
-      "selector": ".dash-grid",
-      "label": "Mission Control panels",
-      "text": "Feature releases"
-    }
-  ],
-  "viewportWidth": 1280,
-  "viewportHeight": 1000
+"label": "Mission Control 2×2 panels at desktop width",
+"target": "default",
+"route": "/?shotState=integration:median15",
+"highlight": ".dash-grid",
+"steps": [
+  {
+    "waitFor": ".dash-grid"
+  }
+],
+"assert": [
+  {
+    "selector": ".dash-grid",
+    "label": "Mission Control panels",
+    "text": "Feature releases"
+  }
+],
+"viewportWidth": 1280,
+"viewportHeight": 1000
 },
 {
-  "label": "Mission Control panels at narrow width",
-  "target": "default",
-  "route": "/?shotState=integration:median15",
-  "highlight": ".dash-grid",
-  "steps": [
-    {
-      "waitFor": ".dash-grid"
-    }
-  ],
-  "assert": [
-    {
-      "selector": ".dash-grid",
-      "label": "Responsive Mission Control panels",
-      "text": "Feature releases"
-    }
-  ],
-  "viewportWidth": 390,
-  "viewportHeight": 900
+"label": "Mission Control panels at narrow width",
+"target": "default",
+"route": "/?shotState=integration:median15",
+"highlight": ".dash-grid",
+"steps": [
+  {
+    "waitFor": ".dash-grid"
+  }
+],
+"assert": [
+  {
+    "selector": ".dash-grid",
+    "label": "Responsive Mission Control panels",
+    "text": "Feature releases"
+  }
+],
+"viewportWidth": 390,
+"viewportHeight": 900
 },
 {
-  "label": "Agents tab with Default Agents and Custom Agents sections",
-  "target": "default",
-  "route": "/agents?tab=default",
-  "highlight": ".agents-tab-content",
-  "steps": [
-    {
-      "waitFor": ".agents-tab-content"
-    }
-  ],
-  "assert": [
-    {
-      "selector": ".agents-tab-content",
-      "label": "Default agents section",
-      "text": "Default agents"
-    },
-    {
-      "selector": ".agents-tab-content",
-      "label": "Custom agents section",
-      "text": "Custom agents"
-    }
-  ],
-  "viewportWidth": 1280,
-  "viewportHeight": 2160
+"label": "Agents tab with Default Agents and Custom Agents sections",
+"target": "default",
+"route": "/agents?tab=default",
+"highlight": ".agents-tab-content",
+"steps": [
+  {
+    "waitFor": ".agents-tab-content"
+  }
+],
+"assert": [
+  {
+    "selector": ".agents-tab-content",
+    "label": "Default agents section",
+    "text": "Default agents"
+  },
+  {
+    "selector": ".agents-tab-content",
+    "label": "Custom agents section",
+    "text": "Custom agents"
+  }
+],
+"viewportWidth": 1280,
+"viewportHeight": 2160
 },
 {
-  "label": "Review pass selection and latest status",
-  "target": "default",
-  "route": "/work?task=1003&tab=review",
-  "highlight": ".review-history-table",
-  "steps": [
-    {
-      "waitFor": ".review-history-table"
-    }
-  ],
-  "assert": [
-    {
-      "selector": ".review-history-table",
-      "label": "Reviewer coding agent",
-      "text": "Codex"
-    },
-    {
-      "selector": ".review-history-table",
-      "label": "Selected pass freshness",
-      "text": "Latest"
-    }
-  ],
-  "state": "drawer:reviewPasses",
-  "viewportWidth": 1280,
-  "viewportHeight": 1000
+"label": "Review pass selection and latest status",
+"target": "default",
+"route": "/work?task=1003&tab=review",
+"highlight": ".review-history-table",
+"steps": [
+  {
+    "waitFor": ".review-history-table"
+  }
+],
+"assert": [
+  {
+    "selector": ".review-history-table",
+    "label": "Reviewer coding agent",
+    "text": "Codex"
+  },
+  {
+    "selector": ".review-history-table",
+    "label": "Selected pass freshness",
+    "text": "Latest"
+  }
+],
+"state": "drawer:reviewPasses",
+"viewportWidth": 1280,
+"viewportHeight": 1000
 },
 {
-  "label": "Task agent assignment preview on hover",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"task-agent-preview\"]",
-  "steps": [
-    {
-      "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
-    },
-    {
-      "waitFor": "[data-test-id=\"task-agent-preview\"]"
-    }
-  ],
-  "assert": [
-    {
-      "selector": "[data-test-id=\"task-agent-preview\"]",
-      "label": "Engineer assignment",
-      "text": "Engineer"
-    },
-    {
-      "selector": "[data-test-id=\"task-agent-preview\"]",
-      "label": "Reviewer assignment",
-      "text": "Reviewer"
-    }
-  ],
-  "state": "board:severalWorkingCards",
-  "viewportWidth": 390,
-  "viewportHeight": 700
+"label": "Task agent assignment preview on hover",
+"target": "default",
+"route": "/work",
+"highlight": "[data-test-id=\"task-agent-preview\"]",
+"steps": [
+  {
+    "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+  },
+  {
+    "waitFor": "[data-test-id=\"task-agent-preview\"]"
+  }
+],
+"assert": [
+  {
+    "selector": "[data-test-id=\"task-agent-preview\"]",
+    "label": "Engineer assignment",
+    "text": "Engineer"
+  },
+  {
+    "selector": "[data-test-id=\"task-agent-preview\"]",
+    "label": "Reviewer assignment",
+    "text": "Reviewer"
+  }
+],
+"state": "board:severalWorkingCards",
+"viewportWidth": 390,
+"viewportHeight": 700
 }
 ]
 ```
@@ -472,3 +472,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T06:16:56Z · note: ui verification failed (1 issue(s)): [missing-target] Review pass selection and latest status (target "default"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:59953/work?shotState=drawer:reviewWithBranch)
 - 2026-11-02T06:18:07Z · body
 - 2026-11-02T06:18:27Z · body
+- 2026-11-02T06:30:04Z · message_queued at 2026-11-02T06:30:04.411Z
