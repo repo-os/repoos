@@ -7,8 +7,9 @@ review feedback creates another numbered report; it never overwrites an earlier
 round, even when the new round did not change source files. Only a retry of an
 interrupted handoff reuses the report already written for that attempt.
 
-The engineer writes a draft under the worktree cache directory at
-`.repoos/engineering-report-drafts/<task-id>.md`. RepoOS finalizes it only after
+The engineer writes a draft under the worktree's configured cache directory
+(`.repoos` by default) at `<cacheDir>/engineering-report-drafts/<task-id>.md`.
+RepoOS finalizes it only after
 the handoff check passes and confirms that the checked source commit has not
 changed. A missing draft blocks every new handoff; work already handed off before
 reports were introduced remains reviewable without one. A draft over 1,000

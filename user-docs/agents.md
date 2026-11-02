@@ -48,7 +48,8 @@ See `docs/reminders.md` for the storage format and API.
 ## Engineering reports
 
 Before handing off after a passing check, engineers write a report draft in the
-worktree cache path `.repoos/engineering-report-drafts/<task-id>.md`. Use the
+worktree's configured cache directory (`.repoos` by default) at
+`<cacheDir>/engineering-report-drafts/<task-id>.md`. Use the
 five required sections and aim for 500–600 words; RepoOS rejects drafts above
 1,000 words, finalizes one immutable report per round, and generates the Git
 change summary itself. See [Engineering reports](/engineering-reports) for the
