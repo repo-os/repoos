@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: github copilot
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-02T04:30:30Z"
+updated_at: "2026-11-02T13:27:50Z"
 ---
 ## Problem
 
@@ -66,3 +67,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-01T16:13:02Z · created · njachowski@gmail.com
 - 2026-11-01T16:13:04Z · screenshots
 - 2026-11-02T04:30:30Z · status inbox→ready
+- 2026-11-02T13:27:50Z · cli_override
