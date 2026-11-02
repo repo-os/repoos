@@ -2,7 +2,7 @@
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
