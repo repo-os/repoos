@@ -3,16 +3,13 @@ id: "0999"
 title: Keep automatic watchdog bookkeeping from blocking close-out
 type: bug
 status: active
-hold: true
-hold_reason: "Paused while #1009 incremental mirror fix is finalized and the server is verified"
-hold_at: "2026-11-02T04:13:35.240Z"
 priority: p1
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/keep-automatic-watchdog-bookkeeping-from
 created_at: "2026-11-01T11:58:54Z"
-updated_at: "2026-11-02T04:13:49Z"
+updated_at: "2026-11-02T04:15:51Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/git-worktree.test.ts > main dirty paths for close-out (#0713) > ignores only appended watchdog check-wait bookkeeping in tracked task files on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 7257f67b7be904467382583adb410bd6bf579bc3
 review_rounds: 1
@@ -73,3 +70,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T04:13:35Z · engineer stopped by request
 - 2026-11-02T04:13:35Z · held, held-reason, held-at
 - 2026-11-02T04:13:49Z · note: handoff requested (cli)
+- 2026-11-02T04:15:51Z · released
