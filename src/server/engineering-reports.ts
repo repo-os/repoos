@@ -87,7 +87,11 @@ export async function finalizeEngineeringReport(args: {
       report: null,
       error: `Engineering report is missing required sections: ${missingSections.join(", ")}.`,
     };
-  if (sectionPositions.some((position, index) => index > 0 && position <= sectionPositions[index - 1]!))
+  if (
+    sectionPositions.some(
+      (position, index) => index > 0 && position <= sectionPositions[index - 1]!,
+    )
+  )
     return {
       report: null,
       error: "Engineering report sections must appear in the required order, starting with TL;DR.",
