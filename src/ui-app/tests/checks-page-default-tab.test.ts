@@ -340,4 +340,39 @@ describe("IntegrationPipelineSummary (#0738)", () => {
     expect(text).toContain("#0738");
     expect(text).toContain("#0739");
   });
+
+  it("describes stale live-slot heartbeats without implying the holder exited", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        jsonResponse({
+          holders: [
+            {
+              slot: 0,
+              pid: 123,
+              ageMs: 90_000,
+              heartbeatAgeMs: 80_000,
+              dead: false,
+              wedged: true,
+              meta: { taskId: "1003" },
+            },
+          ],
+          queue: [],
+        }),
+      ),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    useRepoStore().integration = pipelineActive("1003");
+    const wrapper = mount(IntegrationPipelineSummary, {
+      global: { plugins: [pinia] },
+    });
+    await flushPromises();
+    const text = wrapper.text();
+    expect(text).toContain("No recent heartbeat");
+    expect(text).toContain("last heartbeat 1m 20s ago");
+    expect(text).toContain("alive");
+    expect(text).not.toContain("wedged");
+    wrapper.unmount();
+  });
 });

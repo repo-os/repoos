@@ -671,7 +671,7 @@ const hint = computed<CardHint | null>(() => {
       return {
         label: "re-reviewing checkpoint…",
         title:
-          "checkpoint commit(s) landed after handoff — RepoOS is re-running the handoff gate and a delta review, then close-out continues",
+          "checkpoint commit(s) were added after handoff — RepoOS is re-running the handoff gate and a delta review, then close-out continues",
         cls: "tc-reviewing",
       };
     }
