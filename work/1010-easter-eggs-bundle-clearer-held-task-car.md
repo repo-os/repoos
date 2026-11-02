@@ -25,15 +25,18 @@ Keep the yellow Held chip as the state indicator and remove the redundant lower-
 - Add UI coverage for the held and non-held card states and the release action.
 - Include/update a declared preview shot for the held card state so review can inspect the result.
 
-## Screenshots
-
-![Held task cards currently repeat the Held state as a chip and lower-left label, while showing a green Restart work button.](/api/tasks/1010/attachments/att_4dfea477-d78d-45e9-93e7-5bb25474a00d.png)
-
 ## Notes for AI
 Inspect the task card rendering and held-task action handlers. Reuse the existing hold-release API/command semantics rather than introducing a direct status mutation. Keep the release action distinct from a forced restart: clearing the hold should allow RepoOS's ordinary guarded dispatch to decide whether work can resume. The screenshot attachment shows three held cards and the duplicated state text/action.
 
 ## Additional task-panel and report layout fixes
 \n\n## Requested fixes\n\n- Fix the Hold task modal's broken spacing and padding. Keep the title, explanatory text, reason field, optional release date, and footer buttons inside a consistently padded modal with clear spacing between fields. Use the attached hold-modal screenshot as the visual reference.\n- Move the Hold button in the task panel's bottom action row to the right of Archive task. Preserve the existing Delete task action and ensure the row has consistent spacing. Use the attached task-actions screenshot as reference.\n- In the review tab's engineering report view, place the report-pass table above the report content, near the Report/Chat toggle. It must not end up below the report at the bottom of a long panel. Use the attached report-layout screenshot as reference.\n- Add or update UI coverage for the modal spacing, task action order, and report-table position. Verify responsive layout and preserve keyboard accessibility.
+
+## Screenshots
+
+![Held task cards currently repeat the Held state as a chip and lower-left label, while showing a green Restart work button.](/api/tasks/1010/attachments/att_4dfea477-d78d-45e9-93e7-5bb25474a00d.png)
+![Hold task modal spacing and padding](/api/tasks/1010/attachments/att_f9cd64ed-fd6d-4669-b0af-056a5cd1e5c8.png)
+![Engineering report pass table should appear before the report](/api/tasks/1010/attachments/att_fd7d1451-7bb1-4d1f-861e-b1b407c077c3.png)
+![Hold action should follow Archive task in the task panel](/api/tasks/1010/attachments/att_c755ebbc-74fa-4bcc-abba-0323b8588403.png)
 
 ## Activity
 
@@ -43,3 +46,4 @@ Inspect the task card rendering and held-task action handlers. Reuse the existin
 - 2026-11-02T04:38:38Z · body: Notes for AI (added)
 - 2026-11-02T07:14:04Z · needs_input
 - 2026-11-02T12:44:05Z · body: Additional task-panel and report layout fixes (added)
+- 2026-11-02T12:44:05Z · screenshots
