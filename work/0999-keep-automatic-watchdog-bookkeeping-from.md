@@ -2,7 +2,7 @@
 id: "0999"
 title: Keep automatic watchdog bookkeeping from blocking close-out
 type: bug
-status: review
+status: active
 hold: true
 hold_reason: "Paused while #1009 incremental mirror fix is finalized and the server is verified"
 hold_at: "2026-11-02T04:13:35.240Z"
@@ -72,4 +72,3 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T04:06:48Z · note: adopted orphaned engineer pid 91820
 - 2026-11-02T04:13:35Z · engineer stopped by request
 - 2026-11-02T04:13:35Z · held, held-reason, held-at
-- 2026-11-02T04:13:48Z · status active→review
