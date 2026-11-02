@@ -3,6 +3,9 @@ id: 1002
 title: Record and report per-test timings in check history
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 needs_merge: true
 priority: p2
 area: [core, cli, web]
@@ -12,7 +15,7 @@ branch: feat/record-and-report-per-test-timings-in-ch
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-01T14:20:03Z"
-updated_at: "2026-11-02T00:18:54Z"
+updated_at: "2026-11-02T00:18:55Z"
 last_check_failure: "repoos check at 2026-11-01T23:26:11.154Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 5
 review_rounds: 2
@@ -154,3 +157,4 @@ Read src/core/test-file-timings.ts, src/core/check-store.ts, src/core/check-resu
 - 2026-11-02T00:07:24Z · message_queued at 2026-11-02T00:07:24.410Z
 - 2026-11-02T00:18:15Z · status active→review
 - 2026-11-02T00:18:54Z · note: review pass 6: needs some work
+- 2026-11-02T00:18:55Z · needs_input
