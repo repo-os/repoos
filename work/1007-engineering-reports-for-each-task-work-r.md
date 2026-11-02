@@ -3,6 +3,9 @@ id: 1007
 title: Engineering reports for each task work round
 type: feature
 status: review
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 12s"
 priority: p2
 area: [core, server, web]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/engineering-reports-for-each-task-work-r
 cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T14:54:03Z"
+updated_at: "2026-11-02T14:56:38Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -213,3 +216,5 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T14:53:40Z · note: handoff requested (cli)
 - 2026-11-02T14:54:03Z · status active→review
 - 2026-11-02T14:54:03Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T14:54:57Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-02T14:56:38Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
