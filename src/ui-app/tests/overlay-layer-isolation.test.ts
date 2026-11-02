@@ -223,10 +223,10 @@ describe("overlay layer isolation (#0575)", () => {
   it("gives shared dialog actions visible hover and keyboard-focus states", () => {
     const css = readFileSync(join(APP, "style.css"), "utf8");
     expect(css).toMatch(
-      /\.delete-confirm-actions\s*>\s*button:hover\s*\{\s*filter:\s*brightness\(1\.12\);/,
+      /\.delete-confirm-actions\s+button:hover:not\(:disabled\)\s*\{\s*filter:\s*brightness\(1\.12\);/,
     );
     expect(css).toMatch(
-      /\.delete-confirm-actions\s*>\s*button:focus-visible\s*\{\s*outline:\s*2px solid var\(--ring\);/,
+      /\.delete-confirm-actions\s+button:focus-visible\s*\{\s*outline:\s*2px solid var\(--ring\);/,
     );
   });
 
