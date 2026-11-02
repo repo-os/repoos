@@ -282,6 +282,13 @@ describe("review pass selection and identity (#1003)", () => {
       { ok: true, running: false, enabled: true, review: latest, history, lines: [] },
       { 1: older },
     );
+    expect(
+      wrapper
+        .find(".review-history-table")
+        .element.compareDocumentPosition(wrapper.find(".review-card").element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(wrapper.findAll(".review-history-row")[1]?.attributes("tabindex")).toBe("0");
     expect(wrapper.find(".verdict-callout").text()).toContain("Latest");
     expect(wrapper.findAll(".review-history-row")[0]?.classes()).toContain("is-selected");
     expect(wrapper.findAll(".review-history-row")[0]?.attributes("aria-pressed")).toBe("true");
