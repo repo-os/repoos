@@ -2,14 +2,14 @@
 id: 1009
 title: Remote bundle mirror path is quoted so runners never reuse it
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-02T03:09:44Z"
-updated_at: "2026-11-02T03:09:59Z"
+updated_at: "2026-11-02T03:15:03Z"
 ---
 ## Problem
 Remote validation uploads about 205–210 MB of full Git history on every run even when runners already contain a persistent mirror. The path builder returns a path beginning with tilde, but both the mirror probe and validate.sh invocation shell-quote that value. Quoted tildes do not expand: the probe looks for a literal tilde-relative path, and validate.sh creates a directory under the runner home named tilde instead of using the hidden cache directory. This was confirmed read-only on thinkpad, bee, and mini: each contains populated mirrors under the accidental home/tilde/.repoos-cache directory while the expected home/.repoos-cache directory is absent. So every probe reports an empty mirror and every upload sends full history.
@@ -30,3 +30,4 @@ Inspect remoteMirrorPath, mirrorProbeCommand, validate.sh invocation constructio
 - 2026-11-02T03:09:44Z · created · njachowski@gmail.com
 - 2026-11-02T03:09:44Z · needs_input
 - 2026-11-02T03:09:59Z · needs_input, body: Problem (added 1, removed 1); Acceptance criteria (added 5, removed 5); Notes for AI (added)
+- 2026-11-02T03:15:03Z · status inbox→ready
