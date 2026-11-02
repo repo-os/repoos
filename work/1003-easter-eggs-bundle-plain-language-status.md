@@ -125,16 +125,16 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/?shotState=integration:median15",
 "highlight": ".dash-grid",
 "steps": [
-  {
-    "waitFor": ".dash-grid"
-  }
+{
+  "waitFor": ".dash-grid"
+}
 ],
 "assert": [
-  {
-    "selector": ".dash-grid",
-    "label": "Mission Control panels",
-    "text": "Feature releases"
-  }
+{
+  "selector": ".dash-grid",
+  "label": "Mission Control panels",
+  "text": "Feature releases"
+}
 ],
 "viewportWidth": 1280,
 "viewportHeight": 1000
@@ -145,16 +145,16 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/?shotState=integration:median15",
 "highlight": ".dash-grid",
 "steps": [
-  {
-    "waitFor": ".dash-grid"
-  }
+{
+  "waitFor": ".dash-grid"
+}
 ],
 "assert": [
-  {
-    "selector": ".dash-grid",
-    "label": "Responsive Mission Control panels",
-    "text": "Feature releases"
-  }
+{
+  "selector": ".dash-grid",
+  "label": "Responsive Mission Control panels",
+  "text": "Feature releases"
+}
 ],
 "viewportWidth": 390,
 "viewportHeight": 900
@@ -165,21 +165,21 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/agents?tab=default",
 "highlight": ".agents-tab-content",
 "steps": [
-  {
-    "waitFor": ".agents-tab-content"
-  }
+{
+  "waitFor": ".agents-tab-content"
+}
 ],
 "assert": [
-  {
-    "selector": ".agents-tab-content",
-    "label": "Default agents section",
-    "text": "Default agents"
-  },
-  {
-    "selector": ".agents-tab-content",
-    "label": "Custom agents section",
-    "text": "Custom agents"
-  }
+{
+  "selector": ".agents-tab-content",
+  "label": "Default agents section",
+  "text": "Default agents"
+},
+{
+  "selector": ".agents-tab-content",
+  "label": "Custom agents section",
+  "text": "Custom agents"
+}
 ],
 "viewportWidth": 1280,
 "viewportHeight": 2160
@@ -190,21 +190,21 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/work?task=1003&tab=review",
 "highlight": ".review-history-table",
 "steps": [
-  {
-    "waitFor": ".review-history-table"
-  }
+{
+  "waitFor": ".review-history-table"
+}
 ],
 "assert": [
-  {
-    "selector": ".review-history-table",
-    "label": "Reviewer coding agent",
-    "text": "Codex"
-  },
-  {
-    "selector": ".review-history-table",
-    "label": "Selected pass freshness",
-    "text": "Latest"
-  }
+{
+  "selector": ".review-history-table",
+  "label": "Reviewer coding agent",
+  "text": "Codex"
+},
+{
+  "selector": ".review-history-table",
+  "label": "Selected pass freshness",
+  "text": "Latest"
+}
 ],
 "state": "drawer:reviewPasses",
 "viewportWidth": 1280,
@@ -216,24 +216,24 @@ Keep the selected pass highlight visible while its report is loading and after i
 "route": "/work",
 "highlight": "[data-test-id=\"task-agent-preview\"]",
 "steps": [
-  {
-    "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
-  },
-  {
-    "waitFor": "[data-test-id=\"task-agent-preview\"]"
-  }
+{
+  "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+},
+{
+  "waitFor": "[data-test-id=\"task-agent-preview\"]"
+}
 ],
 "assert": [
-  {
-    "selector": "[data-test-id=\"task-agent-preview\"]",
-    "label": "Engineer assignment",
-    "text": "Engineer"
-  },
-  {
-    "selector": "[data-test-id=\"task-agent-preview\"]",
-    "label": "Reviewer assignment",
-    "text": "Reviewer"
-  }
+{
+  "selector": "[data-test-id=\"task-agent-preview\"]",
+  "label": "Engineer assignment",
+  "text": "Engineer"
+},
+{
+  "selector": "[data-test-id=\"task-agent-preview\"]",
+  "label": "Reviewer assignment",
+  "text": "Reviewer"
+}
 ],
 "state": "board:severalWorkingCards",
 "viewportWidth": 390,
@@ -473,3 +473,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T06:18:07Z · body
 - 2026-11-02T06:18:27Z · body
 - 2026-11-02T06:30:04Z · message_queued at 2026-11-02T06:30:04.411Z
+- 2026-11-02T06:30:04Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
