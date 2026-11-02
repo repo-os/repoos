@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/git-worktree.test.ts > main dirty paths for close-out (#0713) > ignores only appended watchdog check-wait bookkeeping in tracked task files on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 7257f67b7be904467382583adb410bd6bf579bc3
 id: "0999"
 title: Keep automatic watchdog bookkeeping from blocking close-out
 type: bug
@@ -62,3 +64,4 @@ Inspect #0693 and #0682, `src/core/landable.ts`, the watchdog/task metadata writ
 - 2026-11-02T03:53:31Z · note: handoff requested (cli)
 - 2026-11-02T03:54:42Z · message_queued at 2026-11-02T03:54:42.309Z
 - 2026-11-02T04:04:16Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/git-worktree.test.ts > main dirty paths for close-out (#0713) > ignores only appended watchdog check-wait bookkeeping in tracked task files on thinkpad — fix it in the feature branch and re-run the gate
+
