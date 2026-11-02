@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-02T06:36:01.203Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Task Dev tab with engineering report history (target \"default\"): state \"drawer:reviewWithBranch\" did not render on target \"default\" — /work?task=1007&tab=dev has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:61925/work?task=1007&tab=dev&shotState=drawer%3AreviewWithBranch); [missing-target] Task Dev tab with engineering report history (target \"default\"): highli… (truncated)"
 id: 1007
 title: Engineering reports for each task work round
 type: feature
@@ -106,3 +108,4 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T06:11:45Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-02T06:12:15Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T06:35:57Z · note: ui verification failed (2 issue(s)): [missing-target] Task Dev tab with engineering report history (target "default"): state "drawer:reviewWithBranch" did not render on target "default" — /work?task=1007&tab=dev has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:61925/work?task=1007&tab=dev&shotState=drawer%3AreviewWithBranch); [missing-target] Task Dev tab with engineering report history (target "default"): highlight [data-test-id="en
+
