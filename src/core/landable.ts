@@ -426,7 +426,7 @@ export function evaluateTaskScopeCheck(facts: {
 
 export function evaluateMainCleanCheck(
   facts: LandableFacts["mainDirty"],
-  dirs: Pick<LandableBookkeepingDirs, "remindersDir" | "schedulesDir">,
+  dirs: Pick<LandableBookkeepingDirs, "workDir" | "remindersDir" | "schedulesDir">,
 ): LandableCheck {
   const label = "Main clean";
   if (facts.checkFailed) {
