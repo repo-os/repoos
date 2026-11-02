@@ -3,6 +3,9 @@ id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -140,3 +143,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T19:09:17Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-02T19:09:25Z · handoff failed · check failed after 2 automatic retries · reused check inputs changed during handoff — run the check again
 - 2026-11-02T19:17:59Z · note: review pass 2: failed — no usable report
+- 2026-11-02T19:17:59Z · needs_input
