@@ -258,6 +258,13 @@ describe("DashboardView column labels", () => {
     expect(styles).toMatch(
       /@media\s*\(max-width:\s*800px\)\s*\{\s*\.dash-grid\s*\{[^}]*grid-template-columns:\s*1fr/s,
     );
+    const releaseTimelinePath = [
+      resolve(process.cwd(), "src/components/ReleaseTimeline.vue"),
+      resolve(process.cwd(), "src/ui-app/src/components/ReleaseTimeline.vue"),
+    ].find(existsSync);
+    expect(releaseTimelinePath).toBeDefined();
+    const releaseTimeline = readFileSync(releaseTimelinePath!, "utf8");
+    expect(releaseTimeline).not.toMatch(/\.release-panel\s*\{[^}]*margin(?:-bottom)?\s*:/s);
     wrapper.unmount();
   });
 
