@@ -163,7 +163,8 @@ session inherits them.
   a **warning** only (#0743). Tooltip and hover shots need a `hover` or `click`
   step plus a `state` fixture. Use `state` fixtures (`closeOut:active`,
   `closeOut:uploading`, `closeOut:remoteTests`, `card:doneError`,
-  `board:withReviewTask`, `board:cardChips`, `dev:failed`) when the UI only
+  `card:agentFailed`, `board:withReviewTask`, `board:cardChips`, `dev:failed`)
+  when the UI only
   exists in a particular board
   state, and `theme` (`"light"`/`"dark"`) to capture the same route once per
   theme (#0782).

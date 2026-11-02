@@ -471,6 +471,9 @@ fixture the preview applies before capture (preview builds only, via
   queue position and blocker; also seeds `#9999` with a live remote close-out
   for a task-drawer capture (#0897)
 - `card:doneError` — review card with done-error footer (`#9999` fixture task)
+- `card:agentFailed` — active card whose engineer stopped with a concrete
+  `dev-error` cause and a dirty worktree, so the status-line tooltip and the
+  restart confirmation can be captured together (`#9999` fixture task, #0997)
 - `card:humanStep` — ready card flagged by the decision-model human-step check,
   showing the model's bounded explanation (`#9999` fixture task, #0804)
 - `card:checkpointRecovery` — review fixture card mid post-handoff checkpoint

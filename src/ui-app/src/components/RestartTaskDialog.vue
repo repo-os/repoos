@@ -107,11 +107,10 @@ function cancel(): void {
         </DialogDescription>
         <div class="cc-modal-body restart-body-copy">
           <p>
-            This task's worktree has uncommitted changes from the last run
+            This task's worktree has uncommitted changes from the last run.
             <span v-if="task?.git?.worktreePath" class="restart-path mono">{{
               task.git.worktreePath
-            }}</span
-            >.
+            }}</span>
           </p>
           <div v-if="dirtyFiles?.length" class="restart-lost">
             <p>
