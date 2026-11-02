@@ -451,6 +451,108 @@ describe("skip checks records the override (#0507)", () => {
   });
 });
 
+describe("engineering report handoff retries", () => {
+  it.each([
+    { failureStep: "review", failedAt: "worktree task", expectedStep: "review" as const },
+    { failureStep: "main", failedAt: "canonical task", expectedStep: "main" as const },
+  ])(
+    "reuses a committed report after the $failedAt status update fails",
+    async ({ failureStep, expectedStep }) => {
+      const fx = fixture();
+      fx.config.agents = [{ name: "engineer", cli: "qwen", model: "test-model", enabled: true }];
+      writeFileSync(join(fx.worktree, ".gitignore"), ".repoos/\n");
+      git(fx.worktree, ["add", ".gitignore"]);
+      git(fx.worktree, ["commit", "-qm", "ignore runtime cache"]);
+      git(fx.worktree, ["add", "source.txt"]);
+      git(fx.worktree, ["commit", "-qm", "implementation"]);
+      const draftPath = join(fx.worktree, ".repoos", "engineering-report-drafts", "0507.md");
+      mkdirSync(join(fx.worktree, ".repoos", "engineering-report-drafts"), { recursive: true });
+      writeFileSync(
+        draftPath,
+        "## TL;DR\nRecorded the implementation.\n\n" +
+          "## Work and rationale\nKept the change small and tied it to the checked tree.\n\n" +
+          "## Approaches tried\nUsed the existing handoff lifecycle and Git metadata.\n\n" +
+          "## Challenges and blockers\nA later task status update can fail after the report commit.\n\n" +
+          "## Key learnings\nKeep the draft until handoff completion and reuse the committed report.",
+      );
+      writeFileSync(
+        join(fx.bin, "repoos"),
+        ["#!/usr/bin/env node", 'process.stdout.write("All checks passed.\\n");'].join("\n"),
+        { mode: 0o755 },
+      );
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+
+      const { finalizeReviewHandoff } = await import("../../server/handoff");
+      const task = parseTask({
+        content: readFileSync(fx.taskFile, "utf8"),
+        absPath: fx.taskFile,
+        root: fx.root,
+        defaultStatus: fx.config.defaultStatus,
+        defaultAssignee: fx.config.defaultAssignee,
+      });
+      const { guardReviewTransition } = await import("../../server/review-guard");
+      expect((await guardReviewTransition(fx.config, task)).ok).toBe(true);
+      const sourceSha = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: fx.worktree,
+        encoding: "utf8",
+      }).trim();
+      try {
+        const failed = await finalizeReviewHandoff(fx.config, task, {
+          origin: "ui-review",
+          holdGuard: true,
+          onProgress: (step) => {
+            if (step === failureStep) {
+              const content = readFileSync(fx.taskFile, "utf8");
+              writeFileSync(
+                fx.taskFile,
+                content.replace("status: active", "status: active\nhold: true"),
+              );
+            }
+          },
+        });
+        expect(failed.ok).toBe(false);
+        expect(failed.step).toBe(expectedStep);
+        expect(existsSync(draftPath)).toBe(true);
+
+        const reportPath = join(fx.worktree, "work", "engineering-reports", "0507", "round-1.json");
+        expect(existsSync(reportPath)).toBe(true);
+        expect(JSON.parse(readFileSync(reportPath, "utf8")).sourceSha).toBe(sourceSha);
+        expect(
+          execFileSync("git", ["log", "--format=%s", "--all"], {
+            cwd: fx.worktree,
+            encoding: "utf8",
+          })
+            .split("\n")
+            .filter((line) => line.includes("record engineering report for #0507 round 1")),
+        ).toHaveLength(1);
+
+        writeFileSync(fx.taskFile, readFileSync(fx.taskFile, "utf8").replace("hold: true\n", ""));
+        const retried = await finalizeReviewHandoff(fx.config, task, {
+          origin: "ui-review",
+          holdGuard: true,
+        });
+        expect(retried.ok).toBe(true);
+        expect(readStatus(fx)).toBe("review");
+        expect(existsSync(draftPath)).toBe(false);
+        expect(JSON.parse(readFileSync(reportPath, "utf8")).sourceSha).toBe(sourceSha);
+        expect(
+          execFileSync("git", ["log", "--format=%s", "--all"], {
+            cwd: fx.worktree,
+            encoding: "utf8",
+          })
+            .split("\n")
+            .filter((line) => line.includes("record engineering report for #0507 round 1")),
+        ).toHaveLength(1);
+        expect(gitStatus(fx.worktree)).toBe("");
+      } finally {
+        process.env.PATH = oldPath;
+      }
+    },
+    60_000,
+  );
+});
+
 describe("a deliberate stop is not a dev error (#0507)", () => {
   it("does not set needs_input or bump dev_error_count", async () => {
     const fx = fixture();
