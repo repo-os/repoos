@@ -280,8 +280,10 @@ function compareContributionSince(
 }
 
 function isAncestorOf(root: string, ancestor: string, descendant: string): boolean {
-  return gitRun(root, ["merge-base", "--is-ancestor", ancestor, descendant], { timeout: 4000 })
-    .status === 0;
+  return (
+    gitRun(root, ["merge-base", "--is-ancestor", ancestor, descendant], { timeout: 4000 })
+      .status === 0
+  );
 }
 
 /**

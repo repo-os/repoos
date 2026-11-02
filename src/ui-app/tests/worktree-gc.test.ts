@@ -279,7 +279,10 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
       });
 
       expect(report.removedWorktrees).toContainEqual(
-        expect.objectContaining({ branch: "feat/checkpointed", reason: "represented in main and clean" }),
+        expect.objectContaining({
+          branch: "feat/checkpointed",
+          reason: "represented in main and clean",
+        }),
       );
       expect(branches(root).has("feat/checkpointed")).toBe(false);
     } finally {
