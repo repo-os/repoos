@@ -76,10 +76,13 @@ describe("engineering report history", () => {
   it("lists rounds and opens the selected report from the Dev tab", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
-    vi.stubGlobal("EventSource", class {
-      addEventListener(): void {}
-      close(): void {}
-    });
+    vi.stubGlobal(
+      "EventSource",
+      class {
+        addEventListener(): void {}
+        close(): void {}
+      },
+    );
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string | URL | Request) => {

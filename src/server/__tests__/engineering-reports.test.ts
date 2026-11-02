@@ -55,7 +55,13 @@ describe("engineering reports", () => {
     expect(listEngineeringReports(config, "T1")).toHaveLength(1);
     expect(existsSync(join(root, "work", "engineering-reports", "T1", "round-1.json"))).toBe(true);
     const mission = reviewMission(
-      { id: "T1", title: "report test", body: "Task spec", branch: "feat/report", extra: {} } as any,
+      {
+        id: "T1",
+        title: "report test",
+        body: "Task spec",
+        branch: "feat/report",
+        extra: {},
+      } as any,
       { instructions: "Review carefully." } as any,
       root,
       "main",
@@ -64,7 +70,9 @@ describe("engineering reports", () => {
     );
     expect(mission).toContain("Engineering round 1");
     expect(mission).toContain("STALE REPORT");
-    expect(mission).toContain("consider the engineer's rationale, experiments, blockers, and limitations");
+    expect(mission).toContain(
+      "consider the engineer's rationale, experiments, blockers, and limitations",
+    );
     expect(mission).toContain("Recorded a concise summary.");
     const retry = await finalizeEngineeringReport(args);
     expect(retry.report?.round).toBe(1);
