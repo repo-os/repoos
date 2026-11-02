@@ -1,9 +1,9 @@
 import { parseDocument } from "./frontmatter.js";
 
-const AUTOMATIC_ACTIVITY = [
-  /^- \d{4}-\d{2}-\d{2}T[^\s]+ · watchdog: check wait escalated · waiting: .+ · next step: investigate the abnormal wait; the flag clears when the check starts$/,
-  /^- \d{4}-\d{2}-\d{2}T[^\s]+ · watchdog: check wait ended or recovered — cleared needs_input$/,
-];
+const ESCALATED_ACTIVITY =
+  /^- (\d{4}-\d{2}-\d{2}T[^\s]+) · watchdog: check wait escalated · (.+?) · next step: investigate the abnormal wait; the flag clears when the check starts$/;
+const RECOVERED_ACTIVITY =
+  /^- (\d{4}-\d{2}-\d{2}T[^\s]+) · watchdog: check wait ended or recovered — cleared needs_input$/;
 const AUTOMATIC_FIELDS = new Set([
   "needs_input",
   "needs_input_reason",
@@ -66,5 +66,42 @@ export function isWatchdogCheckWaitTaskDelta(
     .split("\n")
     .filter(Boolean);
   if (added.length === 0) return false;
-  return added.every((line) => AUTOMATIC_ACTIVITY.some((pattern) => pattern.test(line)));
+
+  let needsInput = oldDoc.data.needs_input === true;
+  let reason = oldDoc.data.needs_input_reason;
+  let detail = oldDoc.data.needs_input_detail;
+  let lastTimestamp: string | undefined;
+  for (const line of added) {
+    const escalated = ESCALATED_ACTIVITY.exec(line);
+    if (escalated) {
+      if (needsInput) return false;
+      const timestamp = escalated[1]!;
+      const activityDetail = escalated[2]!;
+      if (!Number.isFinite(Date.parse(timestamp))) return false;
+      needsInput = true;
+      reason = "check-wait";
+      detail = activityDetail;
+      lastTimestamp = timestamp;
+      continue;
+    }
+    const recovered = RECOVERED_ACTIVITY.exec(line);
+    if (!recovered || !needsInput || reason !== "check-wait") return false;
+    const timestamp = recovered[1]!;
+    if (!Number.isFinite(Date.parse(timestamp))) return false;
+    needsInput = false;
+    reason = undefined;
+    detail = undefined;
+    lastTimestamp = timestamp;
+  }
+
+  if (!lastTimestamp || newDoc.data.updated_at !== lastTimestamp) return false;
+  if (newDoc.data.needs_input !== needsInput) return false;
+  if (needsInput) {
+    if (newDoc.data.needs_input_reason !== reason || newDoc.data.needs_input_detail !== detail)
+      return false;
+  } else if (newDoc.data.needs_input_reason != null || newDoc.data.needs_input_detail != null) {
+    return false;
+  }
+  // The state fields must actually reflect at least one machine transition.
+  return changedFields.has("updated_at");
 }

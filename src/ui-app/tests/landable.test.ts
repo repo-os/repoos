@@ -360,14 +360,16 @@ describe("evaluateLandable result", () => {
 });
 
 describe("main dirty ownership", () => {
-  it("classifies the four owner buckets", () => {
-    const dirs = { remindersDir: "reminders", schedulesDir: "schedules" };
+  it("classifies managed task, reminder, schedule and config owners", () => {
+    const dirs = { workDir: "work", remindersDir: "reminders", schedulesDir: "schedules" };
     expect(mainDirtyOwner("repoos.toml", dirs)).toBe("repoos.toml");
+    expect(mainDirtyOwner("work/0999-task.md", dirs)).toBe("work/");
     expect(mainDirtyOwner("reminders/0001-a.md", dirs)).toBe("reminders/");
     expect(mainDirtyOwner("schedules/a.md", dirs)).toBe("schedules/");
     expect(mainDirtyOwner("src/a.ts", dirs)).toBe("unknown");
-    expect(classifyMainDirtyFiles(["repoos.toml", "src/a.ts"], dirs)).toEqual([
+    expect(classifyMainDirtyFiles(["repoos.toml", "work/0999-task.md", "src/a.ts"], dirs)).toEqual([
       { path: "repoos.toml", owner: "repoos.toml" },
+      { path: "work/0999-task.md", owner: "work/" },
       { path: "src/a.ts", owner: "unknown" },
     ]);
   });
