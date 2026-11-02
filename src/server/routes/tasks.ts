@@ -4011,7 +4011,9 @@ export const getTaskReviewPass: RouteHandler = (ctx, _req, res, params) => {
 export const getTaskEngineeringReports: RouteHandler = async (ctx, _req, res, params) => {
   const task = ctx.index.getTask(params.param1);
   if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
-  const workdir = task.branch ? await getGitWorker(ctx.config.root).worktreePath(task.branch) : null;
+  const workdir = task.branch
+    ? await getGitWorker(ctx.config.root).worktreePath(task.branch)
+    : null;
   const reports = workdir ? listEngineeringReports({ ...ctx.config, root: workdir }, task.id) : [];
   return json(res, 200, {
     ok: true,
@@ -4025,7 +4027,9 @@ export const getTaskEngineeringReport: RouteHandler = async (ctx, _req, res, par
   const round = Number(params.param2);
   if (!Number.isInteger(round) || round < 1)
     return json(res, 400, { error: "Invalid engineering round" });
-  const workdir = task.branch ? await getGitWorker(ctx.config.root).worktreePath(task.branch) : null;
+  const workdir = task.branch
+    ? await getGitWorker(ctx.config.root).worktreePath(task.branch)
+    : null;
   const report =
     (workdir ? readEngineeringReport({ ...ctx.config, root: workdir }, task.id, round) : null) ??
     readEngineeringReport(ctx.config, task.id, round);
