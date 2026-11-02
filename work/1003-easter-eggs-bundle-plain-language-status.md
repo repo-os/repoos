@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-plain-language-status
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:37:17Z"
-updated_at: "2026-11-02T07:11:52Z"
+updated_at: "2026-11-02T07:45:44Z"
 last_check_failure: "repoos check at 2026-11-02T06:59:11.783Z: repoos check failed: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target \"default\"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target \"default\"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPa… (truncated)"
 review_passes: 4
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from bc190c34 to a09c4d53) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -125,14 +125,14 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".dash-grid",
 "steps": [
 {
-  "waitFor": ".dash-grid"
+"waitFor": ".dash-grid"
 }
 ],
 "assert": [
 {
-  "selector": ".dash-grid",
-  "label": "Mission Control panels",
-  "text": "Feature releases"
+"selector": ".dash-grid",
+"label": "Mission Control panels",
+"text": "Feature releases"
 }
 ],
 "viewportWidth": 1280,
@@ -145,14 +145,14 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".dash-grid",
 "steps": [
 {
-  "waitFor": ".dash-grid"
+"waitFor": ".dash-grid"
 }
 ],
 "assert": [
 {
-  "selector": ".dash-grid",
-  "label": "Responsive Mission Control panels",
-  "text": "Feature releases"
+"selector": ".dash-grid",
+"label": "Responsive Mission Control panels",
+"text": "Feature releases"
 }
 ],
 "viewportWidth": 390,
@@ -165,19 +165,19 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".agents-tab-content",
 "steps": [
 {
-  "waitFor": ".agents-tab-content"
+"waitFor": ".agents-tab-content"
 }
 ],
 "assert": [
 {
-  "selector": ".agents-tab-content",
-  "label": "Default agents section",
-  "text": "Default agents"
+"selector": ".agents-tab-content",
+"label": "Default agents section",
+"text": "Default agents"
 },
 {
-  "selector": ".agents-tab-content",
-  "label": "Custom agents section",
-  "text": "Custom agents"
+"selector": ".agents-tab-content",
+"label": "Custom agents section",
+"text": "Custom agents"
 }
 ],
 "viewportWidth": 1280,
@@ -190,19 +190,19 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": ".review-history-table",
 "steps": [
 {
-  "waitFor": ".review-history-table"
+"waitFor": ".review-history-table"
 }
 ],
 "assert": [
 {
-  "selector": ".review-history-table",
-  "label": "Reviewer coding agent",
-  "text": "Codex"
+"selector": ".review-history-table",
+"label": "Reviewer coding agent",
+"text": "Codex"
 },
 {
-  "selector": ".review-history-table",
-  "label": "Selected pass freshness",
-  "text": "Latest"
+"selector": ".review-history-table",
+"label": "Selected pass freshness",
+"text": "Latest"
 }
 ],
 "state": "drawer:reviewPasses",
@@ -216,22 +216,22 @@ Keep the selected pass highlight visible while its report is loading and after i
 "highlight": "[data-test-id=\"task-agent-preview\"]",
 "steps": [
 {
-  "hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
+"hover": "article[data-task-id=\"0980-1\"] button.tc-agent-btn"
 },
 {
-  "waitFor": "[data-test-id=\"task-agent-preview\"]"
+"waitFor": "[data-test-id=\"task-agent-preview\"]"
 }
 ],
 "assert": [
 {
-  "selector": "[data-test-id=\"task-agent-preview\"]",
-  "label": "Engineer assignment",
-  "text": "Engineer"
+"selector": "[data-test-id=\"task-agent-preview\"]",
+"label": "Engineer assignment",
+"text": "Engineer"
 },
 {
-  "selector": "[data-test-id=\"task-agent-preview\"]",
-  "label": "Reviewer assignment",
-  "text": "Reviewer"
+"selector": "[data-test-id=\"task-agent-preview\"]",
+"label": "Reviewer assignment",
+"text": "Reviewer"
 }
 ],
 "state": "board:severalWorkingCards",
@@ -480,4 +480,4 @@ Use the attached screenshot as context. Match the visual hierarchy of the existi
 - 2026-11-02T06:59:08Z · note: ui verification failed (4 issue(s)): [missing-target] Review pass selection and latest status (target "default"): waitFor .review-history-table: waitFor: Timeout 5000ms exceeded. on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [missing-target] Review pass selection and latest status (target "default"): highlight .review-history-table matched nothing on /work?task=1003&tab=review (http://127.0.0.1:64029/work?shotState=drawer:reviewPasses); [assertion] Re
 - 2026-11-02T06:59:39Z · body
 - 2026-11-02T07:11:52Z · body
-
+- 2026-11-02T07:45:44Z · note: ui verification failed (1 issue(s)): [assertion] Review pass selection and latest status: selector .review-history-table text does not contain "Latest" (saw "passwhenagentmodelverdict#202/11/2026, 18:00:00Codexgpt-5good to go#101/11/2026, 18:00:00Cursorcomposergood to go") (captured http://127.0.0.1:55161/work?shotState=drawer:reviewPasses) (http://127.0.0.1:55161/work?shotState=drawer:reviewPasses)
