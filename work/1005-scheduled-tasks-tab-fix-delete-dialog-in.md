@@ -3,6 +3,7 @@ id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
 status: review
+needs_merge: true
 priority: p1
 area: web
 assigned_to: ai
@@ -12,7 +13,7 @@ cli_override: github copilot
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T04:53:20Z"
+updated_at: "2026-11-03T06:02:03Z"
 ---
 ## Problem
 
@@ -78,3 +79,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T16:50:44Z · status active→review
 - 2026-11-02T23:53:53Z · status review→active
 - 2026-11-03T04:53:20Z · status active→review
+- 2026-11-03T06:02:03Z · needs_merge
