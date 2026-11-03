@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
@@ -104,3 +105,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T10:29:04Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T13:53:28Z · note: stopped orphaned engineer pid 55099
 - 2026-11-03T14:04:25Z · message_overdue: still queued after 60m without being delivered
+
