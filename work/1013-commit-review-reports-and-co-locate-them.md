@@ -51,3 +51,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T07:28:55Z · message_delivered: 2 message(s)
 - 2026-11-03T07:33:02Z · body
 - 2026-11-03T07:42:35Z · message_queued at 2026-11-03T07:42:35.381Z
+- 2026-11-03T07:42:35Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
