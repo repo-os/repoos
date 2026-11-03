@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-03T06:02:41Z"
-review_passes: 7
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
@@ -15,6 +13,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
+updated_at: "2026-11-03T06:39:02Z"
+review_passes: 7
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 dev_error_count: 2
