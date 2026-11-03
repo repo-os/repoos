@@ -19,6 +19,7 @@ import { NO_CHECK_PLAN_NOTICE } from "../../core/check-skip.js";
 import { listProcessGroupPids, processGroupAlive } from "../../core/process-group.js";
 import { runHandoffCommand } from "../../server/handoff.js";
 import { taskHasBlockingCheckOrRemote } from "../../server/active-task-card.js";
+import { trackTestProcess } from "./helpers";
 
 const dirs: string[] = [];
 
@@ -146,6 +147,9 @@ describe("TaskCheckManager durable cancelled runs (#0564)", () => {
           const match = chunk.match(/ready:(\d+)/);
           if (match) {
             groupPid = Number(match[1]);
+            // Production spawned this group; register it so a timeout before
+            // the test's own cancel cannot leave the SIGTERM-ignoring descendant.
+            trackTestProcess(groupPid);
             readyResolve();
           }
         },
