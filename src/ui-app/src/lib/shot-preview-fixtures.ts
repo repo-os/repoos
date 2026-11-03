@@ -552,8 +552,10 @@ export function shotFixtureDevTargets(
 /**
  * Two deterministic schedules for the `schedule:seeded` capture fixture
  * (#1005). Returns null for any other fixture, so the panel keeps its real
- * server data. One weekly row (with a last result and a linked task, so every
- * card detail and the action column render) beside one daily row.
+ * server data. One weekly row (with a last result, so the outcome detail and
+ * the action column render) beside one daily row. Neither points at a real
+ * task id: `lastTaskId` stays empty so a capture can never navigate to a
+ * fixture task that the server 404s.
  */
 export function shotFixtureSchedules(fixture: ShotPreviewFixtureId | null): TaskSchedule[] | null {
   if (fixture !== "schedule:seeded") return null;
