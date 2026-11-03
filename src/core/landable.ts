@@ -160,32 +160,28 @@ export function classifyMainDirtyFiles(
   return paths.map((path) => ({ path, owner: mainDirtyOwner(path, dirs) }));
 }
 
-/** `<id>` from this task's own markdown file, or null when it has no id prefix. */
-function ownTaskId(ownTaskFile: string): string | null {
-  const base = ownTaskFile.split("/").pop() ?? "";
-  const match = /^([A-Za-z0-9]+)-/.exec(base);
-  return match ? match[1]! : null;
-}
-
 /**
  * A branch change outside the task's own work file is drift: config, another
  * task's markdown, an input, or a story definition never lands with this task.
  *
- * Handoff finalization commits this task's engineering report under
- * `<workDir>/engineering-reports/<id>/`, so that report is this task's own
- * bookkeeping rather than another task's (#1004). A report for any other task
- * id remains forbidden.
+ * A task's own engineering reports live under
+ * `<workDir>/engineering-reports/<task-id>/` (docs/engineering-reports.md) and
+ * are written by the handoff itself, so they are this task's bookkeeping even
+ * though they are not the task markdown (#0997). Another task's report stays
+ * forbidden.
  */
 export function isForbiddenTaskScopePath(
   path: string,
   ownTaskFile: string,
   dirs: Pick<LandableBookkeepingDirs, "workDir" | "inputsDir" | "storiesDir">,
+  taskId?: string,
 ): boolean {
   if (path === CONFIG_PATH) return true;
   if (path === ownTaskFile) return false;
-  const workPrefix = `${dirs.workDir.replace(/\/+$/, "")}/`;
-  const id = ownTaskId(ownTaskFile);
-  if (id && path.startsWith(`${workPrefix}engineering-reports/${id}/`)) return false;
+  if (taskId) {
+    const workDir = dirs.workDir.replace(/\/+$/, "");
+    if (path.startsWith(`${workDir}/engineering-reports/${taskId}/`)) return false;
+  }
   const prefixes = [dirs.workDir, dirs.inputsDir, dirs.storiesDir].map(
     (d) => `${d.replace(/\/+$/, "")}/`,
   );
@@ -402,6 +398,7 @@ export function evaluateMergeCheck(facts: {
 export function evaluateTaskScopeCheck(facts: {
   changedPaths: string[] | null;
   ownTaskFile: string;
+  taskId?: string;
   bookkeeping: Pick<LandableBookkeepingDirs, "workDir" | "inputsDir" | "storiesDir">;
 }): LandableCheck {
   const label = "Task scope";
@@ -415,7 +412,7 @@ export function evaluateTaskScopeCheck(facts: {
     };
   }
   const forbidden = facts.changedPaths.filter((p) =>
-    isForbiddenTaskScopePath(p, facts.ownTaskFile, facts.bookkeeping),
+    isForbiddenTaskScopePath(p, facts.ownTaskFile, facts.bookkeeping, facts.taskId),
   );
   if (forbidden.length > 0) {
     const config = forbidden.includes(CONFIG_PATH);
@@ -483,6 +480,7 @@ export function evaluateLandable(facts: LandableFacts): LandableResult {
     evaluateTaskScopeCheck({
       changedPaths: facts.changedPaths,
       ownTaskFile: facts.ownTaskFile,
+      taskId: facts.taskId,
       bookkeeping: facts.bookkeeping,
     }),
     evaluateMainCleanCheck(facts.mainDirty, facts.bookkeeping),

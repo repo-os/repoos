@@ -386,6 +386,22 @@ const remoteActivity = computed(() => {
   return id ? (repo.taskRemoteActivity[id] ?? null) : null;
 });
 
+const activeWorkLabel = computed(() => {
+  const task = ui.active;
+  if (!task) return "";
+  const activity = remoteActivity.value;
+  if (activity?.run) {
+    const elapsed = formatDuration(
+      Math.max(0, checkNow.value - Date.parse(activity.run.startedAt)),
+    );
+    return `remote ${activity.run.kind} · ${activity.run.stage ?? "running"} · ${elapsed}`;
+  }
+  if (activity?.queue) {
+    return `queued · runner · #${activity.queue.position} · ${formatDuration(activity.queue.waitedMs)}`;
+  }
+  return repo.pmWorkingFor(task.id) ? "PM working" : "Engineer working";
+});
+
 function remotePhaseText(ms: number | null | undefined): string {
   return ms == null ? "" : formatDuration(ms);
 }
@@ -788,7 +804,11 @@ const drawerStatusSummary = computed(() => {
   ].includes(key);
   const checkRun = activeCheckRun.value ?? lastCheckRun.value;
   const where = scopeWhere(checkRun?.scope, checkMachine.value ?? checkRun?.machine);
-  const tone = isError ? "fail" : key === "checksRunning" ? "running" : "neutral";
+  const tone = isError
+    ? "fail"
+    : ["checksRunning", "workRunning"].includes(key)
+      ? "running"
+      : "neutral";
   let lines: [string, string, string];
   if (key === "checksRunning" && localCheckWait.value) {
     lines = [
@@ -812,7 +832,7 @@ const drawerStatusSummary = computed(() => {
   } else if (key === "reviewerRunning") {
     lines = ["Reviewer running", "Review", "Reviewer is working…"];
   } else if (key === "workRunning") {
-    lines = ["Work running", "This task", "Work is running…"];
+    lines = [activeWorkLabel.value, "", ""];
   } else if (key === "reviewFailed") {
     lines = ["Review failed", "Review report", shortDetails.reviewFailed || "No complete report"];
   } else if (key === "notLandable") {
@@ -4192,6 +4212,68 @@ watch(
 
 /** Historical usage totals for the open task (time/tokens/cost + role breakdown, 0230). */
 const taskUsage = computed(() => (ui.active ? repo.taskUsageFor(ui.active.id) : undefined));
+interface EngineeringReportRow {
+  taskId: string;
+  round: number;
+  at: string;
+  agent: string;
+  model: string;
+  branch: string;
+  baseSha: string;
+  sourceSha: string;
+  wordCount: number;
+  markdown: string;
+}
+const devPane = ref<"chat" | "report">("chat");
+const engineeringReports = ref<EngineeringReportRow[]>([]);
+const engineeringReportsError = ref("");
+const selectedEngineeringRound = ref<number | null>(null);
+const selectedEngineeringReport = computed(
+  () =>
+    engineeringReports.value.find((report) => report.round === selectedEngineeringRound.value) ??
+    engineeringReports.value.at(-1) ??
+    null,
+);
+const engineeringReportHtml = computed(() =>
+  selectedEngineeringReport.value ? renderMarkdown(selectedEngineeringReport.value.markdown) : "",
+);
+// Every load bumps the generation. A response is applied only when it belongs
+// to the newest load for the task still open in the drawer, so a slow older
+// request can never overwrite newer history — even when the task id and branch
+// are unchanged and only its status moved.
+let engineeringReportGeneration = 0;
+async function loadEngineeringReports(taskId: string): Promise<void> {
+  const generation = ++engineeringReportGeneration;
+  const stillCurrent = () => generation === engineeringReportGeneration && ui.active?.id === taskId;
+  try {
+    const response = await api<{ reports?: EngineeringReportRow[]; errors?: string[] }>(
+      `/api/tasks/${taskId}/engineering-reports`,
+    );
+    if (!stillCurrent()) return;
+    engineeringReports.value = response.reports ?? [];
+    engineeringReportsError.value = response.errors?.length
+      ? `Some report history could not be read: ${response.errors.join("; ")}`
+      : "";
+    selectedEngineeringRound.value = engineeringReports.value.at(-1)?.round ?? null;
+  } catch (error) {
+    if (!stillCurrent()) return;
+    engineeringReports.value = [];
+    selectedEngineeringRound.value = null;
+    engineeringReportsError.value = `Engineering reports could not be loaded: ${
+      error instanceof Error ? error.message : String(error)
+    }`;
+  }
+}
+watch(
+  () => [ui.active?.id, ui.active?.status],
+  ([id]) => {
+    engineeringReports.value = [];
+    engineeringReportsError.value = "";
+    selectedEngineeringRound.value = null;
+    if (id) void loadEngineeringReports(id);
+  },
+  { immediate: true },
+);
 
 /** Whether the "agent / model" column shows the model name under the agent, for every session row (collapsed by default). Clicking any cell in the column toggles all rows together. */
 const sessionAgentsExpanded = ref(false);
@@ -5141,21 +5223,20 @@ watch(
               </Button>
               <Button
                 v-if="
-                  !isHumanTask && ui.active.status === 'active' && !repo.isRunning(ui.active.id)
+                  !isHumanTask &&
+                  ui.active.status === 'active' &&
+                  !repo.isRunning(ui.active.id) &&
+                  !handoffBusy
                 "
+                data-test-id="task-drawer-request-review"
                 variant="status"
                 :style="{ '--tone': statusColor('review') }"
-                :disabled="ui.saving || handoffBusy"
-                :title="
-                  handoffBusy
-                    ? 'RepoOS is already running the handoff finalization for this task'
-                    : 'Ask RepoOS to commit, run the checks, and move this task to review'
-                "
+                :disabled="ui.saving"
+                title="Ask RepoOS to commit, run the checks, and move this task to review"
                 @click="setStatus('review')"
               >
-                <ActivityIndicator v-if="handoffBusy" />
-                <Send v-else class="size-3.5" />
-                {{ handoffBusy ? "Running checks…" : "Review" }}
+                <Send class="size-3.5" />
+                Review
               </Button>
               <Button
                 v-if="!isHumanTask && ui.active.status === 'active' && repo.isRunning(ui.active.id)"
@@ -5525,8 +5606,13 @@ watch(
               'is-error': drawerStatusSummary.isError,
               'is-running': drawerStatusSummary.tone === 'running',
               'is-fail': drawerStatusSummary.tone === 'fail',
+              'is-compact': !drawerStatusSummary.lines[1],
             }"
-            aria-label="Task status. Open Status details."
+            :aria-label="
+              drawerStatusSummary.key === 'workRunning'
+                ? `Work running: ${drawerStatusSummary.lines[0]}. Open Status details.`
+                : 'Task status. Open Status details.'
+            "
             @click="openStatusDetails"
             @keydown.enter.prevent="openStatusDetails"
             @keydown.space.prevent="openStatusDetails"
@@ -5535,7 +5621,7 @@ watch(
               <span class="drawer-status-mark" aria-hidden="true" />
               {{ drawerStatusSummary.lines[0] }}
             </span>
-            <span class="drawer-status-row drawer-status-l2">{{
+            <span v-if="drawerStatusSummary.lines[1]" class="drawer-status-row drawer-status-l2">{{
               drawerStatusSummary.lines[1]
             }}</span>
             <span v-if="drawerStatusSummary.lines[2]" class="drawer-status-row drawer-status-l3">{{
@@ -6031,6 +6117,25 @@ watch(
           </div>
           <div class="delete-zone">
             <Button
+              variant="destructive"
+              size="sm"
+              :disabled="ui.saving"
+              @click="openDeleteConfirm"
+            >
+              Delete task
+            </Button>
+            <Button
+              v-if="!ui.active?.isArchived"
+              variant="outline"
+              size="sm"
+              data-test-id="archive-task"
+              :disabled="ui.saving"
+              title="Park this task without changing its status, branch or worktree"
+              @click="openArchiveConfirm"
+            >
+              Archive task
+            </Button>
+            <Button
               v-if="holdActive"
               variant="outline"
               size="sm"
@@ -6048,26 +6153,6 @@ watch(
               >Hold</Button
             >
             <Button
-              variant="destructive"
-              size="sm"
-              :disabled="ui.saving"
-              @click="openDeleteConfirm"
-            >
-              Delete task
-            </Button>
-            <Button
-              v-if="!ui.active?.isArchived"
-              variant="outline"
-              size="sm"
-              class="delete-zone-archive"
-              data-test-id="archive-task"
-              :disabled="ui.saving"
-              title="Park this task without changing its status, branch or worktree"
-              @click="openArchiveConfirm"
-            >
-              Archive task
-            </Button>
-            <Button
               v-if="!ui.active?.hotfix && ui.active?.status === 'ready'"
               variant="outline"
               size="sm"
@@ -6083,120 +6168,197 @@ watch(
           class="drawer-body drawer-session-body"
           :class="{ 'transition-success': transitioned }"
         >
-          <div v-if="ui.active" class="agent-override-bar">
-            <div class="agent-pick-grid">
-              <div class="agent-field" style="grid-column: 1 / -1">
-                <AgentModelControl
-                  :cli-options="cliOptionsFor(overrideDraft.cli)"
-                  :model-options="modelOptions"
-                  :memory-key="'task:' + ui.active.id + ':agent'"
-                  v-model:cli="overrideDraft.cli"
-                  v-model:model="overrideDraft.model"
-                  :disabled="ui.saving"
-                />
-                <div
-                  v-if="isLegacyGeminiCli(overrideDraft.cli)"
-                  class="agent-legacy-notice"
-                  role="status"
-                >
-                  <strong>Deprecated Gemini CLI</strong> — this saved task override is preserved,
-                  but new runs should use
-                  <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
-                    >Antigravity CLI (agy)</a
-                  >.
-                </div>
-              </div>
-              <div class="agent-field">
-                <div v-if="overrideDirty" class="agent-override-actions" style="padding-top: 20px">
-                  <span class="agent-save-hint">saving…</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div v-if="sessionStats?.stalled" class="agent-stalled">
-            <span class="agent-stalled-dot"></span>
-            <div>
-              <div class="agent-stalled-title">quiet — may be stalled</div>
-              <div class="agent-stalled-sub">
-                No new output for a while. This isn't proof it's stuck — a slow step looks the same
-                from here — but if it stays quiet, check in.
-              </div>
-            </div>
-          </div>
-          <div class="agent-log-wrap">
-            <div class="agent-log" ref="logEl" @scroll="onLogScroll">
-              <template v-if="displayEntries.length === 0">
-                <div class="agent-empty">
-                  No agent session yet.
-                  <br />
-                  Start work to launch the coding agent; its output streams here.
-                </div>
-              </template>
-              <div v-for="row in displayEntries" :key="row.key" class="agent-entry">
-                <!-- legacy plain line (claude / qwen / codex / pre-JSON sessions) -->
-                <ChatDiagnosticRow
-                  v-if="row.kind === 'line' && row.s === 'err'"
-                  :text="row.text"
-                  :at="row.at"
-                />
-                <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
-                  <span class="agent-pfx" :class="row.s">{{
-                    row.s === "err" ? "✕" : row.s === "sys" ? "·" : "›"
-                  }}</span>
-                  <span class="agent-d">{{ row.text }}</span>
-                </div>
-                <!-- system / notice line -->
-                <div v-else-if="row.kind === 'sys'" class="agent-line sys">
-                  <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
-                  <span class="agent-pfx">·</span>
-                  <span class="agent-d">{{ row.text }}</span>
-                </div>
-                <!-- human / user message -->
-                <div v-else-if="row.kind === 'human'" class="agent-human">
-                  <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
-                  <div class="agent-human-bubble" @click="onTaskDrawerBubbleClick(row, $event)">
-                    {{ row.text }}
-                  </div>
-                </div>
-                <!-- assistant text block -->
-                <div
-                  v-else-if="row.kind === 'text'"
-                  class="agent-text"
-                  @click="onTaskDrawerBubbleClick(row, $event)"
-                >
-                  <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
-                  {{ row.text }}
-                </div>
-                <!-- one row per run of adjacent tool calls (#0506) -->
-                <ChatToolCallRow v-else :calls="row.calls" :at="row.at" />
-              </div>
-            </div>
+          <div class="dev-report-toggle" role="tablist" aria-label="Developer view">
             <button
-              v-if="!stick"
               type="button"
-              class="agent-jump"
-              @click="scrollToBottom(true)"
-              aria-label="Jump to latest message"
+              role="tab"
+              :aria-selected="devPane === 'chat'"
+              :class="{ active: devPane === 'chat' }"
+              @click="devPane = 'chat'"
             >
-              <ArrowDown class="size-3.5" />
-              Latest
+              Chat
+            </button>
+            <button
+              type="button"
+              role="tab"
+              data-test-id="engineering-report-tab"
+              :aria-selected="devPane === 'report'"
+              :class="{ active: devPane === 'report' }"
+              @click="devPane = 'report'"
+            >
+              Report <span v-if="engineeringReports.length">{{ engineeringReports.length }}</span>
             </button>
           </div>
-          <ChatQueuedNotice :active="taskMsgQueuedVisible" :queue-key="ui.active?.id" />
-          <form class="ai-chat-compose agent-compose" @submit.prevent="sendTurn">
-            <textarea
-              ref="draftMsgTextarea"
-              v-model="draftMsg"
-              rows="1"
-              placeholder="Send a follow-up to the task's agent session…"
-              aria-label="Follow up with the task's agent"
-              :disabled="ui.saving"
-              @keydown.enter.exact.prevent="sendTurn"
-              @input="adjustDraftMsgHeight"
-            ></textarea>
-            <VoiceDictate :disabled="ui.saving" @transcribed="onDraftMsgTranscribed" />
-            <ChatSendButton :disabled="ui.saving || !draftMsg.trim()" />
-          </form>
+          <section v-if="devPane === 'report'" class="engineering-report-view">
+            <p
+              v-if="engineeringReportsError"
+              class="ff-error"
+              role="alert"
+              data-test-id="engineering-report-error"
+            >
+              {{ engineeringReportsError }}
+            </p>
+            <table
+              v-if="engineeringReports.length"
+              class="review-history-table"
+              data-test-id="engineering-report-history"
+            >
+              <thead>
+                <tr>
+                  <th>Round</th>
+                  <th>Time</th>
+                  <th>Engineer</th>
+                  <th>Model</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="report in engineeringReports"
+                  :key="report.round"
+                  :class="{ selected: selectedEngineeringRound === report.round }"
+                  tabindex="0"
+                  role="button"
+                  :aria-pressed="selectedEngineeringRound === report.round"
+                  @click="selectedEngineeringRound = report.round"
+                  @keydown.enter="selectedEngineeringRound = report.round"
+                  @keydown.space.prevent="selectedEngineeringRound = report.round"
+                >
+                  <td>Round {{ report.round }}</td>
+                  <td>{{ fmtTime(report.at) }}</td>
+                  <td>{{ report.agent }}</td>
+                  <td>{{ report.model }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p v-else-if="!engineeringReportsError" class="review-hint">
+              No engineering reports have been recorded for this task.
+            </p>
+            <div
+              v-if="selectedEngineeringReport"
+              class="md-rendered engineering-report-body"
+              v-html="engineeringReportHtml"
+            ></div>
+          </section>
+          <template v-else>
+            <div v-if="ui.active" class="agent-override-bar">
+              <div class="agent-pick-grid">
+                <div class="agent-field" style="grid-column: 1 / -1">
+                  <AgentModelControl
+                    :cli-options="cliOptionsFor(overrideDraft.cli)"
+                    :model-options="modelOptions"
+                    :memory-key="'task:' + ui.active.id + ':agent'"
+                    v-model:cli="overrideDraft.cli"
+                    v-model:model="overrideDraft.model"
+                    :disabled="ui.saving"
+                  />
+                  <div
+                    v-if="isLegacyGeminiCli(overrideDraft.cli)"
+                    class="agent-legacy-notice"
+                    role="status"
+                  >
+                    <strong>Deprecated Gemini CLI</strong> — this saved task override is preserved,
+                    but new runs should use
+                    <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
+                      >Antigravity CLI (agy)</a
+                    >.
+                  </div>
+                </div>
+                <div class="agent-field">
+                  <div
+                    v-if="overrideDirty"
+                    class="agent-override-actions"
+                    style="padding-top: 20px"
+                  >
+                    <span class="agent-save-hint">saving…</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="sessionStats?.stalled" class="agent-stalled">
+              <span class="agent-stalled-dot"></span>
+              <div>
+                <div class="agent-stalled-title">quiet — may be stalled</div>
+                <div class="agent-stalled-sub">
+                  No new output for a while. This isn't proof it's stuck — a slow step looks the
+                  same from here — but if it stays quiet, check in.
+                </div>
+              </div>
+            </div>
+            <div class="agent-log-wrap">
+              <div class="agent-log" ref="logEl" @scroll="onLogScroll">
+                <template v-if="displayEntries.length === 0">
+                  <div class="agent-empty">
+                    No agent session yet.
+                    <br />
+                    Start work to launch the coding agent; its output streams here.
+                  </div>
+                </template>
+                <div v-for="row in displayEntries" :key="row.key" class="agent-entry">
+                  <!-- legacy plain line (claude / qwen / codex / pre-JSON sessions) -->
+                  <ChatDiagnosticRow
+                    v-if="row.kind === 'line' && row.s === 'err'"
+                    :text="row.text"
+                    :at="row.at"
+                  />
+                  <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
+                    <span class="agent-pfx" :class="row.s">{{
+                      row.s === "err" ? "✕" : row.s === "sys" ? "·" : "›"
+                    }}</span>
+                    <span class="agent-d">{{ row.text }}</span>
+                  </div>
+                  <!-- system / notice line -->
+                  <div v-else-if="row.kind === 'sys'" class="agent-line sys">
+                    <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
+                    <span class="agent-pfx">·</span>
+                    <span class="agent-d">{{ row.text }}</span>
+                  </div>
+                  <!-- human / user message -->
+                  <div v-else-if="row.kind === 'human'" class="agent-human">
+                    <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
+                    <div class="agent-human-bubble" @click="onTaskDrawerBubbleClick(row, $event)">
+                      {{ row.text }}
+                    </div>
+                  </div>
+                  <!-- assistant text block -->
+                  <div
+                    v-else-if="row.kind === 'text'"
+                    class="agent-text"
+                    @click="onTaskDrawerBubbleClick(row, $event)"
+                  >
+                    <time v-if="row.at" class="entry-time">{{ fmtTime(row.at) }}</time>
+                    {{ row.text }}
+                  </div>
+                  <!-- one row per run of adjacent tool calls (#0506) -->
+                  <ChatToolCallRow v-else :calls="row.calls" :at="row.at" />
+                </div>
+              </div>
+              <button
+                v-if="!stick"
+                type="button"
+                class="agent-jump"
+                @click="scrollToBottom(true)"
+                aria-label="Jump to latest message"
+              >
+                <ArrowDown class="size-3.5" />
+                Latest
+              </button>
+            </div>
+            <ChatQueuedNotice :active="taskMsgQueuedVisible" :queue-key="ui.active?.id" />
+            <form class="ai-chat-compose agent-compose" @submit.prevent="sendTurn">
+              <textarea
+                ref="draftMsgTextarea"
+                v-model="draftMsg"
+                rows="1"
+                placeholder="Send a follow-up to the task's agent session…"
+                aria-label="Follow up with the task's agent"
+                :disabled="ui.saving"
+                @keydown.enter.exact.prevent="sendTurn"
+                @input="adjustDraftMsgHeight"
+              ></textarea>
+              <VoiceDictate :disabled="ui.saving" @transcribed="onDraftMsgTranscribed" />
+              <ChatSendButton :disabled="ui.saving || !draftMsg.trim()" />
+            </form>
+          </template>
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
           <p v-if="ui.active.hotfix" class="hotfix-note" role="status">
@@ -6316,6 +6478,49 @@ watch(
             class="review-pane review-report-pane"
             role="tabpanel"
           >
+            <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
+              <div class="review-history-toolbar">
+                <span v-if="reviewPassLoading" class="review-history-loading">Loading…</span>
+              </div>
+              <table class="review-history-table" aria-label="Feature review pass records">
+                <thead>
+                  <tr>
+                    <th class="ta-left">pass</th>
+                    <th class="ta-left">when</th>
+                    <th class="ta-left">agent</th>
+                    <th class="ta-left">model</th>
+                    <th class="ta-left">verdict</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="h in reviewHistoryRows"
+                    :key="h.pass"
+                    class="review-history-row"
+                    :class="{
+                      'is-selected':
+                        selectedReviewPass === h.pass ||
+                        (selectedReviewPass === null && h.pass === latestReviewPass),
+                    }"
+                    tabindex="0"
+                    role="button"
+                    :aria-pressed="
+                      selectedReviewPass === h.pass ||
+                      (selectedReviewPass === null && h.pass === latestReviewPass)
+                    "
+                    @click="selectReviewPass(h.pass)"
+                    @keydown.enter.prevent="selectReviewPass(h.pass)"
+                    @keydown.space.prevent="selectReviewPass(h.pass)"
+                  >
+                    <td class="ta-left review-history-pass">#{{ h.pass }}</td>
+                    <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
+                    <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
+                    <td class="ta-left review-history-model">{{ h.model }}</td>
+                    <td class="ta-left">{{ h.verdict }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
             <div v-if="reviewStale" class="review-stale" role="status">
               <div class="review-stale-body">
                 <span class="review-stale-title">Previous review</span>
@@ -6427,49 +6632,6 @@ watch(
                 </div>
               </template>
             </template>
-            <div v-if="reviewHistoryRows.length > 0" class="review-history-wrap">
-              <div class="review-history-toolbar">
-                <span v-if="reviewPassLoading" class="review-history-loading">Loading…</span>
-              </div>
-              <table class="review-history-table" aria-label="Feature review pass records">
-                <thead>
-                  <tr>
-                    <th class="ta-left">pass</th>
-                    <th class="ta-left">when</th>
-                    <th class="ta-left">agent</th>
-                    <th class="ta-left">model</th>
-                    <th class="ta-left">verdict</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr
-                    v-for="h in reviewHistoryRows"
-                    :key="h.pass"
-                    class="review-history-row"
-                    :class="{
-                      'is-selected':
-                        selectedReviewPass === h.pass ||
-                        (selectedReviewPass === null && h.pass === latestReviewPass),
-                    }"
-                    tabindex="0"
-                    role="button"
-                    :aria-pressed="
-                      selectedReviewPass === h.pass ||
-                      (selectedReviewPass === null && h.pass === latestReviewPass)
-                    "
-                    @click="selectReviewPass(h.pass)"
-                    @keydown.enter.prevent="selectReviewPass(h.pass)"
-                    @keydown.space.prevent="selectReviewPass(h.pass)"
-                  >
-                    <td class="ta-left review-history-pass">#{{ h.pass }}</td>
-                    <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
-                    <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
-                    <td class="ta-left review-history-model">{{ h.model }}</td>
-                    <td class="ta-left">{{ h.verdict }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
             <p class="review-hint">Findings only — you decide whether this task is done.</p>
           </section>
 
@@ -7676,6 +7838,11 @@ watch(
   cursor: pointer;
 }
 
+.drawer-status-summary.is-compact {
+  grid-template-rows: auto;
+  gap: 0;
+}
+
 .drawer-task-filename {
   display: block;
   flex: 0 1 auto;
@@ -7726,6 +7893,20 @@ watch(
 
 .drawer-status-summary.is-running .drawer-status-mark {
   background: var(--cyan);
+  animation: drawer-status-running-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes drawer-status-running-pulse {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer-status-summary.is-running .drawer-status-mark {
+    animation: none;
+  }
 }
 
 .drawer-status-summary.is-fail .drawer-status-mark {

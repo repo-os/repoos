@@ -121,6 +121,12 @@ describe("task drawer Held reason (#0960)", () => {
     useUiStore().activeTab = "details";
     await flush();
 
+    const actions = wrapper
+      .find(".delete-zone")
+      .findAll("button")
+      .map((button) => button.text());
+    expect(actions.slice(0, 3)).toEqual(["Delete task", "Archive task", "Hold"]);
+
     const fetchMock = vi.fn(async () => json({ ok: true, task: heldTask() }));
     vi.stubGlobal("fetch", fetchMock);
     await wrapper.find('[data-test-id="hold-task"]').trigger("click");

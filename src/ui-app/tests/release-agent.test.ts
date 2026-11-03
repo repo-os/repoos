@@ -15,6 +15,7 @@
  * the real shape of the fix, and also the acceptance criterion: the task
  * reaches `review` after a green check, and the agent is gone with it.
  */
+import { seedEngineeringReport } from "./engineering-report-fixture";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -229,6 +230,7 @@ describe("release agent when a task leaves active (#0087)", () => {
       // /start already registered the git worktree; just write a source file
       // so guardReviewTransition sees a non-vacuous change to commit.
       writeFileSync(join(worktreeDir, "release-agent.txt"), "implemented\n");
+      seedEngineeringReport(worktreeDir, id);
 
       const patched = await api(server, "PATCH", `/api/tasks/${id}`, {
         status: "review",
@@ -296,6 +298,7 @@ describe("release agent when a task leaves active (#0087)", () => {
       const worktreeDir = join(dirname(fx.root), `${basename(fx.root)}-worktrees`, branch);
       mkdirSync(worktreeDir, { recursive: true });
       writeFileSync(join(worktreeDir, "release-by-edit.txt"), "implemented\n");
+      seedEngineeringReport(worktreeDir, id);
 
       // The agent's own self-transition edits the MAIN copy on disk directly
       // (never via the API) — the watcher is the only thing that sees it.
