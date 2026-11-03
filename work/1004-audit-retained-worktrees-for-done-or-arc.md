@@ -3,9 +3,6 @@ id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — cleanup can erase ignored local data, and retained-worktree audits omit required details."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -178,3 +175,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T02:14:21Z · status active→review
 - 2026-11-03T02:14:22Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-03T02:21:37Z · note: review pass 5: needs some work
+- 2026-11-03T02:21:37Z · needs_input
