@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
-updated_at: "2026-11-03T19:16:45Z"
+updated_at: "2026-11-03T19:17:14Z"
 last_close_out_gate_ms: 655173
 last_close_out_gate_at: "2026-11-03T19:16:27.761Z"
 review_passes: 1
@@ -80,3 +80,4 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T19:04:23Z · note: review pass 1: good to go
 - 2026-11-03T19:16:27Z · close-out gate completed in 655s
 - 2026-11-03T19:16:45Z · note: shots: skipped — the diff (0 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-03T19:17:14Z · status done→done, release:success
