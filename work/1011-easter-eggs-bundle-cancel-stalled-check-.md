@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-03T18:13:27.153Z: repoos check failed: ◆ Check plan"
 id: 1011
 title: "Easter eggs bundle: Cancel stalled check button flapping"
 type: bug
@@ -88,3 +90,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T18:10:23Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T18:10:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T18:10:23Z · message_delivered: 1 message(s)
+
