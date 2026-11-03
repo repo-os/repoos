@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T15:28:50Z"
+updated_at: "2026-11-03T15:37:18Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 ---
@@ -116,3 +116,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T15:26:31Z · message_delivered: 1 message(s)
 - 2026-11-03T15:27:42Z · body
 - 2026-11-03T15:28:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T15:37:18Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
