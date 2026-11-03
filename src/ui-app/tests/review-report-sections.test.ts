@@ -236,4 +236,33 @@ describe("unresolvedReviewFindingsBlock (#0894)", () => {
     expect(block).toContain("- Off-by-one in parser");
     expect(block).not.toContain("### Edge cases");
   });
+
+  it("falls back to the newest committed pass when the cache mirror is absent (#1013)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-review-findings-"));
+    roots.push(root);
+    const dir = join(root, "work", "reports", "0894");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "review-1.md"),
+      [
+        "---",
+        "task: '0894'",
+        "pass: 1",
+        "state: ok",
+        "---",
+        "",
+        "## Verdict",
+        "needs some work",
+        "",
+        "## Bugs",
+        "- Committed report finding",
+      ].join("\n"),
+    );
+    const block = unresolvedReviewFindingsBlock(
+      { root, cacheDir: ".repoos" } as RepoOSConfig,
+      "0894",
+    )!;
+    expect(block).toContain("### Bugs");
+    expect(block).toContain("- Committed report finding");
+  });
 });
