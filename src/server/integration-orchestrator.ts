@@ -36,6 +36,7 @@ import {
   mergeBranch,
   mainDirtyFilesForCloseOut,
   dirtyPathsOverwrittenByMerge,
+  isTaskMarkdownBookkeepingPath,
   stashPublishPaths,
   popPublishStash,
   publishStashDiff,
@@ -279,6 +280,21 @@ const MAX_PUBLISH_DRIFT_RETRIES = 5;
  * the publish cap (a busy board can strand either path the same way).
  */
 const MAX_VALIDATE_DRIFT_RETRIES = 5;
+
+/**
+ * Publish-time bounded rechecks when a NEW non-task dirty path appears on main
+ * while publish is preparing (#1020). New live-task bookkeeping is accepted
+ * and checkpointed; this window only absorbs a transient non-task write before
+ * naming it as a blocker, so a multi-minute gate does not end on a one-second
+ * dirty moment. Kept tiny: after the gate, waiting longer is worse than
+ * telling the human which path to clear.
+ */
+const MAX_PUBLISH_DIRTY_RECHECKS = 3;
+const PUBLISH_DIRTY_RECHECK_DELAY_MS = 150;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function candidateBranchName(taskId: string): string {
   return `${CANDIDATE_BRANCH_PREFIX}${taskId}`;
@@ -1298,6 +1314,88 @@ export class CloseOutOrchestrator {
       check.reason ??
       `${WORKTREE_CHANGED_AFTER_HANDOFF_PREFIX}: the feature worktree no longer matches the handoff snapshot`;
     return { ok: false, reason };
+  }
+
+  /**
+   * Settle main's publish-time dirty set (#1020).
+   *
+   * Live tasks rewrite their own markdown on `main` continuously, so a
+   * multi-minute gate routinely ends with `work/<other-id>-*.md` dirty. Those
+   * files must not fail the publish: the merge leaves them untouched unless
+   * the candidate itself changes them (task-scope drift, reset earlier), and
+   * `untouchedDirty` below checkpoint-commits them. Re-read a bounded number
+   * of times so live churn is INCLUDED rather than reported as a concurrent
+   * blocker, and so a transient non-task file gets a short grace window before
+   * it is named. A non-task path that persists is still a hard blocker.
+   */
+  private async settlePublishDirty(
+    job: IntegrationJob,
+    root: string,
+    branch: string,
+  ): Promise<{ ok: true; dirty: string[]; overwritten: string[] } | { ok: false; reason: string }> {
+    const workDir = bookkeepingDirs(this.config).workDir;
+    const readDirty = async (
+      phase: string,
+    ): Promise<{ ok: true; files: string[] } | { ok: false; reason: string }> => {
+      try {
+        return { ok: true, files: await mainDirtyFilesForCloseOut(root, this.config) };
+      } catch (err) {
+        if (err instanceof GitDirtyCheckError) {
+          return {
+            ok: false,
+            reason: `could not verify main is clean ${phase} (${err.message}). The candidate was NOT merged; retry, or commit/stash main's working tree first.`,
+          };
+        }
+        throw err;
+      }
+    };
+
+    const initial = await readDirty("at publish time");
+    if (!initial.ok) return initial;
+    let dirty = initial.files;
+    let overwritten =
+      dirty.length > 0 ? await dirtyPathsOverwrittenByMerge(root, branch, dirty) : [];
+    let blockingNew: string[] = [];
+
+    for (let attempt = 0; attempt <= MAX_PUBLISH_DIRTY_RECHECKS; attempt++) {
+      const latest = await readDirty("immediately before publish");
+      if (!latest.ok) return latest;
+      const newPaths = latest.files.filter((path) => !dirty.includes(path));
+      const removed = dirty.filter((path) => !latest.files.includes(path));
+      // Only task markdown may join the set mid-preparation. Every other new
+      // path is exactly the ambiguous/human-work case the old guard named.
+      blockingNew = newPaths.filter((path) => !isTaskMarkdownBookkeepingPath(path, workDir));
+      if (blockingNew.length > 0) {
+        if (attempt === MAX_PUBLISH_DIRTY_RECHECKS) break;
+        this.logger?.integration(
+          job.taskId,
+          "warn",
+          `main gained ${blockingNew.length} uncommitted non-task file${blockingNew.length === 1 ? "" : "s"} during publish preparation — rechecking (attempt ${attempt + 1}/${MAX_PUBLISH_DIRTY_RECHECKS})`,
+          { paths: blockingNew },
+        );
+        await delay(PUBLISH_DIRTY_RECHECK_DELAY_MS * (attempt + 1));
+        continue;
+      }
+      if (newPaths.length === 0 && removed.length === 0) break;
+      dirty = latest.files;
+      overwritten = dirty.length > 0 ? await dirtyPathsOverwrittenByMerge(root, branch, dirty) : [];
+      if (newPaths.length > 0) {
+        this.logger?.integration(
+          job.taskId,
+          "info",
+          "live task bookkeeping changed on main during publish preparation — including it in the publish checkpoint",
+          { paths: newPaths },
+        );
+      }
+    }
+
+    if (blockingNew.length > 0) {
+      return {
+        ok: false,
+        reason: `main gained ${blockingNew.length} uncommitted file${blockingNew.length === 1 ? "" : "s"} during publish preparation: ${blockingNew.slice(0, 8).join(", ")}${blockingNew.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those paths on main and retry.`,
+      };
+    }
+    return { ok: true, dirty, overwritten };
   }
 
   /**
@@ -3738,18 +3836,13 @@ export class CloseOutOrchestrator {
       // "your local changes would be overwritten" at the tail of a long job.
       // Fails closed: an error/timeout in the check is "unknown", never
       // "clean", so we never merge blindly.
-      let dirtyOnMain: string[];
-      try {
-        dirtyOnMain = await mainDirtyFilesForCloseOut(root, this.config);
-      } catch (err) {
-        if (err instanceof GitDirtyCheckError) {
-          return {
-            ok: false,
-            reason: `could not verify main is clean at publish time (${err.message}). The candidate was NOT merged; retry, or commit/stash main's working tree first.`,
-          };
-        }
-        throw err;
+      const settled = await this.settlePublishDirty(job, root, branch);
+      if (!settled.ok) {
+        return { ok: false, reason: settled.reason };
       }
+      const dirtyOnMain = settled.dirty;
+      const overwrittenByMerge = settled.overwritten;
+
       const handoffGuard = await this.assertHandoffWorktreeUnchanged(job);
       if (!handoffGuard.ok) {
         return { ok: false, reason: handoffGuard.reason };
@@ -3773,45 +3866,23 @@ export class CloseOutOrchestrator {
       // have to move out of the way. git refuses such a merge ("Your local
       // changes ... would be overwritten by merge") but merges every other
       // dirty path untouched, so a dirty file the branch does not change needs
-      // no action at all. Decide BEFORE touching anything, with `git merge-tree`
-      // (no working-tree side effect), then handle the two sets differently:
-      //   - untouched dirty files keep the existing policy (selected server
-      //     bookkeeping directories are checkpoint-committed; other paths fail closed);
+      // no action at all. `settlePublishDirty` decided this BEFORE touching
+      // anything, with `git merge-tree` (no working-tree side effect):
+      //   - untouched dirty files are checkpoint-committed when they are
+      //     server-owned bookkeeping; other paths fail closed;
       //   - the overwritten set is stashed immediately before the merge and
       //     always popped after it, so a merge git would have refused still
       //     lands and the local edit is reapplied on top.
-      const overwrittenByMerge =
-        dirtyOnMain.length > 0 ? await dirtyPathsOverwrittenByMerge(root, branch, dirtyOnMain) : [];
-      // The overwrite analysis can itself take time while task activity keeps
-      // arriving. Re-read immediately before checkpointing or merging so a new
-      // human task edit (including a previously recognized watchdog delta
-      // amended with human content) remains a named blocker.
-      let latestDirtyOnMain: string[];
-      try {
-        latestDirtyOnMain = await mainDirtyFilesForCloseOut(root, this.config);
-      } catch (err) {
-        if (err instanceof GitDirtyCheckError) {
-          return {
-            ok: false,
-            reason: `could not verify main is clean immediately before publish (${err.message}). The candidate was NOT merged; retry, or commit/stash main's working tree first.`,
-          };
-        }
-        throw err;
-      }
-      const concurrentDirty = latestDirtyOnMain.filter((path) => !dirtyOnMain.includes(path));
-      if (concurrentDirty.length > 0) {
-        return {
-          ok: false,
-          reason: `main gained ${concurrentDirty.length} uncommitted file${concurrentDirty.length === 1 ? "" : "s"} during publish preparation: ${concurrentDirty.slice(0, 8).join(", ")}${concurrentDirty.length > 8 ? ", …" : ""}. The candidate was NOT merged; commit or stash those paths on main and retry.`,
-        };
-      }
       const untouchedDirty = dirtyOnMain.filter((p) => !overwrittenByMerge.includes(p));
 
       if (untouchedDirty.length > 0) {
-        // Auto-checkpoint only the selected server-owned churn below. Tracked
-        // task files are handled earlier by mainDirtyFilesForCloseOut: only
-        // exact watchdog check-wait escalation/recovery deltas are omitted;
-        // human edits and unrecognized task changes stay in this blocker set.
+        // Auto-checkpoint selected server-owned churn below. Live tasks'
+        // markdown (`work/<id>-*.md`) is the biggest source of this churn
+        // (#1020): the server rewrites it on main while the gate runs, and the
+        // merge leaves it untouched. It is committed here, preserving every
+        // byte, rather than aborting a completed gate. Watchdog-only deltas are
+        // already omitted upstream by mainDirtyFilesForCloseOut. Everything
+        // else still fails closed.
         //
         // `repoos.toml` gets the same treatment: it's always written whole by
         // the settings API (agent config, maxActiveTasks, etc.), never
@@ -3820,15 +3891,15 @@ export class CloseOutOrchestrator {
         // in-progress human work.
         //
         // Scoped narrowly — and scoped to `untouchedDirty`: only when EVERY
-        // path in this set is under one of the managed bookkeeping dirs
-        // (inputs/, stories/, reminders/, schedules/) or is exactly
-        // `repoos.toml` — anything
-        // else (source, other config, a stray build artifact) still fails
-        // closed exactly as before, since that's genuinely ambiguous and worth
-        // a human's attention rather than a blind auto-commit. The overwritten
-        // set is deliberately EXCLUDED here: `commitFiles` is scoped to just
-        // these paths, so a blocker is never swept into a checkpoint commit
-        // that the merge then has to reconcile.
+        // path in this set is a live task markdown file, under one of the
+        // managed bookkeeping dirs (inputs/, stories/, reminders/, schedules/),
+        // or exactly `repoos.toml` — anything else (source, other config, a
+        // stray build artifact) still fails closed exactly as before, since
+        // that's genuinely ambiguous and worth a human's attention rather than
+        // a blind auto-commit. The overwritten set is deliberately EXCLUDED
+        // here: `commitFiles` is scoped to just these paths, so a blocker is
+        // never swept into a checkpoint commit that the merge then has to
+        // reconcile.
         const churnDirs = bookkeepingDirs(this.config);
         const bookkeepingDirsForChurn = [
           churnDirs.inputsDir,
@@ -3837,14 +3908,32 @@ export class CloseOutOrchestrator {
           churnDirs.schedulesDir,
         ].map(withDirSlash);
         const isSafeChurn = (p: string): boolean =>
-          bookkeepingDirsForChurn.some((prefix) => p.startsWith(prefix)) || p === "repoos.toml";
+          isTaskMarkdownBookkeepingPath(p, churnDirs.workDir) ||
+          bookkeepingDirsForChurn.some((prefix) => p.startsWith(prefix)) ||
+          p === "repoos.toml";
         const onlySafeChurn = untouchedDirty.every(isSafeChurn);
         if (onlySafeChurn) {
-          const committed = commitFiles(
-            root,
-            untouchedDirty.map((p) => join(root, p)),
-            "chore: checkpoint bookkeeping/config before publish",
-          );
+          // A live writer can still hold `index.lock` for a moment. Retry this
+          // bounded and log why, rather than losing a completed gate to a
+          // transient git lock (#1020).
+          let committed = false;
+          for (let attempt = 1; attempt <= MAX_PUBLISH_DIRTY_RECHECKS + 1; attempt++) {
+            committed = commitFiles(
+              root,
+              untouchedDirty.map((p) => join(root, p)),
+              "chore: checkpoint bookkeeping/config before publish",
+            );
+            if (committed) break;
+            if (attempt <= MAX_PUBLISH_DIRTY_RECHECKS) {
+              this.logger?.integration(
+                job.taskId,
+                "warn",
+                `checkpoint commit for main's dirty bookkeeping failed — retrying (attempt ${attempt}/${MAX_PUBLISH_DIRTY_RECHECKS})`,
+                { paths: untouchedDirty },
+              );
+              await delay(PUBLISH_DIRTY_RECHECK_DELAY_MS * attempt);
+            }
+          }
           if (!committed) {
             return {
               ok: false,
