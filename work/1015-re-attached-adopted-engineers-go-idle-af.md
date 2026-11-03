@@ -54,3 +54,4 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T16:30:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-03T16:30:49Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T16:31:06Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T16:31:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
