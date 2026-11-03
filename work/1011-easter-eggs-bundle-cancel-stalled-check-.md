@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T17:02:21Z"
+updated_at: "2026-11-03T17:02:23Z"
 ---
 ## Items
 
@@ -59,3 +60,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T17:02:04Z · status inbox→ready
 - 2026-11-03T17:02:20Z · cli_override
 - 2026-11-03T17:02:21Z · cli_override
+- 2026-11-03T17:02:23Z · model_override
