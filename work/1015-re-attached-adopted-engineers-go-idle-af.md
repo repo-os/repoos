@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/re-attached-adopted-engineers-go-idle-af
 created_at: "2026-11-03T09:05:45Z"
-updated_at: "2026-11-03T17:07:46Z"
+updated_at: "2026-11-03T17:14:04Z"
 last_check_failure: "repoos check at 2026-11-03T16:43:32.395Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 2
 ---
@@ -66,4 +66,4 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T17:02:53Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-03T17:02:53Z · note: handoff requested (cli)
 - 2026-11-03T17:07:46Z · message_delivered: 1 message(s)
-
+- 2026-11-03T17:14:04Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1015.md
