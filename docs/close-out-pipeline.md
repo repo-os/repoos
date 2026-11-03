@@ -868,14 +868,26 @@ same automatic, fail-closed rules at boot, after every close-out, and from
   fully audited. `repoos status` mirrors these fields.
 - Ignored files are **not** visible to a plain `git status`, so they are
   inspected explicitly. A resolved or throwaway worktree whose only ignored
-  content is regenerable output (`dist/`, `node_modules/`, `coverage/`,
-  `.repoos/`, `.vitepress` cache) may still be reclaimed; any other ignored path
+  content is regenerable output may still be reclaimed; any other ignored path
   (`.env`, `.env*.local`, `work/.attachments/`, scratch dirs) keeps the
-  worktree with an `ignored files may hold local data` reason. An ignored
+  worktree with an `ignored files may hold local data` reason. "Regenerable" is
+  a **scoped** allowlist, not a path-segment match: root `dist/`, root
+  `coverage/`, the configured root `cacheDir` (`.repoos/`), `node_modules/`
+  installs, and the docs site's `.vitepress` build/cache. A nested `dist/`,
+  `coverage/`, or `.repoos/` (e.g. `src/tool/dist/`) is **not** assumed
+  generated and keeps the worktree. Tracked dirty files are never discarded by
+  path at all, even when they live under a directory named `dist`. An ignored
   `.env` symlink into the canonical main checkout is the one safe exception:
-  removing the link leaves the canonical file in place. This closes a
-  force-removal hole where a worktree containing only a local secret or task
-  attachment looked clean and was deleted.
+  removing the link leaves the canonical file in place. A symlink that cannot
+  be resolved (a loop, EACCES/EIO) is an inspection failure, not a dangling
+  link, and retains the worktree. This closes a force-removal hole where a
+  worktree containing only a local secret or task attachment looked clean and
+  was deleted.
+- Inspection is fail-closed. Only a **confirmed absence** counts as safe:
+  `lstat`/`realpath` errors other than `ENOENT`/`ENOTDIR`, and any failure to
+  read a branch or main blob (`ls-tree`/`cat-file`), retain the worktree with a
+  `could not inspect branch content` reason. A timeout or permission error must
+  never be mistaken for a deletion.
 - A branch with **no task record** is treated as lifecycle-unknown: a live
   worktree is retained (the index may be stale or partial), and only a vanished
   directory is cleaned after the same content proof.

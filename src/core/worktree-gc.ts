@@ -195,48 +195,80 @@ function gitRun(
  * attachments, scratch notes) — `git status` does NOT report ignored files, so
  * a worktree containing only ignored data looks clean to a plain status check
  * and must never be force-removed on that basis.
+ *
+ * Path shape alone is NOT proof for an arbitrary directory name: a repo can
+ * legitimately track `src/tool/dist/`, keep local state under a nested
+ * `.repoos/`, or keep source in a directory called `coverage`. Only known
+ * generated locations are listed here; everything else ignored keeps the
+ * worktree.
  */
-function isDisposableIgnoredPath(path: string): boolean {
+function isDisposableIgnoredPath(path: string, cacheDir: string): boolean {
   const p = path.replace(/\/+$/, "");
   if (p === ".DS_Store" || p.endsWith("/.DS_Store")) return true;
-  if (isGeneratedBuildPath(p)) return true;
-  const segments = p.split("/");
-  if (segments.includes("node_modules")) return true;
-  if (segments.includes("coverage")) return true;
-  // RepoOS's derived index cache, including nested layouts' `<x>/.repoos`.
-  if (segments.includes(".repoos")) return true;
+
+  // Dependency installs are generated output wherever a package is installed;
+  // `node_modules` is never tracked source.
+  if (p.split("/").includes("node_modules")) return true;
+
+  // Root package build output, plus the docs site's nested VitePress build. A
+  // `dist` deeper in the tree (e.g. `src/tool/dist/`) is not proven generated.
+  if (p === "dist" || p.startsWith("dist/")) return true;
+  if (p === "user-docs/.vitepress/dist" || p.startsWith("user-docs/.vitepress/dist/")) {
+    return true;
+  }
+
+  // Docs site build cache and the temporary Vite config bundle.
   if (p === "user-docs/.vitepress/cache" || p.startsWith("user-docs/.vitepress/cache/")) {
     return true;
   }
-  if (/^user-docs\/\.vitepress\/.*\.timestamp-.*\.mjs$/.test(p)) return true;
+  if (/^user-docs\/\.vitepress\/[^/]*\.timestamp-[^/]*\.mjs$/.test(p)) return true;
+
+  // Root test-coverage report.
+  if (p === "coverage" || p.startsWith("coverage/")) return true;
+
+  // RepoOS's own derived index cache at the configured root cache directory. A
+  // nested `.repoos/` may belong to another layout and is not proven redundant
+  // with this checkout.
+  const cache = cacheDir.replace(/\/+$/, "");
+  if (cache && (p === cache || p.startsWith(`${cache}/`))) return true;
+
   return false;
 }
 
-/** Generated build output — never work data, whether ignored or tracked. */
-function isGeneratedBuildPath(path: string): boolean {
-  return path.replace(/\/+$/, "").split("/").includes("dist");
+/** Only a confirmed absence is safe; every other `lstat`/`realpath` error is
+ * an inspection failure and must keep the worktree. */
+function isConfirmedMissing(e: unknown): boolean {
+  const code = (e as NodeJS.ErrnoException).code;
+  return code === "ENOENT" || code === "ENOTDIR";
 }
 
 /**
- * An ignored path is still safe when it is a symlink into the canonical main
- * checkout: `ensureWorktree` links `.env` that way, and removing the link does
- * not remove the data (the canonical file stays put).
+ * True only when an ignored path is provably redundant with data that survives
+ * the worktree: it already vanished, or it is a symlink whose target lives in
+ * the canonical main checkout (or a dangling link that reaches nothing).
+ *
+ * Any error other than a confirmed absence means we could not inspect the path.
+ * That is not proof its bytes are disposable, so retain the worktree.
  */
-function isSymlinkInto(dir: string, relPath: string, canonicalRoot: string): boolean {
+function ignoredPathIsProvablyRedundant(
+  dir: string,
+  relPath: string,
+  canonicalRoot: string,
+): boolean {
+  const absolute = join(dir, relPath);
   let entry;
   try {
-    entry = lstatSync(join(dir, relPath));
-  } catch {
-    // The path vanished between `git status` and this check: nothing to remove.
-    return true;
+    entry = lstatSync(absolute);
+  } catch (e) {
+    return isConfirmedMissing(e);
   }
   if (!entry.isSymbolicLink()) return false;
   try {
-    return isInside(canonicalRoot, realpathSync(join(dir, relPath)));
-  } catch {
-    // Dangling symlink: no data is reachable through it, so removing the link
-    // loses nothing. (A real file never reaches this branch.)
-    return true;
+    return isInside(canonicalRoot, realpathSync(absolute));
+  } catch (e) {
+    // A dangling symlink (ENOENT) carries no data. ELOOP/EACCES/EIO mean we
+    // could not resolve where it points, so fail closed.
+    return isConfirmedMissing(e);
   }
 }
 
@@ -253,7 +285,11 @@ interface WorktreeState {
  * data that cannot be proven disposable does. A missing directory has no paths.
  * `null` means git could not tell us, which is treated as "not safe to clean".
  */
-function worktreeState(path: string, canonicalRoot: string): WorktreeState | null {
+function worktreeState(
+  path: string,
+  canonicalRoot: string,
+  cacheDir: string,
+): WorktreeState | null {
   if (!existsSync(path)) return { dirtyPaths: [], ignoredPaths: [] };
   const run = gitRun(path, [
     "status",
@@ -279,15 +315,19 @@ function worktreeState(path: string, canonicalRoot: string): WorktreeState | nul
     }
     if (status === "!!") {
       const normalized = raw.replace(/\/+$/, "");
-      if (!isDisposableIgnoredPath(normalized) && !isSymlinkInto(path, normalized, canonicalRoot)) {
+      if (
+        !isDisposableIgnoredPath(normalized, cacheDir) &&
+        !ignoredPathIsProvablyRedundant(path, normalized, canonicalRoot)
+      ) {
         ignoredPaths.push(normalized);
       }
       continue;
     }
-    // `dist/` is regenerated build output: preserve the old pathspec exclusion
-    // for repos that track it, so a rebuild never keeps a worktree alive.
+    // Every non-ignored path is real working-tree data, including paths named
+    // like build output. A tracked `dist/` modification is still an
+    // uncommitted change, not proof it can be discarded.
     for (const candidate of [raw, original]) {
-      if (candidate && !isGeneratedBuildPath(candidate)) dirtyPaths.push(candidate);
+      if (candidate) dirtyPaths.push(candidate);
     }
   }
   return { dirtyPaths, ignoredPaths };
@@ -320,10 +360,15 @@ interface Representation {
   differing: string[];
   /** Task files added on the branch but absent from main (unique data). */
   uniqueTaskFiles: string[];
+  /** Set when git could not answer; the worktree is retained, not assumed safe. */
+  inspectionError?: string;
 }
 
 /** Actionable retention reason for a branch that is not proven redundant. */
 function notRepresentedReason(proof: Representation, mainBranch: string): string {
+  if (proof.inspectionError) {
+    return `could not inspect branch content: ${proof.inspectionError}`;
+  }
   if (proof.uniqueTaskFiles.length > 0) {
     return `task file content not represented in ${mainBranch}: ${proof.uniqueTaskFiles
       .slice(0, 5)
@@ -349,22 +394,49 @@ function compareContributionSince(
   base: string,
 ): Representation {
   const diff = gitRun(root, ["diff", "--name-only", "-z", "--no-renames", base, branch]);
-  if (diff.status !== 0) return { represented: false, differing: [], uniqueTaskFiles: [] };
+  if (diff.status !== 0) {
+    return {
+      represented: false,
+      differing: [],
+      uniqueTaskFiles: [],
+      inspectionError: `git diff failed for ${base}..${branch}`,
+    };
+  }
   const changed = diff.stdout.split("\0").filter(Boolean);
   if (changed.length === 0) {
     return { represented: true, differing: [], uniqueTaskFiles: [] };
   }
   // Task files are canonical-wins only when the branch's bytes are exactly
   // main's. A changed task file whose content differs — or that main does not
-  // have — may hold unique data, so it keeps the worktree. A branch deletion
-  // (no branch-side bytes) carries nothing to preserve.
-  const uniqueTaskFiles = changed.filter((path) => {
-    if (!isTaskFilePath(path, workDir)) return false;
-    const branchFile = gitRunBytes(root, ["show", `${branch}:${path}`]);
-    if (branchFile === null) return false;
-    const mainFile = gitRunBytes(root, ["show", `${mainBranch}:${path}`]);
-    return mainFile === null || Buffer.compare(branchFile, mainFile) !== 0;
-  });
+  // have — may hold unique data, so it keeps the worktree. A confirmed branch
+  // deletion (no branch-side bytes) carries nothing to preserve; a failure to
+  // read the bytes is NOT a deletion and keeps the worktree.
+  const uniqueTaskFiles: string[] = [];
+  for (const path of changed) {
+    if (!isTaskFilePath(path, workDir)) continue;
+    const branchFile = gitBlobAt(root, branch, path);
+    if (branchFile.state === "unreadable") {
+      return {
+        represented: false,
+        differing: [],
+        uniqueTaskFiles: [],
+        inspectionError: `could not read ${path} on ${branch}`,
+      };
+    }
+    if (branchFile.state === "absent") continue;
+    const mainFile = gitBlobAt(root, mainBranch, path);
+    if (mainFile.state === "unreadable") {
+      return {
+        represented: false,
+        differing: [],
+        uniqueTaskFiles: [],
+        inspectionError: `could not read ${path} on ${mainBranch}`,
+      };
+    }
+    if (mainFile.state === "absent" || Buffer.compare(branchFile.bytes, mainFile.bytes) !== 0) {
+      uniqueTaskFiles.push(path);
+    }
+  }
   const sourcePaths = changed.filter((path) => !isTaskFilePath(path, workDir));
   if (uniqueTaskFiles.length > 0 || sourcePaths.length === 0) {
     return {
@@ -395,7 +467,14 @@ function compareContributionSince(
       ],
       { timeout: 15000 },
     );
-    if (compare.status !== 0) return { represented: false, differing: [], uniqueTaskFiles: [] };
+    if (compare.status !== 0) {
+      return {
+        represented: false,
+        differing: [],
+        uniqueTaskFiles: [],
+        inspectionError: `git diff failed for ${mainBranch}..${branch}`,
+      };
+    }
     differing.push(...compare.stdout.split("\0").filter(Boolean));
     if (differing.length > 0) break;
   }
@@ -444,7 +523,12 @@ function branchRepresentedInMain(
   }
   const base = gitRun(root, ["merge-base", mainBranch, branch]);
   if (base.status !== 0 || !base.stdout.trim()) {
-    return { represented: false, differing: [], uniqueTaskFiles: [] };
+    return {
+      represented: false,
+      differing: [],
+      uniqueTaskFiles: [],
+      inspectionError: `could not find a merge base for ${branch} and ${mainBranch}`,
+    };
   }
   return compareContributionSince(root, mainBranch, branch, workDir, base.stdout.trim());
 }
@@ -477,16 +561,40 @@ function dirtyTaskFilesAreRedundant(
       unsafe.push(path);
       continue;
     }
-    const canonical = gitRunBytes(root, ["show", `${mainBranch}:${path}`]);
-    if (!canonical || Buffer.compare(current, canonical) !== 0) unsafe.push(path);
+    const canonical = gitBlobAt(root, mainBranch, path);
+    // Absent from main or unreadable both mean the working-tree bytes are not
+    // proven redundant; keep the worktree rather than discard them.
+    if (canonical.state !== "present" || Buffer.compare(current, canonical.bytes) !== 0) {
+      unsafe.push(path);
+    }
   }
   return { safe: unsafe.length === 0, unsafe };
 }
 
-function gitRunBytes(root: string, args: string[]): Buffer | null {
-  const run = spawnSync("git", args, { cwd: root, timeout: 8000 });
-  if (run.status !== 0) return null;
-  return Buffer.isBuffer(run.stdout) ? run.stdout : Buffer.from(run.stdout ?? "");
+type GitBlob = { state: "present"; bytes: Buffer } | { state: "absent" } | { state: "unreadable" };
+
+/**
+ * Read `<rev>:<path>`, distinguishing a confirmed absence from an inspection
+ * failure. `git show` exits non-zero for both, so use `ls-tree` (exit 0 with
+ * empty output for a missing path, non-zero only when the revision cannot be
+ * read) to establish absence, then `cat-file` for the bytes. A failure to read
+ * the blob is `unreadable`, never "deleted": cleanup must retain data it could
+ * not inspect.
+ */
+function gitBlobAt(root: string, rev: string, path: string): GitBlob {
+  const listed = gitRun(root, ["ls-tree", "-z", rev, "--", path], { timeout: 8000 });
+  if (listed.status !== 0) return { state: "unreadable" };
+  if (!listed.stdout.includes("\0")) return { state: "absent" };
+  const shown = spawnSync("git", ["cat-file", "blob", `${rev}:${path}`], {
+    cwd: root,
+    timeout: 8000,
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (shown.error || shown.status !== 0) return { state: "unreadable" };
+  return {
+    state: "present",
+    bytes: Buffer.isBuffer(shown.stdout) ? shown.stdout : Buffer.from(shown.stdout ?? ""),
+  };
 }
 
 function commitCountAhead(root: string, mainBranch: string, branch: string): number | undefined {
@@ -664,7 +772,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       ...(task ? { taskId: task.id, taskStatus: task.status } : {}),
     };
     const merged = branch ? mergedIntoMain.has(branch) : false;
-    const state = worktreeState(w.path, root);
+    const state = worktreeState(w.path, root, config.cacheDir || ".repoos");
     const commitsAhead = branch
       ? merged
         ? 0
@@ -813,6 +921,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     let represented = merged;
     let differing: string[] = [];
     let uniqueTaskFiles: string[] = [];
+    let inspectionError: string | undefined;
     if (!represented) {
       const proof = branchRepresentedInMain(
         root,
@@ -824,10 +933,16 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       represented = proof.represented;
       differing = proof.differing;
       uniqueTaskFiles = proof.uniqueTaskFiles;
+      inspectionError = proof.inspectionError;
     }
 
     if (!represented) {
-      keep(notRepresentedReason({ represented, differing, uniqueTaskFiles }, mainBranch));
+      keep(
+        notRepresentedReason(
+          { represented, differing, uniqueTaskFiles, inspectionError },
+          mainBranch,
+        ),
+      );
       continue;
     }
 

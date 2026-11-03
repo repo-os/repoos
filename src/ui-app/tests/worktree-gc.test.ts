@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { ensureWorktree, listWorktrees, removeWorktree } from "../../core/git.js";
@@ -18,6 +26,8 @@ function makeRepo(): { root: string; main: string; clean: () => void } {
   git(root, ["init", "-q"]);
   git(root, ["config", "user.email", "t@example.com"]);
   git(root, ["config", "user.name", "Test"]);
+  // Keep objects loose so tests can make an individual blob unreadable.
+  git(root, ["config", "gc.auto", "0"]);
   git(root, ["commit", "--allow-empty", "-m", "init"]);
   const main = git(root, ["branch", "--show-current"]);
   return {
@@ -706,6 +716,138 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
       clean();
     }
   });
+
+  it("keeps a worktree whose ignored symlink cannot be resolved", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      ignoreRules(root);
+      const wt = mergedWorktree(root, main, "feat/done");
+      // A self-referential link: `lstat` succeeds, but resolving it throws
+      // ELOOP. That is an inspection failure, not a dangling link, so the
+      // worktree must be retained rather than force-removed.
+      symlinkSync(".env", join(wt, ".env"));
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/done", "done")],
+      });
+
+      expect(report.removedWorktrees).toHaveLength(0);
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "feat/done",
+          reason: expect.stringContaining("ignored files may hold local data"),
+          ignoredPaths: [".env"],
+        }),
+      );
+      expect(branches(root).has("feat/done")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("does not treat a nested dist/coverage/.repoos directory as generated output", () => {
+    const cases: Array<[string, string]> = [
+      ["src/tool/dist", "src/tool/dist/generated.js"],
+      ["src/tool/coverage", "src/tool/coverage/lcov.info"],
+      ["src/tool/.repoos", "src/tool/.repoos/state.json"],
+    ];
+    for (const [ignoredDir, file] of cases) {
+      const { root, main, clean } = makeRepo();
+      try {
+        ignoreRules(root);
+        const wt = mergedWorktree(root, main, "feat/done");
+        write(wt, file, "data that is not proven generated\n");
+
+        const report = sweepStaleWorktrees(cfg(root), {
+          mode: "full",
+          tasks: [task("0001", "feat/done", "done")],
+        });
+
+        expect(report.removedWorktrees, ignoredDir).toHaveLength(0);
+        expect(report.retained, ignoredDir).toContainEqual(
+          expect.objectContaining({
+            branch: "feat/done",
+            reason: expect.stringContaining("ignored files may hold local data"),
+            ignoredPaths: [ignoredDir],
+          }),
+        );
+        expect(branches(root).has("feat/done")).toBe(true);
+      } finally {
+        clean();
+      }
+    }
+  });
+
+  it.each(["dist/index.js", "src/tool/dist/index.ts"])(
+    "never discards a tracked dirty file at %s just because it looks like build output",
+    (rel) => {
+      const { root, main, clean } = makeRepo();
+      try {
+        write(root, rel, "export const value = 1;\n");
+        commitAll(root, `track ${rel}`);
+        const wt = mergedWorktree(root, main, "feat/done");
+        write(wt, rel, "export const value = 2;\n");
+
+        const report = sweepStaleWorktrees(cfg(root), {
+          mode: "full",
+          tasks: [task("0001", "feat/done", "done")],
+        });
+
+        expect(report.retained).toContainEqual(
+          expect.objectContaining({
+            branch: "feat/done",
+            dirtyPaths: [rel],
+          }),
+        );
+        expect(branches(root).has("feat/done")).toBe(true);
+      } finally {
+        clean();
+      }
+    },
+  );
+
+  it.skipIf(typeof process.getuid === "function" && process.getuid() === 0)(
+    "keeps a worktree when git cannot read the branch's task file",
+    () => {
+      const { root, main, clean } = makeRepo();
+      let objectPath: string | undefined;
+      try {
+        worktreeWithFiles(root, main, "feat/unique-task", {
+          "work/0001-new-task.md": "unique branch task data\n",
+        });
+        const sha = git(root, ["rev-parse", "feat/unique-task:work/0001-new-task.md"]);
+        objectPath = join(root, ".git", "objects", sha.slice(0, 2), sha.slice(2));
+        // The path still exists in the branch tree, but its blob cannot be
+        // read. That is an inspection error, not a deletion, so it must keep
+        // the worktree instead of treating the bytes as absent.
+        chmodSync(objectPath, 0o000);
+
+        const report = sweepStaleWorktrees(cfg(root), {
+          mode: "full",
+          tasks: [task("0001", "feat/unique-task", "done")],
+        });
+
+        expect(report.removedWorktrees).toHaveLength(0);
+        expect(report.retained).toContainEqual(
+          expect.objectContaining({
+            branch: "feat/unique-task",
+            reason: expect.stringContaining("could not inspect branch content"),
+          }),
+        );
+        expect(branches(root).has("feat/unique-task")).toBe(true);
+      } finally {
+        if (objectPath) {
+          try {
+            chmodSync(objectPath, 0o644);
+          } catch {
+            // Best effort; the temp tree is removed below.
+          }
+        }
+        clean();
+      }
+    },
+  );
 
   it("keeps a throwaway close-out candidate that holds ignored local data", () => {
     const { root, clean } = makeRepo();
