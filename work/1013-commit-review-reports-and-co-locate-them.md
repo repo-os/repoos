@@ -3,13 +3,18 @@ id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T09:38:48Z"
+updated_at: "2026-11-03T09:38:49Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T09:38:49.222Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Engineering reports are committed under `work/engineering-reports/<id>/round-N.json`. Review reports live in gitignored cache (`.repoos/reviews/<id>/`), so they vanish with the machine and future agents/humans never see why a task went through several rounds. Both are essential history of one loop (engineer changes, writes report, reviewer reviews, repeat) and should be tracked together.
@@ -82,3 +87,5 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T09:31:02Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T09:36:37Z · body
 - 2026-11-03T09:38:48Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T09:38:49Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-03T09:38:49Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
