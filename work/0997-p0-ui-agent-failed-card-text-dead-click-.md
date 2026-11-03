@@ -11,7 +11,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T03:57:38Z"
+updated_at: "2026-11-03T04:00:19Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -206,3 +206,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T03:43:19Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T03:52:32Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T03:57:38Z · body
+- 2026-11-03T04:00:19Z · handoff_deferred: 1 queued message(s) must be read before review
