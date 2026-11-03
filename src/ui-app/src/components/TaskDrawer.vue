@@ -6168,28 +6168,66 @@ watch(
           class="drawer-body drawer-session-body"
           :class="{ 'transition-success': transitioned }"
         >
-          <div class="dev-report-toggle" role="tablist" aria-label="Developer view">
-            <button
-              type="button"
-              role="tab"
-              :aria-selected="devPane === 'chat'"
-              :class="{ active: devPane === 'chat' }"
-              @click="devPane = 'chat'"
-            >
-              Chat
-            </button>
-            <button
-              type="button"
-              role="tab"
-              data-test-id="engineering-report-tab"
-              :aria-selected="devPane === 'report'"
-              :class="{ active: devPane === 'report' }"
-              @click="devPane = 'report'"
-            >
-              Report <span v-if="engineeringReports.length">{{ engineeringReports.length }}</span>
-            </button>
+          <div v-if="ui.active" class="agent-override-bar">
+            <div class="agent-pick-grid">
+              <div class="agent-field" style="grid-column: 1 / -1">
+                <AgentModelControl
+                  :cli-options="cliOptionsFor(overrideDraft.cli)"
+                  :model-options="modelOptions"
+                  :memory-key="'task:' + ui.active.id + ':agent'"
+                  v-model:cli="overrideDraft.cli"
+                  v-model:model="overrideDraft.model"
+                  :disabled="ui.saving"
+                />
+                <div
+                  v-if="isLegacyGeminiCli(overrideDraft.cli)"
+                  class="agent-legacy-notice"
+                  role="status"
+                >
+                  <strong>Deprecated Gemini CLI</strong> — this saved task override is preserved,
+                  but new runs should use
+                  <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
+                    >Antigravity CLI (agy)</a
+                  >.
+                </div>
+              </div>
+              <div class="agent-field">
+                <div v-if="overrideDirty" class="agent-override-actions" style="padding-top: 20px">
+                  <span class="agent-save-hint">saving…</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <section v-if="devPane === 'report'" class="engineering-report-view">
+          <div class="review-toolbar">
+            <div class="review-pane-tabs" role="tablist" aria-label="Developer content">
+              <button
+                type="button"
+                class="review-pane-tab"
+                data-test-id="engineering-report-tab"
+                :class="{ active: devPane === 'report' }"
+                role="tab"
+                :aria-selected="devPane === 'report'"
+                @click="devPane = 'report'"
+              >
+                Report <span v-if="engineeringReports.length">{{ engineeringReports.length }}</span>
+              </button>
+              <button
+                type="button"
+                class="review-pane-tab"
+                :class="{ active: devPane === 'chat' }"
+                role="tab"
+                :aria-selected="devPane === 'chat'"
+                @click="devPane = 'chat'"
+              >
+                Chat
+              </button>
+            </div>
+          </div>
+          <section
+            v-if="devPane === 'report'"
+            class="review-pane review-report-pane engineering-report-view"
+            role="tabpanel"
+          >
             <p
               v-if="engineeringReportsError"
               class="ff-error"
@@ -6239,41 +6277,7 @@ watch(
               v-html="engineeringReportHtml"
             ></div>
           </section>
-          <template v-else>
-            <div v-if="ui.active" class="agent-override-bar">
-              <div class="agent-pick-grid">
-                <div class="agent-field" style="grid-column: 1 / -1">
-                  <AgentModelControl
-                    :cli-options="cliOptionsFor(overrideDraft.cli)"
-                    :model-options="modelOptions"
-                    :memory-key="'task:' + ui.active.id + ':agent'"
-                    v-model:cli="overrideDraft.cli"
-                    v-model:model="overrideDraft.model"
-                    :disabled="ui.saving"
-                  />
-                  <div
-                    v-if="isLegacyGeminiCli(overrideDraft.cli)"
-                    class="agent-legacy-notice"
-                    role="status"
-                  >
-                    <strong>Deprecated Gemini CLI</strong> — this saved task override is preserved,
-                    but new runs should use
-                    <a :href="GEMINI_MIGRATION_URL" target="_blank" rel="noopener noreferrer"
-                      >Antigravity CLI (agy)</a
-                    >.
-                  </div>
-                </div>
-                <div class="agent-field">
-                  <div
-                    v-if="overrideDirty"
-                    class="agent-override-actions"
-                    style="padding-top: 20px"
-                  >
-                    <span class="agent-save-hint">saving…</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <section v-else class="review-pane review-chat-pane" role="tabpanel">
             <div v-if="sessionStats?.stalled" class="agent-stalled">
               <span class="agent-stalled-dot"></span>
               <div>
@@ -6358,7 +6362,7 @@ watch(
               <VoiceDictate :disabled="ui.saving" @transcribed="onDraftMsgTranscribed" />
               <ChatSendButton :disabled="ui.saving || !draftMsg.trim()" />
             </form>
-          </template>
+          </section>
         </div>
         <div v-else-if="ui.activeTab === 'review'" class="drawer-body drawer-session-body">
           <p v-if="ui.active.hotfix" class="hotfix-note" role="status">
