@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T08:41:23Z"
+updated_at: "2026-11-03T08:48:50Z"
 ---
 ## Problem
 Engineering reports are committed under `work/engineering-reports/<id>/round-N.json`. Review reports live in gitignored cache (`.repoos/reviews/<id>/`), so they vanish with the machine and future agents/humans never see why a task went through several rounds. Both are essential history of one loop (engineer changes, writes report, reviewer reviews, repeat) and should be tracked together.
@@ -33,6 +33,26 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 
 ![Review tab: model row above, REPORT left / CHAT right (the layout to copy)](/api/tasks/1013/attachments/att_a9fa8210-fdaf-49ca-a91c-56d0d069efec.png)
 ![Dev tab today: Chat left / Report right, model row below the selector (to fix)](/api/tasks/1013/attachments/att_12e255b3-f63f-4d94-95a5-aff5091335f9.png)
+
+## Shots
+```json
+[
+{
+  "label": "Dev tab: model row above Report|Chat tabs, report on the left",
+  "target": "default",
+  "route": "/work?task=0997&tab=agent",
+  "highlight": ".review-pane-tabs",
+  "steps": [
+    {
+      "click": "[data-test-id=\"engineering-report-tab\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ]
+}
+]
+```
 
 ## Activity
 
@@ -58,3 +78,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T07:57:44Z · message_delivered: 1 message(s)
 - 2026-11-03T07:59:22Z · body
 - 2026-11-03T08:41:23Z · note: adopted orphaned engineer pid 47491
+- 2026-11-03T08:48:50Z · body
