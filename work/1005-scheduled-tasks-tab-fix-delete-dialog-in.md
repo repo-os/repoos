@@ -60,10 +60,10 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": "[role=\"dialog\"]",
 "steps": [
 {
-  "click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
+"click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
 },
 {
-  "waitFor": "[role=\"dialog\"]"
+"waitFor": "[role=\"dialog\"]"
 }
 ],
 "state": "schedule:seeded"
@@ -75,13 +75,13 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": "[role=\"dialog\"] .delete-confirm-actions",
 "steps": [
 {
-  "click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
+"click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
 },
 {
-  "waitFor": "[role=\"dialog\"]"
+"waitFor": "[role=\"dialog\"]"
 },
 {
-  "hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
+"hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
 }
 ],
 "state": "schedule:seeded"
@@ -196,3 +196,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T00:20:57Z · body
 - 2026-11-03T00:22:05Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T00:22:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T00:22:06Z · message_delivered: 1 message(s)
