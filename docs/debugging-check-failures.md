@@ -233,6 +233,15 @@ concluding anything.
   both at the end of the file and in `global-reap`'s teardown after every
   worker exits, so the warning should only fire after a crashed or killed
   worker.
+- **Leaked test helper processes (#1017).** Directories were not the only
+  residue: a killed worker also left its fake CLIs, preview servers and
+  `bun -e` stubs reparented to pid 1 for days. `global-reap` now kills the
+  process groups whose command line names the run's unique temp root (and
+  recorded pids), fails the run if any survive SIGKILL, and the next run sweeps
+  stale roots from the real OS temp dir even when a managed agent's `TMPDIR`
+  points into the checkout. Matching is by run-root path only, never by
+  process name. See
+  [`agent-process-safety.md`](agent-process-safety.md#test-helper-processes-1017).
 - **Nothing enforced formatting before `665f6289`**, so source drifted while
   `dist/` built fine. `fmt:check` + `lint` are now part of the gate.
 
