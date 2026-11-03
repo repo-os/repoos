@@ -334,6 +334,8 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "guard test file globs swift python go non-javascript negative test evidence path match",
   "review.humanFlagAfterPasses":
     "repeated review classes passes human attention flag loop escalating needs some work rounds",
+  "review.timeoutMinutes":
+    "review timeout minutes slow model large diff timed out no usable report retry reviewer killed",
   "shot.targets":
     "capture targets native macos ios android desktop screenshot command offscreen render simctl adb screencapture evidence image non-web",
   "budget.allowlist":

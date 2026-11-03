@@ -2038,6 +2038,12 @@ export interface ReviewVerificationConfig {
 export interface ReviewConfig {
   /** Completed passes before the repeated-class summary and human flag. Default 5. */
   humanFlagAfterPasses?: number;
+  /**
+   * Wall-clock ceiling on one review pass, in minutes (#1019). Default 15.
+   * A large diff on a slow cheap model needs longer; a timed-out pass is
+   * retried once automatically before asking a human. Clamped to 1–240.
+   */
+  timeoutMinutes?: number;
 }
 
 /** Opt-in policy for Move to done without a human click (#0686). */
