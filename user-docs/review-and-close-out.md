@@ -41,7 +41,11 @@ the skip option.
 If a reviewer is enabled on the [Agents](/agents) page, RepoOS runs it
 automatically the moment a task lands in `review`. The reviewer reads the
 branch's diff in the task's own worktree and writes a short report — bugs, edge
-cases, suggestions — shown in the task drawer next to **Move to done**.
+cases, suggestions — shown in the task drawer next to **Move to done**. Each
+numbered pass is committed with the task under
+`work/reports/<task-id>/review-<pass>.md`, next to the engineering rounds, so
+the review history survives a fresh clone; a local cache mirror keeps the
+drawer populated while the task is still in review.
 
 It's advisory. It changes nothing and never replaces your approval. Its verdict
 is one of three lines:

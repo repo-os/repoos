@@ -189,11 +189,13 @@ session inherits them.
   up without restarting `repoos serve`.
 - Feedback that must survive a change of engineer session (a different CLI or
   model) belongs in the **task body** or the **stored review report**. A chat
-  message lives only in the session it was sent to. Each review pass is also kept
-  as a numbered artifact (`.repoos/reviews/<taskId>/<pass>.md`) with a one-line
-  summary in the task activity log; the latest pass still overwrites
-  `.repoos/reviews/<taskId>.md` for sign-off. Unresolved review findings are
-  injected into new engineer sessions automatically.
+  message lives only in the session it was sent to. Each review pass is committed
+  with the task as a numbered artifact (`work/reports/<taskId>/review-<pass>.md`)
+  with a one-line summary in the task activity log; the local cache also keeps a
+  mirror (`<cacheDir>/reviews/<taskId>/<pass>.md` and
+  `<cacheDir>/reviews/<taskId>.md`) for the drawer while the task is in review.
+  Unresolved review findings are injected into new engineer sessions
+  automatically.
 - Approve only after you have seen it work. Approval is a human decision.
 - By default, **Move to done** stays a human step. You can opt in under Settings
   → **Auto-approve clean reviews**: when enabled, tasks that match configured

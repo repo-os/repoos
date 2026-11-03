@@ -169,6 +169,49 @@ describe("worktree handoff guard (#0598)", () => {
     }
   });
 
+  it("allows HEAD drift when only this task's report files changed (#1013)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/reports";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "f.txt"), "a\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(wt.path, "work", "reports", "1013"), { recursive: true });
+      writeFileSync(join(wt.path, "work", "reports", "1013", "review-1.md"), "review pass\n");
+      git(wt.path, ["add", "work/reports/1013/review-1.md"]);
+      git(wt.path, ["commit", "-m", "docs(1013): record review pass 1"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha, { taskId: "1013" });
+      expect(check.ok).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still flags another task's report commit as drift (#1013)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "feat/foreign-report";
+      const wt = ensureWorktree(root, branch);
+      writeFileSync(join(wt.path, "f.txt"), "a\n");
+      git(wt.path, ["add", "f.txt"]);
+      git(wt.path, ["commit", "-m", "handoff"]);
+      const sha = git(wt.path, ["rev-parse", "HEAD"]);
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(wt.path, "work", "reports", "9999"), { recursive: true });
+      writeFileSync(join(wt.path, "work", "reports", "9999", "review-1.md"), "foreign pass\n");
+      git(wt.path, ["add", "work/reports/9999/review-1.md"]);
+      git(wt.path, ["commit", "-m", "docs(9999): record review pass 1"]);
+      const check = await verifyWorktreeHandoffIntegrity(config, branch, sha, { taskId: "1013" });
+      expect(check.ok).toBe(false);
+      expect(check.headMoved).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
   it("flags checkpoint-only drift for automatic recovery (#0834)", async () => {
     const { root, clean } = makeRepo();
     try {

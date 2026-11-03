@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   listReviewPasses,
   reviewPassActivitySummary,
@@ -45,7 +45,7 @@ function writePass(
   },
 ): void {
   const file = reviewPassPath(cfg, taskId, pass);
-  mkdirSync(join(cfg.root, cfg.cacheDir!, "reviews", taskId), { recursive: true });
+  mkdirSync(dirname(file), { recursive: true });
   const fm = [
     `task: "${taskId}"`,
     `pass: ${pass}`,
