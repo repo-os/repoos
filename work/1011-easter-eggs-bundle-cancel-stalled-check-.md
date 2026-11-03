@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: grok-4.7-low
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T17:33:37Z"
+updated_at: "2026-11-03T17:40:05Z"
 ---
 ## Items
 
@@ -57,11 +57,11 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 ```json
 [
 {
-  "label": "Selected review pass number sits clear of the accent bar",
-  "target": "default",
-  "route": "/work?task=9999&tab=review",
-  "highlight": ".review-history-row.is-selected td:first-child",
-  "state": "drawer:reviewPasses"
+"label": "Selected review pass number sits clear of the accent bar",
+"target": "default",
+"route": "/work?task=9999&tab=review",
+"highlight": ".review-history-row.is-selected td:first-child",
+"state": "drawer:reviewPasses"
 }
 ]
 ```
@@ -79,3 +79,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T17:03:05Z · priority
 - 2026-11-03T17:28:17Z · status ready→active, branch
 - 2026-11-03T17:33:37Z · body
+- 2026-11-03T17:40:05Z · message_queued at 2026-11-03T17:40:05.894Z
