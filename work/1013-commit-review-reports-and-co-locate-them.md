@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T16:00:28Z"
+updated_at: "2026-11-03T16:04:35Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 ---
@@ -35,10 +35,10 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 ```json
 [
 {
-"label": "Dev tab: model/agent row above the Report-left/Chat-right selector",
-"target": "default",
-"route": "/work?task=0997&tab=agent",
-"highlight": ".review-toolbar"
+  "label": "Dev tab: model/agent row above the Report-left/Chat-right selector",
+  "target": "default",
+  "route": "/work?task=0997&tab=agent",
+  "highlight": ".review-toolbar"
 }
 ]
 ```
@@ -123,3 +123,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T15:47:18Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T15:57:33Z · body
 - 2026-11-03T16:00:28Z · body
+- 2026-11-03T16:04:35Z · body
