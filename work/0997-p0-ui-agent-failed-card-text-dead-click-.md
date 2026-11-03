@@ -11,7 +11,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T03:34:52Z"
+updated_at: "2026-11-03T03:37:32Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -201,3 +201,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T03:34:46Z · needs_input
 - 2026-11-03T03:34:47Z · message_delivered: 1 message(s)
 - 2026-11-03T03:34:52Z · message_queued at 2026-11-03T03:34:52.123Z
+- 2026-11-03T03:37:32Z · CTO nudge: held — remote validation is running
