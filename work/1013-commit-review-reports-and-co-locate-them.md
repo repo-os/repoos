@@ -3,6 +3,9 @@ id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: core
 assigned_to: ai
@@ -143,3 +146,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T16:52:37Z · needs_input
 - 2026-11-03T16:52:44Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-03T17:07:47Z · note: review pass 2: failed — no usable report
+- 2026-11-03T17:07:47Z · needs_input
