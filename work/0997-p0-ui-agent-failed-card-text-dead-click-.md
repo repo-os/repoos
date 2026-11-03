@@ -11,7 +11,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T02:29:34Z"
+updated_at: "2026-11-03T02:29:35Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -53,28 +53,28 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
-  },
-  {
-    "click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
-  },
-  {
-    "waitFor": "[data-test-id=\"restart-task-dialog\"]"
-  },
-  {
-    "click": "[data-test-id=\"restart-cancel\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
+},
+{
+  "click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
+},
+{
+  "waitFor": "[data-test-id=\"restart-task-dialog\"]"
+},
+{
+  "click": "[data-test-id=\"restart-cancel\"]"
+},
+{
+  "waitMs": 300
+}
 ],
 "assert": [
-  {
-    "selector": "[data-test-id=\"restart-task-dialog\"]",
-    "label": "Cancel closed the restart dialog",
-    "count": 0
-  }
+{
+  "selector": "[data-test-id=\"restart-task-dialog\"]",
+  "label": "Cancel closed the restart dialog",
+  "count": 0
+}
 ],
 "state": "card:agentFailed"
 }
@@ -127,3 +127,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T02:29:33Z · body
 - 2026-11-03T02:29:33Z · note: shot removed: Restart work opens the shared body-teleported restart dialog
 - 2026-11-03T02:29:34Z · note: shot removed: Failed card: status line shows the recorded crash reason on hover
+- 2026-11-03T02:29:35Z · note: shot removed: Failed card: status line shows the recorded crash reason on hover
