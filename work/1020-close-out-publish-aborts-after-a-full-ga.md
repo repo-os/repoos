@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-03T20:22:17Z"
-review_passes: 1
 id: 1020
 title: Close-out publish aborts after a full gate when main has only live tasks' own task files dirty
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-publish-aborts-after-a-full-ga
 created_at: "2026-11-03T19:45:56Z"
+updated_at: "2026-11-03T20:21:27Z"
 ---
 ## Problem
 On 2026-11-03 #1004's Move to done passed its full close-out gate (1,425 s, finished 16:08) and then refused at the publish step: "main has 2 uncommitted files at publish time, so the merge would abort: work/1015-….md, work/1017-….md. The candidate was NOT merged". Those two files are the task files of tasks that were active at that moment: the server rewrites a live task's file (status, activity, body updates) on `main` as it works. The refusal cost a full 24-minute gate, and a manual retry was needed. The same dirty-live-task-file state briefly blocked #1005 and showed as a failing "Main clean" landing check on #1004 and #1005 earlier. With several engineers running (as now), close-out collides with this often.
@@ -32,14 +31,4 @@ Evidence: #1004 activity at 16:08 (gate completed in 1425s) and the CTO brief en
 - 2026-11-03T19:45:56Z · created · njachowski@gmail.com
 - 2026-11-03T19:46:00Z · status inbox→ready
 - 2026-11-03T19:46:37Z · status ready→active, branch
-- 2026-11-03T20:02:10Z · message_queued at 2026-11-03T20:02:10.849Z
-- 2026-11-03T20:02:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-03T20:07:10Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-03T20:12:48Z · body
-- 2026-11-03T20:18:36Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-03T20:18:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-03T20:18:37Z · message_delivered: 1 message(s)
 - 2026-11-03T20:21:27Z · status active→review
-- 2026-11-03T20:21:28Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-03T20:22:17Z · note: review pass 1: good to go
-

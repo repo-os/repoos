@@ -2590,20 +2590,42 @@ export async function mainDirtyFilesForCloseOut(
 }
 
 /**
+ * True for the board's task markdown under `workDir` — `work/<id>-*.md`, never
+ * a report under `work/reports/`. The server rewrites these files continuously
+ * for every live task (status, activity, body), so a dirty one on `main` is
+ * routine bookkeeping churn rather than a signal of in-progress human work
+ * (#1020).
+ */
+export function isTaskMarkdownBookkeepingPath(path: string, workDir = "work"): boolean {
+  const prefix = withTrailingSlash(workDir);
+  const reportsPrefix = `${prefix}reports/`;
+  return path.startsWith(prefix) && path.endsWith(".md") && !path.startsWith(reportsPrefix);
+}
+
+/**
  * Repo-relative path is a committed task markdown file under `workDir` (board
  * bookkeeping), or — when the filter names a task — one of that task's own
  * report files under `<workDir>/reports/<task-id>/` (#1013).
  */
 export function isTaskBookkeepingPath(path: string, filter: WorkFileFilter = {}): boolean {
   const workDir = filter.workDir ?? "work";
-  const prefix = withTrailingSlash(workDir);
   // Task markdown is board bookkeeping, but reports are not "any other task's
   // markdown": only this task's own report directory is bookkeeping (#1013).
-  const reportsPrefix = `${prefix}reports/`;
-  if (path.startsWith(prefix) && path.endsWith(".md") && !path.startsWith(reportsPrefix)) {
-    return true;
-  }
+  if (isTaskMarkdownBookkeepingPath(path, workDir)) return true;
   return filter.taskId !== undefined && isOwnReportPath(path, { workDir }, filter.taskId);
+}
+
+/**
+ * The dirty paths on `main` that must block close-out. Task markdown under the
+ * work dir is excluded: the publish step checkpoint-commits it when the merge
+ * leaves it untouched, and stashes/pops it when the merge would overwrite it,
+ * so it can never abort a publish or lose an edit (#1020). Everything else —
+ * a source file, `repoos.toml`, a report, a reminder/schedule/input — still
+ * blocks exactly as before.
+ */
+export function blockingMainDirtyPaths(paths: string[], dirs: { workDir?: string } = {}): string[] {
+  const workDir = dirs.workDir ?? "work";
+  return paths.filter((path) => !isTaskMarkdownBookkeepingPath(path, workDir));
 }
 
 /**
