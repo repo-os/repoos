@@ -888,8 +888,8 @@ export class TaskWatchdog {
       );
       return;
     }
-    // Fire-and-forget, never awaited: a review can run for up to REVIEW_TIMEOUT_MS
-    // (15 min), and `checkNow` is a background scan that must stay fast so it can
+    // Fire-and-forget, never awaited: a review can run for up to
+    // `review.timeoutMinutes` (15 min by default), and `checkNow` is a background scan that must stay fast so it can
     // keep detecting OTHER stuck tasks on the same sweep. The retry marker above
     // already bounds it, and `ReviewManager.isRunning` short-circuits re-entry for
     // this same task, so there is nothing to await. Mirrors how the route layer

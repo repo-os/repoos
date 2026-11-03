@@ -6445,6 +6445,11 @@
   color: var(--txt);
   word-break: break-word;
 }
+/* A timeout is recoverable (one automatic retry), so it is amber, not red. */
+.review-failed.review-timed-out {
+  background: var(--amber-tint);
+  border-color: var(--amber-border-tint);
+}
 .review-incomplete {
   padding: 12px;
   margin-bottom: 10px;

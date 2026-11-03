@@ -129,6 +129,14 @@ export interface ReviewReport {
   branch: string;
   /** "ok" when a parseable verdict is present; "incomplete" when output lacked one; "failed" when the run produced no usable report. */
   state: "ok" | "incomplete" | "failed";
+  /**
+   * True when `state: "failed"` was caused by the hard review timeout (#1019),
+   * not by a reviewer that exited without a report. The UI and activity log use
+   * this to say "timed out after N minutes" instead of "no usable report".
+   */
+  timedOut?: boolean;
+  /** Configured timeout that stopped this pass, in minutes (set with `timedOut`). */
+  timeoutMinutes?: number;
   /** The report markdown (or the failure detail when state is "failed"). */
   markdown: string;
   /**
@@ -185,12 +193,56 @@ export function shouldAutoRefreshStaleEvidence(
   );
 }
 
+/** Default ceiling on one review pass (#1019). */
+export const DEFAULT_REVIEW_TIMEOUT_MINUTES = 15;
+
+/** Upper bound for `review.timeoutMinutes`; a typo must not hold a slot for days. */
+export const MAX_REVIEW_TIMEOUT_MINUTES = 240;
+
 /**
- * Ceiling on one review run. Generous compared to the 3-minute one-shot
- * default: a reviewer reads a whole diff and may run the test suite, and a
- * timeout means the human gets no report at all.
+ * Ceiling on one review run, from `review.timeoutMinutes` (#1019). Generous
+ * compared to the 3-minute one-shot default: a reviewer reads a whole diff and
+ * may run the test suite, and a timeout means no report at all. A large diff on
+ * a slow cheap model can need the configured maximum.
  */
-const REVIEW_TIMEOUT_MS = 900_000;
+export function reviewTimeoutMinutes(config: Pick<RepoOSConfig, "review">): number {
+  const raw = config.review?.timeoutMinutes;
+  return typeof raw === "number" && Number.isFinite(raw) && raw >= 1
+    ? Math.min(MAX_REVIEW_TIMEOUT_MINUTES, Math.floor(raw))
+    : DEFAULT_REVIEW_TIMEOUT_MINUTES;
+}
+
+export function reviewTimeoutMs(config: Pick<RepoOSConfig, "review">): number {
+  return reviewTimeoutMinutes(config) * 60_000;
+}
+
+/** "15 minutes" / "1 minute" — used in activity lines and reports. */
+export function formatReviewTimeout(minutes: number): string {
+  return minutes === 1 ? "1 minute" : `${minutes} minutes`;
+}
+
+export type ReviewRunFailure = "ok" | "timeout" | "no-output";
+
+/**
+ * Distinguish a hard timeout from a reviewer that exited without a report
+ * (#1019). The distinction decides both the message the human sees and whether
+ * one automatic retry is allowed.
+ */
+export function classifyReviewRunFailure(timedOut: boolean, hasOutput: boolean): ReviewRunFailure {
+  if (timedOut) return "timeout";
+  return hasOutput ? "ok" : "no-output";
+}
+
+/** Timeout retries already spent on this task (persisted in task frontmatter). */
+export function reviewTimeoutRetryAttempts(task: Pick<Task, "extra">): number {
+  const raw = task.extra?.review_timeout_retries;
+  return typeof raw === "number" && Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+}
+
+/** At most one automatic retry per timeout episode (#1019). */
+export function reviewTimeoutRetryAllowed(task: Pick<Task, "extra">): boolean {
+  return reviewTimeoutRetryAttempts(task) < 1;
+}
 
 /** Cap on the task spec quoted into the mission (keeps the prompt bounded). */
 const SPEC_CHARS = 6000;
@@ -246,7 +298,18 @@ function reviewUsage(
 }
 
 /** Frontmatter key order for the stored report file. */
-const REPORT_KEYS = ["task", "at", "agent", "cli", "model", "branch", "state", "tree_identity"];
+const REPORT_KEYS = [
+  "task",
+  "at",
+  "agent",
+  "cli",
+  "model",
+  "branch",
+  "state",
+  "timed_out",
+  "timeout_minutes",
+  "tree_identity",
+];
 
 /** How the handoff `repoos check` gate finished (#0697). */
 export type ReviewHandoffCheckOutcome = "passed" | "skipped: no check plan";
@@ -818,6 +881,8 @@ interface Run {
   mode: "run" | "chat";
   /** True when the hard timeout fired (the child was killed). */
   timedOut?: boolean;
+  /** Configured timeout that armed this run, in minutes (#1019). */
+  timeoutMinutes?: number;
   /** The timeout timer, so it can be cleared on completion/cancel. */
   timer?: ReturnType<typeof setTimeout>;
   /** Post-handoff checkpoint delta review (#0834). */
@@ -934,6 +999,12 @@ function parseReviewReportFile(file: string, taskId: string): ReviewReport | nul
     return v === null || v === undefined ? "" : String(v);
   };
   const treeIdentity = str("tree_identity") || null;
+  const timedOut = doc.data["timed_out"] === true || str("timed_out") === "true";
+  const timeoutMinutesRaw = Number(str("timeout_minutes"));
+  const timeoutMinutes =
+    Number.isFinite(timeoutMinutesRaw) && timeoutMinutesRaw >= 1
+      ? Math.floor(timeoutMinutesRaw)
+      : undefined;
   return {
     id: str("task") || taskId,
     at: str("at"),
@@ -943,6 +1014,8 @@ function parseReviewReportFile(file: string, taskId: string): ReviewReport | nul
     branch: str("branch"),
     state:
       str("state") === "failed" ? "failed" : str("state") === "incomplete" ? "incomplete" : "ok",
+    ...(timedOut ? { timedOut: true } : {}),
+    ...(timedOut && timeoutMinutes ? { timeoutMinutes } : {}),
     markdown: doc.body.trim(),
     ...(treeIdentity ? { treeIdentity } : {}),
   };
@@ -953,6 +1026,12 @@ export class ReviewManager {
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;
   private readonly runs = new Map<string, Run>();
+  /**
+   * Timeout retries spent on a task (#1019). The task frontmatter is the
+   * durable record; this map makes the bound hold even before the live index
+   * has observed the write, so one timeout can never become a retry loop.
+   */
+  private readonly timeoutRetries = new Map<string, number>();
   /** Tasks the status guard just put back in `review`, by timestamp. */
   private readonly reverted = new Map<string, number>();
   /** AgentRunner to send auto-bounce messages to the engineer session. */
@@ -1404,10 +1483,11 @@ export class ReviewManager {
     // an earlier (possibly pre-reload) abandon, so the new turn is not
     // instantly treated as cancelled.
     this.clearCancelled(taskId);
+    run.timeoutMinutes = reviewTimeoutMinutes(this.config);
     run.timer = setTimeout(() => {
       run.timedOut = true;
       this.runner?.stop(this.reviewKey(taskId));
-    }, REVIEW_TIMEOUT_MS);
+    }, run.timeoutMinutes * 60_000);
     run.timer.unref?.();
   }
 
@@ -1427,11 +1507,15 @@ export class ReviewManager {
       const run: Run = {
         cancelled: this.isCancelled(taskId),
         mode: this.runner?.reviewKindOf(r.id) ?? "run",
+        timeoutMinutes: reviewTimeoutMinutes(this.config),
       };
-      run.timer = setTimeout(() => {
-        run.timedOut = true;
-        this.runner?.stop(r.id);
-      }, REVIEW_TIMEOUT_MS);
+      run.timer = setTimeout(
+        () => {
+          run.timedOut = true;
+          this.runner?.stop(r.id);
+        },
+        (run.timeoutMinutes ?? reviewTimeoutMinutes(this.config)) * 60_000,
+      );
       run.timer.unref?.();
       this.runs.set(taskId, run);
     }
@@ -1605,9 +1689,24 @@ export class ReviewManager {
     const lines = session?.lines ?? [];
 
     if (mode === "run") {
-      await this.finalizeRun(task, agent, lines, session, timedOut, checkpointDelta);
+      await this.finalizeRun(
+        task,
+        agent,
+        lines,
+        session,
+        timedOut,
+        checkpointDelta,
+        run?.timeoutMinutes ?? reviewTimeoutMinutes(this.config),
+      );
     } else {
-      await this.finalizeChat(task, agent, lines, session, timedOut);
+      await this.finalizeChat(
+        task,
+        agent,
+        lines,
+        session,
+        timedOut,
+        run?.timeoutMinutes ?? reviewTimeoutMinutes(this.config),
+      );
     }
   }
 
@@ -1626,14 +1725,19 @@ export class ReviewManager {
     } | null,
     timedOut: boolean,
     checkpointDelta = false,
+    timeoutMinutes = reviewTimeoutMinutes(this.config),
   ): Promise<void> {
     const hasOutput = sessionHasUsableOutput(agent.cli, lines);
-    const ok = !timedOut && hasOutput;
-    const error = timedOut
-      ? `the ${agent.cli} agent timed out after ${Math.round(REVIEW_TIMEOUT_MS / 1000)}s`
-      : ok
-        ? undefined
-        : `the ${agent.cli} agent exited without output: ${sessionErrorText(lines)}`;
+    const failure = classifyReviewRunFailure(timedOut, hasOutput);
+    const ok = failure === "ok";
+    const timeoutText = formatReviewTimeout(timeoutMinutes);
+    const timeoutRetryScheduled = failure === "timeout" && this.canRetryTimedOutReview(task);
+    const error =
+      failure === "timeout"
+        ? `the ${agent.cli} agent timed out after ${timeoutText}`
+        : failure === "no-output"
+          ? `the ${agent.cli} agent exited without output: ${sessionErrorText(lines)}`
+          : undefined;
     const result: PromptResult = {
       ok,
       // The full raw transcript isn't kept; extract the report from the parsed
@@ -1671,8 +1775,13 @@ export class ReviewManager {
     }
     const verdict = hasReport ? parseVerdict(reportText) : null;
     const state: ReviewReport["state"] = !hasReport ? "failed" : verdict ? "ok" : "incomplete";
+    const timeoutRetryNote = timeoutRetryScheduled
+      ? " An automatic retry will start shortly."
+      : ` The automatic retry did not produce a report either; raise review.timeoutMinutes or choose a faster reviewer model, then use Review again.`;
     const body = !hasReport
-      ? `The review agent produced no report: ${error ?? "no report"}`
+      ? failure === "timeout"
+        ? `Review timed out after ${timeoutText} before it produced a report.${timeoutRetryNote}`
+        : `The review agent produced no report: ${error ?? "no report"}`
       : reportText;
     const treeIdentity = await reviewTreeIdentityForTask(this.config, task);
     const report: ReviewReport = {
@@ -1683,24 +1792,41 @@ export class ReviewManager {
       model: agent.model,
       branch: task.branch,
       state,
+      ...(failure === "timeout" ? { timedOut: true, timeoutMinutes } : {}),
       markdown: body.slice(0, REPORT_CHARS),
       ...(clampReason ? { clampReason } : {}),
       ...(treeIdentity ? { treeIdentity } : {}),
       ...(environmentOnly ? { environmentOnly: true } : {}),
     };
-    await this.write(report, task);
+    await this.write(report, task, timeoutRetryScheduled);
     const marker =
       state === "ok"
         ? "✓ review complete"
         : state === "incomplete"
           ? "⚠ review incomplete — no verdict in report"
-          : `✗ review failed: ${error ?? "no report"}`;
+          : failure === "timeout"
+            ? `✗ review timed out after ${timeoutText} — no report${
+                timeoutRetryScheduled ? "; retrying once automatically" : "; a human is needed"
+              }`
+            : `✗ review failed: ${error ?? "no report"}`;
     this.appendMarker(task.id, marker);
+    if (state === "ok" || state === "incomplete") {
+      this.resetReviewTimeoutRetries(task);
+    }
     if (state === "ok") {
       this.logger.task(task.id, "info", "review completed");
     } else if (state === "incomplete") {
       this.logger.task(task.id, "warn", "review incomplete — no parseable verdict");
       void this.scheduleIncompleteRetry(task);
+    } else if (failure === "timeout" && timeoutRetryScheduled) {
+      this.logger.task(task.id, "warn", "review timed out — retrying once", {
+        timeoutMinutes,
+      });
+      this.scheduleTimeoutRetry(task, timeoutMinutes);
+    } else if (failure === "timeout") {
+      this.logger.task(task.id, "error", "review timed out after its automatic retry", {
+        timeoutMinutes,
+      });
     } else {
       this.logger.task(task.id, "error", "review failed", { error: error ?? "no report" });
     }
@@ -1714,11 +1840,12 @@ export class ReviewManager {
     });
     this.enforceStillInReview(task);
 
-    // The review agent produced no report at all (crash, timeout) — there's no
-    // verdict to auto-bounce on and nothing for the engineer to act on, so
-    // bouncing would just burn a round on silence. Escalate straight to a
-    // human, same as the relevance-flag escalation below.
-    if (state === "failed" && !task.needsInput) {
+    // The review agent produced no report at all (crash, or a timeout whose
+    // single automatic retry was already spent) — there's no verdict to
+    // auto-bounce on and nothing for the engineer to act on, so bouncing would
+    // just burn a round on silence. Escalate straight to a human, same as the
+    // relevance-flag escalation below.
+    if (state === "failed" && !timeoutRetryScheduled && !task.needsInput) {
       try {
         patchTaskFile(this.config, task.absPath, {
           needsInput: true,
@@ -2060,14 +2187,17 @@ export class ReviewManager {
       costUsd?: number;
     } | null,
     timedOut: boolean,
+    timeoutMinutes = reviewTimeoutMinutes(this.config),
   ): void {
     const hasOutput = sessionHasUsableOutput(agent.cli, lines);
-    const ok = !timedOut && hasOutput;
-    const error = timedOut
-      ? `the ${agent.cli} agent timed out after ${Math.round(REVIEW_TIMEOUT_MS / 1000)}s`
-      : ok
-        ? undefined
-        : `the ${agent.cli} agent exited without output: ${sessionErrorText(lines)}`;
+    const failure = classifyReviewRunFailure(timedOut, hasOutput);
+    const ok = failure === "ok";
+    const error =
+      failure === "timeout"
+        ? `the ${agent.cli} agent timed out after ${formatReviewTimeout(timeoutMinutes)}`
+        : failure === "no-output"
+          ? `the ${agent.cli} agent exited without output: ${sessionErrorText(lines)}`
+          : undefined;
     const result: PromptResult = {
       ok,
       output: ok ? extractReportFromSession(agent.cli, lines, "") : undefined,
@@ -2671,7 +2801,7 @@ export class ReviewManager {
    * task worktree, a numbered cache mirror, and the latest cache mirror the Dev
    * and Review tabs read while the task is still in review.
    */
-  private async write(report: ReviewReport, task: Task): Promise<void> {
+  private async write(report: ReviewReport, task: Task, timeoutRetrying = false): Promise<void> {
     const worktree = task.branch
       ? await getGitWorker(this.config.root).worktreePath(task.branch)
       : null;
@@ -2698,6 +2828,10 @@ export class ReviewManager {
       model: report.model,
       branch: report.branch,
       state: report.state,
+      ...(report.timedOut ? { timed_out: true } : {}),
+      ...(report.timedOut && report.timeoutMinutes
+        ? { timeout_minutes: report.timeoutMinutes }
+        : {}),
       ...(report.treeIdentity ? { tree_identity: report.treeIdentity } : {}),
     };
     const body = `\n${report.markdown}\n`;
@@ -2711,6 +2845,10 @@ export class ReviewManager {
       model: report.model,
       branch: report.branch,
       state: report.state,
+      ...(report.timedOut ? { timed_out: true } : {}),
+      ...(report.timedOut && report.timeoutMinutes
+        ? { timeout_minutes: report.timeoutMinutes }
+        : {}),
       ...(report.treeIdentity ? { tree_identity: report.treeIdentity } : {}),
     };
     try {
@@ -2741,10 +2879,84 @@ export class ReviewManager {
     const verdict = parseVerdict(report.markdown);
     try {
       patchTaskFile(this.config, task.absPath, {
-        note: reviewPassActivitySummary(pass, report.state, verdict, report.clampReason),
+        note: reviewPassActivitySummary(
+          pass,
+          report.state,
+          verdict,
+          report.clampReason,
+          report.timedOut
+            ? {
+                minutes: report.timeoutMinutes ?? reviewTimeoutMinutes(this.config),
+                retrying: timeoutRetrying,
+              }
+            : undefined,
+        ),
       });
     } catch {
       /* best-effort */
+    }
+  }
+
+  /** Retries spent on this task, preferring the in-process guard (#1019). */
+  private timeoutRetryAttempts(task: Pick<Task, "id" | "extra">): number {
+    const inMemory = this.timeoutRetries.get(task.id);
+    return inMemory !== undefined ? inMemory : reviewTimeoutRetryAttempts(task);
+  }
+
+  private canRetryTimedOutReview(task: Pick<Task, "id" | "extra">): boolean {
+    return this.timeoutRetryAttempts(task) < 1;
+  }
+
+  /**
+   * One automatic retry after a hard review timeout (#1019). The counter is
+   * persisted before the timer so a server reload cannot reset the bound, and
+   * a successful/incomplete pass clears it for the next timeout episode.
+   * Always marks the retry in the task activity so it is never silent.
+   */
+  private scheduleTimeoutRetry(task: Task, timeoutMinutes: number): void {
+    if (!this.canRetryTimedOutReview(task)) return;
+    this.timeoutRetries.set(task.id, 1);
+    this.persistReviewTimeoutRetries(task, 1);
+    const timer = setTimeout(() => {
+      const current = this.index?.getTask(task.id) ?? task;
+      if (!current || current.status !== "review" || current.isArchived) return;
+      this.appendMarker(
+        task.id,
+        `↻ automatically retrying review — previous pass timed out after ${formatReviewTimeout(
+          timeoutMinutes,
+        )}`,
+      );
+      void this.run(current, { trigger: REVIEW_RUN_TRIGGERS.TIMEOUT_RETRY });
+    }, 4_000);
+    timer.unref?.();
+  }
+
+  /** Clear the timeout-retry counter once a pass actually produced a report. */
+  private resetReviewTimeoutRetries(task: Task): void {
+    const attempts = this.timeoutRetryAttempts(task);
+    this.timeoutRetries.set(task.id, 0);
+    if (attempts > 0) this.persistReviewTimeoutRetries(task, 0);
+  }
+
+  /** Best-effort durable timeout-retry counter (task frontmatter). */
+  private persistReviewTimeoutRetries(task: Task, retries: number): void {
+    try {
+      const raw = readFileSync(task.absPath, "utf8");
+      const doc = parseDocument(raw);
+      doc.data.review_timeout_retries = retries;
+      doc.data.updated_at = utcTimestamp();
+      const keys = Object.keys(doc.data).filter(
+        (k) => k !== "review_timeout_retries" && k !== "updated_at",
+      );
+      keys.unshift("updated_at", "review_timeout_retries");
+      writeFileSync(task.absPath, serializeDocument(doc.data, `\n${doc.body}\n`, keys));
+      commitTaskFile(
+        this.config.root,
+        task.absPath,
+        `docs(${task.id}): ${retries ? "review timeout retry" : "reset review timeout retry"}`,
+      );
+    } catch {
+      /* best-effort — the in-memory guard still bounds the retries */
     }
   }
 

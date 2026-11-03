@@ -744,7 +744,7 @@ const drawerStatusSummary = computed(() => {
   if (!key) return null;
   const labels = {
     waitingForYou: "Needs input",
-    reviewFailed: "Review failed",
+    reviewFailed: review.value?.report?.timedOut ? "Review timed out" : "Review failed",
     notLandable: "Not ready to merge",
     handoffFailed: "Handoff failed",
     checksRunning: "Checks running",
@@ -6566,7 +6566,11 @@ watch(
               Loading review pass…
             </div>
             <template v-else-if="displayedReviewReport">
-              <div v-if="displayedReviewReport.state === 'failed'" class="review-failed">
+              <div
+                v-if="displayedReviewReport.state === 'failed'"
+                class="review-failed"
+                :class="{ 'review-timed-out': displayedReviewReport.timedOut }"
+              >
                 {{ displayedReviewReport.markdown }}
               </div>
               <template v-else>
