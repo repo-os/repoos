@@ -412,6 +412,55 @@ describe("classifyDeadAgentReason", () => {
   });
 });
 
+describe("queued-message recovery wiring (#1015)", () => {
+  it("offers an active task with a queued message to the runner", async () => {
+    const fx = makeFx(600_000);
+    const id = parseTaskAt(fx).id;
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const recovered: string[] = [];
+    const runner = {
+      hasQueuedMessages: (taskId: string) => taskId === id,
+      recoverSilentEngineerWithQueuedMessage: async (taskId: string) => {
+        recovered.push(taskId);
+        return true;
+      },
+    } as unknown as AgentRunner;
+    try {
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 600_000);
+      await (
+        watchdog as unknown as { recoverSilentEngineerQueues(): Promise<void> }
+      ).recoverSilentEngineerQueues();
+      expect(recovered).toEqual([id]);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("does not offer a task with no queued message", async () => {
+    const fx = makeFx(600_000);
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const recovered: string[] = [];
+    const runner = {
+      hasQueuedMessages: () => false,
+      recoverSilentEngineerWithQueuedMessage: async (taskId: string) => {
+        recovered.push(taskId);
+        return true;
+      },
+    } as unknown as AgentRunner;
+    try {
+      const watchdog = new TaskWatchdog(fx.config, index, runner, 600_000);
+      await (
+        watchdog as unknown as { recoverSilentEngineerQueues(): Promise<void> }
+      ).recoverSilentEngineerQueues();
+      expect(recovered).toEqual([]);
+    } finally {
+      fx.clean();
+    }
+  });
+});
+
 describe("autoTransitionTarget", () => {
   it("returns ready for a task with no branch", async () => {
     const fx = makeFx(1000);
