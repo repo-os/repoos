@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-publish-aborts-after-a-full-ga
 created_at: "2026-11-03T19:45:56Z"
-updated_at: "2026-11-03T20:34:41Z"
+updated_at: "2026-11-03T20:35:32Z"
 last_close_out_gate_ms: 670000
 last_close_out_gate_at: "2026-11-03T20:34:41.630Z"
 review_passes: 1
@@ -46,4 +46,4 @@ Evidence: #1004 activity at 16:08 (gate completed in 1425s) and the CTO brief en
 - 2026-11-03T20:21:28Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-03T20:22:17Z · note: review pass 1: good to go
 - 2026-11-03T20:34:41Z · close-out gate completed in 670s
-
+- 2026-11-03T20:35:32Z · status done→done, release:success
