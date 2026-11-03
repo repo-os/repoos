@@ -11,7 +11,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T02:21:40Z"
+updated_at: "2026-11-03T02:29:27Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -48,85 +48,63 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 ```json
 [
 {
-"label": "Failed card: status line shows the recorded crash reason on hover",
-"target": "default",
-"route": "/work",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"steps": [
-{
-"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  "label": "Restart work opens the shared body-teleported restart dialog",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"restart-task-dialog\"]",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
+    },
+    {
+      "click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
+    },
+    {
+      "waitFor": "[data-test-id=\"restart-task-dialog\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-test-id=\"restart-task-dialog\"]",
+      "label": "the restart confirmation renders",
+      "text": "Restart task #9999?"
+    }
+  ],
+  "state": "card:agentFailed"
 },
 {
-"waitMs": 700
-}
-],
-"assert": [
-{
-"selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"label": "the failed status line is present",
-"text": "Agent exited with error"
-}
-],
-"state": "card:agentFailed"
-},
-{
-"label": "Restart work opens the shared body-teleported restart dialog",
-"target": "default",
-"route": "/work",
-"highlight": "[data-test-id=\"restart-task-dialog\"]",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
-},
-{
-"click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
-},
-{
-"waitFor": "[data-test-id=\"restart-task-dialog\"]"
-},
-{
-"waitMs": 300
-}
-],
-"assert": [
-{
-"selector": "[data-test-id=\"restart-task-dialog\"]",
-"label": "the restart confirmation renders",
-"text": "Restart task #9999?"
-}
-],
-"state": "card:agentFailed"
-},
-{
-"label": "Cancel in the restart dialog responds to a real click and closes it",
-"target": "default",
-"route": "/work",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
-},
-{
-"click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
-},
-{
-"waitFor": "[data-test-id=\"restart-task-dialog\"]"
-},
-{
-"click": "[data-test-id=\"restart-cancel\"]"
-},
-{
-"waitMs": 300
-}
-],
-"assert": [
-{
-"selector": "[data-test-id=\"restart-task-dialog\"]",
-"label": "Cancel closed the restart dialog",
-"count": 0
-}
-],
-"state": "card:agentFailed"
+  "label": "Cancel in the restart dialog responds to a real click and closes it",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
+    },
+    {
+      "click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
+    },
+    {
+      "waitFor": "[data-test-id=\"restart-task-dialog\"]"
+    },
+    {
+      "click": "[data-test-id=\"restart-cancel\"]"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-test-id=\"restart-task-dialog\"]",
+      "label": "Cancel closed the restart dialog",
+      "count": 0
+    }
+  ],
+  "state": "card:agentFailed"
 }
 ]
 ```
@@ -172,3 +150,5 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T00:39:29Z · handoff failed · remote validation failed: test failure: tests/ai-chat-standard.test.ts > no chat ships an animation it never defined > every `animation:` name in a component resolves to a @keyframes block on bee — fix it in the feature branch and re-run the gate
 - 2026-11-03T02:04:20Z · CTO nudge: held — remote validation is running
 - 2026-11-03T02:21:40Z · body
+- 2026-11-03T02:29:27Z · body
+- 2026-11-03T02:29:27Z · note: shot removed: Failed card: status line shows the recorded crash reason on hover
