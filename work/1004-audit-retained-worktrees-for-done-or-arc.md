@@ -275,3 +275,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T09:42:39Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 82523, alive), #1005 check (pid 80663, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-03T09:47:09Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T10:01:21Z · message_queued at 2026-11-03T10:01:21.061Z
+- 2026-11-03T10:01:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
