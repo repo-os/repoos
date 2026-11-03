@@ -3,34 +3,45 @@
  *
  * Runs against the MAIN checkout (via `boardRoot()`), never a linked worktree.
  *
- *   repoos gc              prune `repoos/integrate/*` candidates + stale metadata
- *                          now, and PREVIEW the feature worktrees `--yes` would take
- *   repoos gc --yes        also remove feature worktrees/branches for done/absent
- *                          tasks (skips any with uncommitted or unmerged work)
- *   repoos gc --dry-run    show everything that would be collected, touch nothing
+ * Cleanup is automatic and safe by construction (#1004): the same sweep runs at
+ * boot and after every close-out. An operator can still inspect or force a run:
+ *
+ *   repoos gc              run the safe sweep now (candidates + resolved,
+ *                          provably-redundant feature worktrees)
+ *   repoos gc --yes        accepted for compatibility; identical to the above
+ *   repoos gc --dry-run    show candidates, retained reasons, and external
+ *                          worktrees, touching nothing
  */
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot } from "../core/config.js";
 import { c } from "../cli/colors.js";
-import { sweepStaleWorktrees, type GcReport } from "../core/worktree-gc.js";
+import { formatGcEntryDetails, sweepStaleWorktrees, type GcReport } from "../core/worktree-gc.js";
 
 function printReport(report: GcReport, title: string): void {
   console.log(c.bold(`  ${title}`));
-  if (
-    report.removedWorktrees.length === 0 &&
-    report.keptDirty.length === 0 &&
-    report.errors.length === 0
-  ) {
-    console.log(c.dim("    nothing to collect"));
-  }
+  const counts = report.summary;
+  console.log(
+    c.dim(
+      `    ${counts.candidates} safe candidate${counts.candidates === 1 ? "" : "s"} · ` +
+        `${counts.retained} retained · ${counts.external} outside RepoOS`,
+    ),
+  );
   for (const w of report.removedWorktrees) {
     const verb = report.dryRun ? "would remove" : "removed";
-    console.log(`    ${c.green(verb)} ${w.branch || c.dim("(detached)")} ${c.dim(w.path)}`);
+    console.log(
+      `    ${c.green(verb)} ${w.branch || c.dim("(detached)")} ${c.dim(w.path)}` +
+        c.dim(` — ${w.reason}`),
+    );
   }
-  for (const k of report.keptDirty) {
+  for (const k of report.retained) {
     console.log(
       `    ${c.yellow("kept")}    ${k.branch || c.dim("(detached)")} ${c.dim(`— ${k.reason}`)}`,
     );
+    const detail = formatGcEntryDetails(k);
+    if (detail) console.log(c.dim(`            ${detail}`));
+  }
+  for (const e of report.external) {
+    console.log(`    ${c.dim("external")} ${e.branch || c.dim("(detached)")} ${c.dim(e.path)}`);
   }
   for (const e of report.errors) {
     console.log(`    ${c.red("error")}   ${e}`);
@@ -40,8 +51,8 @@ function printReport(report: GcReport, title: string): void {
 
 export function cmdGc(argv: string[]): void {
   const dryRun = argv.includes("--dry-run") || argv.includes("-n");
-  const yes = argv.includes("--yes") || argv.includes("-y");
-
+  // `--yes` is accepted as a no-op compatibility alias: the default sweep is
+  // already the same safe policy, with the same fail-closed guards.
   const { root } = boardRoot();
   const { config } = createRepoOS(root);
 
@@ -49,26 +60,5 @@ export function cmdGc(argv: string[]): void {
     printReport(sweepStaleWorktrees(config, { mode: "full", dryRun: true }), "gc — dry run");
     return;
   }
-
-  if (yes) {
-    printReport(sweepStaleWorktrees(config, { mode: "full" }), "gc");
-    return;
-  }
-
-  // Default: do the safe part for real, preview the rest.
-  printReport(
-    sweepStaleWorktrees(config, { mode: "integrate-only" }),
-    "gc — candidates + stale metadata",
-  );
-  const preview = sweepStaleWorktrees(config, { mode: "full", dryRun: true });
-  const pendingFeature = preview.removedWorktrees.filter(
-    (w) => !w.branch.startsWith("repoos/integrate/"),
-  );
-  if (pendingFeature.length || preview.keptDirty.length) {
-    console.log();
-    printReport(
-      { ...preview, removedWorktrees: pendingFeature },
-      "feature worktrees — run `repoos gc --yes` to apply",
-    );
-  }
+  printReport(sweepStaleWorktrees(config, { mode: "full" }), "gc");
 }
