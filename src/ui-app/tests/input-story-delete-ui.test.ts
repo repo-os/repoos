@@ -91,6 +91,16 @@ async function confirmDialog(label: string): Promise<void> {
   await flushPromises();
 }
 
+function pointerClick(button: HTMLButtonElement): void {
+  button.dispatchEvent(
+    new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 1 }),
+  );
+  button.dispatchEvent(
+    new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 1 }),
+  );
+  button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+}
+
 // ── Inputs drawer ────────────────────────────────────────────────────────────
 
 describe("inputs side-panel delete (#0634)", () => {
@@ -160,12 +170,13 @@ describe("inputs side-panel delete (#0634)", () => {
       .click();
     await flushPromises();
     const modal = document.body.querySelector(".delete-confirm-modal")!;
-    Array.from(modal.querySelectorAll("button"))
-      .find((b) => b.textContent?.includes("Cancel"))!
-      .click();
+    pointerClick(
+      Array.from(modal.querySelectorAll("button")).find((b) => b.textContent?.includes("Cancel"))!,
+    );
     await flushPromises();
     expect(deletesOf(wrapper)).toHaveLength(0);
     expect(document.body.querySelector(".drawer")).toBeTruthy();
+    expect(document.body.querySelector(".delete-confirm-modal")).toBeNull();
   });
 });
 

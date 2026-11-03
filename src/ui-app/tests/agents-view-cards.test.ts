@@ -125,4 +125,62 @@ describe("AgentsView agent cards", () => {
     revisit.unmount();
     vi.unstubAllGlobals();
   });
+
+  it("teleports the skills modal to body with a marked overlay layer (#1005)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/api/models")) {
+          return {
+            ok: true,
+            json: async () => ({
+              byCli: { opencode: { supported: true, models: ["default"], refreshable: false } },
+            }),
+          };
+        }
+        throw new Error(`unexpected fetch: ${url}`);
+      }),
+    );
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.agents = [{ name: "engineer", cli: "opencode", model: "default", enabled: true }];
+    config.agentsMeta = {
+      clis: ["opencode"],
+      models: ["default"],
+      defaults: config.agents,
+      skills: [
+        { name: "frontend-design", path: "skills/frontend-design/SKILL.md", description: "" },
+      ],
+    };
+    config.loaded = true;
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/", component: { template: "<div />" } }],
+    });
+    await router.push("/");
+    // No teleport stub: the real Teleport must land the fixed-position modal
+    // in body (#0575), or a dialog layered above it goes click-transparent.
+    const wrapper = mount(AgentsView, {
+      attachTo: document.body,
+      global: { plugins: [pinia, router], stubs: { Transition: true, VoiceDictate: true } },
+    });
+    await flush();
+
+    await wrapper.find(".agent-skills-add").trigger("click");
+    await flush();
+
+    const modal = document.body.querySelector(".am-modal") as HTMLElement;
+    expect(modal).not.toBeNull();
+    expect(modal.parentElement).toBe(document.body);
+    const layerId = modal.getAttribute("data-overlay-layer");
+    expect(layerId).toMatch(/^overlay-/);
+    expect(document.body.querySelector(".overlay")?.getAttribute("data-overlay-layer")).toBe(
+      layerId,
+    );
+
+    wrapper.unmount();
+    document.body.innerHTML = "";
+    vi.unstubAllGlobals();
+  });
 });

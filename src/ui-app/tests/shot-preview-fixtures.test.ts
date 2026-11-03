@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import {
+  SHOT_PREVIEW_APPLIED_ATTR,
   SHOT_PREVIEW_FIXTURE_TASK_ID,
+  shotFixtureContainer,
   type ShotPreviewFixtureId,
 } from "../../core/shot-fixtures.js";
 import {
@@ -12,6 +14,7 @@ import {
   shotFixturePinnedIntegration,
   shotFixturePinnedRemoteStatus,
   shotFixturePinnedTaskRemoteActivity,
+  shotFixtureSchedules,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
 import { useNoticesStore } from "../src/stores/notices";
@@ -61,6 +64,40 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(cards).toHaveLength(6);
     expect(cards.every((task) => task.status === "active")).toBe(true);
     expect(repo.runningIds).toEqual(expect.arrayContaining(cards.map((task) => task.id)));
+  });
+
+  it("seeds two deterministic schedules for agents:scheduledSeeded (#1005)", () => {
+    expect(shotFixtureSchedules(null)).toBeNull();
+    expect(shotFixtureSchedules("schedule:newPanel")).toBeNull();
+    const rows = shotFixtureSchedules("agents:scheduledSeeded");
+    expect(rows).toHaveLength(2);
+    expect(rows!.map((row) => row.id)).toEqual(["0001", "0002"]);
+    for (const row of rows!) {
+      expect(row.title.length).toBeGreaterThan(0);
+      expect(row.nextRunPreview.length).toBeGreaterThan(0);
+      expect(row.path).toContain(row.id);
+    }
+  });
+
+  it("requires no dialog container for agents:scheduledSeeded (#1005)", () => {
+    expect(shotFixtureContainer("agents:scheduledSeeded")).toBeNull();
+    expect(shotFixtureContainer("schedule:newPanel")).toBe("dialog");
+  });
+
+  it("applies agents:scheduledSeeded through the shared fixture entry point (#1005)", () => {
+    // The panel used to seed rows locally, which left `data-repoos-shot-state`
+    // unset and made a declared capture look like the wrong screen. Going
+    // through applyShotPreviewFixture both seeds and stamps the marker.
+    const repo = useRepoStore();
+    try {
+      applyShotPreviewFixture(repo, "agents:scheduledSeeded");
+      expect(repo.schedules.map((row) => row.id)).toEqual(["0001", "0002"]);
+      expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
+        "agents:scheduledSeeded",
+      );
+    } finally {
+      document.documentElement.removeAttribute(SHOT_PREVIEW_APPLIED_ATTR);
+    }
   });
 
   it("reads shotState from the location query", () => {

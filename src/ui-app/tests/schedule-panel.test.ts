@@ -4,8 +4,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
 import { useRepoStore } from "../src/stores/repo";
+import { applyShotPreviewFixture } from "../src/lib/shot-preview-fixtures";
+import { SHOT_PREVIEW_APPLIED_ATTR } from "../../core/shot-fixtures.js";
+import type { Health } from "../src/types";
 import type { TaskSchedule } from "../../core/schedule.js";
 
 vi.mock("vue-router", () => ({
@@ -24,10 +29,24 @@ function drawer(): HTMLElement | null {
   return document.body.querySelector('[data-testid="schedule-editor-drawer"]');
 }
 
+function editorButton(testId: string): HTMLButtonElement {
+  return document.body.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`)!;
+}
+
 function buttons(root: ParentNode, label: (t: string) => boolean): HTMLButtonElement | undefined {
   return Array.from(root.querySelectorAll("button")).find((b) => label(b.textContent ?? "")) as
     | HTMLButtonElement
     | undefined;
+}
+
+function pointerClick(button: HTMLButtonElement): void {
+  button.dispatchEvent(
+    new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 1 }),
+  );
+  button.dispatchEvent(
+    new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 1 }),
+  );
+  button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
 }
 
 function makeSchedule(over: Partial<TaskSchedule> = {}): TaskSchedule {
@@ -87,7 +106,7 @@ describe("schedule editor drawer (#0841)", () => {
     expect(el!.querySelector(".drawer-resize")).toBeTruthy();
     expect(el!.querySelector(".drawer-head")!.textContent).toContain("New schedule");
 
-    await wrapper.get('[data-testid="schedule-editor-close"]').trigger("click");
+    editorButton("schedule-editor-close").click();
     await flushPromises();
     expect(drawer()).toBeNull();
 
@@ -136,21 +155,21 @@ describe("schedule editor drawer (#0841)", () => {
     expect(previewEl.textContent).not.toBe("—");
     expect(previewEl.textContent!.length).toBeGreaterThan(3);
 
-    const saveBtn = wrapper.get('[data-testid="schedule-save"]');
-    expect((saveBtn.element as HTMLButtonElement).disabled).toBe(true);
+    const saveBtn = editorButton("schedule-save");
+    expect(saveBtn.disabled).toBe(true);
 
     const titleInput = drawer()!.querySelector("#sched-title") as HTMLInputElement;
     titleInput.value = "Weekly audit";
     titleInput.dispatchEvent(new Event("input"));
     await flushPromises();
-    expect((saveBtn.element as HTMLButtonElement).disabled).toBe(false);
+    expect(saveBtn.disabled).toBe(false);
 
     const tzInput = drawer()!.querySelector("#sched-timezone") as HTMLInputElement;
     tzInput.value = "Not/A_Zone";
     tzInput.dispatchEvent(new Event("input"));
     await flushPromises();
     expect(previewEl.textContent).toMatch(/valid IANA/i);
-    expect((saveBtn.element as HTMLButtonElement).disabled).toBe(true);
+    expect(saveBtn.disabled).toBe(true);
   });
 });
 
@@ -182,7 +201,7 @@ describe("schedule CRUD from the panel", () => {
     titleInput.dispatchEvent(new Event("input"));
     await flushPromises();
 
-    await wrapper.get('[data-testid="schedule-save"]').trigger("click");
+    editorButton("schedule-save").click();
     await flushPromises();
     expect(repo.createSchedule).toHaveBeenCalled();
     repo.schedules = [created];
@@ -193,7 +212,7 @@ describe("schedule CRUD from the panel", () => {
     editBtn!.click();
     await flushPromises();
     expect(drawer()!.querySelector(".drawer-head")!.textContent).toContain("Edit schedule");
-    await wrapper.get('[data-testid="schedule-editor-close"]').trigger("click");
+    editorButton("schedule-editor-close").click();
     await flushPromises();
 
     const card = wrapper.get('[data-testid="schedule-card-0099"]');
@@ -217,5 +236,182 @@ describe("schedule CRUD from the panel", () => {
     confirmBtn.click();
     await flushPromises();
     expect(repo.deleteSchedule).toHaveBeenCalledWith("0099");
+  });
+
+  it("cancels or confirms a schedule deletion through pointer interactions", async () => {
+    const repo = useRepoStore();
+    const schedule = makeSchedule();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.schedules = [schedule];
+    repo.deleteSchedule = vi.fn().mockImplementation(async () => {
+      repo.schedules = [];
+    });
+
+    const wrapper = mountPanel();
+    await flushPromises();
+    const card = wrapper.get('[data-testid="schedule-card-0001"]');
+    const deleteSchedule = buttons(card.element, (text) => text.trim() === "Delete")!;
+
+    pointerClick(deleteSchedule);
+    await flushPromises();
+    let modal = document.body.querySelector(".delete-confirm-modal")!;
+    expect(modal.getAttribute("data-overlay-layer")).toMatch(/^overlay-/);
+    const cancel = buttons(modal, (text) => text.trim() === "Cancel")!;
+    pointerClick(cancel);
+    await flushPromises();
+    expect(document.body.querySelector(".delete-confirm-modal")).toBeNull();
+    expect(repo.deleteSchedule).not.toHaveBeenCalled();
+    expect(repo.schedules).toEqual([schedule]);
+
+    pointerClick(deleteSchedule);
+    await flushPromises();
+    modal = document.body.querySelector(".delete-confirm-modal")!;
+    pointerClick(buttons(modal, (text) => text.trim() === "Delete schedule")!);
+    await flushPromises();
+    expect(repo.deleteSchedule).toHaveBeenCalledWith("0001");
+    expect(document.body.querySelector(".delete-confirm-modal")).toBeNull();
+    expect(repo.schedules).toEqual([]);
+  });
+
+  it("prevents duplicate deletes and keeps failures in the confirmation", async () => {
+    const repo = useRepoStore();
+    const schedule = makeSchedule();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.schedules = [schedule];
+    repo.deleteSchedule = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("schedule service unavailable"))
+      .mockImplementationOnce(async () => {
+        repo.schedules = [];
+      });
+
+    const wrapper = mountPanel();
+    await flushPromises();
+    const card = wrapper.get('[data-testid="schedule-card-0001"]');
+    pointerClick(buttons(card.element, (text) => text.trim() === "Delete")!);
+    await flushPromises();
+
+    let modal = document.body.querySelector(".delete-confirm-modal")!;
+    const confirm = buttons(modal, (text) => text.trim() === "Delete schedule")!;
+    pointerClick(confirm);
+    pointerClick(confirm);
+    expect(repo.deleteSchedule).toHaveBeenCalledTimes(1);
+    await flushPromises();
+
+    modal = document.body.querySelector(".delete-confirm-modal")!;
+    expect(modal.querySelector('[role="alert"]')?.textContent).toContain(
+      "schedule service unavailable",
+    );
+    expect(repo.schedules).toEqual([schedule]);
+
+    pointerClick(buttons(modal, (text) => text.trim() === "Delete schedule")!);
+    await flushPromises();
+    expect(repo.deleteSchedule).toHaveBeenCalledTimes(2);
+    expect(document.body.querySelector(".delete-confirm-modal")).toBeNull();
+    expect(repo.schedules).toEqual([]);
+  });
+
+  it("places schedule details beside the action column", async () => {
+    const repo = useRepoStore();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.schedules = [makeSchedule()];
+    const wrapper = mountPanel();
+    await flushPromises();
+
+    const card = wrapper.get('[data-testid="schedule-card-0001"]');
+    const details = card.get(".schedule-card-details");
+    const rows = Array.from(details.get(".schedule-kv").element.children);
+    expect(rows).toHaveLength(5);
+    for (const row of rows) {
+      expect(row.querySelector("dt")).toBeTruthy();
+      expect(row.querySelector("dd")).toBeTruthy();
+    }
+    expect(details.get(".schedule-actions").element.parentElement).toBe(details.element);
+    expect(details.findAll(".schedule-actions button")).toHaveLength(3);
+
+    const source = readFileSync(
+      resolve(__dirname, "../src/components/ScheduledTasksPanel.vue"),
+      "utf8",
+    );
+    expect(source).toMatch(
+      /@media \(max-width: 900px\)[\s\S]*?\.schedule-card-details\s*\{\s*flex-direction:\s*column/,
+    );
+    expect(source).toMatch(
+      /@media \(max-width: 900px\)[\s\S]*?\.schedule-actions\s*\{[^}]*flex-direction:\s*row;[^}]*flex-wrap:\s*wrap/,
+    );
+  });
+});
+
+describe("schedule dialog layering and capture fixture (#1005)", () => {
+  it("teleports the editor drawer to body with a marked overlay layer", async () => {
+    const repo = useRepoStore();
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    repo.schedules = [];
+    const wrapper = mountPanel();
+    await flushPromises();
+    await wrapper.get('[data-testid="new-schedule"]').trigger("click");
+    await flushPromises();
+
+    const el = drawer();
+    expect(el).toBeTruthy();
+    // Radix does not portal DialogContent itself: without the Teleport the
+    // fixed-position drawer renders inline and breaks the shared
+    // dismissable-layer ordering for any dialog layered above it.
+    expect(el!.parentElement).toBe(document.body);
+    const layerId = el!.getAttribute("data-overlay-layer");
+    expect(layerId).toMatch(/^overlay-/);
+    const scrim = document.body.querySelector(".overlay");
+    expect(scrim?.getAttribute("data-overlay-layer")).toBe(layerId);
+  });
+
+  it("seeds the agents:scheduledSeeded capture fixture and records the applied marker", async () => {
+    const repo = useRepoStore();
+    repo.health = { isPreviewBuild: true } as unknown as Health;
+    repo.schedules = [];
+    repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
+    window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=agents:scheduledSeeded");
+    try {
+      // #1005 — the fixture must go through the shared entry point (the same
+      // one App.vue calls), not a panel-local assignment: only that path stamps
+      // `data-repoos-shot-state`, which is what a capture probes to prove the
+      // declared state rendered.
+      applyShotPreviewFixture(repo, "agents:scheduledSeeded");
+      expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
+        "agents:scheduledSeeded",
+      );
+
+      mountPanel();
+      await flushPromises();
+      const cards = document.body.querySelectorAll(".schedule-card");
+      expect(cards).toHaveLength(2);
+      expect(document.body.querySelector('[data-testid="schedule-card-0001"]')).toBeTruthy();
+      expect(document.body.querySelector('[data-testid="schedule-card-0002"]')).toBeTruthy();
+    } finally {
+      document.documentElement.removeAttribute(SHOT_PREVIEW_APPLIED_ATTR);
+      window.history.replaceState({}, "", "/");
+    }
+  });
+
+  it("re-applies agents:scheduledSeeded rows after a live refresh (#1005)", async () => {
+    // An SSE `schedule.changed` event calls refreshSchedules() mid-capture. The
+    // live response must not wipe the seeded rows — board fixtures re-apply on
+    // index refresh for the same reason (#0782).
+    const repo = useRepoStore();
+    repo.health = { isPreviewBuild: true } as unknown as Health;
+    repo.schedules = [];
+    window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=agents:scheduledSeeded");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => [makeSchedule({ id: "9999", title: "Real server row" })],
+      })),
+    );
+    try {
+      await repo.refreshSchedules();
+      expect(repo.schedules.map((row) => row.id)).toEqual(["0001", "0002"]);
+    } finally {
+      window.history.replaceState({}, "", "/");
+    }
   });
 });

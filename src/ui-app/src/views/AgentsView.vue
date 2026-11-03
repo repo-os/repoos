@@ -1151,48 +1151,54 @@ onUnmounted(() => {
         <ModelRoutingPanel v-show="activeTab === 'model-routing'" />
       </div>
     </template>
-    <Dialog
-      :open="!!skillsModalAgent"
-      @update:open="
-        (open) => {
-          if (!open) skillsModalAgent = null;
-        }
-      "
-    >
-      <DialogOverlay />
-      <DialogContent class="am-modal">
-        <div class="am-modal-head">
-          <DialogTitle>Skills for {{ skillsModalAgent?.name }}</DialogTitle
-          ><DialogClose class="close-x">×</DialogClose>
-        </div>
-        <DialogDescription class="am-modal-desc"
-          >Choose preferred candidates for this agent. RepoOS still selects only task-relevant
-          skills on each run.</DialogDescription
-        >
-        <div v-if="skillsModalAgent" class="agent-skill-modal-list">
-          <label
-            v-for="skill in config.agentsMeta.skills"
-            :key="skill.path"
-            class="agent-skill-option"
+    <!-- Body-teleported like every other modal dialog (#0575, #1005): Radix
+      does not portal DialogContent itself, and an inline fixed-position
+      modal breaks the shared dismissable-layer ordering for any dialog
+      layered above it. -->
+    <Teleport to="body">
+      <Dialog
+        :open="!!skillsModalAgent"
+        @update:open="
+          (open) => {
+            if (!open) skillsModalAgent = null;
+          }
+        "
+      >
+        <DialogOverlay />
+        <DialogContent class="am-modal">
+          <div class="am-modal-head">
+            <DialogTitle>Skills for {{ skillsModalAgent?.name }}</DialogTitle
+            ><DialogClose class="close-x">×</DialogClose>
+          </div>
+          <DialogDescription class="am-modal-desc"
+            >Choose preferred candidates for this agent. RepoOS still selects only task-relevant
+            skills on each run.</DialogDescription
           >
-            <input
-              type="checkbox"
-              :checked="(skillsModalAgent.skills ?? []).includes(skill.name)"
-              @change="
-                toggleSkill(
-                  skillsModalAgent!,
-                  skill.name,
-                  ($event.target as HTMLInputElement).checked,
-                )
-              "
-            />
-            <span
-              ><strong>{{ skill.name }}</strong
-              ><small v-if="skill.description">{{ skill.description }}</small></span
+          <div v-if="skillsModalAgent" class="agent-skill-modal-list">
+            <label
+              v-for="skill in config.agentsMeta.skills"
+              :key="skill.path"
+              class="agent-skill-option"
             >
-          </label>
-        </div>
-      </DialogContent>
-    </Dialog>
+              <input
+                type="checkbox"
+                :checked="(skillsModalAgent.skills ?? []).includes(skill.name)"
+                @change="
+                  toggleSkill(
+                    skillsModalAgent!,
+                    skill.name,
+                    ($event.target as HTMLInputElement).checked,
+                  )
+                "
+              />
+              <span
+                ><strong>{{ skill.name }}</strong
+                ><small v-if="skill.description">{{ skill.description }}</small></span
+              >
+            </label>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Teleport>
   </div>
 </template>

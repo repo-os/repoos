@@ -148,6 +148,14 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "budget:paused",
   // #0841 — Agents scheduled tab with the New schedule drawer open.
   "schedule:newPanel",
+  // #1005 — Agents scheduled tab with two seeded schedules, so captures can
+  // show the compact cards and drive the delete confirmation without needing
+  // real `schedules/` rows on the preview board. Deliberately NOT under the
+  // `schedule:` prefix: the capture driver maps that prefix to "a dialog must
+  // be open" (server-side `shotFixtureContainer`, which may be the
+  // control-plane build rather than this branch's), and these rows are a plain
+  // list screen whose steps open and close their own dialog.
+  "agents:scheduledSeeded",
   "reminders:due",
 ] as const;
 
