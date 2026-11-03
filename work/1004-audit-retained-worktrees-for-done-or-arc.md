@@ -219,3 +219,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T07:01:15Z · handoff failed · ui-review handoff failed at review · Engineering report including its generated change summary must contain at most 1,000 words (final report has 1103); shorten the draft and request handoff again.
 - 2026-11-03T07:06:22Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-03T07:06:23Z · note: handoff requested (cli)
+- 2026-11-03T07:06:23Z · body
