@@ -11,7 +11,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T02:04:20Z"
+updated_at: "2026-11-03T02:21:40Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -171,3 +171,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T00:22:08Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T00:39:29Z · handoff failed · remote validation failed: test failure: tests/ai-chat-standard.test.ts > no chat ships an animation it never defined > every `animation:` name in a component resolves to a @keyframes block on bee — fix it in the feature branch and re-run the gate
 - 2026-11-03T02:04:20Z · CTO nudge: held — remote validation is running
+- 2026-11-03T02:21:40Z · body
