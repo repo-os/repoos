@@ -3,6 +3,9 @@ id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 needs_merge: true
 priority: p2
 area: [core, server]
@@ -19,7 +22,8 @@ last_handoff_failure_sha: "067bdf85d570629574fbd4d129680f56eda172ee"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
-dev_error_count: 3
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T15:15:10.658Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -286,3 +290,5 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T14:52:26Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-03T14:57:32Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T15:15:10Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T15:15:10Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-03T15:15:10Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
