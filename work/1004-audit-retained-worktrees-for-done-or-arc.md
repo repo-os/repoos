@@ -13,7 +13,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T09:16:28Z"
+updated_at: "2026-11-03T09:47:09Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: "067bdf85d570629574fbd4d129680f56eda172ee"
 review_passes: 7
@@ -266,3 +266,11 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T09:06:37Z · note: handoff requested (ui-review)
 - 2026-11-03T09:10:19Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-03T09:16:28Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-11-03T09:18:34Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 57626, alive), #1005 check (pid 4584, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T09:33:32Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T09:33:48Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 57626, alive), #1013 check (pid 81676, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 10s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T09:34:17Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T09:34:33Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 57626, alive), #1005 check (pid 76490, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 55s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T09:38:33Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T09:42:39Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 82523, alive), #1005 check (pid 80663, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T09:47:09Z · watchdog: check wait ended or recovered — cleared needs_input
