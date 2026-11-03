@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/re-attached-adopted-engineers-go-idle-af
 created_at: "2026-11-03T09:05:45Z"
-updated_at: "2026-11-03T15:17:09Z"
+updated_at: "2026-11-03T15:17:10Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -41,3 +41,4 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T14:04:28Z · CTO action: restart-stalled-agent (resume) · agent never started — no session exists for this task
 - 2026-11-03T15:11:17Z · status ready→active
 - 2026-11-03T15:17:09Z · message_queued at 2026-11-03T15:17:09.905Z
+- 2026-11-03T15:17:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
