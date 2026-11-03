@@ -202,3 +202,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T04:47:35Z · CTO nudge: held — handoff gate is running
 - 2026-11-03T04:54:32Z · body
 - 2026-11-03T04:56:48Z · status active→review
+- 2026-11-03T04:56:48Z · note: shots: skipped — Docs site skipped: no docs shot declared
