@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
-updated_at: "2026-11-03T15:27:13Z"
+updated_at: "2026-11-03T17:11:02Z"
 ---
 ## Problem
 On 2026-11-03 the host was under critical memory pressure (swap churn over the guard limit) and local checks sat queued for 30+ minutes, delaying handoff of #1004 and #1013. `ps` shows dozens of leftover test helper processes, some days old, none doing work:
@@ -31,8 +31,24 @@ No test run leaves a helper process behind. After `repoos check` or `bun run tes
 ## Notes for AI
 Evidence: `ps -eo pid,etime,command | grep -E 'repoos-vitest|repoos-cli-api|repoos-preview-req'` on the maintainer's machine. Only kill processes you spawned in the test itself, tracked by pid/group, never by name pattern. Do not run the leak guard against other tasks' live engineers.
 
+PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks cannot accumulate. Home: the stray reaper in `src/server/system.ts` (census table in `docs/agent-process-safety.md`): add a new census kind for leaked test helpers. Run it on a slow timer (every 10-15 min) with its first run a few minutes after boot, not at startup. Never match by process name. Reap (SIGTERM, then SIGKILL via the process group) only when ALL hold: same uid, ppid 1, older than ~30 min, and the command line or cwd is inside a RepoOS-created temp dir (repoos-vitest-*, repoos-cli-api-*, repoos-preview-req-*) or the process carries a REPOOS_TEST_HELPER=<runId> tag set by the test helper, and no live test run still owns that temp dir. Never touch anything under a live task worktree. Log each reap in the system log. Add tests and update docs/agent-process-safety.md.
+
 ## Activity
 
 - 2026-11-03T11:57:42Z · created · njachowski@gmail.com
 - 2026-11-03T12:57:45Z · status inbox→ready
 - 2026-11-03T15:27:13Z · status ready→active, branch
+- 2026-11-03T15:33:13Z · body: Notes for AI (added 1)
+- 2026-11-03T15:33:14Z · message_queued at 2026-11-03T15:33:14.772Z
+- 2026-11-03T15:33:17Z · message_queued at 2026-11-03T15:33:17.515Z
+- 2026-11-03T15:37:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T15:47:18Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1013 check (pid 51511, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 8s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:48:03Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T15:48:33Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1015 check (pid 58891, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:48:48Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:19:51Z · body
+- 2026-11-03T16:39:53Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-03T17:07:42Z · body
+- 2026-11-03T17:11:02Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-03T17:11:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T17:11:02Z · message_delivered: 2 message(s)

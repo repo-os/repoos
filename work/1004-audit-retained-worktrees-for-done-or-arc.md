@@ -2,10 +2,11 @@
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: active
+status: done
 needs_merge: true
 priority: p2
 area: [core, server]
+merged_commit: 463e500c73f55a25eaefb557978996b48cf76e46
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/make-retained-worktree-cleanup-safe-and-
@@ -13,14 +14,13 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T15:27:09Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: "067bdf85d570629574fbd4d129680f56eda172ee"
-review_passes: 7
+updated_at: "2026-11-03T16:47:51Z"
+last_close_out_gate_ms: 496802
+last_close_out_gate_at: "2026-11-03T16:46:31.474Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T15:15:10.658Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
@@ -295,3 +295,13 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T15:22:10Z · message_queued at 2026-11-03T15:22:10.356Z
 - 2026-11-03T15:22:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T15:27:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T15:29:33Z · body
+- 2026-11-03T15:36:39Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T15:36:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T15:36:39Z · message_delivered: 1 message(s)
+- 2026-11-03T15:43:07Z · status active→review
+- 2026-11-03T15:43:08Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-03T15:44:27Z · note: review pass 9: good to go
+- 2026-11-03T16:08:36Z · close-out gate completed in 1425s
+- 2026-11-03T16:46:31Z · close-out gate completed in 497s
+- 2026-11-03T16:47:51Z · status done→done, release:success

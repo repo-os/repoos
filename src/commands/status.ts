@@ -28,7 +28,7 @@ import {
   unionApps,
 } from "../core/tunnel-registry.js";
 import { currentBranch, runGit } from "../core/git.js";
-import { countWorktrees, sweepStaleWorktrees } from "../core/worktree-gc.js";
+import { countWorktrees, formatGcEntryDetails, sweepStaleWorktrees } from "../core/worktree-gc.js";
 import { isOrphanServeCommand, isPortListening } from "../server/serve-reaper.js";
 import { STATUSES, type RepoOSConfig, type Status } from "../core/types.js";
 import { c } from "../cli/colors.js";
@@ -139,13 +139,41 @@ export interface StatusSnapshot {
     active: StatusActiveTask[];
   };
   worktrees: {
-    /** Registered worktrees including the main checkout. */
+    /** Registered worktrees including the main checkout and external ones. */
     count: number;
+    /** Registered worktrees RepoOS manages (excludes external ones). */
+    managedCount: number;
     warnThreshold: number;
     /** What `repoos gc --dry-run` would collect (same sweep, same inputs). */
-    leaked: Array<{ branch: string; path: string }>;
+    candidates: Array<{
+      branch: string;
+      path: string;
+      reason: string;
+      taskId?: string;
+      taskStatus?: string;
+      commitsAhead?: number;
+      dirtyPaths?: string[];
+      ignoredPaths?: string[];
+      changedSourcePaths?: string[];
+    }>;
     /** What gc would keep, with the reason it is kept. */
-    kept: Array<{ branch: string; path: string; reason: string }>;
+    retained: Array<{
+      branch: string;
+      path: string;
+      reason: string;
+      taskId?: string;
+      taskStatus?: string;
+      commitsAhead?: number;
+      dirtyPaths?: string[];
+      ignoredPaths?: string[];
+      changedSourcePaths?: string[];
+    }>;
+    /** Registered worktrees outside RepoOS's managed directory (never touched). */
+    external: Array<{ branch: string; path: string; reason: string }>;
+    /** Why a sweep could not proceed, e.g. unreadable lifecycle state. */
+    errors: string[];
+    /** Counts mirror `gc --dry-run`, so the two views agree by construction. */
+    counts: { candidates: number; retained: number; external: number };
   };
   tunnel: {
     configured: boolean;
@@ -481,11 +509,36 @@ export async function collectStatus(
   // the board is only walked once. The counts therefore match gc by
   // construction, not by coincidence.
   const gc = sweepStaleWorktrees(config, { mode: "full", dryRun: true, tasks: idx.tasks });
+  const registered = countWorktrees(root);
   const worktrees = {
-    count: countWorktrees(root),
+    count: registered,
+    managedCount: registered - gc.external.length,
     warnThreshold: config.worktreeWarnThreshold ?? 20,
-    leaked: gc.removedWorktrees.map((w) => ({ branch: w.branch, path: w.path })),
-    kept: gc.keptDirty.map((k) => ({ branch: k.branch, path: k.path, reason: k.reason })),
+    candidates: gc.removedWorktrees.map((w) => ({
+      branch: w.branch,
+      path: w.path,
+      reason: w.reason,
+      ...(w.taskId ? { taskId: w.taskId } : {}),
+      ...(w.taskStatus ? { taskStatus: w.taskStatus } : {}),
+      ...(w.commitsAhead !== undefined ? { commitsAhead: w.commitsAhead } : {}),
+      ...(w.dirtyPaths ? { dirtyPaths: w.dirtyPaths } : {}),
+      ...(w.ignoredPaths ? { ignoredPaths: w.ignoredPaths } : {}),
+      ...(w.changedSourcePaths ? { changedSourcePaths: w.changedSourcePaths } : {}),
+    })),
+    retained: gc.retained.map((k) => ({
+      branch: k.branch,
+      path: k.path,
+      reason: k.reason,
+      ...(k.taskId ? { taskId: k.taskId } : {}),
+      ...(k.taskStatus ? { taskStatus: k.taskStatus } : {}),
+      ...(k.commitsAhead !== undefined ? { commitsAhead: k.commitsAhead } : {}),
+      ...(k.dirtyPaths ? { dirtyPaths: k.dirtyPaths } : {}),
+      ...(k.ignoredPaths ? { ignoredPaths: k.ignoredPaths } : {}),
+      ...(k.changedSourcePaths ? { changedSourcePaths: k.changedSourcePaths } : {}),
+    })),
+    external: gc.external.map((e) => ({ branch: e.branch, path: e.path, reason: e.reason })),
+    errors: gc.errors,
+    counts: gc.summary,
   };
 
   // ── tunnel ──
@@ -841,18 +894,38 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
 
   // worktrees
   const threshold = s.worktrees.warnThreshold;
-  const wtBits = [`${s.worktrees.count} registered`];
+  const ws = s.worktrees;
+  const wtCounts = ws.counts;
+  const wtBits = [`${ws.count} registered`];
+  if (ws.managedCount !== ws.count) {
+    wtBits.push(`${ws.managedCount} managed`);
+  }
   if (threshold > 0) wtBits.push(`advisory ceiling ${threshold}`);
-  const leaked = s.worktrees.leaked;
-  const leakText =
-    leaked.length === 0
-      ? c.dim("no leaks")
-      : c.yellow(`${leaked.length} leaked — run `) + c.cyan("repoos gc --dry-run");
-  row("worktrees", wtBits.join(c.dim(" · ")) + c.dim(" · ") + leakText);
-  for (const w of leaked)
-    sub(c.yellow("leaked ") + c.cyan(w.branch || "(detached)") + c.dim("  " + w.path));
-  for (const k of s.worktrees.kept) {
-    sub(c.dim("kept    ") + c.cyan(k.branch || "(detached)") + c.dim(`  — ${k.reason}`));
+  wtBits.push(`${wtCounts.candidates} safe candidate${wtCounts.candidates === 1 ? "" : "s"}`);
+  wtBits.push(`${wtCounts.retained} retained`);
+  wtBits.push(`${wtCounts.external} external`);
+  row("worktrees", wtBits.join(c.dim(" · ")));
+  for (const w of ws.candidates) {
+    sub(
+      c.yellow("candidate ") +
+        c.cyan(w.branch || "(detached)") +
+        c.dim(` — ${w.reason}`) +
+        c.dim("  " + w.path),
+    );
+  }
+  for (const k of ws.retained) {
+    sub(c.dim("kept      ") + c.cyan(k.branch || "(detached)") + c.dim(`  — ${k.reason}`));
+    const detail = formatGcEntryDetails(k);
+    if (detail) sub(c.dim(`            ${detail}`));
+  }
+  for (const e of ws.external) {
+    sub(c.dim("external  ") + c.dim(e.branch || "(detached)") + c.dim(`  — ${e.reason}`));
+  }
+  for (const e of ws.errors) {
+    sub(c.red("error     ") + c.red(e));
+  }
+  if (wtCounts.candidates > 0) {
+    sub(c.dim("          run ") + c.cyan("repoos gc") + c.dim(" to reclaim the candidates"));
   }
 
   // tunnel

@@ -117,7 +117,7 @@ async function makeGitFixture(): Promise<Fixture> {
   mkdirSync(join(root, "work"), { recursive: true });
   mkdirSync(join(root, "src"), { recursive: true });
   mkdirSync(join(root, "dist"), { recursive: true });
-  writeFileSync(join(root, ".gitignore"), ".repoos/\ndist/\nnode_modules/\n");
+  writeFileSync(join(root, ".gitignore"), ".repoos/\ndist/\nnode_modules/\n.env\n");
   writeFileSync(join(root, "src", "app.ts"), "export const app = 1;\n");
   writeFileSync(
     join(root, "dist", ".build-info.json"),
@@ -255,14 +255,17 @@ describe("collectStatus — server stopped", () => {
     expect(active.updatedAt).toBe("2026-09-03T11:00:00Z");
     expect(active.needsInput).toBe(false);
 
-    // worktrees: main + 1 registered; the merged done-task worktree is leaked
+    // worktrees: main + 1 registered; the merged done-task worktree is a candidate
     expect(s.worktrees.count).toBe(2);
+    expect(s.worktrees.managedCount).toBe(2);
     expect(s.worktrees.warnThreshold).toBeGreaterThan(0);
-    expect(s.worktrees.leaked.map((w) => w.branch)).toEqual(["feat/done"]);
+    expect(s.worktrees.candidates.map((w) => w.branch)).toEqual(["feat/done"]);
+    expect(s.worktrees.counts).toEqual({ candidates: 1, retained: 0, external: 0 });
 
-    // leak count matches what `repoos gc --dry-run` would report (same sweep)
+    // candidate count matches what `repoos gc --dry-run` would report (same sweep)
     const gcReport = sweepStaleWorktrees(fx.config, { mode: "full", dryRun: true });
-    expect(s.worktrees.leaked.length).toBe(gcReport.removedWorktrees.length);
+    expect(s.worktrees.candidates.length).toBe(gcReport.removedWorktrees.length);
+    expect(s.worktrees.counts).toEqual(gcReport.summary);
 
     // tunnel: nothing configured in the fixture
     expect(s.tunnel.configured).toBe(false);
@@ -274,6 +277,33 @@ describe("collectStatus — server stopped", () => {
     expect(s.git.clean).toBe(true);
     expect(s.git.dirtyFiles).toBe(0);
     expect(s.git.isMainBranch).toBe(fx.branch === "main");
+  });
+
+  it("mirrors ignored-data retention and audit fields from the gc sweep", async () => {
+    const fx = await makeGitFixture();
+    // The done worktree would otherwise be a candidate; ignored local data
+    // keeps it, and status must report the same audit gc does.
+    const wt = join(worktreesDir(fx.root), "feat/done");
+    writeFileSync(join(wt, ".env"), "SECRET=local-only\n");
+
+    const s = await collectStatus(fx.config, { probeTimeoutMs: 300 });
+    expect(s.worktrees.candidates).toHaveLength(0);
+    const kept = s.worktrees.retained.find((w) => w.branch === "feat/done");
+    expect(kept).toMatchObject({
+      taskId: "0002",
+      taskStatus: "done",
+      commitsAhead: 0,
+      changedSourcePaths: [],
+      dirtyPaths: [],
+      ignoredPaths: [".env"],
+    });
+
+    // Dry-run and status share the sweep, so the counts and entries agree.
+    const gcReport = sweepStaleWorktrees(fx.config, { mode: "full", dryRun: true });
+    expect(s.worktrees.counts).toEqual(gcReport.summary);
+    expect(gcReport.retained).toContainEqual(
+      expect.objectContaining({ branch: "feat/done", ignoredPaths: [".env"] }),
+    );
   });
 
   it("reports a FRESH build when the marker hash matches src/", async () => {
@@ -389,7 +419,7 @@ describe("renderStatus", () => {
     expect(out).toContain("last lock"); // dead lock's facts are the diagnostic
     expect(out).toContain("#0001");
     expect(out).toContain("worktree missing");
-    expect(out).toContain("leaked");
+    expect(out).toContain("safe candidate");
     expect(out).toContain("not configured");
     expect(out).toContain(fx.branch);
     // header line comes first
@@ -665,9 +695,13 @@ describe("status --json shape", () => {
       "worktreePath",
     ]);
     expect(Object.keys(parsed.worktrees as object).sort()).toEqual([
+      "candidates",
       "count",
-      "kept",
-      "leaked",
+      "counts",
+      "errors",
+      "external",
+      "managedCount",
+      "retained",
       "warnThreshold",
     ]);
     expect(Object.keys(parsed.tunnel as object).sort()).toEqual([

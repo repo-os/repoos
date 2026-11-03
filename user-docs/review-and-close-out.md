@@ -298,7 +298,9 @@ dialog (discard or send back to the engineer).
 RepoOS never deletes a worktree that has uncommitted work on its own. If one is
 left over (for example a close-out that raced a new edit), it is kept, named in
 the task's `needs_input` detail, and reported by `repoos gc` until you deal with
-it.
+it. The one exception is `work/*.md` dirt whose bytes are identical to main's
+canonical task file — that is provably redundant, so the automatic sweep may
+reclaim it; unique task content is always kept.
 
 The same rule covers **Restart → Start clean**, the one place a worktree *is*
 discarded on purpose: the confirmation lists the uncommitted files it is about
