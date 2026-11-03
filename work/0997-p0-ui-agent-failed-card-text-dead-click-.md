@@ -16,7 +16,6 @@ review_rounds: 1
 routing_switches: 1
 review_passes: 1
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T03:33:45.144Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
