@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/re-attached-adopted-engineers-go-idle-af
 created_at: "2026-11-03T09:05:45Z"
-updated_at: "2026-11-03T15:22:09Z"
+updated_at: "2026-11-03T16:08:38Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -43,3 +43,8 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T15:17:09Z · message_queued at 2026-11-03T15:17:09.905Z
 - 2026-11-03T15:17:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T15:22:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T15:46:03Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1013 check (pid 27634, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:46:33Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T15:47:04Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1013 check (pid 51437, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:47:48Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:08:38Z · body
