@@ -8,6 +8,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
 import { useRepoStore } from "../src/stores/repo";
+import { applyShotPreviewFixture } from "../src/lib/shot-preview-fixtures";
+import { SHOT_PREVIEW_APPLIED_ATTR } from "../../core/shot-fixtures.js";
 import type { Health } from "../src/types";
 import type { TaskSchedule } from "../../core/schedule.js";
 
@@ -362,45 +364,52 @@ describe("schedule dialog layering and capture fixture (#1005)", () => {
     expect(scrim?.getAttribute("data-overlay-layer")).toBe(layerId);
   });
 
-  it("renders the schedule:seeded capture fixture without calling the API", async () => {
+  it("seeds the schedule:seeded capture fixture and records the applied marker", async () => {
     const repo = useRepoStore();
     repo.health = { isPreviewBuild: true } as unknown as Health;
     repo.schedules = [];
     repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
     window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=schedule:seeded");
     try {
+      // #1005 — the fixture must go through the shared entry point (the same
+      // one App.vue calls), not a panel-local assignment: only that path stamps
+      // `data-repoos-shot-state`, which is what a capture probes to prove the
+      // declared state rendered.
+      applyShotPreviewFixture(repo, "schedule:seeded");
+      expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
+        "schedule:seeded",
+      );
+
       mountPanel();
       await flushPromises();
       const cards = document.body.querySelectorAll(".schedule-card");
       expect(cards).toHaveLength(2);
       expect(document.body.querySelector('[data-testid="schedule-card-0001"]')).toBeTruthy();
       expect(document.body.querySelector('[data-testid="schedule-card-0002"]')).toBeTruthy();
-      expect(repo.refreshSchedules).not.toHaveBeenCalled();
     } finally {
+      document.documentElement.removeAttribute(SHOT_PREVIEW_APPLIED_ATTR);
       window.history.replaceState({}, "", "/");
     }
   });
 
-  it("seeds schedule:seeded rows when health lands after mount (#1005)", async () => {
-    // Cold capture load: the panel mounts before App.onMounted resolves health,
-    // so the mount-time read misses the fixture. The seed must still win over
-    // the live fetch once health lands — otherwise the capture's row selectors
-    // miss and the run times out.
+  it("re-applies schedule:seeded rows after a live refresh (#1005)", async () => {
+    // An SSE `schedule.changed` event calls refreshSchedules() mid-capture. The
+    // live response must not wipe the seeded rows — board fixtures re-apply on
+    // index refresh for the same reason (#0782).
     const repo = useRepoStore();
-    repo.health = null;
+    repo.health = { isPreviewBuild: true } as unknown as Health;
     repo.schedules = [];
-    repo.refreshSchedules = vi.fn().mockImplementation(async () => {
-      repo.schedules = [];
-    });
     window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=schedule:seeded");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => [makeSchedule({ id: "9999", title: "Real server row" })],
+      })),
+    );
     try {
-      mountPanel();
-      await flushPromises();
-      expect(document.body.querySelectorAll(".schedule-card")).toHaveLength(0);
-      repo.health = { isPreviewBuild: true } as unknown as Health;
-      await flushPromises();
-      expect(document.body.querySelectorAll(".schedule-card")).toHaveLength(2);
-      expect(document.body.querySelector('[data-testid="schedule-card-0001"]')).toBeTruthy();
+      await repo.refreshSchedules();
+      expect(repo.schedules.map((row) => row.id)).toEqual(["0001", "0002"]);
     } finally {
       window.history.replaceState({}, "", "/");
     }

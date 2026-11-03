@@ -1191,6 +1191,13 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "schedule:newPanel":
       useUiStore().scheduleEditorShotOpen = true;
       break;
+    case "schedule:seeded":
+      // #1005 — seed the schedule list itself, not just a panel flag. Going
+      // through the shared fixture entry point also stamps the applied marker
+      // that a capture probes (`shotStateProblem`), so a declared
+      // `state: schedule:seeded` verifies instead of reporting a wrong screen.
+      repo.schedules = shotFixtureSchedules(fixture) ?? [];
+      break;
     case "drawer:queuedMessage": {
       // #0821 — the drawer task (the shot's `?task=`) with a running agent and
       // one message queued for when the turn ends, so the Dev composer shows its

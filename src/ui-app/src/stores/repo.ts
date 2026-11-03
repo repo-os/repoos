@@ -23,6 +23,7 @@ import {
   shotFixturePinnedIntegration,
   shotFixturePinnedSystemStats,
   shotFixturePinnedTaskRemoteActivity,
+  shotFixtureSchedules,
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
@@ -3804,6 +3805,14 @@ export const useRepoStore = defineStore("repo", () => {
         await api<import("../../../core/schedule.js").TaskSchedule[]>("/api/schedules");
     } catch {
       /* keep existing */
+    }
+    // #1005 — a `?shotState=schedule:seeded` capture must survive a live
+    // refresh. An SSE `schedule.changed`/`schedule.run` event calls this and
+    // would otherwise overwrite the seeded rows mid-capture; board fixtures
+    // re-apply on index refresh for the same reason (#0782).
+    if (typeof window !== "undefined" && health.value?.isPreviewBuild) {
+      const seeded = shotFixtureSchedules(readShotPreviewFixtureFromLocation(window.location));
+      if (seeded) schedules.value = seeded;
     }
   }
 
