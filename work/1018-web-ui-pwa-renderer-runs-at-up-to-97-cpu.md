@@ -1,15 +1,15 @@
 ---
 id: 1018
-title: "Web UI (PWA) renderer runs at up to 97% CPU for days and may be loading the server: profile and fix runaway work"
+title: "Web UI renderer runs at up to 97% CPU when left open for days and may be loading the server: profile and fix runaway work (any browser, PWA or tab)"
 type: bug
 status: inbox
 priority: p0
 area: [web, server]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-03T15:28:57Z"
-updated_at: "2026-11-03T15:28:57Z"
+updated_at: "2026-11-03T15:30:04Z"
 ---
 ## Problem
 On 2026-11-03 the RepoOS web UI, installed as a Chrome PWA (its own Chrome profile via `--user-data-dir`, pointed at `http://127.0.0.1:7171`), had been open for about 1.5 days. Its renderer process (pid 34283) held 29–97% of a CPU the whole time and its GPU process (34243) another 30–66%, at about 640 MB. Over the same period the host load average reached 36–69, the RepoOS server on :7171 stopped answering, and `launchd` restarted it 7 times (last exit code 1). After the maintainer killed those two processes the load average dropped from ~36–55 to ~6.5 and the server stayed up. Cause not proven, but the timing is strong. Candidate causes: a runaway reactive/watch loop, SSE or polling that re-renders the whole board, an event-stream reconnect storm, unbounded growth of the task list or logs held in memory (640 MB), or per-card timers/animations that keep the GPU busy.
@@ -30,3 +30,4 @@ Start with `src/ui-app/src/stores/repo.ts` (SSE/event handling and store updates
 ## Activity
 
 - 2026-11-03T15:28:57Z · created · njachowski@gmail.com
+- 2026-11-03T15:30:04Z · title
