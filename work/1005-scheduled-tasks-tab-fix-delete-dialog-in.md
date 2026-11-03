@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-03T09:54:04Z"
+review_passes: 5
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
@@ -12,8 +14,6 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T09:54:04Z"
-review_passes: 4
 last_check_failure: "repoos check at 2026-11-03T04:09:23.516Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Scheduled task cards use a compact horizontal layout (target \"default\"): state \"schedule:seeded\" did not render on target \"default\" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:58574/agents?tab=scheduled&shotState=schedule%3Aseeded); [missing-target] Schedule cards stack readably at a narrow viewport (target \"default\"): state \"sched… (truncated)"
 review_rounds: 2
 dev_error_count: 1
@@ -306,3 +306,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T09:35:02Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T09:50:14Z · status active→review
 - 2026-11-03T09:54:04Z · note: review pass 5: good to go
+
