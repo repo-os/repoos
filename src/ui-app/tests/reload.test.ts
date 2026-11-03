@@ -1427,7 +1427,7 @@ ${extra}
       expect(reviews.runningCount()).toBe(1);
 
       // ...and gets a Run record whose timer stops the child if it fires.
-      // REVIEW_TIMEOUT_MS is 900s, so instead of waiting, verify the wiring by
+      // The default timeout is 15 minutes, so instead of waiting, verify the wiring by
       // simulating a cancelled adopted turn via cancel(), which the Run now
       // supports (an adopted proc-less review previously had no Run and could
       // never be marked cancelled).
