@@ -12,12 +12,12 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T07:18:47Z"
+updated_at: "2026-11-03T07:42:11Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-03T04:09:23.516Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Scheduled task cards use a compact horizontal layout (target \"default\"): state \"schedule:seeded\" did not render on target \"default\" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:58574/agents?tab=scheduled&shotState=schedule%3Aseeded); [missing-target] Schedule cards stack readably at a narrow viewport (target \"default\"): state \"sched… (truncated)"
 review_rounds: 2
 dev_error_count: 1
-engineer_stall_resume_log: "[{\"at\":\"2026-11-03T07:05:06.159Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-03T07:42:11.691Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -285,3 +285,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T07:07:21Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1004 check (pid 60109, alive), #1004 check (pid 77372, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-03T07:10:21Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T07:18:47Z · body
+- 2026-11-03T07:42:11Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
