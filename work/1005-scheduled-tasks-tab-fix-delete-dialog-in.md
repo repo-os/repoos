@@ -274,3 +274,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T06:10:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T06:21:21Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
 - 2026-11-03T06:27:43Z · message_queued at 2026-11-03T06:27:43.323Z
+- 2026-11-03T06:27:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
