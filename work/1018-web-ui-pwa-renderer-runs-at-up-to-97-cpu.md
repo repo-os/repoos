@@ -50,3 +50,4 @@ Reproduce in a normal browser tab and in the PWA, and say whether the cost diffe
 - 2026-11-03T18:07:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T18:13:23Z · body
 - 2026-11-03T18:16:39Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T18:16:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
