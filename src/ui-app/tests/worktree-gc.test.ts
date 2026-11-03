@@ -89,6 +89,16 @@ function branches(root: string): Set<string> {
   );
 }
 
+/** Every local branch ref, whether or not a worktree still checks it out. */
+function allBranches(root: string): Set<string> {
+  return new Set(
+    git(root, ["branch", "--format=%(refname:short)"])
+      .split("\n")
+      .map((b) => b.trim())
+      .filter(Boolean),
+  );
+}
+
 describe("sweepStaleWorktrees — lifecycle rules", () => {
   it.each(["active", "review"])(
     "reports candidate and feature worktrees kept for %s tasks",
@@ -253,7 +263,89 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
           reason: "represented in main and clean",
         }),
       );
+      // The content proof covers a non-ancestor branch: its ref must really go,
+      // not just its worktree (`git branch -d` would refuse it).
+      expect(report.removedBranches).toContain("feat/squashed");
       expect(branches(root).has("feat/squashed")).toBe(false);
+      expect(allBranches(root).has("feat/squashed")).toBe(false);
+      expect(report.errors).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("reclaims a represented branch whose worktree directory vanished", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      const wt = worktreeWithFiles(root, main, "feat/vanished", {
+        "src/gone.ts": "export const gone = 1;\n",
+      });
+      git(root, ["commit", "--allow-empty", "-m", "main moves on"]);
+      const sha = git(wt, ["rev-parse", "HEAD"]);
+      git(root, ["cherry-pick", sha]);
+      rmSync(wt, { recursive: true, force: true });
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/vanished", "done")],
+      });
+
+      expect(report.removedWorktrees).toContainEqual(
+        expect.objectContaining({ branch: "feat/vanished" }),
+      );
+      expect(report.removedBranches).toContain("feat/vanished");
+      expect(allBranches(root).has("feat/vanished")).toBe(false);
+      expect(report.errors).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("reclaims a represented vanished-directory branch with no task record", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      const wt = worktreeWithFiles(root, main, "feat/vanished-absent", {
+        "src/gone-absent.ts": "export const gone = 1;\n",
+      });
+      git(root, ["commit", "--allow-empty", "-m", "main moves on"]);
+      const sha = git(wt, ["rev-parse", "HEAD"]);
+      git(root, ["cherry-pick", sha]);
+      rmSync(wt, { recursive: true, force: true });
+
+      const report = sweepStaleWorktrees(cfg(root), { mode: "full", tasks: [] });
+
+      expect(report.removedWorktrees).toContainEqual(
+        expect.objectContaining({ branch: "feat/vanished-absent" }),
+      );
+      expect(report.removedBranches).toContain("feat/vanished-absent");
+      expect(allBranches(root).has("feat/vanished-absent")).toBe(false);
+      expect(report.errors).toEqual([]);
+    } finally {
+      clean();
+    }
+  });
+
+  it("dry run reports the same non-ancestor branch deletion it would perform", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      const wt = worktreeWithFiles(root, main, "feat/squashed-dry", {
+        "src/dry.ts": "export const dry = 1;\n",
+      });
+      git(root, ["commit", "--allow-empty", "-m", "main moves on"]);
+      const sha = git(wt, ["rev-parse", "HEAD"]);
+      git(root, ["cherry-pick", sha]);
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        dryRun: true,
+        tasks: [task("0001", "feat/squashed-dry", "done")],
+      });
+
+      expect(report.removedWorktrees.map((w) => w.branch)).toContain("feat/squashed-dry");
+      expect(report.removedBranches).toContain("feat/squashed-dry");
+      expect(report.errors).toEqual([]);
+      // Dry run touched nothing.
+      expect(allBranches(root).has("feat/squashed-dry")).toBe(true);
     } finally {
       clean();
     }

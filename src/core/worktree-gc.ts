@@ -500,14 +500,27 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
   // `forceWorktree` is only ever true where this sweep has ALREADY decided the
   // tree's contents may be discarded: a throwaway `repoos/integrate/<id>`
   // candidate, a feature worktree established to be represented in main AND
-  // clean, or one whose only dirt is redundant task-file bytes. Everything else
-  // keeps the non-forced default of `removeWorktree`, which refuses a dirty
-  // worktree rather than deleting it (#0512) — the same invariant the close-out
-  // path holds.
+  // clean, or one whose only dirt is redundant task-file bytes. `forceBranch`
+  // is true for a content-proven branch that is not an ancestor of main (a
+  // squash/rebase landing), where `git branch -d` would refuse: the content
+  // proof is what makes `-D` safe. Merged branches still use the non-forced
+  // delete. Everything else keeps the non-forced default of `removeWorktree`,
+  // which refuses a dirty worktree rather than deleting it (#0512) — the same
+  // invariant the close-out path holds.
   const remove = (entry: GcEntry, forceBranch: boolean, forceWorktree: boolean): void => {
     if (report.dryRun) {
       candidate(entry);
-      if (entry.branch) report.removedBranches.push(entry.branch);
+      if (entry.branch) {
+        // Match what the real run will do: a merged branch deletes with `-d`,
+        // a content-proven non-ancestor branch needs the force-delete below.
+        if (forceBranch || mergedIntoMain.has(entry.branch)) {
+          report.removedBranches.push(entry.branch);
+        } else {
+          report.errors.push(
+            `would remove worktree but keep branch ${entry.branch} (not merged into ${mainBranch})`,
+          );
+        }
+      }
       return;
     }
     if (!removeWorktree(root, entry.branch || entry.path, { force: forceWorktree })) {
@@ -581,14 +594,19 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
         retain({ ...meta, reason: "no task record for branch — lifecycle state unknown" });
         continue;
       }
-      const proof = mergedIntoMain.has(branch)
+      const merged = mergedIntoMain.has(branch);
+      const proof = merged
         ? { represented: true, differing: [] as string[], uniqueTaskFiles: [] as string[] }
         : branchRepresentedInMain(root, mainBranch, branch, workDir, null);
       if (!proof.represented) {
         retain({ ...meta, reason: notRepresentedReason(proof, mainBranch) });
         continue;
       }
-      remove({ ...meta, reason: "stale metadata for a vanished directory" }, false, true);
+      remove(
+        { ...meta, reason: "stale metadata for a vanished directory" },
+        /* forceBranch */ !merged,
+        /* forceWorktree */ true,
+      );
       continue;
     }
 
@@ -683,9 +701,11 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       remove(
         withProgress({
           ...meta,
-          reason: "merged into main; dirty task-file changes match main",
+          reason: merged
+            ? "merged into main; dirty task-file changes match main"
+            : "represented in main; dirty task-file changes match main",
         }),
-        /* forceBranch */ false,
+        /* forceBranch */ !merged,
         /* forceWorktree */ true,
       );
       continue;
@@ -696,7 +716,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
         ...meta,
         reason: merged ? "merged into main and clean" : "represented in main and clean",
       }),
-      /* forceBranch */ false,
+      /* forceBranch */ !merged,
       /* forceWorktree */ true,
     );
   }
