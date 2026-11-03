@@ -220,3 +220,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T04:40:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T04:47:24Z · body
 - 2026-11-03T04:49:34Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T04:49:34Z · message_delivered: 1 message(s)
