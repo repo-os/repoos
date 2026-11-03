@@ -9,8 +9,10 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/re-attached-adopted-engineers-go-idle-af
 created_at: "2026-11-03T09:05:45Z"
-updated_at: "2026-11-03T15:22:09Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-11-03T17:07:46Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-03T16:43:32.395Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Per `docs/agent-run-operations.md` (#0837) and `src/server/orphan-engineers.ts`, a server restart should re-attach the engineers it recorded (activity: `adopted orphaned engineer pid N`) and carry on. In practice, after restarts on 2026-11-03 the adopted engineers on #1004, #1005 and #1013 went idle:
@@ -43,3 +45,25 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T15:17:09Z · message_queued at 2026-11-03T15:17:09.905Z
 - 2026-11-03T15:17:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T15:22:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T15:46:03Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1013 check (pid 27634, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:46:33Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T15:47:04Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1013 check (pid 51437, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:47:48Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:08:38Z · body
+- 2026-11-03T16:26:00Z · body
+- 2026-11-03T16:27:19Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T16:28:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:30:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T16:30:49Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:31:06Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T16:31:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T16:31:07Z · message_delivered: 1 message(s)
+- 2026-11-03T16:52:09Z · message_queued at 2026-11-03T16:52:09.906Z
+- 2026-11-03T16:52:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-03T16:54:43Z · body
+- 2026-11-03T16:57:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T16:57:38Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T16:57:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T17:02:53Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-03T17:02:53Z · note: handoff requested (cli)
+- 2026-11-03T17:07:46Z · message_delivered: 1 message(s)

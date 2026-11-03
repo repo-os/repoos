@@ -2,17 +2,19 @@
 id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
+review_cli_override: opencode
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T15:26:31Z"
+updated_at: "2026-11-03T17:08:40Z"
+last_check_failure: "repoos check at 2026-11-03T16:08:43.074Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T09:38:49.222Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Engineering reports are committed under `work/engineering-reports/<id>/round-N.json`. Review reports live in gitignored cache (`.repoos/reviews/<id>/`), so they vanish with the machine and future agents/humans never see why a task went through several rounds. Both are essential history of one loop (engineer changes, writes report, reviewer reviews, repeat) and should be tracked together.
@@ -115,3 +117,34 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T15:12:04Z · agent exited with an error (opencode) · handoff finalization was interrupted (server reload) — restart work to hand off again
 - 2026-11-03T15:26:26Z · watchdog: restarting engineer after 14m with no live process
 - 2026-11-03T15:26:31Z · message_delivered: 1 message(s)
+- 2026-11-03T15:27:42Z · body
+- 2026-11-03T15:28:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T15:37:18Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-03T15:46:03Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1013 check (pid 27634, wedged); slot holder has made no progress for 30 minutes (no heartbeat) for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:46:33Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T15:46:48Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1013 check (pid 51437, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:47:18Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T15:57:33Z · body
+- 2026-11-03T16:00:28Z · body
+- 2026-11-03T16:04:35Z · body
+- 2026-11-03T16:12:09Z · message_queued at 2026-11-03T16:12:09.847Z
+- 2026-11-03T16:12:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-03T16:17:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T16:25:08Z · body
+- 2026-11-03T16:28:04Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 8s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T16:30:34Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:33:22Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T16:33:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T16:33:23Z · message_delivered: 1 message(s)
+- 2026-11-03T16:34:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T16:34:49Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:37:31Z · status active→review
+- 2026-11-03T16:37:31Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-03T16:37:32Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-03T16:52:36Z · note: review pass 1: failed — no usable report
+- 2026-11-03T16:52:37Z · needs_input
+- 2026-11-03T16:52:44Z · needs_input (review-failed) cleared for review again by human
+- 2026-11-03T17:07:47Z · note: review pass 2: failed — no usable report
+- 2026-11-03T17:07:47Z · needs_input
+- 2026-11-03T17:08:39Z · review_cli_override, review_model_override
+- 2026-11-03T17:08:40Z · needs_input (review-failed) cleared for review again by human
