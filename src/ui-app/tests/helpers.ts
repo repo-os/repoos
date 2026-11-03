@@ -298,6 +298,15 @@ export function takeTrackedTestPids(): number[] {
 }
 
 /**
+ * Track a group-leader pid that a production helper spawned for a test (for
+ * example `runHandoffCommand`'s detached group). The per-file and global
+ * teardowns kill it even if the test's own `finally` never runs.
+ */
+export function trackTestProcess(pid: number): void {
+  if (Number.isInteger(pid) && pid > 0) trackedTestPids.add(pid);
+}
+
+/**
  * Spawn a helper in its own process group and record it for teardown. Use this
  * for any test-owned long-lived child: the group is signalled on teardown
  * (afterEach/global teardown), including after a test timeout or worker kill.
@@ -312,7 +321,7 @@ export function spawnTestProcess(
     detached: process.platform !== "win32",
   });
   if (child.pid) {
-    trackedTestPids.add(child.pid);
+    trackTestProcess(child.pid);
     recordTestProcess(child.pid, [command, ...args].join(" "));
   }
   return child;
