@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-03T15:44:28Z"
-review_passes: 8
+last_close_out_gate_ms: 1424980
+last_close_out_gate_at: "2026-11-03T16:08:36.782Z"
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
@@ -15,6 +15,8 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
+updated_at: "2026-11-03T16:08:36Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 dev_error_count: 4
@@ -299,4 +301,5 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T15:43:07Z · status active→review
 - 2026-11-03T15:43:08Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-03T15:44:27Z · note: review pass 9: good to go
+- 2026-11-03T16:08:36Z · close-out gate completed in 1425s
 
