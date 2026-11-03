@@ -6,6 +6,7 @@ status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — code safety fixes verify clean, but branch still carries a task-scope file that fails landing."
+needs_merge: true
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -15,7 +16,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T05:27:21Z"
+updated_at: "2026-11-03T05:30:54Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -209,3 +210,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T04:57:51Z · note: review pass 7: needs some work
 - 2026-11-03T04:57:51Z · needs_input
 - 2026-11-03T05:27:21Z · body
+- 2026-11-03T05:30:54Z · needs_merge
