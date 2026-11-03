@@ -248,3 +248,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T04:17:51Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-11-03T04:24:45Z · body
 - 2026-11-03T04:32:33Z · message_queued at 2026-11-03T04:32:33.070Z
+- 2026-11-03T04:32:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
