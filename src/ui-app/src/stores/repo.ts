@@ -27,6 +27,7 @@ import {
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
+import { mergeTaskCheckRuns } from "../lib/task-check-runs";
 import { useNow } from "../composables/useNow";
 import { sseReconnectDelay } from "../lib/sse-backoff";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
@@ -2204,7 +2205,9 @@ export const useRepoStore = defineStore("repo", () => {
         typeof window !== "undefined" &&
         isShotPreviewCaptureActive(window.location) &&
         readShotPreviewFixtureFromLocation(window.location) === "checks:progress";
-      if (!opts?.remoteOnly && !keepProgressShot) taskChecks.value[taskId] = r.runs;
+      if (!opts?.remoteOnly && !keepProgressShot) {
+        taskChecks.value[taskId] = mergeTaskCheckRuns(taskChecks.value[taskId], r.runs);
+      }
       // A drawer shot fixture pins its remote detail; a preview board's real
       // 404/empty response must not wipe the seeded state (#0897).
       taskRemoteActivity.value[taskId] =

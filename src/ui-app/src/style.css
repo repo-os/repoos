@@ -6366,7 +6366,8 @@
 .review-history-row {
   cursor: pointer;
 }
-.review-history-row.is-selected {
+.review-history-row.is-selected,
+.engineering-report-view tbody tr.selected {
   background: var(--violet-dim);
   box-shadow: inset 3px 0 var(--violet);
 }
@@ -6390,7 +6391,8 @@
 }
 .review-history-table td:first-child,
 .review-history-table th:first-child {
-  padding-left: 0;
+  /* Room for the selected-row inset bar so it sits beside the pass/round (#1011). */
+  padding-left: 12px;
 }
 .review-history-table th {
   font-size: 9.5px;
@@ -6584,9 +6586,6 @@
 }
 .engineering-report-view tbody tr {
   cursor: pointer;
-}
-.engineering-report-view tbody tr.selected {
-  background: var(--violet-dim);
 }
 .engineering-report-body {
   padding: 12px 14px;

@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 765893
-last_close_out_gate_at: "2026-11-03T19:44:35.124Z"
 id: 1011
 title: "Easter eggs bundle: Cancel stalled check button flapping"
 type: bug
-status: review
+status: done
 priority: p1
 area: [web, core]
+merged_commit: 6034ca1b322be0257092fca7f8586b16f2d957b2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-cancel-stalled-check-
@@ -16,6 +15,8 @@ review_cli_override: opencode
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-02T16:01:49Z"
 updated_at: "2026-11-03T19:44:35Z"
+last_close_out_gate_ms: 765893
+last_close_out_gate_at: "2026-11-03T19:44:35.124Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-03T18:45:22.741Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65375/api/tasks/9999/engineering-reports (http://127.0.0.1:65375/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65375/api/tasks/9999/engineering-reports)"
 ---
