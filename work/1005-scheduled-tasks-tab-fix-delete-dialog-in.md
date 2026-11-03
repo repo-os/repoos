@@ -3,6 +3,9 @@ id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the branch fails the task-scope check, and the narrow-layout capture does not show a narrow viewport."
 priority: p1
 area: web
 assigned_to: ai
@@ -254,3 +257,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T04:37:24Z · message_delivered: 1 message(s)
 - 2026-11-03T04:53:20Z · status active→review
 - 2026-11-03T04:57:06Z · note: review pass 4: needs some work
+- 2026-11-03T04:57:06Z · needs_input
