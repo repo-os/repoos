@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { reviewPassPath } from "../../core/review-passes";
 import type { RepoOSConfig } from "../../core/types";
 import { startServer, type ServerHandle } from "../../server/server";
@@ -43,7 +43,7 @@ describe("GET /api/tasks/:id/review/passes/:pass (#0995 E4)", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-0995-review-pass-"));
     tmpRoots.push(root);
     const cfg = config(root);
-    mkdirSync(join(root, ".repoos", "reviews", "0970"), { recursive: true });
+    mkdirSync(dirname(reviewPassPath(cfg, "0970", 1)), { recursive: true });
     writeFileSync(
       reviewPassPath(cfg, "0970", 1),
       `---

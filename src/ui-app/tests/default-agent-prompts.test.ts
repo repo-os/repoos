@@ -212,7 +212,7 @@ describe("shared review mission prompt (#0872)", () => {
         summary: { pass: 1, warn: 0, fail: 0 },
       } as unknown as LandableResult,
     });
-    expect(mission).toContain(join(root, ".repoos", "reviews", "0872"));
+    expect(mission).toContain(join(root, "work", "reports", "0872"));
     expect(mission).toContain("Read the newest ones before judging this pass");
     expect(mission).toMatch(/WHOLE CLASS/);
     expect(mission).toMatch(/Never hold an\s+instance back for a later pass/);
