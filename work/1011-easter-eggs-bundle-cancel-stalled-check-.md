@@ -14,7 +14,7 @@ model_override: grok-4.7-low
 review_cli_override: opencode
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T19:44:35Z"
+updated_at: "2026-11-03T19:46:32Z"
 last_close_out_gate_ms: 765893
 last_close_out_gate_at: "2026-11-03T19:44:35.124Z"
 review_passes: 1
@@ -113,4 +113,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T19:31:30Z · note: review pass 2: good to go
 - 2026-11-03T19:43:16Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (6034ca1b3) during finalization (#0734)
 - 2026-11-03T19:44:35Z · close-out gate completed in 766s
-
+- 2026-11-03T19:46:32Z · status done→done, release:success
