@@ -117,7 +117,7 @@ async function makeGitFixture(): Promise<Fixture> {
   mkdirSync(join(root, "work"), { recursive: true });
   mkdirSync(join(root, "src"), { recursive: true });
   mkdirSync(join(root, "dist"), { recursive: true });
-  writeFileSync(join(root, ".gitignore"), ".repoos/\ndist/\nnode_modules/\n");
+  writeFileSync(join(root, ".gitignore"), ".repoos/\ndist/\nnode_modules/\n.env\n");
   writeFileSync(join(root, "src", "app.ts"), "export const app = 1;\n");
   writeFileSync(
     join(root, "dist", ".build-info.json"),
@@ -277,6 +277,33 @@ describe("collectStatus — server stopped", () => {
     expect(s.git.clean).toBe(true);
     expect(s.git.dirtyFiles).toBe(0);
     expect(s.git.isMainBranch).toBe(fx.branch === "main");
+  });
+
+  it("mirrors ignored-data retention and audit fields from the gc sweep", async () => {
+    const fx = await makeGitFixture();
+    // The done worktree would otherwise be a candidate; ignored local data
+    // keeps it, and status must report the same audit gc does.
+    const wt = join(worktreesDir(fx.root), "feat/done");
+    writeFileSync(join(wt, ".env"), "SECRET=local-only\n");
+
+    const s = await collectStatus(fx.config, { probeTimeoutMs: 300 });
+    expect(s.worktrees.candidates).toHaveLength(0);
+    const kept = s.worktrees.retained.find((w) => w.branch === "feat/done");
+    expect(kept).toMatchObject({
+      taskId: "0002",
+      taskStatus: "done",
+      commitsAhead: 0,
+      changedSourcePaths: [],
+      dirtyPaths: [],
+      ignoredPaths: [".env"],
+    });
+
+    // Dry-run and status share the sweep, so the counts and entries agree.
+    const gcReport = sweepStaleWorktrees(fx.config, { mode: "full", dryRun: true });
+    expect(s.worktrees.counts).toEqual(gcReport.summary);
+    expect(gcReport.retained).toContainEqual(
+      expect.objectContaining({ branch: "feat/done", ignoredPaths: [".env"] }),
+    );
   });
 
   it("reports a FRESH build when the marker hash matches src/", async () => {

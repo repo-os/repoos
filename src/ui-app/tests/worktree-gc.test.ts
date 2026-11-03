@@ -666,6 +666,9 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
       write(wt, "node_modules/pkg/index.js", "installed\n");
       write(wt, "coverage/lcov.info", "coverage\n");
       write(wt, ".repoos/index-cache.json", "{}\n");
+      // Nested build/install output matches the repo ignore rules at any depth.
+      write(wt, "user-docs/node_modules/pkg/index.js", "installed\n");
+      write(wt, "user-docs/.vitepress/dist/app.js", "built\n");
 
       const report = sweepStaleWorktrees(cfg(root), {
         mode: "full",
@@ -821,6 +824,9 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
         expect.objectContaining({
           branch: "feat/archived-unmerged",
           reason: expect.stringContaining("not in main"),
+          commitsAhead: 1,
+          changedSourcePaths: ["src/unmerged.ts"],
+          dirtyPaths: [],
         }),
       );
       expect(report.removedWorktrees).toContainEqual(

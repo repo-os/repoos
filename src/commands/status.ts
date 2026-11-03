@@ -28,7 +28,7 @@ import {
   unionApps,
 } from "../core/tunnel-registry.js";
 import { currentBranch, runGit } from "../core/git.js";
-import { countWorktrees, sweepStaleWorktrees } from "../core/worktree-gc.js";
+import { countWorktrees, formatGcEntryDetails, sweepStaleWorktrees } from "../core/worktree-gc.js";
 import { isOrphanServeCommand, isPortListening } from "../server/serve-reaper.js";
 import { STATUSES, type RepoOSConfig, type Status } from "../core/types.js";
 import { c } from "../cli/colors.js";
@@ -915,6 +915,8 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
   }
   for (const k of ws.retained) {
     sub(c.dim("kept      ") + c.cyan(k.branch || "(detached)") + c.dim(`  — ${k.reason}`));
+    const detail = formatGcEntryDetails(k);
+    if (detail) sub(c.dim(`            ${detail}`));
   }
   for (const e of ws.external) {
     sub(c.dim("external  ") + c.dim(e.branch || "(detached)") + c.dim(`  — ${e.reason}`));

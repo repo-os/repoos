@@ -77,11 +77,27 @@ export interface GcEntry {
   changedSourcePaths?: string[];
 }
 
-/** A registered worktree outside RepoOS's managed directory. Never inspected. */
+/** Registered worktrees outside RepoOS's managed directory. Never inspected. */
 export interface GcExternal {
   branch: string;
   path: string;
   reason: string;
+}
+
+/** Compact audit detail for a retained entry, shared by `gc` and `status`. */
+export function formatGcEntryDetails(entry: GcEntry): string | null {
+  const bits: string[] = [];
+  if (entry.commitsAhead !== undefined) bits.push(`${entry.commitsAhead} commit(s) ahead`);
+  const list = (label: string, paths: string[] | undefined): void => {
+    if (!paths?.length) return;
+    const shown = paths.slice(0, 8);
+    const more = paths.length > shown.length ? ` +${paths.length - shown.length} more` : "";
+    bits.push(`${label}: ${shown.join(", ")}${more}`);
+  };
+  list("source", entry.changedSourcePaths);
+  list("dirty", entry.dirtyPaths);
+  list("ignored", entry.ignoredPaths);
+  return bits.length > 0 ? bits.join(" · ") : null;
 }
 
 export interface GcReport {
@@ -183,16 +199,22 @@ function gitRun(
 function isDisposableIgnoredPath(path: string): boolean {
   const p = path.replace(/\/+$/, "");
   if (p === ".DS_Store" || p.endsWith("/.DS_Store")) return true;
-  if (p === "dist" || p.startsWith("dist/")) return true;
-  if (p === "node_modules" || p.startsWith("node_modules/")) return true;
-  if (p === "coverage" || p.startsWith("coverage/")) return true;
+  if (isGeneratedBuildPath(p)) return true;
+  const segments = p.split("/");
+  if (segments.includes("node_modules")) return true;
+  if (segments.includes("coverage")) return true;
   // RepoOS's derived index cache, including nested layouts' `<x>/.repoos`.
-  if (p.split("/").includes(".repoos")) return true;
+  if (segments.includes(".repoos")) return true;
   if (p === "user-docs/.vitepress/cache" || p.startsWith("user-docs/.vitepress/cache/")) {
     return true;
   }
   if (/^user-docs\/\.vitepress\/.*\.timestamp-.*\.mjs$/.test(p)) return true;
   return false;
+}
+
+/** Generated build output — never work data, whether ignored or tracked. */
+function isGeneratedBuildPath(path: string): boolean {
+  return path.replace(/\/+$/, "").split("/").includes("dist");
 }
 
 /**
@@ -201,13 +223,19 @@ function isDisposableIgnoredPath(path: string): boolean {
  * not remove the data (the canonical file stays put).
  */
 function isSymlinkInto(dir: string, relPath: string, canonicalRoot: string): boolean {
+  let entry;
   try {
-    const entry = lstatSync(join(dir, relPath));
-    if (!entry.isSymbolicLink()) return false;
+    entry = lstatSync(join(dir, relPath));
+  } catch {
+    // The path vanished between `git status` and this check: nothing to remove.
+    return true;
+  }
+  if (!entry.isSymbolicLink()) return false;
+  try {
     return isInside(canonicalRoot, realpathSync(join(dir, relPath)));
   } catch {
-    // Dangling symlink or unreadable path: no data is reachable through it, so
-    // removing the link loses nothing.
+    // Dangling symlink: no data is reachable through it, so removing the link
+    // loses nothing. (A real file never reaches this branch.)
     return true;
   }
 }
@@ -256,8 +284,11 @@ function worktreeState(path: string, canonicalRoot: string): WorktreeState | nul
       }
       continue;
     }
-    dirtyPaths.push(raw);
-    if (original) dirtyPaths.push(original);
+    // `dist/` is regenerated build output: preserve the old pathspec exclusion
+    // for repos that track it, so a rebuild never keeps a worktree alive.
+    for (const candidate of [raw, original]) {
+      if (candidate && !isGeneratedBuildPath(candidate)) dirtyPaths.push(candidate);
+    }
   }
   return { dirtyPaths, ignoredPaths };
 }
@@ -645,18 +676,21 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     // data even when the deciding reason (active agent, human owner) needs none
     // of them — otherwise `status` and `gc --dry-run` cannot answer "what is in
     // this retained worktree?" without a second investigation.
-    const keep = (reason: string): void => {
-      const entry: GcEntry = { ...meta, reason };
-      if (commitsAhead !== undefined) entry.commitsAhead = commitsAhead;
+    const audit = (): Partial<GcEntry> => {
+      const fields: Partial<GcEntry> = {};
+      if (commitsAhead !== undefined) fields.commitsAhead = commitsAhead;
       if (state) {
-        entry.dirtyPaths = state.dirtyPaths;
-        entry.ignoredPaths = state.ignoredPaths;
+        fields.dirtyPaths = state.dirtyPaths;
+        fields.ignoredPaths = state.ignoredPaths;
       }
       if (branch) {
         const changed = branchChangedSourcePaths(root, mainBranch, branch, workDir);
-        if (changed) entry.changedSourcePaths = changed;
+        if (changed) fields.changedSourcePaths = changed;
       }
-      retain(entry);
+      return fields;
+    };
+    const keep = (reason: string): void => {
+      retain({ ...meta, ...audit(), reason });
     };
 
     // --- repoos/integrate/<id> candidates: throwaway, both modes ---
@@ -683,7 +717,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
         continue;
       }
       remove(
-        { ...meta, reason: "throwaway close-out candidate" },
+        { ...meta, ...audit(), reason: "throwaway close-out candidate" },
         /* forceBranch */ true,
         /* forceWorktree */ true,
       );
@@ -698,7 +732,12 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       // is already gone (pure stale metadata).
       if (!existsSync(w.path)) {
         remove(
-          { branch: "", path: w.path, reason: "stale metadata for a vanished directory" },
+          {
+            branch: "",
+            path: w.path,
+            ...audit(),
+            reason: "stale metadata for a vanished directory",
+          },
           false,
           true,
         );
@@ -728,7 +767,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
         continue;
       }
       remove(
-        { ...meta, reason: "stale metadata for a vanished directory" },
+        { ...meta, ...audit(), reason: "stale metadata for a vanished directory" },
         /* forceBranch */ !merged,
         /* forceWorktree */ true,
       );
@@ -815,10 +854,10 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       remove(
         {
           ...meta,
+          ...audit(),
           reason: merged
             ? "merged into main; dirty task-file changes match main"
             : "represented in main; dirty task-file changes match main",
-          commitsAhead: commitsAhead ?? 0,
         },
         /* forceBranch */ !merged,
         /* forceWorktree */ true,
@@ -829,8 +868,8 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     remove(
       {
         ...meta,
+        ...audit(),
         reason: merged ? "merged into main and clean" : "represented in main and clean",
-        commitsAhead: commitsAhead ?? 0,
       },
       /* forceBranch */ !merged,
       /* forceWorktree */ true,
