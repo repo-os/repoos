@@ -2,14 +2,14 @@
 id: 1015
 title: "Re-attached (adopted) engineers go idle after a server restart: find out why and fix"
 type: bug
-status: inbox
+status: ready
 priority: p0
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-03T09:05:45Z"
-updated_at: "2026-11-03T09:05:45Z"
+updated_at: "2026-11-03T11:57:48Z"
 ---
 ## Problem
 Per `docs/agent-run-operations.md` (#0837) and `src/server/orphan-engineers.ts`, a server restart should re-attach the engineers it recorded (activity: `adopted orphaned engineer pid N`) and carry on. In practice, after restarts on 2026-11-03 the adopted engineers on #1004, #1005 and #1013 went idle:
@@ -33,3 +33,4 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 ## Activity
 
 - 2026-11-03T09:05:45Z · created · njachowski@gmail.com
+- 2026-11-03T11:57:48Z · status inbox→ready
