@@ -1804,7 +1804,9 @@ export const useRepoStore = defineStore("repo", () => {
       } else {
         outputs.value[e.id] = [e.entry];
       }
-      agentActivityAt.value = { ...agentActivityAt.value, [e.id]: new Date().toISOString() };
+      // Mutate the map in place: a spread here copied a key per task for every
+      // streamed line and invalidated every reader of the map (#1018).
+      agentActivityAt.value[e.id] = new Date().toISOString();
     } else if (e.type === "agent.stats") {
       agentStats.value = { ...agentStats.value, [e.id]: e.stats };
     } else if (e.type === "agent.exited") {

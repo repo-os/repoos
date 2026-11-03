@@ -65,6 +65,25 @@ describe("bounded client buffers (#1018)", () => {
     expect(repo.outputs).toBe(transcripts);
   });
 
+  it("updates the agent-activity map in place instead of copying it per line", () => {
+    const repo = newRepo();
+    const activityMap = repo.agentActivityAt;
+
+    for (let i = 0; i < 100; i++) {
+      repo.applyEvent({
+        type: "agent.output",
+        id: "0001",
+        entry: { type: "text", text: `line-${i}` },
+        stream: "out",
+      });
+    }
+
+    // A spread per streamed line copied a key per task and invalidated every
+    // reader of the map (#1018).
+    expect(repo.agentActivityAt).toBe(activityMap);
+    expect(repo.agentActivityAt["0001"]).toBeTruthy();
+  });
+
   it("caps retained check runs per task", () => {
     const repo = newRepo();
     for (let i = 0; i < 40; i++) {
