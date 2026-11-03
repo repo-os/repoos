@@ -2,14 +2,14 @@
 id: 1015
 title: "Re-attached (adopted) engineers go idle after a server restart: find out why and fix"
 type: bug
-status: active
+status: review
 priority: p0
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/re-attached-adopted-engineers-go-idle-af
 created_at: "2026-11-03T09:05:45Z"
-updated_at: "2026-11-03T17:14:04Z"
+updated_at: "2026-11-03T17:18:34Z"
 last_check_failure: "repoos check at 2026-11-03T16:43:32.395Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 handoff_signal_retry_count: 2
 ---
@@ -67,3 +67,4 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T17:02:53Z · note: handoff requested (cli)
 - 2026-11-03T17:07:46Z · message_delivered: 1 message(s)
 - 2026-11-03T17:14:04Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1015.md
+- 2026-11-03T17:18:34Z · status active→review
