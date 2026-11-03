@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: grok-4.7-low
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T18:58:40Z"
+updated_at: "2026-11-03T19:02:18Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-03T18:45:22.741Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65375/api/tasks/9999/engineering-reports (http://127.0.0.1:65375/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65375/api/tasks/9999/engineering-reports)"
 ---
@@ -98,3 +98,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T18:52:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T18:57:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T18:58:40Z · body
+- 2026-11-03T19:02:18Z · handoff_deferred: 1 queued message(s) must be read before review
