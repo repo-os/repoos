@@ -2,14 +2,14 @@
 id: 1017
 title: "Test helper processes leak: days-old repoos-vitest fakebins and stubs stay running and add memory pressure"
 type: bug
-status: ready
+status: active
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
-updated_at: "2026-11-03T12:57:47Z"
+updated_at: "2026-11-03T15:27:13Z"
 ---
 ## Problem
 On 2026-11-03 the host was under critical memory pressure (swap churn over the guard limit) and local checks sat queued for 30+ minutes, delaying handoff of #1004 and #1013. `ps` shows dozens of leftover test helper processes, some days old, none doing work:
@@ -35,3 +35,4 @@ Evidence: `ps -eo pid,etime,command | grep -E 'repoos-vitest|repoos-cli-api|repo
 
 - 2026-11-03T11:57:42Z · created · njachowski@gmail.com
 - 2026-11-03T12:57:45Z · status inbox→ready
+- 2026-11-03T15:27:13Z · status ready→active, branch
