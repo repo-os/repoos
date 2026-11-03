@@ -364,6 +364,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // is flagged for a human.
   review: {
     humanFlagAfterPasses: 5,
+    timeoutMinutes: 15,
   },
   // Check-gate defaults (#0655): how many times a failing test file is
   // re-run in isolation for the informational flake-triage label.
@@ -2482,23 +2483,28 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.reviewVerification = reviewVerification;
     }
 
-    // Repeated review classes (#0872): how many completed passes are allowed
-    // before the next report summarises the recurring classes and the task is
-    // flagged for a human. Accept a number or a numeric string from the
-    // Settings UI / hand-edited TOML; ignore nonsense and keep the default.
-    const reviewHumanFlagRaw = parsed["review.humanFlagAfterPasses"];
-    const reviewHumanFlag =
-      typeof reviewHumanFlagRaw === "number"
-        ? reviewHumanFlagRaw
-        : typeof reviewHumanFlagRaw === "string" && /^\d+$/.test(reviewHumanFlagRaw.trim())
-          ? Number(reviewHumanFlagRaw.trim())
+    // Repeated review classes (#0872) and the review-pass timeout (#1019).
+    // Accept a number or a numeric string from the Settings UI / hand-edited
+    // TOML; ignore nonsense and keep the default.
+    const reviewNumber = (raw: unknown): number | undefined =>
+      typeof raw === "number"
+        ? raw
+        : typeof raw === "string" && /^\d+$/.test(raw.trim())
+          ? Number(raw.trim())
           : undefined;
+    const reviewHumanFlag = reviewNumber(parsed["review.humanFlagAfterPasses"]);
+    const reviewTimeout = reviewNumber(parsed["review.timeoutMinutes"]);
+    const review: ReviewConfig = { ...DEFAULT_CONFIG.review, ...cfg.review };
+    let reviewConfigured = false;
     if (reviewHumanFlag !== undefined && Number.isFinite(reviewHumanFlag) && reviewHumanFlag >= 1) {
-      const review: ReviewConfig = {
-        humanFlagAfterPasses: Math.min(50, Math.floor(reviewHumanFlag)),
-      };
-      cfg.review = review;
+      review.humanFlagAfterPasses = Math.min(50, Math.floor(reviewHumanFlag));
+      reviewConfigured = true;
     }
+    if (reviewTimeout !== undefined && Number.isFinite(reviewTimeout) && reviewTimeout >= 1) {
+      review.timeoutMinutes = Math.min(240, Math.floor(reviewTimeout));
+      reviewConfigured = true;
+    }
+    if (reviewConfigured) cfg.review = review;
   }
 
   // Model-provider API keys (0327): env-only, same rule as the [auth] secrets
@@ -3312,6 +3318,20 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Completed review passes on one task before the next report opens with a summary of the repeated " +
         "bug classes earlier passes kept finding and the task is flagged for a human. Default 5. The flag is " +
         "separate from the auto-bounce review-rounds-exhausted backstop.",
+    },
+    {
+      key: "review.timeoutMinutes",
+      label: "Review timeout",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.review!.timeoutMinutes!,
+      min: 1,
+      step: 1,
+      description:
+        "Minutes one review pass may run before it is stopped. Default 15, maximum 240. Raise it for a " +
+        "large diff on a slow model. A pass cut off by this limit is reported as a timeout, retried once " +
+        "automatically, and only then flagged for a human.",
     },
     {
       key: "maxConcurrentAgents",
@@ -4507,6 +4527,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "reviewVerification.guardTestCheck",
   "reviewVerification.testGlobs",
   "review.humanFlagAfterPasses",
+  "review.timeoutMinutes",
   // Remote validation
   "remoteValidation.enabled",
   "remoteValidation.provider",

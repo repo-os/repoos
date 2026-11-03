@@ -27,6 +27,7 @@ export const REVIEW_RUN_TRIGGERS = {
   STALE_EVIDENCE_REREVIEW: "stale-evidence-rereview",
   EVIDENCE_GAP_REREVIEW: "evidence-gap-rereview",
   INCOMPLETE_RETRY: "incomplete-retry",
+  TIMEOUT_RETRY: "timeout-retry",
   WATCHDOG_STUCK_REVIEW: "watchdog-stuck-review",
   EXPLICIT_AGAIN: "explicit-again",
 } as const;
@@ -72,6 +73,8 @@ export function reviewTriggerNote(trigger: ReviewRunTrigger): string {
       return "automatic review after evidence-gap repair";
     case REVIEW_RUN_TRIGGERS.INCOMPLETE_RETRY:
       return "automatic review retry (incomplete prior pass)";
+    case REVIEW_RUN_TRIGGERS.TIMEOUT_RETRY:
+      return "automatic review retry (previous pass timed out)";
     case REVIEW_RUN_TRIGGERS.WATCHDOG_STUCK_REVIEW:
       return "automatic review (watchdog dead reviewer retry)";
     case REVIEW_RUN_TRIGGERS.EXPLICIT_AGAIN:

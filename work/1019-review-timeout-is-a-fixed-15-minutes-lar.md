@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 747455
-last_close_out_gate_at: "2026-11-03T20:57:51.162Z"
 id: 1019
 title: "Review timeout is a fixed 15 minutes: large diffs fail with 'no usable report' and burn review rounds"
 type: bug
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: be9f01ce9edee751f284d74f87531d2fafa89e87
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-timeout-is-a-fixed-15-minutes-lar
 created_at: "2026-11-03T19:16:59Z"
 updated_at: "2026-11-03T20:57:51Z"
+last_close_out_gate_ms: 747455
+last_close_out_gate_at: "2026-11-03T20:57:51.162Z"
 review_passes: 1
 ---
 ## Problem

@@ -182,13 +182,22 @@ describe("review completion", () => {
 
       // A review turn was started with a task-level Antigravity override.
       // Completion must not silently label its result as the global OpenCode
-      // reviewer. The trailing args are (timedOut, checkpointDelta): an
-      // ordinary review is neither timed out nor a post-handoff delta pass
-      // (#0834 added the checkpointDelta flag to finalizeRun).
+      // reviewer. The trailing args are (timedOut, checkpointDelta,
+      // timeoutMinutes): an ordinary review is neither timed out nor a
+      // post-handoff delta pass, and uses the default 15-minute ceiling
+      // (#0834 added checkpointDelta, #1019 added timeoutMinutes).
       (reviews as any).runs.set(task.id, { cancelled: false, mode: "run", agent: selected });
       reviews.handleReviewDone(`review:${task.id}`, true, "run");
 
-      expect(finalize).toHaveBeenCalledWith(task, selected, [], expect.anything(), false, false);
+      expect(finalize).toHaveBeenCalledWith(
+        task,
+        selected,
+        [],
+        expect.anything(),
+        false,
+        false,
+        15,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
