@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import {
+  SHOT_PREVIEW_APPLIED_ATTR,
   SHOT_PREVIEW_FIXTURE_TASK_ID,
   shotFixtureContainer,
   type ShotPreviewFixtureId,
@@ -81,6 +82,18 @@ describe("shot preview board fixtures (#0743)", () => {
   it("requires no dialog container for schedule:seeded (#1005)", () => {
     expect(shotFixtureContainer("schedule:seeded")).toBeNull();
     expect(shotFixtureContainer("schedule:newPanel")).toBe("dialog");
+  });
+
+  it("applies schedule:seeded through the shared fixture entry point (#1005)", () => {
+    // The panel used to seed rows locally, which left `data-repoos-shot-state`
+    // unset and made a declared capture look like the wrong screen. Going
+    // through applyShotPreviewFixture both seeds and stamps the marker.
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "schedule:seeded");
+    expect(repo.schedules.map((row) => row.id)).toEqual(["0001", "0002"]);
+    expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
+      "schedule:seeded",
+    );
   });
 
   it("reads shotState from the location query", () => {

@@ -13574,7 +13574,11 @@
 }
 .cc-modal-actions button:hover:not(:disabled),
 .delete-confirm-actions button:hover:not(:disabled),
-.restart-actions button:hover:not(:disabled) {
+.restart-actions button:hover:not(:disabled),
+.hotfix-actions button:hover:not(:disabled),
+.dirty-actions button:hover:not(:disabled),
+.ste-actions button:hover:not(:disabled),
+.stop-work-modal-actions button:hover:not(:disabled) {
   filter: brightness(1.12);
   /* #1005 round 4: brightness alone shifts outlined buttons ~5/255 — invisible
      in captures, and a border-bright wash fades the outline instead of
@@ -13586,7 +13590,11 @@
 }
 .cc-modal-actions button:focus-visible,
 .delete-confirm-actions button:focus-visible,
-.restart-actions button:focus-visible {
+.restart-actions button:focus-visible,
+.hotfix-actions button:focus-visible,
+.dirty-actions button:focus-visible,
+.ste-actions button:focus-visible,
+.stop-work-modal-actions button:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
 }

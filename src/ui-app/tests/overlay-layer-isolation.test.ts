@@ -248,14 +248,33 @@ describe("overlay layer isolation (#0575)", () => {
     style.remove();
   });
 
-  it("gives shared dialog actions visible hover and keyboard-focus states", () => {
+  it("gives every shared dialog action row visible hover and keyboard-focus states", () => {
     const css = readFileSync(join(APP, "style.css"), "utf8");
-    expect(css).toMatch(
-      /\.cc-modal-actions button:hover:not\(:disabled\),[\s\S]*?\.delete-confirm-actions button:hover:not\(:disabled\),[\s\S]*?\.restart-actions button:hover:not\(:disabled\)/,
-    );
-    expect(css).toMatch(
-      /\.cc-modal-actions button:focus-visible,[\s\S]*?\.delete-confirm-actions button:focus-visible,[\s\S]*?\.restart-actions button:focus-visible/,
-    );
+    // #1005 — the same affordance must cover every modal action row, not just
+    // the schedule delete confirmation: the hand-rolled confirm dialogs use
+    // their own action classes. Table-driven so a new dialog class is added in
+    // one place and checked here.
+    const actionRows = [
+      "cc-modal-actions",
+      "delete-confirm-actions",
+      "restart-actions",
+      "hotfix-actions",
+      "dirty-actions",
+      "ste-actions",
+      "stop-work-modal-actions",
+    ];
+    for (const cls of actionRows) {
+      const hoverAt = css.indexOf(`.${cls} button:hover:not(:disabled)`);
+      expect(hoverAt, `${cls} hover selector`).toBeGreaterThanOrEqual(0);
+      const hoverRule = css.slice(hoverAt, css.indexOf("}", hoverAt));
+      expect(hoverRule, `${cls} hover tint`).toContain("background-color: color-mix");
+      expect(hoverRule, `${cls} hover border`).toContain("border-color: currentColor");
+
+      const focusAt = css.indexOf(`.${cls} button:focus-visible`);
+      expect(focusAt, `${cls} focus selector`).toBeGreaterThanOrEqual(0);
+      const focusRule = css.slice(focusAt, css.indexOf("}", focusAt));
+      expect(focusRule, `${cls} focus ring`).toContain("outline: 2px solid var(--ring)");
+    }
   });
 
   it("marks every hand-teleported overlay root and keeps the hit-test rule", () => {

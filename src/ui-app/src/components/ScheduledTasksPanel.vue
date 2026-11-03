@@ -23,10 +23,6 @@ import SelectValue from "./ui/select/value.vue";
 import SelectViewport from "./ui/select/viewport.vue";
 import DeleteConfirmDialog from "./DeleteConfirmDialog.vue";
 import PageSkeleton from "./PageSkeleton.vue";
-import {
-  readShotPreviewFixtureFromLocation,
-  shotFixtureSchedules,
-} from "../lib/shot-preview-fixtures";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
 import DialogContent from "./ui/dialog/content.vue";
@@ -315,46 +311,9 @@ function consumeShotEditorOpen(): void {
 
 watch(() => ui.scheduleEditorShotOpen, consumeShotEditorOpen);
 
-/**
- * Deterministic rows for the `schedule:seeded` capture fixture (#1005), or
- * null when no fixture is active. Read lazily (not once at mount): `repo`
- * health lands in `App.onMounted`, which runs *after* this panel mounts, so a
- * mount-time-only read misses the fixture on a cold capture load and the live
- * fetch then wipes the seed — the capture's row selectors miss and the run
- * times out. DevView survives the same race via polling; this panel has no
- * poll, so the seed is (re-)applied when health lands and after the fetch.
- */
-function previewSeededRows(): TaskSchedule[] | null {
-  if (!repo.health?.isPreviewBuild) return null;
-  return shotFixtureSchedules(readShotPreviewFixtureFromLocation(window.location));
-}
-
-function applyPreviewSeed(): boolean {
-  const rows = previewSeededRows();
-  if (!rows) return false;
-  repo.schedules = rows;
-  loading.value = false;
-  return true;
-}
-
-watch(
-  () => repo.health?.isPreviewBuild,
-  () => {
-    applyPreviewSeed();
-  },
-);
-
 onMounted(() => {
-  // Preview captures seed deterministic rows via `?shotState=schedule:seeded`
-  // (#1005, same early-return shape as DevView's `dev:failed`): a capture must
-  // not depend on real `schedules/` rows existing on the preview board, and a
-  // live fetch would overwrite the seeded rows right after they paint.
-  if (applyPreviewSeed()) {
-    consumeShotEditorOpen();
-    return;
-  }
   void repo.refreshSchedules().finally(() => {
-    if (!applyPreviewSeed()) loading.value = false;
+    loading.value = false;
   });
   consumeShotEditorOpen();
 });
@@ -448,10 +407,10 @@ onMounted(() => {
 
     <!-- Body-teleported like every other modal dialog (#0575): Radix does not
       portal DialogContent itself, and an inline fixed-position drawer layer
-      breaks the shared dismissable-layer ordering — the layer underneath
-      inherits an inline `pointer-events: none` no stylesheet can override,
-      which is exactly the dead-buttons symptom this panel's delete
-      confirmation showed. -->
+      breaks the shared dismissable-layer ordering for any dialog layered above
+      it. The delete confirmation already used the shared body-teleported
+      shell; this fixes the same class of bug in the panel's editor layer (an
+      inline fixed layer) instead of leaving one instance inline. -->
     <Teleport to="body">
       <Dialog :open="editorOpen" @update:open="setEditorOpen">
         <DialogOverlay />
