@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: grok-4.7-low
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T17:55:25Z"
+updated_at: "2026-11-03T18:06:38Z"
 ---
 ## Items
 
@@ -84,3 +84,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T17:42:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T17:44:07Z · body
 - 2026-11-03T17:55:25Z · body
+- 2026-11-03T18:06:38Z · body
