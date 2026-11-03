@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
-updated_at: "2026-11-03T15:37:09Z"
+updated_at: "2026-11-03T16:19:51Z"
 ---
 ## Problem
 On 2026-11-03 the host was under critical memory pressure (swap churn over the guard limit) and local checks sat queued for 30+ minutes, delaying handoff of #1004 and #1013. `ps` shows dozens of leftover test helper processes, some days old, none doing work:
@@ -42,3 +42,8 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T15:33:14Z · message_queued at 2026-11-03T15:33:14.772Z
 - 2026-11-03T15:33:17Z · message_queued at 2026-11-03T15:33:17.515Z
 - 2026-11-03T15:37:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T15:47:18Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1013 check (pid 51511, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 8s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:48:03Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T15:48:33Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1013 check (pid 43807, alive), #1015 check (pid 58891, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T15:48:48Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:19:51Z · body
