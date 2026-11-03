@@ -83,3 +83,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T09:03:32Z · note: click [data-test-id="engineering-report-tab"]: click: Timeout 5000ms exceeded. on /work?task=0997&tab=agent
 - 2026-11-03T09:03:32Z · note: highlight .review-pane-tabs matched nothing on /work?task=0997&tab=agent
 - 2026-11-03T09:11:22Z · message_queued at 2026-11-03T09:11:22.095Z
+- 2026-11-03T09:11:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
