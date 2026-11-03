@@ -59,12 +59,12 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "route": "/agents?tab=scheduled",
 "highlight": "[role=\"dialog\"]",
 "steps": [
-  {
-    "click": "[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child"
-  },
-  {
-    "waitFor": "[role=\"dialog\"]"
-  }
+{
+  "click": "[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child"
+},
+{
+  "waitFor": "[role=\"dialog\"]"
+}
 ],
 "state": "schedule:seeded"
 },
@@ -74,15 +74,15 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "route": "/agents?tab=scheduled",
 "highlight": "[role=\"dialog\"] .delete-confirm-actions",
 "steps": [
-  {
-    "click": "[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child"
-  },
-  {
-    "waitFor": "[role=\"dialog\"]"
-  },
-  {
-    "hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
-  }
+{
+  "click": "[data-testid^=\"schedule-card-\"] .schedule-actions button:last-child"
+},
+{
+  "waitFor": "[role=\"dialog\"]"
+},
+{
+  "hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
+}
 ],
 "state": "schedule:seeded"
 }
@@ -190,3 +190,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-02T23:53:53Z · note: please fix bugs and write engineer report before handoff
 - 2026-11-03T00:01:33Z · body
 - 2026-11-03T00:07:01Z · message_queued at 2026-11-03T00:07:01.088Z
+- 2026-11-03T00:07:01Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
