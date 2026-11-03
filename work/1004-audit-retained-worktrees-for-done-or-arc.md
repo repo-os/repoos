@@ -3,6 +3,9 @@ id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -204,3 +207,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T04:56:48Z · status active→review
 - 2026-11-03T04:56:48Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-03T04:57:51Z · note: review pass 7: needs some work
+- 2026-11-03T04:57:51Z · needs_input
