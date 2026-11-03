@@ -167,7 +167,12 @@ describe("review timeout classification (#1019)", () => {
     } as RepoOSConfig;
     const index = { getTask: () => taskRow };
     const reviews = new ReviewManager(config, () => {}, undefined, index as never);
-    const run = vi.spyOn(reviews as unknown as { run: () => Promise<unknown> }, "run");
+    const run = vi.spyOn(
+      reviews as unknown as {
+        run: (task: Task, opts?: { trigger?: string }) => Promise<unknown>;
+      },
+      "run",
+    );
     run.mockResolvedValue({ ok: true });
     vi.useFakeTimers();
     try {
