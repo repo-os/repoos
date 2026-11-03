@@ -234,3 +234,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T02:09:18Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T02:49:08Z · body
 - 2026-11-03T03:05:38Z · message_queued at 2026-11-03T03:05:38.316Z
+- 2026-11-03T03:05:38Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
