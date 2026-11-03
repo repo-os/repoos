@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
-updated_at: "2026-11-03T18:20:34Z"
+updated_at: "2026-11-03T18:24:48Z"
 ---
 ## Problem
 On 2026-11-03 the host was under critical memory pressure (swap churn over the guard limit) and local checks sat queued for 30+ minutes, delaying handoff of #1004 and #1013. `ps` shows dozens of leftover test helper processes, some days old, none doing work:
@@ -60,3 +60,5 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T18:20:34Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T18:20:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T18:20:34Z · message_delivered: 1 message(s)
+- 2026-11-03T18:23:47Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T18:24:48Z · needs_input
