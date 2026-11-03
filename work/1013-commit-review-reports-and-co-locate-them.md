@@ -3,13 +3,16 @@ id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: the opencode agent timed out after 900s
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T16:52:36Z"
+updated_at: "2026-11-03T16:52:37Z"
 last_check_failure: "repoos check at 2026-11-03T16:08:43.074Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 dev_error_count: 2
@@ -140,3 +143,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T16:37:31Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-03T16:37:32Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-03T16:52:36Z · note: review pass 1: failed — no usable report
+- 2026-11-03T16:52:37Z · needs_input
