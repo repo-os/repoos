@@ -16,9 +16,10 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-cancel-stalled-check-
 cli_override: cursor
 model_override: grok-4.7-low
-review_model_override: opencode-go/muse-spark-1.3-contributor
+review_cli_override: opencode
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T19:29:35Z"
+updated_at: "2026-11-03T19:29:40Z"
 last_check_failure: "repoos check at 2026-11-03T18:45:22.741Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65375/api/tasks/9999/engineering-reports (http://127.0.0.1:65375/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65375/api/tasks/9999/engineering-reports)"
 ---
 ## Items
@@ -109,3 +110,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T19:29:07Z · status active→review
 - 2026-11-03T19:29:13Z · note: review pass 1: failed — no usable report
 - 2026-11-03T19:29:13Z · needs_input
+- 2026-11-03T19:29:40Z · review_cli_override, review_model_override
