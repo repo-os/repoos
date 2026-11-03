@@ -113,6 +113,16 @@ function actionButton(wrapper: ReturnType<typeof mount>, label: string, index = 
   return wrapper.findAll("button").filter((b) => b.text().trim() === label)[index];
 }
 
+function pointerClick(button: HTMLButtonElement): void {
+  button.dispatchEvent(
+    new PointerEvent("pointerdown", { bubbles: true, cancelable: true, pointerId: 1 }),
+  );
+  button.dispatchEvent(
+    new PointerEvent("pointerup", { bubbles: true, cancelable: true, pointerId: 1 }),
+  );
+  button.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+}
+
 beforeEach(() => {
   invalidatePageData("dev-targets");
   localStorage.clear();
@@ -889,7 +899,7 @@ describe("DevView actions (#0748)", () => {
     ).toBe(true);
   });
 
-  it("confirms restart of a running target with the shared dialog, then restarts", async () => {
+  it("handles pointer cancel and confirm actions in the shared dialog", async () => {
     const { calls } = installFetch({ targets: [target({ status: "running" })] });
     const wrapper = mountView();
     await flush();
@@ -902,12 +912,23 @@ describe("DevView actions (#0748)", () => {
     expect(wrapper.text()).toContain("Web app");
     expect(calls.some((c) => c.url.endsWith("/restart"))).toBe(false);
 
-    // Confirming runs the restart.
+    const cancel = wrapper
+      .findAll("button")
+      .find((b) => b.text().trim() === "Cancel" && b.element.closest(".cc-modal-actions"));
+    expect(cancel, "cancel button in the dialog actions").toBeTruthy();
+    pointerClick(cancel!.element as HTMLButtonElement);
+    await flush();
+    expect(wrapper.text()).not.toContain("Restart target?");
+    expect(calls.some((c) => c.url.endsWith("/restart"))).toBe(false);
+
+    await actionButton(wrapper, "Restart").trigger("click");
+    await flush();
+
     const confirm = wrapper
       .findAll("button")
       .find((b) => b.text().trim() === "Restart" && b.element.closest(".cc-modal-actions"));
     expect(confirm, "confirm button in the dialog actions").toBeTruthy();
-    await confirm!.trigger("click");
+    pointerClick(confirm!.element as HTMLButtonElement);
     await flush();
     expect(
       calls.some((c) => c.url.endsWith("/api/dev/targets/web/restart") && c.method === "POST"),
