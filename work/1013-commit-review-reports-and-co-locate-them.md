@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T09:28:06Z"
+updated_at: "2026-11-03T09:36:37Z"
 ---
 ## Problem
 Engineering reports are committed under `work/engineering-reports/<id>/round-N.json`. Review reports live in gitignored cache (`.repoos/reviews/<id>/`), so they vanish with the machine and future agents/humans never see why a task went through several rounds. Both are essential history of one loop (engineer changes, writes report, reviewer reviews, repeat) and should be tracked together.
@@ -33,18 +33,10 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 ```json
 [
 {
-"label": "Dev tab: model row above Report|Chat tabs, report on the left",
-"target": "default",
-"route": "/work?task=0997&tab=agent",
-"highlight": ".review-pane-tabs",
-"steps": [
-{
-"click": "[data-test-id=\"engineering-report-tab\"]"
-},
-{
-"waitMs": 500
-}
-]
+  "label": "Dev tab: model/agent row above the Report-left/Chat-right selector",
+  "target": "default",
+  "route": "/work?task=0997&tab=agent",
+  "highlight": ".review-toolbar"
 }
 ]
 ```
@@ -86,3 +78,6 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T09:11:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T09:14:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T09:28:06Z · body
+- 2026-11-03T09:29:17Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T09:31:02Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T09:36:37Z · body
