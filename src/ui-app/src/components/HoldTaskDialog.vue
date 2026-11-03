@@ -38,28 +38,30 @@ function submit(): void {
   <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
     <DialogOverlay />
     <DialogContent class="cc-modal">
-      <div class="flex items-center justify-between gap-3">
+      <div class="cc-modal-head">
         <DialogTitle>Hold task</DialogTitle>
         <DialogClose class="close-x" aria-label="Close" :disabled="busy">×</DialogClose>
       </div>
       <DialogDescription class="cc-modal-desc"
         >Automation will not start this task while the hold is active.</DialogDescription
       >
-      <label class="grid gap-1.5 text-sm font-medium"
-        >Reason <span class="sr-only">(required)</span>
-        <textarea
-          v-model="reason"
-          class="input min-h-20 resize-y"
-          required
-          maxlength="1000"
-          placeholder="Why should this task stay parked?"
-        />
-      </label>
-      <label class="mt-3 grid gap-1.5 text-sm font-medium"
-        >Auto-release date <span class="text-xs font-normal text-muted-foreground">Optional</span>
-        <input v-model="until" class="input" type="date" />
-      </label>
-      <div class="mt-5 flex justify-end gap-2">
+      <div class="cc-modal-body">
+        <label class="grid gap-1.5 text-sm font-medium"
+          >Reason <span class="sr-only">(required)</span>
+          <textarea
+            v-model="reason"
+            class="input min-h-20 resize-y"
+            required
+            maxlength="1000"
+            placeholder="Why should this task stay parked?"
+          />
+        </label>
+        <label class="grid gap-1.5 text-sm font-medium"
+          >Auto-release date <span class="text-xs font-normal text-muted-foreground">Optional</span>
+          <input v-model="until" class="input" type="date" />
+        </label>
+      </div>
+      <div class="cc-modal-actions">
         <DialogClose as-child
           ><Button variant="outline" :disabled="busy">Cancel</Button></DialogClose
         >

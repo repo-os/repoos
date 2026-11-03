@@ -135,6 +135,15 @@ describe("missionFor header ordering", () => {
     expect(mission.indexOf("off-limits")).toBeLessThan(mission.indexOf("RESUME PREAMBLE"));
   });
 
+  it("interpolates the configured cache dir into the engineering report draft path", () => {
+    const cfg = { ...config(ROOT), cacheDir: ".custom-cache" };
+    const mission = missionFor(task(), "feat/0654-task", WORKDIR, agent, cfg);
+
+    expect(mission).toContain(".custom-cache/engineering-report-drafts/<task-id>.md");
+    expect(mission).not.toContain("${config.cacheDir}");
+    expect(mission).not.toContain(".repoos/engineering-report-drafts");
+  });
+
   it("uses the hotfix wording in the mission when the task is a main-checkout hotfix", () => {
     const hotfix = task({ hotfix: true, hotfixTarget: "branch" });
     const mission = missionFor(hotfix, "hotfix/0654-task", ROOT, agent, config(ROOT));

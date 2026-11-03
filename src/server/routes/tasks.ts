@@ -115,6 +115,7 @@ import { releaseBranchless, isBranchlessReleaseEligible } from "../branchless-re
 import { bootstrap } from "../../core/bootstrap.js";
 import { generateServerContext, serverResumePreamble } from "../context-pack.js";
 import { listReviewPasses } from "../../core/review-passes.js";
+import { loadEngineeringReports } from "../engineering-reports.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
 import {
@@ -4005,6 +4006,51 @@ export const getTaskReviewPass: RouteHandler = (ctx, _req, res, params) => {
     return json(res, 404, { error: `Review pass #${pass} not found for task #${id}` });
   }
   return json(res, 200, { ok: true, review: report });
+};
+
+export const getTaskEngineeringReports: RouteHandler = async (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  const workdir = task.branch
+    ? await getGitWorker(ctx.config.root).worktreePath(task.branch)
+    : null;
+  // While a task has a worktree, its reports are the source of truth — never
+  // fall back to main's older copy, which can show a stale round or hide a
+  // corrupt one.
+  const worktreeExists = workdir !== null && existsSync(workdir);
+  const loaded = loadEngineeringReports(
+    worktreeExists ? { ...ctx.config, root: workdir } : ctx.config,
+    task.id,
+  );
+  return json(res, 200, {
+    ok: true,
+    source: worktreeExists ? "worktree" : "main",
+    reports: loaded.reports,
+    errors: loaded.errors,
+  });
+};
+
+export const getTaskEngineeringReport: RouteHandler = async (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  const round = Number(params.param2);
+  if (!Number.isInteger(round) || round < 1)
+    return json(res, 400, { error: "Invalid engineering round" });
+  const workdir = task.branch
+    ? await getGitWorker(ctx.config.root).worktreePath(task.branch)
+    : null;
+  const worktreeExists = workdir !== null && existsSync(workdir);
+  const loaded = loadEngineeringReports(
+    worktreeExists ? { ...ctx.config, root: workdir } : ctx.config,
+    task.id,
+  );
+  const report = loaded.reports.find((entry) => entry.round === round) ?? null;
+  if (report) return json(res, 200, { ok: true, report });
+  if (loaded.errors.length)
+    return json(res, 500, {
+      error: `Engineering report history is unreadable: ${loaded.errors.join("; ")}`,
+    });
+  return json(res, 404, { error: `Engineering report round ${round} not found` });
 };
 
 export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => {

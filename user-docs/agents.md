@@ -45,6 +45,17 @@ These commands require the running server. The pause-allowlist quick path and
 resume-on-Done option will follow once pause support (#0850) is available.
 See `docs/reminders.md` for the storage format and API.
 
+## Engineering reports
+
+Before handing off after a passing check, engineers write a report draft in the
+worktree's configured cache directory (`.repoos` by default) at
+`<cacheDir>/engineering-report-drafts/<task-id>.md`. Use the
+five required sections and aim for 500–600 words; RepoOS rejects drafts above
+1,000 words, finalizes one immutable report per round, and generates the Git
+change summary itself. See [Engineering reports](/engineering-reports) for the
+format and lifecycle. Reviewers receive the latest round in their prompt and
+must weigh its rationale, experiments, and known limitations with the diff.
+
 ## Supported coding agents
 
 RepoOS has a driver for eight CLIs:

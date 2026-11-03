@@ -67,6 +67,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:shotEvidence",
   // #0829 — task drawer Debug tab with a long log row for expand-to-full-message shots.
   "drawer:debugLogs",
+  // #0997 — an active task whose engineer crashed with the concrete cause
+  // recorded in needsInputDetail, so a capture can show the card status line
+  // and the dirty-worktree restart confirmation together.
+  "card:agentFailed",
   // #0804 — a ready task flagged by the decision-model human-step check, so a
   // capture can show the flag's explanation on the card.
   "card:humanStep",

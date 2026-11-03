@@ -2,24 +2,25 @@
 id: 1007
 title: Engineering reports for each task work round
 type: feature
-status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — A new engineering round can pass handoff without producing its required report.
+status: done
 priority: p2
 area: [core, server, web]
+merged_commit: 955b7945d412064b585a5a0e5f4cd37f6b4f5e1d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-reports-for-each-task-work-r
-model_override: gpt-6.1-terra
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-01T18:38:06Z"
-updated_at: "2026-11-02T13:24:00Z"
-review_passes: 4
+updated_at: "2026-11-02T17:05:57Z"
+last_close_out_gate_ms: 579871
+last_close_out_gate_at: "2026-11-02T17:03:41.578Z"
+review_passes: 10
 last_check_failure: "repoos check at 2026-11-02T08:46:33.517Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 
@@ -188,3 +189,78 @@ Inspect the engineer session lifecycle, handoff checkpoint/commit flow, reviewer
 - 2026-11-02T13:18:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-02T13:18:33Z · message_delivered: 1 message(s)
 - 2026-11-02T13:18:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T13:49:30Z · body
+- 2026-11-02T13:56:05Z · body
+- 2026-11-02T14:09:28Z · status active→review
+- 2026-11-02T14:09:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T14:09:28Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T14:13:46Z · note: review pass 5: needs some work
+- 2026-11-02T14:13:46Z · needs_input
+- 2026-11-02T14:13:46Z · needs_input
+- 2026-11-02T14:14:41Z · status review→active
+- 2026-11-02T14:14:41Z · note: Review pass 5 found three blocking issues; returning to engineering for a focused correction round.
+- 2026-11-02T14:14:50Z · needs_input
+- 2026-11-02T14:14:50Z · agent exited with an error (opencode) · error: Invalid model reference: gpt-6.1-terra
+- 2026-11-02T14:15:23Z · cli_override, model_override
+- 2026-11-02T14:15:34Z · needs_input
+- 2026-11-02T14:32:07Z · message_queued at 2026-11-02T14:32:07.877Z
+- 2026-11-02T14:32:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-02T14:35:02Z · body
+- 2026-11-02T14:37:07Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-02T14:37:23Z · message_queued at 2026-11-02T14:37:23.342Z
+- 2026-11-02T14:50:02Z · body
+- 2026-11-02T14:53:39Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-02T14:53:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T14:53:39Z · status active→review
+- 2026-11-02T14:53:39Z · message_delivered: 2 message(s)
+- 2026-11-02T14:53:40Z · note: handoff requested (cli)
+- 2026-11-02T14:54:03Z · status active→review
+- 2026-11-02T14:54:03Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T14:54:57Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-02T14:56:38Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-02T14:58:16Z · note: review pass 6: needs some work
+- 2026-11-02T14:58:42Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-02T14:59:40Z · status review→active
+- 2026-11-02T15:03:03Z · note: adopted orphaned engineer pid 22080
+- 2026-11-02T15:08:01Z · CTO nudge: held — remote validation is running
+- 2026-11-02T15:21:59Z · body
+- 2026-11-02T15:24:11Z · note: adopted orphaned engineer pid 22080
+- 2026-11-02T15:25:09Z · status active→review
+- 2026-11-02T15:25:10Z · note: shots: skipped — 2 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T15:31:16Z · note: review pass 7: needs some work
+- 2026-11-02T15:31:16Z · needs_input
+- 2026-11-02T15:41:59Z · status review→active
+- 2026-11-02T15:41:59Z · note: Review pass 7 needs a focused correction round; see the three blocking findings in .repoos/reviews/1007/7.md.
+- 2026-11-02T15:42:18Z · needs_input
+- 2026-11-02T15:56:18Z · body
+- 2026-11-02T15:59:42Z · status active→review
+- 2026-11-02T15:59:42Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T16:03:07Z · note: review pass 8: needs some work
+- 2026-11-02T16:03:07Z · needs_input
+- 2026-11-02T16:03:45Z · status review→active
+- 2026-11-02T16:03:45Z · note: Review pass 8: one small fix needed, see .repoos/reviews/1007/8.md
+- 2026-11-02T16:03:46Z · needs_input
+- 2026-11-02T16:16:05Z · message_queued at 2026-11-02T16:16:05.086Z
+- 2026-11-02T16:16:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-02T16:20:47Z · body
+- 2026-11-02T16:21:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-02T16:24:32Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-02T16:24:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-02T16:24:32Z · status active→review
+- 2026-11-02T16:24:33Z · message_delivered: 1 message(s)
+- 2026-11-02T16:24:33Z · note: handoff requested (cli)
+- 2026-11-02T16:25:07Z · status active→review
+- 2026-11-02T16:25:07Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T16:25:39Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1007 check (pid 38838, alive), #1004 check (pid 39868, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 10s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-02T16:26:09Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-02T16:26:39Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 13s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-02T16:28:46Z · note: review pass 9: needs some work
+- 2026-11-02T16:29:24Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-02T16:30:19Z · status review→active
+- 2026-11-02T16:30:19Z · note: Review pass 9: two small fixes, see .repoos/reviews/1007/9.md
+- 2026-11-02T16:43:33Z · body
+- 2026-11-02T16:46:19Z · status active→review
+- 2026-11-02T16:46:19Z · note: shots: skipped — 4 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-02T16:50:23Z · note: review pass 10: good to go
+- 2026-11-02T17:03:41Z · close-out gate completed in 580s
+- 2026-11-02T17:05:57Z · status done→done, release:success
