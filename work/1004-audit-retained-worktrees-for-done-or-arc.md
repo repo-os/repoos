@@ -21,7 +21,6 @@ review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-02T17:37:43.905Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T01:35:06.474Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
