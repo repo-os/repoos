@@ -90,6 +90,7 @@ import {
   commitTaskFile,
   commitDirtyFiles,
   mainDirtyFilesForCloseOut,
+  blockingMainDirtyPaths,
   uncommittedWorkFiles,
   workFileFilter,
   ensureWorktree,
@@ -3117,9 +3118,9 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     // cannot assert the tree is clean, so the close-out is refused rather than
     // enqueued against a tree that git may abort at publish time. An unknown
     // state must never silently look clean.
-    let dirty: string[];
+    let rawDirty: string[];
     try {
-      dirty = await mainDirtyFilesForCloseOut(config.root, config);
+      rawDirty = await mainDirtyFilesForCloseOut(config.root, config);
     } catch (err) {
       if (err instanceof GitDirtyCheckError) {
         return json(res, 409, {
@@ -3132,6 +3133,12 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
       throw err;
     }
+    // Live tasks' own markdown on main is routine server churn (#1020): the
+    // publish step checkpoint-commits it when the merge leaves it untouched.
+    // It must not block enqueue, and it is not something "Commit & continue"
+    // needs to ask about. Source files, repoos.toml, reports and other
+    // bookkeeping dirs still block.
+    const dirty = blockingMainDirtyPaths(rawDirty, config);
     const doneBody = (await readBody(req)) as { commitDirty?: unknown };
     const commitDirty = doneBody?.commitDirty === true;
     if (dirty.length > 0 && !commitDirty) {
@@ -3199,7 +3206,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       }
       worktreeCommittedForCloseOut = true;
     }
-    if (dirty.length > 0 && commitDirty) {
+    if (rawDirty.length > 0 && commitDirty) {
       let committed: string[];
       try {
         committed = await commitDirtyFiles(
@@ -3211,17 +3218,17 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
           return json(res, 500, {
             error: `could not re-verify main while committing dirty files (${err.message}). Close-out aborted; nothing was merged.`,
             needsCommit: true,
-            dirtyFiles: dirty,
+            dirtyFiles: rawDirty,
             dirtyCheckFailed: true,
           });
         }
         throw err;
       }
-      if (committed.length !== dirty.length) {
+      if (committed.length !== rawDirty.length) {
         return json(res, 500, {
-          error: `auto-commit of ${dirty.length} dirty file${dirty.length === 1 ? "" : "s"} failed on main`,
+          error: `auto-commit of ${rawDirty.length} dirty file${rawDirty.length === 1 ? "" : "s"} failed on main`,
           needsCommit: true,
-          dirtyFiles: dirty,
+          dirtyFiles: rawDirty,
         });
       }
     }
