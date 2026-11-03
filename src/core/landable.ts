@@ -166,7 +166,7 @@ export function classifyMainDirtyFiles(
  * task's markdown, an input, or a story definition never lands with this task.
  *
  * A task's own engineering and review reports live under
- * `<workDir>/reports/<task-id>/` (docs/engineering-reports.md) and are written
+ * `<workDir>/reports/<task-id>/` (user-docs/engineering-reports.md) and are written
  * by the handoff/review itself, so they are this task's bookkeeping even
  * though they are not the task markdown (#0997, #1013). The pre-#1013
  * engineering-report directory is still recognized for older branches. Another
