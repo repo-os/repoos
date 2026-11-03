@@ -44,10 +44,10 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 "highlight": ".review-pane-tabs",
 "steps": [
 {
-  "click": "[data-test-id=\"engineering-report-tab\"]"
+"click": "[data-test-id=\"engineering-report-tab\"]"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ]
 }
@@ -81,3 +81,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T08:48:50Z · body
 - 2026-11-03T08:51:22Z · CTO nudge: held — remote validation is running
 - 2026-11-03T09:03:32Z · note: click [data-test-id="engineering-report-tab"]: click: Timeout 5000ms exceeded. on /work?task=0997&tab=agent
+- 2026-11-03T09:03:32Z · note: highlight .review-pane-tabs matched nothing on /work?task=0997&tab=agent
