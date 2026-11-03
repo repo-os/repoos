@@ -155,8 +155,14 @@ shape, covered by test):
   build:  { code, stale, message, version, buildAt },
   board:  { taskCount, counts, active: [{ id, title, branch, worktreePath,
             worktreeMissing, updatedAt, needsInput }] },
-  worktrees: { count, warnThreshold, leaked: [{branch, path}],
-               kept: [{branch, path, reason}] },
+  worktrees: { count, managedCount, warnThreshold,
+               candidates: [{branch, path, reason, taskId?, taskStatus?,
+                             commitsAhead?, dirtyPaths?}],
+               retained: [{branch, path, reason, taskId?, taskStatus?,
+                           commitsAhead?, dirtyPaths?}],
+               external: [{branch, path, reason}],
+               errors: [string],
+               counts: { candidates, retained, external } },
   tunnel: { configured, tunnelName, running, hostnames },
   git:    { branch, clean, dirtyFiles, isMainBranch, ahead, behind } }
 ```

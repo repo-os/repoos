@@ -845,7 +845,9 @@ same automatic, fail-closed rules at boot, after every close-out, and from
   self-check checkpoints whose content already shipped are reclaimable. If main
   later changed those files differently, the branch is not proven and stays.
   Rename detection is disabled for the comparison, so a rename is checked as
-  both its addition and its deletion.
+  both its addition and its deletion. A content-proven branch that is not an
+  ancestor of main (a squash/rebase landing) is deleted with `-D`; dry-run
+  reports exactly that deletion.
 - Committed `work/*.md` changes are handled the same way: the branch's bytes
   must match main's canonical copy exactly. A task file the branch adds, or
   modifies to different bytes than main, may hold unique data and keeps the
@@ -859,6 +861,9 @@ same automatic, fail-closed rules at boot, after every close-out, and from
   unmerged source changes, and dirty files outside `work/*.md` are **always
   retained** with a reason. A task marked done/archived does not make its
   branch disposable; the content proof does.
+- A branch with **no task record** is treated as lifecycle-unknown: a live
+  worktree is retained (the index may be stale or partial), and only a vanished
+  directory is cleaned after the same content proof.
 - A managed worktree whose branch has **no matching task record** is retained
   too: a missing record is indistinguishable from a stale/partial index, and
   content proof alone cannot establish that an agent or close-out is finished
