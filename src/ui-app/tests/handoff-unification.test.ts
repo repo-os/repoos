@@ -518,7 +518,7 @@ describe("engineering report handoff retries", () => {
         expect(failed.step).toBe(expectedStep);
         expect(existsSync(draftPath)).toBe(true);
 
-        const reportPath = join(fx.worktree, "work", "engineering-reports", "0507", "round-1.json");
+        const reportPath = join(fx.worktree, "work", "reports", "0507", "round-1.json");
         expect(existsSync(reportPath)).toBe(true);
         expect(JSON.parse(readFileSync(reportPath, "utf8")).sourceSha).toBe(sourceSha);
         expect(

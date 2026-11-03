@@ -517,12 +517,16 @@ export async function verifyWorktreeHandoffIntegrity(
     );
     if (handoffStillReachable === true) {
       const filter = workFileFilter(config as RepoOSConfig);
+      // Include this task's own report commits (#1013) in the bookkeeping set
+      // for the drift test. Another task's report is still real drift.
+      const bookkeepingFilter: WorkFileFilter =
+        opts.taskId === undefined ? filter : { ...filter, taskId: opts.taskId };
       // A conflict-free merge of main into the branch while the task is in
       // review (#0624) is not implementation drift: close-out merges main
       // into a fresh candidate anyway. Allow it when every task-side commit
       // since handoff is bookkeeping-only (#0600) or a verified main-sync
       // merge.
-      if (await isMainSyncDrift(config.root, wt, expectedSha, actualHead, filter)) {
+      if (await isMainSyncDrift(config.root, wt, expectedSha, actualHead, bookkeepingFilter)) {
         return { ok: true };
       }
       const taskId = opts.taskId;
@@ -540,7 +544,9 @@ export async function verifyWorktreeHandoffIntegrity(
   const files = await changedFilesSinceHandoff(
     wt,
     expectedSha,
-    workFileFilter(config as RepoOSConfig),
+    opts.taskId === undefined
+      ? workFileFilter(config as RepoOSConfig)
+      : { ...workFileFilter(config as RepoOSConfig), taskId: opts.taskId },
   );
   return {
     ok: false,

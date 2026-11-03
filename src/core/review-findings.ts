@@ -6,11 +6,23 @@ import { join } from "node:path";
 import { parseDocument } from "./frontmatter.js";
 import { parseReviewVerdict } from "./review-verdict.js";
 import { extractReviewReportSections } from "./review-report-sections.js";
+import { listReviewPasses } from "./review-passes.js";
 import type { RepoOSConfig } from "./types.js";
 
+/**
+ * Newest review report available: the local latest-pass mirror first, then the
+ * newest committed pass (#1013). A fresh clone has no cache mirror, so without
+ * the fallback a re-handoff after review feedback would lose the findings.
+ */
+function latestReviewReportFile(config: RepoOSConfig, taskId: string): string | null {
+  const mirror = join(config.root, config.cacheDir || ".repoos", "reviews", `${taskId}.md`);
+  if (existsSync(mirror)) return mirror;
+  return listReviewPasses(config, taskId).at(-1)?.file ?? null;
+}
+
 export function unresolvedReviewFindingsBlock(config: RepoOSConfig, taskId: string): string | null {
-  const file = join(config.root, config.cacheDir || ".repoos", "reviews", `${taskId}.md`);
-  if (!existsSync(file)) return null;
+  const file = latestReviewReportFile(config, taskId);
+  if (!file) return null;
   let markdown: string;
   try {
     markdown = parseDocument(readFileSync(file, "utf8")).body.trim();

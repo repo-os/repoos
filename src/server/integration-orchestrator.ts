@@ -101,6 +101,7 @@ import { detectRepoMarkers } from "../core/check-runner.js";
 import { guardStrayRepoosTomlOnTaskBranch } from "../core/repoos-toml-branch-guard.js";
 import { DEFAULT_CONFIG, bookkeepingDirs, loadConfig } from "../core/config.js";
 import type { BookkeepingDirs } from "../core/config.js";
+import { isOwnReportPath } from "../core/report-paths.js";
 import {
   effectiveCloseOutTimeoutMs,
   recordCloseOutGateTimingStats,
@@ -566,8 +567,13 @@ export async function resetForeignWorkFiles(opts: {
    * work dir that legitimately differs and must NOT be reset.
    */
   ownWorkFile: string | null;
+  /**
+   * When set, this task's own report files (work/reports/<id>/, #1013) are also
+   * its bookkeeping and must survive the reset. Another task's reports do not.
+   */
+  taskId?: string;
 }): Promise<string[]> {
-  const { candidateWtPath, baseMainSha, dirs, ownWorkFile } = opts;
+  const { candidateWtPath, baseMainSha, dirs, ownWorkFile, taskId } = opts;
   const prefixes = [
     dirs.workDir,
     dirs.inputsDir,
@@ -581,10 +587,23 @@ export async function resetForeignWorkFiles(opts: {
     10_000,
   );
   if (changed.status !== 0) return [];
+  // Task markdown is the classic case, but a report is bookkeeping too: both
+  // the shared (`reports/`) and legacy (`engineering-reports/`) directories can
+  // hold JSON or markdown, and another task's report must not survive either.
+  const workDirPrefix = withDirSlash(dirs.workDir);
+  const reportPrefixes = [`${workDirPrefix}reports/`, `${workDirPrefix}engineering-reports/`];
+  const isReportFile = (path: string): boolean =>
+    reportPrefixes.some((prefix) => path.startsWith(prefix));
   const foreign = changed.stdout
     .split("\n")
     .map((s) => s.trim())
-    .filter((p) => p && p.endsWith(".md") && p !== ownWorkFile);
+    .filter(
+      (p) =>
+        p &&
+        (p.endsWith(".md") || isReportFile(p)) &&
+        p !== ownWorkFile &&
+        !(taskId !== undefined && isOwnReportPath(p, dirs, taskId)),
+    );
   if (foreign.length === 0) return [];
 
   // Partition by whether the file exists at main's tip: modified/deleted files
@@ -2755,6 +2774,7 @@ export class CloseOutOrchestrator {
         baseMainSha: currentMainSha,
         dirs: bookkeepingDirs(this.config),
         ownWorkFile: task ? relative(root, task.absPath) : null,
+        taskId: task?.id,
       });
       if (reset.length > 0) {
         this.logger?.integration(

@@ -284,6 +284,31 @@ describe("guardReviewTransition (0210)", () => {
     }
   });
 
+  it("keeps this task's own review report but not another task's (#1013)", async () => {
+    const fx = makeFixture();
+    try {
+      uncommittedChange(fx);
+      mkdirSync(join(fx.worktree, "work", "reports", "0210"), { recursive: true });
+      mkdirSync(join(fx.worktree, "work", "reports", "0299"), { recursive: true });
+      writeFileSync(join(fx.worktree, "work", "reports", "0210", "review-1.md"), "own\n");
+      writeFileSync(join(fx.worktree, "work", "reports", "0299", "review-1.md"), "foreign\n");
+
+      const res = await guardReviewTransition(fx.config, fx.task);
+
+      expect(res.ok).toBe(true);
+      const committed = git(fx.worktree, ["show", "--name-only", "--format=", "HEAD"])
+        .split("\n")
+        .filter(Boolean);
+      expect(committed).toContain("work/reports/0210/review-1.md");
+      expect(committed).not.toContain("work/reports/0299/review-1.md");
+      expect(
+        readFileSync(join(fx.worktree, "work", "reports", "0299", "review-1.md"), "utf8"),
+      ).toBe("foreign\n");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("is idempotent: passes again after a successful commit (no double-commit)", async () => {
     const fx = makeFixture();
     try {

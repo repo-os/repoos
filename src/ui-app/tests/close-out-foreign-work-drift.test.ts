@@ -133,6 +133,57 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
     }
   });
 
+  it("keeps the closing task's own review report and removes another task's (#1013)", async () => {
+    const fx = makeFixture();
+    try {
+      mkdirSync(join(fx.candidate, "work", "reports", "0001"), { recursive: true });
+      mkdirSync(join(fx.candidate, "work", "reports", "0002"), { recursive: true });
+      writeFileSync(
+        join(fx.candidate, "work", "reports", "0001", "review-1.md"),
+        "own review pass\n",
+      );
+      writeFileSync(join(fx.candidate, "work", "reports", "0001", "round-1.json"), '{"round":1}\n');
+      writeFileSync(
+        join(fx.candidate, "work", "reports", "0002", "review-1.md"),
+        "foreign review pass\n",
+      );
+      writeFileSync(join(fx.candidate, "work", "reports", "0002", "round-1.json"), '{"round":1}\n');
+      git(fx.candidate, ["add", "-A"]);
+      git(fx.candidate, ["commit", "-q", "-m", "docs: reports"]);
+
+      const reset = await resetForeignWorkFiles({
+        candidateWtPath: fx.candidate,
+        baseMainSha: fx.baseSha,
+        dirs: {
+          workDir: "work",
+          inputsDir: "inputs",
+          storiesDir: "stories",
+          remindersDir: "reminders",
+          schedulesDir: "schedules",
+        },
+        ownWorkFile: "work/0001-own.md",
+        taskId: "0001",
+      });
+
+      expect(reset.sort()).toEqual([
+        "work/0002-other.md",
+        "work/reports/0002/review-1.md",
+        "work/reports/0002/round-1.json",
+      ]);
+      expect(
+        readFileSync(join(fx.candidate, "work", "reports", "0001", "review-1.md"), "utf8"),
+      ).toBe("own review pass\n");
+      expect(
+        readFileSync(join(fx.candidate, "work", "reports", "0001", "round-1.json"), "utf8"),
+      ).toBe('{"round":1}\n');
+      const tracked = git(fx.candidate, ["ls-files", "work/reports"]);
+      expect(tracked).not.toContain("work/reports/0002/review-1.md");
+      expect(tracked).not.toContain("work/reports/0002/round-1.json");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("removes a task file the branch newly added that isn't the closing task's", async () => {
     const fx = makeFixture(true);
     try {
