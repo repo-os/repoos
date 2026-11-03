@@ -163,6 +163,12 @@ exactly the case the reminder exists for. A live *child* doing a known step is
 the busy signal. Load average is only consulted by the pressure guard when the
 platform gives no memory reading.
 
+The "undelivered message queued" hold is not indefinite (#1015): the watchdog's
+`recoverSilentEngineerQueues()` ends a turn whose oldest queued message has
+waited an hour with no output and no known work child, which delivers the
+message to the resumed engineer. See `docs/agent-run-operations.md`
+("What actually breaks after adoption").
+
 The idle threshold and cooldown are live Settings controls
 (`cto.nudgeIdleMs`, default 5 minutes, and `cto.nudgeCooldownMs`, default 60
 minutes; minimums 30s and 1min). Invalid values fall back to the defaults.

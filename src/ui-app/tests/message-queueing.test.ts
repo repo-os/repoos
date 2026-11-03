@@ -19,6 +19,26 @@ setTimeout(() => {
 }, 100);
 `;
 
+/**
+ * First spawn: alive and silent forever (the hung/adopted shape #1015 guards
+ * against). Any later spawn: finish normally, so the recovered turn cleans up.
+ */
+const HANGING_FAKEBIN = `#!/usr/bin/env node
+const fs = require("fs");
+const log = process.env.REPOOS_FAKEBIN_LOG;
+const seen = fs.existsSync(log)
+  ? fs.readFileSync(log, "utf8").trim().split("\\n").filter(Boolean).length
+  : 0;
+fs.appendFileSync(log, (process.env.REPOOS_TASK_ID || "") + "\\n");
+if (seen === 0) {
+  setInterval(() => {}, 1000);
+} else {
+  setTimeout(() => {
+    process.stdout.write("done\\n");
+  }, 50);
+}
+`;
+
 interface Fixture {
   root: string;
   bin: string;
@@ -282,6 +302,83 @@ describe("message queueing", () => {
         .map((e) => (e as { text: string }).text);
       expect(texts).toContain("Read me when the turn ends");
     } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("ends a silent engineer turn so its overdue queued message is delivered (#1015)", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    writeFileSync(join(fx.bin, "qwen"), HANGING_FAKEBIN, { mode: 0o755 });
+    const absPath = setupTaskFile(fx.root, "1015", "active");
+    const runner = new AgentRunner(config(fx.root), () => {}, {
+      getTask: () => parseFile(fx.root, absPath),
+      stallTimeoutMs: 300,
+      stallCheckIntervalMs: 100,
+    });
+    try {
+      const t: Task = {
+        ...task("1015"),
+        status: "active",
+        absPath,
+        path: "work/1015-test.md",
+      };
+      expect(runner.start(t, "feat/1015", agent, { cwd: fx.bin }).ok).toBe(true);
+      expect(runner.send("1015", "please read this", agent).queued).toBe(true);
+      // The message has already waited past the one-hour overdue window.
+      runner["messageQueuedAt"].set("1015", new Date(Date.now() - 61 * 60 * 1000).toISOString());
+
+      await waitFor(() => runner.stats("1015").stalled, 5000);
+      await expect(runner.recoverSilentEngineerWithQueuedMessage("1015")).resolves.toBe(true);
+
+      // Ending the turn is what delivers the queue — no manual start needed.
+      await waitFor(() => !runner["queuedMessages"].has("1015"), 8000);
+      const body = readFileSync(absPath, "utf8");
+      expect(body).toContain("message_delivered");
+      expect(body).toContain("queued message undelivered for 61m");
+      expect(body).not.toContain("agent exited with an error");
+    } finally {
+      runner.stop("1015");
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("leaves a working engineer alone while its queued message is young (#1015)", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    writeFileSync(join(fx.bin, "qwen"), HANGING_FAKEBIN, { mode: 0o755 });
+    const absPath = setupTaskFile(fx.root, "1015-young", "active");
+    const runner = new AgentRunner(config(fx.root), () => {}, {
+      getTask: () => parseFile(fx.root, absPath),
+      stallTimeoutMs: 300,
+      stallCheckIntervalMs: 100,
+    });
+    try {
+      const t: Task = {
+        ...task("1015-young"),
+        status: "active",
+        absPath,
+        path: "work/1015-young-test.md",
+      };
+      expect(runner.start(t, "feat/1015-young", agent, { cwd: fx.bin }).ok).toBe(true);
+      expect(runner.send("1015-young", "read soon", agent).queued).toBe(true);
+
+      await waitFor(() => runner.stats("1015-young").stalled, 5000);
+      await expect(runner.recoverSilentEngineerWithQueuedMessage("1015-young")).resolves.toBe(
+        false,
+      );
+      expect(runner.isRunning("1015-young")).toBe(true);
+      expect(runner.hasQueuedMessages("1015-young")).toBe(true);
+    } finally {
+      runner.stop("1015-young");
       runner.dispose();
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
