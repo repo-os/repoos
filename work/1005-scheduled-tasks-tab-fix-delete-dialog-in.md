@@ -11,7 +11,7 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T01:24:36Z"
+updated_at: "2026-11-03T01:27:02Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
@@ -44,44 +44,37 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 ```json
 [
 {
-"label": "Scheduled task cards use a compact horizontal layout",
-"target": "default",
-"route": "/agents?tab=scheduled",
-"highlight": ".schedule-card",
-"state": "schedule:seeded"
+  "label": "Scheduled task cards use a compact horizontal layout",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": ".schedule-card",
+  "state": "schedule:seeded"
 },
 {
-"label": "Delete schedule dialog with working actions",
-"target": "default",
-"route": "/agents?tab=scheduled",
-"highlight": "[role=\"dialog\"]",
-"steps": [
-{
-"click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
+  "label": "Delete schedule dialog: Cancel shows a visible hover state",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": "[role=\"dialog\"] .delete-confirm-actions",
+  "steps": [
+    {
+      "click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
+    },
+    {
+      "waitFor": "[role=\"dialog\"]"
+    },
+    {
+      "hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
+    }
+  ],
+  "state": "schedule:seeded"
 },
 {
-"waitFor": "[role=\"dialog\"]"
-}
-],
-"state": "schedule:seeded"
-},
-{
-"label": "Delete dialog actions show a visible hover state",
-"target": "default",
-"route": "/agents?tab=scheduled",
-"highlight": "[role=\"dialog\"] .delete-confirm-actions",
-"steps": [
-{
-"click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
-},
-{
-"waitFor": "[role=\"dialog\"]"
-},
-{
-"hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
-}
-],
-"state": "schedule:seeded"
+  "label": "Schedule cards stack readably at a narrow viewport",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": ".schedule-card",
+  "state": "schedule:seeded",
+  "viewportWidth": 640
 }
 ]
 ```
@@ -198,3 +191,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T00:33:20Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
 - 2026-11-03T01:12:46Z · CTO nudge: held — machine under pressure (system load is high (9.0× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-03T01:24:36Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-11-03T01:27:02Z · body
