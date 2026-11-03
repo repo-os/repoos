@@ -114,6 +114,7 @@ import {
   type RecordedEngineerPid,
 } from "./orphan-engineers.js";
 import { knownWorkProcessLabel, type EngineerProcessState } from "../core/cto-idle-nudge.js";
+import { decideQueuedMessageRecovery } from "../core/queued-message-recovery.js";
 import {
   classifyPhantom,
   DEFAULT_PHANTOM_DETECT_MS,
@@ -394,6 +395,13 @@ interface Entry {
     branch: string;
     cwd: string;
   };
+  /**
+   * #1015: this turn was ended because a human message sat queued behind a
+   * silent engineer (`recoverSilentEngineerWithQueuedMessage`). The end is not
+   * a failure — `finalizeTurn` must not escalate it or hand it to crash
+   * recovery, and must deliver the queued message to the resumed engineer.
+   */
+  interruptedForQueuedMessage?: boolean;
 }
 
 /**
@@ -5985,10 +5993,32 @@ export class AgentRunner {
       if (cwdGone || !processAlive) stale.add(taskId);
     }
     for (const taskId of stale) {
-      if (this.entries.has(taskId)) this.cleanup(taskId, false);
+      const entry = this.entries.get(taskId);
+      if (entry) this.cleanup(taskId, this.adoptedExitIsClean(taskId, entry), null);
       else this.removeRegistryEntry(taskId);
     }
     return [...stale];
+  }
+
+  /**
+   * Whether a turn that ended with no ChildProcess handle should be treated as
+   * a clean exit (#1015).
+   *
+   * An adopted turn (#0214) has no `proc`, so the `close` event that carries the
+   * exit code never fires in this server: `reconcileDeadAgents()` is the only
+   * thing that notices the process group is gone. Passing `exitedCleanly=false`
+   * there booked EVERY adopted turn as a crash — "agent exited with an error",
+   * a `needs_input` escalation, and queued messages handed to crash recovery
+   * instead of delivered. With no exit code there is no evidence of failure, so
+   * an adopted end is clean unless the replayed transcript recorded a provider
+   * failure or the worktree itself is gone. A runner-aborted turn keeps its own
+   * classification.
+   */
+  private adoptedExitIsClean(taskId: string, entry: Entry): boolean {
+    if (entry.proc || entry.adoptedPid === undefined) return false;
+    if (entry.abortKind) return false;
+    if (entry.workdir && !existsSync(entry.workdir)) return false;
+    return !this.sessions.get(taskId)?.providerFailureDetail;
   }
 
   /**
@@ -6997,6 +7027,57 @@ export class AgentRunner {
     return !!msgs && msgs.length > 0;
   }
 
+  /** Age in ms of the OLDEST queued message for this id, or null when none. */
+  oldestQueuedMessageAgeMs(taskId: string): number | null {
+    const queuedAt =
+      this.messageQueuedAt.get(taskId) ?? this.queuedMessages.get(taskId)?.[0]?.queuedAt;
+    if (!queuedAt) return null;
+    const at = Date.parse(queuedAt);
+    return Number.isFinite(at) ? Math.max(0, Date.now() - at) : null;
+  }
+
+  /**
+   * End an engineer turn that has gone silent while a human message waits
+   * (#1015). The end of the turn is what delivers the queue, so this is the
+   * bounded recovery for a run that is alive but not progressing — in
+   * particular an adopted run, which has no ChildProcess handle to notice its
+   * end and therefore outlives every other recovery path while looking healthy.
+   *
+   * Returns true when the turn was ended. All the guards live in
+   * {@link decideQueuedMessageRecovery}; the caller need not pre-filter.
+   */
+  async recoverSilentEngineerWithQueuedMessage(taskId: string): Promise<boolean> {
+    const entry = this.entries.get(taskId);
+    if (!entry) return false;
+    const state = await this.engineerProcessState(taskId);
+    const oldestQueuedMs = this.oldestQueuedMessageAgeMs(taskId) ?? 0;
+    const decision = decideQueuedMessageRecovery({
+      running: !entry.review && !entry.finalizing,
+      queuedMessages: this.queuedMessages.get(taskId)?.length ?? 0,
+      oldestQueuedMs,
+      silent: this.snapshotStats(taskId).stalled,
+      busyChild: state.busyChild,
+      processGroupAlive: state.groupAlive,
+      paused: this.isPaused(taskId),
+      handoffInFlight: entry.handoffRequested || this.handoffsInFlight.has(taskId),
+      alreadyRecovering: entry.interruptedForQueuedMessage === true,
+    });
+    if (!decision.recover) return false;
+    entry.interruptedForQueuedMessage = true;
+    const minutes = Math.max(1, Math.round(oldestQueuedMs / 60_000));
+    this.recordTaskActivity(
+      taskId,
+      `queued message undelivered for ${minutes}m and the engineer produced no output — ending the turn so it is delivered`,
+    );
+    this.appendLine(
+      taskId,
+      "sys",
+      `↻ ending a silent engineer turn so the queued message is delivered (no output for ${minutes}m)`,
+    );
+    this.killTurnProcess(taskId);
+    return true;
+  }
+
   /**
    * Flag messages that have sat queued past the timeout (#0821). They are never
    * dropped — a queued message is a human's follow-up and silently losing it is
@@ -7777,6 +7858,18 @@ export class AgentRunner {
           /* gone */
         }
       }
+      // An adopted process has no `close` event to force the issue, so mirror
+      // the spawned-child branch: escalate to SIGKILL when SIGTERM is ignored.
+      entry.killTimer = setTimeout(() => {
+        if (groupLeader) signalProcessGroup(groupLeader, "SIGKILL");
+        else {
+          try {
+            process.kill(entry.adoptedPid!, "SIGKILL");
+          } catch {
+            /* gone */
+          }
+        }
+      }, 3000);
     }
   }
 
@@ -8846,6 +8939,10 @@ export class AgentRunner {
     // Capture before the entry is deleted below so the review-completion hook
     // can still be fired and its DB recording skipped (0288).
     const wasReview = entry.review === true;
+    // #1015: a turn we ended to deliver a queued message is not a failure. It
+    // must not escalate, must not enter crash recovery, and its queue must be
+    // delivered rather than deferred to the next manual start.
+    const interruptedForQueue = entry.interruptedForQueuedMessage === true;
 
     // Drain and flush durable-log pollers before removing the registry entry.
     // The final output may not carry a newline, so it lives in the tailer's
@@ -9000,7 +9097,11 @@ export class AgentRunner {
     // engineer exit is left to crash recovery, whose relaunch drains the queue
     // into the new turn (with the task context) instead of racing it (#0869).
     const crashRecoveryWillResume =
-      !exitedCleanly && !wasReview && !entry.intentionalStop && !!this.onEngineerCrash;
+      !exitedCleanly &&
+      !wasReview &&
+      !entry.intentionalStop &&
+      !interruptedForQueue &&
+      !!this.onEngineerCrash;
     // #0865: a handoff requested while messages are still queued must not run
     // review before the engineer reads them. Defer it (and the queue stays
     // persisted) so the next turn delivers the messages first.
@@ -9027,11 +9128,12 @@ export class AgentRunner {
       }
     }
     if (
-      !wasReview &&
-      !entry.handoffRequested &&
-      !entry.intentionalStop &&
-      !this.isPaused(taskId) &&
-      !crashRecoveryWillResume
+      interruptedForQueue ||
+      (!wasReview &&
+        !entry.handoffRequested &&
+        !entry.intentionalStop &&
+        !this.isPaused(taskId) &&
+        !crashRecoveryWillResume)
     ) {
       queueMicrotask(() => this.deliverQueuedMessages(taskId));
     }
@@ -9061,7 +9163,12 @@ export class AgentRunner {
     // ReviewManager's own completion handler instead, so they are skipped here
     // to avoid double-booking (0288).
     if (session && !wasReview) {
-      this.recordSessionToDb(session.sessionId, session, taskId, exitedCleanly);
+      this.recordSessionToDb(
+        session.sessionId,
+        session,
+        taskId,
+        exitedCleanly || interruptedForQueue,
+      );
     }
     // #0507: last chance to see a `repoos mv <own id> review` that landed in
     // the same tick the process exited — checkStalls() polls on a timer, so
@@ -9079,7 +9186,7 @@ export class AgentRunner {
     // messages are excluded from finalization above but still land here: the
     // turn did end without a handoff.
     if (
-      exitedCleanly &&
+      (exitedCleanly || interruptedForQueue) &&
       !wasReview &&
       !entry.intentionalStop &&
       !this.isPaused(taskId) &&
@@ -9104,6 +9211,7 @@ export class AgentRunner {
     const abortKind = entry.abortKind;
     const degenerateRetry = entry.degenerateRetry;
     if (
+      !interruptedForQueue &&
       !this.isPaused(taskId) &&
       !entry.intentionalStop &&
       !entry.handoffRequested &&
@@ -9166,6 +9274,7 @@ export class AgentRunner {
     if (
       !wasReview &&
       !exitedCleanly &&
+      !interruptedForQueue &&
       !entry.handoffRequested &&
       !entry.intentionalStop &&
       !this.isPaused(taskId) &&
