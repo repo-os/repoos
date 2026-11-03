@@ -522,7 +522,10 @@ async function retryStalledPipeline(): Promise<void> {
 const activeEngineerEvidence = computed(() =>
   activeEngineerCardHint({
     taskId: props.task.id,
-    nowMs: now.value,
+    // `now` only forces this to recompute. The stall decision uses the clock
+    // at evaluation time so a heartbeat stamped between ticks is not "future"
+    // relative to a 1s or 15s-stale tick (#1011).
+    nowMs: Math.max(now.value, Date.now()),
     lastActivityAt: lastActivityFor(props.task.id),
     taskChecks: repo.taskChecks[props.task.id],
     remoteActivity: repo.taskRemoteActivity[props.task.id],

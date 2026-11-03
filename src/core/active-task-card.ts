@@ -13,6 +13,14 @@ export const DEFAULT_STUCK_SILENCE_MS = 5 * 60 * 1000;
 /** Default stall window when check/remote output stops advancing (#0799). */
 export const DEFAULT_CHECK_STALL_MS = 3 * 60 * 1000;
 
+/**
+ * Heartbeats this far ahead of the observer clock are still progress (#1011).
+ * The board card ticks `now` every 1–15s, and an SSE `at` is stamped when the
+ * chunk is emitted, so a healthy beat is often slightly in the future relative
+ * to that tick. Far-future timestamps stay invalid and fail closed.
+ */
+export const HEARTBEAT_FUTURE_SKEW_MS = 15_000;
+
 export interface ActiveTaskCheckSnapshot {
   running: boolean;
   startedAt: string | null;
@@ -71,7 +79,9 @@ export interface ActiveTaskCardHint {
 function msSince(iso: string | null | undefined, nowMs: number): number | null {
   if (!iso || Number.isNaN(Date.parse(iso))) return null;
   const ms = nowMs - Date.parse(iso);
-  return Number.isFinite(ms) && ms >= 0 ? ms : null;
+  if (!Number.isFinite(ms)) return null;
+  if (ms < 0) return -ms <= HEARTBEAT_FUTURE_SKEW_MS ? 0 : null;
+  return ms;
 }
 
 /** Match card classification for cancel eligibility: absent, malformed, or

@@ -6253,7 +6253,11 @@ watch(
                 <tr
                   v-for="report in engineeringReports"
                   :key="report.round"
-                  :class="{ selected: selectedEngineeringRound === report.round }"
+                  class="review-history-row"
+                  :class="{
+                    selected: selectedEngineeringRound === report.round,
+                    'is-selected': selectedEngineeringRound === report.round,
+                  }"
                   tabindex="0"
                   role="button"
                   :aria-pressed="selectedEngineeringRound === report.round"
