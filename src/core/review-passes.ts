@@ -1,11 +1,18 @@
 /**
- * Numbered review pass artifacts (#0680): `reviews/<taskId>/<pass>.md`.
+ * Numbered review pass artifacts (#0680).
+ *
+ * Review reports are committed with the task under
+ * `<workDir>/reports/<taskId>/review-<pass>.md` (#1013), beside the engineering
+ * rounds. Older checkouts kept them in the gitignored cache at
+ * `<cacheDir>/reviews/<taskId>/<pass>.md`; that location is still read (and kept
+ * as a local mirror while a task is in review) so history survives the upgrade.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "./frontmatter.js";
 import type { RepoOSConfig } from "./types.js";
 import { parseReviewVerdict, reviewVerdictSection } from "./review-verdict.js";
+import { reportsTaskDir, reviewReportRelPath } from "./report-paths.js";
 
 export interface ReviewPassSummary {
   pass: number;
@@ -23,28 +30,68 @@ export interface ReviewPassSummary {
   file: string;
 }
 
-function reviewsDir(config: RepoOSConfig, taskId: string): string {
+export function trackedReviewsDir(config: RepoOSConfig, taskId: string): string {
+  return reportsTaskDir(config, taskId);
+}
+
+function legacyReviewsDir(config: RepoOSConfig, taskId: string): string {
   return join(config.root, config.cacheDir || ".repoos", "reviews", taskId);
 }
 
+/** Local latest-pass mirror kept for the Dev/Review tabs while a task is in review. */
 export function latestReviewPath(config: RepoOSConfig, taskId: string): string {
   return join(config.root, config.cacheDir || ".repoos", "reviews", `${taskId}.md`);
 }
 
-/** Allocate the next pass number by counting existing `<n>.md` files. */
-export function allocateReviewPassNumber(config: RepoOSConfig, taskId: string): number {
-  const dir = reviewsDir(config, taskId);
-  if (!existsSync(dir)) return 1;
-  const nums = readdirSync(dir)
-    .map((f) => /^(\d+)\.md$/.exec(f))
-    .filter(Boolean)
-    .map((m) => parseInt(m![1]!, 10))
-    .filter((n) => Number.isFinite(n));
-  return nums.length ? Math.max(...nums) + 1 : 1;
+/**
+ * Canonical pass path: the tracked report committed with the task branch.
+ * `listReviewPasses` still finds a legacy cache-only pass.
+ */
+export function reviewPassPath(config: RepoOSConfig, taskId: string, pass: number): string {
+  return join(config.root, reviewReportRelPath(config, taskId, pass));
 }
 
-export function reviewPassPath(config: RepoOSConfig, taskId: string, pass: number): string {
-  return join(reviewsDir(config, taskId), `${pass}.md`);
+/** Legacy pass path in the gitignored cache. Read-only compatibility. */
+export function legacyReviewPassPath(config: RepoOSConfig, taskId: string, pass: number): string {
+  return join(legacyReviewsDir(config, taskId), `${pass}.md`);
+}
+
+/** Tracked or legacy pass file for `pass`, preferring the committed copy. */
+export function findReviewPassFile(
+  config: RepoOSConfig,
+  taskId: string,
+  pass: number,
+): string | null {
+  const tracked = reviewPassPath(config, taskId, pass);
+  if (existsSync(tracked)) return tracked;
+  const legacy = legacyReviewPassPath(config, taskId, pass);
+  return existsSync(legacy) ? legacy : null;
+}
+
+/** All pass numbers present in either location. */
+function reviewPassNumbers(config: RepoOSConfig, taskId: string): number[] {
+  const numbers = new Set<number>();
+  const tracked = trackedReviewsDir(config, taskId);
+  if (existsSync(tracked)) {
+    for (const name of readdirSync(tracked)) {
+      const m = /^review-(\d+)\.md$/.exec(name);
+      if (m) numbers.add(parseInt(m[1]!, 10));
+    }
+  }
+  const legacy = legacyReviewsDir(config, taskId);
+  if (existsSync(legacy)) {
+    for (const name of readdirSync(legacy)) {
+      const m = /^(\d+)\.md$/.exec(name);
+      if (m) numbers.add(parseInt(m[1]!, 10));
+    }
+  }
+  return [...numbers].filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+}
+
+/** Allocate the next pass number by counting existing pass files in both locations. */
+export function allocateReviewPassNumber(config: RepoOSConfig, taskId: string): number {
+  const nums = reviewPassNumbers(config, taskId);
+  return nums.length ? Math.max(...nums) + 1 : 1;
 }
 
 /**
@@ -53,14 +100,10 @@ export function reviewPassPath(config: RepoOSConfig, taskId: string, pass: numbe
  * once — so this summary carries the per-run reviewer agent/model too.
  */
 export function listReviewPasses(config: RepoOSConfig, taskId: string): ReviewPassSummary[] {
-  const dir = reviewsDir(config, taskId);
-  if (!existsSync(dir)) return [];
   const out: ReviewPassSummary[] = [];
-  for (const name of readdirSync(dir)) {
-    const m = /^(\d+)\.md$/.exec(name);
-    if (!m) continue;
-    const pass = parseInt(m[1]!, 10);
-    const file = join(dir, name);
+  for (const pass of reviewPassNumbers(config, taskId)) {
+    const file = findReviewPassFile(config, taskId, pass);
+    if (!file) continue;
     let at = "";
     let state = "ok";
     let markdown = "";
@@ -90,7 +133,6 @@ export function listReviewPasses(config: RepoOSConfig, taskId: string): ReviewPa
       file,
     });
   }
-  out.sort((a, b) => a.pass - b.pass);
   return out;
 }
 
@@ -115,8 +157,4 @@ export function reviewPassActivitySummary(
     return `review pass ${pass}: ${v} — clamped by automated verification: ${clampReason}`;
   }
   return `review pass ${pass}: ${v}`;
-}
-
-export function ensureReviewPassDir(config: RepoOSConfig, taskId: string): void {
-  mkdirSync(reviewsDir(config, taskId), { recursive: true });
 }

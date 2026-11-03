@@ -75,7 +75,7 @@ describe("engineering reports", () => {
     expect(first.report?.sourceSha).toBe(sourceSha);
     expect(first.report?.wordCount).toBeGreaterThan(0);
     expect(listEngineeringReports(config, "T1")).toHaveLength(1);
-    expect(existsSync(join(root, "work", "engineering-reports", "T1", "round-1.json"))).toBe(true);
+    expect(existsSync(join(root, "work", "reports", "T1", "round-1.json"))).toBe(true);
     const mission = reviewMission(
       {
         id: "T1",
@@ -148,8 +148,8 @@ describe("engineering reports", () => {
     expect(second.error).toBeUndefined();
     expect(second.report?.round).toBe(2);
     expect(listEngineeringReports(config, "T1")).toHaveLength(2);
-    expect(existsSync(join(root, "work", "engineering-reports", "T1", "round-1.json"))).toBe(true);
-    expect(existsSync(join(root, "work", "engineering-reports", "T1", "round-2.json"))).toBe(true);
+    expect(existsSync(join(root, "work", "reports", "T1", "round-1.json"))).toBe(true);
+    expect(existsSync(join(root, "work", "reports", "T1", "round-2.json"))).toBe(true);
 
     // An explicit retry of the unfinished second round reuses it.
     const retry = await finalizeEngineeringReport({ ...args, retryRound: 2 });
@@ -241,7 +241,7 @@ describe("engineering reports", () => {
       sourceSha: firstSource,
     });
     expect(first.report?.round).toBe(1);
-    const reportPath = join(root, "work", "engineering-reports", "T1", "round-1.json");
+    const reportPath = join(root, "work", "reports", "T1", "round-1.json");
     const savedReport = readFileSync(reportPath, "utf8");
     git("add .");
     git('commit -m "record round one report"');
@@ -249,7 +249,7 @@ describe("engineering reports", () => {
     // Rewrite the branch: the round-1 source commit is no longer an ancestor,
     // but its report file survives on disk.
     git(`reset --hard ${baseSha}`);
-    mkdirSync(join(root, "work", "engineering-reports", "T1"), { recursive: true });
+    mkdirSync(join(root, "work", "reports", "T1"), { recursive: true });
     writeFileSync(reportPath, savedReport);
     writeFileSync(join(root, "src", "c.ts"), "rewritten round\n");
     git("add .");
@@ -266,6 +266,37 @@ describe("engineering reports", () => {
     if (!("error" in result)) throw new Error("expected a base resolution error");
     expect(result.error).toContain("not an ancestor");
     expect(result.error).toContain(firstSource);
+  });
+
+  it("reads pre-#1013 reports from the legacy directory alongside the shared one", () => {
+    const shape = {
+      at: new Date(0).toISOString(),
+      agent: "codex",
+      model: "test-model",
+      branch: "feat/report",
+      baseSha: "base",
+      sourceSha: "source",
+      wordCount: 1,
+      markdown: "Report",
+    };
+    const legacyDir = join(root, "work", "engineering-reports", "T1");
+    const sharedDir = join(root, "work", "reports", "T1");
+    mkdirSync(legacyDir, { recursive: true });
+    mkdirSync(sharedDir, { recursive: true });
+    writeFileSync(
+      join(legacyDir, "round-1.json"),
+      `${JSON.stringify({ ...shape, taskId: "T1", round: 1, markdown: "legacy" })}\n`,
+    );
+    writeFileSync(
+      join(sharedDir, "round-2.json"),
+      `${JSON.stringify({ ...shape, taskId: "T1", round: 2, markdown: "shared" })}\n`,
+    );
+    const loaded = loadEngineeringReports({ root, cacheDir: ".repoos" } as any, "T1");
+    expect(loaded.errors).toEqual([]);
+    expect(loaded.reports.map((report) => [report.round, report.markdown])).toEqual([
+      [1, "legacy"],
+      [2, "shared"],
+    ]);
   });
 
   it("rejects misplaced reports and surfaces directory read failures", () => {
@@ -512,6 +543,14 @@ describe("engineering reports", () => {
     const config = { root, cacheDir: ".repoos", workDir: "work" } as any;
     const task = { id: "T1", path: "work/T1.md" } as any;
 
+    expect(await engineeringReportMatchesReviewTree(config, task, root)).toBe(true);
+
+    // A review report committed after the engineering report is bookkeeping
+    // too, so it must not make the engineering report look stale (#1013).
+    mkdirSync(join(root, "work", "reports", "T1"), { recursive: true });
+    writeFileSync(join(root, "work", "reports", "T1", "review-1.md"), "review pass\n");
+    git("add work/reports/T1/review-1.md");
+    git('commit -m "docs(T1): record review pass 1"');
     expect(await engineeringReportMatchesReviewTree(config, task, root)).toBe(true);
 
     const sameTree = git("rev-parse HEAD^{tree}");

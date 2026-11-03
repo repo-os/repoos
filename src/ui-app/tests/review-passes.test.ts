@@ -9,7 +9,7 @@
 import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   listReviewPasses,
   reviewPassActivitySummary,
@@ -45,7 +45,7 @@ function writePass(
   },
 ): void {
   const file = reviewPassPath(cfg, taskId, pass);
-  mkdirSync(join(cfg.root, cfg.cacheDir!, "reviews", taskId), { recursive: true });
+  mkdirSync(dirname(file), { recursive: true });
   const fm = [
     `task: "${taskId}"`,
     `pass: ${pass}`,
@@ -97,6 +97,35 @@ describe("listReviewPasses (#0733)", () => {
         cli: "claude",
         model: "opus-4",
       });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reads committed passes and prefers them over a legacy cache copy (#1013)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-rp-"));
+    try {
+      const cfg = config(root);
+      writePass(cfg, "1013", 1, { at: "2026-11-01T00:00:00Z", body: "## Verdict\nGood to go." });
+      // A pre-#1013 cache mirror at a path the shared location has not got yet.
+      const legacyDir = join(cfg.root, cfg.cacheDir!, "reviews", "1013");
+      mkdirSync(legacyDir, { recursive: true });
+      writeFileSync(
+        join(legacyDir, "2.md"),
+        `---\ntask: "1013"\npass: 2\nat: "2026-11-02T00:00:00Z"\nstate: ok\n---\n\n## Verdict\nneeds some work.\n`,
+      );
+      // Same pass in both places: the committed copy must win.
+      writeFileSync(
+        join(legacyDir, "1.md"),
+        `---\ntask: "1013"\npass: 1\nat: "2026-11-01T00:00:00Z"\nstate: ok\n---\n\nStale cache.\n`,
+      );
+
+      const passes = listReviewPasses(cfg, "1013");
+      expect(passes.map((pass) => pass.pass)).toEqual([1, 2]);
+      expect(passes[0]!.file).toBe(reviewPassPath(cfg, "1013", 1));
+      expect(passes[0]!.verdictText).not.toContain("Stale cache");
+      expect(passes[1]!.file).toBe(join(legacyDir, "2.md"));
+      expect(passes[1]!.verdictText).toContain("needs some work");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

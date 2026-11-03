@@ -200,6 +200,7 @@ import { parseGeneratedTask, pmPrompt, explanationTitle } from "./freeform.js";
 import { runAreaMigrationPass } from "./area-migration.js";
 import { runTaskBodyMigrationPass } from "./task-body-migration.js";
 import { runDoneHoldMigrationPass } from "./done-hold-migration.js";
+import { runReportLayoutMigrationPass } from "./report-layout-migration.js";
 import { sweepUnderspecifiedTasks } from "./task-underspecified-flag.js";
 import { FreeformRunManager, liveFreeformRunIds } from "./freeform-runs.js";
 import { pmChatSessionTaskId, clearPmChatSession, isPmWorking } from "./pm-runs.js";
@@ -2322,11 +2323,57 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       });
     }
   };
+  // One-time report-layout migration (#1013): move pre-existing engineering
+  // rounds from `work/engineering-reports/<id>/` to the shared
+  // `work/reports/<id>/` so both halves of the loop sit together. It runs on
+  // the control plane and commits the moves on `main`, deliberately NOT on a
+  // feature branch — a branch that moved another task's report files would be
+  // cross-task bookkeeping that landable/close-out correctly reject. The
+  // reader keeps reading the legacy directory forever, so a failed move is
+  // only a missed tidy-up, never a lost report.
+  const runReportLayoutMigration = async (): Promise<void> => {
+    try {
+      if (!isControlPlane) return;
+      if (process.env.VITEST === "true") return;
+      if (process.env.REPOOS_SKIP_REPORT_LAYOUT_MIGRATION === "1") return;
+      const outcome = runReportLayoutMigrationPass(config, (absPaths) =>
+        commitFiles(
+          config.root,
+          absPaths,
+          "docs: co-locate engineering and review reports under work/reports (#1013)",
+        ),
+      );
+      if (!outcome.attempted) return;
+      if (!outcome.committed) {
+        logger.system(
+          "warn",
+          "report-layout migration (#1013): commit failed; will retry on boot",
+          {
+            moved: outcome.moved,
+            removed: outcome.removed,
+            retried: outcome.retried,
+          },
+        );
+      } else {
+        logger.system("info", "report-layout migration (#1013)", {
+          moved: outcome.moved,
+          removed: outcome.removed,
+          retried: outcome.retried,
+        });
+      }
+      await index.refreshAllAsync();
+    } catch (error) {
+      logger.system("warn", "report-layout migration failed; legacy locations remain readable", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
   void indexReady.then(
     async () => {
       await runAreaMigration();
       await runTaskBodyMigration();
       await runDoneHoldMigration();
+      await runReportLayoutMigration();
     },
     () => {},
   );

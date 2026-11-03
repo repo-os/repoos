@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 703662
-last_close_out_gate_at: "2026-11-03T17:27:34.101Z"
 id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: fd0e49c7355ba5b45b3b00db4d89d17115fa6e27
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
@@ -14,6 +13,8 @@ review_cli_override: opencode
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-03T05:23:01Z"
 updated_at: "2026-11-03T17:27:34Z"
+last_close_out_gate_ms: 703662
+last_close_out_gate_at: "2026-11-03T17:27:34.101Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-03T16:08:43.074Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
