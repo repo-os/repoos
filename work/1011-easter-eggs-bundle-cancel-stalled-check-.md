@@ -2,17 +2,17 @@
 id: 1011
 title: "Easter eggs bundle: Cancel stalled check button flapping"
 type: bug
-status: ready
+status: active
 priority: p1
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-cancel-stalled-check-
 cli_override: cursor
 model_override: grok-4.7-low
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T17:03:05Z"
+updated_at: "2026-11-03T17:28:17Z"
 ---
 ## Items
 
@@ -64,3 +64,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T17:02:23Z · model_override
 - 2026-11-03T17:02:36Z · review_model_override
 - 2026-11-03T17:03:05Z · priority
+- 2026-11-03T17:28:17Z · status ready→active, branch
