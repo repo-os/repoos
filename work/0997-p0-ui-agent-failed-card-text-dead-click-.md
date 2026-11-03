@@ -211,3 +211,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T04:13:35Z · body
 - 2026-11-03T04:26:37Z · status active→review
 - 2026-11-03T04:26:38Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-03T04:26:38Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
