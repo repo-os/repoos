@@ -32,6 +32,7 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 ## Screenshots
 
 ![Review tab: model row above, REPORT left / CHAT right (the layout to copy)](/api/tasks/1013/attachments/att_a9fa8210-fdaf-49ca-a91c-56d0d069efec.png)
+![Dev tab today: Chat left / Report right, model row below the selector (to fix)](/api/tasks/1013/attachments/att_12e255b3-f63f-4d94-95a5-aff5091335f9.png)
 
 ## Activity
 
@@ -41,3 +42,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T05:55:37Z · body: Desired UX (added 1)
 - 2026-11-03T05:55:37Z · message_queued at 2026-11-03T05:55:37.514Z
 - 2026-11-03T05:55:38Z · screenshots
+- 2026-11-03T05:55:39Z · screenshots
