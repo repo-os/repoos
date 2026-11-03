@@ -35,3 +35,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T05:53:32Z · status inbox→ready
 - 2026-11-03T05:53:35Z · status ready→active, branch
 - 2026-11-03T05:55:37Z · body: Desired UX (added 1)
+- 2026-11-03T05:55:37Z · message_queued at 2026-11-03T05:55:37.514Z
