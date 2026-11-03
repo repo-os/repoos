@@ -85,6 +85,30 @@ run mid-test once (Ctrl-C), then checking
 `ps -eo pid,etime,command | grep "$TMPDIR/repoos-"` shows nothing after the
 next `bun run test`/`repoos check` starts.
 
+### Automatic control-plane safety net
+
+The suite's own teardown cannot run when the whole test process is SIGKILLed.
+The control plane therefore runs a second, machine-wide census
+(`scanTestHelperProcesses` / `reapLeakedTestHelpers` in
+`src/server/system.ts`, wired in `src/server/server.ts`):
+
+- Only the long-lived control plane arms it (`shouldReapStrayServeProcesses`),
+  never a preview child or an in-process `port: 0` test server.
+- First pass about 3 minutes after boot, then every 12 minutes — never at
+  startup, so a booting gate cannot be disturbed.
+- A process is a candidate only when **all** hold: same uid, `ppid` 1 (its
+  spawner is gone), older than 30 minutes, and its command line, cwd (via
+  `lsof`) or `REPOOS_TEST_HELPER` env tag names a RepoOS test temp dir
+  (`repoos-vitest-*`, `repoos-cli-api-*`, `repoos-preview-req-*`).
+- It is skipped when a live test run still owns that temp dir (a supervised
+  process names it, or the run-root heartbeat is under 15 minutes old) and
+  never touched when the path is inside this repo's task-worktree directory.
+- Reaping is `SIGTERM` to the process group, a 1.5 s grace, then `SIGKILL` to
+  survivors. Each reap (or failed reap) is written to
+  `.repoos/logs/system.log` as `test-helper-reaper: …`.
+- Matching is by the unique run-scoped temp path or env tag, never by process
+  name, so an unrelated `node`/`bun` process is never touched.
+
 ## What `repoos service` does differently
 
 `repoos service install` registers the server with launchd (macOS) or systemd

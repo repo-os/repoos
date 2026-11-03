@@ -7,7 +7,14 @@
  * ppid is no longer the server's pid, is marked orphaned.
  */
 import { execFile } from "node:child_process";
-import { existsSync, readFileSync, realpathSync, writeFileSync, mkdirSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  realpathSync,
+  statSync,
+  writeFileSync,
+  mkdirSync,
+} from "node:fs";
 import { basename, join } from "node:path";
 import { cpus, totalmem, freemem, loadavg, platform } from "node:os";
 import { type PressureSnapshot } from "../core/pressure-guard.js";
@@ -619,6 +626,331 @@ export async function reapStrayServeProcesses(
     }
   }
   return reaped;
+}
+
+// ---- Leaked test-helper census (#1017 phase 2) ---------------------------
+
+/** A helper older than this, orphaned (ppid 1), is safe to treat as leaked. */
+export const TEST_HELPER_STALE_MS = 30 * 60 * 1000;
+/**
+ * A run root whose mtime heartbeat is younger than this still has a live test
+ * run (see `tests/setup/global-reap.ts`). Do not touch its helpers.
+ */
+export const TEST_HELPER_LIVE_OWNER_MS = 15 * 60 * 1000;
+
+/**
+ * RepoOS test fixtures live in uniquely named temp dirs. Matching one of these
+ * exact path components is what identifies a test helper — never a process
+ * name, and never a broad `repoos` substring. The run root (`repoos-vitest-*`)
+ * and the fixture dirs a test creates directly under the OS temp dir
+ * (`repoos-cli-api-*`, `repoos-preview-req-*`) all count.
+ */
+const TEST_HELPER_ROOT_RE =
+  /((?:\/[^\s"'`=<>|&;]+)*\/repoos-(?:vitest|cli-api|preview-req(?:-e2e)?)-[A-Za-z0-9]+)(?=$|[/\s"'`=<>|&;])/;
+
+/** Extract the RepoOS test temp dir named in `text`, or null. */
+export function parseTestHelperRoot(text: string): string | null {
+  const match = text.match(TEST_HELPER_ROOT_RE);
+  if (!match) return null;
+  // A nested fixture (`repoos-vitest-*/file-*/repoos-cli-api-*`) is owned by
+  // its run root; return the ancestor so liveness is checked against the run
+  // root's heartbeat, not a fixture dir the helper may have stopped touching.
+  return owningRunRoot(match[1]) ?? match[1];
+}
+
+/** True when `text` (a command line or cwd) is at/under `root`. */
+function pathInsideText(text: string, root: string): boolean {
+  const normalized = root.replace(/\/+$/, "");
+  return text === normalized || text.includes(`${normalized}/`);
+}
+
+/** The `repoos-vitest-*` run root containing `path`, or null. */
+function owningRunRoot(path: string): string | null {
+  const parts = path.split("/");
+  for (let i = parts.length; i > 0; i--) {
+    const candidate = parts.slice(0, i).join("/");
+    if (/\/repoos-vitest-[A-Za-z0-9]+$/.test(candidate)) return candidate;
+  }
+  return null;
+}
+
+/** Best-effort cwd via `lsof` (macOS/Linux); null when the probe is unavailable. */
+async function readProcessCwd(pid: number): Promise<string | null> {
+  const output = await safeExecFile("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"]);
+  if (!output) return null;
+  const line = output.split("\n").find((entry) => entry.startsWith("n"));
+  return line ? line.slice(1) : null;
+}
+
+/** The `REPOOS_TEST_HELPER` env tag, where `/proc` exposes it (Linux). */
+function readTestHelperTag(pid: number): string | null {
+  if (process.platform !== "linux") return null;
+  try {
+    const entries = readFileSync(`/proc/${pid}/environ`, "utf8").split("\0");
+    const match = entries.find((entry) => entry.startsWith("REPOOS_TEST_HELPER="));
+    return match ? match.slice("REPOOS_TEST_HELPER=".length) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** One candidate row from the test-helper census, before classification. */
+export interface TestHelperCandidate {
+  pid: number;
+  ppid: number;
+  pgid: number;
+  uid: number;
+  ageMs: number;
+  command: string;
+  cwd?: string | null;
+  /** `REPOOS_TEST_HELPER` value when the environment is readable. */
+  helperTag?: string | null;
+}
+
+export interface TestHelperProcessInfo extends TestHelperCandidate {
+  kind: "leaked" | "live" | "ignored";
+  reason: string;
+  /** RepoOS temp dir that identifies the helper, when one matched. */
+  tempRoot: string | null;
+}
+
+export interface TestHelperScan {
+  /** Orphaned candidates examined (same uid, ppid 1, old enough). */
+  candidates: number;
+  leaked: number;
+  processes: TestHelperProcessInfo[];
+}
+
+export interface TestHelperClassifyOptions {
+  uid: number;
+  now: number;
+  /** True when a live test run still owns this temp dir. */
+  isLiveTempRoot: (root: string) => boolean;
+  /** Sibling worktrees directory for this repo; never reaped. */
+  worktreesRoot?: string | null;
+}
+
+/**
+ * Decide whether one candidate is a leaked test helper. Every guard must pass:
+ * same uid, reparented (ppid 1), old enough, identified by a RepoOS temp-dir
+ * path (command line, cwd, or the `REPOOS_TEST_HELPER` tag), not owned by a live
+ * run, and not inside a task worktree.
+ */
+export function classifyTestHelperProcess(
+  candidate: TestHelperCandidate,
+  opts: TestHelperClassifyOptions,
+): TestHelperProcessInfo {
+  const verdict = (
+    kind: TestHelperProcessInfo["kind"],
+    reason: string,
+    tempRoot: string | null,
+  ) => ({
+    ...candidate,
+    kind,
+    reason,
+    tempRoot,
+  });
+  if (candidate.uid !== opts.uid) return verdict("ignored", "different uid", null);
+  if (candidate.ppid !== 1) return verdict("ignored", "still supervised", null);
+  if (candidate.ageMs < TEST_HELPER_STALE_MS)
+    return verdict("ignored", "younger than the stale threshold", null);
+
+  const paths = [candidate.command, candidate.cwd ?? "", candidate.helperTag ?? ""].filter(Boolean);
+  if (opts.worktreesRoot && paths.some((path) => pathInsideText(path, opts.worktreesRoot!))) {
+    return verdict("ignored", "inside a live task worktree", null);
+  }
+  const tempRoot =
+    parseTestHelperRoot(candidate.command) ??
+    parseTestHelperRoot(candidate.cwd ?? "") ??
+    parseTestHelperRoot(candidate.helperTag ?? "");
+  if (!tempRoot && !candidate.helperTag) {
+    return verdict("ignored", "not a RepoOS test helper", null);
+  }
+  if (tempRoot && opts.isLiveTempRoot(tempRoot)) {
+    return verdict("live", "owned by a live test run", tempRoot);
+  }
+  return verdict(
+    "leaked",
+    tempRoot ? "orphaned test helper in a stale temp dir" : "orphaned tagged test helper",
+    tempRoot,
+  );
+}
+
+/** Parse `ps ax -o pid=,ppid=,pgid=,uid=,etime=,command=` into raw rows. */
+function parseTestHelperRows(
+  output: string,
+): Pick<TestHelperCandidate, "pid" | "ppid" | "pgid" | "uid" | "ageMs" | "command">[] {
+  const rows: Pick<TestHelperCandidate, "pid" | "ppid" | "pgid" | "uid" | "ageMs" | "command">[] =
+    [];
+  for (const line of output.split("\n")) {
+    const match = line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\S+)\s+(.*)$/);
+    if (!match) continue;
+    rows.push({
+      pid: Number(match[1]),
+      ppid: Number(match[2]),
+      pgid: Number(match[3]),
+      uid: Number(match[4]),
+      ageMs: parseElapsedMs(match[5]),
+      command: match[6],
+    });
+  }
+  return rows;
+}
+
+/** Parse `ps` `etime` (`[[dd-]hh:]mm:ss`) into milliseconds; 0 when unknown. */
+function parseElapsedMs(value: string): number {
+  const match = value.trim().match(/^(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+)$/);
+  if (!match) return 0;
+  return (
+    (Number(match[1] ?? 0) * 86_400 +
+      Number(match[2] ?? 0) * 3_600 +
+      Number(match[3]) * 60 +
+      Number(match[4])) *
+    1_000
+  );
+}
+
+/** Whether `root` is still owned by a live run: fresh heartbeat or a supervised process. */
+function liveRootChecker(
+  rows: Pick<TestHelperCandidate, "pid" | "ppid" | "command">[],
+  now: number,
+): (root: string) => boolean {
+  const liveRoots = rows
+    .filter((row) => row.ppid !== 1)
+    .map((row) => parseTestHelperRoot(row.command))
+    .filter((root): root is string => root !== null);
+  return (root) => {
+    if (
+      liveRoots.some(
+        (live) => live === root || live.startsWith(`${root}/`) || root.startsWith(`${live}/`),
+      )
+    ) {
+      return true;
+    }
+    const owned = owningRunRoot(root) ?? root;
+    try {
+      return now - statSync(owned).mtimeMs < TEST_HELPER_LIVE_OWNER_MS;
+    } catch {
+      return false;
+    }
+  };
+}
+
+/**
+ * Census orphaned test helpers. Walks `ps` once, then probes cwd/env only for
+ * the small set that is already a candidate (same uid, ppid 1, old enough).
+ */
+export async function scanTestHelperProcesses(opts: {
+  uid: number;
+  now?: number;
+  worktreesRoot?: string | null;
+}): Promise<TestHelperScan | null> {
+  const output = await safeExecFile("ps", ["ax", "-o", "pid=,ppid=,pgid=,uid=,etime=,command="]);
+  if (output === null) return null;
+  const now = opts.now ?? Date.now();
+  const rows = parseTestHelperRows(output);
+  const isLiveTempRoot = liveRootChecker(rows, now);
+  const processes: TestHelperProcessInfo[] = [];
+  for (const row of rows) {
+    if (row.uid !== opts.uid || row.ppid !== 1 || row.ageMs < TEST_HELPER_STALE_MS) continue;
+    const cwd = await readProcessCwd(row.pid);
+    const commandRoot = parseTestHelperRoot(row.command);
+    const helperTag = commandRoot ? null : readTestHelperTag(row.pid);
+    processes.push(
+      classifyTestHelperProcess(
+        { ...row, cwd, helperTag },
+        { uid: opts.uid, now, isLiveTempRoot, worktreesRoot: opts.worktreesRoot },
+      ),
+    );
+  }
+  return {
+    candidates: processes.length,
+    leaked: processes.filter((process) => process.kind === "leaked").length,
+    processes,
+  };
+}
+
+export interface ReapedTestHelper {
+  pid: number;
+  pgid: number;
+  tempRoot: string | null;
+  reason: string;
+  /** True when the pid was still alive after SIGKILL (should be rare). */
+  survived: boolean;
+}
+
+/**
+ * Reap leaked test helpers: SIGTERM the process group, wait a grace period,
+ * then SIGKILL any survivor. Every guard lives in the classifier; this function
+ * only signals pids the scan already proved are unattended RepoOS fixtures.
+ */
+export async function reapLeakedTestHelpers(opts: {
+  uid: number;
+  now?: number;
+  worktreesRoot?: string | null;
+  scan?: () => TestHelperScan | null | Promise<TestHelperScan | null>;
+  signal?: (pid: number, signal: NodeJS.Signals, group: boolean) => void;
+  isAlive?: (pid: number) => boolean;
+  sleep?: (ms: number) => Promise<void>;
+}): Promise<ReapedTestHelper[]> {
+  const scan =
+    opts.scan ??
+    (() =>
+      scanTestHelperProcesses({
+        uid: opts.uid,
+        now: opts.now,
+        worktreesRoot: opts.worktreesRoot,
+      }));
+  const result = await scan();
+  if (!result) return [];
+  const leaked = result.processes.filter((process) => process.kind === "leaked");
+  if (leaked.length === 0) return [];
+
+  const signal =
+    opts.signal ??
+    ((pid: number, sig: NodeJS.Signals, group: boolean) => {
+      try {
+        if (group) process.kill(-pid, sig);
+        else process.kill(pid, sig);
+      } catch {
+        // Group gone; still try the leader directly.
+        try {
+          process.kill(pid, sig);
+        } catch {
+          /* already gone */
+        }
+      }
+    });
+  const isAlive =
+    opts.isAlive ??
+    ((pid: number) => {
+      try {
+        process.kill(pid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const send = (process: TestHelperProcessInfo, sig: NodeJS.Signals): void => {
+    try {
+      signal(process.pid, sig, process.pgid === process.pid);
+    } catch {
+      /* already gone */
+    }
+  };
+  for (const process of leaked) send(process, "SIGTERM");
+  await sleep(1_500);
+  for (const process of leaked) {
+    if (isAlive(process.pid)) send(process, "SIGKILL");
+  }
+  return leaked.map((process) => ({
+    pid: process.pid,
+    pgid: process.pgid,
+    tempRoot: process.tempRoot,
+    reason: process.reason,
+    survived: isAlive(process.pid),
+  }));
 }
 
 /**
