@@ -97,3 +97,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T10:00:50Z · body
 - 2026-11-03T10:12:18Z · CTO nudge: held — machine under pressure (system load is high (8.5× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-03T10:22:17Z · message_queued at 2026-11-03T10:22:17.170Z
+- 2026-11-03T10:22:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
