@@ -78,7 +78,7 @@ detail, nextStep? }], summary: { pass, warn, fail } }`.
 | `review-lock` | a review lock exists and its sha differs from the worktree HEAD (a **missing** lock is a warning, not a failure) | request a fresh review of the current commit |
 | `worktree-clean` | the task worktree has uncommitted files | commit them on the branch or discard them |
 | `merge-conflicts` | `git merge-tree` reports a conflict outside the task's own `work/<id>-*.md` (own-file-only is a warning: close-out takes main's copy) | merge main into the branch (`repoos sync <id>`), keep both sides, re-review |
-| `task-scope` | the diff changes `repoos.toml`, or another task's `work/`, `inputs/` or `stories/` file | restore that path from main, re-review |
+| `task-scope` | the diff changes `repoos.toml`, or another task's `work/`, `inputs/` or `stories/` file. This task's own `work/<id>-*.md` and its own `work/engineering-reports/<id>/` are bookkeeping, not drift | restore that path from main, re-review |
 | `main-clean` | the primary checkout has uncommitted files, listed with their owner (`repoos.toml`, `work/`, `reminders/`, `schedules/`, `unknown`). A `repoos.toml` diff that is only automatic quota/pause fields is ignored. A tracked task file is ignored only when its entire delta is a valid watchdog check-wait escalation/recovery: the watchdog fields and exact activity entry, with the rest of the task unchanged. | commit or stash the named paths on main |
 
 The server gathers these facts with the same `gatherApprovalPreflight` the
@@ -829,28 +829,94 @@ refuses squash/rebase-merged branches.
 Note that `done.ts`'s `completeTask`/`completeTaskLocked` worktree cleanup is
 **dead code** — tests only. The live review→done path is `CloseOutOrchestrator`.
 
-**Guard and policy:** `sweepStaleWorktrees` (`core/worktree-gc.ts`), with a
-deliberately conservative default:
+**Guard and policy:** `sweepStaleWorktrees` (`core/worktree-gc.ts`) runs the
+same automatic, fail-closed rules at boot, after every close-out, and from
+`repoos gc` (#1004):
 
-- The **boot sweep is `integrate-only`** — candidates plus `git worktree prune`,
-  never `feat/*`. `REPOOS_NO_WORKTREE_GC=1` opts out.
-- `repoos gc --yes` does a full sweep but still only removes worktrees that are
-  **merged into main AND clean** (`dist/` excluded from
-  "clean"); anything with real uncommitted or unmerged work is kept and
-  reported.
-- Scope boundary is paths inside `worktreesDir(root)` only, so another coding
-  agent's worktrees (e.g. `.claude/worktrees/*`) are never touched — there is no
-  agent-name matching anywhere, by design.
+- The boot/close-out sweep is a **full safe sweep**, not merely
+  `integrate-only`: throwaway candidates plus resolved task worktrees that are
+  proven redundant with main. `REPOOS_NO_WORKTREE_GC=1` opts out.
+- A feature worktree is reclaimed only when its task is **resolved** — `done`,
+  or archived (archive metadata alone is never enough) — and either the branch
+  is an ancestor of main and clean, or its non-task-file changes are **proven
+  represented in main**. The proof compares the branch tip against main over
+  the paths the branch touched; when a task records a `merged_commit` that is
+  in main, only commits added after that close-out need comparing, so WIP
+  self-check checkpoints whose content already shipped are reclaimable. If main
+  later changed those files differently, the branch is not proven and stays.
+  Rename detection is disabled for the comparison, so a rename is checked as
+  both its addition and its deletion. A content-proven branch that is not an
+  ancestor of main (a squash/rebase landing) is deleted with `-D`; dry-run
+  reports exactly that deletion.
+- Committed `work/*.md` changes are handled the same way: the branch's bytes
+  must match main's canonical copy exactly. A task file the branch adds, or
+  modifies to different bytes than main, may hold unique data and keeps the
+  worktree. A branch deletion carries nothing to preserve.
+- `work/*.md` dirt does **not** by itself block cleanup, but it is only
+  discarded when every dirty task file's working-tree bytes are exactly main's
+  canonical bytes (or the file was deleted). Unique task data keeps the
+  worktree. This is the same "main's task file wins" rule the merge path uses,
+  applied only after a content comparison — never path alone.
+- Active and review worktrees, held/unresolved tasks, human-assigned work,
+  unmerged source changes, and dirty files outside `work/*.md` are **always
+  retained** with a reason. A task marked done/archived does not make its
+  branch disposable; the content proof does.
+- Retained entries carry an audit, not just a reason: `commitsAhead`,
+  `changedSourcePaths` (all non-task paths the branch changed relative to its
+  merge base with main), `dirtyPaths`, and `ignoredPaths`. This is measured
+  before the lifecycle verdict, so an active or human-owned worktree is still
+  fully audited. `repoos status` mirrors these fields.
+- Ignored files are **not** visible to a plain `git status`, so they are
+  inspected explicitly. A resolved or throwaway worktree whose only ignored
+  content is regenerable output may still be reclaimed; any other ignored path
+  (`.env`, `.env*.local`, `work/.attachments/`, scratch dirs) keeps the
+  worktree with an `ignored files may hold local data` reason. "Regenerable" is
+  a **scoped** allowlist, not a path-segment match: root `dist/`, root
+  `coverage/`, the configured root `cacheDir` (`.repoos/`), `node_modules/`
+  installs, and the docs site's `.vitepress` build/cache. A nested `dist/`,
+  `coverage/`, or `.repoos/` (e.g. `src/tool/dist/`) is **not** assumed
+  generated and keeps the worktree. Tracked dirty files are never discarded by
+  path at all, even when they live under a directory named `dist`. An ignored
+  `.env` symlink into the canonical main checkout is the one safe exception:
+  removing the link leaves the canonical file in place. A symlink that cannot
+  be resolved (a loop, EACCES/EIO) is an inspection failure, not a dangling
+  link, and retains the worktree. This closes a force-removal hole where a
+  worktree containing only a local secret or task attachment looked clean and
+  was deleted.
+- Inspection is fail-closed. Only a **confirmed absence** counts as safe:
+  `lstat`/`realpath` errors other than `ENOENT`/`ENOTDIR`, and any failure to
+  read a branch or main blob (`ls-tree`/`cat-file`), retain the worktree with a
+  `could not inspect branch content` reason. A timeout or permission error must
+  never be mistaken for a deletion.
+- A branch with **no task record** is treated as lifecycle-unknown: a live
+  worktree is retained (the index may be stale or partial), and only a vanished
+  directory is cleaned after the same content proof.
+- A managed worktree whose branch has **no matching task record** is retained
+  too: a missing record is indistinguishable from a stale/partial index, and
+  content proof alone cannot establish that an agent or close-out is finished
+  with it. The reason says the lifecycle state is unknown.
+- If the task index cannot be built, or the durable close-out-job records
+  cannot be read, the sweep **skips cleanup entirely** and reports an error.
+  An empty or partial lifecycle view must never make an active task or a live
+  close-out look absent.
+- Scope boundary is paths inside `worktreesDir(root)` only. Other coding
+  agents' worktrees (e.g. `~/.codex/worktrees/*`) are reported as **external**
+  and are never inspected (`git status` is not run there) or removed — there is
+  no agent-name matching anywhere, by design.
+- `repoos gc --dry-run` and `repoos status` run the same sweep and report the
+  same **candidate / retained / external** counts, so they agree by
+  construction. `repoos gc` applies the safe candidates; `--yes` remains an
+  accepted alias.
 
 The conservatism is deliberate: it is what keeps a `salvage/*` situation (class
 #1) recoverable rather than garbage-collected.
 
 **Leaked ≠ dirty (#0512).** Being kept is not a leak, and the two are now
-different mechanisms: GC decides *whether a worktree may be removed* (merged AND
-clean, from `git worktree status --porcelain` excluding `dist/`), while
-`removeWorktree`'s non-forced default enforces *whether it may be deleted*. A
-worktree the close-out kept because it had uncommitted work (see "The
-worktree-cleanup invariant" above) will therefore keep being reported by
+different mechanisms: GC decides *whether a worktree may be removed* (resolved
+task AND content represented in main, with the task-file-content exception
+above), while `removeWorktree`'s non-forced default enforces *whether it may be
+deleted*. A worktree the close-out kept because it had uncommitted work (see
+"The worktree-cleanup invariant" above) will therefore keep being reported by
 `repoos gc` until a human commits or discards it — that is the intended
 behaviour, not a regression. Fixing such a task means dealing with the files
 named in its `needs_input` detail, then `git worktree remove <path>` (or
