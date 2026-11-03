@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T14:04:25Z"
+updated_at: "2026-11-03T14:34:27Z"
+handoff_signal_retry_count: 1
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T09:38:49.222Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -105,4 +105,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T10:29:04Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T13:53:28Z · note: stopped orphaned engineer pid 55099
 - 2026-11-03T14:04:25Z · message_overdue: still queued after 60m without being delivered
-
+- 2026-11-03T14:34:27Z · watchdog: restarting engineer after 27m with no live process
