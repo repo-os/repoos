@@ -11,7 +11,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T03:34:46Z"
+updated_at: "2026-11-03T03:34:47Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -199,3 +199,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T03:33:45Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-03T03:33:45Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-03T03:34:46Z · needs_input
+- 2026-11-03T03:34:47Z · message_delivered: 1 message(s)
