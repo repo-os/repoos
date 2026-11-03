@@ -291,3 +291,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T15:15:10Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-03T15:15:15Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-03T15:15:15Z · needs_input
+- 2026-11-03T15:15:15Z · message_delivered: 1 message(s)
