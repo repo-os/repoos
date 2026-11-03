@@ -12,7 +12,7 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T06:02:17Z"
+updated_at: "2026-11-03T06:37:35Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-03T04:09:23.516Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Scheduled task cards use a compact horizontal layout (target \"default\"): state \"schedule:seeded\" did not render on target \"default\" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:58574/agents?tab=scheduled&shotState=schedule%3Aseeded); [missing-target] Schedule cards stack readably at a narrow viewport (target \"default\"): state \"sched… (truncated)"
 review_rounds: 2
@@ -88,10 +88,18 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "state": "agents:scheduledSeeded"
 },
 {
-"label": "Schedule cards stack readably at a narrow viewport",
+"label": "Schedule cards stack at a 390px phone viewport",
 "target": "default",
 "route": "/agents?tab=scheduled",
 "highlight": ".schedule-card",
+"steps": [
+{
+"waitFor": ".schedule-card"
+},
+{
+"waitMs": 250
+}
+],
 "assert": [
 {
 "selector": ".schedule-card .schedule-actions button",
@@ -100,7 +108,8 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 }
 ],
 "state": "agents:scheduledSeeded",
-"viewportWidth": 640
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -261,3 +270,9 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T06:02:17Z · needs_input
 - 2026-11-03T06:02:17Z · status review→active
 - 2026-11-03T06:02:17Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-11-03T06:06:51Z · body
+- 2026-11-03T06:10:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T06:21:21Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-11-03T06:27:43Z · message_queued at 2026-11-03T06:27:43.323Z
+- 2026-11-03T06:27:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-03T06:37:35Z · CTO nudge: held — an undelivered message is already queued
