@@ -2,14 +2,14 @@
 id: 1011
 title: "Easter eggs bundle: Cancel stalled check button flapping"
 type: bug
-status: inbox
+status: ready
 priority: p3
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-02T16:06:26Z"
+updated_at: "2026-11-03T17:02:04Z"
 ---
 ## Items
 
@@ -55,3 +55,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-02T16:01:49Z · created · njachowski@gmail.com
 - 2026-11-02T16:06:24Z · body: Items (added 1); E2 · Selected history row accent bar covers the pass number (added)
 - 2026-11-02T16:06:26Z · screenshots
+- 2026-11-03T17:02:04Z · status inbox→ready
