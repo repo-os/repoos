@@ -11,13 +11,13 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T01:43:43Z"
+updated_at: "2026-11-03T01:48:51Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
-engineer_stall_resume_log: "[{\"at\":\"2026-11-03T01:24:36.586Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-03T01:24:36.586Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-03T01:48:51.689Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -200,3 +200,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T01:43:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T01:43:27Z · message_delivered: 1 message(s)
 - 2026-11-03T01:43:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T01:48:51Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
