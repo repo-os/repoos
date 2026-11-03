@@ -9,6 +9,7 @@ import type { QueuedMessageDetail } from "../../../core/queued-message-ui.js";
 import { queuedMessageSourceLabel } from "../../../core/queued-message-ui.js";
 import { fmtTime, relTime } from "../lib/time";
 import { useRepoStore } from "../stores/repo";
+import { useNow } from "../composables/useNow";
 
 const PREVIEW_CHARS = 220;
 const CLOSE_DELAY_MS = 200;
@@ -30,14 +31,8 @@ const props = withDefaults(
 const repo = useRepoStore();
 const { queuedMessages } = storeToRefs(repo);
 
-const now = ref(Date.now());
-let nowTimer: ReturnType<typeof setInterval> | null = null;
-nowTimer = setInterval(() => {
-  now.value = Date.now();
-}, 1000);
-onBeforeUnmount(() => {
-  if (nowTimer) clearInterval(nowTimer);
-});
+// #1018: one shared clock (paused while hidden) instead of a private interval.
+const now = useNow();
 
 const resolvedItems = computed(() => {
   if (props.items) return props.items;

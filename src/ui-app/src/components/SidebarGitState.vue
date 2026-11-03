@@ -18,6 +18,7 @@ import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
 import { relTime } from "../lib/time";
 import { authorInitials } from "../lib/repo-history";
+import { useNow } from "../composables/useNow";
 import CommitDialog from "./CommitDialog.vue";
 
 /** A snapshot older than this is history, not state — show `unknown`. */
@@ -35,14 +36,9 @@ const POPOVER_ID = "side-git-pop";
 const repo = useRepoStore();
 const { gitStatus } = storeToRefs(repo);
 
-const now = ref(Date.now());
-let nowTimer: ReturnType<typeof setInterval> | null = null;
-nowTimer = setInterval(() => {
-  now.value = Date.now();
-}, 1000);
-onBeforeUnmount(() => {
-  if (nowTimer) clearInterval(nowTimer);
-});
+// #1018: one shared clock instead of a private one-second interval; the
+// shared clock stops while the document is hidden.
+const now = useNow();
 
 /** Milliseconds since the server computed the snapshot (Infinity when absent). */
 const ageMs = computed(() => {

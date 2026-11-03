@@ -58,6 +58,9 @@ can't assume any.
   scope × light/dark is measured in headless WebKit, the judgment calls
   (gradient worst-stops, WCAG incidental exemptions, the config-load barrier),
   and what the first full triage changed in the product.
+- `ui-idle-performance-1018.md` — why a board/PWA left open for days burned a
+  CPU and grew memory, the measured before/after, and the regression budgets
+  that keep idle cost flat (#1018).
 - `cto-autopilot.md` — the CTO's routine work (approval policy #0686, safe
   actions #0688, the #0727 restart strategy, the kill switch) and the
   conservative policy proposed for this repo. Read before touching
