@@ -2,14 +2,14 @@
 id: 1017
 title: "Test helper processes leak: days-old repoos-vitest fakebins and stubs stay running and add memory pressure"
 type: bug
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
-updated_at: "2026-11-03T18:44:14Z"
+updated_at: "2026-11-03T19:02:15Z"
 last_check_failure: "repoos check at 2026-11-03T18:24:48.985Z: repoos check failed: ui-smoke — timed out — timed out after 300s"
 ---
 ## Problem
@@ -72,4 +72,4 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T18:44:13Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T18:44:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T18:44:14Z · message_delivered: 1 message(s)
-
+- 2026-11-03T19:02:15Z · status active→review
