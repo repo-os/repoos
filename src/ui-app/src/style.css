@@ -4460,27 +4460,11 @@
   color: var(--red);
 }
 
-/* restart dirty-task choice */
-.restart-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(4, 6, 12, 0.62);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.restart-card {
-  width: min(460px, 100%);
-  background: var(--panel-solid);
-  border: 1px solid var(--border-bright);
-  border-radius: 16px;
-  padding: 22px;
-  box-shadow: var(--drawer-shadow);
-  animation: restartIn 0.18s ease-out;
-}
+/* Shared entry animation for the hand-rolled confirmation panels (dirty
+   checkout, hotfix, dependency). The restart dialog now uses the shared
+   `cc-modal` shell (#0997) and no longer needs it, but these callers still
+   reference `restartIn` — removing the keyframes would silently freeze them
+   (guarded by ai-chat-standard.test.ts). */
 @keyframes restartIn {
   from {
     opacity: 0;
@@ -4491,27 +4475,24 @@
     transform: none;
   }
 }
-.restart-title {
-  margin: 0 0 10px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--txt);
+
+/* restart dirty-task choice (#0997): shared dialog shell (`cc-modal`), so this
+   block only styles the restart-specific body/list. */
+.restart-body-copy {
+  padding-bottom: 2px;
 }
-.restart-body {
-  margin: 0 0 10px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--txt-dim);
+.restart-body-copy p {
+  margin: 0;
 }
-.restart-body.dim {
-  color: var(--txt-faint);
-}
-.restart-body b {
+.restart-body-copy b {
   color: var(--txt);
   font-weight: 600;
 }
+.restart-body-copy .dim {
+  color: var(--txt-faint);
+}
 .restart-error {
-  margin: 0 0 14px;
+  margin: 0;
   color: var(--red);
   font-size: 13px;
   line-height: 1.45;
@@ -4526,10 +4507,10 @@
 /* What "Start clean" would discard (#0512): named, not abstract. Mirrors the
    dirty-close-out file list so the two confirmations read the same. */
 .restart-lost {
-  margin: 0 0 10px;
+  margin: 0;
 }
-.restart-lost .restart-body {
-  margin-bottom: 6px;
+.restart-lost p {
+  margin: 0 0 6px;
 }
 .restart-lost-list {
   margin: 0;
@@ -4546,10 +4527,7 @@
   word-break: break-all;
 }
 .restart-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 18px;
+  flex-wrap: wrap;
 }
 .restart-play {
   font-size: 10px;

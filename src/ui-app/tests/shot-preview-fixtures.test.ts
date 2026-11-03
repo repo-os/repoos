@@ -291,6 +291,19 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(task!.needsInputDetail).toContain("Decision model");
   });
 
+  it("seeds a failed active card with its concrete crash reason and a dirty worktree (#0997)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:agentFailed");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task, "card:agentFailed seeds the fixture task").toBeTruthy();
+    expect(task!.status).toBe("active");
+    expect(task!.needsInputReason).toBe("dev-error");
+    expect(task!.needsInputDetail).toContain("Could not create the task worktree");
+    expect(task!.git.dirty).toBe(true);
+  });
+
   it("seeds an uploading close-out with visible bundle progress (#0782)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -801,6 +814,7 @@ describe("shot preview board fixtures (#0743)", () => {
       for (const fixture of [
         "card:doneError",
         "card:humanStep",
+        "card:agentFailed",
         "closeOut:uploading",
         "closeOut:remoteTests",
         "board:withReviewTask",
