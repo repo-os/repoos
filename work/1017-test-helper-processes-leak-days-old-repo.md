@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-03T18:24:48.985Z: repoos check failed: ui-smoke — timed out — timed out after 300s"
 id: 1017
 title: "Test helper processes leak: days-old repoos-vitest fakebins and stubs stay running and add memory pressure"
 type: bug
@@ -62,3 +64,4 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T18:20:34Z · message_delivered: 1 message(s)
 - 2026-11-03T18:23:47Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-03T18:24:48Z · needs_input
+
