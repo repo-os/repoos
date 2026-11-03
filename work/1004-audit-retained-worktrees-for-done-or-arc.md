@@ -20,7 +20,6 @@ review_passes: 7
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T08:55:54.177Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The 2026-11-01 cleanup found 48 registered worktrees: 28 were clean feature worktrees whose branches were already merged into main, and 16 were protected. Running `repoos gc --yes` removed the safe candidates; the current count is 21 with zero remaining cleanup candidates and 16 protected worktrees.
