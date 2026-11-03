@@ -67,3 +67,4 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T18:25:02Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-03T18:26:17Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T18:32:09Z · message_queued at 2026-11-03T18:32:09.717Z
+- 2026-11-03T18:32:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
