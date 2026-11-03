@@ -163,14 +163,25 @@ export function classifyMainDirtyFiles(
 /**
  * A branch change outside the task's own work file is drift: config, another
  * task's markdown, an input, or a story definition never lands with this task.
+ *
+ * A task's own engineering reports live under
+ * `<workDir>/engineering-reports/<task-id>/` (docs/engineering-reports.md) and
+ * are written by the handoff itself, so they are this task's bookkeeping even
+ * though they are not the task markdown (#0997). Another task's report stays
+ * forbidden.
  */
 export function isForbiddenTaskScopePath(
   path: string,
   ownTaskFile: string,
   dirs: Pick<LandableBookkeepingDirs, "workDir" | "inputsDir" | "storiesDir">,
+  taskId?: string,
 ): boolean {
   if (path === CONFIG_PATH) return true;
   if (path === ownTaskFile) return false;
+  if (taskId) {
+    const workDir = dirs.workDir.replace(/\/+$/, "");
+    if (path.startsWith(`${workDir}/engineering-reports/${taskId}/`)) return false;
+  }
   const prefixes = [dirs.workDir, dirs.inputsDir, dirs.storiesDir].map(
     (d) => `${d.replace(/\/+$/, "")}/`,
   );
@@ -387,6 +398,7 @@ export function evaluateMergeCheck(facts: {
 export function evaluateTaskScopeCheck(facts: {
   changedPaths: string[] | null;
   ownTaskFile: string;
+  taskId?: string;
   bookkeeping: Pick<LandableBookkeepingDirs, "workDir" | "inputsDir" | "storiesDir">;
 }): LandableCheck {
   const label = "Task scope";
@@ -400,7 +412,7 @@ export function evaluateTaskScopeCheck(facts: {
     };
   }
   const forbidden = facts.changedPaths.filter((p) =>
-    isForbiddenTaskScopePath(p, facts.ownTaskFile, facts.bookkeeping),
+    isForbiddenTaskScopePath(p, facts.ownTaskFile, facts.bookkeeping, facts.taskId),
   );
   if (forbidden.length > 0) {
     const config = forbidden.includes(CONFIG_PATH);
@@ -468,6 +480,7 @@ export function evaluateLandable(facts: LandableFacts): LandableResult {
     evaluateTaskScopeCheck({
       changedPaths: facts.changedPaths,
       ownTaskFile: facts.ownTaskFile,
+      taskId: facts.taskId,
       bookkeeping: facts.bookkeeping,
     }),
     evaluateMainCleanCheck(facts.mainDirty, facts.bookkeeping),

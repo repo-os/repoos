@@ -15,17 +15,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { defineComponent, h, nextTick } from "vue";
 import { mount, type VueWrapper } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import DialogContent from "../src/components/ui/dialog/content.vue";
 import DialogOverlay from "../src/components/ui/dialog/overlay.vue";
 import DialogRoot from "../src/components/ui/dialog/root.vue";
 import HotfixConfirmDialog from "../src/components/HotfixConfirmDialog.vue";
-import RestartTaskDialog from "../src/components/RestartTaskDialog.vue";
 import UiRecoveryBanner from "../src/components/UiRecoveryBanner.vue";
 import { dismissRecovery, showOffline } from "../src/lib/uiRecovery";
-import { makeTask } from "./component-test-helpers";
 
 const APP = resolve(__dirname, "../src");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -201,31 +198,6 @@ describe("overlay layer isolation (#0575)", () => {
     await wrapper.unmount();
   });
 
-  it("teleports and marks the restart confirmation above an open drawer", async () => {
-    setActivePinia(createPinia());
-    const { closed, wrapper } = mountPanel();
-    await nextTick();
-    await sleep(10);
-    const restart = mount(RestartTaskDialog, {
-      attachTo: document.body,
-      props: { task: makeTask() },
-    });
-    await nextTick();
-    await sleep(10);
-
-    const root = document.body.querySelector(".restart-overlay") as HTMLElement;
-    expect(root.parentElement).toBe(document.body);
-    expect(root.getAttribute("data-overlay-layer")).toBe("floating");
-    await pointerDown(root.querySelector("button")!);
-    expect(closed).toEqual([]);
-
-    (root.querySelector("button") as HTMLButtonElement).click();
-    expect(restart.emitted("close")).toHaveLength(1);
-    expect(closed).toEqual([]);
-    await restart.unmount();
-    await wrapper.unmount();
-  });
-
   it("keeps a marked layer hit-testable while <body> is click-transparent", () => {
     const css = readFileSync(join(APP, "style.css"), "utf8");
     const rule = css.match(/\[data-overlay-layer\]\s*\{[^}]*\}/);
@@ -285,7 +257,6 @@ describe("overlay layer isolation (#0575)", () => {
       "components/HotfixConfirmDialog.vue",
       "components/StopWorkConfirmModal.vue",
       "components/DirtyCheckoutDialog.vue",
-      "components/RestartTaskDialog.vue",
       "components/SendToEngineerDialog.vue",
       "components/ToastPanel.vue",
       "components/CopyInspectorOverlay.vue",

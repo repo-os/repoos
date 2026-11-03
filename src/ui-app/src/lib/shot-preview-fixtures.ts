@@ -1097,6 +1097,26 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         holdUntil: new Date(Date.now() + 86_400_000).toISOString(),
       });
       break;
+    case "card:agentFailed":
+      // #0997 — an engineer that stopped with a concrete cause. The card must
+      // hover and act on that reason, and its dirty worktree makes "Restart
+      // work" open the restart confirmation.
+      ensureFixtureTask(repo, "active", {
+        title: "Failed after crash recovery",
+        needsInput: true,
+        needsInputReason: "dev-error",
+        needsInputDetail:
+          "crash recovery could not start the engineer: Could not create the task worktree: not a git repository",
+        git: {
+          branchExists: true,
+          worktreeExists: true,
+          lastCommit: null,
+          lastCommitAt: null,
+          worktreePath: "/tmp/repo-worktrees/feat/agent-failed-fixture",
+          dirty: true,
+        },
+      });
+      break;
     case "card:humanStep":
       // #0804 / #0909 — needs-human-step: card and drawer show the quoted
       // criterion plus the model's bounded explanation.
