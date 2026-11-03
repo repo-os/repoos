@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
+debug_tldr: "Handoff was deferred because queued messages haven’t been read — read them, then request review again."
+debug_tldr_at: "2026-11-03T03:34:10Z"
+debug_tldr_key: "dev-error|✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p0
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T03:33:45Z"
+updated_at: "2026-11-03T03:34:10Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
