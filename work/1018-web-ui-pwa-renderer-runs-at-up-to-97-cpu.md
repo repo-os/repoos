@@ -1,0 +1,32 @@
+---
+id: 1018
+title: "Web UI (PWA) renderer runs at up to 97% CPU for days and may be loading the server: profile and fix runaway work"
+type: bug
+status: inbox
+priority: p0
+area: [web, server]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-11-03T15:28:57Z"
+updated_at: "2026-11-03T15:28:57Z"
+---
+## Problem
+On 2026-11-03 the RepoOS web UI, installed as a Chrome PWA (its own Chrome profile via `--user-data-dir`, pointed at `http://127.0.0.1:7171`), had been open for about 1.5 days. Its renderer process (pid 34283) held 29–97% of a CPU the whole time and its GPU process (34243) another 30–66%, at about 640 MB. Over the same period the host load average reached 36–69, the RepoOS server on :7171 stopped answering, and `launchd` restarted it 7 times (last exit code 1). After the maintainer killed those two processes the load average dropped from ~36–55 to ~6.5 and the server stayed up. Cause not proven, but the timing is strong. Candidate causes: a runaway reactive/watch loop, SSE or polling that re-renders the whole board, an event-stream reconnect storm, unbounded growth of the task list or logs held in memory (640 MB), or per-card timers/animations that keep the GPU busy.
+
+## Desired UX
+An open board costs almost nothing when nothing is changing: renderer CPU near 0% when idle, bounded memory over days, and no load on the server beyond a light event stream. A long-lived tab or PWA can never degrade the host or the server.
+
+## Acceptance criteria
+- [ ] Reproduce: open the board with the real task count (hundreds of tasks) for a long idle period and record renderer CPU/memory over time (Chrome task manager or Playwright tracing). Record the finding in `docs/`.
+- [ ] Find and fix the cause(s) (profile with the Performance panel: reactive loops, SSE handlers that replace whole stores, intervals/timers, CSS animations or blur layers that keep the GPU active).
+- [ ] Add a regression check: an idle-board test or smoke step that fails if the UI's per-minute main-thread work or SSE-triggered re-render count exceeds a budget, and a test that the store does not grow without bound.
+- [ ] Measure the server side too: request/event rate from one idle client, and that a reconnect storm backs off (jitter).
+- [ ] When the tab is hidden, polling/animations pause.
+
+## Notes for AI
+Start with `src/ui-app/src/stores/repo.ts` (SSE/event handling and store updates), the board view and task card components (timers, animations), and the server's event stream route. Evidence is from the maintainer's machine on 2026-11-03; also check whether the same CPU pattern appears in a normal browser tab (not only the PWA). Do not use the maintainer's live Chrome profile for testing; use Playwright or a fresh profile.
+
+## Activity
+
+- 2026-11-03T15:28:57Z · created · njachowski@gmail.com
