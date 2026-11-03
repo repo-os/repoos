@@ -63,6 +63,7 @@ import { useNow } from "../composables/useNow";
 import { integrationActiveCopy, integrationQueuedCopy } from "../lib/integration-pipeline-ui";
 import { isHoldActive } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
+import { shotPreviewSkipsEngineeringReportsFetch } from "../lib/shot-preview-fixtures";
 import { Clock3 } from "lucide-vue-next";
 import {
   needsInputBannerText,
@@ -4243,6 +4244,12 @@ const engineeringReportHtml = computed(() =>
 // are unchanged and only its status moved.
 let engineeringReportGeneration = 0;
 async function loadEngineeringReports(taskId: string): Promise<void> {
+  if (
+    typeof window !== "undefined" &&
+    shotPreviewSkipsEngineeringReportsFetch(window.location, taskId)
+  ) {
+    return;
+  }
   const generation = ++engineeringReportGeneration;
   const stillCurrent = () => generation === engineeringReportGeneration && ui.active?.id === taskId;
   try {

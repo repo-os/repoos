@@ -15,6 +15,7 @@ import {
   shotFixturePinnedRemoteStatus,
   shotFixturePinnedTaskRemoteActivity,
   shotFixtureSchedules,
+  shotPreviewSkipsEngineeringReportsFetch,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
 import { useNoticesStore } from "../src/stores/notices";
@@ -787,6 +788,15 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.taskLogs["0820"]).toHaveLength(2);
     expect(repo.taskLogs["0820"]![0]!.message).toContain("main advanced with bookkeeping");
     vi.unstubAllGlobals();
+  });
+
+  it("skips engineering-report fetches for the fixture task during capture (#1011)", () => {
+    const during = { search: "?task=9999&tab=review&shotState=drawer:reviewPasses" };
+    expect(shotPreviewSkipsEngineeringReportsFetch(during, "9999")).toBe(true);
+    expect(shotPreviewSkipsEngineeringReportsFetch(during, "1011")).toBe(false);
+    expect(
+      shotPreviewSkipsEngineeringReportsFetch({ search: "?task=9999&tab=review" }, "9999"),
+    ).toBe(false);
   });
 
   it("seeds 15 succeeded close-outs for the integration timer tooltip (#0819)", () => {
