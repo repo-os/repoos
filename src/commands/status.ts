@@ -153,6 +153,8 @@ export interface StatusSnapshot {
       taskStatus?: string;
       commitsAhead?: number;
       dirtyPaths?: string[];
+      ignoredPaths?: string[];
+      changedSourcePaths?: string[];
     }>;
     /** What gc would keep, with the reason it is kept. */
     retained: Array<{
@@ -163,6 +165,8 @@ export interface StatusSnapshot {
       taskStatus?: string;
       commitsAhead?: number;
       dirtyPaths?: string[];
+      ignoredPaths?: string[];
+      changedSourcePaths?: string[];
     }>;
     /** Registered worktrees outside RepoOS's managed directory (never touched). */
     external: Array<{ branch: string; path: string; reason: string }>;
@@ -518,6 +522,8 @@ export async function collectStatus(
       ...(w.taskStatus ? { taskStatus: w.taskStatus } : {}),
       ...(w.commitsAhead !== undefined ? { commitsAhead: w.commitsAhead } : {}),
       ...(w.dirtyPaths ? { dirtyPaths: w.dirtyPaths } : {}),
+      ...(w.ignoredPaths ? { ignoredPaths: w.ignoredPaths } : {}),
+      ...(w.changedSourcePaths ? { changedSourcePaths: w.changedSourcePaths } : {}),
     })),
     retained: gc.retained.map((k) => ({
       branch: k.branch,
@@ -527,6 +533,8 @@ export async function collectStatus(
       ...(k.taskStatus ? { taskStatus: k.taskStatus } : {}),
       ...(k.commitsAhead !== undefined ? { commitsAhead: k.commitsAhead } : {}),
       ...(k.dirtyPaths ? { dirtyPaths: k.dirtyPaths } : {}),
+      ...(k.ignoredPaths ? { ignoredPaths: k.ignoredPaths } : {}),
+      ...(k.changedSourcePaths ? { changedSourcePaths: k.changedSourcePaths } : {}),
     })),
     external: gc.external.map((e) => ({ branch: e.branch, path: e.path, reason: e.reason })),
     errors: gc.errors,

@@ -861,6 +861,21 @@ same automatic, fail-closed rules at boot, after every close-out, and from
   unmerged source changes, and dirty files outside `work/*.md` are **always
   retained** with a reason. A task marked done/archived does not make its
   branch disposable; the content proof does.
+- Retained entries carry an audit, not just a reason: `commitsAhead`,
+  `changedSourcePaths` (all non-task paths the branch changed relative to its
+  merge base with main), `dirtyPaths`, and `ignoredPaths`. This is measured
+  before the lifecycle verdict, so an active or human-owned worktree is still
+  fully audited. `repoos status` mirrors these fields.
+- Ignored files are **not** visible to a plain `git status`, so they are
+  inspected explicitly. A resolved or throwaway worktree whose only ignored
+  content is regenerable output (`dist/`, `node_modules/`, `coverage/`,
+  `.repoos/`, `.vitepress` cache) may still be reclaimed; any other ignored path
+  (`.env`, `.env*.local`, `work/.attachments/`, scratch dirs) keeps the
+  worktree with an `ignored files may hold local data` reason. An ignored
+  `.env` symlink into the canonical main checkout is the one safe exception:
+  removing the link leaves the canonical file in place. This closes a
+  force-removal hole where a worktree containing only a local secret or task
+  attachment looked clean and was deleted.
 - A branch with **no task record** is treated as lifecycle-unknown: a live
   worktree is retained (the index may be stale or partial), and only a vanished
   directory is cleaned after the same content proof.

@@ -29,7 +29,7 @@
  * live outside that directory; they are reported as `external` and never even
  * inspected (no `git status`), let alone removed.
  */
-import { existsSync, realpathSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, realpathSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, isAbsolute } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { RepoOSConfig, Task } from "./types.js";
@@ -61,8 +61,20 @@ export interface GcEntry {
   taskStatus?: string;
   /** Commits on the branch that are not ancestors of main, when measured. */
   commitsAhead?: number;
-  /** Dirty paths (repo-relative) when the entry was retained for its contents. */
+  /** Uncommitted (non-ignored) paths, repo-relative, when measured. */
   dirtyPaths?: string[];
+  /**
+   * Ignored paths that are not regenerable build output. These can hold local
+   * secrets (`.env`) or task attachments (`work/.attachments/`), so their
+   * presence always keeps the worktree; reported so an operator can inspect.
+   */
+  ignoredPaths?: string[];
+  /**
+   * Non-task paths the branch changed relative to main (the branch's whole
+   * contribution to the merge base). Structured so the retention audit does
+   * not depend on a five-path reason string.
+   */
+  changedSourcePaths?: string[];
 }
 
 /** A registered worktree outside RepoOS's managed directory. Never inspected. */
@@ -162,41 +174,92 @@ function gitRun(
 }
 
 /**
- * Dirty paths in a worktree, repo-relative, WITHOUT touching `dist/` (generated
- * build output is routinely re-dirtied and is not work data — the same
- * exclusion `DIFF_SOURCE_PATHS` uses for the review diff). A missing directory
- * has no dirty paths. `null` means git could not tell us, which is treated as
- * "not safe to clean".
+ * Generated output that is safe to discard along with a worktree. Everything
+ * else that git ignores is treated as possible local data (secrets, task
+ * attachments, scratch notes) — `git status` does NOT report ignored files, so
+ * a worktree containing only ignored data looks clean to a plain status check
+ * and must never be force-removed on that basis.
  */
-function worktreeDirtyPaths(path: string): string[] | null {
-  if (!existsSync(path)) return [];
+function isDisposableIgnoredPath(path: string): boolean {
+  const p = path.replace(/\/+$/, "");
+  if (p === ".DS_Store" || p.endsWith("/.DS_Store")) return true;
+  if (p === "dist" || p.startsWith("dist/")) return true;
+  if (p === "node_modules" || p.startsWith("node_modules/")) return true;
+  if (p === "coverage" || p.startsWith("coverage/")) return true;
+  // RepoOS's derived index cache, including nested layouts' `<x>/.repoos`.
+  if (p.split("/").includes(".repoos")) return true;
+  if (p === "user-docs/.vitepress/cache" || p.startsWith("user-docs/.vitepress/cache/")) {
+    return true;
+  }
+  if (/^user-docs\/\.vitepress\/.*\.timestamp-.*\.mjs$/.test(p)) return true;
+  return false;
+}
+
+/**
+ * An ignored path is still safe when it is a symlink into the canonical main
+ * checkout: `ensureWorktree` links `.env` that way, and removing the link does
+ * not remove the data (the canonical file stays put).
+ */
+function isSymlinkInto(dir: string, relPath: string, canonicalRoot: string): boolean {
+  try {
+    const entry = lstatSync(join(dir, relPath));
+    if (!entry.isSymbolicLink()) return false;
+    return isInside(canonicalRoot, realpathSync(join(dir, relPath)));
+  } catch {
+    // Dangling symlink or unreadable path: no data is reachable through it, so
+    // removing the link loses nothing.
+    return true;
+  }
+}
+
+interface WorktreeState {
+  /** Uncommitted non-ignored paths (repo-relative). */
+  dirtyPaths: string[];
+  /** Ignored paths that may hold local data (NOT build output or canonical symlinks). */
+  ignoredPaths: string[];
+}
+
+/**
+ * Changes and unpreserved local data in a worktree. `dist/` and other generated
+ * output is discarded with the worktree and never counts as work data; ignored
+ * data that cannot be proven disposable does. A missing directory has no paths.
+ * `null` means git could not tell us, which is treated as "not safe to clean".
+ */
+function worktreeState(path: string, canonicalRoot: string): WorktreeState | null {
+  if (!existsSync(path)) return { dirtyPaths: [], ignoredPaths: [] };
   const run = gitRun(path, [
     "status",
     "--porcelain",
     "-z",
     "--untracked-files=all",
-    "--",
-    ".",
-    ":(exclude)dist",
+    "--ignored=matching",
   ]);
   if (run.status !== 0) return null;
   const parts = run.stdout.split("\0");
-  const paths: string[] = [];
+  const dirtyPaths: string[] = [];
+  const ignoredPaths: string[] = [];
   for (let i = 0; i < parts.length; i += 1) {
     const entry = parts[i];
     if (!entry) continue;
     const status = entry.slice(0, 2);
-    paths.push(entry.slice(3));
+    const raw = entry.slice(3);
     // Rename/copy records carry the original path as the next NUL field.
+    let original: string | undefined;
     if (status.includes("R") || status.includes("C")) {
-      const original = parts[i + 1];
-      if (original) {
-        paths.push(original);
-        i += 1;
-      }
+      original = parts[i + 1];
+      if (original) i += 1;
     }
+    if (status === "!!") {
+      const normalized = raw.replace(/\/+$/, "");
+      if (!isDisposableIgnoredPath(normalized) && !isSymlinkInto(path, normalized, canonicalRoot)) {
+        ignoredPaths.push(normalized);
+      }
+      continue;
+    }
+    dirtyPaths.push(raw);
+    if (original) dirtyPaths.push(original);
   }
-  return paths;
+  return { dirtyPaths, ignoredPaths };
 }
 
 /** Resolve symlinks (macOS `/var` -> `/private/var`) so path containment checks line up. */
@@ -405,6 +468,32 @@ function commitCountAhead(root: string, mainBranch: string, branch: string): num
 }
 
 /**
+ * The non-task paths a branch changed relative to its merge base with main.
+ * Structured audit data for retained worktrees; the reason string only shows a
+ * handful, and the report must not lose the rest. `undefined` when git cannot
+ * answer — callers omit the field rather than claim "no paths".
+ */
+function branchChangedSourcePaths(
+  root: string,
+  mainBranch: string,
+  branch: string,
+  workDir: string,
+): string[] | undefined {
+  const base = gitRun(root, ["merge-base", mainBranch, branch], { timeout: 4000 });
+  if (base.status !== 0 || !base.stdout.trim()) return undefined;
+  const diff = gitRun(
+    root,
+    ["diff", "--name-only", "-z", "--no-renames", base.stdout.trim(), branch],
+    { timeout: 15000 },
+  );
+  if (diff.status !== 0) return undefined;
+  return diff.stdout
+    .split("\0")
+    .filter(Boolean)
+    .filter((path) => !isTaskFilePath(path, workDir));
+}
+
+/**
  * Sweep stale worktrees/branches. Synchronous and fail-soft — any git hiccup is
  * recorded in `report.errors` and the sweep moves on.
  */
@@ -543,17 +632,54 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       path: w.path,
       ...(task ? { taskId: task.id, taskStatus: task.status } : {}),
     };
+    const merged = branch ? mergedIntoMain.has(branch) : false;
+    const state = worktreeState(w.path, root);
+    const commitsAhead = branch
+      ? merged
+        ? 0
+        : commitCountAhead(root, mainBranch, branch)
+      : undefined;
+
+    // Retaining is an AUDIT, not just a decision. Record the branch's commits
+    // ahead, structured changed source paths, dirty paths, and ignored local
+    // data even when the deciding reason (active agent, human owner) needs none
+    // of them — otherwise `status` and `gc --dry-run` cannot answer "what is in
+    // this retained worktree?" without a second investigation.
+    const keep = (reason: string): void => {
+      const entry: GcEntry = { ...meta, reason };
+      if (commitsAhead !== undefined) entry.commitsAhead = commitsAhead;
+      if (state) {
+        entry.dirtyPaths = state.dirtyPaths;
+        entry.ignoredPaths = state.ignoredPaths;
+      }
+      if (branch) {
+        const changed = branchChangedSourcePaths(root, mainBranch, branch, workDir);
+        if (changed) entry.changedSourcePaths = changed;
+      }
+      retain(entry);
+    };
 
     // --- repoos/integrate/<id> candidates: throwaway, both modes ---
     if (branch.startsWith(CANDIDATE_BRANCH_PREFIX)) {
       const taskId = branch.slice(CANDIDATE_BRANCH_PREFIX.length);
       if (activeJobIds.has(taskId)) {
-        retain({ ...meta, reason: "close-out job still active" });
+        keep("close-out job still active");
         continue;
       }
       const candidateTask = taskById.get(taskId);
       if (candidateTask?.status === "active" || candidateTask?.status === "review") {
-        retain({ ...meta, reason: "task agent still active" });
+        keep("task agent still active");
+        continue;
+      }
+      // Even a throwaway candidate is force-removed only when it holds nothing
+      // unpreserved: ignored files are invisible to `git status`, so a build
+      // directory is fine but a stray `.env` or attachment tree is not.
+      if (!state) {
+        keep("could not read worktree status (kept conservatively)");
+        continue;
+      }
+      if (state.ignoredPaths.length > 0) {
+        keep(`ignored files may hold local data: ${state.ignoredPaths.slice(0, 5).join(", ")}`);
         continue;
       }
       remove(
@@ -577,7 +703,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
           true,
         );
       } else {
-        retain({ branch: "", path: w.path, reason: "detached worktree, directory present" });
+        keep("detached worktree, directory present");
       }
       continue;
     }
@@ -591,15 +717,14 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     // can carry unmerged data — so the content proof here decides.
     if (!task) {
       if (existsSync(w.path)) {
-        retain({ ...meta, reason: "no task record for branch — lifecycle state unknown" });
+        keep("no task record for branch — lifecycle state unknown");
         continue;
       }
-      const merged = mergedIntoMain.has(branch);
       const proof = merged
         ? { represented: true, differing: [] as string[], uniqueTaskFiles: [] as string[] }
         : branchRepresentedInMain(root, mainBranch, branch, workDir, null);
       if (!proof.represented) {
-        retain({ ...meta, reason: notRepresentedReason(proof, mainBranch) });
+        keep(notRepresentedReason(proof, mainBranch));
         continue;
       }
       remove(
@@ -626,35 +751,25 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
             : task.isArchived
               ? `archived task status is ${task.status} (not resolved)`
               : `task status is ${task.status} (not resolved)`;
-      retain({ ...meta, reason });
+      keep(reason);
       continue;
     }
     if (task.assignee === "human") {
       // Done human-owned work is still human-owned; a done close-out is the
       // only RepoOS workflow that resolves it, and even then we do not delete a
       // worktree the human may still be inspecting.
-      retain({ ...meta, reason: "human-assigned task" });
+      keep("human-assigned task");
       continue;
     }
 
     // At this point the task is resolved (done, or archived+AI) and AI-owned.
     // `merged` is the cheap ancestry proof; `representation` is the stronger
     // content proof for squash/rebase/WIP-checkpoint branches.
-    const merged = mergedIntoMain.has(branch);
-    const dirtyPaths = worktreeDirtyPaths(w.path);
-    const commitsAhead = merged ? 0 : commitCountAhead(root, mainBranch, branch);
-    const withProgress = (entry: GcEntry): GcEntry =>
-      commitsAhead === undefined ? entry : { ...entry, commitsAhead };
-
-    if (dirtyPaths === null) {
-      retain(
-        withProgress({
-          ...meta,
-          reason: "could not read worktree status (kept conservatively)",
-        }),
-      );
+    if (!state) {
+      keep("could not read worktree status (kept conservatively)");
       continue;
     }
+    const dirtyPaths = state.dirtyPaths;
 
     let represented = merged;
     let differing: string[] = [];
@@ -673,13 +788,16 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     }
 
     if (!represented) {
-      retain(
-        withProgress({
-          ...meta,
-          reason: notRepresentedReason({ represented, differing, uniqueTaskFiles }, mainBranch),
-          ...(dirtyPaths.length > 0 ? { dirtyPaths } : {}),
-        }),
-      );
+      keep(notRepresentedReason({ represented, differing, uniqueTaskFiles }, mainBranch));
+      continue;
+    }
+
+    // Ignored files are not visible to `git status` default output: a worktree
+    // whose only unpreserved content is an ignored `.env` or attachment tree
+    // must look dirty, not clean, or a forced removal would delete local data
+    // that is not in main (and, for attachments, not anywhere else).
+    if (state.ignoredPaths.length > 0) {
+      keep(`ignored files may hold local data: ${state.ignoredPaths.slice(0, 5).join(", ")}`);
       continue;
     }
 
@@ -687,24 +805,21 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
       const taskDirt = dirtyTaskFilesAreRedundant(root, w.path, mainBranch, workDir, dirtyPaths);
       if (!taskDirt.safe) {
         const allTaskFiles = dirtyPaths.every((path) => isTaskFilePath(path, workDir));
-        retain(
-          withProgress({
-            ...meta,
-            reason: allTaskFiles
-              ? `uncommitted task-file changes with unique data: ${taskDirt.unsafe.slice(0, 5).join(", ")}`
-              : `uncommitted changes: ${taskDirt.unsafe.slice(0, 5).join(", ")}`,
-            dirtyPaths,
-          }),
+        keep(
+          allTaskFiles
+            ? `uncommitted task-file changes with unique data: ${taskDirt.unsafe.slice(0, 5).join(", ")}`
+            : `uncommitted changes: ${taskDirt.unsafe.slice(0, 5).join(", ")}`,
         );
         continue;
       }
       remove(
-        withProgress({
+        {
           ...meta,
           reason: merged
             ? "merged into main; dirty task-file changes match main"
             : "represented in main; dirty task-file changes match main",
-        }),
+          commitsAhead: commitsAhead ?? 0,
+        },
         /* forceBranch */ !merged,
         /* forceWorktree */ true,
       );
@@ -712,10 +827,11 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     }
 
     remove(
-      withProgress({
+      {
         ...meta,
         reason: merged ? "merged into main and clean" : "represented in main and clean",
-      }),
+        commitsAhead: commitsAhead ?? 0,
+      },
       /* forceBranch */ !merged,
       /* forceWorktree */ true,
     );
