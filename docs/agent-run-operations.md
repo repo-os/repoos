@@ -207,6 +207,50 @@ an adopt/stop line, then `repoos agents` and the task transcript before
 `repoos start` — a second start while the orphan is still alive used to create
 two writers and WIP checkpoint commits that blocked Move to done (#0832).
 
+### What actually breaks after adoption (#1015)
+
+The hypothesis that an adopted process loses its stdout link is **wrong**, and
+worth recording so nobody "fixes" it again. Engineers are spawned with their
+stdout/stderr on **file descriptors**, not pipes owned by the server
+(`stdio: ["ignore", outFd, errFd]` in `src/server/agents.ts`), precisely so a
+reload cannot cause EPIPE. Stdin is `"ignore"` for every engineer, so there was
+never an interactive channel to lose. After adoption the new server replays
+`<taskId>.out.log` and tails it from the end: output, `::repoos-handoff-ready::`
+signals and `repoos mv` request files all keep working, and worktree activity
+continues. The 2026-11-03 activity logs confirm it — each `adopted orphaned
+engineer pid N` line is followed by continued `body` edits and a delivered
+message.
+
+What does break is **turn-end classification**. A live spawn has a
+`ChildProcess` handle, so `close` carries an exit code into `cleanup()`; an
+adopted entry has none, so the only observer is `reconcileDeadAgents()` on the
+watchdog tick. That path used to pass `exitedCleanly: false` for every adopted
+turn, which meant:
+
+- every adopted turn that ended normally was booked as `agent exited with an
+  error` and escalated to `needs_input` (a human had to press Start);
+- queued human messages were handed to crash recovery instead of delivered by
+  the normal end-of-turn path.
+
+Fixed in `reconcileDeadAgents()`: an adopted end with no `ChildProcess` is
+**clean** unless the replayed transcript recorded a provider failure, the
+worktree is gone, or RepoOS itself aborted the turn. The bounded clean-exit
+resume (#0888) then owns it, exactly like a spawned turn.
+
+A second, independent gap made "idle after a restart" feel unbounded: while the
+adopted process is *alive but silent*, nothing bounded a queued message. The CTO
+nudge deliberately holds on `message-queued` (another reminder would only queue
+behind it) and `restart-stalled-agent` refuses while `isRunning()` is true, so
+the board could say "an undelivered message is already queued" for hours. The
+watchdog now runs `recoverSilentEngineerQueues()` each tick: when the OLDEST
+queued message has waited past an hour **and** the engineer has produced no
+output, **and** no known long-running work child (check, tests, browser, remote
+validation) is alive in its process group, the turn is ended with a clear
+Activity line (`queued message undelivered for Nm … ending the turn so it is
+delivered`). Ending the turn is what delivers the queue, so the engineer resumes
+with the message. Paused, handing-off and phantom-runner cases keep their own
+owners. The pure decision table lives in `src/core/queued-message-recovery.ts`.
+
 ### Previews and second servers
 
 **Current operating rules** (see `AGENTS.md`): one **control-plane** `repoos
