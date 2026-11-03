@@ -37,3 +37,4 @@ Evidence: `.repoos/agent-logs/review:1013.*` logs, activity lines at 16:52:36Z a
 - 2026-11-03T19:37:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T20:04:01Z · body
 - 2026-11-03T20:07:44Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T20:07:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
