@@ -112,9 +112,9 @@ describe("engineering reports", () => {
     expect(secondRound.report?.round).toBe(2);
     expect(listEngineeringReports(config, "T1")).toHaveLength(2);
 
-    writeFileSync(join(draftDir, "T1.md"), `${narrative} ${"long ".repeat(1001)}`);
+    writeFileSync(join(draftDir, "T1.md"), `${narrative} ${"long ".repeat(1201)}`);
     const tooLong = await finalizeEngineeringReport(args);
-    expect(tooLong.error).toContain("1–1,000 words");
+    expect(tooLong.error).toContain("1–1,200 words");
     expect(listEngineeringReports(config, "T1")).toHaveLength(2);
   });
 
@@ -404,7 +404,7 @@ describe("engineering reports", () => {
     expect(listEngineeringReports(config, "T1")).toHaveLength(0);
   });
 
-  it("enforces the word limit after adding the generated file summary", async () => {
+  it("does not count the generated file summary toward the word limit", async () => {
     const baseSha = git("rev-parse HEAD");
     for (let index = 0; index < 140; index++) {
       writeFileSync(join(root, "src", `generated-report-file-${index}.ts`), "line\n");
@@ -427,10 +427,9 @@ describe("engineering reports", () => {
       sourceSha,
     });
 
-    expect(result.report).toBeNull();
-    expect(result.error).toContain("including its generated change summary");
-    expect(result.error).toContain("final report has");
-    expect(listEngineeringReports(config, "T1")).toHaveLength(0);
+    expect(result.error).toBeUndefined();
+    expect(result.report?.wordCount).toBeLessThanOrEqual(1200);
+    expect(listEngineeringReports(config, "T1")).toHaveLength(1);
   });
 
   it("does not assume a missing report belongs to legacy work", () => {
