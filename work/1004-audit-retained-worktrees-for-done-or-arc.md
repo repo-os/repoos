@@ -2,7 +2,7 @@
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — cleanup can erase ignored local data, and retained-worktree audits omit required details."
@@ -16,7 +16,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T02:11:41Z"
+updated_at: "2026-11-03T02:14:21Z"
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_passes: 3
 review_rounds: 2
@@ -175,4 +175,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T02:11:40Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T02:11:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T02:11:41Z · message_delivered: 1 message(s)
-
+- 2026-11-03T02:14:21Z · status active→review
