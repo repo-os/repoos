@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-03T18:13:27.153Z: repoos check failed: ◆ Check plan"
 id: 1011
 title: "Easter eggs bundle: Cancel stalled check button flapping"
 type: bug
@@ -14,7 +12,9 @@ cli_override: cursor
 model_override: grok-4.7-low
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T18:10:23Z"
+updated_at: "2026-11-03T18:24:44Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-03T18:13:27.153Z: repoos check failed: ◆ Check plan"
 ---
 ## Items
 
@@ -90,4 +90,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T18:10:23Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T18:10:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T18:10:23Z · message_delivered: 1 message(s)
-
+- 2026-11-03T18:24:44Z · body
