@@ -278,3 +278,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T06:37:35Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T06:52:43Z · body
 - 2026-11-03T06:56:14Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T06:56:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
