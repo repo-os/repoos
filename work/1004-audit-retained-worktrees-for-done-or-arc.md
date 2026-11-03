@@ -4,8 +4,8 @@ title: Make retained worktree cleanup safe and actionable
 type: chore
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — code safety fixes verify clean, but branch still carries a task-scope file that fails landing."
 priority: p2
 area: [core, server]
 assigned_to: ai
