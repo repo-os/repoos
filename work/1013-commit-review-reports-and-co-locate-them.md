@@ -6,13 +6,16 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: the opencode agent timed out after 900s
+debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
+debug_tldr_at: "2026-11-03T17:08:16Z"
+debug_tldr_key: review-failed|the opencode agent timed out after 900s
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T17:07:47Z"
+updated_at: "2026-11-03T17:08:16Z"
 last_check_failure: "repoos check at 2026-11-03T16:08:43.074Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 dev_error_count: 2
