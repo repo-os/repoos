@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T10:27:12Z"
+updated_at: "2026-11-03T10:27:17Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T09:38:49.222Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -99,3 +99,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T10:22:17Z · message_queued at 2026-11-03T10:22:17.170Z
 - 2026-11-03T10:22:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T10:27:12Z · body
+- 2026-11-03T10:27:17Z · CTO nudge: held — an undelivered message is already queued
