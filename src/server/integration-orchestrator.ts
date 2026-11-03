@@ -587,13 +587,20 @@ export async function resetForeignWorkFiles(opts: {
     10_000,
   );
   if (changed.status !== 0) return [];
+  // Task markdown is the classic case, but a report is bookkeeping too: both
+  // the shared (`reports/`) and legacy (`engineering-reports/`) directories can
+  // hold JSON or markdown, and another task's report must not survive either.
+  const workDirPrefix = withDirSlash(dirs.workDir);
+  const reportPrefixes = [`${workDirPrefix}reports/`, `${workDirPrefix}engineering-reports/`];
+  const isReportFile = (path: string): boolean =>
+    reportPrefixes.some((prefix) => path.startsWith(prefix));
   const foreign = changed.stdout
     .split("\n")
     .map((s) => s.trim())
     .filter(
       (p) =>
         p &&
-        p.endsWith(".md") &&
+        (p.endsWith(".md") || isReportFile(p)) &&
         p !== ownWorkFile &&
         !(taskId !== undefined && isOwnReportPath(p, dirs, taskId)),
     );

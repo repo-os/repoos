@@ -7,7 +7,7 @@
  * `<cacheDir>/reviews/<taskId>/<pass>.md`; that location is still read (and kept
  * as a local mirror while a task is in review) so history survives the upgrade.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseDocument } from "./frontmatter.js";
 import type { RepoOSConfig } from "./types.js";
@@ -157,10 +157,4 @@ export function reviewPassActivitySummary(
     return `review pass ${pass}: ${v} — clamped by automated verification: ${clampReason}`;
   }
   return `review pass ${pass}: ${v}`;
-}
-
-/** Create the tracked pass directory (and the local cache mirror's on demand). */
-export function ensureReviewPassDir(config: RepoOSConfig, taskId: string): void {
-  mkdirSync(trackedReviewsDir(config, taskId), { recursive: true });
-  mkdirSync(legacyReviewsDir(config, taskId), { recursive: true });
 }

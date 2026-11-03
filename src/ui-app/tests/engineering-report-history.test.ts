@@ -110,10 +110,33 @@ describe("engineering report history", () => {
     });
     for (let i = 0; i < 5; i++) await nextTick();
 
+    // #1013: the Dev tab mirrors the Review tab — model/agent row above the
+    // sub-tab selector, Report first on the left, Chat second on the right.
+    const overrideBar = wrapper.get(".agent-override-bar");
+    const paneTabs = wrapper.get(".review-pane-tabs");
+    expect(paneTabs.findAll("button")[0]!.attributes("data-test-id")).toBe(
+      "engineering-report-tab",
+    );
+    expect(paneTabs.findAll("button").map((tab) => tab.text().trim())).toEqual([
+      "Report 2",
+      "Chat",
+    ]);
+    expect(
+      overrideBar.element.compareDocumentPosition(paneTabs.element) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
     await wrapper.get('[data-test-id="engineering-report-tab"]').trigger("click");
     expect(wrapper.get('[data-test-id="engineering-report-history"]').text()).toContain("Round 1");
     expect(wrapper.text()).toContain("Round 2");
     expect(wrapper.text()).toContain("Second round report body.");
+
+    // Chat is the other half of the same pane pair; switching hides the report.
+    await paneTabs.findAll("button")[1]!.trigger("click");
+    expect(wrapper.find('[data-test-id="engineering-report-history"]').exists()).toBe(false);
+    expect(wrapper.find(".ai-chat-compose.agent-compose").exists()).toBe(true);
+    await wrapper.get('[data-test-id="engineering-report-tab"]').trigger("click");
+    expect(wrapper.get('[data-test-id="engineering-report-history"]').text()).toContain("Round 1");
 
     await wrapper.get('[data-test-id="engineering-report-history"] tbody tr').trigger("click");
     expect(wrapper.text()).toContain("First round report body.");

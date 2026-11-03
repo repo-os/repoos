@@ -142,10 +142,12 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
         join(fx.candidate, "work", "reports", "0001", "review-1.md"),
         "own review pass\n",
       );
+      writeFileSync(join(fx.candidate, "work", "reports", "0001", "round-1.json"), '{"round":1}\n');
       writeFileSync(
         join(fx.candidate, "work", "reports", "0002", "review-1.md"),
         "foreign review pass\n",
       );
+      writeFileSync(join(fx.candidate, "work", "reports", "0002", "round-1.json"), '{"round":1}\n');
       git(fx.candidate, ["add", "-A"]);
       git(fx.candidate, ["commit", "-q", "-m", "docs: reports"]);
 
@@ -163,13 +165,20 @@ describe("resetForeignWorkFiles (close-out drift guard)", () => {
         taskId: "0001",
       });
 
-      expect(reset.sort()).toEqual(["work/0002-other.md", "work/reports/0002/review-1.md"]);
+      expect(reset.sort()).toEqual([
+        "work/0002-other.md",
+        "work/reports/0002/review-1.md",
+        "work/reports/0002/round-1.json",
+      ]);
       expect(
         readFileSync(join(fx.candidate, "work", "reports", "0001", "review-1.md"), "utf8"),
       ).toBe("own review pass\n");
-      expect(git(fx.candidate, ["ls-files", "work/reports"])).not.toContain(
-        "work/reports/0002/review-1.md",
-      );
+      expect(
+        readFileSync(join(fx.candidate, "work", "reports", "0001", "round-1.json"), "utf8"),
+      ).toBe('{"round":1}\n');
+      const tracked = git(fx.candidate, ["ls-files", "work/reports"]);
+      expect(tracked).not.toContain("work/reports/0002/review-1.md");
+      expect(tracked).not.toContain("work/reports/0002/round-1.json");
     } finally {
       fx.clean();
     }
