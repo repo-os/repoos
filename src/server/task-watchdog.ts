@@ -543,6 +543,11 @@ export class TaskWatchdog {
     this.lastWatchdogTickMs = wallNow;
     try {
       this.runner.reconcileDeadAgents?.();
+      // #1015: bound a human message queued behind a silent engineer. The CTO
+      // nudge holds on `message-queued` (another reminder would only queue
+      // behind the first) and `restart-stalled-agent` refuses while a turn is
+      // "running", so nothing else would ever deliver it.
+      await this.recoverSilentEngineerQueues();
       // A hold that stopped an engineer left a pause. Once hold_until passes,
       // that pause must not keep this scan from resuming the task.
       clearExpiredHoldPauses(
@@ -577,6 +582,39 @@ export class TaskWatchdog {
       this.escalateStaleQueueWaits();
     } finally {
       this.scanning = false;
+    }
+  }
+
+  /**
+   * Bound a human message queued behind a silent engineer (#1015).
+   *
+   * A message sent while a turn is running waits for that turn to end. That is
+   * correct while the engineer is working, but a turn can be alive and
+   * producing nothing — a hung provider call, or an engineer adopted across a
+   * server restart whose process outlives the turn that spawned it. Without
+   * this the message waits forever and the board only ever says "an
+   * undelivered message is already queued". The runner owns every guard
+   * (silence window, known work child, pause, handoff); this sweep just offers
+   * each task that has a queue.
+   */
+  private async recoverSilentEngineerQueues(): Promise<void> {
+    if (typeof this.runner.recoverSilentEngineerWithQueuedMessage !== "function") return;
+    for (const task of this.index.getTasks("active")) {
+      if (task.isArchived || task.needsInput || isHoldActive(task)) continue;
+      if (task.assignee === "human") continue;
+      if (
+        typeof this.runner.hasQueuedMessages === "function" &&
+        !this.runner.hasQueuedMessages(task.id)
+      ) {
+        continue;
+      }
+      try {
+        await this.runner.recoverSilentEngineerWithQueuedMessage(task.id);
+      } catch (error) {
+        console.error(
+          `[repoos] watchdog: queued-message recovery failed for #${task.id}: ${(error as Error).message}`,
+        );
+      }
     }
   }
 
