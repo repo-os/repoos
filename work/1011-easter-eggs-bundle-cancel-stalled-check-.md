@@ -95,3 +95,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T18:26:32Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T18:45:19Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65375/api/tasks/9999/engineering-reports (http://127.0.0.1:65375/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65375/api/tasks/9999/engineering-reports)
 - 2026-11-03T18:52:09Z · message_queued at 2026-11-03T18:52:09.719Z
+- 2026-11-03T18:52:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
