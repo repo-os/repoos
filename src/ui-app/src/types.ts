@@ -521,6 +521,10 @@ export interface ReviewReport {
   branch: string;
   /** "ok" when a parseable verdict is present; "incomplete" when output lacked one; "failed" when the run produced no usable report. */
   state: "ok" | "incomplete" | "failed";
+  /** True when `state: "failed"` was a hard review timeout, not a silent exit (#1019). */
+  timedOut?: boolean;
+  /** Configured timeout that stopped the pass, in minutes (set with `timedOut`). */
+  timeoutMinutes?: number;
   markdown: string;
 }
 
