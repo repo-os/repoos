@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-03T16:08:43.074Z: repoos check failed: ◆ Check plan"
 id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
@@ -124,3 +126,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T15:57:33Z · body
 - 2026-11-03T16:00:28Z · body
 - 2026-11-03T16:04:35Z · body
+
