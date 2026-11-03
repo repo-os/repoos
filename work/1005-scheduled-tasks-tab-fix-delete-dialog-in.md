@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-03T04:09:23.516Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Scheduled task cards use a compact horizontal layout (target \"default\"): state \"schedule:seeded\" did not render on target \"default\" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:58574/agents?tab=scheduled&shotState=schedule%3Aseeded); [missing-target] Schedule cards stack readably at a narrow viewport (target \"default\"): state \"sched… (truncated)"
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
@@ -12,7 +14,6 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
 updated_at: "2026-11-03T04:09:20Z"
-last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1
@@ -242,3 +243,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T03:43:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T03:43:44Z · message_delivered: 1 message(s)
 - 2026-11-03T04:09:20Z · note: ui verification failed (2 issue(s)): [missing-target] Scheduled task cards use a compact horizontal layout (target "default"): state "schedule:seeded" did not render on target "default" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:58574/agents?tab=scheduled&shotState=schedule%3Aseeded); [missing-target] Schedule cards stack readably at a narrow viewport (target "default"): state "schedule:seeded" did not r
+
