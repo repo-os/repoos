@@ -137,3 +137,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T16:34:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-03T16:34:49Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T16:37:31Z · status active→review
+- 2026-11-03T16:37:31Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
