@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: grok-4.7-low
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T17:42:10Z"
+updated_at: "2026-11-03T17:44:07Z"
 ---
 ## Items
 
@@ -49,10 +49,6 @@ The pass/round number is fully readable on the selected row: add left padding to
 ### Notes for AI
 Find the selected-row class in the review history table (grep TaskDrawer.vue / style.css for the row selected style). If #1007 has not landed yet, cover the report table once it is on main.
 
-## Screenshots
-
-![Selected review row: accent bar overlaps #8](/api/tasks/1011/attachments/att_7bb17e23-df1b-45f2-8cc8-a7e128aad7db.png)
-
 ## Shots
 ```json
 [
@@ -65,6 +61,10 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 }
 ]
 ```
+
+## Screenshots
+
+![Selected review row: accent bar overlaps #8](/api/tasks/1011/attachments/att_7bb17e23-df1b-45f2-8cc8-a7e128aad7db.png)
 
 ## Activity
 
@@ -82,3 +82,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T17:40:05Z · message_queued at 2026-11-03T17:40:05.894Z
 - 2026-11-03T17:40:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T17:42:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T17:44:07Z · body
