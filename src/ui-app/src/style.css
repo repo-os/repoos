@@ -5,6 +5,18 @@
  * Tailwind utilities are layered on top.
  */
 
+/* #1018: a hidden document must not keep the GPU busy. Chrome throttles
+   timers and rAF in a background tab, but CSS animations (status pulses,
+   review-ready glows, activity art) keep compositing. App.vue toggles this
+   class on <html> from visibilitychange; animations resume where they left
+   off when the tab becomes visible again. */
+.ui-document-hidden *,
+.ui-document-hidden *::before,
+.ui-document-hidden *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+
 :root {
   --bg: #070a12;
   --bg-2: #0b1020;

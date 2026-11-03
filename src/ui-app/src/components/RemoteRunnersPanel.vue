@@ -84,7 +84,10 @@ onMounted(() => {
     if (fixture) applyShotPreviewFixture(repo, fixture);
   }
   void load();
-  pollTimer = setInterval(() => void load(), 3000);
+  pollTimer = setInterval(() => {
+    // #1018: skip the poll while hidden; visibility/focus re-reads state.
+    if (document.visibilityState === "visible") void load();
+  }, 3000);
   tickTimer = setInterval(() => (nowTick.value = Date.now()), 1000);
 });
 onUnmounted(() => {
