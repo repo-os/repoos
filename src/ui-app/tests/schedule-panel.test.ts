@@ -364,20 +364,20 @@ describe("schedule dialog layering and capture fixture (#1005)", () => {
     expect(scrim?.getAttribute("data-overlay-layer")).toBe(layerId);
   });
 
-  it("seeds the schedule:seeded capture fixture and records the applied marker", async () => {
+  it("seeds the agents:scheduledSeeded capture fixture and records the applied marker", async () => {
     const repo = useRepoStore();
     repo.health = { isPreviewBuild: true } as unknown as Health;
     repo.schedules = [];
     repo.refreshSchedules = vi.fn().mockResolvedValue(undefined);
-    window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=schedule:seeded");
+    window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=agents:scheduledSeeded");
     try {
       // #1005 — the fixture must go through the shared entry point (the same
       // one App.vue calls), not a panel-local assignment: only that path stamps
       // `data-repoos-shot-state`, which is what a capture probes to prove the
       // declared state rendered.
-      applyShotPreviewFixture(repo, "schedule:seeded");
+      applyShotPreviewFixture(repo, "agents:scheduledSeeded");
       expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
-        "schedule:seeded",
+        "agents:scheduledSeeded",
       );
 
       mountPanel();
@@ -392,14 +392,14 @@ describe("schedule dialog layering and capture fixture (#1005)", () => {
     }
   });
 
-  it("re-applies schedule:seeded rows after a live refresh (#1005)", async () => {
+  it("re-applies agents:scheduledSeeded rows after a live refresh (#1005)", async () => {
     // An SSE `schedule.changed` event calls refreshSchedules() mid-capture. The
     // live response must not wipe the seeded rows — board fixtures re-apply on
     // index refresh for the same reason (#0782).
     const repo = useRepoStore();
     repo.health = { isPreviewBuild: true } as unknown as Health;
     repo.schedules = [];
-    window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=schedule:seeded");
+    window.history.replaceState({}, "", "/agents?tab=scheduled&shotState=agents:scheduledSeeded");
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => ({

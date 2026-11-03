@@ -146,8 +146,12 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "schedule:newPanel",
   // #1005 — Agents scheduled tab with two seeded schedules, so captures can
   // show the compact cards and drive the delete confirmation without needing
-  // real `schedules/` rows on the preview board.
-  "schedule:seeded",
+  // real `schedules/` rows on the preview board. Deliberately NOT under the
+  // `schedule:` prefix: the capture driver maps that prefix to "a dialog must
+  // be open" (server-side `shotFixtureContainer`, which may be the
+  // control-plane build rather than this branch's), and these rows are a plain
+  // list screen whose steps open and close their own dialog.
+  "agents:scheduledSeeded",
   "reminders:due",
 ] as const;
 
@@ -172,10 +176,6 @@ export function isShotPreviewFixtureId(value: string): value is ShotPreviewFixtu
 export type ShotFixtureContainer = "dialog" | "task-card";
 
 export function shotFixtureContainer(fixture: string): ShotFixtureContainer | null {
-  // #1005 — `schedule:seeded` only seeds list rows; the capture's own steps
-  // open (and may close) the delete dialog, so neither outcome may require a
-  // dialog to still be open. Every other `schedule:` fixture opens one.
-  if (fixture === "schedule:seeded") return null;
   if (
     fixture.startsWith("drawer:") ||
     fixture.startsWith("panel:") ||
