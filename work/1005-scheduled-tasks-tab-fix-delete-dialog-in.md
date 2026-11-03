@@ -198,3 +198,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T01:40:01Z · body
 - 2026-11-03T01:43:26Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T01:43:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T01:43:27Z · message_delivered: 1 message(s)
