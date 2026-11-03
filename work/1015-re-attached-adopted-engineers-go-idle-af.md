@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: 1015
 title: "Re-attached (adopted) engineers go idle after a server restart: find out why and fix"
 type: bug
@@ -39,3 +40,4 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T14:04:26Z · watchdog: auto-surfaced stuck task · status active→ready · agent never started — no session exists for this task · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-11-03T14:04:28Z · CTO action: restart-stalled-agent (resume) · agent never started — no session exists for this task
 - 2026-11-03T15:11:17Z · status ready→active
+
