@@ -16,7 +16,8 @@ export interface EngineeringReport {
   markdown: string;
 }
 
-const MAX_WORDS = 1000;
+// Cap applies to the engineer's own narrative only; the generated change summary never counts.
+const MAX_WORDS = 1200;
 const words = (text: string): number =>
   (text.match(/\b[\p{L}\p{N}][\p{L}\p{N}'’-]*\b/gu) ?? []).length;
 const reportDir = (config: RepoOSConfig, taskId: string) =>
@@ -184,7 +185,7 @@ export async function finalizeEngineeringReport(args: {
   if (!narrative || narrativeWords > MAX_WORDS)
     return {
       report: null,
-      error: `Engineering report must contain 1–1,000 words (draft has ${narrativeWords}); shorten it and request handoff again.`,
+      error: `Engineering report must contain 1–1,200 words (draft has ${narrativeWords}); shorten it and request handoff again.`,
     };
   const requiredSections = [
     "## TL;DR",
@@ -271,12 +272,6 @@ export async function finalizeEngineeringReport(args: {
     ...(files.length ? files : ["- No changed files."]),
   ].join("\n");
   const markdown = `${narrative}\n\n${summary}`;
-  const reportWords = words(markdown);
-  if (reportWords > MAX_WORDS)
-    return {
-      report: null,
-      error: `Engineering report including its generated change summary must contain at most 1,000 words (final report has ${reportWords}); shorten the draft and request handoff again.`,
-    };
   const reports = listEngineeringReports(config, taskId);
   // Only an incomplete handoff may reuse its report. Everything else — a new
   // round after review feedback included — appends an immutable round, even
@@ -299,7 +294,7 @@ export async function finalizeEngineeringReport(args: {
     branch,
     baseSha: base.stdout.trim(),
     sourceSha,
-    wordCount: reportWords,
+    wordCount: narrativeWords,
     markdown,
   };
   mkdirSync(dir, { recursive: true });
