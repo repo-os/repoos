@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-03T04:29:52Z"
+review_passes: 2
 id: "0997"
 title: "Agent-failed card text, dead click target, and unclickable restart modal"
 type: bug
@@ -11,10 +13,8 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T04:29:52Z"
 review_rounds: 1
 routing_switches: 1
-review_passes: 1
 dev_error_count: 1
 ---
 ## Problem
@@ -213,3 +213,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T04:26:38Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-03T04:26:38Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-03T04:29:52Z · note: review pass 3: needs some work
+
