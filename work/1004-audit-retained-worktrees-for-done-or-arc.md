@@ -3,9 +3,6 @@ id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 needs_merge: true
 priority: p2
 area: [core, server]
@@ -16,7 +13,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T08:55:54Z"
+updated_at: "2026-11-03T08:56:01Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: user-docs-build — Error: ENOENT: no such file or directory, open '/Users/nick/code/nick/repoos-worktrees/feat/make-retained-worktree-cleanup-safe-and-/user-docs/.vitepress/dist/agent-skill.md'"
 last_handoff_failure_sha: db84e9c0c09f40287c08b894bac1cd56c6c05d9a
 review_passes: 7
@@ -264,3 +261,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T08:55:53Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T08:55:53Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-03T08:55:54Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-03T08:56:01Z · needs_input
