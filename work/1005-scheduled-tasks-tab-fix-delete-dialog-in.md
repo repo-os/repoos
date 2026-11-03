@@ -57,13 +57,13 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": "[role=\"dialog\"] .delete-confirm-actions",
 "steps": [
 {
-  "click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
+"click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
 },
 {
-  "waitFor": "[role=\"dialog\"]"
+"waitFor": "[role=\"dialog\"]"
 },
 {
-  "hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
+"hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
 }
 ],
 "state": "schedule:seeded"
@@ -194,3 +194,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T01:27:02Z · body
 - 2026-11-03T01:30:21Z · body
 - 2026-11-03T01:39:20Z · message_queued at 2026-11-03T01:39:20.298Z
+- 2026-11-03T01:39:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
