@@ -14,8 +14,10 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
+review_cli_override: opencode
+review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T17:08:16Z"
+updated_at: "2026-11-03T17:08:39Z"
 last_check_failure: "repoos check at 2026-11-03T16:08:43.074Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 dev_error_count: 2
@@ -150,3 +152,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T16:52:44Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-03T17:07:47Z · note: review pass 2: failed — no usable report
 - 2026-11-03T17:07:47Z · needs_input
+- 2026-11-03T17:08:39Z · review_cli_override, review_model_override
