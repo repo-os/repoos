@@ -12,7 +12,6 @@ created_at: "2026-11-03T05:23:01Z"
 updated_at: "2026-11-03T15:28:50Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T09:38:49.222Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Engineering reports are committed under `work/engineering-reports/<id>/round-N.json`. Review reports live in gitignored cache (`.repoos/reviews/<id>/`), so they vanish with the machine and future agents/humans never see why a task went through several rounds. Both are essential history of one loop (engineer changes, writes report, reviewer reviews, repeat) and should be tracked together.
