@@ -40,3 +40,4 @@ Reproduce in a normal browser tab and in the PWA, and say whether the cost diffe
 - 2026-11-03T16:47:16Z · status inbox→ready
 - 2026-11-03T16:47:20Z · status ready→active, branch
 - 2026-11-03T16:57:10Z · message_queued at 2026-11-03T16:57:10.169Z
+- 2026-11-03T16:57:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
