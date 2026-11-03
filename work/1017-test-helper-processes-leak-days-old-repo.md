@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
-updated_at: "2026-11-03T17:11:02Z"
+updated_at: "2026-11-03T17:27:10Z"
 ---
 ## Problem
 On 2026-11-03 the host was under critical memory pressure (swap churn over the guard limit) and local checks sat queued for 30+ minutes, delaying handoff of #1004 and #1013. `ps` shows dozens of leftover test helper processes, some days old, none doing work:
@@ -52,3 +52,4 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T17:11:02Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-03T17:11:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T17:11:02Z · message_delivered: 2 message(s)
+- 2026-11-03T17:27:10Z · message_queued at 2026-11-03T17:27:10.717Z
