@@ -11,7 +11,8 @@ Both travel with the task branch and remain in the repository after close-out,
 so a fresh clone keeps the rationale and the review findings for every round.
 The engineering report was originally written to
 `work/engineering-reports/<task-id>/round-<n>.json`; RepoOS still reads that
-legacy location, but every new report goes to the shared directory.
+legacy location, and on its next control-plane boot it moves any remaining
+rounds into `work/reports/<task-id>/` and commits that migration on `main`.
 
 An engineering report is written once per handoff. A later fix after review
 feedback creates another numbered round; it never overwrites an earlier round,
