@@ -2,14 +2,14 @@
 id: 1013
 title: Commit review reports and co-locate them with engineering reports
 type: feature
-status: review
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T15:11:03Z"
+updated_at: "2026-11-03T15:11:06Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T09:38:49.222Z\",\"kind\":\"dev-error\"}]"
