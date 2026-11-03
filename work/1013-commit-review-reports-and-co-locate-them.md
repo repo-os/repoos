@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T10:27:17Z"
+updated_at: "2026-11-03T10:29:04Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T09:38:49.222Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -100,3 +100,5 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T10:22:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T10:27:12Z · body
 - 2026-11-03T10:27:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T10:28:19Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T10:29:04Z · watchdog: check wait ended or recovered — cleared needs_input
