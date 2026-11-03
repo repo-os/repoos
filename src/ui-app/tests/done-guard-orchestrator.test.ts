@@ -224,7 +224,7 @@ describe("publish-time dirty-main guard (#0211)", () => {
     }
   });
 
-  it("blocks a human task edit that arrives during publish preparation", async () => {
+  it("checkpoints a task-file edit that arrives during publish preparation and preserves it (#1020)", async () => {
     const { root, clean } = makeRepo();
     try {
       mkdirSync(join(root, "work"), { recursive: true });
@@ -254,7 +254,9 @@ describe("publish-time dirty-main guard (#0211)", () => {
         branchSha: candidateSha,
         candidateSha,
       });
-      writeFileSync(join(root, "repoos.toml"), 'theme = "dark"\n');
+      // An already-dirty live task file makes publish run its merge-tree
+      // analysis, during which the second edit arrives.
+      writeFileSync(join(root, "work", "0095-initial-churn.md"), "---\nid: 0095\n---\nbody\n");
 
       const originalOverwriteCheck = gitModule.dirtyPathsOverwrittenByMerge;
       const overwriteSpy = vi
@@ -278,15 +280,193 @@ describe("publish-time dirty-main guard (#0211)", () => {
 
         const result = await orchestrator.processNext();
 
-        expect(result.ok).toBe(false);
-        expect(result.reason).toContain("work/0098-other-task.md");
-        expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
-        expect(git(root, ["status", "--porcelain"])).toContain("work/0098-other-task.md");
+        // A task file is live server-owned bookkeeping, not a source edit: the
+        // publish step now checkpoints it instead of aborting a finished gate.
+        expect(result.ok).toBe(true);
+        expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+        expect(readFileSync(taskPath, "utf8")).toContain("Human edit during publish.");
+        expect(git(root, ["status", "--porcelain"])).toBe("");
       } finally {
         overwriteSpy.mockRestore();
       }
     } finally {
       vi.restoreAllMocks();
+      clean();
+    }
+  });
+
+  it("still blocks a source file that arrives during publish preparation", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      const branch = "repoos/integrate/T3-late-source";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T3-late-source", branch } as any);
+      coordinator.updateJob("T3-late-source", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+      // Trigger the merge-tree analysis that the source edit arrives during.
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "work", "0095-initial-churn.md"), "---\nid: 0095\n---\nbody\n");
+
+      const originalOverwriteCheck = gitModule.dirtyPathsOverwrittenByMerge;
+      const overwriteSpy = vi
+        .spyOn(gitModule, "dirtyPathsOverwrittenByMerge")
+        .mockImplementation(async (...args) => {
+          const result = await originalOverwriteCheck(...args);
+          writeFileSync(join(root, "src-late.ts"), "export const late = 1;\n");
+          return result;
+        });
+
+      try {
+        const orchestrator = new CloseOutOrchestrator(
+          { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+          coordinator,
+          createRepositoryLock(root),
+          createRootLock(root),
+        );
+
+        const result = await orchestrator.processNext();
+
+        expect(result.ok).toBe(false);
+        expect(result.reason).toContain("src-late.ts");
+        expect(git(root, ["rev-parse", "main"])).toBe(mainSha);
+      } finally {
+        overwriteSpy.mockRestore();
+      }
+    } finally {
+      vi.restoreAllMocks();
+      clean();
+    }
+  });
+
+  it("checkpoints and publishes past a live task file dirty on main (#1020)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const taskPath = join(root, "work", "0097-live-task.md");
+      writeFileSync(
+        taskPath,
+        `---\nid: "0097"\ntitle: Live task\nstatus: active\n---\n\n## Problem\n\nIn flight.\n`,
+      );
+      git(root, ["add", "work/0097-live-task.md"]);
+      git(root, ["commit", "-m", "seed live task"]);
+
+      const branch = "repoos/integrate/T-live-task";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate work"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T-live-task", branch } as any);
+      coordinator.updateJob("T-live-task", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+
+      // The live task's own file was rewritten by the server moments before
+      // publish — exactly the #1004 shape (work/1015, work/1017).
+      writeFileSync(
+        taskPath,
+        `---\nid: "0097"\ntitle: Live task\nstatus: active\n---\n\n## Problem\n\nIn flight.\n\n## Activity\n\n- 2026-11-03T16:08:00Z · status active→review\n`,
+      );
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      expect(git(root, ["rev-parse", "main"])).not.toBe(mainSha);
+      expect(git(root, ["status", "--porcelain"])).toBe("");
+      expect(git(root, ["log", "--oneline", "-5"])).toMatch(/checkpoint bookkeeping\/config/);
+      // The live task's edit was checkpointed, not discarded or overwritten.
+      expect(git(root, ["show", "HEAD:work/0097-live-task.md"])).toContain("active→review");
+    } finally {
+      clean();
+    }
+  });
+
+  it("stashes a dirty task file the merge touches instead of checkpointing it (#1020)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      mkdirSync(join(root, "work"), { recursive: true });
+      const taskPath = join(root, "work", "0096-shared-task.md");
+      writeFileSync(
+        taskPath,
+        `---\nid: "0096"\ntitle: Shared task\n---\n\n## Problem\n\nline one\nline two\nline three\n`,
+      );
+      git(root, ["add", "work/0096-shared-task.md"]);
+      git(root, ["commit", "-m", "seed shared task"]);
+
+      const branch = "repoos/integrate/T-shared-task";
+      const wt = ensureWorktree(root, branch);
+      expect(wt.ok).toBe(true);
+      // The candidate branch changes the same task file the live writer touches.
+      writeFileSync(
+        join(wt.path, "work/0096-shared-task.md"),
+        `---\nid: "0096"\ntitle: Shared task\n---\n\n## Problem\n\nBRANCH line one\nline two\nline three\n`,
+      );
+      writeFileSync(join(wt.path, "feature.txt"), "new\n");
+      git(wt.path, ["add", "work/0096-shared-task.md", "feature.txt"]);
+      git(wt.path, ["commit", "-m", "candidate edits the task file"]);
+      const mainSha = git(root, ["rev-parse", "main"]);
+      const candidateSha = git(wt.path, ["rev-parse", "HEAD"]);
+
+      const coordinator = createJobCoordinator(root);
+      coordinator.enqueue({ id: "T-shared-task", branch } as any);
+      coordinator.updateJob("T-shared-task", {
+        phase: "publishing",
+        startedAt: new Date().toISOString(),
+        baseMainSha: mainSha,
+        branchSha: candidateSha,
+        candidateSha,
+      });
+
+      // Main's live writer changed a different line. The merge overwrites the
+      // file, so it must be stashed and reapplied — never silently committed.
+      writeFileSync(
+        taskPath,
+        `---\nid: "0096"\ntitle: Shared task\n---\n\n## Problem\n\nline one\nline two\nLIVE line three\n`,
+      );
+
+      const orchestrator = new CloseOutOrchestrator(
+        { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig,
+        coordinator,
+        createRepositoryLock(root),
+        createRootLock(root),
+      );
+
+      const result = await orchestrator.processNext();
+
+      expect(result.ok).toBe(true);
+      const merged = readFileSync(taskPath, "utf8");
+      expect(merged).toContain("BRANCH line one");
+      expect(merged).toContain("LIVE line three");
+      expect(git(root, ["stash", "list"])).toBe("");
+    } finally {
       clean();
     }
   });

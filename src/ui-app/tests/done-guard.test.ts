@@ -265,6 +265,58 @@ describe("move-to-done dirty-main guard (#0211)", () => {
     }
   });
 
+  it("does not block close-out when main only has another live task's markdown dirty (#1020)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      makeFeatureWorktree(root);
+      writeFileSync(join(root, "work", "9999-live-task.md"), "---\nid: 9999\n---\nbody\n");
+      const enqueue = vi.fn(() => ({ taskId: "0211", phase: "queued", enqueuedAt: "now" }));
+      const res = makeRes();
+
+      await taskAction(
+        makeCtx(root, reviewTask(root), { onEnqueue: enqueue }),
+        makeReq(),
+        res as any,
+        {
+          param1: "0211",
+          param2: "done",
+        },
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(enqueue).toHaveBeenCalledTimes(1);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still blocks close-out when a live task file rides along with a source edit (#1020)", async () => {
+    const { root, clean } = makeRepo();
+    try {
+      makeFeatureWorktree(root);
+      writeFileSync(join(root, "work", "9999-live-task.md"), "---\nid: 9999\n---\nbody\n");
+      writeFileSync(join(root, "src-late.ts"), "export const late = 1;\n");
+      const enqueue = vi.fn();
+      const res = makeRes();
+
+      await taskAction(
+        makeCtx(root, reviewTask(root), { onEnqueue: enqueue }),
+        makeReq(),
+        res as any,
+        {
+          param1: "0211",
+          param2: "done",
+        },
+      );
+
+      expect(res.statusCode).toBe(409);
+      expect(res.body.dirtyFiles).toEqual(["src-late.ts"]);
+      expect(enqueue).not.toHaveBeenCalled();
+    } finally {
+      clean();
+    }
+  });
+
   it("does not block close-out when the only dirty files on main are shot captures (#0713)", async () => {
     const { root, clean } = makeRepo();
     try {

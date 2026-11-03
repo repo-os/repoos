@@ -34,10 +34,11 @@ release soak), a few patterns recur. Full CLI table and incident notes:
 - **Use `repoos done <id>`** (optionally `--commit-dirty`, `--wait`) for the
   merge pipeline — not `repoos mv <id> done`. Use **`repoos review <id>`** for
   synchronous handoff when you need the validation result in the terminal.
-- **`--commit-dirty` on `main`:** only when uncommitted paths are **`work/*.md`
-  bookkeeping** (or an intentional config commit you mean to land with that
-  close-out). Never commit another task's dirty source or an owner's WIP via
-  this flag.
+- **`--commit-dirty` on `main`:** only when uncommitted paths are source or an
+  intentional config commit you mean to land with that close-out. Live task
+  markdown (`work/<id>-*.md`) no longer needs it: Move to done checkpoints that
+  bookkeeping at publish (#1020). Never commit another task's dirty source or an
+  owner's WIP via this flag.
 - **Branch work after a failed handoff (driver):** `repoos mv <id> active` (or
   API) **before** worktree merges/commits, then merge/check/commit and
   `repoos review <id>`. Automated close-out conflict repair stays in `review` —
@@ -79,7 +80,7 @@ detail, nextStep? }], summary: { pass, warn, fail } }`.
 | `worktree-clean` | the task worktree has uncommitted files | commit them on the branch or discard them |
 | `merge-conflicts` | `git merge-tree` reports a conflict outside the task's own `work/<id>-*.md` (own-file-only is a warning: close-out takes main's copy) | merge main into the branch (`repoos sync <id>`), keep both sides, re-review |
 | `task-scope` | the diff changes `repoos.toml`, or another task's `work/`, `inputs/` or `stories/` file. This task's own `work/<id>-*.md` and its own `work/engineering-reports/<id>/` are bookkeeping, not drift | restore that path from main, re-review |
-| `main-clean` | the primary checkout has uncommitted files, listed with their owner (`repoos.toml`, `work/`, `reminders/`, `schedules/`, `unknown`). A `repoos.toml` diff that is only automatic quota/pause fields is ignored. A tracked task file is ignored only when its entire delta is a valid watchdog check-wait escalation/recovery: the watchdog fields and exact activity entry, with the rest of the task unchanged. | commit or stash the named paths on main |
+| `main-clean` | the primary checkout has uncommitted files, listed with their owner (`repoos.toml`, `work/`, `reminders/`, `schedules/`, `unknown`). A `repoos.toml` diff that is only automatic quota/pause fields is ignored. A tracked task file is ignored only when its entire delta is a valid watchdog check-wait escalation/recovery: the watchdog fields and exact activity entry, with the rest of the task unchanged. A task markdown file under `work/` that **this branch does not change** is a **warning**, not a failure: publish checkpoint-commits it (#1020). A task file the branch itself changes, any source file, a report under `work/reports/`, or a reminder/schedule/input still fails. | commit or stash the named paths on main (live task files need no action) |
 
 The server gathers these facts with the same `gatherApprovalPreflight` the
 opt-in approval policy uses (`src/server/request-close-out.ts`), so the command,
@@ -790,12 +791,24 @@ candidate in the validate phase and into live `main` at publish), so a *conflict
 in any of them resolves to main's copy instead of failing the close-out. And the
 publish-time dirty-main guard treats a dirty file under any of the five (plus
 `repoos.toml`) as routine, server-written churn it may auto-checkpoint — a dirty
-file anywhere else still fails closed. Automatic quota/usage pauses are not
-part of that `repoos.toml` checkpoint (#0998): they are stored in the gitignored
-`.repoos/budget-runtime.json`. A `repoos.toml` whose only uncommitted change is
-those automatic pause fields is omitted from the dirty-main list, so it is
-neither a close-out blocker nor checkpoint-committed. A human settings edit,
-a human pause, an unknown key, or a parse failure still blocks.
+file anywhere else still fails closed. **Live task markdown
+(`work/<id>-*.md`) is the main case (#1020):** the server rewrites it on `main`
+for every active task while a close-out gate runs, so a finished 20-minute gate
+used to abort at publish with "main has 2 uncommitted files". It is now
+checkpoint-committed by the publish step — preserving every byte — when the
+merge leaves it untouched. A dirty task file the merge *would* overwrite is
+never checkpoint-committed; it goes through the stash/pop path below. Automatic
+quota/usage pauses are not part of that `repoos.toml` checkpoint (#0998): they
+are stored in the gitignored `.repoos/budget-runtime.json`. A `repoos.toml`
+whose only uncommitted change is those automatic pause fields is omitted from
+the dirty-main list, so it is neither a close-out blocker nor
+checkpoint-committed. A human settings edit, a human pause, an unknown key, or a
+parse failure still blocks.
+
+The enqueue guard (`POST /api/tasks/:id/done`, `repoos done`, the approval
+policy) and the `main-clean` landing check apply the same split: only
+non-task-markdown paths are blockers. Dirty live task files no longer need
+"Commit & continue" before a close-out can be enqueued.
 
 Before that classification, publish asks `git merge-tree` which of main's dirty
 paths the merge would actually overwrite (#0820). Only those are stashed — a
@@ -806,6 +819,13 @@ edit is reapplied. Dirty files the merge does not touch are never stashed. A pop
 that conflicts keeps the stash (git does not drop it on failure), reports the
 conflict with the preserved edit in the error card, and hands the task to the
 Debugger — the edit is never committed or discarded to make the merge fit.
+
+The dirty set is re-read a bounded number of times before the merge (three
+short retries). New live task markdown found there is included and
+checkpoint-committed, with a log line naming the paths. A new **non-task** path
+(a source edit, a `repoos.toml` change) gets that same short grace window and
+is then reported as a blocker — the retry can absorb a one-second dirty moment,
+but cannot make a real local edit safe to commit.
 
 **Only if the human explicitly authorizes manual recovery outside the normal
 pipeline:** when hand-landing a stale branch, do this check yourself; the guards

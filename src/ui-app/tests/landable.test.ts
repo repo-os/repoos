@@ -340,6 +340,35 @@ const cases: Case[] = [
     detail: "could not read main's dirty state",
   },
   {
+    name: "main has a live task file the branch does not change",
+    facts: {
+      mainDirty: { files: ["work/1015-other-task.md"], checkFailed: false },
+      changedPaths: ["src/core/landable.ts", "work/0867-repoos-landable.md"],
+    },
+    id: "main-clean",
+    status: "warn",
+    detail:
+      "main has 1 uncommitted live task file (work/1015-other-task.md); publish checkpoints them",
+  },
+  {
+    name: "main has a task file the branch itself changes",
+    facts: {
+      mainDirty: { files: ["work/0867-repoos-landable.md"], checkFailed: false },
+    },
+    id: "main-clean",
+    status: "fail",
+    detail: "main has 1 uncommitted file: work/0867-repoos-landable.md (work/)",
+  },
+  {
+    name: "main has a live task file alongside a source edit",
+    facts: {
+      mainDirty: { files: ["work/1015-other-task.md", "src/wip.ts"], checkFailed: false },
+    },
+    id: "main-clean",
+    status: "fail",
+    detail: "main has 1 uncommitted file: src/wip.ts (unknown)",
+  },
+  {
     name: "main has a repoos.toml edit",
     facts: { mainDirty: { files: ["repoos.toml"], checkFailed: false } },
     id: "main-clean",
