@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/re-attached-adopted-engineers-go-idle-af
 created_at: "2026-11-03T09:05:45Z"
-updated_at: "2026-11-03T17:40:01Z"
+updated_at: "2026-11-03T17:41:38Z"
 last_close_out_gate_ms: 624503
 last_close_out_gate_at: "2026-11-03T17:40:01.751Z"
 check_retry_count: 1
@@ -76,4 +76,4 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T17:18:35Z · note: shots: skipped — the diff (11 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-03T17:19:55Z · note: review pass 1: good to go
 - 2026-11-03T17:40:01Z · close-out gate completed in 625s
-
+- 2026-11-03T17:41:38Z · status done→done, release:success
