@@ -29,6 +29,7 @@ import {
   dirtyFiles,
   filterIgnorableMainDirtyPaths,
   isLocalAttachmentPath,
+  blockingMainDirtyPaths,
   mainDirtyFilesForCloseOut,
   uncommittedWorkFiles,
   commitDirtyFiles,
@@ -792,6 +793,37 @@ describe("uncommittedWorkFiles (#0609)", () => {
 });
 
 describe("main dirty paths for close-out (#0713)", () => {
+  it("treats live task markdown as non-blocking, but not source/config/reports (#1020)", () => {
+    expect(
+      blockingMainDirtyPaths(["work/1015-a.md", "work/1017-b.md"], { workDir: "work" }),
+    ).toEqual([]);
+    expect(
+      blockingMainDirtyPaths(
+        [
+          "work/1015-a.md",
+          "src/a.ts",
+          "repoos.toml",
+          "work/reports/1015/round-1.json",
+          "reminders/0001-a.md",
+          "stories/launch.md",
+        ],
+        { workDir: "work" },
+      ),
+    ).toEqual([
+      "src/a.ts",
+      "repoos.toml",
+      "work/reports/1015/round-1.json",
+      "reminders/0001-a.md",
+      "stories/launch.md",
+    ]);
+    // A custom work dir still resolves task markdown, never a nested `.md`.
+    expect(
+      blockingMainDirtyPaths(["repoos/work/1-a.md", "repoos/work/.attachments/1/a.png"], {
+        workDir: "repoos/work",
+      }),
+    ).toEqual(["repoos/work/.attachments/1/a.png"]);
+  });
+
   it("recognizes attachment trees under configurable work and inputs dirs", () => {
     expect(isLocalAttachmentPath("work/.attachments/0713/shots/a.png")).toBe(true);
     expect(isLocalAttachmentPath("inputs/.attachments/in-1/shot.png")).toBe(true);

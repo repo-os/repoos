@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 670000
-last_close_out_gate_at: "2026-11-03T20:34:41.630Z"
 id: 1020
 title: Close-out publish aborts after a full gate when main has only live tasks' own task files dirty
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: aa3cda6943d53bc3721ffe84b30cd2ba3a661e38
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-publish-aborts-after-a-full-ga
 created_at: "2026-11-03T19:45:56Z"
 updated_at: "2026-11-03T20:34:41Z"
+last_close_out_gate_ms: 670000
+last_close_out_gate_at: "2026-11-03T20:34:41.630Z"
 review_passes: 1
 ---
 ## Problem

@@ -10,6 +10,7 @@
  */
 import type { ReviewVerdict } from "./review-verdict.js";
 import { isOwnReportPath } from "./report-paths.js";
+import { isTaskMarkdownBookkeepingPath } from "./git.js";
 
 export type LandableCheckId =
   | "review-verdict"
@@ -438,6 +439,7 @@ export function evaluateTaskScopeCheck(facts: {
 export function evaluateMainCleanCheck(
   facts: LandableFacts["mainDirty"],
   dirs: Pick<LandableBookkeepingDirs, "workDir" | "remindersDir" | "schedulesDir">,
+  changedPaths: string[] | null = null,
 ): LandableCheck {
   const label = "Main clean";
   if (facts.checkFailed) {
@@ -450,7 +452,28 @@ export function evaluateMainCleanCheck(
     };
   }
   if (facts.files.length > 0) {
-    const owned = classifyMainDirtyFiles(facts.files, dirs);
+    const changed = changedPaths === null ? null : new Set(changedPaths);
+    // A live task's own markdown is rewritten on main continuously by the
+    // server. Publish checkpoint-commits it, or stashes/pops it if the merge
+    // overwrites it, so it never blocks a landing (#1020). Only exempt a task
+    // file the branch itself does not change: a dirty file the merge would
+    // touch stays a blocker. An unreadable changed-path list stays closed.
+    const liveTaskFiles = facts.files.filter(
+      (path) =>
+        changed !== null && isTaskMarkdownBookkeepingPath(path, dirs.workDir) && !changed.has(path),
+    );
+    if (liveTaskFiles.length === facts.files.length) {
+      const listed = liveTaskFiles.join(", ");
+      return {
+        id: "main-clean",
+        label,
+        status: "warn",
+        detail: `main has ${liveTaskFiles.length} uncommitted live task file${liveTaskFiles.length === 1 ? "" : "s"} (${listed}); publish checkpoints them`,
+        nextStep: "No action needed — Move to done checkpoints these task files before merging",
+      };
+    }
+    const blocking = facts.files.filter((path) => !liveTaskFiles.includes(path));
+    const owned = classifyMainDirtyFiles(blocking, dirs);
     const listed = owned.map((f) => `${f.path} (${f.owner})`).join(", ");
     return {
       id: "main-clean",
@@ -482,7 +505,7 @@ export function evaluateLandable(facts: LandableFacts): LandableResult {
       taskId: facts.taskId,
       bookkeeping: facts.bookkeeping,
     }),
-    evaluateMainCleanCheck(facts.mainDirty, facts.bookkeeping),
+    evaluateMainCleanCheck(facts.mainDirty, facts.bookkeeping, facts.changedPaths),
   ];
   const summary = {
     pass: checks.filter((c) => c.status === "pass").length,

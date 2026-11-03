@@ -8,6 +8,7 @@ import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import {
   mainDirtyFilesForCloseOut,
+  blockingMainDirtyPaths,
   GitDirtyCheckError,
   preflightMerge,
   runGit,
@@ -91,7 +92,10 @@ export async function gatherApprovalPreflight(
   let mainDirtyCheckFailed = false;
   try {
     mainDirtyFiles = await mainDirtyFilesForCloseOut(config.root, config);
-    mainDirty = mainDirtyFiles.length > 0;
+    // Task markdown for other live tasks is routine churn the publish step
+    // checkpoints; it must not block auto-approval or the landing checklist
+    // (#1020). Everything else remains a blocker.
+    mainDirty = blockingMainDirtyPaths(mainDirtyFiles, config).length > 0;
   } catch {
     // Treat an unreadable main as dirty: fail closed rather than auto-landing
     // on top of a checkout we could not verify (#0727).
@@ -233,7 +237,7 @@ export async function enqueueCloseOutForTask(
 
   let dirty: string[];
   try {
-    dirty = await mainDirtyFilesForCloseOut(config.root, config);
+    dirty = blockingMainDirtyPaths(await mainDirtyFilesForCloseOut(config.root, config), config);
   } catch (err) {
     if (err instanceof GitDirtyCheckError) {
       return { ok: false, reason: "main dirty check failed" };
