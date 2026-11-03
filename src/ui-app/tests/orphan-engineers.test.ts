@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { parseTask } from "../../core/task.js";
 import {
   collectRecordedEngineerPids,
   isManagedHarnessCommand,
@@ -329,6 +330,98 @@ branch: feat/note
       ]);
       expect(runner.isRunning("0001")).toBe(true);
       expect(notes.some((n) => n === `adopted orphaned engineer pid ${process.pid}`)).toBe(true);
+      vi.restoreAllMocks();
+      runner.dispose();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("finalizes an adopted turn whose process ended as a clean exit, not a crash (#1015)", async () => {
+    const { AgentRunner } = await import("../../server/agents.js");
+    const root = mkdtempSync(join(tmpdir(), "repoos-orphan-clean-exit-"));
+    try {
+      const cacheDir = ".repoos";
+      const fullCacheDir = join(root, cacheDir);
+      mkdirSync(join(fullCacheDir, "agent-logs"), { recursive: true });
+      mkdirSync(join(root, "work"), { recursive: true });
+      const taskFile = join(root, "work", "0001-clean.md");
+      writeFileSync(
+        taskFile,
+        `---
+id: "0001"
+title: Adopted clean exit
+type: bug
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/clean
+---
+## Test
+`,
+      );
+      writeFileSync(
+        join(fullCacheDir, "agents.json"),
+        JSON.stringify({
+          entries: [
+            {
+              taskId: "0001",
+              pid: process.pid,
+              workdir: root,
+              branch: "feat/clean",
+              runId: "run-clean",
+              kind: "engineer",
+            },
+          ],
+        }),
+      );
+      const readTask = () =>
+        parseTask({
+          content: readFileSync(taskFile, "utf8"),
+          absPath: taskFile,
+          root,
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        });
+      const runner = new AgentRunner(
+        {
+          root,
+          workDir: "work",
+          docsDir: "docs",
+          skillsDir: "skills",
+          taskExtensions: [".md"],
+          defaultStatus: "inbox" as const,
+          defaultAssignee: "unassigned" as const,
+          cacheDir,
+          pressureGuard: { enabled: false },
+        } as any,
+        () => {},
+        { getTask: () => readTask() },
+      );
+      vi.spyOn(orphanEngineers, "verifyRecordedHarnessPid").mockResolvedValue(true);
+      await runner.adoptRunningAgents();
+      expect(runner.isRunning("0001")).toBe(true);
+
+      // The adopted harness ends sometime after the reload. There is no
+      // ChildProcess handle, so the only observer is reconcileDeadAgents().
+      const entry = runner["entries"].get("0001") as
+        | { adoptedPid?: number; processGroupLeader?: number }
+        | undefined;
+      expect(entry).toBeDefined();
+      entry!.adoptedPid = 999_999_999;
+      entry!.processGroupLeader = 999_999_999;
+
+      runner.reconcileDeadAgents();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(runner.isRunning("0001")).toBe(false);
+      const body = readFileSync(taskFile, "utf8");
+      // Clean exit: the bounded clean-exit resume owns it, not a crash
+      // escalation that parks the task on `needs_input`.
+      expect(body).toContain("engineer turn ended without a handoff");
+      expect(body).not.toContain("agent exited with an error");
+      expect(readTask().needsInput).toBe(false);
       vi.restoreAllMocks();
       runner.dispose();
     } finally {

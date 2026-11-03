@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 624503
-last_close_out_gate_at: "2026-11-03T17:40:01.751Z"
 id: 1015
 title: "Re-attached (adopted) engineers go idle after a server restart: find out why and fix"
 type: bug
-status: review
+status: done
 priority: p0
 area: server
+merged_commit: cb4b8d3fd709bd65a9d525671a7c8998c85098bd
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/re-attached-adopted-engineers-go-idle-af
 created_at: "2026-11-03T09:05:45Z"
 updated_at: "2026-11-03T17:40:01Z"
+last_close_out_gate_ms: 624503
+last_close_out_gate_at: "2026-11-03T17:40:01.751Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-03T17:28:27.027Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 2183260b to cb4b8d3f) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 1
