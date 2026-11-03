@@ -274,6 +274,35 @@ const cases: Case[] = [
     status: "pass",
     detail: "diff changes 2 files, all within this task",
   },
+  {
+    name: "diff includes this task's own engineering report",
+    facts: {
+      changedPaths: ["src/a.ts", "work/engineering-reports/0867/round-1.json"],
+    },
+    id: "task-scope",
+    status: "pass",
+    detail: "diff changes 2 files, all within this task",
+  },
+  {
+    name: "diff includes another task's engineering report",
+    facts: {
+      changedPaths: ["src/a.ts", "work/engineering-reports/0123/round-1.json"],
+    },
+    id: "task-scope",
+    status: "fail",
+    detail:
+      "the diff changes another task's bookkeeping: work/engineering-reports/0123/round-1.json",
+  },
+  {
+    name: "diff includes a report under a task id that only shares a prefix",
+    facts: {
+      changedPaths: ["src/a.ts", "work/engineering-reports/08670/round-1.json"],
+    },
+    id: "task-scope",
+    status: "fail",
+    detail:
+      "the diff changes another task's bookkeeping: work/engineering-reports/08670/round-1.json",
+  },
 
   // main-clean
   {

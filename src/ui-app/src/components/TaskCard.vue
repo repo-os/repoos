@@ -625,9 +625,17 @@ const PM_WORKING_HINT: CardHint = {
 
 function needsInputHint(task: Task): CardHint {
   const hasQuestions = (task.questions?.length ?? 0) > 0;
+  // The hover must carry the concrete failure when one was recorded — the
+  // same text the drawer's Waiting-for-you card shows. The banner line is a
+  // category ("The agent exited with an error."), so it is only the fallback.
+  const detail = formatNeedsInputDetailForDisplay(
+    task.needsInputReason,
+    task.needsInputDetail,
+    hasQuestions,
+  );
   return {
     label: needsInputStatusLabel(task.needsInputReason, hasQuestions),
-    title: needsInputBannerText(task.needsInputReason, hasQuestions),
+    title: detail ?? needsInputBannerText(task.needsInputReason, hasQuestions),
     cls: "tc-needs-input",
   };
 }
@@ -1212,6 +1220,12 @@ function onCardHintClick(): void {
     void openPm();
     return;
   }
+  // The yellow needs-input line is the card's failure surface: open the panel
+  // on Status details, where the Waiting-for-you card carries the full reason.
+  if (h.cls === "tc-needs-input") {
+    void openTaskStatusDetails();
+    return;
+  }
   if (h.cls === "tc-moving") {
     void openTaskStatusDetails();
   }
@@ -1464,8 +1478,7 @@ async function openDebuggerFromError(): Promise<void> {
           class="tc-hint"
           data-test-id="task-card-agent-hint"
           :class="[hint.cls, hint.cls === 'tc-moving' ? 'tc-hint--progress-clamp' : '']"
-          :title="hint.cls === 'tc-moving' ? undefined : hint.title"
-          :data-tip="hint.cls === 'tc-moving' ? hint.title : undefined"
+          :data-tip="hint.title"
           tabindex="0"
           role="button"
           @click.stop="onCardHintClick"
@@ -1526,7 +1539,7 @@ async function openDebuggerFromError(): Promise<void> {
           v-if="needsInputDetailLine"
           class="tc-needs-detail"
           :class="{ 'tc-needs-detail--clamp': needsInputDetailClamp }"
-          :title="needsInputDetailLine"
+          :data-tip="needsInputDetailLine"
         >
           {{ needsInputDetailLine }}
         </p>

@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 134498
-last_close_out_gate_at: "2026-11-03T05:17:33.279Z"
 id: "0997"
 title: "Agent-failed card text, dead click target, and unclickable restart modal"
 type: bug
-status: review
+status: done
 priority: p0
 area: web
+merged_commit: aaed413bafda7ef1acd1d901f7abb112331cf25a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/agent-failed-card-text-dead-click-target
@@ -14,6 +13,8 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
 updated_at: "2026-11-03T05:17:33Z"
+last_close_out_gate_ms: 134498
+last_close_out_gate_at: "2026-11-03T05:17:33.279Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
