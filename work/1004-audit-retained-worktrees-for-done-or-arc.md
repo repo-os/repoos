@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: "067bdf85d570629574fbd4d129680f56eda172ee"
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
@@ -14,8 +16,6 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
 updated_at: "2026-11-03T09:10:19Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: user-docs-build — Error: ENOENT: no such file or directory, open '/Users/nick/code/nick/repoos-worktrees/feat/make-retained-worktree-cleanup-safe-and-/user-docs/.vitepress/dist/agent-skill.md'"
-last_handoff_failure_sha: db84e9c0c09f40287c08b894bac1cd56c6c05d9a
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -265,3 +265,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T08:59:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T09:06:37Z · note: handoff requested (ui-review)
 - 2026-11-03T09:10:19Z · handoff failed · ui-review handoff failed at check · repoos check failed: ◆ Check plan
+
