@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-02T23:56:26Z"
+updated_at: "2026-11-03T00:07:01Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-02T17:37:43.905Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -148,3 +148,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-02T23:52:15Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-02T23:56:25Z · note: review pass 3: needs some work
 - 2026-11-02T23:56:26Z · status review→active
+- 2026-11-03T00:07:01Z · message_queued at 2026-11-03T00:07:01.796Z
