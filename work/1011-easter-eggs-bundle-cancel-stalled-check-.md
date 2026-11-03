@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-03T19:31:30Z"
-review_passes: 1
 id: 1011
 title: "Easter eggs bundle: Cancel stalled check button flapping"
 type: bug
@@ -15,6 +13,8 @@ model_override: grok-4.7-low
 review_cli_override: opencode
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-02T16:01:49Z"
+updated_at: "2026-11-03T19:43:16Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-03T18:45:22.741Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65375/api/tasks/9999/engineering-reports (http://127.0.0.1:65375/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65375/api/tasks/9999/engineering-reports)"
 ---
 ## Items
@@ -108,4 +108,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T19:29:40Z · review_cli_override, review_model_override
 - 2026-11-03T19:29:40Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-03T19:31:30Z · note: review pass 2: good to go
-
+- 2026-11-03T19:43:16Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (6034ca1b3) during finalization (#0734)
