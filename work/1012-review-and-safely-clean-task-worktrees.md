@@ -3,13 +3,16 @@ id: 1012
 title: Review and safely clean task worktrees
 type: chore
 status: ready
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: schedule
 branch: ""
 created_at: "2026-11-02T22:00:03Z"
-updated_at: "2026-11-02T22:00:03Z"
+updated_at: "2026-11-03T01:24:20Z"
 ---
 ## Purpose
 
@@ -28,3 +31,4 @@ Do not edit product code, push, or start unrelated tasks as part of this schedul
 ## Activity
 
 - 2026-11-02T22:00:03Z · created · schedule
+- 2026-11-03T01:24:20Z · needs_input
