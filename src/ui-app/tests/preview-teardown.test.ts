@@ -12,21 +12,22 @@
  *     same-shaped process that is not in the registry is never touched, i.e.
  *     nothing is killed by name.
  */
-import { spawn, type ChildProcess } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PreviewManager, type PreviewInfo } from "../../server/preview.js";
+import { spawnTestProcess } from "./helpers";
 
 const children: ChildProcess[] = [];
 
 /** A long-lived process shaped like a preview child (`--port <n>` in `ps`). */
 function fakePreview(port: number): number {
-  const child = spawn(
+  const child = spawnTestProcess(
     process.execPath,
     ["-e", "setInterval(() => {}, 1000)", "--", "--port", String(port), "serve"],
-    { detached: true, stdio: "ignore" },
+    { stdio: "ignore" },
   );
   child.unref();
   if (!child.pid) throw new Error("could not spawn fake preview");

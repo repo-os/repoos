@@ -129,6 +129,7 @@ import {
   sanitizeBuiltInAgents,
   saveBuiltInAgentsConfig,
   projectDisplayName,
+  worktreesDir,
 } from "../core/config.js";
 import {
   ensureWorktree,
@@ -293,6 +294,7 @@ import {
   sampleSystem,
   psAvailable,
   reapStrayServeProcesses,
+  reapLeakedTestHelpers,
   killTrackedProcess,
   type SystemStats,
 } from "./system.js";
@@ -2717,6 +2719,57 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       }, REAP_INTERVAL_MS)
     : null;
 
+  // Leaked test-helper reaper (#1017 phase 2). A killed test worker leaves its
+  // fake CLIs/preview servers reparented to pid 1; the suite's own global
+  // teardown handles the common case, but this is the machine-wide safety net
+  // when a run is SIGKILLed outright and its teardown never executes. Slow by
+  // design: first pass a few minutes after boot, then every 12 minutes, with
+  // every guard in `scanTestHelperProcesses` (same uid, ppid 1, >30 min old,
+  // RepoOS test temp dir/tag, no live owner, never a task worktree).
+  const TEST_HELPER_REAP_INITIAL_MS = 3 * 60_000;
+  const TEST_HELPER_REAP_INTERVAL_MS = 12 * 60_000;
+  let testHelperReapInitial: ReturnType<typeof setTimeout> | null = null;
+  let testHelperReapTimer: ReturnType<typeof setInterval> | null = null;
+  if (shouldReapStrayServeProcesses(opts)) {
+    const runTestHelperReap = async (): Promise<void> => {
+      if (!(await psAvailable())) return;
+      const reaped = await reapLeakedTestHelpers({
+        uid: process.getuid?.() ?? -1,
+        worktreesRoot: worktreesDir(config.root),
+      });
+      for (const item of reaped) {
+        logger.system(
+          item.survived ? "warn" : "info",
+          `test-helper-reaper: ${item.survived ? "failed to reap" : "reaped"} pid ${item.pid}` +
+            (item.tempRoot ? ` (${item.tempRoot})` : ""),
+          {
+            pid: item.pid,
+            pgid: item.pgid,
+            reason: item.reason,
+            survived: item.survived,
+          },
+        );
+      }
+      if (reaped.length > 0) {
+        console.log(
+          `test-helper-reaper: reaped ${reaped.length} leaked helper process${reaped.length === 1 ? "" : "es"}`,
+        );
+      }
+    };
+    testHelperReapInitial = setTimeout(() => {
+      void runTestHelperReap().catch(() => {
+        /* best-effort — never crash the server over cleanup */
+      });
+      testHelperReapTimer = setInterval(() => {
+        void runTestHelperReap().catch(() => {
+          /* best-effort — never crash the server over cleanup */
+        });
+      }, TEST_HELPER_REAP_INTERVAL_MS);
+      testHelperReapTimer.unref?.();
+    }, TEST_HELPER_REAP_INITIAL_MS);
+    testHelperReapInitial.unref?.();
+  }
+
   // Built-in agent scheduling: a single in-flight guard shared with the manual
   // /run endpoint, checked once a minute. An enabled agent whose daily/weekly
   // schedule is due runs exactly one scan per tick; scheduled and manual runs
@@ -4546,6 +4599,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
         }
         clearInterval(systemSampleTimer);
         if (reapTimer) clearInterval(reapTimer);
+        if (testHelperReapInitial) clearTimeout(testHelperReapInitial);
+        if (testHelperReapTimer) clearInterval(testHelperReapTimer);
         clearInterval(builtInTimer);
         if (reminderTimer) clearInterval(reminderTimer);
         clearInterval(worktreeSweepTimer);
@@ -4623,6 +4678,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           stopProviderUsageLimitProbes();
           if (engineerCountTimer) clearInterval(engineerCountTimer);
           if (reapTimer) clearInterval(reapTimer);
+          if (testHelperReapInitial) clearTimeout(testHelperReapInitial);
+          if (testHelperReapTimer) clearInterval(testHelperReapTimer);
           clearInterval(worktreeSweepTimer);
           clearTimeout(initialWorktreeSweep);
           clearInterval(builtInTimer);

@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-03T19:04:24Z"
-review_passes: 1
 id: 1017
 title: "Test helper processes leak: days-old repoos-vitest fakebins and stubs stay running and add memory pressure"
 type: bug
@@ -11,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
-last_check_failure: "repoos check at 2026-11-03T18:24:48.985Z: repoos check failed: ui-smoke — timed out — timed out after 300s"
+updated_at: "2026-11-03T19:02:15Z"
 ---
 ## Problem
 On 2026-11-03 the host was under critical memory pressure (swap churn over the guard limit) and local checks sat queued for 30+ minutes, delaying handoff of #1004 and #1013. `ps` shows dozens of leftover test helper processes, some days old, none doing work:
@@ -54,25 +52,4 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T17:11:02Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-03T17:11:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T17:11:02Z · message_delivered: 2 message(s)
-- 2026-11-03T17:27:10Z · message_queued at 2026-11-03T17:27:10.717Z
-- 2026-11-03T17:27:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-03T17:27:38Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-03T17:37:21Z · body
-- 2026-11-03T18:16:28Z · body
-- 2026-11-03T18:20:34Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-03T18:20:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-03T18:20:34Z · message_delivered: 1 message(s)
-- 2026-11-03T18:23:47Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-03T18:24:48Z · needs_input
-- 2026-11-03T18:25:02Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1m · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-03T18:26:17Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-03T18:32:09Z · message_queued at 2026-11-03T18:32:09.717Z
-- 2026-11-03T18:32:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-03T18:37:09Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-03T18:41:23Z · body
-- 2026-11-03T18:44:13Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-03T18:44:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-03T18:44:14Z · message_delivered: 1 message(s)
 - 2026-11-03T19:02:15Z · status active→review
-- 2026-11-03T19:04:23Z · note: review pass 1: good to go
-

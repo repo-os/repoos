@@ -3,14 +3,14 @@
  * touching unrelated processes (#0675).
  */
 import { afterEach, describe, expect, it } from "vitest";
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AgentRunner } from "../../server/agents";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { processGroupKillSupported } from "../../core/process-group.js";
-import { waitFor } from "./helpers";
+import { spawnTestProcess, waitFor } from "./helpers";
 
 const FAKE_CHILD_SLEEP = "600";
 const FAKE_DECOY_SLEEP = "900";
@@ -86,7 +86,7 @@ function pidAlive(pid: number): boolean {
 }
 
 function startDetachedSleep(seconds: string): number {
-  const child = spawn("sleep", [seconds], { detached: true, stdio: "ignore" });
+  const child = spawnTestProcess("sleep", [seconds], { stdio: "ignore" });
   child.unref();
   if (!child.pid) throw new Error("no pid");
   return child.pid;
