@@ -62,9 +62,10 @@ describe("mergeTaskCheckRuns (#1011)", () => {
     const missing = mergeTaskCheckRuns(undefined, [run({ lastProgressAt: null })]);
     expect(stalled(missing)).toBe(true);
 
-    const bothOld = mergeTaskCheckRuns([run({ lastProgressAt: old })], [
-      run({ lastProgressAt: null }),
-    ]);
+    const bothOld = mergeTaskCheckRuns(
+      [run({ lastProgressAt: old })],
+      [run({ lastProgressAt: null })],
+    );
     expect(stalled(bothOld)).toBe(true);
   });
 
