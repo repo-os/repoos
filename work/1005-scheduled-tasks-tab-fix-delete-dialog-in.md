@@ -11,7 +11,7 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T01:48:51Z"
+updated_at: "2026-11-03T01:53:16Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
@@ -44,37 +44,63 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 ```json
 [
 {
-"label": "Scheduled task cards use a compact horizontal layout",
-"target": "default",
-"route": "/agents?tab=scheduled",
-"highlight": ".schedule-card",
-"state": "schedule:seeded"
+  "label": "Scheduled task cards use a compact horizontal layout",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": ".schedule-card",
+  "assert": [
+    {
+      "selector": ".schedule-card",
+      "label": "both seeded schedule cards render",
+      "minCount": 2
+    },
+    {
+      "selector": ".schedule-card .schedule-actions button",
+      "label": "each card keeps its three actions",
+      "minCount": 3
+    }
+  ],
+  "state": "schedule:seeded"
 },
 {
-"label": "Delete schedule dialog: Cancel shows a visible hover state",
-"target": "default",
-"route": "/agents?tab=scheduled",
-"highlight": "[role=\"dialog\"] .delete-confirm-actions",
-"steps": [
-{
-"click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
+  "label": "Delete schedule dialog: Cancel shows a visible hover state",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": "[role=\"dialog\"] .delete-confirm-actions",
+  "steps": [
+    {
+      "click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
+    },
+    {
+      "waitFor": "[role=\"dialog\"]"
+    },
+    {
+      "hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[role=\"dialog\"] .delete-confirm-actions button",
+      "label": "both confirmation actions render",
+      "count": 2
+    }
+  ],
+  "state": "schedule:seeded"
 },
 {
-"waitFor": "[role=\"dialog\"]"
-},
-{
-"hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
-}
-],
-"state": "schedule:seeded"
-},
-{
-"label": "Schedule cards stack readably at a narrow viewport",
-"target": "default",
-"route": "/agents?tab=scheduled",
-"highlight": ".schedule-card",
-"state": "schedule:seeded",
-"viewportWidth": 640
+  "label": "Schedule cards stack readably at a narrow viewport",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": ".schedule-card",
+  "assert": [
+    {
+      "selector": ".schedule-card .schedule-actions button",
+      "label": "actions stay usable when stacked",
+      "minCount": 3
+    }
+  ],
+  "state": "schedule:seeded",
+  "viewportWidth": 640
 }
 ]
 ```
@@ -201,3 +227,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T01:43:27Z · message_delivered: 1 message(s)
 - 2026-11-03T01:43:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T01:48:51Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-11-03T01:53:16Z · body
