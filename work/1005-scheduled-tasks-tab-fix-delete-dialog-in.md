@@ -11,7 +11,7 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T02:07:03Z"
+updated_at: "2026-11-03T02:49:08Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-02T20:25:00.420Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
@@ -50,14 +50,14 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": ".schedule-card",
 "assert": [
 {
-  "selector": ".schedule-card",
-  "label": "both seeded schedule cards render",
-  "minCount": 2
+"selector": ".schedule-card",
+"label": "both seeded schedule cards render",
+"minCount": 2
 },
 {
-  "selector": ".schedule-card .schedule-actions button",
-  "label": "each card keeps its three actions",
-  "minCount": 3
+"selector": ".schedule-card .schedule-actions button",
+"label": "each card keeps its three actions",
+"minCount": 3
 }
 ],
 "state": "schedule:seeded"
@@ -69,20 +69,20 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": "[role=\"dialog\"] .delete-confirm-actions",
 "steps": [
 {
-  "click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
+"click": "[data-testid=\"schedule-card-0001\"] .schedule-actions button:last-child"
 },
 {
-  "waitFor": "[role=\"dialog\"]"
+"waitFor": "[role=\"dialog\"]"
 },
 {
-  "hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
+"hover": "[role=\"dialog\"] .delete-confirm-actions button:first-child"
 }
 ],
 "assert": [
 {
-  "selector": "[role=\"dialog\"] .delete-confirm-actions button",
-  "label": "both confirmation actions render",
-  "count": 2
+"selector": "[role=\"dialog\"] .delete-confirm-actions button",
+"label": "both confirmation actions render",
+"count": 2
 }
 ],
 "state": "schedule:seeded"
@@ -94,9 +94,9 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "highlight": ".schedule-card",
 "assert": [
 {
-  "selector": ".schedule-card .schedule-actions button",
-  "label": "actions stay usable when stacked",
-  "minCount": 3
+"selector": ".schedule-card .schedule-actions button",
+"label": "actions stay usable when stacked",
+"minCount": 3
 }
 ],
 "state": "schedule:seeded",
@@ -230,3 +230,6 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T01:53:16Z · body
 - 2026-11-03T01:54:10Z · body
 - 2026-11-03T02:07:03Z · body
+- 2026-11-03T02:07:48Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T02:09:18Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T02:49:08Z · body
