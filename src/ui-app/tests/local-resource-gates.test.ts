@@ -26,6 +26,7 @@ import {
 } from "../../core/resource-limits.js";
 import { REPOOS_REMOTE_FALLBACK_DETAIL } from "../../server/pre-review-remote-gate.js";
 import { currentQueueMarkers, type LocalQueueMarker } from "../../core/local-queue-marker.js";
+import { spawnTestProcess } from "./helpers";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -223,9 +224,8 @@ describe("cross-process local check slots", () => {
     const candidate = join(root, "candidate");
     mkdirSync(candidate, { recursive: true });
     if (process.platform === "win32") return;
-    const child = spawn("sh", ["-c", "trap '' TERM; while :; do sleep 1; done"], {
+    const child = spawnTestProcess("sh", ["-c", "trap '' TERM; while :; do sleep 1; done"], {
       cwd: root,
-      detached: true,
       stdio: "ignore",
     });
     if (!child.pid) throw new Error("could not start wedged holder fixture");
@@ -270,9 +270,8 @@ describe("cross-process local check slots", () => {
     dirs.push(root);
     const lockRoot = localCheckLockRoot(root, ".repoos");
     const candidate = join(root, "missing-candidate");
-    const child = spawn("sh", ["-c", "trap '' TERM; while :; do sleep 1; done"], {
+    const child = spawnTestProcess("sh", ["-c", "trap '' TERM; while :; do sleep 1; done"], {
       cwd: root,
-      detached: true,
       stdio: "ignore",
     });
     if (!child.pid) throw new Error("could not start fixture process");

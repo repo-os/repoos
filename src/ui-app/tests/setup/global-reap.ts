@@ -23,13 +23,15 @@
  * silently reopen per-file again.
  */
 import { mkdtempSync, rmSync, utimesSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  killSpawnedLogs,
+  collectSpawnedLogPids,
+  findProcessesMatchingRoots,
   reapStaleFixtures,
   STALE_FIXTURE_AGE_MS,
   defaultOsTmpdir,
+  sweepOrphanedRunRootProcesses,
+  terminateTestPidsSync,
 } from "../helpers";
 
 /**
@@ -41,6 +43,15 @@ let runRoot: string | undefined;
 let runRootHeartbeat: ReturnType<typeof setInterval> | undefined;
 
 export async function setup(): Promise<void> {
+  // Recover helpers from a run whose run root was already removed (the old
+  // teardown bug): their command line still names the missing root. Do this
+  // before creating this run's root so nothing current can be mistaken for it.
+  const orphaned = sweepOrphanedRunRootProcesses();
+  if (orphaned > 0) {
+    console.warn(
+      `[global-reap] killed helpers left by ${orphaned} orphaned repoos-vitest-* run root(s)`,
+    );
+  }
   const removed = reapStaleFixtures("repoos-");
   // A normal run now leaves nothing behind (each test file's tmpdir is
   // isolated and the run root is removed at teardown), so the only expected
@@ -60,6 +71,10 @@ export async function setup(): Promise<void> {
   // outside any checkout even when the test process inherited agent TMPDIR.
   runRoot = mkdtempSync(join(defaultOsTmpdir(), "repoos-vitest-"));
   process.env.REPOOS_TEST_TMP_ROOT = runRoot;
+  // Tag every helper this run spawns (even through production code paths) so
+  // the control plane's slow test-helper reaper can identify its own orphans
+  // on platforms where the command line alone is not enough.
+  process.env.REPOOS_TEST_HELPER = runRoot;
   // Nested fixture writes do not necessarily update the run root's mtime. Keep
   // a long-running worker's root younger than the stale-age gate so a
   // concurrent test run cannot reap its live fixtures.
@@ -88,8 +103,23 @@ export async function teardown(rootOverride?: string): Promise<void> {
   }
   // Per-file afterAll normally removes fixtures, but a killed worker can leave
   // both its spawns.log and live fake agents here. Reap pids before deleting
-  // the only remaining record of them.
-  killSpawnedLogs(root);
+  // the only remaining record of them: recorded pids cover fixtures that log
+  // them, and a command-line match on this run's unique root covers the ones
+  // that don't (preview servers, `bun -e` service stubs, raw fake CLIs).
+  const recorded = collectSpawnedLogPids(root);
+  const matched = findProcessesMatchingRoots([root]).map((entry) => entry.pid);
+  const survivors = terminateTestPidsSync([...recorded, ...matched]);
+  if (!rootOverride) {
+    delete process.env.REPOOS_TEST_TMP_ROOT;
+    delete process.env.REPOOS_TEST_HELPER;
+  }
+  if (survivors.length > 0) {
+    // Leak guard: keep the root (and its spawn logs) for diagnosis, and fail
+    // the run instead of silently leaving days-old helpers behind.
+    throw new Error(
+      `[global-reap] test helper process(es) survived teardown: ${survivors.join(", ")}. ` +
+        `Run root kept for diagnosis: ${root}`,
+    );
+  }
   rmSync(root, { recursive: true, force: true });
-  if (!rootOverride) delete process.env.REPOOS_TEST_TMP_ROOT;
 }
