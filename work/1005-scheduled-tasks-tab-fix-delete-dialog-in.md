@@ -2,10 +2,8 @@
 id: 1005
 title: "Scheduled tasks tab: fix delete dialog interactions and compact cards"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the branch fails the task-scope check, and the narrow-layout capture does not show a narrow viewport."
+status: active
+needs_merge: true
 priority: p1
 area: web
 assigned_to: ai
@@ -14,12 +12,12 @@ branch: feat/scheduled-tasks-tab-fix-delete-dialog-in
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T16:13:02Z"
-updated_at: "2026-11-03T05:08:01Z"
+updated_at: "2026-11-03T07:56:59Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-03T04:09:23.516Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Scheduled task cards use a compact horizontal layout (target \"default\"): state \"schedule:seeded\" did not render on target \"default\" — /agents?tab=scheduled has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:58574/agents?tab=scheduled&shotState=schedule%3Aseeded); [missing-target] Schedule cards stack readably at a narrow viewport (target \"default\"): state \"sched… (truncated)"
 review_rounds: 2
 dev_error_count: 1
-engineer_stall_resume_log: "[{\"at\":\"2026-11-03T04:17:51.093Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-03T07:42:11.691Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-03T07:54:18.278Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -90,10 +88,18 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 "state": "agents:scheduledSeeded"
 },
 {
-"label": "Schedule cards stack readably at a narrow viewport",
+"label": "Schedule cards stack at a 390px phone viewport",
 "target": "default",
 "route": "/agents?tab=scheduled",
 "highlight": ".schedule-card",
+"steps": [
+{
+"waitFor": ".schedule-card"
+},
+{
+"waitMs": 250
+}
+],
 "assert": [
 {
 "selector": ".schedule-card .schedule-actions button",
@@ -102,7 +108,8 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 }
 ],
 "state": "agents:scheduledSeeded",
-"viewportWidth": 640
+"viewportWidth": 390,
+"viewportHeight": 844
 }
 ]
 ```
@@ -259,3 +266,26 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T04:57:06Z · note: review pass 4: needs some work
 - 2026-11-03T04:57:06Z · needs_input
 - 2026-11-03T05:08:01Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (03c92f672) during finalization (#0734)
+- 2026-11-03T06:02:03Z · needs_merge
+- 2026-11-03T06:02:17Z · needs_input
+- 2026-11-03T06:02:17Z · status review→active
+- 2026-11-03T06:02:17Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-11-03T06:06:51Z · body
+- 2026-11-03T06:10:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T06:21:21Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-11-03T06:27:43Z · message_queued at 2026-11-03T06:27:43.323Z
+- 2026-11-03T06:27:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-03T06:37:35Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T06:52:43Z · body
+- 2026-11-03T06:56:14Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T06:56:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T06:56:15Z · message_delivered: 1 message(s)
+- 2026-11-03T06:56:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T07:05:06Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-11-03T07:07:21Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1004 check (pid 60109, alive), #1004 check (pid 77372, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 7s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T07:10:21Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T07:18:47Z · body
+- 2026-11-03T07:42:11Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-11-03T07:43:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-03T07:54:18Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 2/3 in 30m
+- 2026-11-03T07:56:52Z · engineer stopped by request
