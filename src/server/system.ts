@@ -944,6 +944,8 @@ export async function reapLeakedTestHelpers(opts: {
   for (const process of leaked) {
     if (isAlive(process.pid)) send(process, "SIGKILL");
   }
+  // Give SIGKILL time to take effect before reporting a survivor.
+  await sleep(100);
   return leaked.map((process) => ({
     pid: process.pid,
     pgid: process.pgid,
