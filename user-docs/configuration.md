@@ -843,17 +843,19 @@ Edit both keys in **Settings → General**. The check appends a `## Automated ve
 
 A **command capture target** (`[[shot.targets]]`, below) has no browser page or console, so its evidence in the same file is a `commandCaptures` record instead: the target, command, cwd, exit status, stdout/stderr tail and the images it produced (with sizes), plus the same tested-tree identity and plan fingerprint. The handoff gate writes it for command-only tasks exactly as it writes the browser record for web ones, stale-capture detection applies the same way, and the reviewer prompt says browser verification does not apply (the console-error check is `skipped`, never blocking). See [Command capture targets](#command-capture-targets-non-web-apps).
 
-## Repeated review classes
+## Repeated review classes and review timeout
 
 ```toml
 review.humanFlagAfterPasses = 5
+review.timeoutMinutes = 15
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `review.humanFlagAfterPasses` | number | `5` | yes | Completed review passes on one task before the next report opens with a summary of the bug classes earlier passes kept finding, and the task gets a human-attention flag (`review-human-attention`). Default 5. The flag is separate from the auto-bounce `review-rounds-exhausted` backstop: it counts every completed pass, including manual **Review again**, and clears when a clean review or a new engineer run confirms progress. |
+| `review.timeoutMinutes` | number | `15` | yes | Minutes one review pass may run before it is stopped. A large diff on a slow cheap model can legitimately take longer than the default; raise this when reviews of big branches keep getting cut off. Values are clamped to 1–240. A pass that hits the limit is recorded as **timed out after N minutes** (not "no usable report"), retried once automatically on the same reviewer, and only flagged for a human if that retry also times out. |
 
-Edit the key in **Settings → General** (Automation & approval). A task can bounce between `active` and `review` many times when each pass finds one more instance of the same class; this is the signal to stop and look at the pattern rather than pay for another round. See [Review and close-out → Repeated review classes](/review-and-close-out#repeated-review-classes-and-the-human-attention-flag).
+Edit both keys in **Settings → General** (Automation & approval). A task can bounce between `active` and `review` many times when each pass finds one more instance of the same class; this is the signal to stop and look at the pattern rather than pay for another round. See [Review and close-out → Repeated review classes](/review-and-close-out#repeated-review-classes-and-the-human-attention-flag).
 
 ## Approval policy (opt-in auto Move to done)
 

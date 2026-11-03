@@ -136,17 +136,31 @@ export function listReviewPasses(config: RepoOSConfig, taskId: string): ReviewPa
   return out;
 }
 
-/** One-line summary for the task activity log. */
+/**
+ * One-line summary for the task activity log.
+ *
+ * `timeout` distinguishes a pass the hard review-timeout stopped (#1019) from
+ * a reviewer that simply exited without a report. The two need different
+ * follow-up: a timeout may be retried with more time or a faster model, while
+ * a silent exit usually means the CLI crashed.
+ */
 export function reviewPassActivitySummary(
   pass: number,
   state: string,
   verdict: string | null,
   clampReason?: string,
+  timeout?: { minutes: number; retrying: boolean },
 ): string {
   if (state === "incomplete") {
     return `review pass ${pass}: incomplete — no verdict in report`;
   }
   if (state === "failed") {
+    if (timeout) {
+      const duration = timeout.minutes === 1 ? "1 minute" : `${timeout.minutes} minutes`;
+      return timeout.retrying
+        ? `review pass ${pass}: timed out after ${duration} — no report (retrying once automatically)`
+        : `review pass ${pass}: timed out after ${duration} — no report; human needed`;
+    }
     return `review pass ${pass}: failed — no usable report`;
   }
   const v = verdict ?? "unknown verdict";
