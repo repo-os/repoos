@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: user-docs-build — Error: ENOENT: no such file or directory, open '/Users/nick/code/nick/repoos-worktrees/feat/make-retained-worktree-cleanup-safe-and-/user-docs/.vitepress/dist/agent-skill.md'"
+last_handoff_failure_sha: db84e9c0c09f40287c08b894bac1cd56c6c05d9a
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
@@ -239,3 +241,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T07:34:15Z · note: handoff requested (ui-review)
 - 2026-11-03T07:36:40Z · body
 - 2026-11-03T07:37:16Z · handoff failed · ui-review handoff failed at check · repoos check failed: user-docs-build — Error: ENOENT: no such file or directory, open '/Users/nick/code/nick/repoos-worktrees/feat/make-retained-worktree-cleanup-safe-and-/user-docs/.vitepress/dist/agent-skill.md'
+
