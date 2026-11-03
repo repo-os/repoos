@@ -12,7 +12,7 @@ branch: feat/web-ui-renderer-runs-at-up-to-97-cpu-whe
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-11-03T15:28:57Z"
-updated_at: "2026-11-03T19:00:59Z"
+updated_at: "2026-11-03T19:05:04Z"
 last_close_out_gate_ms: 805577
 last_close_out_gate_at: "2026-11-03T19:00:59.814Z"
 ---
@@ -61,4 +61,4 @@ Reproduce in a normal browser tab and in the PWA, and say whether the cost diffe
 - 2026-11-03T18:46:46Z · note: review pass 1: good to go
 - 2026-11-03T18:59:15Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (8261b6f68) during finalization (#0734)
 - 2026-11-03T19:00:59Z · close-out gate completed in 806s
-
+- 2026-11-03T19:05:04Z · status done→done, release:success
