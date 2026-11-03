@@ -33,6 +33,19 @@ import type {
 const DEBUG_LOGS_FIXTURE_MESSAGE =
   "main advanced with bookkeeping-only commits — publishing without a merge conflict check on the candidate tree";
 
+/**
+ * The fixture task exists only in the preview board. Engineering-report
+ * history is a real API read and 404s for that id, which fails the handoff
+ * console check (#1011).
+ */
+export function shotPreviewSkipsEngineeringReportsFetch(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  if (!isShotPreviewCaptureActive(location)) return false;
+  return taskId === SHOT_PREVIEW_FIXTURE_TASK_ID;
+}
+
 /** True when preview capture should keep fixture debug logs instead of fetching. */
 export function shotPreviewSkipsTaskLogsFetch(
   location: Pick<Location, "search">,
