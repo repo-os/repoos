@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-11-03T18:45:22.741Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65375/api/tasks/9999/engineering-reports (http://127.0.0.1:65375/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65375/api/tasks/9999/engineering-reports)"
 id: 1011
 title: "Easter eggs bundle: Cancel stalled check button flapping"
 type: bug
@@ -14,7 +12,9 @@ cli_override: cursor
 model_override: grok-4.7-low
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T18:45:19Z"
+updated_at: "2026-11-03T18:52:09Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-03T18:45:22.741Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65375/api/tasks/9999/engineering-reports (http://127.0.0.1:65375/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65375/api/tasks/9999/engineering-reports)"
 ---
 ## Items
 
@@ -94,4 +94,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-03T18:25:02Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-03T18:26:32Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T18:45:19Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65375/api/tasks/9999/engineering-reports (http://127.0.0.1:65375/api/tasks/9999/engineering-reports); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65375/api/tasks/9999/engineering-reports)
-
+- 2026-11-03T18:52:09Z · message_queued at 2026-11-03T18:52:09.719Z
