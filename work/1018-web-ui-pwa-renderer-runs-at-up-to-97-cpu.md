@@ -11,7 +11,7 @@ branch: feat/web-ui-renderer-runs-at-up-to-97-cpu-whe
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-11-03T15:28:57Z"
-updated_at: "2026-11-03T17:02:06Z"
+updated_at: "2026-11-03T17:40:41Z"
 ---
 ## Problem
 On 2026-11-03 the RepoOS web UI had been open for about 1.5 days, installed as a Chrome PWA (its own Chrome profile) pointed at `http://127.0.0.1:7171`. A PWA is just the same web app in a standalone window, so treat this as a problem in the web app itself that will also affect an ordinary browser tab; it was only noticed in the PWA. Its renderer process (pid 34283) held 29–97% of a CPU the whole time and its GPU process (34243) another 30–66%, at about 640 MB. Over the same period the host load average reached 36–69, the RepoOS server on :7171 stopped answering, and `launchd` restarted it 7 times (last exit code 1). After the maintainer killed those two processes the load average dropped from ~36–55 to ~6.5 and the server stayed up. Cause not proven, but the timing is strong. Candidate causes: a runaway reactive/watch loop, SSE or polling that re-renders the whole board, an event-stream reconnect storm, unbounded growth of the task list or logs held in memory (640 MB), or per-card timers/animations that keep the GPU busy.
@@ -42,3 +42,4 @@ Reproduce in a normal browser tab and in the PWA, and say whether the cost diffe
 - 2026-11-03T16:57:10Z · message_queued at 2026-11-03T16:57:10.169Z
 - 2026-11-03T16:57:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T17:02:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T17:40:41Z · engineer stopped by request
