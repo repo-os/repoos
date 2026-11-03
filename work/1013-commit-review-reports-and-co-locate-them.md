@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T09:11:22Z"
+updated_at: "2026-11-03T09:14:15Z"
 ---
 ## Problem
 Engineering reports are committed under `work/engineering-reports/<id>/round-N.json`. Review reports live in gitignored cache (`.repoos/reviews/<id>/`), so they vanish with the machine and future agents/humans never see why a task went through several rounds. Both are essential history of one loop (engineer changes, writes report, reviewer reviews, repeat) and should be tracked together.
@@ -84,3 +84,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T09:03:32Z · note: highlight .review-pane-tabs matched nothing on /work?task=0997&tab=agent
 - 2026-11-03T09:11:22Z · message_queued at 2026-11-03T09:11:22.095Z
 - 2026-11-03T09:11:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-03T09:14:15Z · CTO nudge: held — an undelivered message is already queued
