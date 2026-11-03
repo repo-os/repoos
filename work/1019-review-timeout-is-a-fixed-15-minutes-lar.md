@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-timeout-is-a-fixed-15-minutes-lar
 created_at: "2026-11-03T19:16:59Z"
-updated_at: "2026-11-03T20:57:51Z"
+updated_at: "2026-11-03T21:00:02Z"
 last_close_out_gate_ms: 747455
 last_close_out_gate_at: "2026-11-03T20:57:51.162Z"
 review_passes: 1
@@ -47,4 +47,4 @@ Evidence: `.repoos/agent-logs/review:1013.*` logs, activity lines at 16:52:36Z a
 - 2026-11-03T20:26:08Z · note: review pass 1: good to go
 - 2026-11-03T20:38:13Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (be9f01ce9) during finalization (#0734)
 - 2026-11-03T20:57:51Z · close-out gate completed in 747s
-
+- 2026-11-03T21:00:02Z · status done→done, release:success
