@@ -4,10 +4,11 @@
  * the human who signs it off.
  *
  * It SUPPORTS sign-off, it never replaces it. The report is advisory: the
- * agent inspects the branch's diff in the task's own worktree, writes a short
- * markdown report to `<cacheDir>/reviews/<id>.md`, and stops. It never edits
- * the repo, never merges, and never moves the task to `done` — that transition
- * stays exactly where it was, behind the human's "Move to done".
+ * agent inspects the branch's diff in the task's own worktree, the server then
+ * writes a short markdown report to `work/reports/<id>/review-<pass>.md` (a
+ * committed, tracked copy) plus a local cache mirror for the UI, and stops. It
+ * never edits the repo, never merges, and never moves the task to `done` — that
+ * transition stays exactly where it was, behind the human's "Move to done".
  *
  * Three layers keep it that way:
  *   1. the mission spells out the read-only boundary;
@@ -76,11 +77,12 @@ import { createLogger, type Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb } from "../core/db.js";
 import {
   allocateReviewPassNumber,
-  ensureReviewPassDir,
+  findReviewPassFile,
   listReviewPasses,
   reviewPassActivitySummary,
-  reviewPassPath,
+  trackedReviewsDir,
 } from "../core/review-passes.js";
+import { persistTrackedReviewReport } from "./review-report-store.js";
 import {
   readUiHandoffGateEvidence,
   effectiveHandoffTreeStatus,
@@ -95,6 +97,7 @@ import { isEvidenceRefreshActive } from "./evidence-refresh-lock.js";
 import { resolvedUiVerification } from "../core/ui-verification-config.js";
 import { applyMechanicalReviewVerification } from "../core/review-verification.js";
 import { loadEngineeringReports } from "./engineering-reports.js";
+import { isOwnReportPath } from "../core/report-paths.js";
 import {
   gatherReviewVerification,
   gatherReviewVerificationWithoutWorktree,
@@ -460,11 +463,10 @@ export async function engineeringReportMatchesReviewTree(
     10_000,
   );
   if (changed.status !== 0) return false;
-  const reportDir = `${config.workDir || "work"}/engineering-reports/${task.id}/`;
   return changed.stdout
     .split("\n")
     .filter(Boolean)
-    .every((path) => path.startsWith(reportDir) || path === task.path);
+    .every((path) => isOwnReportPath(path, config, task.id) || path === task.path);
 }
 
 export function reviewMission(
@@ -485,7 +487,13 @@ export function reviewMission(
   const priorPasses = reviewPassesSoFar(task);
   const repeatedClassThreshold = reviewHumanFlagThreshold(config);
   const repeatedClasses = priorPasses >= repeatedClassThreshold;
-  const earlierReportsDir = join(config.root, config.cacheDir || ".repoos", "reviews", task.id);
+  const earlierReportsDir = trackedReviewsDir({ ...config, root: workdir }, task.id);
+  const legacyEarlierReportsDir = join(
+    config.root,
+    config.cacheDir || ".repoos",
+    "reviews",
+    task.id,
+  );
   const engineeringReportLoad = loadEngineeringReports({ ...config, root: workdir }, task.id);
   const engineeringReport = engineeringReportLoad.reports.at(-1);
   const parts: string[] = [];
@@ -616,8 +624,12 @@ export function reviewMission(
     "",
     "## Earlier passes and the whole bug class",
     "",
-    `- Earlier review reports live in \`${earlierReportsDir}\` (newest numbered pass`,
-    "  first). Read the newest ones before judging this pass, verify each finding",
+    `- Earlier review reports live in \`${earlierReportsDir}\` (committed with the task,`,
+    `  newest numbered pass first)${
+      existsSync(legacyEarlierReportsDir)
+        ? `; pre-#1013 passes may still be in \`${legacyEarlierReportsDir}\``
+        : ""
+    }. Read the newest ones before judging this pass, verify each finding`,
     "  was actually fixed, and never re-report a fixed item as new.",
     "- Report the WHOLE CLASS of every bug in this one report. Name its class",
     "  (lifecycle/teardown ordering, unhandled spawn errors, config-key",
@@ -908,6 +920,34 @@ function taskIdFromReviewKey(sessionKey: string): string {
     : sessionKey;
 }
 
+/** Parse one stored review-report file (tracked or legacy cache mirror). */
+function parseReviewReportFile(file: string, taskId: string): ReviewReport | null {
+  let raw: string;
+  try {
+    raw = readFileSync(file, "utf8");
+  } catch {
+    return null;
+  }
+  const doc = parseDocument(raw);
+  const str = (key: string): string => {
+    const v = doc.data[key];
+    return v === null || v === undefined ? "" : String(v);
+  };
+  const treeIdentity = str("tree_identity") || null;
+  return {
+    id: str("task") || taskId,
+    at: str("at"),
+    agent: str("agent"),
+    cli: str("cli"),
+    model: str("model"),
+    branch: str("branch"),
+    state:
+      str("state") === "failed" ? "failed" : str("state") === "incomplete" ? "incomplete" : "ok",
+    markdown: doc.body.trim(),
+    ...(treeIdentity ? { treeIdentity } : {}),
+  };
+}
+
 export class ReviewManager {
   private readonly completions = new Map<string, Promise<void>>();
   private readonly config: RepoOSConfig;
@@ -1028,61 +1068,16 @@ export class ReviewManager {
   /** The stored report for a task, or null when none was ever written. */
   read(taskId: string): ReviewReport | null {
     const file = this.path(taskId);
-    if (!existsSync(file)) return null;
-    let raw: string;
-    try {
-      raw = readFileSync(file, "utf8");
-    } catch {
-      return null;
-    }
-    const doc = parseDocument(raw);
-    const str = (key: string): string => {
-      const v = doc.data[key];
-      return v === null || v === undefined ? "" : String(v);
-    };
-    const treeIdentity = str("tree_identity") || null;
-    return {
-      id: str("task") || taskId,
-      at: str("at"),
-      agent: str("agent"),
-      cli: str("cli"),
-      model: str("model"),
-      branch: str("branch"),
-      state:
-        str("state") === "failed" ? "failed" : str("state") === "incomplete" ? "incomplete" : "ok",
-      markdown: doc.body.trim(),
-      ...(treeIdentity ? { treeIdentity } : {}),
-    };
+    if (existsSync(file)) return parseReviewReportFile(file, taskId);
+    // A fresh clone has no cache mirror: fall back to the newest tracked pass.
+    const latest = listReviewPasses(this.config, taskId).at(-1);
+    return latest ? parseReviewReportFile(latest.file, taskId) : null;
   }
 
   /** Stored report for one numbered pass (#0995 E4), or null when missing. */
   readPass(taskId: string, pass: number): ReviewReport | null {
-    const file = reviewPassPath(this.config, taskId, pass);
-    if (!existsSync(file)) return null;
-    let raw: string;
-    try {
-      raw = readFileSync(file, "utf8");
-    } catch {
-      return null;
-    }
-    const doc = parseDocument(raw);
-    const str = (key: string): string => {
-      const v = doc.data[key];
-      return v === null || v === undefined ? "" : String(v);
-    };
-    const treeIdentity = str("tree_identity") || null;
-    return {
-      id: str("task") || taskId,
-      at: str("at"),
-      agent: str("agent"),
-      cli: str("cli"),
-      model: str("model"),
-      branch: str("branch"),
-      state:
-        str("state") === "failed" ? "failed" : str("state") === "incomplete" ? "incomplete" : "ok",
-      markdown: doc.body.trim(),
-      ...(treeIdentity ? { treeIdentity } : {}),
-    };
+    const file = findReviewPassFile(this.config, taskId, pass);
+    return file ? parseReviewReportFile(file, taskId) : null;
   }
 
   /**
@@ -1693,7 +1688,7 @@ export class ReviewManager {
       ...(treeIdentity ? { treeIdentity } : {}),
       ...(environmentOnly ? { environmentOnly: true } : {}),
     };
-    this.write(report, task);
+    await this.write(report, task);
     const marker =
       state === "ok"
         ? "✓ review complete"
@@ -2671,51 +2666,85 @@ export class ReviewManager {
     this.runner?.system(this.reviewKey(taskId), text);
   }
 
-  /** Persist a report, creating `<cacheDir>/reviews/` on first use. */
-  private write(report: ReviewReport, task: Task): void {
-    const pass = allocateReviewPassNumber(this.config, report.id);
-    ensureReviewPassDir(this.config, report.id);
-    const passFile = reviewPassPath(this.config, report.id, pass);
+  /**
+   * Persist a report in three places (#1013): the committed tracked copy in the
+   * task worktree, a numbered cache mirror, and the latest cache mirror the Dev
+   * and Review tabs read while the task is still in review.
+   */
+  private async write(report: ReviewReport, task: Task): Promise<void> {
+    const worktree = task.branch
+      ? await getGitWorker(this.config.root).worktreePath(task.branch)
+      : null;
+    // Allocate from both the branch (canonical, may be a fresh clone) and the
+    // local cache (pre-#1013 history), so a pass number is never reused.
+    const pass = Math.max(
+      allocateReviewPassNumber(this.config, report.id),
+      worktree ? allocateReviewPassNumber({ ...this.config, root: worktree }, report.id) : 0,
+    );
+    const legacyPassFile = join(
+      this.config.root,
+      this.config.cacheDir || ".repoos",
+      "reviews",
+      report.id,
+      `${pass}.md`,
+    );
     const latestFile = this.path(report.id);
+    const data: Record<string, unknown> = {
+      task: report.id,
+      pass,
+      at: report.at,
+      agent: report.agent,
+      cli: report.cli,
+      model: report.model,
+      branch: report.branch,
+      state: report.state,
+      ...(report.treeIdentity ? { tree_identity: report.treeIdentity } : {}),
+    };
+    const body = `\n${report.markdown}\n`;
+    const keys = ["task", "pass", ...REPORT_KEYS.filter((k) => k !== "task")];
+    const passDocument = serializeDocument(data, body, keys);
+    const latestData: Record<string, unknown> = {
+      task: report.id,
+      at: report.at,
+      agent: report.agent,
+      cli: report.cli,
+      model: report.model,
+      branch: report.branch,
+      state: report.state,
+      ...(report.treeIdentity ? { tree_identity: report.treeIdentity } : {}),
+    };
     try {
+      mkdirSync(dirname(legacyPassFile), { recursive: true });
+      writeFileSync(legacyPassFile, passDocument);
       mkdirSync(dirname(latestFile), { recursive: true });
-      const data: Record<string, unknown> = {
-        task: report.id,
-        pass,
-        at: report.at,
-        agent: report.agent,
-        cli: report.cli,
-        model: report.model,
-        branch: report.branch,
-        state: report.state,
-        ...(report.treeIdentity ? { tree_identity: report.treeIdentity } : {}),
-      };
-      const body = `\n${report.markdown}\n`;
-      const keys = ["task", "pass", ...REPORT_KEYS.filter((k) => k !== "task")];
-      writeFileSync(passFile, serializeDocument(data, body, keys));
-      const latestData: Record<string, unknown> = {
-        task: report.id,
-        at: report.at,
-        agent: report.agent,
-        cli: report.cli,
-        model: report.model,
-        branch: report.branch,
-        state: report.state,
-        ...(report.treeIdentity ? { tree_identity: report.treeIdentity } : {}),
-      };
       writeFileSync(latestFile, serializeDocument(latestData, body, REPORT_KEYS));
-      const verdict = parseVerdict(report.markdown);
-      try {
-        patchTaskFile(this.config, task.absPath, {
-          note: reviewPassActivitySummary(pass, report.state, verdict, report.clampReason),
-        });
-      } catch {
-        /* best-effort */
-      }
     } catch (err) {
       console.error(
         `[repoos] could not write the review for #${report.id}: ${(err as Error).message}`,
       );
+    }
+    if (worktree && task.branch && task.hotfix !== true) {
+      const persisted = await persistTrackedReviewReport({
+        config: this.config,
+        worktree,
+        branch: task.branch,
+        taskId: report.id,
+        pass,
+        content: passDocument,
+      });
+      if (persisted.error) {
+        console.error(
+          `[repoos] could not commit the review report for #${report.id}: ${persisted.error}`,
+        );
+      }
+    }
+    const verdict = parseVerdict(report.markdown);
+    try {
+      patchTaskFile(this.config, task.absPath, {
+        note: reviewPassActivitySummary(pass, report.state, verdict, report.clampReason),
+      });
+    } catch {
+      /* best-effort */
     }
   }
 

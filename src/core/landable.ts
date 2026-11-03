@@ -9,6 +9,7 @@
  * pure evaluator so every check and its failure message is table-testable.
  */
 import type { ReviewVerdict } from "./review-verdict.js";
+import { isOwnReportPath } from "./report-paths.js";
 
 export type LandableCheckId =
   | "review-verdict"
@@ -164,11 +165,12 @@ export function classifyMainDirtyFiles(
  * A branch change outside the task's own work file is drift: config, another
  * task's markdown, an input, or a story definition never lands with this task.
  *
- * A task's own engineering reports live under
- * `<workDir>/engineering-reports/<task-id>/` (docs/engineering-reports.md) and
- * are written by the handoff itself, so they are this task's bookkeeping even
- * though they are not the task markdown (#0997). Another task's report stays
- * forbidden.
+ * A task's own engineering and review reports live under
+ * `<workDir>/reports/<task-id>/` (docs/engineering-reports.md) and are written
+ * by the handoff/review itself, so they are this task's bookkeeping even
+ * though they are not the task markdown (#0997, #1013). The pre-#1013
+ * engineering-report directory is still recognized for older branches. Another
+ * task's report stays forbidden.
  */
 export function isForbiddenTaskScopePath(
   path: string,
@@ -178,10 +180,7 @@ export function isForbiddenTaskScopePath(
 ): boolean {
   if (path === CONFIG_PATH) return true;
   if (path === ownTaskFile) return false;
-  if (taskId) {
-    const workDir = dirs.workDir.replace(/\/+$/, "");
-    if (path.startsWith(`${workDir}/engineering-reports/${taskId}/`)) return false;
-  }
+  if (taskId && isOwnReportPath(path, dirs, taskId)) return false;
   const prefixes = [dirs.workDir, dirs.inputsDir, dirs.storiesDir].map(
     (d) => `${d.replace(/\/+$/, "")}/`,
   );

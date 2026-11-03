@@ -411,6 +411,7 @@ cannot tell from the code alone:
   (`POST /api/tasks`, `PATCH /api/tasks/:id`, etc.). If the RepoOS server
   is unreachable, stop and report the issue — do not hand-write task files.
 - **Merging main into a task branch: take main's copy of work/<id>-*.md.** When manually merging main into an active task branch, git may stop on a conflict in `work/<id>-*.md` (the task file is pure bookkeeping, always superseded by main's version). Take main's copy: `git checkout --theirs work/<id>-*.md`, then stage and commit. Do not pause the merge to report this. RepoOS auto-resolves these inside close-out (#0754); manual merges need the same rule.
+- **A task's reports are its own bookkeeping.** Engineering rounds and review passes live together under `work/reports/<id>/` (`round-<n>.json`, `review-<n>.md`; see `user-docs/engineering-reports.md`). They are committed with the task, and handoff/landable/close-out treat this task's report files as bookkeeping rather than implementation drift — another task's reports still fail the task-scope check. Never hand-edit or delete a stored round or pass.
 - **After merging main into a task branch, run `bun run build` before `repoos check`.** If the check fails on staleness (`dist/` older than `src/`), rebuild and rerun — a staleness failure always means the merged-in source changes have not been compiled yet, never a code problem. `bun run build` fixes it.
 - **The Product Manager agent is authorized to create and update tasks.** It
   must use those same RepoOS CLI commands or HTTP API endpoints for task body,

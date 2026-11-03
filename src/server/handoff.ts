@@ -86,6 +86,7 @@ import {
   listEngineeringReports,
   resolveEngineeringReportBase,
 } from "./engineering-reports.js";
+import { engineeringReportRelPath, legacyEngineeringReportRelPath } from "../core/report-paths.js";
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
@@ -655,14 +656,17 @@ async function runHandoffFinalization(
       );
       if (changed.status !== 0) continue;
       const paths = changed.stdout.trim().split("\n").filter(Boolean);
-      const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${report.round}.json`;
+      const reportPath = engineeringReportRelPath(config, task.id, report.round);
+      const legacyReportPath = legacyEngineeringReportRelPath(config, task.id, report.round);
+      const isReportPath = (path: string): boolean =>
+        path === reportPath || path === legacyReportPath;
       const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${task.id}-`;
       const reportNarrative = report.markdown.split("\n\n## Generated change summary", 1)[0];
       if (
-        paths.includes(reportPath) &&
+        paths.some(isReportPath) &&
         (!pendingNarrative || reportNarrative === pendingNarrative) &&
         paths.every(
-          (path) => path === reportPath || (path.startsWith(ownTaskPath) && path.endsWith(".md")),
+          (path) => isReportPath(path) || (path.startsWith(ownTaskPath) && path.endsWith(".md")),
         )
       ) {
         return report;
@@ -975,7 +979,7 @@ async function runHandoffFinalization(
     if (!finalized.report)
       return fail("review", finalized.error ?? "engineering report could not be finalized");
     finalizedReport = finalized.report;
-    const reportPath = `${config.workDir || "work"}/engineering-reports/${task.id}/round-${finalized.report.round}.json`;
+    const reportPath = engineeringReportRelPath(config, task.id, finalized.report.round);
     const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
     if (staged.status !== 0)
       return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);

@@ -25,6 +25,7 @@ import { repoosTomlDiffIsAutomaticPauseOnly } from "./repoos-toml-runtime-diff.j
 import { isWatchdogCheckWaitTaskDelta } from "./watchdog-task-diff.js";
 import { notifyGitMutation, onGitMutation } from "./git-activity.js";
 import { trackGitCall } from "./git-inflight.js";
+import { isOwnReportPath } from "./report-paths.js";
 import {
   isLockfileOnlyConflicts,
   tryCompleteMergeByRegeneratingLockfile,
@@ -2474,6 +2475,11 @@ export interface WorkFileFilter {
   workDir?: string;
   /** Runtime cache dir (`config.cacheDir`) — locks, logs, local database. */
   cacheDir?: string;
+  /**
+   * When set, that task's own report files under `<workDir>/reports/<id>/`
+   * are bookkeeping too (#1013). Another task's reports are not.
+   */
+  taskId?: string;
 }
 
 const withTrailingSlash = (dir: string): string => `${dir.replace(/\/+$/, "")}/`;
@@ -2583,11 +2589,21 @@ export async function mainDirtyFilesForCloseOut(
   return remaining.filter((path) => path !== "repoos.toml");
 }
 
-/** Repo-relative path is a committed task markdown file under `workDir` (board bookkeeping). */
+/**
+ * Repo-relative path is a committed task markdown file under `workDir` (board
+ * bookkeeping), or — when the filter names a task — one of that task's own
+ * report files under `<workDir>/reports/<task-id>/` (#1013).
+ */
 export function isTaskBookkeepingPath(path: string, filter: WorkFileFilter = {}): boolean {
   const workDir = filter.workDir ?? "work";
   const prefix = withTrailingSlash(workDir);
-  return path.startsWith(prefix) && path.endsWith(".md");
+  // Task markdown is board bookkeeping, but reports are not "any other task's
+  // markdown": only this task's own report directory is bookkeeping (#1013).
+  const reportsPrefix = `${prefix}reports/`;
+  if (path.startsWith(prefix) && path.endsWith(".md") && !path.startsWith(reportsPrefix)) {
+    return true;
+  }
+  return filter.taskId !== undefined && isOwnReportPath(path, { workDir }, filter.taskId);
 }
 
 /**

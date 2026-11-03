@@ -139,9 +139,10 @@ interface Run {
  * roles share the same `runPrompt` reload-death exposure, but the blast radius
  * differs fundamentally:
  *
- * - The review produces a ONE-TIME sign-off artifact (.repoos/reviews/<id>.md)
- *   that is permanently lost if the process reloads mid-run — hence #0288 made
- *   it durable.
+ * - The review produces a ONE-TIME sign-off artifact
+ *   (work/reports/<id>/review-<pass>.md, committed with the task) that would
+ *   otherwise be lost if the process reloads mid-run — hence #0288 made it
+ *   durable.
  * - The CTO is a PERIODIC board monitor (default 5-min cadence). A run lost to
  *   a reload merely delays the next sweep; the monitor simply re-runs on its
  *   own next tick and self-heals. It never produces a one-of-a-kind artifact.

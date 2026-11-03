@@ -2,6 +2,12 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import { runGit } from "../core/git.js";
+import {
+  engineeringReportRelPath,
+  isOwnReportPath,
+  legacyEngineeringReportsDir,
+  reportsTaskDir,
+} from "../core/report-paths.js";
 
 export interface EngineeringReport {
   taskId: string;
@@ -19,8 +25,17 @@ export interface EngineeringReport {
 const MAX_WORDS = 1000;
 const words = (text: string): number =>
   (text.match(/\b[\p{L}\p{N}][\p{L}\p{N}'’-]*\b/gu) ?? []).length;
-const reportDir = (config: RepoOSConfig, taskId: string) =>
-  join(config.root, config.workDir || "work", "engineering-reports", taskId);
+const reportDir = (config: RepoOSConfig, taskId: string): string => reportsTaskDir(config, taskId);
+
+/**
+ * Directories an engineering report may live in, newest location first. The
+ * shared `reports/<id>/` directory is canonical; `engineering-reports/<id>/`
+ * is read so a clone from before #1013 keeps its history.
+ */
+const reportDirs = (config: RepoOSConfig, taskId: string): string[] => [
+  reportDir(config, taskId),
+  legacyEngineeringReportsDir(config, taskId),
+];
 
 export interface EngineeringReportLoad {
   reports: EngineeringReport[];
@@ -63,37 +78,44 @@ export function loadEngineeringReports(
   config: RepoOSConfig,
   taskId: string,
 ): EngineeringReportLoad {
-  const dir = reportDir(config, taskId);
-  if (!existsSync(dir)) return { reports: [], errors: [] };
   const errors: string[] = [];
-  let names: string[];
-  try {
-    names = readdirSync(dir);
-  } catch (error) {
-    return {
-      reports: [],
-      errors: [`could not read report directory ${dir}: ${(error as Error).message}`],
-    };
-  }
-  const reports = names
-    .filter((name) => /^round-\d+\.json$/.test(name))
-    .sort((a, b) => Number(a.match(/\d+/)?.[0]) - Number(b.match(/\d+/)?.[0]))
-    .flatMap((name) => {
+  const seenRounds = new Set<number>();
+  const reports: EngineeringReport[] = [];
+  for (const dir of reportDirs(config, taskId)) {
+    if (!existsSync(dir)) continue;
+    let names: string[];
+    try {
+      names = readdirSync(dir);
+    } catch (error) {
+      errors.push(`could not read report directory ${dir}: ${(error as Error).message}`);
+      continue;
+    }
+    const roundFiles = names
+      .filter((name) => /^round-\d+\.json$/.test(name))
+      .sort((a, b) => Number(a.match(/\d+/)?.[0]) - Number(b.match(/\d+/)?.[0]));
+    for (const name of roundFiles) {
       const expectedRound = Number(name.match(/^round-(\d+)\.json$/)?.[1]);
+      // A migrated round can exist in both locations for a while; the shared
+      // location is canonical and was read first. Mark it seen before parsing
+      // so a malformed canonical file cannot be silently replaced by a stale
+      // legacy copy of the same round.
+      if (seenRounds.has(expectedRound)) continue;
+      seenRounds.add(expectedRound);
       try {
         const parsed: unknown = JSON.parse(readFileSync(join(dir, name), "utf8"));
         if (!isEngineeringReport(parsed, taskId, expectedRound)) {
           errors.push(
             `${name}: report identity does not match its task directory or round (expected taskId ${taskId}, round ${expectedRound})`,
           );
-          return [];
+          continue;
         }
-        return [parsed];
+        reports.push(parsed);
       } catch (error) {
         errors.push(`${name}: ${(error as Error).message}`);
-        return [];
       }
-    });
+    }
+  }
+  reports.sort((a, b) => a.round - b.round);
   return { reports, errors };
 }
 
@@ -251,11 +273,9 @@ export async function finalizeEngineeringReport(args: {
   // Round bookkeeping sits between the previous round's source tree and this
   // one's, so a later-round diff sees it even though it is not this round's
   // work. Keep it out of the generated change summary.
-  const workDir = (config.workDir || "work").replace(/\\/g, "/").replace(/\/+$/, "");
-  const reportPrefix = `${workDir}/engineering-reports/${taskId}/`;
   const taskPath = args.taskPath?.replace(/\\/g, "/");
   const isBookkeeping = (path: string): boolean =>
-    path.startsWith(reportPrefix) || (taskPath !== undefined && path === taskPath);
+    isOwnReportPath(path, config, taskId) || (taskPath !== undefined && path === taskPath);
   const files = nameRows.flatMap(([status, ...paths], index) => {
     if (paths.some(isBookkeeping)) return [];
     const path = paths.length === 2 ? `${paths[0]} → ${paths[1]}` : paths[0];
