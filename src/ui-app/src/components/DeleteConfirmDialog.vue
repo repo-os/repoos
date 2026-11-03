@@ -23,6 +23,7 @@ defineProps<{
   open: boolean;
   title: string;
   busy?: boolean;
+  error?: string;
   /** Button text while idle; a leading "Delete …" names the action. */
   confirmLabel?: string;
 }>();
@@ -43,7 +44,8 @@ const emit = defineEmits<{
           <DialogClose class="close-x" aria-label="Close" :disabled="busy">×</DialogClose>
         </div>
         <DialogDescription class="delete-confirm-desc"><slot /></DialogDescription>
-        <div class="delete-confirm-actions">
+        <p v-if="error" class="delete-confirm-error" role="alert">{{ error }}</p>
+        <div class="delete-confirm-actions cc-modal-actions">
           <DialogClose as-child>
             <Button variant="outline" :disabled="busy">Cancel</Button>
           </DialogClose>

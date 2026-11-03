@@ -13579,12 +13579,45 @@
   color: var(--txt);
   font-weight: 650;
 }
+.delete-confirm-error {
+  margin: 12px 24px 0;
+  color: var(--red);
+  font-size: 13px;
+  line-height: 1.45;
+}
 .delete-confirm-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   padding: 24px;
   margin-top: 8px;
+}
+/* #1005 — every shared modal action row gets the same visible affordance.
+   Brightness alone shifts outlined buttons ~5/255 (invisible in a capture) and
+   a border-bright wash fades the outline instead of strengthening it, so the
+   hover adds a tint in the action's own text color plus a currentColor border:
+   it reads on every variant (outline Cancel, destructive confirm) while each
+   action keeps its hue identity (red text stays red). */
+.cc-modal-actions button:hover:not(:disabled),
+.delete-confirm-actions button:hover:not(:disabled),
+.restart-actions button:hover:not(:disabled),
+.hotfix-actions button:hover:not(:disabled),
+.dirty-actions button:hover:not(:disabled),
+.ste-actions button:hover:not(:disabled),
+.stop-work-modal-actions button:hover:not(:disabled) {
+  filter: brightness(1.12);
+  border-color: currentColor;
+  background-color: color-mix(in srgb, currentColor 22%, transparent);
+}
+.cc-modal-actions button:focus-visible,
+.delete-confirm-actions button:focus-visible,
+.restart-actions button:focus-visible,
+.hotfix-actions button:focus-visible,
+.dirty-actions button:focus-visible,
+.ste-actions button:focus-visible,
+.stop-work-modal-actions button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 
 /* Archive confirmation (#0657). Body-teleported like every other confirm
