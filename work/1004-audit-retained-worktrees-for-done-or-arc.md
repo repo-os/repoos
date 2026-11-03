@@ -16,7 +16,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T02:09:20Z"
+updated_at: "2026-11-03T02:11:40Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_passes: 3
@@ -173,3 +173,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T02:04:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T02:07:19Z · body
 - 2026-11-03T02:09:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-03T02:11:40Z · handoff_deferred: 1 queued message(s) must be read before review
