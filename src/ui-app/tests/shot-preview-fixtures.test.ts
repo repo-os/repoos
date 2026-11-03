@@ -89,11 +89,15 @@ describe("shot preview board fixtures (#0743)", () => {
     // unset and made a declared capture look like the wrong screen. Going
     // through applyShotPreviewFixture both seeds and stamps the marker.
     const repo = useRepoStore();
-    applyShotPreviewFixture(repo, "schedule:seeded");
-    expect(repo.schedules.map((row) => row.id)).toEqual(["0001", "0002"]);
-    expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
-      "schedule:seeded",
-    );
+    try {
+      applyShotPreviewFixture(repo, "schedule:seeded");
+      expect(repo.schedules.map((row) => row.id)).toEqual(["0001", "0002"]);
+      expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
+        "schedule:seeded",
+      );
+    } finally {
+      document.documentElement.removeAttribute(SHOT_PREVIEW_APPLIED_ATTR);
+    }
   });
 
   it("reads shotState from the location query", () => {
