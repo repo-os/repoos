@@ -230,3 +230,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T07:28:41Z · needs_input
 - 2026-11-03T07:28:47Z · message_delivered: 1 message(s)
 - 2026-11-03T07:28:58Z · needs_input
+- 2026-11-03T07:28:58Z · message_queued at 2026-11-03T07:28:58.496Z
