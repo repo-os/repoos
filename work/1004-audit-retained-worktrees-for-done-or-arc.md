@@ -2,7 +2,7 @@
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — cleanup can treat failed safety checks and unscoped paths as proof data is disposable.
@@ -15,7 +15,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T02:32:16Z"
+updated_at: "2026-11-03T02:32:19Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -181,3 +181,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T02:21:38Z · needs_input
 - 2026-11-03T02:32:14Z · review_cli_override, review_model_override
 - 2026-11-03T02:32:16Z · review_model_override
+- 2026-11-03T02:32:19Z · status review→active
