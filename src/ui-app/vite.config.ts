@@ -120,6 +120,9 @@ export default defineConfig({
       // Isolate each test file under the run root that globalSetup exposes to
       // workers. The setup file applies the per-file temp path before tests run.
       "./tests/setup/tmp-isolation.ts",
+      // Kill helpers spawned through the shared `spawnTestProcess()` after
+      // every test/file, even when the body throws or times out (#1017).
+      "./tests/setup/process-guard.ts",
     ],
     // Runs once before the whole test run starts (not per test file) —
     // sweeps orphaned fake-agent processes a previous run's worker left
