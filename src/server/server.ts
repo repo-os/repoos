@@ -4220,7 +4220,13 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           Connection: "keep-alive",
           "Access-Control-Allow-Origin": "*",
         });
-        res.write(`retry: 2000\n\n`);
+        // Jittered retry hint (#1018). A fixed 2s `retry:` made every open tab
+        // reconnect in lockstep after a server restart; each successful
+        // reconnect then pulls a full board index. Spreading the first retry
+        // by connection keeps a restart from turning into a thundering herd.
+        // The board client also runs its own exponential backoff, so this hint
+        // mainly covers other EventSource consumers.
+        res.write(`retry: ${1000 + Math.floor(Math.random() * 2000)}\n\n`);
         // A reload handoff spawns the replacement already accepting connections
         // while the full index build runs in the background (0285). Emit `hello`
         // (which the client treats as "the server is ready to be asked about the
