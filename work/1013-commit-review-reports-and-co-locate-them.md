@@ -12,7 +12,7 @@ branch: feat/commit-review-reports-and-co-locate-them
 review_cli_override: opencode
 review_model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T17:27:34Z"
+updated_at: "2026-11-03T17:28:57Z"
 last_close_out_gate_ms: 703662
 last_close_out_gate_at: "2026-11-03T17:27:34.101Z"
 review_passes: 1
@@ -154,4 +154,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T17:08:40Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-03T17:15:20Z · note: review pass 3: good to go
 - 2026-11-03T17:27:34Z · close-out gate completed in 704s
-
+- 2026-11-03T17:28:57Z · status done→done, release:success
