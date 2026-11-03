@@ -3806,7 +3806,7 @@ export const useRepoStore = defineStore("repo", () => {
     } catch {
       /* keep existing */
     }
-    // #1005 — a `?shotState=schedule:seeded` capture must survive a live
+    // #1005 — a `?shotState=agents:scheduledSeeded` capture must survive a live
     // refresh. An SSE `schedule.changed`/`schedule.run` event calls this and
     // would otherwise overwrite the seeded rows mid-capture; board fixtures
     // re-apply on index refresh for the same reason (#0782).

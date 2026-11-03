@@ -550,7 +550,7 @@ export function shotFixtureDevTargets(
 }
 
 /**
- * Two deterministic schedules for the `schedule:seeded` capture fixture
+ * Two deterministic schedules for the `agents:scheduledSeeded` capture fixture
  * (#1005). Returns null for any other fixture, so the panel keeps its real
  * server data. One weekly row (with a last result, so the outcome detail and
  * the action column render) beside one daily row. Neither points at a real
@@ -558,7 +558,7 @@ export function shotFixtureDevTargets(
  * fixture task that the server 404s.
  */
 export function shotFixtureSchedules(fixture: ShotPreviewFixtureId | null): TaskSchedule[] | null {
-  if (fixture !== "schedule:seeded") return null;
+  if (fixture !== "agents:scheduledSeeded") return null;
   const now = new Date().toISOString();
   return [
     {
@@ -1193,11 +1193,11 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "schedule:newPanel":
       useUiStore().scheduleEditorShotOpen = true;
       break;
-    case "schedule:seeded":
+    case "agents:scheduledSeeded":
       // #1005 — seed the schedule list itself, not just a panel flag. Going
       // through the shared fixture entry point also stamps the applied marker
       // that a capture probes (`shotStateProblem`), so a declared
-      // `state: schedule:seeded` verifies instead of reporting a wrong screen.
+      // `state: agents:scheduledSeeded` verifies instead of reporting a wrong screen.
       repo.schedules = shotFixtureSchedules(fixture) ?? [];
       break;
     case "drawer:queuedMessage": {
