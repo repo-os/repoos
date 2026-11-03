@@ -50,3 +50,4 @@ PHASE 2 (requested by the maintainer): also add an automatic safety net so leaks
 - 2026-11-03T16:39:53Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-03T17:07:42Z · body
 - 2026-11-03T17:11:02Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-03T17:11:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
