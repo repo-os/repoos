@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/commit-review-reports-and-co-locate-them
 created_at: "2026-11-03T05:23:01Z"
-updated_at: "2026-11-03T09:39:08Z"
+updated_at: "2026-11-03T09:52:56Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T09:38:49.222Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -88,3 +88,9 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T09:38:49Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-03T09:39:07Z · needs_input
 - 2026-11-03T09:39:08Z · message_delivered: 1 message(s)
+- 2026-11-03T09:39:39Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1004 check (pid 14438, alive), #1005 check (pid 80663, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T09:46:09Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T09:47:56Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1004 check (pid 99152, alive), #1005 check (pid 80663, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 3s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T09:50:56Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T09:51:11Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1004 check (pid 2771, alive), #1005 check (pid 80663, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T09:52:56Z · watchdog: check wait ended or recovered — cleared needs_input
