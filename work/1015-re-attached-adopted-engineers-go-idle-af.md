@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/re-attached-adopted-engineers-go-idle-af
 created_at: "2026-11-03T09:05:45Z"
-updated_at: "2026-11-03T16:26:00Z"
+updated_at: "2026-11-03T16:31:06Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -49,3 +49,8 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T15:47:48Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T16:08:38Z · body
 - 2026-11-03T16:26:00Z · body
+- 2026-11-03T16:27:19Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T16:28:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:30:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-03T16:30:49Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-03T16:31:06Z · handoff_deferred: 1 queued message(s) must be read before review
