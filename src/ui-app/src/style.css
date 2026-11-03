@@ -4460,6 +4460,22 @@
   color: var(--red);
 }
 
+/* Shared entry animation for the hand-rolled confirmation panels (dirty
+   checkout, hotfix, dependency). The restart dialog now uses the shared
+   `cc-modal` shell (#0997) and no longer needs it, but these callers still
+   reference `restartIn` — removing the keyframes would silently freeze them
+   (guarded by ai-chat-standard.test.ts). */
+@keyframes restartIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* restart dirty-task choice (#0997): shared dialog shell (`cc-modal`), so this
    block only styles the restart-specific body/list. */
 .restart-body-copy {
