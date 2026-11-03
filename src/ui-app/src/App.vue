@@ -50,6 +50,20 @@ const onApiTimeout = (event: Event): void => {
   showOffline(detail);
 };
 
+/**
+ * A hidden document must not keep the GPU busy (#1018). Chrome throttles
+ * timers and rAF in a background tab, but CSS animations (status pulses,
+ * review-ready glows, activity art) keep running on the compositor. Toggling
+ * one class on <html> lets style.css pause every animation/transition while
+ * nothing is visible; they resume where they left off on return.
+ */
+const syncDocumentVisibility = (): void => {
+  document.documentElement.classList.toggle(
+    "ui-document-hidden",
+    document.visibilityState === "hidden",
+  );
+};
+
 onMounted(async () => {
   configureUiRecovery({
     isDirty: () =>
@@ -70,6 +84,8 @@ onMounted(async () => {
   });
   window.addEventListener("focus", checkUiBuild);
   window.addEventListener("repoos:api-timeout", onApiTimeout);
+  syncDocumentVisibility();
+  document.addEventListener("visibilitychange", syncDocumentVisibility);
   // The router guard already calls this before the first navigation
   // resolves, so it's normally already loaded by the time we mount.
   if (!auth.loaded) await auth.loadMe();
@@ -129,6 +145,7 @@ watch(
 onUnmounted(() => {
   window.removeEventListener("focus", checkUiBuild);
   window.removeEventListener("repoos:api-timeout", onApiTimeout);
+  document.removeEventListener("visibilitychange", syncDocumentVisibility);
   notices.stop();
 });
 </script>

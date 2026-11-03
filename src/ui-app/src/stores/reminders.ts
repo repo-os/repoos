@@ -108,6 +108,9 @@ export const useRemindersStore = defineStore("reminders", () => {
     void refresh();
     timer = setInterval(() => {
       now.value = Date.now();
+      // #1018: a hidden tab renders nothing — defer the poll until the tab is
+      // visible again (visibilitychange/focus handlers refresh immediately).
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       void refresh();
     }, 30_000);
   }

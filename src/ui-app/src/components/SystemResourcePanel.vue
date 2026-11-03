@@ -67,7 +67,10 @@ async function refreshGcStatus(): Promise<void> {
 
 onMounted(() => {
   void refreshGcStatus();
-  gcStatusTimer = setInterval(() => void refreshGcStatus(), 5000);
+  gcStatusTimer = setInterval(() => {
+    // #1018: a hidden dashboard renders nothing — skip the poll until visible.
+    if (document.visibilityState === "visible") void refreshGcStatus();
+  }, 5000);
 });
 onUnmounted(() => {
   if (gcStatusTimer) clearInterval(gcStatusTimer);
