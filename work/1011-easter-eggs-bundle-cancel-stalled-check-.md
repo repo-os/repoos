@@ -8,8 +8,9 @@ area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: github copilot
 created_at: "2026-11-02T16:01:49Z"
-updated_at: "2026-11-03T17:02:04Z"
+updated_at: "2026-11-03T17:02:20Z"
 ---
 ## Items
 
@@ -56,3 +57,4 @@ Find the selected-row class in the review history table (grep TaskDrawer.vue / s
 - 2026-11-02T16:06:24Z · body: Items (added 1); E2 · Selected history row accent bar covers the pass number (added)
 - 2026-11-02T16:06:26Z · screenshots
 - 2026-11-03T17:02:04Z · status inbox→ready
+- 2026-11-03T17:02:20Z · cli_override
