@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 655173
-last_close_out_gate_at: "2026-11-03T19:16:27.761Z"
 id: 1017
 title: "Test helper processes leak: days-old repoos-vitest fakebins and stubs stay running and add memory pressure"
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: 93448366b19d4067df0f722db85a25fef1d3e227
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/test-helper-processes-leak-days-old-repo
 created_at: "2026-11-03T11:57:42Z"
 updated_at: "2026-11-03T19:16:27Z"
+last_close_out_gate_ms: 655173
+last_close_out_gate_at: "2026-11-03T19:16:27.761Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-03T18:24:48.985Z: repoos check failed: ui-smoke — timed out — timed out after 300s"
 ---
