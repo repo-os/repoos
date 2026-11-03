@@ -222,3 +222,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T04:49:34Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T04:49:34Z · message_delivered: 1 message(s)
 - 2026-11-03T05:00:48Z · status active→review
+- 2026-11-03T05:00:48Z · note: shots: skipped — 7 shots already captured — an engineer-made capture pre-empts the automatic one
