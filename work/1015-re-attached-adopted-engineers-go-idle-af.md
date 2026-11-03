@@ -2,7 +2,7 @@
 id: 1015
 title: "Re-attached (adopted) engineers go idle after a server restart: find out why and fix"
 type: bug
-status: review
+status: active
 priority: p0
 area: server
 assigned_to: ai
