@@ -2,14 +2,14 @@
 id: 1019
 title: "Review timeout is a fixed 15 minutes: large diffs fail with 'no usable report' and burn review rounds"
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-timeout-is-a-fixed-15-minutes-lar
 created_at: "2026-11-03T19:16:59Z"
-updated_at: "2026-11-03T19:17:07Z"
+updated_at: "2026-11-03T20:25:02Z"
 ---
 ## Problem
 `REVIEW_TIMEOUT_MS` is a hard-coded 900,000 ms (15 minutes) in `src/server/review.ts` (~line 190), with no setting for it. On 2026-11-03, #1013 (39 changed files) failed two review passes in a row on `opencode-go/mimo-v2.6-flash` (16:52 and 17:07: "review pass N: failed — no usable report"). The logs show the reviewer still working through tool calls when it was cut off at ~15 minutes. #0997 hit the same limit earlier (reviewer session errored at 900,023 ms). A third pass on a different model finished in about a minute and passed, so the diff was reviewable; the first model was just slow. Each failure also set needs_input and needed a human or driver to run `repoos review again`.
@@ -32,3 +32,4 @@ Evidence: `.repoos/agent-logs/review:1013.*` logs, activity lines at 16:52:36Z a
 - 2026-11-03T19:16:59Z · created · njachowski@gmail.com
 - 2026-11-03T19:17:04Z · status inbox→ready
 - 2026-11-03T19:17:07Z · status ready→active, branch
+- 2026-11-03T20:25:02Z · status active→review
