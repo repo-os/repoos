@@ -2,7 +2,7 @@
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: review
+status: active
 needs_merge: true
 priority: p2
 area: [core, server]
