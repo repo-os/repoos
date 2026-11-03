@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { ensureWorktree, listWorktrees, removeWorktree } from "../../core/git.js";
@@ -39,6 +39,16 @@ function write(root: string, rel: string, content: string): void {
 function commitAll(root: string, message: string): void {
   git(root, ["add", "-A"]);
   git(root, ["commit", "-q", "-m", message]);
+}
+
+/** Commit the ignore rules the real repo ships, so ignored-file tests are real. */
+function ignoreRules(root: string): void {
+  write(
+    root,
+    ".gitignore",
+    "dist/\nnode_modules/\ncoverage/\n.repoos/\n.env\n.env.*\nwork/.attachments/\n",
+  );
+  commitAll(root, "ignore rules");
 }
 
 /** A branch with one commit, merged into main, with a linked worktree. */
@@ -614,6 +624,176 @@ describe("sweepStaleWorktrees — lifecycle rules", () => {
         }),
       );
       expect(branches(root).has("feat/done")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps ignored local data that git status would otherwise hide", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      ignoreRules(root);
+      const wt = mergedWorktree(root, main, "feat/done");
+      // Both are ignored, so a plain `git status` calls this worktree clean.
+      write(wt, ".env", "SECRET=local-only\n");
+      write(wt, "work/.attachments/shot.png", "png bytes\n");
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/done", "done")],
+      });
+
+      expect(report.removedWorktrees).toHaveLength(0);
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "feat/done",
+          reason: expect.stringContaining("ignored files may hold local data"),
+          ignoredPaths: [".env", "work/.attachments"],
+        }),
+      );
+      expect(branches(root).has("feat/done")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("still reclaims a worktree whose only ignored content is regenerable output", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      ignoreRules(root);
+      const wt = mergedWorktree(root, main, "feat/done");
+      write(wt, "dist/app.js", "built\n");
+      write(wt, "node_modules/pkg/index.js", "installed\n");
+      write(wt, "coverage/lcov.info", "coverage\n");
+      write(wt, ".repoos/index-cache.json", "{}\n");
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/done", "done")],
+      });
+
+      expect(report.removedWorktrees.map((w) => w.branch)).toContain("feat/done");
+      expect(report.errors).toEqual([]);
+      expect(branches(root).has("feat/done")).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("treats an inherited .env symlink into the canonical checkout as disposable", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      ignoreRules(root);
+      write(root, ".env", "SECRET=canonical\n"); // ignored, never committed
+      const wt = mergedWorktree(root, main, "feat/done");
+      // `ensureWorktree` links `.env` from the main checkout; removing the link
+      // does not remove the canonical file.
+      symlinkSync(join(root, ".env"), join(wt, ".env"));
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/done", "done")],
+      });
+
+      expect(report.removedWorktrees.map((w) => w.branch)).toContain("feat/done");
+      expect(branches(root).has("feat/done")).toBe(false);
+      // The canonical secret survived.
+      expect(readFileSync(join(root, ".env"), "utf8")).toBe("SECRET=canonical\n");
+    } finally {
+      clean();
+    }
+  });
+
+  it("keeps a throwaway close-out candidate that holds ignored local data", () => {
+    const { root, clean } = makeRepo();
+    try {
+      ignoreRules(root);
+      const wt = ensureWorktree(root, "repoos/integrate/0009").path;
+      write(wt, ".env", "SECRET=local-only\n");
+
+      const report = sweepStaleWorktrees(cfg(root), { mode: "full", tasks: [] });
+
+      expect(report.removedWorktrees).toHaveLength(0);
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "repoos/integrate/0009",
+          reason: expect.stringContaining("ignored files may hold local data"),
+          ignoredPaths: [".env"],
+        }),
+      );
+      expect(branches(root).has("repoos/integrate/0009")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("removes a close-out candidate whose only ignored content is build output", () => {
+    const { root, clean } = makeRepo();
+    try {
+      ignoreRules(root);
+      const wt = ensureWorktree(root, "repoos/integrate/0009").path;
+      write(wt, "dist/candidate.js", "built\n");
+      write(wt, "node_modules/pkg/index.js", "installed\n");
+
+      const report = sweepStaleWorktrees(cfg(root), { mode: "full", tasks: [] });
+
+      expect(report.removedWorktrees.map((w) => w.branch)).toContain("repoos/integrate/0009");
+      expect(report.errors).toEqual([]);
+      expect(branches(root).has("repoos/integrate/0009")).toBe(false);
+    } finally {
+      clean();
+    }
+  });
+
+  it("audits active worktrees with commits, changed source paths, and dirty paths", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      const wt = unmergedWorktree(root, main, "feat/live");
+      write(wt, "src/scratch.ts", "export const scratch = 1;\n");
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/live", "active")],
+      });
+
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "feat/live",
+          reason: "task agent still active",
+          commitsAhead: 1,
+          changedSourcePaths: ["src/unmerged.ts"],
+          dirtyPaths: ["src/scratch.ts"],
+        }),
+      );
+      expect(branches(root).has("feat/live")).toBe(true);
+    } finally {
+      clean();
+    }
+  });
+
+  it("audits human-assigned worktrees even though ownership alone retains them", () => {
+    const { root, main, clean } = makeRepo();
+    try {
+      write(root, "work/0001-done.md", "canonical\n");
+      commitAll(root, "task file");
+      const wt = mergedWorktree(root, main, "feat/human");
+      write(wt, "work/0001-done.md", "unique local note\n");
+
+      const report = sweepStaleWorktrees(cfg(root), {
+        mode: "full",
+        tasks: [task("0001", "feat/human", "done", { assignee: "human" })],
+      });
+
+      expect(report.retained).toContainEqual(
+        expect.objectContaining({
+          branch: "feat/human",
+          reason: "human-assigned task",
+          commitsAhead: 0,
+          changedSourcePaths: [],
+          dirtyPaths: ["work/0001-done.md"],
+        }),
+      );
+      expect(branches(root).has("feat/human")).toBe(true);
     } finally {
       clean();
     }

@@ -15,7 +15,23 @@
 import { createRepoOS } from "../core/repoos.js";
 import { boardRoot } from "../core/config.js";
 import { c } from "../cli/colors.js";
-import { sweepStaleWorktrees, type GcReport } from "../core/worktree-gc.js";
+import { sweepStaleWorktrees, type GcEntry, type GcReport } from "../core/worktree-gc.js";
+
+/** Compact audit detail for a retained entry, so the reason is not the only clue. */
+function detailLine(entry: GcEntry): string | null {
+  const bits: string[] = [];
+  if (entry.commitsAhead !== undefined) bits.push(`${entry.commitsAhead} commit(s) ahead`);
+  const list = (label: string, paths: string[] | undefined): void => {
+    if (!paths?.length) return;
+    const shown = paths.slice(0, 8);
+    const more = paths.length > shown.length ? ` +${paths.length - shown.length} more` : "";
+    bits.push(`${label}: ${shown.join(", ")}${more}`);
+  };
+  list("source", entry.changedSourcePaths);
+  list("dirty", entry.dirtyPaths);
+  list("ignored", entry.ignoredPaths);
+  return bits.length > 0 ? bits.join(" · ") : null;
+}
 
 function printReport(report: GcReport, title: string): void {
   console.log(c.bold(`  ${title}`));
@@ -37,6 +53,8 @@ function printReport(report: GcReport, title: string): void {
     console.log(
       `    ${c.yellow("kept")}    ${k.branch || c.dim("(detached)")} ${c.dim(`— ${k.reason}`)}`,
     );
+    const detail = detailLine(k);
+    if (detail) console.log(c.dim(`            ${detail}`));
   }
   for (const e of report.external) {
     console.log(`    ${c.dim("external")} ${e.branch || c.dim("(detached)")} ${c.dim(e.path)}`);
