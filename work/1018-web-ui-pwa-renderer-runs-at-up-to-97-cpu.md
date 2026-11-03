@@ -8,8 +8,9 @@ area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+review_cli_override: cursor
 created_at: "2026-11-03T15:28:57Z"
-updated_at: "2026-11-03T15:30:07Z"
+updated_at: "2026-11-03T16:46:59Z"
 ---
 ## Problem
 On 2026-11-03 the RepoOS web UI had been open for about 1.5 days, installed as a Chrome PWA (its own Chrome profile) pointed at `http://127.0.0.1:7171`. A PWA is just the same web app in a standalone window, so treat this as a problem in the web app itself that will also affect an ordinary browser tab; it was only noticed in the PWA. Its renderer process (pid 34283) held 29–97% of a CPU the whole time and its GPU process (34243) another 30–66%, at about 640 MB. Over the same period the host load average reached 36–69, the RepoOS server on :7171 stopped answering, and `launchd` restarted it 7 times (last exit code 1). After the maintainer killed those two processes the load average dropped from ~36–55 to ~6.5 and the server stayed up. Cause not proven, but the timing is strong. Candidate causes: a runaway reactive/watch loop, SSE or polling that re-renders the whole board, an event-stream reconnect storm, unbounded growth of the task list or logs held in memory (640 MB), or per-card timers/animations that keep the GPU busy.
@@ -33,3 +34,4 @@ Reproduce in a normal browser tab and in the PWA, and say whether the cost diffe
 - 2026-11-03T15:30:04Z · title
 - 2026-11-03T15:30:05Z · body: Problem (added 1, removed 1)
 - 2026-11-03T15:30:07Z · body: Notes for AI (added 1, removed 1)
+- 2026-11-03T16:46:59Z · review_cli_override
