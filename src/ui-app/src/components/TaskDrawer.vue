@@ -61,7 +61,7 @@ import { checkRunSkipped } from "../../../core/check-skip.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import { useNow } from "../composables/useNow";
 import { integrationActiveCopy, integrationQueuedCopy } from "../lib/integration-pipeline-ui";
-import { isHoldActive } from "../../../core/task-selection.js";
+import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import { Clock3 } from "lucide-vue-next";
 import {
@@ -866,7 +866,7 @@ const drawerStatusDetails = computed(() => {
   // too, not just on the board card. `isHoldActive` is tag-aware and
   // expiry-aware, so a `hold` tag shows here just like the flag, and a hold that
   // has auto-released is no longer shown.
-  if (isHoldActive(task, holdNow.value)) {
+  if (taskIsHeld(task) && isHoldActive(task, holdNow.value)) {
     rows.push({
       title: "Held",
       timestamp: task.holdAt,
@@ -1812,7 +1812,9 @@ const archiveBusy = ref(false);
 const unarchiveBusy = ref(false);
 const holdDialogOpen = ref(false);
 const holdBusy = ref(false);
-const holdActive = computed(() => !!ui.active && isHoldActive(ui.active, holdNow.value));
+const holdActive = computed(
+  () => !!ui.active && taskIsHeld(ui.active) && isHoldActive(ui.active, holdNow.value),
+);
 async function placeHold(value: { reason: string; until?: string }): Promise<void> {
   const task = ui.active;
   if (!task) return;

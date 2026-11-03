@@ -41,7 +41,7 @@ import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { activeEngineerCardHint, activeEngineerCardBlocksInterrupt } from "../lib/active-task-card";
 import { useNow } from "../composables/useNow";
-import { isHoldActive } from "../../../core/task-selection.js";
+import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { Clock3 } from "lucide-vue-next";
 
 const holdNow = useNow();
@@ -78,7 +78,13 @@ const taskAreaChips = computed<string[]>(() => {
  * task is shown whether parked by flag or by tag, and vanishes once the hold
  * auto-releases — mirroring the server's single predicate.
  */
-const held = computed(() => (isHoldActive(props.task, holdNow.value) ? props.task : null));
+const held = computed(() =>
+  // Short-circuit on the time-independent hold fields before reading the
+  // shared clock (#1018). Without this every card's `held` computed subscribed
+  // to the one-second clock, so hundreds of cards re-evaluated it every second
+  // even though a task with no hold can never become held as time passes.
+  taskIsHeld(props.task) && isHoldActive(props.task, holdNow.value) ? props.task : null,
+);
 
 /**
  * Effective per-task agent/model assignments shown by the card's robot toggle.
@@ -271,6 +277,10 @@ function stopCardRemotePoll(): void {
 function syncCardRemotePoll(id: string, status: string, running: boolean): void {
   stopCardRemotePoll();
   if (status !== "active" || !running) return;
+  // #1018: polling pauses while the document is hidden — the remote check
+  // state cannot be seen, and a board left open in the background must not
+  // keep hitting the server every 5s for every running card.
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
   void repo.refreshTaskChecks(id, { remoteOnly: true });
   cardRemotePoll.value = setInterval(() => {
     void repo.refreshTaskChecks(id, { remoteOnly: true });
@@ -341,25 +351,61 @@ onBeforeUnmount(() => {
  * without ever exiting, so `repo.isRunning()` alone can't tell "coding right
  * now" apart from "stuck." `now` ticks so the staleness check below stays
  * live without needing any store event to fire.
+ *
+ * #1018: only cards with genuinely time-dependent state get a timer. The old
+ * code gave EVERY card a 15s interval, so a 500-task board ran ~500 timers,
+ * all created at mount time and therefore all firing in the same tick — a
+ * burst of hundreds of full card re-renders every 15 seconds, forever. An
+ * idle/inbox/done card's copy cannot change with time, so it now has no timer
+ * at all. Timers also stop while the document is hidden (the same tab may sit
+ * in the background for days) and resync on return.
  */
 const now = ref(Date.now());
 let nowTimer: ReturnType<typeof setInterval> | undefined;
-function syncNowTimer(): void {
+
+/** True when this card's visible state actually changes as time passes. */
+function needsNowTick(): boolean {
+  const t = props.task;
+  const running = repo.isRunning(t.id);
   const integrating =
-    props.task.status === "review" &&
-    integrationPipelineRole(repo.integration, props.task.id) === "active";
-  const liveEngineer =
-    props.task.status === "active" &&
-    repo.isRunning(props.task.id) &&
-    ((repo.taskChecks[props.task.id] ?? []).some((r) => r.running) ||
-      !!repo.taskRemoteActivity[props.task.id]);
-  const ms = integrating || liveEngineer ? 1_000 : 15_000;
-  if (nowTimer !== undefined) clearInterval(nowTimer);
+    t.status === "review" && integrationPipelineRole(repo.integration, t.id) === "active";
+  // A running engineer can go silent (hung call, dead stream) with no event to
+  // announce it, so any card with a live process needs the clock — that is a
+  // handful of cards, never the whole board.
+  const liveAgent = (t.status === "active" || t.status === "review") && running;
+  // A queue hint counts down to the next probe; a handoff / done-error retry
+  // has its own live countdown; checkpoint recovery can stall on a timer.
+  const waiting =
+    repo.isQueued(t.id) ||
+    repo.handoffInFlight(t.id) ||
+    (t.status === "review" && (!!repo.doneErrorFor(t.id) || repo.checkpointRecoveryFor(t.id)));
+  return integrating || liveAgent || waiting;
+}
+
+function stopNowTimer(): void {
+  if (nowTimer !== undefined) {
+    clearInterval(nowTimer);
+    nowTimer = undefined;
+  }
+}
+
+function syncNowTimer(): void {
+  stopNowTimer();
+  if (document.visibilityState === "hidden") return;
+  if (!needsNowTick()) return;
+  now.value = Date.now();
   nowTimer = setInterval(() => {
     now.value = Date.now();
-  }, ms);
+  }, 1_000);
 }
-onMounted(() => syncNowTimer());
+function onCardVisibilityChange(): void {
+  syncNowTimer();
+  syncCardRemotePoll(props.task.id, props.task.status, repo.isRunning(props.task.id));
+}
+onMounted(() => {
+  syncNowTimer();
+  document.addEventListener("visibilitychange", onCardVisibilityChange);
+});
 watch(
   () =>
     [
@@ -368,13 +414,18 @@ watch(
       repo.integration?.active?.taskId,
       repo.integration?.queue,
       repo.isRunning(props.task.id),
+      repo.isQueued(props.task.id),
+      repo.handoffInFlight(props.task.id),
+      repo.doneErrorFor(props.task.id),
+      repo.checkpointRecoveryFor(props.task.id),
       (repo.taskChecks[props.task.id] ?? []).some((r) => r.running),
       repo.taskRemoteActivity[props.task.id],
     ] as const,
   () => syncNowTimer(),
 );
 onUnmounted(() => {
-  clearInterval(nowTimer);
+  stopNowTimer();
+  document.removeEventListener("visibilitychange", onCardVisibilityChange);
   stopCardRemotePoll();
 });
 

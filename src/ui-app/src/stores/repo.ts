@@ -28,7 +28,8 @@ import {
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import { useNow } from "../composables/useNow";
-import { isHoldActive } from "../../../core/task-selection.js";
+import { sseReconnectDelay } from "../lib/sse-backoff";
+import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { doneAtFromActivity } from "../../../core/task.js";
 import type { StoryListSortOrder } from "../../../core/stories.js";
 import type {
@@ -274,6 +275,36 @@ function forgetDismissedDoneError(id: string): void {
 
 /** Cap on retained transcript lines per task in the client. */
 const OUTPUT_MAX_LINES = 2000;
+
+/**
+ * Cap on the streamed text a single check run (or the test suite) keeps in
+ * memory (#1018). The Debug/Checks tabs render a tail, and the progress marker
+ * is found via `lastIndexOf`, so keeping the tail is enough — while a check
+ * that prints megabytes over a multi-hour session can no longer grow the tab's
+ * heap without bound.
+ */
+const CHECK_OUTPUT_MAX_CHARS = 400_000;
+const TEST_RUN_OUTPUT_MAX_CHARS = 500_000;
+/** Runs retained per task; older rows are history the Debug tab need not replay. */
+const TASK_CHECK_RUNS_MAX = 25;
+
+/**
+ * Append `item` to a live transcript buffer in place. Replacing the whole
+ * record (`{...outputs.value, [id]: [...lines, entry].slice(-N)}`) once per
+ * streamed line copied up to 2000 entries and invalidated every subscriber on
+ * every line — O(n) per event is what made a long streaming session expensive
+ * (#1018). Pushing and trimming in place is O(1) amortised.
+ */
+function appendCapped<T>(list: T[], item: T, max: number): T[] {
+  list.push(item);
+  if (list.length > max) list.splice(0, list.length - max);
+  return list;
+}
+
+/** Keep only the tail of a streamed log string. */
+function capTail(text: string, max: number): string {
+  return text.length > max ? text.slice(text.length - max) : text;
+}
 
 /**
  * Prefix on the SSE id used to stream a task's reviewer conversation. The
@@ -869,7 +900,10 @@ export const useRepoStore = defineStore("repo", () => {
     output: string;
   }>({ running: false, startedAt: null, finishedAt: null, code: null, output: "" });
   /** Per-task `repoos check` history (Debug tab, 0310): handoff-finalize +
-   *  MTD merge-gate runs, fed by SSE + hydrated via API when the tab opens. */
+   *  MTD merge-gate runs, fed by SSE + hydrated via API when the tab opens.
+   *  Each run keeps its streamed output, so the list and each buffer are
+   *  capped (#1018) — a long-lived tab must not grow with every check ever
+   *  seen. */
   const taskChecks = ref<Record<string, TaskCheckRun[]>>({});
   /** Live remote run/queue detail per task (#0897), hydrated with the checks. */
   const taskRemoteActivity = ref<Record<string, RemoteTaskActivity | null>>({});
@@ -918,6 +952,16 @@ export const useRepoStore = defineStore("repo", () => {
   let feedKey = 0;
   let toastId = 0;
   let es: EventSource | null = null;
+  /**
+   * SSE reconnect state (#1018). We take reconnection away from EventSource's
+   * fixed `retry:` cadence so a server restart — or a proxy dropping the
+   * stream — cannot make every open tab retry in lockstep and pile full board
+   * refreshes into the server's boot window. `sseAttempt` counts consecutive
+   * failures and resets on a real open/frame; the delay is exponential with
+   * full jitter.
+   */
+  let sseAttempt = 0;
+  let sseReconnectTimer: ReturnType<typeof setTimeout> | null = null;
   /**
    * When init()'s own index fetch completed, or 0 once consumed. Lets the FIRST
    * SSE open skip its refresh: init() fetched the index moments earlier and the
@@ -970,13 +1014,31 @@ export const useRepoStore = defineStore("repo", () => {
 
   const fmtDate = (s: string | null): string => (s ? new Date(s).toLocaleString() : "—");
 
-  const byStatus = (s: string): Task[] => {
-    // Archived tasks are parked (#0657) and never appear in a column; they
-    // live in `archivedTasks` instead.
-    const filtered = tasks.value.filter((t) => t.status === s && !t.isArchived);
-    if (sortOrder.value === "current") return filtered;
-    return sortTasks(filtered, sortOrder.value, s);
-  };
+  /**
+   * The board's per-status task lists, derived once per tasks/sort-order change
+   * (#1018). `byStatus` used to filter and re-sort the entire task list on
+   * every call, and `BoardColumn` calls it from its template twice per render
+   * (list + empty check) for every column — at hundreds of tasks that was
+   * thousands of comparisons per repaint. A computed keeps the same public
+   * function API but makes repeated reads O(1).
+   */
+  const byStatusCache = computed<Record<string, Task[]>>(() => {
+    const groups: Record<string, Task[]> = {};
+    for (const task of tasks.value) {
+      // Archived tasks are parked (#0657) and never appear in a column; they
+      // live in `archivedTasks` instead.
+      if (task.isArchived) continue;
+      (groups[task.status] ??= []).push(task);
+    }
+    if (sortOrder.value !== "current") {
+      for (const status of Object.keys(groups)) {
+        groups[status] = sortTasks(groups[status], sortOrder.value, status);
+      }
+    }
+    return groups;
+  });
+  const NO_TASKS: Task[] = [];
+  const byStatus = (s: string): Task[] => byStatusCache.value[s] ?? NO_TASKS;
 
   /** Archived tasks (#0657) for the work queue's collapsible Archived list. */
   const archivedTasks = computed<Task[]>(() =>
@@ -1000,11 +1062,17 @@ export const useRepoStore = defineStore("repo", () => {
    *  parked out of ALL automation. Uses `isHoldActive` (tag-aware and
    *  expiry-aware) so a `hold` tag surfaces here exactly as the flag does, and
    *  a hold whose auto-release time has passed is no longer shown. */
-  const heldTasks = computed<Task[]>(() =>
-    tasks.value
-      .filter((t) => t.status !== "done" && !t.isArchived && isHoldActive(t, holdNow.value))
-      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? "")),
-  );
+  const heldTasks = computed<Task[]>(() => {
+    const held: Task[] = [];
+    for (const t of tasks.value) {
+      if (t.status === "done" || t.isArchived) continue;
+      // Short-circuit before reading the clock (#1018): with no held task the
+      // computed then has no dependency on the one-second clock and is not
+      // invalidated every second.
+      if (taskIsHeld(t) && isHoldActive(t, holdNow.value)) held.push(t);
+    }
+    return held.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+  });
 
   function setSortOrder(order: SortOrder): void {
     sortOrder.value = order;
@@ -1718,10 +1786,7 @@ export const useRepoStore = defineStore("repo", () => {
       if (e.id === CTO_SESSION_ID) {
         // CTO board-monitor conversation output — routed to the CTO panel's
         // lines buffer, never into a task transcript.
-        cto.value = {
-          ...cto.value,
-          lines: [...cto.value.lines, e.entry].slice(-OUTPUT_MAX_LINES),
-        };
+        cto.value.lines = appendCapped(cto.value.lines, e.entry, OUTPUT_MAX_LINES);
         return;
       }
       if (e.id.startsWith(REVIEW_SESSION_PREFIX)) {
@@ -1730,20 +1795,15 @@ export const useRepoStore = defineStore("repo", () => {
         const tid = e.id.slice(REVIEW_SESSION_PREFIX.length);
         const state = reviews.value[tid];
         if (!state) return;
-        reviews.value = {
-          ...reviews.value,
-          [tid]: {
-            ...state,
-            lines: [...(state.lines ?? []), e.entry].slice(-OUTPUT_MAX_LINES),
-          },
-        };
+        state.lines = appendCapped(state.lines ?? [], e.entry, OUTPUT_MAX_LINES);
         return;
       }
-      const prev = outputs.value[e.id] ?? [];
-      outputs.value = {
-        ...outputs.value,
-        [e.id]: [...prev, e.entry].slice(-OUTPUT_MAX_LINES),
-      };
+      const prev = outputs.value[e.id];
+      if (prev) {
+        appendCapped(prev, e.entry, OUTPUT_MAX_LINES);
+      } else {
+        outputs.value[e.id] = [e.entry];
+      }
       agentActivityAt.value = { ...agentActivityAt.value, [e.id]: new Date().toISOString() };
     } else if (e.type === "agent.stats") {
       agentStats.value = { ...agentStats.value, [e.id]: e.stats };
@@ -1919,7 +1979,12 @@ export const useRepoStore = defineStore("repo", () => {
           });
       }
     } else if (e.type === "system.stats") {
-      systemStats.value = shotFixturePinnedSystemStats() ?? e.stats;
+      // A hidden tab renders nothing; applying a 5-second system sample there
+      // only schedules paint work the browser throttles anyway (#1018). The
+      // next visible sample lands within 5s of returning.
+      if (typeof document === "undefined" || document.visibilityState !== "hidden") {
+        systemStats.value = shotFixturePinnedSystemStats() ?? e.stats;
+      }
     } else if (e.type === "auto-engineering.state") {
       autoEng.value = e.state;
     } else if (e.type === "integration") {
@@ -1934,14 +1999,14 @@ export const useRepoStore = defineStore("repo", () => {
       testRun.code = null;
       testRun.output = "";
     } else if (e.type === "test-run.output") {
-      testRun.output += e.chunk;
+      testRun.output = capTail(testRun.output + e.chunk, TEST_RUN_OUTPUT_MAX_CHARS);
     } else if (e.type === "test-run.done") {
       testRun.running = false;
       testRun.finishedAt = e.at;
       testRun.code = e.code;
     } else if (e.type === "task-check.started") {
-      if (!taskChecks.value[e.taskId]) taskChecks.value[e.taskId] = [];
-      taskChecks.value[e.taskId].push({
+      const runs = taskChecks.value[e.taskId] ?? (taskChecks.value[e.taskId] = []);
+      runs.push({
         id: e.checkId,
         taskId: e.taskId,
         kind: e.checkKind,
@@ -1956,11 +2021,12 @@ export const useRepoStore = defineStore("repo", () => {
         machine: e.machine,
         lastProgressAt: e.at,
       });
+      if (runs.length > TASK_CHECK_RUNS_MAX) runs.splice(0, runs.length - TASK_CHECK_RUNS_MAX);
     } else if (e.type === "task-check.output") {
       const run = taskChecks.value[e.taskId]?.find((r) => r.id === e.checkId);
       if (run) {
         run.lastProgressAt = e.at;
-        run.output += e.chunk;
+        run.output = capTail(run.output + e.chunk, CHECK_OUTPUT_MAX_CHARS);
         const marker = "::repoos-check-progress::";
         const at = run.output.lastIndexOf(marker);
         if (at >= 0) {
@@ -2287,9 +2353,20 @@ export const useRepoStore = defineStore("repo", () => {
   }
 
   function connectSSE(): void {
-    if (es) es.close();
-    es = new EventSource(origin + "/api/events");
-    es.onopen = () => {
+    if (sseReconnectTimer) {
+      clearTimeout(sseReconnectTimer);
+      sseReconnectTimer = null;
+    }
+    if (es) {
+      es.close();
+      es = null;
+    }
+    const source = new EventSource(origin + "/api/events");
+    es = source;
+    source.onopen = () => {
+      // A real connection reset the backoff: the next outage starts from the
+      // base delay again instead of the cap reached by an earlier storm.
+      sseAttempt = 0;
       connected.value = true;
       markStreamHealthy();
       // Events emitted while EventSource reconnects are not replayed. Refresh
@@ -2334,9 +2411,20 @@ export const useRepoStore = defineStore("repo", () => {
       // this tab is still waiting on background enrichment (#0631).
       if (enrichingInputs.size > 0) void refreshInputs();
     };
-    es.onerror = () => {
+    source.onerror = () => {
       connected.value = false;
       markStreamError();
+      // EventSource retries by itself at the server's fixed `retry:` cadence.
+      // Close it and run an exponential, jittered reconnect instead so a
+      // restarting server does not get every tab back at the same instant
+      // (#1018). Each reconnect still refreshes the index after open.
+      source.close();
+      if (sseReconnectTimer) return;
+      const delay = sseReconnectDelay(sseAttempt++);
+      sseReconnectTimer = setTimeout(() => {
+        sseReconnectTimer = null;
+        connectSSE();
+      }, delay);
     };
     for (const t of [
       "hello",
@@ -2378,7 +2466,7 @@ export const useRepoStore = defineStore("repo", () => {
       "close-out.outcome",
       "attention.updated",
     ]) {
-      es.addEventListener(t, (ev: MessageEvent) => {
+      source.addEventListener(t, (ev: MessageEvent) => {
         connected.value = true;
         markStreamHealthy(); // a frame arrived — the stream is demonstrably up
         try {

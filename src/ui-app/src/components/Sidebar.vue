@@ -5,6 +5,7 @@ import { navFromConfig } from "../nav";
 import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { relTime } from "../lib/time";
+import { useNow } from "../composables/useNow";
 import { CANARY_PROMPT } from "../../../core/canary.js";
 import CanaryConfirmDialog from "./CanaryConfirmDialog.vue";
 import SidebarGitState from "./SidebarGitState.vue";
@@ -41,16 +42,13 @@ function setUiTheme(t: string): void {
   void config.setUiTheme(t);
 }
 
-const now = ref(Date.now());
-let tick: ReturnType<typeof setInterval> | null = null;
+// #1018: the shared clock (one timer for the whole app, paused while hidden)
+// instead of a private one-second interval per component.
+const now = useNow();
 onMounted(() => {
-  tick = setInterval(() => {
-    now.value = Date.now();
-  }, 1000);
   window.addEventListener("repoos:project-environments-changed", secretsChanged);
 });
 onBeforeUnmount(() => {
-  if (tick) clearInterval(tick);
   window.removeEventListener("repoos:project-environments-changed", secretsChanged);
 });
 

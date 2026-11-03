@@ -129,7 +129,10 @@ async function loadActiveChecks(): Promise<void> {
 
 onMounted(() => {
   void loadActiveChecks();
-  activeCheckPoll = window.setInterval(() => void loadActiveChecks(), 3000);
+  activeCheckPoll = window.setInterval(() => {
+    // #1018: a hidden tab renders nothing — skip the request until visible.
+    if (document.visibilityState === "visible") void loadActiveChecks();
+  }, 3000);
 });
 onBeforeUnmount(() => {
   if (activeCheckPoll !== undefined) window.clearInterval(activeCheckPoll);
@@ -167,7 +170,9 @@ async function releaseWedgedSlot(holder: (typeof localSlotHolders.value)[number]
 
 onMounted(() => {
   void loadLocalSlotHolders();
-  window.setInterval(() => void loadLocalSlotHolders(), 5000);
+  window.setInterval(() => {
+    if (document.visibilityState === "visible") void loadLocalSlotHolders();
+  }, 5000);
 });
 
 async function load(): Promise<void> {
