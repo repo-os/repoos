@@ -16,7 +16,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T15:15:10Z"
+updated_at: "2026-11-03T15:15:15Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: "067bdf85d570629574fbd4d129680f56eda172ee"
 review_passes: 7
@@ -292,3 +292,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T15:15:10Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T15:15:10Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
 - 2026-11-03T15:15:10Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-03T15:15:15Z · message_overdue: still queued after 60m without being delivered
