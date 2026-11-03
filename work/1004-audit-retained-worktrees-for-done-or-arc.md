@@ -3,6 +3,8 @@ id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
 status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
 needs_merge: true
 priority: p2
 area: [core, server]
@@ -227,3 +229,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T07:27:34Z · message_queued at 2026-11-03T07:27:34.936Z
 - 2026-11-03T07:27:35Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-03T07:28:41Z · engineer stopped by request
+- 2026-11-03T07:28:41Z · needs_input
