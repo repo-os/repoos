@@ -78,7 +78,7 @@ detail, nextStep? }], summary: { pass, warn, fail } }`.
 | `review-lock` | a review lock exists and its sha differs from the worktree HEAD (a **missing** lock is a warning, not a failure) | request a fresh review of the current commit |
 | `worktree-clean` | the task worktree has uncommitted files | commit them on the branch or discard them |
 | `merge-conflicts` | `git merge-tree` reports a conflict outside the task's own `work/<id>-*.md` (own-file-only is a warning: close-out takes main's copy) | merge main into the branch (`repoos sync <id>`), keep both sides, re-review |
-| `task-scope` | the diff changes `repoos.toml`, or another task's `work/`, `inputs/` or `stories/` file | restore that path from main, re-review |
+| `task-scope` | the diff changes `repoos.toml`, or another task's `work/`, `inputs/` or `stories/` file. This task's own `work/<id>-*.md` and its own `work/engineering-reports/<id>/` are bookkeeping, not drift | restore that path from main, re-review |
 | `main-clean` | the primary checkout has uncommitted files, listed with their owner (`repoos.toml`, `work/`, `reminders/`, `schedules/`, `unknown`). A `repoos.toml` diff that is only automatic quota/pause fields is ignored. A tracked task file is ignored only when its entire delta is a valid watchdog check-wait escalation/recovery: the watchdog fields and exact activity entry, with the rest of the task unchanged. | commit or stash the named paths on main |
 
 The server gathers these facts with the same `gatherApprovalPreflight` the

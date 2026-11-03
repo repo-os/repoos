@@ -268,6 +268,21 @@ const cases: Case[] = [
     detail: "the diff changes another task's bookkeeping: inputs/0007-a-note.md",
   },
   {
+    name: "diff adds this task's engineering report",
+    facts: { changedPaths: ["work/engineering-reports/0867/round-1.json"] },
+    id: "task-scope",
+    status: "pass",
+    detail: "diff changes 1 file, all within this task",
+  },
+  {
+    name: "diff changes another task's engineering report",
+    facts: { changedPaths: ["work/engineering-reports/0123/round-1.json"] },
+    id: "task-scope",
+    status: "fail",
+    detail:
+      "the diff changes another task's bookkeeping: work/engineering-reports/0123/round-1.json",
+  },
+  {
     name: "diff stays within the task",
     facts: {},
     id: "task-scope",
