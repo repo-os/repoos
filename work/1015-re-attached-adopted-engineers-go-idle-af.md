@@ -65,3 +65,4 @@ Start at `src/server/orphan-engineers.ts` and the adoption path in `src/server/a
 - 2026-11-03T16:57:38Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-03T16:57:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T17:02:53Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-03T17:02:53Z · note: handoff requested (cli)
