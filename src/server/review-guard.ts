@@ -25,6 +25,7 @@ import { resolve } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import { runGit, agentTouchedFiles } from "../core/git.js";
 import { REPOOS_TOML_REL, taskDeclaresRepoosTomlWork } from "../core/repoos-toml-branch-guard.js";
+import { isOwnReportPath } from "../core/report-paths.js";
 import { getGitWorker } from "./git-worker.js";
 
 export interface ReviewGuardResult {
@@ -149,13 +150,16 @@ export async function guardReviewTransition(
   // the worktree, and the `git add -A` above folds it into this task's
   // "implement" commit — which then publishes to main on close-out (observed:
   // #0319 landed #0202/#0275 frontmatter drift). Only this task's own file
-  // (already unstaged above) is the handoff's to carry.
+  // (already unstaged above) and its own report files (#1013) are the handoff's
+  // to carry.
   const stagedWorkFiles = (
     await runGit(registered, ["diff", "--cached", "--name-only", "--", config.workDir], 10_000)
   ).stdout
     .split("\n")
     .map((s) => s.trim())
-    .filter((p) => p && p.endsWith(".md") && p !== task.path);
+    .filter(
+      (p) => p && p.endsWith(".md") && p !== task.path && !isOwnReportPath(p, config, task.id),
+    );
   if (stagedWorkFiles.length > 0) {
     const unstageForeign = await runGit(
       registered,

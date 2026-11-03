@@ -56,16 +56,6 @@ export function legacyReviewPassPath(config: RepoOSConfig, taskId: string, pass:
   return join(legacyReviewsDir(config, taskId), `${pass}.md`);
 }
 
-/** Canonical path in a specific worktree (the writer's view). */
-export function worktreeReviewPassPath(
-  worktree: string,
-  config: RepoOSConfig,
-  taskId: string,
-  pass: number,
-): string {
-  return join(worktree, reviewReportRelPath(config, taskId, pass));
-}
-
 /** Tracked or legacy pass file for `pass`, preferring the committed copy. */
 export function findReviewPassFile(
   config: RepoOSConfig,
