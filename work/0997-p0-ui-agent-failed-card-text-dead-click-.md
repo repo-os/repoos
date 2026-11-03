@@ -3,6 +3,9 @@ id: "0997"
 title: "Agent-failed card text, dead click target, and unclickable restart modal"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ handoff deferred — read the queued message(s) first, then request review again"
 priority: p0
 area: web
 assigned_to: ai
@@ -11,10 +14,12 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T03:33:44Z"
+updated_at: "2026-11-03T03:33:45Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-03T03:33:45.144Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -53,19 +58,19 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "waitMs": 700
-  }
+{
+"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+"waitMs": 700
+}
 ],
 "assert": [
-  {
-    "selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-    "label": "the failed status line is present",
-    "text": "Agent exited with error"
-  }
+{
+"selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"label": "the failed status line is present",
+"text": "Agent exited with error"
+}
 ],
 "state": "card:agentFailed"
 },
@@ -75,25 +80,25 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 "route": "/work",
 "highlight": "[data-test-id=\"restart-task-dialog\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
-  },
-  {
-    "click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
-  },
-  {
-    "waitFor": "[data-test-id=\"restart-task-dialog\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
+},
+{
+"click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
+},
+{
+"waitFor": "[data-test-id=\"restart-task-dialog\"]"
+},
+{
+"waitMs": 300
+}
 ],
 "assert": [
-  {
-    "selector": "[data-test-id=\"restart-task-dialog\"]",
-    "label": "the restart confirmation renders",
-    "text": "Restart task #9999?"
-  }
+{
+"selector": "[data-test-id=\"restart-task-dialog\"]",
+"label": "the restart confirmation renders",
+"text": "Restart task #9999?"
+}
 ],
 "state": "card:agentFailed"
 },
@@ -103,28 +108,28 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
-  },
-  {
-    "click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
-  },
-  {
-    "waitFor": "[data-test-id=\"restart-task-dialog\"]"
-  },
-  {
-    "click": "[data-test-id=\"restart-cancel\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"]"
+},
+{
+"click": "[data-task-id=\"9999\"] [data-test-id=\"task-card-action-footer\"] .tc-card-footer-action"
+},
+{
+"waitFor": "[data-test-id=\"restart-task-dialog\"]"
+},
+{
+"click": "[data-test-id=\"restart-cancel\"]"
+},
+{
+"waitMs": 300
+}
 ],
 "assert": [
-  {
-    "selector": "[data-test-id=\"restart-task-dialog\"]",
-    "label": "Cancel closed the restart dialog",
-    "count": 0
-  }
+{
+"selector": "[data-test-id=\"restart-task-dialog\"]",
+"label": "Cancel closed the restart dialog",
+"count": 0
+}
 ],
 "state": "card:agentFailed"
 }
@@ -194,3 +199,5 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T03:05:40Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-03T03:07:13Z · body
 - 2026-11-03T03:33:44Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T03:33:45Z · agent exited with an error (opencode) · ✗ handoff deferred — read the queued message(s) first, then request review again
+- 2026-11-03T03:33:45Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · ✗ handoff deferred — read the queued message(s) first, then request review again
