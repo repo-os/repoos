@@ -284,6 +284,24 @@ const cases: Case[] = [
     detail: "diff changes 2 files, all within this task",
   },
   {
+    name: "diff includes this task's own report in the shared reports directory",
+    facts: {
+      changedPaths: ["src/a.ts", "work/reports/0867/round-1.json", "work/reports/0867/review-1.md"],
+    },
+    id: "task-scope",
+    status: "pass",
+    detail: "diff changes 3 files, all within this task",
+  },
+  {
+    name: "diff includes another task's report in the shared reports directory",
+    facts: {
+      changedPaths: ["src/a.ts", "work/reports/0123/review-1.md"],
+    },
+    id: "task-scope",
+    status: "fail",
+    detail: "the diff changes another task's bookkeeping: work/reports/0123/review-1.md",
+  },
+  {
     name: "diff includes another task's engineering report",
     facts: {
       changedPaths: ["src/a.ts", "work/engineering-reports/0123/round-1.json"],
@@ -302,6 +320,15 @@ const cases: Case[] = [
     status: "fail",
     detail:
       "the diff changes another task's bookkeeping: work/engineering-reports/08670/round-1.json",
+  },
+  {
+    name: "diff includes a shared-location report under a task id that only shares a prefix",
+    facts: {
+      changedPaths: ["src/a.ts", "work/reports/08670/review-1.md"],
+    },
+    id: "task-scope",
+    status: "fail",
+    detail: "the diff changes another task's bookkeeping: work/reports/08670/review-1.md",
   },
 
   // main-clean

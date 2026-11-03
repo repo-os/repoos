@@ -219,8 +219,10 @@ Adds liveness over the one-shot core. No new business logic.
   work with no task branch; it does not merge anything.
 - `review.ts` — the review agent: when a task lands in `review` (by any route),
   it instructs the enabled `reviewer` agent to work read-only in the task's
-  worktree and writes a short report to `<cacheDir>/reviews/<id>.md` for the
-  human signing off. Advisory: it never edits the repo and never moves a task to `done` —
+  worktree and commits a short numbered report to
+  `work/reports/<id>/review-<pass>.md` for the human signing off (with a local
+  cache mirror for the drawer). Advisory: it never edits the repo and never
+  moves a task to `done` —
   a task that comes back `done` is put straight back into `review`. After the
   report lands it runs the mechanical verification in `review-verification.ts`
   and clamps a clean verdict to `needs some work` when a check fails — see

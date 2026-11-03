@@ -1,11 +1,26 @@
-# Engineering reports
+# Engineering and review reports
 
-RepoOS stores one immutable engineering report per successful engineer handoff at
-`work/engineering-reports/<task-id>/round-<n>.json`. The artifact travels with
-the task branch and remains in the repository after close-out. A later fix after
-review feedback creates another numbered report; it never overwrites an earlier
-round, even when the new round did not change source files. Only a retry of an
-interrupted handoff reuses the report already written for that attempt.
+RepoOS stores the history of one engineer → review loop side by side under
+`work/reports/<task-id>/`:
+
+- `round-<n>.json` — one immutable engineering report per successful engineer
+  handoff.
+- `review-<n>.md` — the numbered review report for each review pass.
+
+Both travel with the task branch and remain in the repository after close-out,
+so a fresh clone keeps the rationale and the review findings for every round.
+The engineering report was originally written to
+`work/engineering-reports/<task-id>/round-<n>.json`; RepoOS still reads that
+legacy location, and on its next control-plane boot it moves any remaining
+rounds into `work/reports/<task-id>/` and commits that migration on `main`.
+
+An engineering report is written once per handoff. A later fix after review
+feedback creates another numbered round; it never overwrites an earlier round,
+even when the new round did not change source files. Only a retry of an
+interrupted handoff reuses the report already written for that attempt. Review
+reports are appended per pass the same way and are committed by the server as
+task bookkeeping, so committing one does not invalidate the review lock or the
+handoff snapshot.
 
 The engineer writes a draft under the worktree's configured cache directory
 (`.repoos` by default) at `<cacheDir>/engineering-report-drafts/<task-id>.md`.
@@ -30,8 +45,8 @@ the branch merge-base; later rounds diff from the previous round's source tree,
 so a round summary describes only that round instead of replaying earlier work.
 If a rebase or reset removes that source commit from the branch's history,
 RepoOS cannot compute a round-relative base and refuses the handoff instead of
-quietly producing a cumulative summary. Report files and the task's own markdown
-are excluded from the generated list.
+quietly producing a cumulative summary. Engineering and review report files and
+the task's own markdown are excluded from the generated list.
 It includes changed paths, status, and deterministic additions/deletions;
 engineers must not author those counts. Report metadata records round, time, coding agent, model, branch, base
 tree, and checked source commit. Review prompts include the newest report and
