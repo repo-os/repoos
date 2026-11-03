@@ -15,7 +15,7 @@ cli_override: opencode
 model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
-updated_at: "2026-11-03T04:18:52Z"
+updated_at: "2026-11-03T04:18:53Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2
@@ -191,3 +191,4 @@ No current worktree is provably safe to remove. Future merged-and-clean worktree
 - 2026-11-03T04:07:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-03T04:07:48Z · message_delivered: 1 message(s)
 - 2026-11-03T04:18:52Z · status active→review
+- 2026-11-03T04:18:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
