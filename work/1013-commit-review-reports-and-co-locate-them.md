@@ -29,6 +29,10 @@ Engineering reports are committed under `work/engineering-reports/<id>/round-N.j
 ## Notes for AI
 Main design risk: the review lock records the reviewed HEAD sha, so committing the review report after the review moves HEAD. Decide whether the report commit is excluded from the lock/drift comparison (like `work/*.md`-only commits, #0600) or written by close-out. See `src/server/review.ts` (~line 488), `src/server/engineering-reports.ts`, `src/core/landable.ts`.
 
+## Screenshots
+
+![Review tab: model row above, REPORT left / CHAT right (the layout to copy)](/api/tasks/1013/attachments/att_a9fa8210-fdaf-49ca-a91c-56d0d069efec.png)
+
 ## Activity
 
 - 2026-11-03T05:23:01Z · created · njachowski@gmail.com
@@ -36,3 +40,4 @@ Main design risk: the review lock records the reviewed HEAD sha, so committing t
 - 2026-11-03T05:53:35Z · status ready→active, branch
 - 2026-11-03T05:55:37Z · body: Desired UX (added 1)
 - 2026-11-03T05:55:37Z · message_queued at 2026-11-03T05:55:37.514Z
+- 2026-11-03T05:55:38Z · screenshots
