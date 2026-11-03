@@ -11,7 +11,7 @@ branch: feat/agent-failed-card-text-dead-click-target
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-01T07:03:42Z"
-updated_at: "2026-11-03T02:38:38Z"
+updated_at: "2026-11-03T02:38:40Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -104,3 +104,4 @@ Likely causes to check first: the restart confirmation is not body-teleported wi
 - 2026-11-03T02:29:40Z · note: shot removed: Cancel in the restart dialog responds to a real click and closes it
 - 2026-11-03T02:30:23Z · note: shot removed: Failed card: status line shows the recorded crash reason on hover
 - 2026-11-03T02:38:38Z · note: shot removed: auto: matched src/ui-app/**
+- 2026-11-03T02:38:40Z · note: shot removed: Failed card: status line shows the recorded crash reason on hover
