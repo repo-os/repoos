@@ -239,8 +239,10 @@ concluding anything.
   process groups whose command line names the run's unique temp root (and
   recorded pids), fails the run if any survive SIGKILL, and the next run sweeps
   stale roots from the real OS temp dir even when a managed agent's `TMPDIR`
-  points into the checkout. Matching is by run-root path only, never by
-  process name. See
+  points into the checkout. A control-plane census in `src/server/system.ts`
+  then reaps any orphan older than 30 minutes on a slow timer, as the
+  machine-wide backstop when the whole test process is killed. Matching is by
+  run-root path/tag only, never by process name. See
   [`agent-process-safety.md`](agent-process-safety.md#test-helper-processes-1017).
 - **Nothing enforced formatting before `665f6289`**, so source drifted while
   `dist/` built fine. `fmt:check` + `lint` are now part of the gate.

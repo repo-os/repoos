@@ -71,6 +71,10 @@ export async function setup(): Promise<void> {
   // outside any checkout even when the test process inherited agent TMPDIR.
   runRoot = mkdtempSync(join(defaultOsTmpdir(), "repoos-vitest-"));
   process.env.REPOOS_TEST_TMP_ROOT = runRoot;
+  // Tag every helper this run spawns (even through production code paths) so
+  // the control plane's slow test-helper reaper can identify its own orphans
+  // on platforms where the command line alone is not enough.
+  process.env.REPOOS_TEST_HELPER = runRoot;
   // Nested fixture writes do not necessarily update the run root's mtime. Keep
   // a long-running worker's root younger than the stale-age gate so a
   // concurrent test run cannot reap its live fixtures.
@@ -105,7 +109,10 @@ export async function teardown(rootOverride?: string): Promise<void> {
   const recorded = collectSpawnedLogPids(root);
   const matched = findProcessesMatchingRoots([root]).map((entry) => entry.pid);
   const survivors = terminateTestPidsSync([...recorded, ...matched]);
-  if (!rootOverride) delete process.env.REPOOS_TEST_TMP_ROOT;
+  if (!rootOverride) {
+    delete process.env.REPOOS_TEST_TMP_ROOT;
+    delete process.env.REPOOS_TEST_HELPER;
+  }
   if (survivors.length > 0) {
     // Leak guard: keep the root (and its spawn logs) for diagnosis, and fail
     // the run instead of silently leaving days-old helpers behind.

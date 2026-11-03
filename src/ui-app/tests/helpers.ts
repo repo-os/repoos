@@ -319,6 +319,11 @@ export function spawnTestProcess(
   const child = spawn(command, args, {
     ...options,
     detached: process.platform !== "win32",
+    env: {
+      ...(options.env ?? process.env),
+      REPOOS_TEST_HELPER:
+        options.env?.REPOOS_TEST_HELPER ?? process.env.REPOOS_TEST_HELPER ?? testRunRoot(),
+    },
   });
   if (child.pid) {
     trackTestProcess(child.pid);
