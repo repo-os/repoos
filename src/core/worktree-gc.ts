@@ -29,7 +29,7 @@
  * live outside that directory; they are reported as `external` and never even
  * inspected (no `git status`), let alone removed.
  */
-import { existsSync, lstatSync, realpathSync, readdirSync, readFileSync } from "node:fs";
+import { lstatSync, realpathSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative, isAbsolute } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { RepoOSConfig, Task } from "./types.js";
@@ -242,6 +242,20 @@ function isConfirmedMissing(e: unknown): boolean {
   return code === "ENOENT" || code === "ENOTDIR";
 }
 
+type PathPresence = "present" | "missing" | "unknown";
+
+/** Distinguish a path that is really gone from one we could not inspect.
+ * `existsSync` collapses both to `false`, which would let a permission error
+ * look like a vanished worktree and discard data we never read. */
+function pathPresence(path: string): PathPresence {
+  try {
+    lstatSync(path);
+    return "present";
+  } catch (e) {
+    return isConfirmedMissing(e) ? "missing" : "unknown";
+  }
+}
+
 /**
  * True only when an ignored path is provably redundant with data that survives
  * the worktree: it already vanished, or it is a symlink whose target lives in
@@ -290,7 +304,9 @@ function worktreeState(
   canonicalRoot: string,
   cacheDir: string,
 ): WorktreeState | null {
-  if (!existsSync(path)) return { dirtyPaths: [], ignoredPaths: [] };
+  const presence = pathPresence(path);
+  if (presence === "missing") return { dirtyPaths: [], ignoredPaths: [] };
+  if (presence === "unknown") return null;
   const run = gitRun(path, [
     "status",
     "--porcelain",
@@ -553,7 +569,12 @@ function dirtyTaskFilesAreRedundant(
       continue;
     }
     const absolute = join(worktreePath, path);
-    if (!existsSync(absolute)) continue; // a dirty deletion carries no working-tree data
+    const presence = pathPresence(absolute);
+    if (presence === "missing") continue; // a dirty deletion carries no working-tree data
+    if (presence === "unknown") {
+      unsafe.push(path);
+      continue;
+    }
     let current: Buffer;
     try {
       current = readFileSync(absolute);
@@ -837,8 +858,10 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     // --- feature worktrees ---
     if (!branch) {
       // Detached HEAD with no branch ref: only safe to drop when its directory
-      // is already gone (pure stale metadata).
-      if (!existsSync(w.path)) {
+      // is already gone (pure stale metadata). An unreadable directory is not
+      // proven gone, so it is retained like a present one.
+      const presence = pathPresence(w.path);
+      if (presence === "missing") {
         remove(
           {
             branch: "",
@@ -850,7 +873,11 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
           true,
         );
       } else {
-        keep("detached worktree, directory present");
+        keep(
+          presence === "unknown"
+            ? "could not inspect detached worktree (kept conservatively)"
+            : "detached worktree, directory present",
+        );
       }
       continue;
     }
@@ -863,7 +890,7 @@ export function sweepStaleWorktrees(config: RepoOSConfig, opts: SweepOptions): G
     // vanished directory has no working tree to protect — only its branch ref
     // can carry unmerged data — so the content proof here decides.
     if (!task) {
-      if (existsSync(w.path)) {
+      if (pathPresence(w.path) !== "missing") {
         keep("no task record for branch — lifecycle state unknown");
         continue;
       }
