@@ -4258,8 +4258,11 @@ export class CloseOutOrchestrator {
 
     // Opportunistic GC: every close-out is a natural moment to reclaim
     // `repoos/integrate/*` candidates that failed jobs left behind (this
-    // task's own were just removed above). Conservative — never touches
-    // `feat/*`. Also logs a "run `repoos gc`" warning if the worktree count is
+    // task's own were just removed above), plus resolved feature worktrees
+    // whose branch content is provably represented in main (#1004). It still
+    // never touches active/review/human work, unmerged changes, unique dirty
+    // files, or worktrees outside RepoOS's managed directory. Also logs a
+    // warning with candidate/retained/external counts if the worktree count is
     // over the advisory ceiling. The worker keeps its Git reads off the HTTP
     // thread; the result remains fail-soft and not awaited-critical.
     void sweepAndWarnAsync(this.config, {

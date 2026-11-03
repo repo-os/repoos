@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 496802
-last_close_out_gate_at: "2026-11-03T16:46:31.474Z"
 id: 1004
 title: Make retained worktree cleanup safe and actionable
 type: chore
-status: review
+status: done
 needs_merge: true
 priority: p2
 area: [core, server]
+merged_commit: 463e500c73f55a25eaefb557978996b48cf76e46
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/make-retained-worktree-cleanup-safe-and-
@@ -16,6 +15,8 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-01T15:50:52Z"
 updated_at: "2026-11-03T16:46:31Z"
+last_close_out_gate_ms: 496802
+last_close_out_gate_at: "2026-11-03T16:46:31.474Z"
 review_passes: 8
 last_check_failure: "repoos check at 2026-11-03T01:54:13.726Z: repoos check failed: ◆ Check plan"
 review_rounds: 2

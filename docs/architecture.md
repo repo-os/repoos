@@ -103,8 +103,9 @@ screen (#0324): the serve process (port, PID, uptime from
 printed first and loud when stale, since a stale build is this repo's #1
 time-waster), board counts with every `active` task's branch, worktree path
 and last activity (a task whose worktree is missing is flagged), worktree
-count vs `worktreeWarnThreshold` plus everything `repoos gc --dry-run` would
-collect (same sweep, so the numbers match by construction), a one-line tunnel
+count vs `worktreeWarnThreshold` plus the same candidate / retained / external
+breakdown `repoos gc --dry-run` reports (same sweep, so the numbers match by
+construction), a one-line tunnel
 summary (configured / running / published hostnames), and the main
 checkout's git state (branch, clean/dirty, ahead/behind `main`).
 
@@ -154,8 +155,16 @@ shape, covered by test):
   build:  { code, stale, message, version, buildAt },
   board:  { taskCount, counts, active: [{ id, title, branch, worktreePath,
             worktreeMissing, updatedAt, needsInput }] },
-  worktrees: { count, warnThreshold, leaked: [{branch, path}],
-               kept: [{branch, path, reason}] },
+  worktrees: { count, managedCount, warnThreshold,
+               candidates: [{branch, path, reason, taskId?, taskStatus?,
+                             commitsAhead?, dirtyPaths?, ignoredPaths?,
+                             changedSourcePaths?}],
+               retained: [{branch, path, reason, taskId?, taskStatus?,
+                           commitsAhead?, dirtyPaths?, ignoredPaths?,
+                           changedSourcePaths?}],
+               external: [{branch, path, reason}],
+               errors: [string],
+               counts: { candidates, retained, external } },
   tunnel: { configured, tunnelName, running, hostnames },
   git:    { branch, clean, dirtyFiles, isMainBranch, ahead, behind } }
 ```

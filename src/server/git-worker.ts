@@ -676,27 +676,41 @@ export async function sweepAndWarnAsync(
   opts: {
     activeJobIds?: Set<string>;
     threshold?: number;
+    /** Tasks from the caller's live index; omitted, the worker builds its own. */
+    tasks?: Task[];
     log: (level: "info" | "warn", msg: string, meta?: Record<string, unknown>) => void;
   },
 ): Promise<void> {
   try {
     const threshold = opts.threshold ?? 20;
     const { report, worktreeCount } = await getGitWorker(config.root).sweep(config, {
-      mode: "integrate-only",
+      mode: "full",
       activeJobIds: opts.activeJobIds,
+      tasks: opts.tasks,
       includeCount: threshold > 0,
     });
     if (report.removedWorktrees.length || report.errors.length) {
       opts.log("info", "worktree gc", {
         removed: report.removedWorktrees.map((worktree) => worktree.branch || worktree.path),
+        retained: report.summary.retained,
+        external: report.summary.external,
         errors: report.errors,
       });
     }
     if (threshold > 0 && worktreeCount !== null && worktreeCount > threshold) {
       opts.log(
         "warn",
-        `${worktreeCount} git worktrees registered (advisory ceiling ${threshold}) — run \`repoos gc\` to reclaim leftovers from done/abandoned tasks`,
-        { worktrees: worktreeCount, threshold },
+        `${worktreeCount} git worktrees registered (advisory ceiling ${threshold}): ` +
+          `${report.summary.candidates} safe candidate${report.summary.candidates === 1 ? "" : "s"} reclaimed, ` +
+          `${report.summary.retained} retained, ${report.summary.external} outside RepoOS's managed directory — ` +
+          "run `repoos gc --dry-run` for the reasons",
+        {
+          worktrees: worktreeCount,
+          threshold,
+          candidates: report.summary.candidates,
+          retained: report.summary.retained,
+          external: report.summary.external,
+        },
       );
     }
   } catch (error) {
