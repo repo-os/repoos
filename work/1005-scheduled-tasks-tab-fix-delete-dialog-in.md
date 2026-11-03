@@ -240,3 +240,4 @@ Inspect the shared Dialog, overlay, and portal interaction rules (including `dat
 - 2026-11-03T03:08:25Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-03T03:41:21Z · body
 - 2026-11-03T03:43:43Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-03T03:43:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
