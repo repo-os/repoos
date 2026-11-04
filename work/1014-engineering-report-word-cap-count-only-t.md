@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-report-word-cap-count-only-t
 created_at: "2026-11-03T07:45:14Z"
-updated_at: "2026-11-04T02:42:37Z"
+updated_at: "2026-11-04T02:44:59Z"
 ---
 ## Problem
 The engineering report has a hard 1,000-word cap, and `src/server/engineering-reports.ts` enforces it twice: on the engineer's draft (~line 184) and again on the final markdown, which includes the server-generated change summary (~line 274: `${narrative}\n\n${summary}`, summary = base/source tree plus one line per changed file). On a task with many changed files the generated file list alone eats the budget. #1004 (18 files) was rejected at handoff with "final report has 1103 words" even after the engineer cut its own text to 302 words, forcing it to shorten useful content and loop.
@@ -35,3 +35,4 @@ See `MAX_WORDS`, `words()`, and both checks in `src/server/engineering-reports.t
 - 2026-11-04T02:29:51Z · status ready→active, branch
 - 2026-11-04T02:42:37Z · message_queued at 2026-11-04T02:42:37.575Z
 - 2026-11-04T02:42:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T02:44:59Z · body
