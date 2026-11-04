@@ -4,6 +4,7 @@ import AgentPromptCta from "./components/AgentPromptCta.vue";
 import ForClients from "./components/ForClients.vue";
 import InstallBox from "./components/InstallBox.vue";
 import SiteLogo from "./components/SiteLogo.vue";
+import { CURRENT_RELEASE, formatReleaseDate } from "../../shared/release";
 import {
   type Appearance,
   type DesignThemeId,
@@ -19,6 +20,8 @@ import {
 } from "./theme-resolve";
 
 const isForClients = /^\/for-clients(?:\/(?:index\.html)?)?$/.test(window.location.pathname);
+const releaseVersion = `v${CURRENT_RELEASE.version}`;
+const releaseDate = formatReleaseDate();
 function siteLink(path: string): string {
   const url = new URL(
     appendThemeToUrl(
@@ -608,7 +611,10 @@ const year = new Date().getFullYear();
               <dd
                 class="mt-1 whitespace-nowrap text-[22px] font-bold tracking-tight sm:text-[26px]"
               >
-                v0.5.62
+                {{ releaseVersion }}
+              </dd>
+              <dd class="mt-0.5 text-[11px] leading-tight text-[var(--txt-faint)]">
+                released {{ releaseDate }}
               </dd>
             </div>
           </dl>

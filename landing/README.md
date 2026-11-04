@@ -73,12 +73,20 @@ landing/
 
 `https://repoos.org/llms.txt` is generated, not committed. `vite-plugin-llms-txt.ts`
 reads the one canonical starter prompt at `../agent/starter-prompt.md` and adds a
-short llmstxt.org overview with the published install commands and links to the
-docs site. `vite dev` serves the same text at `/llms.txt`; `vite build` emits
+short llmstxt.org overview with the published install commands, the current
+version/release date from `../release-history.json`, and links to the docs site.
+`vite dev` serves the same text at `/llms.txt`; `vite build` emits
 `dist/llms.txt` at the dist root so the Worker serves it. A request to `/` with
 `Accept: text/markdown` returns that same body (`Content-Type: text/markdown`,
 `Vary: Accept`); a request without that preference still gets the HTML page.
 Edit the prompt file, not a copy in a Vue component.
+
+The Worker also resolves guessable agent URLs that used to 404 (v0.5.75 QA):
+`/llms-full.txt` redirects to the docs site, `/AGENTS.md` to the raw repository
+file, `/.well-known/llms.txt` to `/llms.txt`, and `/docs` to
+`docs.repoos.org`. The map and its `run_worker_first` entries are in
+`worker.ts` and `wrangler.jsonc`; tests live in
+`src/ui-app/tests/landing-agent-redirects.test.ts`.
 
 The hero's agent call to action (`src/components/AgentPromptCta.vue`) copies that
 same prompt. Its heading, sentence, button labels and guide link come from
@@ -153,12 +161,14 @@ See the enquiry setup below before enabling the form in production.
 
 ## Notes for future edits
 
-- The board stats (task counts, version) in `src/App.vue` (and the `og:image`/
+- The board stats (task counts) in `src/App.vue` (and the `og:image`/
   `og:description` meta tags in `index.html`) are **hand-written snapshots**,
   not fetched live — there's no stats backend here to source them from. Copy is
   deliberately phrased as "as of vX.Y.Z" / "N+ tasks" rather than implying a
-  live figure, so it doesn't need updating on every commit; still worth a
-  glance whenever RepoOS cuts a meaningfully newer release.
+  live figure, so it doesn't need updating on every commit. The **current
+  version and release date** are the exception: they come from
+  `../release-history.json` via `../shared/release.ts`, so a release updates
+  them without a hand edit.
 - `og:image`/`twitter:image` are absolute URLs (`https://repoos.org/...`) —
   both platforms require an absolute URL to render a link preview image, a
   relative path silently fails.

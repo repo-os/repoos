@@ -1,5 +1,6 @@
 import { readdirSync } from "node:fs";
 import path from "node:path";
+import { releaseStamp } from "../../shared/release";
 
 /**
  * Shared contract for the agent-facing outputs of the docs build:
@@ -14,6 +15,14 @@ import path from "node:path";
  */
 
 export const SITE_ORIGIN = "https://docs.repoos.org";
+
+/**
+ * The version/date stamp every agent surface carries. The release pipeline
+ * writes the history this reads; `scripts/check-llms.ts` fails the docs build
+ * when llms.txt or llms-full.txt loses it, so a release cannot ship docs that
+ * do not say which release they describe.
+ */
+export const RELEASE_LINE = `Current release: ${releaseStamp()} — https://github.com/repo-os/repoos/releases`;
 
 /**
  * Source files under `user-docs/` that are deliberately not part of the
@@ -31,6 +40,8 @@ export const LLMS_INDEX_EXCLUDED_SOURCES = ["README.md", "index.md"] as const;
 export const llmsIndexTemplate = `# {title}
 
 {description}
+
+${RELEASE_LINE}
 
 {details}
 

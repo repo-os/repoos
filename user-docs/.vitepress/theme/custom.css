@@ -412,6 +412,26 @@ html[data-ui-theme="gruvbox"] .release-notice {
  * marker rather than decoration. Everything else stays in the default theme's
  * surfaces and type, by design: this page is reference material, not a hero.
  */
+.release-current {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 1.25rem 0 0;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--vp-c-border);
+  border-radius: 999px;
+  background: var(--vp-c-bg-alt);
+  font-size: 0.9rem;
+  color: var(--vp-c-text-2);
+}
+
+.release-current strong {
+  font-family: var(--vp-font-family-mono);
+  font-weight: 600;
+  color: var(--vp-c-text-1);
+}
+
 .release-list {
   display: flex;
   flex-direction: column;
