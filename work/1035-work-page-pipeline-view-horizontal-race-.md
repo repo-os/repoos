@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T18:07:56Z"
+updated_at: "2026-11-04T18:14:29Z"
 ---
 ## Problem
 
@@ -75,11 +75,11 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 ```json
 [
 {
-  "label": "Pipeline view with lanes across every stage",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"pipeline-view\"]",
-  "state": "board:pipeline"
+"label": "Pipeline view with lanes across every stage",
+"target": "default",
+"route": "/work",
+"highlight": "[data-test-id=\"pipeline-view\"]",
+"state": "board:pipeline"
 }
 ]
 ```
@@ -96,3 +96,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T17:44:42Z · status inbox→ready
 - 2026-11-04T18:02:21Z · status ready→active, branch
 - 2026-11-04T18:07:56Z · body
+- 2026-11-04T18:14:29Z · message_queued at 2026-11-04T18:14:29.799Z
