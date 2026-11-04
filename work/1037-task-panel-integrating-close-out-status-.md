@@ -93,3 +93,4 @@ Look at where the drawer header renders the integration pill/status (grep TaskDr
 - 2026-11-04T21:02:31Z · body
 - 2026-11-04T21:10:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T21:32:39Z · status active→review
+- 2026-11-04T21:32:39Z · message_queued at 2026-11-04T21:32:39.920Z
