@@ -258,3 +258,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:49:28Z · message_delivered: 1 message(s)
 - 2026-11-04T16:49:30Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · reused check inputs changed during handoff — run the check again
 - 2026-11-04T16:51:02Z · message_queued at 2026-11-04T16:51:02.178Z
+- 2026-11-04T16:51:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
