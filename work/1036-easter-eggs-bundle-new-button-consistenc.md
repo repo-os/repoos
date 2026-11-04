@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:48:47Z"
+updated_at: "2026-11-04T18:50:42Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -114,6 +114,30 @@ The textarea is about 3 lines tall (roughly 68px) and still resizable vertically
 
 Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` call sites that set a smaller min-height the same way and list them in the handoff report; fix only this panel.
 
+## Shots
+```json
+[
+{
+  "label": "New schedule accent button",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": "[data-testid=\"new-schedule\"]"
+},
+{
+  "label": "New reminder accent button",
+  "target": "default",
+  "route": "/agents?tab=reminders",
+  "highlight": "[data-testid=\"new-reminder\"]"
+},
+{
+  "label": "New environment accent button",
+  "target": "default",
+  "route": "/secrets",
+  "highlight": "[data-testid=\"new-environment\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-04T17:57:32Z · created · njachowski@gmail.com
@@ -133,3 +157,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T18:48:35Z · body: Items (removed 1)
 - 2026-11-04T18:48:37Z · message_queued at 2026-11-04T18:48:37.676Z
 - 2026-11-04T18:48:47Z · note: adopted orphaned engineer pid 50901
+- 2026-11-04T18:50:42Z · body
