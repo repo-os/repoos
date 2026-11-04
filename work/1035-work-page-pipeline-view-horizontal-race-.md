@@ -67,8 +67,10 @@ Approved mockup (light and dark, solid hairline guides, centered cards): rendere
 
 ![1](/api/tasks/1035/attachments/att_de823a65-bd9c-48c2-845b-fbd197b59ece.png)
 ![2](/api/tasks/1035/attachments/att_4ea308fd-fe8e-43f3-9f15-fee13a945e69.webp)
+![Approved Pipeline view mockup, light and dark](/api/tasks/1035/attachments/att_11dd76d3-db5c-4cb5-a3de-9376193d9be7.png)
 
 ## Activity
 
 - 2026-11-04T17:20:01Z · created · njachowski@gmail.com
 - 2026-11-04T17:20:02Z · screenshots
+- 2026-11-04T17:22:46Z · screenshots
