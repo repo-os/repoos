@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 709858
-last_close_out_gate_at: "2026-11-04T20:45:42.252Z"
 id: 1022
 title: "macOS Hub CI: HubFindBarContainerTests.testHidingFindBarReturnsFocusToThePage fails on every run; the Build and test native Hub job has been red since at least 2026-10-19"
 type: bug
-status: review
+status: done
 priority: p1
 area: macos
+merged_commit: b164e8fd93b065acd925de085d9ef5e85b6db636
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/macos-hub-ci-hubfindbarcontainertests-te
@@ -16,6 +15,8 @@ review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-04T03:59:44Z"
 updated_at: "2026-11-04T20:45:42Z"
+last_close_out_gate_ms: 709858
+last_close_out_gate_at: "2026-11-04T20:45:42.252Z"
 review_passes: 2
 review_rounds: 1
 ---
