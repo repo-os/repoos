@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T12:58:43Z"
+updated_at: "2026-11-04T13:13:56Z"
 ---
 ## Items
 
@@ -19,7 +19,6 @@ updated_at: "2026-11-04T12:58:43Z"
 - E4 · Empty-repo git edge cases
 - E5 · Quieter `repoos list` with no server
 - E6 · Doc and message accuracy nits
-- E7 · Hold dialog styling, optional reason, and held-card padding
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body.
 
@@ -132,27 +131,6 @@ The message links a docs URL; the docs sentence is accurate.
 
 Source: external QA report on v0.5.75, items 3, 4, 13-18.
 
-## E7 · Hold dialog styling, optional reason, and held-card padding
-
-### Problem
-
-The Hold task dialog (screenshots attached, from #0715) renders its Reason textarea and Auto-release date input with no visible field chrome: they read as plain text, unlike other textareas and date inputs in the app. The "Hold task" button is disabled until a reason is typed, but a reason is not needed to hold a task (the CLI takes `--reason` as optional context). On the task panel, the "Held — automation won't start this task" card has uneven padding: the text, the Release hold / Release and start buttons and the card edges are cramped.
-
-### Desired UX
-
-The Reason textarea and the date input use the shared rounded, outlined field styles (the global `ff-textarea` and the form-field classes in `src/ui-app/src/style.css`), with a visible focus ring, matching the other drawers and dialogs. The Hold task button is enabled with an empty reason; the hold is stored without `hold_reason` (or a neutral default) and the held card handles a missing reason without showing a blank line or the word "pause". The held card on the task panel has even padding on all sides and consistent gaps between the title, reason, byline and buttons.
-
-### Acceptance criteria
-
-- [ai] Test: the hold dialog's Hold task button is enabled with an empty reason and submits successfully.
-- [ai] Test: a held task with no reason renders the held card without an empty reason row.
-- [ai] The textarea and date input pick up the shared field classes (no bespoke colors; passes the hardcoded-colors and contrast guards in light and dark).
-- [ai] Declared `## Shots`: hold dialog and held card on the task panel.
-
-### Notes for AI
-
-Check the server hold route (`repoos hold` / `POST /api/tasks/:id/hold`) accepts an empty reason before relaxing the UI; keep CLI behavior unchanged. Dialog must use the shared `ui/dialog/*` components per AGENTS.md. Bundle is now at 7 items; keep this one in its own commit.
-
 ## Screenshots
 
 ![3](/api/tasks/1026/attachments/att_7f4494fa-3f9a-4412-9743-b2405629c23b.png)
@@ -168,3 +146,4 @@ Check the server hold route (`repoos hold` / `POST /api/tasks/:id/hold`) accepts
 - 2026-11-04T12:58:41Z · body: Items (added 1)
 - 2026-11-04T12:58:42Z · body: E7 · Hold dialog styling, optional reason, and held-card padding (added)
 - 2026-11-04T12:58:43Z · screenshots
+- 2026-11-04T13:13:56Z · body: Items (removed 1); E7 · Hold dialog styling, optional reason, and held-card padding (removed)
