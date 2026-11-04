@@ -132,3 +132,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T15:28:19Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-04T15:29:49Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T15:36:20Z · message_queued at 2026-11-04T15:36:20.056Z
+- 2026-11-04T15:36:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
