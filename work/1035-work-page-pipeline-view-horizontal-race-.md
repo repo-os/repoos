@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-04T18:48:31.070Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: 1035
 title: "Work page: Pipeline view (horizontal race track for active and review tasks)"
 type: feature
@@ -12,7 +10,9 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T18:48:28Z"
+updated_at: "2026-11-04T18:53:42Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-04T18:48:31.070Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
 
@@ -107,4 +107,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T18:42:21Z · body
 - 2026-11-04T18:47:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T18:48:28Z · message_queued at 2026-11-04T18:48:28.004Z
-
+- 2026-11-04T18:53:42Z · CTO nudge: held — an undelivered message is already queued
