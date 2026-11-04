@@ -104,3 +104,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 - 2026-11-04T04:37:43Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T04:41:10Z · body
 - 2026-11-04T04:45:36Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T04:45:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
