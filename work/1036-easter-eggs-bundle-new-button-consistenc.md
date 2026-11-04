@@ -177,3 +177,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T20:12:08Z · note: adopted orphaned engineer pid 55874
 - 2026-11-04T20:17:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T20:40:06Z · note: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:52583/api/project-environments (http://127.0.0.1:52583/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:52583/api/project-environments); [missing-target] New environment accent button (target "default"): highlight [data-testid="new-environment"] matched nothing on /secrets (http://127.0.0.1:52583/secrets)
+- 2026-11-04T20:40:06Z · message_queued at 2026-11-04T20:40:06.920Z
