@@ -3,15 +3,19 @@ id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T14:21:12Z"
-dev_error_count: 3
+updated_at: "2026-11-04T14:21:54Z"
+dev_error_count: 4
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"}]"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -193,3 +197,5 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T14:12:51Z · body
 - 2026-11-04T14:21:11Z · message_queued at 2026-11-04T14:21:11.854Z
 - 2026-11-04T14:21:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T14:21:54Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-04T14:21:54Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
