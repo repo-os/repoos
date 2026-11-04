@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 924483
+last_close_out_gate_at: "2026-11-04T08:16:09.214Z"
 id: 1029
 title: Indexer warns 'skipped 1 task file with no id' for work/reports/<id>/review-<n>.md
 type: bug
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/indexer-warns-skipped-1-task-file-with-n
 created_at: "2026-11-04T07:06:29Z"
-updated_at: "2026-11-04T07:43:33Z"
+updated_at: "2026-11-04T08:16:09Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -42,3 +44,5 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:43:04Z · status active→review
 - 2026-11-04T07:43:04Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-04T07:43:33Z · note: review pass 1: good to go
+- 2026-11-04T08:16:09Z · close-out gate completed in 924s
+
