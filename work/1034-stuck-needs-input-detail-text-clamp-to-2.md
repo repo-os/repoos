@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T16:58:58Z"
+updated_at: "2026-11-04T16:59:01Z"
 last_check_failure: "repoos check at 2026-11-04T16:24:15.644Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 5
 ---
@@ -122,3 +122,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T16:44:24Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T16:58:58Z · note: ui verification failed (2 issue(s)): [missing-target] Board card clamps long check-wait detail (target "default"): state "card:checkWaitDetail" did not render on target "default" — / shows no task card (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail); [missing-target] Board card clamps long check-wait detail (target "default"): highlight [data-test-id=task-card-needs-input-detail] matched nothing on / (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail)
 - 2026-11-04T16:58:58Z · message_queued at 2026-11-04T16:58:58.495Z
+- 2026-11-04T16:59:01Z · message_delivered: 1 message(s)
