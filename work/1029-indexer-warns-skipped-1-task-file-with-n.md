@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/indexer-warns-skipped-1-task-file-with-n
 created_at: "2026-11-04T07:06:29Z"
-updated_at: "2026-11-04T08:16:09Z"
+updated_at: "2026-11-04T08:17:26Z"
 last_close_out_gate_ms: 924483
 last_close_out_gate_at: "2026-11-04T08:16:09.214Z"
 handoff_signal_retry_count: 2
@@ -46,4 +46,4 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:43:04Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-04T07:43:33Z · note: review pass 1: good to go
 - 2026-11-04T08:16:09Z · close-out gate completed in 924s
-
+- 2026-11-04T08:17:26Z · status done→done, release:success
