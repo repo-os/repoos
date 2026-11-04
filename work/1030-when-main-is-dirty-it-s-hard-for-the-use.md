@@ -269,3 +269,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T17:41:38Z · body
 - 2026-11-04T17:44:44Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T17:55:07Z · status active→review
+- 2026-11-04T17:55:07Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
