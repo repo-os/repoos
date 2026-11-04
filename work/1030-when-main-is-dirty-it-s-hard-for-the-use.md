@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T10:42:39Z"
+updated_at: "2026-11-04T10:42:44Z"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -81,6 +81,39 @@ existing `repo.status` SSE update is enough).
 `hardcoded-colors`, contrast audit), and the code passes `repoos check` including the UI
 smoke test.
 
+## Notes for AI
+
+- Data already exists: the store reuses `gitStatus` from `src/ui-app/src/stores/repo.ts`
+(~line 758; fetched from `GET /api/repo/status`, refreshed by SSE `repo.status` with a
+dirty-transition debounce around lines 2275-2325). Subscribe rather than re-fetch.
+- Sidebar changes go in `src/ui-app/src/components/SidebarGitState.vue` (extend it, or add a
+child component it renders when `dirtyCount > 0`) and its mount point
+`src/ui-app/src/components/Sidebar.vue:11`. Keep the existing ⓘ popover working.
+- Right panel: follow the shared drawer pattern from the UI store — `drawerWidth`
+(`src/ui-app/src/stores/ui.ts:69`, default 680px, `startResize`) and the
+`drawer-resize`/`drawer-head`/`drawer-body` classes used by `TaskDrawer.vue:4671`,
+`RemindersPanel.vue:204`, etc. The panel lives in the app layout column (no Teleport needed
+for the panel itself), but any modal/scrim bits must follow the `data-overlay-layer` rule.
+- Point conventions that apply: styled dropdowns for any selection, shared dialog components for
+confirmations (never native `alert`/`confirm`), `.main` sizing and `.kv-rows` utilities where
+relevant. Rebuild with `bun run build:ui` after the change.
+- Diff rendering: preference order — reuse `DiffFileViewer.vue` exactly as TaskDrawer's Changes
+tab does (particularly the call-site at `TaskDrawer.vue:7091`), with `DiffView.vue`
+(`/repo/working-diff`) kept as the full-screen escape. Working-tree patch data for the repo
+root may need a small read-only server route in `src/server/routes/repo-log.ts` alongside
+`GET /api/repo/status`; keep it read-only.
+- Committing: reuse `POST /api/repo/commit` (`repo-log.ts` `commitRepoRoot`): it stages
+everything and commits all uncommitted changes on the current branch, and the human's click is
+the authorization for human-only commits (agents never call it). Respect its guards: 409
+nothing-to-commit / conflicts / detached HEAD / pending close-out, 422 hook rejection with
+verbatim output. Do not add selective file staging; that is a different scope.
+- There is already a `CommitDialog.vue` reachable from the popover. Prefer reusing that flow or
+its server semantics so the app has one commit UX; do not fork a second commit pipeline.
+- Tests: component tests near `src/ui-app/tests/` — button render across clean/dirty/unknown
+states, panel open/close with shared width, commit success/error paths with the store mocked
+(use fakes; do not phrase anything around real credentials). Add captions via
+`repoos update 1030 --shots '<json>'` at handoff and rebuild so the preview serves the button.
+
 
 ## Activity
 
@@ -95,3 +128,4 @@ smoke test.
 - 2026-11-04T10:42:29Z · body: Problem (added)
 - 2026-11-04T10:42:33Z · body: Desired UX (added)
 - 2026-11-04T10:42:39Z · body: Acceptance criteria (added)
+- 2026-11-04T10:42:44Z · body: Notes for AI (added)
