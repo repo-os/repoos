@@ -84,22 +84,74 @@ final class HubFindBarContainerTests: XCTestCase {
     func testHidingFindBarReturnsFocusToThePage() {
         let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         let container = HubServerWebContainerView(webView: webView)
+        container.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
             styleMask: [.titled],
             backing: .buffered,
             defer: false
         )
+        window.isReleasedWhenClosed = false
         window.contentView = container
+        defer {
+            window.orderOut(nil)
+            window.contentView = nil
+            RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+            window.close()
+        }
+
         window.makeKeyAndOrderFront(nil)
+        settleFocusWindow(window)
         container.presentFindInterface()
+        settleFocusWindow(window)
+        XCTAssertTrue(
+            Self.findBarOwnsFocus(in: window, findBar: container.findBar),
+            "the find field must hold focus before Done closes the bar"
+        )
 
         container.hideFindInterface()
-        // Focus moves back on the next run loop.
-        RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        let deadline = Date().addingTimeInterval(1)
+        while Date() < deadline {
+            if !container.isFindBarVisible, window.firstResponder === container.webView {
+                break
+            }
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        }
 
-        XCTAssertTrue(window.firstResponder === container.webView)
-        window.close()
+        XCTAssertFalse(container.isFindBarVisible)
+        XCTAssertTrue(
+            window.firstResponder === container.webView,
+            "hideFindInterface must make the web view first responder when the bar had focus"
+        )
+    }
+
+    /// Matches `HubServerWebContainerView`'s find-bar focus bookkeeping: the
+    /// search field, its subviews, or the shared field editor editing that field.
+    @MainActor
+    private static func findBarOwnsFocus(in window: NSWindow, findBar: HubFindBarView) -> Bool {
+        if let view = window.firstResponder as? NSView,
+            view === findBar || view.isDescendant(of: findBar)
+        {
+            return true
+        }
+        if let editor = window.firstResponder as? NSTextView,
+            let control = editor.delegate as? NSControl,
+            control === findBar.searchField
+        {
+            return true
+        }
+        return false
+    }
+
+    /// Lets AppKit install key-window focus and `hideFindInterface`'s async
+    /// first-responder handoff before assertions run.
+    @MainActor
+    private func settleFocusWindow(_ window: NSWindow) {
+        for _ in 0..<3 {
+            window.layoutIfNeeded()
+            window.contentView?.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        }
     }
 
     @MainActor

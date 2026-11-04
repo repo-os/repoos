@@ -39,6 +39,30 @@ installation copy.
 
 ## Failure triage
 
+- The **Build and test native Hub** job runs `xcodebuild test` with
+  `CODE_SIGNING_ALLOWED=NO` (see `.github/workflows/macos-hub.yml`). A single
+  red test fails the whole job and can surface a release warning even when the
+  DMG upload job succeeds.
+- **`HubFindBarContainerTests.testHidingFindBarReturnsFocusToThePage`** failed
+  on every CI run from 2026-10-19 through v0.5.75 (for example run
+  41769376401). The GitHub log only named the test; the underlying failure was
+  XCTest’s memory checker (`XCTMemoryChecker`) after the test body: the case
+  hosted a real `WKWebView` in an `NSWindow` without the teardown pattern other
+  Hub window tests use (`isReleasedWhenClosed = false`, `orderOut`, nil
+  `contentView`, a short main-run-loop drain). That abort looked like an instant
+  (0.000 s) failure on CI. The fix keeps the original strict check that
+  `hideFindInterface` makes the web view first responder (`window.firstResponder
+  === webView`, matching the production `makeFirstResponder` call), verifies
+  the find field held focus first (field editor delegate or find-bar subtree),
+  settles key-window focus before presenting the bar, polls through the async
+  handoff, and tears the window down safely so XCTest's memory checker does not
+  abort at scope exit.
+- **`LocalServerDiscoveryTests`** still compiled with Swift 6 concurrency
+  warnings (`NSLock` and a captured `var` in `onUpdate`); those were cleaned up
+  with `OSAllocatedUnfairLock` so a future strict mode does not turn warnings
+  into errors. They were not failing the job while only the find-bar test was
+  red.
+
 - A built `RepoOS Hub.app` with a missing DMG usually means the workflow path
   still names the old bundle; fix the path and release a new patch version.
 - A generic Finder icon means the release bundle is missing `AppIcon.icns`.
