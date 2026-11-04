@@ -50,7 +50,8 @@ curl -fsSL https://repoos.org/install | bash
 ```
 
 It runs on Bun when available (recommended), otherwise requires Node.js >=
-20.6.0. It installs to `~/.repoos` and links `repoos` into `~/.local/bin`.
+20.6.0. It installs to `~/.local/share/repoos` and links `repoos` into
+`~/.local/bin`. Machine state stays in `~/.repoos`.
 
 ### Homebrew
 
@@ -76,22 +77,18 @@ bun add -g @repo-os/repoos
 pnpm add -g @repo-os/repoos
 ```
 
-### mise
+mise is not a recommended install method. See `docs/install-layout.md`.
 
-```bash
-mise use --global npm:@repo-os/repoos
-```
-
-This uses mise's built-in npm backend and records RepoOS in your global mise
-configuration. Make sure [mise shell activation](https://mise.jdx.dev/getting-started.html)
-is enabled so its `repoos` shim is on your PATH.
+Bun installs `bun` into `~/.bun/bin`; add that directory to `PATH` before
+`bun add -g`. pnpm on a clean account needs `SHELL` set and `pnpm setup`
+before a global install.
 
 Use the same tool to update a package-manager install: `npm update -g
 @repo-os/repoos`, `bun update -g @repo-os/repoos`, `pnpm update -g
-@repo-os/repoos`, `mise upgrade npm:@repo-os/repoos`, or `brew update && brew
-upgrade repo-os/tap/repoos`. A standalone install updates with `repoos upgrade`
-and removes with `repoos uninstall`. When run from a recognised package-manager
-install, `repoos upgrade` prints the matching package-manager command instead.
+@repo-os/repoos`, or `brew update && brew upgrade repo-os/tap/repoos`. A
+standalone install updates with `repoos upgrade` and removes with
+`repoos uninstall`. When run from a recognised package-manager install,
+`repoos upgrade` prints the matching package-manager command instead.
 
 Then in any repo:
 
