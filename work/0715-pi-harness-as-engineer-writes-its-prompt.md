@@ -109,3 +109,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:15:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-04T15:20:02Z · status active→review
 - 2026-11-04T15:20:03Z · message_queued at 2026-11-04T15:20:03.240Z
+- 2026-11-04T15:20:03Z · note: shots: skipped — Docs site skipped: no docs shot declared
