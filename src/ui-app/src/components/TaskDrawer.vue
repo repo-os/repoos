@@ -1013,6 +1013,17 @@ const drawerStatusDetails = computed(() => {
       timestamp: task.updated_at,
       detail: `${needsInputBannerText(task.needsInputReason, activeNeedsInputQuestions.value, task.needsInputDetail)}${activeNeedsInputDetailLine.value ? `\n${activeNeedsInputDetailLine.value}` : ""}${needsInputSuggestionText(task.needsInputReason, activeNeedsInputQuestions.value) ? `\n${needsInputSuggestionText(task.needsInputReason, activeNeedsInputQuestions.value)}` : ""}${activeTldrSentence.value ? `\n${activeTldrSentence.value}` : ""}`,
     });
+  const queuedCheck = localQueueHintForTask(
+    repo.resourceQueueMarkers,
+    task.id,
+    new Date(checkNow.value),
+  );
+  if (queuedCheck) {
+    rows.push({
+      title: "Check slot wait",
+      detail: queuedCheck.title,
+    });
+  }
   if (
     task.status === "review" &&
     (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed")
@@ -5833,14 +5844,21 @@ watch(
                           )
                   }}
                 </div>
-                <!-- Why it failed: at most two lines here; the full text is in
+                <!-- Why it failed: at most three lines here; the full text is in
                    Debug → Status details. -->
-                <div
+                <button
                   v-if="activeNeedsInputDetailLine"
+                  type="button"
                   class="agent-waiting-detail agent-waiting-detail--clamp"
+                  data-test-id="drawer-needs-input-detail"
+                  :aria-label="`${activeNeedsInputDetailLine}. Open Status details.`"
+                  @click="openStatusDetails"
+                  @keydown.enter.prevent="openStatusDetails"
+                  @keydown.space.prevent="openStatusDetails"
                 >
                   {{ activeNeedsInputDetailLine }}
-                </div>
+                  <span class="diagnostic-details-affordance">Details</span>
+                </button>
                 <div class="agent-waiting-actions">
                   <Button
                     v-if="needsInputPrimary && !staleNeedsInputOnReview"

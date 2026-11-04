@@ -1178,6 +1178,18 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       break;
     }
+    case "card:checkWaitDetail":
+    case "drawer:checkWaitDetail": {
+      const longWait =
+        "waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1030 check (pid 50649, alive), #1024 check (pid 70210, alive), #1024 check (pid 57029, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 11s";
+      ensureFixtureTask(repo, "active", {
+        title: "Check wait escalation fixture",
+        needsInput: true,
+        needsInputReason: "check-wait",
+        needsInputDetail: longWait,
+      });
+      break;
+    }
     case "checks:waiting":
       ensureFixtureTask(repo, "active", { title: "Check waiting behind a live slot holder" });
       repo.resourceQueueMarkers = [

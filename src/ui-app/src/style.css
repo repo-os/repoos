@@ -2741,13 +2741,35 @@
   font-size: 11px;
   line-height: 1.4;
   color: var(--txt-dim);
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
 }
-/* #0832 — long stored review summaries stay readable on the card without repeating the verdict chip. */
+.tc-needs-detail:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* #0832 / #1034 — long diagnostics stay compact on the card; full text is in Debug → Status details. */
 .tc-needs-detail--clamp {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
+}
+.diagnostic-details-affordance {
+  display: inline;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--txt-dim);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .tc-review-warn {
   color: var(--amber);
@@ -8571,9 +8593,23 @@
 }
 .agent-waiting-detail--clamp {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+button.agent-waiting-detail {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+button.agent-waiting-detail:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .agent-waiting-suggestion {
   font-size: 11.5px;
