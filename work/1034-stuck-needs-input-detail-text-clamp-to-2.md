@@ -14,7 +14,6 @@ review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
 updated_at: "2026-11-04T16:39:26Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-04T16:24:15.644Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 5
 ---
@@ -120,3 +119,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T16:35:58Z · body
 - 2026-11-04T16:39:26Z · message_queued at 2026-11-04T16:39:26.031Z
 - 2026-11-04T16:39:26Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+
