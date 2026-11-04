@@ -11,7 +11,7 @@ branch: feat/add-hide-completed-stories-toggle-to-sto
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-11-03T09:13:40Z"
-updated_at: "2026-11-04T04:23:31Z"
+updated_at: "2026-11-04T04:25:21Z"
 ---
 ## Problem
 
@@ -63,6 +63,32 @@ filtering — the filter can be applied client-side.
 
 Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 
+## Shots
+```json
+[
+{
+  "label": "Hide Completed Stories toggle in the Stories header (default off)",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-filter-toggle"
+},
+{
+  "label": "Stories list after checking Hide Completed Stories",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".stories-filter-toggle",
+  "steps": [
+    {
+      "click": ".stories-filter-toggle button"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-11-03T09:13:40Z · created · hello@repoos.org
@@ -71,3 +97,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 - 2026-11-04T04:22:46Z · cli_override
 - 2026-11-04T04:23:01Z · model_override
 - 2026-11-04T04:23:31Z · status ready→active, branch
+- 2026-11-04T04:25:21Z · body
