@@ -1620,12 +1620,15 @@ async function openDebuggerFromError(): Promise<void> {
           v-if="needsInputDetailLine"
           type="button"
           class="tc-needs-detail"
-          :class="{ 'tc-needs-detail--clamp': needsInputDetailClamp }"
           data-test-id="task-card-needs-input-detail"
           :aria-label="`${needsInputDetailLine}. Open Status details.`"
           @click.stop="onNeedsInputDetailClick"
         >
-          {{ needsInputDetailLine }}
+          <span
+            class="tc-needs-detail-text"
+            :class="{ 'tc-needs-detail-text--clamp': needsInputDetailClamp }"
+            >{{ needsInputDetailLine }}</span
+          >
           <span class="diagnostic-details-affordance">Details</span>
         </button>
       </div>
