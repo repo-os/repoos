@@ -10,10 +10,11 @@ created_by: njachowski@gmail.com
 branch: feat/release-pipeline-rebuild-docs-changelog-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T06:45:38Z"
-updated_at: "2026-11-04T16:12:12Z"
+updated_at: "2026-11-04T16:17:21Z"
 handoff_signal_retry_count: 1
 dev_error_count: 10
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-04T16:17:21.858Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 v0.5.75 QA found the release leaves public surfaces stale: docs.repoos.org/changelog stops at v0.5.74, changelog.md "Recent releases" is empty, llms-full.txt is stale (docs built 11:07 SGT, release published 11:49 SGT). GitHub release notes for v0.5.73–75 are empty apart from a "Full Changelog" link. No current version/date is shown on repoos.org, llms.txt or docs. Guessable agent URLs 404: repoos.org `/llms-full.txt`, `/AGENTS.md`, `/.well-known/llms.txt`, `/docs`; repo `CHANGELOG.md`.
@@ -146,3 +147,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T15:49:40Z · message_delivered: 2 message(s)
 - 2026-11-04T16:12:12Z · handoff failed · remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-04T16:12:12Z · message_queued at 2026-11-04T16:12:12.893Z
+- 2026-11-04T16:17:21Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3 in 30m
