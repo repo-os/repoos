@@ -38,3 +38,4 @@ Search for `monotonicMs` in cross-process-slots.ts (writers at ~380, 385, 484). 
 - 2026-11-04T12:12:33Z · status inbox→ready
 - 2026-11-04T12:12:36Z · status ready→active, branch
 - 2026-11-04T12:24:28Z · message_queued at 2026-11-04T12:24:28.179Z
+- 2026-11-04T12:24:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
