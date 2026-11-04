@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-panel-status-card-should-mirror-the
 created_at: "2026-11-04T05:34:26Z"
-updated_at: "2026-11-04T09:54:10Z"
+updated_at: "2026-11-04T10:03:12Z"
 ---
 ## Problem
 While #1016 ran its handoff checks, the board card showed "RUNNING CHECKS" with the animated activity indicator (the style chosen in Settings, `activityAnimationStyle`). The task panel for the same task showed a different, static three-row block: "Confirming handoff / Handoff / Running checks…". The rows repeat each other, add no information, and leave mostly empty space. The card and the panel disagree about the same state. This was meant to be fixed already (see `eef0c75d6`, `a79124e85`, `68b544019`), but the panel's `confirmingHandoff` case still builds fixed three-line text.
@@ -29,14 +29,6 @@ The panel status block shows the same state label the card shows for that task (
 ## Notes for AI
 Reuse whatever the card uses to pick its label and progress line (`cardProgressLine` and friends) instead of building a second copy in the drawer. Screenshots: board card on the left, panel on the right, same task, same moment.
 
-## Screenshots
-
-![Board card: Running checks with animated indicator](/api/tasks/1023/attachments/att_4d98e6c3-ffea-40fc-ba5b-5ed65244ec16.png)
-![Task panel for the same task: Confirming handoff, Handoff, Running checks…, no animation](/api/tasks/1023/attachments/att_e56947d0-dd1a-41a1-9e10-a6970e377175.png)
-![#1016 panel: Integrating pill reads 'queued #1 · 7m 29s — ahead: #1027 validating', a different wording from the card](/api/tasks/1023/attachments/att_776ae0f3-5692-4152-9944-d59cf66ca522.png)
-![#1027 board card: 'integrating · remote tests · 7m 26s'](/api/tasks/1023/attachments/att_1743f691-e833-44da-8759-834b7a4a5c4e.png)
-![#1027 panel: pill reads 'Integrating... (check · 7m 17s)' and the status dropdown is blank](/api/tasks/1023/attachments/att_bc803b78-7cff-4365-831d-ad6b102d2c5b.png)
-
 ## More examples
 Seen on #1016 and #1027 while both were integrating (Move to done) on 2026-11-04. The card and the panel describe the same state in different words, and the panel loses information.
 
@@ -51,21 +43,29 @@ Acceptance addition: for integrating, queued and validating states, the panel pi
 ```json
 [
 {
-  "label": "Panel and card both read running checks during a handoff gate",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusChecksRunning"
+"label": "Panel and card both read running checks during a handoff gate",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Confirming handoff: one shared heading plus the current step, no filler rows",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:statusConfirmingHandoff"
+"label": "Confirming handoff: one shared heading plus the current step, no filler rows",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:statusConfirmingHandoff"
 }
 ]
 ```
+
+## Screenshots
+
+![Board card: Running checks with animated indicator](/api/tasks/1023/attachments/att_4d98e6c3-ffea-40fc-ba5b-5ed65244ec16.png)
+![Task panel for the same task: Confirming handoff, Handoff, Running checks…, no animation](/api/tasks/1023/attachments/att_e56947d0-dd1a-41a1-9e10-a6970e377175.png)
+![#1016 panel: Integrating pill reads 'queued #1 · 7m 29s — ahead: #1027 validating', a different wording from the card](/api/tasks/1023/attachments/att_776ae0f3-5692-4152-9944-d59cf66ca522.png)
+![#1027 board card: 'integrating · remote tests · 7m 26s'](/api/tasks/1023/attachments/att_1743f691-e833-44da-8759-834b7a4a5c4e.png)
+![#1027 panel: pill reads 'Integrating... (check · 7m 17s)' and the status dropdown is blank](/api/tasks/1023/attachments/att_bc803b78-7cff-4365-831d-ad6b102d2c5b.png)
 
 ## Activity
 
@@ -79,3 +79,4 @@ Acceptance addition: for integrating, queued and validating states, the panel pi
 - 2026-11-04T09:24:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T09:40:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T09:54:10Z · body
+- 2026-11-04T10:03:12Z · body
