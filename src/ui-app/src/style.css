@@ -2927,13 +2927,40 @@
   font-size: 11px;
   line-height: 1.4;
   color: var(--txt-dim);
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
 }
-/* #0832 — long stored review summaries stay readable on the card without repeating the verdict chip. */
-.tc-needs-detail--clamp {
+.tc-needs-detail:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.tc-needs-detail-text {
+  display: block;
+}
+/* #0832 / #1034 — clamp the inner span, not the native button: a button's
+   internal content box ignores -webkit-line-clamp and renders every line. */
+.tc-needs-detail-text--clamp {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
+}
+.diagnostic-details-affordance {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--txt-dim);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .tc-review-warn {
   color: var(--amber);
@@ -8755,11 +8782,29 @@
   line-height: 1.5;
   word-break: break-word;
 }
-.agent-waiting-detail--clamp {
+.agent-waiting-detail-text {
+  display: block;
+}
+/* Clamp the inner span, not the native button (see .tc-needs-detail-text). */
+.agent-waiting-detail-text--clamp {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   overflow: hidden;
+}
+.agent-waiting-detail--action {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.agent-waiting-detail--action:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .agent-waiting-suggestion {
   font-size: 11.5px;

@@ -710,8 +710,16 @@ const needsInputDetailLine = computed<string | null>(() => {
   return formatNeedsInputDetailForDisplay(t.needsInputReason, t.needsInputDetail, hasQuestions);
 });
 const needsInputDetailClamp = computed(() =>
-  needsInputDetailUsesLineClamp(props.task.needsInputReason),
+  needsInputDetailUsesLineClamp(
+    props.task.needsInputReason,
+    props.task.needsInputDetail,
+    (props.task.questions?.length ?? 0) > 0,
+  ),
 );
+
+function cardHintUsesLineClamp(h: CardHint): boolean {
+  return h.cls === "tc-moving" || h.cls === "tc-queued";
+}
 
 /** The last automatic review's actual outcome for this task, when one
  *  exists — null while no report has landed yet, or its state is
@@ -1277,6 +1285,10 @@ function cancelDirty(): void {
 function onCardHintClick(): void {
   const h = hint.value;
   if (!h) return;
+  if (h.cls === "tc-queued") {
+    void openTaskStatusDetails();
+    return;
+  }
   if (h.cls === "tc-coding" || h.cls === "tc-stuck") {
     void openAgent();
     return;
@@ -1294,6 +1306,10 @@ function onCardHintClick(): void {
   if (h.cls === "tc-moving") {
     void openTaskStatusDetails();
   }
+}
+
+function onNeedsInputDetailClick(): void {
+  void openTaskStatusDetails();
 }
 
 /** Open Debug → Status details with the full close-out progress line (#0995). */
@@ -1542,7 +1558,7 @@ async function openDebuggerFromError(): Promise<void> {
         <span
           class="tc-hint"
           data-test-id="task-card-agent-hint"
-          :class="[hint.cls, hint.cls === 'tc-moving' ? 'tc-hint--progress-clamp' : '']"
+          :class="[hint.cls, cardHintUsesLineClamp(hint) ? 'tc-hint--progress-clamp' : '']"
           :data-tip="hint.title"
           tabindex="0"
           role="button"
@@ -1600,14 +1616,21 @@ async function openDebuggerFromError(): Promise<void> {
             slow
           </span>
         </span>
-        <p
+        <button
           v-if="needsInputDetailLine"
+          type="button"
           class="tc-needs-detail"
-          :class="{ 'tc-needs-detail--clamp': needsInputDetailClamp }"
-          :data-tip="needsInputDetailLine"
+          data-test-id="task-card-needs-input-detail"
+          :aria-label="`${needsInputDetailLine}. Open Status details.`"
+          @click.stop="onNeedsInputDetailClick"
         >
-          {{ needsInputDetailLine }}
-        </p>
+          <span
+            class="tc-needs-detail-text"
+            :class="{ 'tc-needs-detail-text--clamp': needsInputDetailClamp }"
+            >{{ needsInputDetailLine }}</span
+          >
+          <span class="diagnostic-details-affordance">Details</span>
+        </button>
       </div>
     </div>
 

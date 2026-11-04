@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 1748f9633e4b7794615370cd63260f3c737e76b4
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
@@ -10,16 +8,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stuck-needs-input-detail-text-clamp-to-2
-cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T18:09:36Z"
-review_passes: 3
-review_rounds: 2
-last_check_failure: "repoos check at 2026-11-04T16:59:01.799Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Board card clamps long check-wait detail (target \"default\"): state \"card:checkWaitDetail\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail); [missing-target] Board card clamps long check-wait detail (target \"default\"): highlight [data-test-id=task-card-needs-input-detail] matched nothing on / (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail)"
-dev_error_count: 5
+updated_at: "2026-11-04T17:26:37Z"
 ---
 ## Problem
 
@@ -43,31 +37,6 @@ When a task is stuck or waiting (needs input, 'STUCK · SILENT 16M', check-wait 
 
 Source of the strings is the check-wait/queue-marker message and the stuck-card state in src/core/active-task-card.ts; the panel block is the 'Waiting for you' component in the task drawer. Reuse the existing `?tab=debug` route handling (/work?task=<id>&tab=debug). Related: #0272 (card error UX). Observation, not in scope: these cards also say 'slot holder has made no progress for 30 minutes (no heartbeat)' and '#1024 check (pid 57029, wedged)' for live holders — that false alarm is #1032.
 
-## Shots
-```json
-[
-{
-"label": "Board card clamps long check-wait detail",
-"target": "default",
-"route": "/work?status=active",
-"highlight": "[data-test-id=task-card-needs-input-detail]",
-"steps": [
-{
-"waitFor": "[data-test-id=task-card-needs-input-detail]"
-}
-],
-"state": "card:checkWaitDetail"
-},
-{
-"label": "Drawer waiting block clamps long check-wait detail",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": "[data-test-id=drawer-needs-input-detail]",
-"state": "drawer:checkWaitDetail"
-}
-]
-```
-
 ## Screenshots
 
 ![6](/api/tasks/1034/attachments/att_2364700c-13b6-4d61-bae3-26951e1331f9.png)
@@ -83,88 +52,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:11:33Z · review_model_override
 - 2026-11-04T14:11:34Z · status inbox→ready
 - 2026-11-04T14:11:38Z · status ready→active, branch
-- 2026-11-04T14:14:41Z · body
-- 2026-11-04T14:15:26Z · body
-- 2026-11-04T14:21:12Z · message_queued at 2026-11-04T14:21:12.282Z
-- 2026-11-04T14:21:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T14:21:54Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:21:54Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:22:05Z · needs_input
-- 2026-11-04T14:22:05Z · message_delivered: 1 message(s)
-- 2026-11-04T14:22:52Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:22:52Z · engineer crash recovery: resuming cursor + composer-2.5 (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:23:18Z · needs_input
-- 2026-11-04T14:31:00Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:31:00Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
-- 2026-11-04T14:37:47Z · cli_override, model_override
-- 2026-11-04T14:37:49Z · needs_input
-- 2026-11-04T14:39:01Z · body
-- 2026-11-04T14:45:47Z · agent exited with an error (codex) · Reading additional input from stdin...
-- 2026-11-04T14:45:47Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
-- 2026-11-04T14:46:17Z · needs_input
-- 2026-11-04T14:46:43Z · agent exited with an error (codex) · 2026-11-04T14:46:31.428988Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: invalid peer certificate: UnknownIssuer, url: wss://chatgpt.com/backend-api/codex/responses
-- 2026-11-04T14:46:44Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-11-04T14:46:31.428988Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: invalid peer certificate: UnknownIssuer, url: wss://chatgpt.com/backend-api/codex/responses
-- 2026-11-04T14:47:03Z · needs_input
-- 2026-11-04T14:49:24Z · body
-- 2026-11-04T14:53:17Z · cli_override, model_override
-- 2026-11-04T14:54:07Z · engineer stopped by request
-- 2026-11-04T15:00:20Z · body
-- 2026-11-04T15:21:19Z · message_queued at 2026-11-04T15:21:19.332Z
-- 2026-11-04T15:21:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T15:22:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T15:26:20Z · body
-- 2026-11-04T15:28:04Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 12s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-04T15:28:19Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-04T15:49:27Z · body
-- 2026-11-04T15:53:54Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-04T15:53:54Z · message_queued at 2026-11-04T15:53:54.434Z
-- 2026-11-04T15:53:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T15:53:54Z · message_delivered: 2 message(s)
-- 2026-11-04T16:24:12Z · message_queued at 2026-11-04T16:24:12.417Z
-- 2026-11-04T16:24:15Z · message_delivered: 1 message(s)
-- 2026-11-04T16:26:19Z · CTO nudge: held — remote validation is running
-- 2026-11-04T16:29:42Z · note: handoff requested (cli)
-- 2026-11-04T16:31:20Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T16:35:58Z · body
-- 2026-11-04T16:39:26Z · message_queued at 2026-11-04T16:39:26.031Z
-- 2026-11-04T16:39:26Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T16:44:24Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T16:58:58Z · note: ui verification failed (2 issue(s)): [missing-target] Board card clamps long check-wait detail (target "default"): state "card:checkWaitDetail" did not render on target "default" — / shows no task card (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail); [missing-target] Board card clamps long check-wait detail (target "default"): highlight [data-test-id=task-card-needs-input-detail] matched nothing on / (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail)
-- 2026-11-04T16:58:58Z · message_queued at 2026-11-04T16:58:58.495Z
-- 2026-11-04T16:59:01Z · message_delivered: 1 message(s)
-- 2026-11-04T16:59:22Z · message_queued at 2026-11-04T16:59:22.962Z
-- 2026-11-04T16:59:24Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T16:59:42Z · body
-- 2026-11-04T17:08:50Z · body
-- 2026-11-04T17:08:57Z · note: handoff requested (cli)
-- 2026-11-04T17:09:25Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T17:12:21Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-04T17:12:21Z · message_queued at 2026-11-04T17:12:21.685Z
-- 2026-11-04T17:12:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: All checks pass. Re-requesting handoff with the corrected card shot route. · stderr: (empty)
-- 2026-11-04T17:21:59Z · status active→review
-- 2026-11-04T17:22:50Z · note: review pass 1: needs some work
-- 2026-11-04T17:22:50Z · message_queued at 2026-11-04T17:22:50.680Z
-- 2026-11-04T17:22:50Z · status review→active
-- 2026-11-04T17:22:53Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T17:26:37Z · status active→review
-- 2026-11-04T17:29:05Z · note: review pass 2: needs some work
-- 2026-11-04T17:29:05Z · message_delivered: 3 message(s)
-- 2026-11-04T17:29:06Z · status review→active
-- 2026-11-04T17:29:08Z · CTO nudge: held — remote validation is running
-- 2026-11-04T17:29:30Z · note: adopted orphaned engineer pid 43820
-- 2026-11-04T17:29:33Z · note: handoff requested (cli)
-- 2026-11-04T17:34:30Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T17:42:23Z · message_queued at 2026-11-04T17:42:23.979Z
-- 2026-11-04T17:42:24Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/task-card-review-rounds-detail.test.ts > review-rounds-exhausted card detail (#0832) > clamps long detail and does not repeat the verdict under the status chip, tests/task-check-wait-detail-clamp.test.ts > check-wait diagnostic clamp (#1034) > clamps the card detail line and keeps the full text in Status details, tests/task-drawer-status-summary.test.ts > task drawer status summary (#0952) > keeps the landable checklist off the card and opens Status details on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-11-04T17:43:49Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T17:56:54Z · note: handoff requested (cli)
-- 2026-11-04T17:59:29Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T18:02:12Z · body
-- 2026-11-04T18:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-04T18:05:51Z · message_queued at 2026-11-04T18:05:51.071Z
-- 2026-11-04T18:05:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: All fixes are in and verified on the final tree. Requesting handoff. · stderr: (empty)
-- 2026-11-04T18:05:51Z · status active→review
-- 2026-11-04T18:05:52Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-04T18:06:27Z · note: review pass 3: good to go
-- 2026-11-04T18:09:36Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
