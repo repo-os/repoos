@@ -70220,3 +70220,181 @@ fatal: not a git repository (or any of the parent directories): .git
 ::repoos-check-progress::{"stepsDone":0,"stepsTotal":2,"currentStep":1,"stepName":"rendered-contrast","testsDone":null,"testsTotal":null,"testsPass":null}
 $ bun scripts/ui-contrast-audit.mjs
   · contrast audit runtime: Bun 1.4.3
+  · 16 theme scope(s) × 14 screen state(s) · 15858 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 65 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 8843 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (50.2s)
+::repoos-check-step::{"name":"rendered-contrast","status":"passed","durationMs":50324}
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":2}
+  ✔ rendered-contrast (50.3s) — $ bun scripts/ui-contrast-audit.mjs
+  · contrast audit runtime: Bun 1.4.3
+  · 16 theme scope(s) × 14 screen state(s) · 15858 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 65 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 8843 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (50.2s)
+::repoos-check-step::{"name":"bare-require","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":2}
+  ⏭ bare-require — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+::repoos-check-step::{"name":"task-assets","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":2}
+  ⏭ task-assets — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+::repoos-check-step::{"name":"tests","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":2}
+  ⏭ tests — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+
+  ◆ ui-smoke
+  · kind: ui-smoke
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":2,"currentStep":2,"stepName":"ui-smoke","testsDone":null,"testsTotal":null,"testsPass":null}
+$ bun scripts/ui-smoke.mjs
+  · UI smoke runtime: Bun 1.4.3
+  ✔ UI smoke test passed
+::repoos-check-step::{"name":"ui-smoke","status":"passed","durationMs":12571}
+::repoos-check-progress::{"stepsDone":2,"stepsTotal":2}
+  ✔ ui-smoke (12.6s) — ran package.json smoke script
+::repoos-check-step::{"name":"user-docs-build","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":2,"stepsTotal":2}
+  ⏭ user-docs-build — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+::repoos-check-step::{"name":"landing-build","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":2,"stepsTotal":2}
+  ⏭ landing-build — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+::repoos-check-step::{"name":"telegram-manager-build","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":2,"stepsTotal":2}
+  ⏭ telegram-manager-build — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+::repoos-check-step::{"name":"telegram-manager-test","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":2,"stepsTotal":2}
+  ⏭ telegram-manager-test — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+::repoos-check-step::{"name":"macos-hub-icon-transparency","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":2,"stepsTotal":2}
+  ⏭ macos-hub-icon-transparency — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+
+  ── Step timings ──
+  staleness: 0ms · skipped
+  lockfile-sync: 0ms · skipped
+  zero-runtime-deps: 0ms · skipped
+  check-fmt:check: 0ms · skipped
+  check-lint: 0ms · skipped
+  build: 0ms · skipped
+  css-layers: 0ms · skipped
+  theme-contrast: 0ms · skipped
+  hardcoded-colors: 0ms · skipped
+  rendered-contrast: 50324ms · passed
+  bare-require: 0ms · skipped
+  task-assets: 0ms · skipped
+  tests: 0ms · skipped
+  ui-smoke: 12571ms · passed
+  user-docs-build: 0ms · skipped
+  landing-build: 0ms · skipped
+  telegram-manager-build: 0ms · skipped
+  telegram-manager-test: 0ms · skipped
+  macos-hub-icon-transparency: 0ms · skipped
+
+  ── Results ──
+  ⏭ staleness  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ lockfile-sync  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ zero-runtime-deps  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ check-fmt:check  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ check-lint  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ build  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ css-layers  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ theme-contrast  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ hardcoded-colors  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ✔ rendered-contrast  — $ bun scripts/ui-contrast-audit.mjs
+  · contrast audit runtime: Bun 1.4.3
+  · 16 theme scope(s) × 14 screen state(s) · 15858 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 65 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 8843 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (50.2s)
+  ⏭ bare-require  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ task-assets  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ tests  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ✔ ui-smoke  — ran package.json smoke script
+  ⏭ user-docs-build  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ landing-build  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ telegram-manager-build  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ telegram-manager-test  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+  ⏭ macos-hub-icon-transparency  — skipped — not selected by --step (selected: ui-smoke, rendered-contrast)
+
+  All checks passed.
+
+
+  ── Failed steps ──
+  ✔ none
+[validate] browser gate exit 0
+[validate] gate exit 0
+
+[remote validation PASSED in 745s on thinkpad]
+  ✔ remote gate passed — running local guards only
+
+
+  ◆ staleness
+  · kind: staleness
+::repoos-check-progress::{"stepsDone":0,"stepsTotal":11,"currentStep":1,"stepName":"staleness","testsDone":null,"testsTotal":null,"testsPass":null}
+  · build is stale — running `bun run build` before the check
+::repoos-check-step::{"name":"staleness","status":"passed","durationMs":56394}
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":11}
+  ✔ staleness (56.4s) — rebuilt a stale build
+::repoos-check-step::{"name":"lockfile-sync","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":11}
+  ⏭ lockfile-sync — skipped — no changed path matches package.json, bun.lock
+::repoos-check-step::{"name":"zero-runtime-deps","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":11}
+  ⏭ zero-runtime-deps — skipped — no changed path matches package.json
+
+  ◆ check-fmt:check
+  · kind: format
+::repoos-check-progress::{"stepsDone":1,"stepsTotal":11,"currentStep":2,"stepName":"check-fmt:check","testsDone":null,"testsTotal":null,"testsPass":null}
+::repoos-check-step::{"name":"check-fmt:check","status":"passed","durationMs":18969}
+::repoos-check-progress::{"stepsDone":2,"stepsTotal":11}
+  ✔ check-fmt:check (19.0s)
+
+  ◆ check-lint
+  · kind: lint
+::repoos-check-progress::{"stepsDone":2,"stepsTotal":11,"currentStep":3,"stepName":"check-lint","testsDone":null,"testsTotal":null,"testsPass":null}
+::repoos-check-step::{"name":"check-lint","status":"passed","durationMs":641}
+::repoos-check-progress::{"stepsDone":3,"stepsTotal":11}
+  ✔ check-lint
+
+  ◆ build
+  · kind: build
+::repoos-check-progress::{"stepsDone":3,"stepsTotal":11,"currentStep":4,"stepName":"build","testsDone":null,"testsTotal":null,"testsPass":null}
+$ bun scripts/build.mjs
+build: up to date (src/ unchanged) — skipping rebuild. Use --force or REPOOS_FORCE_BUILD=1 to rebuild anyway.
+::repoos-check-step::{"name":"build","status":"passed","durationMs":224}
+::repoos-check-progress::{"stepsDone":4,"stepsTotal":11}
+  ✔ build
+
+  ◆ css-layers
+  · kind: css-layers
+::repoos-check-progress::{"stepsDone":4,"stepsTotal":11,"currentStep":5,"stepName":"css-layers","testsDone":null,"testsTotal":null,"testsPass":null}
+::repoos-check-step::{"name":"css-layers","status":"failed","durationMs":20}
+::repoos-check-progress::{"stepsDone":5,"stepsTotal":11}
+  ✗ css-layers
+
+  ◆ theme-contrast
+  · kind: theme-contrast
+::repoos-check-progress::{"stepsDone":5,"stepsTotal":11,"currentStep":6,"stepName":"theme-contrast","testsDone":null,"testsTotal":null,"testsPass":null}
+::repoos-check-step::{"name":"theme-contrast","status":"passed","durationMs":9}
+::repoos-check-progress::{"stepsDone":6,"stepsTotal":11}
+  ✔ theme-contrast
+
+  ◆ hardcoded-colors
+  · kind: hardcoded-colors
+::repoos-check-progress::{"stepsDone":6,"stepsTotal":11,"currentStep":7,"stepName":"hardcoded-colors","testsDone":null,"testsTotal":null,"testsPass":null}
+::repoos-check-step::{"name":"hardcoded-colors","status":"passed","durationMs":23}
+::repoos-check-progress::{"stepsDone":7,"stepsTotal":11}
+  ✔ hardcoded-colors — scanned 145 file(s)
+
+  ◆ rendered-contrast
+  · bun run contrast:audit
+::repoos-check-progress::{"stepsDone":7,"stepsTotal":11,"currentStep":8,"stepName":"rendered-contrast","testsDone":null,"testsTotal":null,"testsPass":null}
+$ bun scripts/ui-contrast-audit.mjs
+  · contrast audit runtime: Bun 1.4.4
