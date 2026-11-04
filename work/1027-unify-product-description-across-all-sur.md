@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-product-description-across-all-sur
 created_at: "2026-11-04T06:53:26Z"
-updated_at: "2026-11-04T07:55:00Z"
+updated_at: "2026-11-04T07:57:48Z"
 ---
 ## Problem
 
@@ -119,3 +119,4 @@ Also grep the repo (README, SKILL.md, llms.txt files, docs index, release templa
 - 2026-11-04T07:15:14Z · body
 - 2026-11-04T07:36:23Z · body
 - 2026-11-04T07:55:00Z · body
+- 2026-11-04T07:57:48Z · handoff_deferred: 1 queued message(s) must be read before review
