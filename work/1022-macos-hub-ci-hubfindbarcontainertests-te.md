@@ -58,3 +58,4 @@ This needs a macOS runner to confirm: the fix cannot be fully verified locally i
 - 2026-11-04T20:25:12Z · body
 - 2026-11-04T20:25:44Z · status active→review
 - 2026-11-04T20:25:45Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-04T20:26:23Z · message_queued at 2026-11-04T20:26:23.336Z
