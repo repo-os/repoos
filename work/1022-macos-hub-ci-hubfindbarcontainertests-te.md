@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-04T03:59:44Z"
-updated_at: "2026-11-04T20:22:09Z"
+updated_at: "2026-11-04T20:22:10Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -54,3 +54,4 @@ This needs a macOS runner to confirm: the fix cannot be fully verified locally i
 - 2026-11-04T20:11:56Z · message_queued at 2026-11-04T20:11:56.308Z
 - 2026-11-04T20:17:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T20:22:09Z · message_delivered: 1 message(s)
+- 2026-11-04T20:22:10Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
