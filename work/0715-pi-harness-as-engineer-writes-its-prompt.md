@@ -94,3 +94,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T13:36:40Z · body
 - 2026-11-04T13:48:42Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-04T14:37:55Z · released
+- 2026-11-04T14:38:03Z · note: handoff requested (cli)
