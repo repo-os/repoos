@@ -84,3 +84,4 @@ Acceptance addition: for integrating, queued and validating states, the panel pi
 - 2026-11-04T10:22:55Z · watchdog: check wait escalated · waiting: waiting for a local check slot (2 ahead, position 3); waiting behind #1028 check (pid 91683, alive), #0715 check (pid 89133, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 8s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-04T10:25:40Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T10:25:55Z · queued message undelivered for 61m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-04T10:25:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
