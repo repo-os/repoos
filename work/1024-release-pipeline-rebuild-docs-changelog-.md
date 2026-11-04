@@ -3,6 +3,9 @@ id: 1024
 title: "Release pipeline: rebuild docs, changelog, llms files and release notes on every release"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "engineer keeps crashing (3 in 30m): RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p1
 area: [core, docs]
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/release-pipeline-rebuild-docs-changelog-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T06:45:38Z"
-updated_at: "2026-11-04T14:00:53Z"
-dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:27:45.709Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:34:29.914Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:35:16.571Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:48:39.951Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:49:23.286Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-04T14:08:02Z"
+dev_error_count: 6
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:48:39.951Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:49:23.286Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:08:02.770Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
 ## Problem
@@ -70,3 +73,5 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T13:54:58Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T13:59:42Z · body
 - 2026-11-04T14:00:53Z · body
+- 2026-11-04T14:01:01Z · watchdog: check wait escalated · waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1030 check (pid 50649, alive), #1024 check (pid 70210, alive), #1024 check (pid 57029, wedged); slot holder has made no progress for 30 minutes (no heartbeat) for 6s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T14:08:02Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (3/3 crashes in 30m)
