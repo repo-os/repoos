@@ -173,6 +173,7 @@ import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff, reviewSupersededByFixRound } from "../lib/reviewFreshness";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
+import { taskInDevPass, taskRoundCounts } from "../lib/pipeline-card";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
@@ -3181,44 +3182,8 @@ const compactNeedsInputChipLabel = computed(() =>
  * `review_rounds` only for tasks written before that field. */
 const taskRounds = computed(() => {
   const task = ui.active;
-  if (!task || (!task.branch && (task.status === "draft" || task.status === "inbox"))) {
-    return { dev: 0, review: 0 };
-  }
-  let completed = task.extra?.review_passes;
-  if (typeof completed !== "number" || !Number.isFinite(completed)) {
-    completed = task.extra?.review_rounds;
-  }
-  const passes =
-    typeof completed === "number" && Number.isFinite(completed)
-      ? Math.max(0, Math.floor(completed))
-      : 0;
-  // Dev rounds that errored out before ever reaching a review pass (#0271
-  // follow-up, confirmed live on #0291): an engineer session that crashes
-  // never bumps review_passes, so without this a task with a genuine failed
-  // dev attempt showed D0 · R0 — the badge simply didn't render at all
-  // (`v-if="taskRounds.dev > 0"` below), even though a real, token-spending
-  // session happened. See agents.ts's escalateFailedExit for where this is
-  // counted.
-  let errors = task.extra?.dev_error_count;
-  const devErrors =
-    typeof errors === "number" && Number.isFinite(errors) ? Math.max(0, Math.floor(errors)) : 0;
-  // A task is in (or about to start) a dev pass when it's `ready` or `active`,
-  // or back in `review` because the engineer is actively re-coding (post-handoff
-  // fix / resume). Otherwise the current dev round is finished: `done` and
-  // "waiting for human" review states show exactly the completed passes (D == R).
-  // Excluded while `needsInput` is set from a fresh error: that flag marks the
-  // SAME round `devErrors` already counted as still open/unresumed, not a new
-  // one starting — resuming clears `needsInput`, which is when this becomes
-  // eligible again for that (now genuinely new) attempt.
-  const inDevPass =
-    !task.needsInput &&
-    (task.status === "ready" ||
-      task.status === "active" ||
-      (task.status === "review" && repo.isRunning(task.id)));
-  return {
-    dev: passes + devErrors + (inDevPass ? 1 : 0),
-    review: passes,
-  };
+  if (!task) return { dev: 0, review: 0 };
+  return taskRoundCounts(task, taskInDevPass(task, repo.isRunning(task.id)));
 });
 
 /** Rendered (safe) Markdown of the report body. */
