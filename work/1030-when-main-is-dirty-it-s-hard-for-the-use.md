@@ -2,14 +2,14 @@
 id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
-status: draft
+status: inbox
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T12:02:28Z"
+updated_at: "2026-11-04T12:02:30Z"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -130,3 +130,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T10:42:39Z · body: Acceptance criteria (added)
 - 2026-11-04T10:42:44Z · body: Notes for AI (added)
 - 2026-11-04T12:02:28Z · title
+- 2026-11-04T12:02:30Z · status draft→inbox
