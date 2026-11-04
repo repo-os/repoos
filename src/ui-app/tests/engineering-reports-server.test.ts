@@ -14,6 +14,9 @@ import { canReuseEngineeringReport } from "../../server/handoff.js";
 
 const narrative = `## TL;DR\nRecorded a concise summary.\n\n## Work and rationale\nChanged the implementation to preserve task context.\n\n## Approaches tried\nCompared the existing persistence patterns and selected tracked artifacts.\n\n## Challenges and blockers\nThe handoff gate must bind this report to the checked source tree.\n\n## Key learnings\nKeep generated Git facts separate from engineer-authored narrative.`;
 
+const narrativeWordCount = (text: string): number =>
+  (text.match(/\b[\p{L}\p{N}][\p{L}\p{N}'’-]*\b/gu) ?? []).length;
+
 describe("engineering reports", () => {
   it.each([
     ["retry with draft", "active", "draft", "", true],
@@ -112,9 +115,11 @@ describe("engineering reports", () => {
     expect(secondRound.report?.round).toBe(2);
     expect(listEngineeringReports(config, "T1")).toHaveLength(2);
 
-    writeFileSync(join(draftDir, "T1.md"), `${narrative} ${"long ".repeat(1201)}`);
+    const overLimitDraft = `${narrative} ${"long ".repeat(1201)}`;
+    writeFileSync(join(draftDir, "T1.md"), overLimitDraft);
     const tooLong = await finalizeEngineeringReport(args);
-    expect(tooLong.error).toContain("1–1,200 words");
+    expect(tooLong.error).toContain(`narrative is ${narrativeWordCount(overLimitDraft)} words`);
+    expect(tooLong.error).toContain("hard limit is 1,200 words of narrative");
     expect(listEngineeringReports(config, "T1")).toHaveLength(2);
   });
 
@@ -435,9 +440,9 @@ describe("engineering reports", () => {
     expect(listEngineeringReports(config, "T1")).toHaveLength(0);
   });
 
-  it("does not count the generated file summary toward the word limit", async () => {
+  it("accepts a narrative under the cap with a 100-file generated summary", async () => {
     const baseSha = git("rev-parse HEAD");
-    for (let index = 0; index < 140; index++) {
+    for (let index = 0; index < 100; index++) {
       writeFileSync(join(root, "src", `generated-report-file-${index}.ts`), "line\n");
     }
     git("add .");
@@ -445,7 +450,8 @@ describe("engineering reports", () => {
     const sourceSha = git("rev-parse HEAD");
     const draftDir = join(root, ".repoos", "engineering-report-drafts");
     mkdirSync(draftDir, { recursive: true });
-    writeFileSync(join(draftDir, "T1.md"), `${narrative} ${"lesson ".repeat(700)}`);
+    const draft = `${narrative} ${"lesson ".repeat(700)}`;
+    writeFileSync(join(draftDir, "T1.md"), draft);
     const config = { root, cacheDir: ".repoos" } as any;
     const result = await finalizeEngineeringReport({
       config,
@@ -459,7 +465,11 @@ describe("engineering reports", () => {
     });
 
     expect(result.error).toBeUndefined();
-    expect(result.report?.wordCount).toBeLessThanOrEqual(1200);
+    expect(result.report?.wordCount).toBe(narrativeWordCount(draft));
+    expect(result.report?.markdown.match(/generated-report-file-/g)).toHaveLength(100);
+    // The full markdown is over the hard cap only because of the generated
+    // summary, which the limit must not count toward.
+    expect(narrativeWordCount(result.report!.markdown)).toBeGreaterThan(1200);
     expect(listEngineeringReports(config, "T1")).toHaveLength(1);
   });
 

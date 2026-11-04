@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 765176
-last_close_out_gate_at: "2026-11-04T03:06:46.722Z"
 id: 1014
 title: "Engineering report word cap: count only the engineer's narrative, soft limit around 1,200"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: d2f5c0020e89b3359c32ff2576f9950c6f8f189b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-report-word-cap-count-only-t
 created_at: "2026-11-03T07:45:14Z"
 updated_at: "2026-11-04T03:06:46Z"
+last_close_out_gate_ms: 765176
+last_close_out_gate_at: "2026-11-04T03:06:46.722Z"
 review_passes: 1
 ---
 ## Problem
