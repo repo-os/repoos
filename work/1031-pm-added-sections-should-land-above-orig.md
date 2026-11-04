@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 522845
-last_close_out_gate_at: "2026-11-04T19:43:21.457Z"
 id: 1031
 title: PM-added sections should land above Original prompt and Screenshots
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: 1ee7cea95a2f0eea5eadc9c396409dba4ceaa200
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pm-added-sections-should-land-above-orig
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
 updated_at: "2026-11-04T19:43:21Z"
+last_close_out_gate_ms: 522845
+last_close_out_gate_at: "2026-11-04T19:43:21.457Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
