@@ -2,7 +2,7 @@
 id: 1016
 title: "Add \"Hide Completed Stories\" toggle to Stories page"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
