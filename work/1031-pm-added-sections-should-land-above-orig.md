@@ -51,3 +51,4 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 - 2026-11-04T18:53:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T19:09:00Z · status active→review
 - 2026-11-04T19:09:00Z · message_queued at 2026-11-04T19:09:00.565Z
+- 2026-11-04T19:09:00Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
