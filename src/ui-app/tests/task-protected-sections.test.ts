@@ -419,6 +419,118 @@ describe("section helpers", () => {
     expect(out.split("## Activity").length - 1).toBe(1);
   });
 
+  it("replaceSection inserts a new spec section above Original prompt and Screenshots (#1031)", () => {
+    const freeform = [
+      "Raw user capture.",
+      "",
+      "## Original prompt",
+      "",
+      "The long raw prompt.",
+      "",
+      "## Screenshots",
+      "",
+      "![a](x.png)",
+      "",
+      "## Activity",
+      "",
+      "- 2026-01-01T00:00:00Z · created",
+    ].join("\n");
+    const out = replaceSection(freeform, "## Problem", "Fleshed-out problem.");
+    expect(out.indexOf("## Problem")).toBeLessThan(out.indexOf("## Original prompt"));
+    expect(out.indexOf("## Problem")).toBeLessThan(out.indexOf("## Screenshots"));
+    expect(out.indexOf("## Screenshots")).toBeLessThan(out.indexOf("## Activity"));
+    expect(out).toContain("## Problem\nFleshed-out problem.");
+    expect(out).toContain("## Original prompt");
+    expect(out).toContain("![a](x.png)");
+  });
+
+  it("replaceSection sequential adds keep their order above the raw capture (#1031)", () => {
+    const freeform = [
+      "Raw user capture.",
+      "",
+      "## Original prompt",
+      "",
+      "The long raw prompt.",
+      "",
+      "## Screenshots",
+      "",
+      "![a](x.png)",
+      "",
+      "## Activity",
+      "",
+      "- 2026-01-01T00:00:00Z · created",
+    ].join("\n");
+    let out = freeform;
+    const sections: Array<[string, string]> = [
+      ["## Problem", "Problem text."],
+      ["## Desired UX", "UX text."],
+      ["## Acceptance criteria", "- [ ] Done"],
+      ["## Notes for AI", "Notes."],
+    ];
+    for (const [heading, content] of sections) {
+      out = replaceSection(out, heading, content);
+    }
+    const order = [
+      "## Problem",
+      "## Desired UX",
+      "## Acceptance criteria",
+      "## Notes for AI",
+      "## Original prompt",
+      "## Screenshots",
+      "## Activity",
+    ].map((h) => out.indexOf(h));
+    expect(order.every((i) => i !== -1)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("replaceSection re-replaces an existing section in place above the raw capture (#1031)", () => {
+    const withProblem = [
+      "Raw user capture.",
+      "",
+      "## Problem",
+      "",
+      "Old problem.",
+      "",
+      "## Original prompt",
+      "",
+      "The long raw prompt.",
+      "",
+      "## Activity",
+      "",
+      "- 2026-01-01T00:00:00Z · created",
+    ].join("\n");
+    const out = replaceSection(withProblem, "## Problem", "New problem.");
+    expect(out).toContain("## Problem\nNew problem.");
+    expect(out).not.toContain("Old problem.");
+    expect(out.indexOf("## Problem")).toBeLessThan(out.indexOf("## Original prompt"));
+    expect(out.split("## Problem").length - 1).toBe(1);
+  });
+
+  it("replaceSection on a body with only Activity inserts before it (#1031)", () => {
+    const activityOnly = [
+      "Some text.",
+      "",
+      "## Activity",
+      "",
+      "- 2026-01-01T00:00:00Z · created",
+    ].join("\n");
+    const out = replaceSection(activityOnly, "## Problem", "Problem text.");
+    expect(out.indexOf("## Problem")).toBeLessThan(out.indexOf("## Activity"));
+    expect(out.split("## Activity").length - 1).toBe(1);
+  });
+
+  it("replaceSection still places Original prompt and Screenshots before Activity (#1031)", () => {
+    const base = ["Spec text.", "", "## Activity", "", "- 2026-01-01T00:00:00Z · created"].join(
+      "\n",
+    );
+    const withOriginal = replaceSection(base, "## Original prompt", "raw prompt");
+    expect(withOriginal.indexOf("## Original prompt")).toBeLessThan(
+      withOriginal.indexOf("## Activity"),
+    );
+    const withShots = replaceSection(withOriginal, "## Screenshots", "![a](x.png)");
+    expect(withShots.indexOf("## Screenshots")).toBeLessThan(withShots.indexOf("## Activity"));
+  });
+
   it("replaceSection on an existing section does not duplicate Activity", () => {
     const out = replaceSection(body, "## Screenshots", "![b](y.png)");
     expect(out.split("## Screenshots").length - 1).toBe(1);
