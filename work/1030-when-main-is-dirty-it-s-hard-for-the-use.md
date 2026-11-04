@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T14:23:22Z"
+updated_at: "2026-11-04T14:23:47Z"
 dev_error_count: 5
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:22:51.475Z\",\"kind\":\"dev-error\"}]"
@@ -115,26 +115,26 @@ states, panel open/close with shared width, commit success/error paths with the 
 ```json
 [
 {
-  "label": "Full-width amber dirty-main button under the sidebar git row",
-  "target": "default",
-  "route": "/",
-  "highlight": ".side-git-dirty",
-  "state": "repo:dirtyMain"
+"label": "Full-width amber dirty-main button under the sidebar git row",
+"target": "default",
+"route": "/",
+"highlight": ".side-git-dirty",
+"state": "repo:dirtyMain"
 },
 {
-  "label": "Uncommitted-changes right panel with file list, working-tree diff and commit footer",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-testid=\"repo-dirty-panel\"]",
-  "steps": [
-    {
-      "click": ".side-git-dirty"
-    },
-    {
-      "waitMs": 500
-    }
-  ],
-  "state": "repo:dirtyMain"
+"label": "Uncommitted-changes right panel with file list, working-tree diff and commit footer",
+"target": "default",
+"route": "/",
+"highlight": "[data-testid=\"repo-dirty-panel\"]",
+"steps": [
+  {
+    "click": ".side-git-dirty"
+  },
+  {
+    "waitMs": 500
+  }
+],
+"state": "repo:dirtyMain"
 }
 ]
 ```
@@ -203,3 +203,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T14:22:51Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:23:07Z · needs_input
 - 2026-11-04T14:23:22Z · body
+- 2026-11-04T14:23:47Z · body
