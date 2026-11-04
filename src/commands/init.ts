@@ -201,11 +201,6 @@ repo is silent, write down the open question instead of guessing.
 
 `;
 
-const DOCS_README_STUB = `# Project docs
-
-Add architecture notes, conventions, and reading order here. The starter index lists what to write first.
-`;
-
 const AGENTS_MD = (workDir: string, docsDir: string) => `# AGENTS.md
 
 This repo uses **RepoOS**: tasks are markdown files under \`${workDir}/\`, and the
@@ -229,8 +224,7 @@ hand off with \`repoos mv <id> review\`; see the operating loop below.
 For a RepoOS-managed task runner:
 
 1. Read this file, your assigned task under \`${workDir}/\`, and relevant
-   project docs under \`${docsDir}/\` — start from the index at
-   \`${docsDir}/README.md\`, which lists the reading order. Before reading a
+   project docs under \`${docsDir}/\`. Before reading a
    large file, run \`repoos outline <path>\` to get its symbols with line
    numbers, then read only the range you need instead of the whole file.
 2. Work in the task branch and dedicated worktree RepoOS assigned. The server
@@ -839,7 +833,6 @@ export function scaffoldInto(
 
   ensureDir(config.workDir);
   ensureDir(config.docsDir);
-  ensureFile(join(config.docsDir, "README.md"), DOCS_README_STUB);
   // A blocked workDir/docsDir means every ensureFile() below (which writes
   // INTO those directories) would throw an uncaught ENOENT — bail with
   // whatever succeeded so far instead of crashing mid-scaffold.
