@@ -8,7 +8,17 @@
     "not_found_handling": "404-page",
     // llms*.txt go through the worker so a miss is never cached (worker.ts).
     // "/" negotiates Accept: text/markdown against the same llms.txt body.
-    "run_worker_first": ["/", "/api/*", "/llms.txt", "/llms-full.txt"]
+    // The agent redirects (llms-full.txt, AGENTS.md, .well-known/llms.txt,
+    // /docs) also need the worker before static assets can 404 them.
+    "run_worker_first": [
+      "/",
+      "/api/*",
+      "/llms.txt",
+      "/llms-full.txt",
+      "/AGENTS.md",
+      "/.well-known/llms.txt",
+      "/docs"
+    ]
   },
   // Both limiters are required. Missing bindings fail closed without sending mail.
   // Namespace IDs are account-wide; reserve these for landing enquiries.

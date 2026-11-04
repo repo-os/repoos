@@ -8,6 +8,22 @@ interface Env {
 
 const unchangedPaths = new Set(["/llms.txt", "/llms-full.txt", "/sitemap.xml", "/robots.txt"]);
 
+/**
+ * Guessable agent URLs that used to 404 (v0.5.75 QA). Docs owns the manual,
+ * so `/docs` is just this site's home; the repository's agent instructions
+ * stay canonical in `AGENTS.md` rather than becoming a second copy here.
+ */
+const DOCS_REDIRECTS = new Map<string, string>([
+  ["/AGENTS.md", "https://raw.githubusercontent.com/repo-os/repoos/main/AGENTS.md"],
+  ["/.well-known/llms.txt", "/llms.txt"],
+  ["/docs", "/"],
+]);
+
+/** Absolute-or-site-relative redirect target for a guessable agent URL. */
+export function docsRedirect(pathname: string): string | null {
+  return DOCS_REDIRECTS.get(pathname) ?? null;
+}
+
 /** Returns true only when Markdown is explicitly acceptable and wins the tie. */
 export function prefersMarkdown(accept: string | null): boolean {
   if (!accept || accept.trim() === "*/*") return false;
@@ -57,6 +73,8 @@ function withVaryAccept(response: Response, cacheControl?: string): Response {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const redirect = docsRedirect(url.pathname);
+    if (redirect) return Response.redirect(new URL(redirect, request.url).href, 308);
     const twinPath = markdownTwinPath(url.pathname);
     // The docs home has no index.md twin. Serve the generated llms.txt index
     // so Accept: text/markdown at / is not a second copy to maintain.

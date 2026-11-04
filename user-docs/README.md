@@ -142,24 +142,26 @@ module `landing/` uses — change the shared files, not one site's component.
 `agents.txt` is deliberately not emitted: no client reads it and the same
 generator does not produce it. Revisit only with a concrete consumer.
 
-## The changelog page fetches from GitHub at build time
+## The changelog page reads the committed release history
 
 `/changelog` (`changelog.md` + `changelog.data.ts`) embeds the most recent
-GitHub Releases via a VitePress **data loader**, so the fetch runs once per
-build (and per dev-server start), not in a visitor's browser. It reads the
-unauthenticated public Releases API — no token needed — and renders each
-release's markdown body with VitePress's own markdown renderer, then links out
-to the full history for anything older.
+releases from the repository's committed `release-history.json`, written by the
+release pipeline in the same commit as the version bump. The page is therefore
+always built from the release that shipped, even when the docs deploy runs
+before GitHub has created the Release object, and it needs no network access or
+API token. Each entry's Markdown is rendered with VitePress's own renderer and
+links out to the full history on GitHub.
 
 Two consequences worth knowing:
 
-- **The build needs network access to `api.github.com`.** If the fetch fails
-  (offline build, rate limit), the data loader returns an error object instead
-  of throwing, and the page degrades to just the link-out — the docs build
-  never fails over it. Unauthenticated rate limit is 60/hour; add
-  `GITHUB_TOKEN` only if the build ever actually hits it.
+- **The build has no GitHub dependency.** Offline builds, rate limits and
+  GitHub outages cannot blank the page.
 - The page is a **snapshot from deploy time**, not live. That is why the link
   to the GitHub Releases page is always present alongside the embed.
+
+The same file also supplies the version/date stamp in the docs homepage, the
+docs `llms.txt` / `llms-full.txt` / `llms-essentials.txt`, and repoos.org —
+`scripts/check-llms.ts` fails the build when any agent output loses it.
 
 ## Deploy (Cloudflare)
 
@@ -171,7 +173,10 @@ convention, matching repoos.org (`landing/`):
 | `main` | dev/staging | `docs-dev.repoos.org` |
 | `prod` | production | `docs.repoos.org` |
 
-`prod` advances only as an infrequent, deliberate fast-forward merge of `main`.
+`prod` advances as a fast-forward of `main`: normally from the Deployments page,
+and automatically from a RepoOS release cut (the release pipeline pushes every
+configured deployment branch that is behind the release branch). Sites built
+from `main` are the dev/staging previews; only `prod` serves the public domain.
 
 `user-docs/macos-hub.md` is the RepoOS Hub for Mac guide. Publish the docs site
 from `main` to `prod` before linking users to it from public release copy.
