@@ -120,3 +120,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T19:24:08Z · message_delivered: 2 message(s)
 - 2026-11-04T19:28:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T19:41:57Z · status active→review
+- 2026-11-04T19:41:57Z · message_queued at 2026-11-04T19:41:57.647Z
