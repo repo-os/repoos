@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:40:05Z"
+updated_at: "2026-11-04T18:52:57Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -95,6 +95,30 @@ An engineer whose check is running with a valid heartbeat is not listed as stall
 
 Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-docs/check.md` "When a check is waiting".
 
+## Shots
+```json
+[
+{
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "label": "New schedule accent button",
+  "highlight": "[data-testid=\"new-schedule\"]"
+},
+{
+  "target": "default",
+  "route": "/agents?tab=reminders",
+  "label": "New reminder accent button",
+  "highlight": "[data-testid=\"new-reminder\"]"
+},
+{
+  "target": "default",
+  "route": "/secrets",
+  "label": "New environment accent button",
+  "highlight": "[data-testid=\"new-environment\"]"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-04T17:57:32Z · created · njachowski@gmail.com
@@ -106,3 +130,4 @@ Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-doc
 - 2026-11-04T18:39:58Z · model_override
 - 2026-11-04T18:40:01Z · status inbox→ready
 - 2026-11-04T18:40:05Z · status ready→active, branch
+- 2026-11-04T18:52:57Z · body
