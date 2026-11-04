@@ -26,8 +26,7 @@ const themeBootInline = themeBootScriptContent();
 export default defineConfig({
   lang: "en",
   title: "RepoOS",
-  description:
-    "Your AI dev team, living in your repo, for CTOs and builders.",
+  description: "Your AI dev team, living in your repo, for CTOs and builders.",
   cleanUrls: true,
   sitemap: { hostname: "https://docs.repoos.org" },
   // RepoOS owns appearance (dark/light) and design theme (Classic/Gruvbox).
