@@ -276,6 +276,97 @@ describe("StoriesView sort dropdown (#0536)", () => {
   });
 });
 
+describe("StoriesView hide completed toggle (#1016)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    setActivePinia(createPinia());
+    useConfigStore().data = { stories: { enabled: true } };
+  });
+
+  function seedCompleteAndOpen(): void {
+    setTasks([
+      makeTask({
+        id: "0001",
+        story: "Shipped",
+        status: "done",
+        updated_at: "2026-09-09T00:00:00Z",
+      }),
+      makeTask({
+        id: "0002",
+        story: "In flight",
+        status: "active",
+        updated_at: "2026-09-08T00:00:00Z",
+      }),
+    ]);
+  }
+
+  it("shows the labelled control and every story, in the existing order, by default", () => {
+    seedCompleteAndOpen();
+    const wrapper = mountView();
+    const toggle = wrapper.find(".stories-filter-toggle");
+    expect(toggle.exists()).toBe(true);
+    expect(toggle.text()).toContain("Hide Completed Stories");
+    expect(wrapper.find("button[role='checkbox']").attributes("data-state")).toBe("unchecked");
+    expect(wrapper.findAll(".story-name").map((n) => n.text())).toEqual(["Shipped", "In flight"]);
+  });
+
+  it("hides completed stories when checked and restores the full list when unchecked", async () => {
+    seedCompleteAndOpen();
+    const wrapper = mountView();
+    const box = wrapper.find("button[role='checkbox']");
+
+    await box.trigger("click");
+    expect(box.attributes("data-state")).toBe("checked");
+    expect(wrapper.findAll(".story-name").map((n) => n.text())).toEqual(["In flight"]);
+    // The unfinished story keeps its placement; no reload, just the filter.
+    expect(wrapper.find(".story-card").classes()).not.toContain("complete");
+
+    await box.trigger("click");
+    expect(box.attributes("data-state")).toBe("unchecked");
+    expect(wrapper.findAll(".story-name").map((n) => n.text())).toEqual(["Shipped", "In flight"]);
+  });
+
+  it("persists the choice through the repo store and localStorage", async () => {
+    seedCompleteAndOpen();
+    const wrapper = mountView();
+    await wrapper.find("button[role='checkbox']").trigger("click");
+    expect(useRepoStore().storiesPageHideCompleted).toBe(true);
+    expect(localStorage.getItem("repoos.storiesPage.hideCompleted")).toBe("true");
+  });
+
+  it("shows a completed-only empty state instead of the no-stories one", () => {
+    setTasks([
+      makeTask({ id: "0001", story: "Shipped", status: "done" }),
+      makeTask({ id: "0002", story: "Also shipped", status: "done" }),
+    ]);
+    useRepoStore().setStoriesPageHideCompleted(true);
+    const wrapper = mountView();
+    expect(wrapper.text()).toContain("All stories are complete");
+    expect(wrapper.text()).toContain("2 completed stories are hidden");
+    expect(wrapper.text()).not.toContain("No stories yet");
+    expect(wrapper.findAll(".story-card")).toHaveLength(0);
+  });
+
+  it("keeps an unfinished registered story with no tasks visible while hiding completed", () => {
+    setTasks([makeTask({ id: "0001", story: "Shipped", status: "done" })]);
+    useRepoStore().storyDefinitions = [
+      {
+        key: "planned",
+        name: "Planned slice",
+        path: "stories/planned-slice.md",
+        body: "",
+        createdAt: "2026-09-01T00:00:00Z",
+        createdBy: "hello@repoos.org",
+      },
+    ];
+    useRepoStore().setStoriesPageHideCompleted(true);
+    const names = mountView()
+      .findAll(".story-name")
+      .map((n) => n.text());
+    expect(names).toEqual(["Planned slice"]);
+  });
+});
+
 describe("StoriesView copy-link number (#0515)", () => {
   beforeEach(() => {
     localStorage.clear();
