@@ -119,3 +119,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T16:31:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T16:35:58Z · body
 - 2026-11-04T16:39:26Z · message_queued at 2026-11-04T16:39:26.031Z
+- 2026-11-04T16:39:26Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
