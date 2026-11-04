@@ -101,7 +101,9 @@ forever. TaskWatchdog detects that shape without waiting for the CTO:
 
 1. The runner records `engineer turn ended without a handoff` in Activity on a
    clean engineer turn that did not request review. This is durable, so the
-   signal survives a server reload.
+   signal survives a server reload. The line also carries the exit reason, the
+   last assistant message (truncated) and the stderr tail (or `(empty)`), so a
+   non-empty `pi` stderr is visible on the task instead of a silent no-op.
 2. The watchdog clears a **phantom** runner-registry row first (#0863): a row
    whose process group is gone must not read as "already running" and mask the
    stall.
@@ -112,10 +114,19 @@ forever. TaskWatchdog detects that shape without waiting for the CTO:
 4. A **deferred handoff** (`handoff_deferred: N queued message(s)…`) always
    resumes the engineer to read the queued message, even when the legacy
    handoff-signal retry still has budget. The resumed turn drains that queue.
-5. Resume budget: **3 resumes per 30 minutes per task**. At the cap the task is
-   surfaced as `needs_input` with reason `watchdog-stuck` and the resume history
-   (`engineer_stall_resume_log`) stays in the task frontmatter. The window is
-   fixed, not a Settings key: this is a safety bound, not a tuning knob.
+5. Resume budget: **3 resumes per active episode**, counted from the
+   `→active` transition and monotonic (`1/3`, `2/3`, `3/3`). A rolling 30-minute
+   window let the attempt number repeat on a long episode (#1016 resumed at
+   05:56, 06:18 and 06:47 and printed `2/3` twice), so the window no longer
+   bounds the count. At the cap the task is surfaced as `needs_input` with
+   reason `watchdog-stuck` and the resume history (`engineer_stall_resume_log`)
+   stays in the task frontmatter. The limit is fixed, not a Settings key: this
+   is a safety bound, not a tuning knob.
+6. A poisoned conversation (the same failure repeats even after a resume) is
+   reset with `repoos start <id> --fresh` (API
+   `POST /api/tasks/<id>/start {"mode":"fresh"}`), which abandons the old CLI
+   session and starts a new one in the same worktree. The needs-input detail
+   names this command.
 
 This is the completion path when the CTO is off. It never overrides a person:
 `repoos pause` marks the task paused and both the watchdog and the resume path

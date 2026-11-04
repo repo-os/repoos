@@ -149,6 +149,33 @@ belong in the repo, not in a private memory store: append them to the driver
 notes file (see `AGENTS.md` → "Where project knowledge goes"), so the next
 session inherits them.
 
+### When an engineer ends a turn without handing off
+
+A turn that exits cleanly but never requests review is **resumed
+automatically**, not left idle. The task Activity records why the turn ended:
+the exit code, the last assistant message (truncated), and the stderr tail (or
+`stderr: (empty)`). A `pi` engineer whose stderr carries a provider/CLI message
+therefore shows it on the task instead of looking like a silent no-op.
+
+Resumes are bounded to **three per active episode** (`→active` transition), and
+the counter is monotonic — a long episode shows `1/3`, `2/3`, `3/3`, never a
+repeated `2/3`. After the third, the task is flagged `needs_input` with reason
+`watchdog-stuck` instead of waiting forever. The CTO monitor uses RepoOS's own
+idle evidence (run state, agent-log mtime, the turn-end event) rather than
+`ps`, and a clean exit after a completion nudge is treated as a resume
+candidate.
+
+If the conversation itself is poisoned (the same failure repeats, or the model
+loops even after a resume), reset it with:
+
+```bash
+repoos start <id> --fresh      # API: POST /api/tasks/<id>/start {"mode":"fresh"}
+```
+
+`--fresh` abandons the old CLI session and starts a new one in the same
+worktree. Use it for a poisoned conversation — not as a substitute for fixing
+the underlying code or environment.
+
 ## 4. The review loop
 
 - For UI tasks, **handoff runs a browser verification gate** before review: declared

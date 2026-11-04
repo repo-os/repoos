@@ -38,6 +38,7 @@ const FAKEBIN = `#!/usr/bin/env node
 const fs = require("fs");
 const path = require("path");
 const args = process.argv.slice(2);
+if (process.env.REPOOS_FAKEBIN_STDERR) process.stderr.write(process.env.REPOOS_FAKEBIN_STDERR + "\\n");
 fs.appendFileSync(process.env.REPOOS_FAKEBIN_LOG, JSON.stringify({ args, cwd: process.cwd(), agent: process.env.REPOOS_AGENT || "", task: process.env.REPOOS_TASK_ID || "", api: process.env.REPOOS_API_URL || "", vitestWorkers: process.env.VITEST_MAX_WORKERS || "", repoosTestWorkers: process.env.REPOOS_TEST_WORKERS || "", playwrightWorkers: process.env.PLAYWRIGHT_WORKERS || "", path: process.env.PATH || "" }) + "\\n");
 if (path.basename(process.argv[1]) === "pi") {
   if (process.env.REPOOS_FAKEBIN_PI_NO_SESSION_HEADER !== "1") process.stdout.write(JSON.stringify({ type: "session", version: 3, id: "sess-pi" }) + "\\n");
@@ -839,6 +840,66 @@ describe("pi driver", () => {
       delete process.env.REPOOS_FAKEBIN_LOG;
       delete process.env.REPOOS_FAKEBIN_PI_ERROR_AFTER_BLOCK;
       fx.clean();
+    }
+  });
+
+  it("records the exit reason, last assistant text and stderr on a clean exit without a handoff (#0715)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-pi-clean-exit-"));
+    const bin = join(root, "bin");
+    const work = join(root, "work");
+    mkdirSync(bin, { recursive: true });
+    mkdirSync(work, { recursive: true });
+    writeFileSync(join(bin, "pi"), FAKEBIN, { mode: 0o755 });
+    const taskPath = join(work, "0001-pi.md");
+    writeFileSync(
+      taskPath,
+      `---
+id: "0001"
+title: pi clean exit
+type: bug
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: feat/x
+---
+## Problem
+It stops.
+`,
+    );
+    const getTask = (): Task =>
+      parseTask({
+        content: readFileSync(taskPath, "utf8"),
+        absPath: taskPath,
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    process.env.REPOOS_FAKEBIN_LOG = join(root, "spawns.log");
+    process.env.REPOOS_FAKEBIN_STDERR = "pi: transient upstream note";
+    const runner = new AgentRunner({ ...config(root), root, cacheDir: ".repoos" }, () => {}, {
+      getTask,
+    });
+    try {
+      runner.start(getTask(), "feat/x", agent("pi"), { cwd: bin });
+      await waitFor(() => !runner.isRunning("0001"), "pi clean exit");
+      await waitFor(
+        () => readFileSync(taskPath, "utf8").includes("engineer turn ended without a handoff"),
+        "clean-exit activity written",
+        5000,
+      );
+      const body = readFileSync(taskPath, "utf8");
+      expect(body).toContain("reason: exited with code 0");
+      expect(body).toContain("last assistant: Hello world");
+      expect(body).toContain("stderr: pi: transient upstream note");
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      delete process.env.REPOOS_FAKEBIN_STDERR;
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });
