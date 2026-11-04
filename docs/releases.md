@@ -5,14 +5,16 @@ manages, and how prerelease channels (beta / canary / rc) work.
 
 ## The one idea
 
-**RepoOS only pushes a git tag. CI builds and publishes.** `cutNewRelease`
-(`src/server/release.ts`) commits the version bump, runs the full `repoos
-check` gate, pushes the release branch, then pushes an annotated
-`v<version>` tag. That's the whole of RepoOS's job — no GitHub client, no npm
-publish, nothing that would pull a dependency into the zero-runtime-dependency
-core. The tag push triggers `.github/workflows/release.yml`, which packages
-`dist/` and creates the GitHub Release. Until that workflow finishes, the
-version is tagged but **not downloadable**.
+**RepoOS commits the release record, pushes a git tag, and CI builds and publishes.**
+`cutNewRelease` (`src/server/release.ts`) commits the version bump together with
+the release changelog, runs the full `repoos check` gate, pushes the release
+branch, then pushes an annotated `v<version>` tag, and finally pushes any
+configured deployment branch that is still behind the release branch. That's
+the whole of RepoOS's job — no GitHub client, no npm publish, nothing that
+would pull a dependency into the zero-runtime-dependency core. The tag push
+triggers `.github/workflows/release.yml`, which packages `dist/` and creates
+the GitHub Release. Until that workflow finishes, the version is tagged but
+**not downloadable**.
 
 Releases are opt-in. Without a `[release]` block in `repoos.toml` the feature
 is off and the "Releases" nav item doesn't appear.
@@ -65,11 +67,11 @@ moves through these phases:
 | phase          | what happens |
 | -------------- | ------------ |
 | `preparing`    | re-read status; checkpoint safe churn if the tree is dirty (see below) |
-| `committing`   | write `version` into `versionFile`, commit as `release: v<x>` — **skipped** if the manifest is already at that version (retry path) |
+| `committing`   | write `version` into `versionFile`, `release-history.json` (the new entry, with version, date and notes) and `CHANGELOG.md`, commit all of them as `release: v<x>` — the file write is **skipped** if the manifest is already at that version (retry path; a stale release record is committed on its own) |
 | `building`     | `bun run build` — so the staleness gate can't trip, and to confirm the tree compiles before any ref moves |
 | `checking`     | `repoos check` — the same definition-of-done gate as task close-out (build staleness, full build, tests, UI smoke, fmt/lint). It runs through the project's own `dist/cli/index.js` only when the project's `package.json` `bin` points at it (RepoOS itself); any other project gates through the globally linked `repoos` instead, so a project with no CLI ships no `dist/cli/index.js` requirement |
 | `pushing_main` | `git push <remote> <branch>` |
-| `tagging`      | `git tag -a v<x> -m "Release v<x>"` — plus a second `-m` carrying the release notes when any were supplied |
+| `tagging`      | `git tag -a v<x> --cleanup=verbatim -m "Release v<x>" -m "<notes>"` — the second `-m` always carries the release notes (supplied, or a deterministic fallback from commit subjects), so the tag body is never empty |
 | `pushing_tag`  | `git push <remote> v<x>` — this is what triggers CI |
 
 If any phase fails, the run stops with `state: "failed"`, the phase it failed
@@ -90,7 +92,67 @@ pushed the bump is public and is never rewritten away — the output says that
 instead.
 
 On success: `v<x> pushed. CI is now building the release — it becomes
-downloadable once that finishes.`
+downloadable once that finishes.` When a configured deployment branch (this
+repo's `prod`) is behind the release branch, the success output also lists the
+production deploy it fast-forwarded and pushed.
+
+## Public surfaces (docs, changelog, llms files, release notes)
+
+The release record is committed before the gate, not reconstructed after it, so
+the public surfaces cannot lag a release:
+
+- **`release-history.json`** is the structured source of truth: one entry per
+  release with `version`, `tag`, UTC `date`, and Markdown `notes`. It is written
+  by `writeReleaseSurfaces` (`src/server/release-history.ts`) and committed with
+  the version bump.
+- **`CHANGELOG.md`** is rendered from that file. Both paths are listed in the
+  bump commit, so the tag CI releases already contains them.
+- **docs.repoos.org/changelog** reads the committed history at build time (no
+  GitHub API fetch), because the docs build can run before the GitHub Release
+  exists. The page and the generated `llms.txt` / `llms-full.txt` /
+  `llms-essentials.txt` each carry the current version and date;
+  `scripts/check-llms.ts` fails the docs build if that stamp is missing.
+- **repoos.org** reads the same history for its version/date stat, and its
+  `/llms.txt` carries the same stamp.
+- **GitHub release body**: `.github/workflows/release.yml` runs
+  `scripts/release-notes.ts <tag>` against `release-history.json`; only a tag
+  with no history entry falls back to the annotated tag body. Leaving the tag
+  body as the only source is what produced the empty v0.5.73–75 release notes.
+- **Deploy**: after a successful tag push, `cutNewRelease` fast-forwards and
+  pushes every configured `[[deployments]]` branch that is strictly behind the
+  release branch (this repo: `prod` ← `main`). Cloudflare rebuilds the landing
+  and docs sites from that push, which is what publishes the new version to
+  docs.repoos.org and repoos.org. The release's own full `repoos check` also
+  runs `user-docs-build` and `landing-build`, so a tag can only be pushed after
+  those builds pass with the new stamp. A deploy failure does not fail the
+  release — the tag is already public — and the output tells the operator to
+  retry the branch from the Deployments page. Branches that are equal are
+  skipped; a diverged branch is refused by the normal deploy path, never
+  force-pushed.
+
+Notes supplied in the cut modal are used verbatim. When the field is empty, the
+cut writes a deterministic fallback from the release-relevant commit subjects,
+so no release can have an empty body.
+
+## Agent URLs that used to 404
+
+The v0.5.75 QA report listed guessable URLs that returned 404. They now resolve
+by redirect:
+
+| URL | Target |
+| --- | --- |
+| `repoos.org/llms-full.txt` | `docs.repoos.org/llms-full.txt` |
+| `repoos.org/AGENTS.md` | raw `AGENTS.md` in the repository |
+| `repoos.org/.well-known/llms.txt` | `repoos.org/llms.txt` |
+| `repoos.org/docs` | `docs.repoos.org` |
+| `docs.repoos.org/AGENTS.md` | raw `AGENTS.md` in the repository |
+| `docs.repoos.org/.well-known/llms.txt` | `docs.repoos.org/llms.txt` |
+| `docs.repoos.org/docs` | `docs.repoos.org` |
+
+`CHANGELOG.md` now exists at the repository root and is the rendered release
+history. The redirects live in `landing/worker.ts` (plus `wrangler.jsonc`'s
+`run_worker_first`) and `user-docs/worker.ts`, and are covered by
+`src/ui-app/tests/landing-agent-redirects.test.ts`.
 
 ### Retry / resume
 

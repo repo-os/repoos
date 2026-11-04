@@ -1,38 +1,47 @@
 import { createMarkdownRenderer, defineLoader, type MarkdownRenderer } from "vitepress";
+import history from "../release-history.json";
 
-// Build-time fetch of RepoOS's own release notes for the /changelog page.
+// Build-time read of RepoOS's own release history for the /changelog page.
 //
-// Source of truth is the GitHub Releases API (the `body` field), not the tag
-// annotations directly: it is the same public surface `repoos upgrade` and the
-// GitHub Releases page itself read, and it needs no auth for a public repo.
-// This is a VitePress data loader, so the fetch runs once at build time and the
-// result is baked into the page — there is no runtime request from a visitor's
-// browser.
+// The source of truth is the committed `release-history.json`, written by the
+// release pipeline in the same commit as the version bump. It used to fetch
+// the GitHub Releases API at build time: that made the page depend on a
+// release CI had not created yet, so a docs deploy triggered by the release
+// commit lagged one version behind (v0.5.75 QA). The committed file is in the
+// tag itself, so every build — including the release's own `repoos check` —
+// already contains the new version and date.
 const REPO = "repo-os/repoos";
 const RELEASES_URL = `https://github.com/${REPO}/releases`;
-const API_URL = `https://api.github.com/repos/${REPO}/releases`;
 
-// Bound both the page and the fetch to a recent window. The full history is a
-// link-out (see the page), so there is no reason to pull all of it.
+// The page embeds a recent window; the full history is a link-out.
 const LIMIT = 15;
+
+interface HistoryEntry {
+  version: string;
+  tag: string;
+  date: string;
+  notes: string;
+}
 
 export interface Release {
   tag: string;
   name: string;
-  /** Human-readable date, e.g. "Sep 16, 2026". */
+  /** Human-readable date, e.g. "Nov 4, 2026". */
   date: string;
-  /** Machine-readable publish timestamp for <time datetime>. */
+  /** Machine-readable publish date for <time datetime>. */
   iso: string;
   url: string;
   prerelease: boolean;
-  /** Rendered release-note HTML (from the release body markdown). */
+  /** Rendered release-note HTML (from the entry's markdown). */
   html: string;
 }
 
 export interface Data {
   releases: Release[];
+  currentVersion: string;
+  currentDate: string;
   githubUrl: string;
-  /** Set when the fetch failed; the page degrades to the link-out. */
+  /** Kept for the page's error branch; the committed file cannot fail to fetch. */
   error: string | null;
 }
 
@@ -52,17 +61,6 @@ function getMarkdown(): Promise<MarkdownRenderer> {
   return markdown;
 }
 
-interface GitHubRelease {
-  tag_name: string;
-  name: string | null;
-  published_at: string | null;
-  created_at: string;
-  html_url: string;
-  body: string | null;
-  draft: boolean;
-  prerelease: boolean;
-}
-
 const dateFormat = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   month: "short",
@@ -70,51 +68,37 @@ const dateFormat = new Intl.DateTimeFormat("en-US", {
   timeZone: "UTC",
 });
 
+function humanDate(iso: string): string {
+  const [year, month, day] = iso.split("-").map(Number);
+  if (!year || !month || !day) return iso;
+  return dateFormat.format(new Date(Date.UTC(year, month - 1, day)));
+}
+
 function headingIds(html: string, tag: string): string {
   const prefix = tag.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   return html.replace(/<h([1-6]) id="([^"]*)"/g, `<h$1 id="${prefix}--$2"`);
 }
 
 async function load(): Promise<Data> {
-  try {
-    const res = await fetch(`${API_URL}?per_page=${LIMIT}`, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "repoos-docs-build",
-      },
-    });
-    if (!res.ok) {
-      throw new Error(`GitHub returned ${res.status} ${res.statusText}`);
-    }
-
-    const raw = (await res.json()) as GitHubRelease[];
-    const md = await getMarkdown();
-
-    const releases = raw
-      .filter((r) => !r.draft)
-      .map((r) => {
-        const iso = r.published_at ?? r.created_at;
-        return {
-          tag: r.tag_name,
-          name: r.name?.trim() || r.tag_name,
-          date: dateFormat.format(new Date(iso)),
-          iso,
-          url: r.html_url,
-          prerelease: r.prerelease,
-          html: headingIds(md.render(r.body ?? ""), r.tag_name),
-        };
-      });
-
-    return { releases, githubUrl: RELEASES_URL, error: null };
-  } catch (err) {
-    // A transient GitHub hiccup must not fail the whole docs build. Degrade to
-    // the link-out instead — GitHub is authoritative anyway.
-    return {
-      releases: [],
-      githubUrl: RELEASES_URL,
-      error: err instanceof Error ? err.message : String(err),
-    };
-  }
+  const entries = (history as { releases: HistoryEntry[] }).releases;
+  const md = await getMarkdown();
+  const releases = entries.slice(0, LIMIT).map((entry) => ({
+    tag: entry.tag,
+    name: entry.tag,
+    date: humanDate(entry.date),
+    iso: entry.date,
+    url: `${RELEASES_URL}/tag/${entry.tag}`,
+    prerelease: entry.version.includes("-"),
+    html: headingIds(md.render(entry.notes), entry.tag),
+  }));
+  const current = releases[0];
+  return {
+    releases,
+    currentVersion: current ? current.name.replace(/^v/, "") : "",
+    currentDate: current?.date ?? "",
+    githubUrl: RELEASES_URL,
+    error: null,
+  };
 }
 
 export default defineLoader({ load });

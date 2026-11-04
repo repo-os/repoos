@@ -5,14 +5,20 @@ description: Every RepoOS release, with the notes that ship with it.
 
 # Changelog
 
-Every RepoOS release and the notes that ship with it. The most recent releases
-are embedded below when the docs are built; the full history lives on GitHub.
+Every RepoOS release and the notes that ship with it, newest first. This page
+is built from the committed release history, so it always includes the version
+the docs were built from; the full history lives on GitHub.
 
 ## Recent releases
 
 <script setup>
 import { data as changelog } from "./changelog.data";
 </script>
+
+<p v-if="changelog.currentVersion" class="release-current">
+  Current release <strong>v{{ changelog.currentVersion }}</strong>
+  <span>· {{ changelog.currentDate }}</span>
+</p>
 
 <div v-if="changelog.error" class="release-notice">
   <p>

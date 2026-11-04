@@ -4,13 +4,27 @@
  * This makes the integration useful without baking a GitHub or npm client
  * into RepoOS's zero-dependency core.
  */
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, relative, resolve } from "node:path";
 import type { ReleaseConfig, RepoOSConfig } from "../core/types.js";
 import { captureOutput } from "./done.js";
 import { listCachedReleaseNotes } from "./release-notes-cache.js";
 import type { RemoteValidator } from "./remote-validation.js";
+import {
+  configuredDeployments,
+  deployBranch,
+  deployRoot,
+  deploymentBranches,
+} from "./deployments.js";
+import {
+  RELEASE_HISTORY_FILE,
+  CHANGELOG_FILE,
+  releaseDate,
+  renderDefaultReleaseNotes,
+  writeReleaseSurfaces,
+  type ReleaseHistoryEntry,
+} from "./release-history.js";
 import {
   checkEnvAfterRemoteGate,
   runRemotePreReviewGate,
@@ -572,6 +586,48 @@ export function releaseNotesPrompt(
   ].join("\n");
 }
 
+/**
+ * Fast-forward + push every configured deployment branch that is still behind
+ * the release branch (this repo: `prod` ← `main`). Cloudflare rebuilds the
+ * landing and docs sites from that push, which is what publishes the new
+ * version and release notes; leaving `prod` untouched was why
+ * docs.repoos.org/changelog lagged behind the release (v0.5.75 QA).
+ *
+ * A failure here never fails the release: the tag is already public, and the
+ * operator can push the branch from the Deployments page. The note in the
+ * success output names the branch and the reason.
+ */
+async function deployReleaseBranches(
+  config: RepoOSConfig,
+  releaseBranch: string,
+  exec: Run,
+): Promise<string> {
+  const rows = configuredDeployments(config);
+  if (rows.length === 0) return "";
+  const root = deployRoot(config);
+  const notes: string[] = [];
+  let failed = false;
+  for (const branch of deploymentBranches(rows)) {
+    if (branch === releaseBranch) continue;
+    // Only branches strictly behind the release branch need a deploy. An
+    // equal branch would be another no-op push and an extra provider build;
+    // a diverged one is refused by deployBranch rather than force-pushed.
+    const behind = await exec("git", ["rev-list", "--count", `${branch}..${releaseBranch}`], root);
+    if (behind.code !== 0) continue;
+    if ((Number(behind.stdout.trim()) || 0) === 0) continue;
+    const result = await deployBranch(config, branch, exec);
+    notes.push(result.ok ? `${branch}: ${result.output}` : `${branch}: failed — ${result.output}`);
+    if (!result.ok) failed = true;
+  }
+  if (notes.length === 0) return "";
+  return (
+    `\n\nProduction deploy:\n${notes.map((note) => `- ${note}`).join("\n")}` +
+    (failed
+      ? "\nThe release is published; retry the failed branch from the Deployments page once the cause is fixed."
+      : "")
+  );
+}
+
 export async function cutNewRelease(
   config: RepoOSConfig,
   version: string,
@@ -624,6 +680,27 @@ export async function cutNewRelease(
   }
   const relVersionPath = relative(config.root, versionPath);
   const bumpSubject = `release: ${tag}`;
+  // Notes are required for every public surface: the tag annotation, the
+  // GitHub release body, CHANGELOG.md and the docs changelog. When the cut
+  // supplies none, fall back to the release-relevant commit subjects — the
+  // old behaviour left v0.5.73–75 releases with an empty body.
+  let releaseNotes = notes?.trim() ?? "";
+  if (!releaseNotes) {
+    const commits = await collectReleaseCommits(config, exec);
+    releaseNotes = renderDefaultReleaseNotes(commits.commits);
+  }
+  const releaseEntry: ReleaseHistoryEntry = {
+    version,
+    tag,
+    date: releaseDate(),
+    notes: releaseNotes,
+  };
+  // Committed with the version bump so the tag CI releases already carries the
+  // new version/date for docs.repoos.org and repoos.org to build from.
+  const surfacePaths: string[] = [RELEASE_HISTORY_FILE, CHANGELOG_FILE];
+  // A retry may need to refresh these on their own; that commit is bookkeeping,
+  // never the version bump, so the rollback below must treat it separately.
+  let surfacesCommittedThisRun = false;
   // Set once this run commits the bump below; drives the failure-path
   // handling (rollback vs. explain) for every phase after this point.
   let bumpedThisRun = false;
@@ -669,11 +746,38 @@ export async function cutNewRelease(
     output: string,
   ): Promise<{ ok: boolean; status: ReleaseStatus; output: string }> {
     if (!bumpedThisRun) {
+      // A retry's own changelog commit is ours to undo, unlike the version
+      // bump a previous attempt left on the branch.
+      let surfacesNote = "";
+      if (surfacesCommittedThisRun && !mainPushed) {
+        const head = await exec("git", ["log", "-1", "--format=%s"], config.root);
+        if (head.code === 0 && head.stdout.trim() === bumpSubject) {
+          const reset = await exec("git", ["reset", "--soft", "HEAD~1"], config.root);
+          if (reset.code === 0) {
+            const restored = await exec(
+              "git",
+              ["checkout", "HEAD", "--", ...surfacePaths],
+              config.root,
+            );
+            if (restored.code !== 0) {
+              // The pre-bump tree may predate these files; a checkout cannot
+              // restore a path HEAD does not have, so remove the new ones and
+              // drop them from the index left behind by `reset --soft`.
+              await exec("git", ["reset", "HEAD", "--", ...surfacePaths], config.root);
+              for (const path of surfacePaths) rmSync(join(config.root, path), { force: true });
+            }
+            surfacesNote =
+              "\n\nThe separate release-changelog commit from this attempt was rolled back.";
+          }
+        }
+      }
       // This run did not create a bump, but a previous attempt may have left
       // one on the branch. Never rewrite it here (it is not ours to reset),
       // but never return the bare gate error either — the operator must know
       // the unpushed commit exists and how to undo it.
-      if (!preexistingBump) return { ok: false, status, output };
+      if (!preexistingBump) {
+        return { ok: false, status, output: `${output}${surfacesNote}` };
+      }
       const note =
         preexistingBump === "head"
           ? `A version-bump commit ("${bumpSubject}") for this release was already on ` +
@@ -687,7 +791,7 @@ export async function cutNewRelease(
       return {
         ok: false,
         status: await getReleaseStatus(config, exec),
-        output: `${output}\n\n${note}`,
+        output: `${output}\n\n${note}${surfacesNote}`,
       };
     }
     if (!mainPushed) {
@@ -699,10 +803,22 @@ export async function cutNewRelease(
         // destroy unrelated uncommitted work (e.g. the dirty source file a
         // "state changed" failure just reported), and every other dirty path
         // is left exactly as it was.
-        const restored =
+        let restored =
           reset.code === 0
-            ? await exec("git", ["checkout", "HEAD", "--", relVersionPath], config.root)
+            ? await exec(
+                "git",
+                ["checkout", "HEAD", "--", relVersionPath, ...surfacePaths],
+                config.root,
+              )
             : reset;
+        if (reset.code === 0 && restored.code !== 0) {
+          // A first release after this pipeline existed has no surfaces in the
+          // pre-bump HEAD; restore the version file and drop the new files
+          // (including their index entries from the soft reset).
+          await exec("git", ["reset", "HEAD", "--", ...surfacePaths], config.root);
+          for (const path of surfacePaths) rmSync(join(config.root, path), { force: true });
+          restored = await exec("git", ["checkout", "HEAD", "--", relVersionPath], config.root);
+        }
         if (restored.code === 0) {
           return {
             ok: false,
@@ -738,14 +854,24 @@ export async function cutNewRelease(
     } catch {
       return { ok: false, status, output: "Could not update the configured version file." };
     }
-    const staged = await exec("git", ["add", "--", relVersionPath], config.root);
+    try {
+      writeReleaseSurfaces(config.root, releaseEntry);
+    } catch (error) {
+      return {
+        ok: false,
+        status,
+        output: `Could not write the release changelog: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+    const commitPaths = [relVersionPath, ...surfacePaths];
+    const staged = await exec("git", ["add", "--", ...commitPaths], config.root);
     const committed =
       staged.code === 0
         ? await exec(
             "git",
-            // `--only` commits just the version bump; a plain commit would take
+            // `--only` commits just the release files; a plain commit would take
             // the whole index and sweep in whatever else was staged (#0353).
-            ["commit", "-o", "-m", bumpSubject, "--", relVersionPath],
+            ["commit", "-o", "-m", bumpSubject, "--", ...commitPaths],
             config.root,
           )
         : staged;
@@ -758,6 +884,32 @@ export async function cutNewRelease(
       };
     }
     bumpedThisRun = true;
+  } else {
+    // Retry path: the version is already committed, so the bump commit above
+    // is skipped. Refresh the release surfaces on their own when a previous
+    // attempt (or a hand edit) left them stale, without touching the version.
+    const surfaces = writeReleaseSurfaces(config.root, releaseEntry);
+    if (surfaces.changed) {
+      const staged = await exec("git", ["add", "--", ...surfaces.paths], config.root);
+      const committed =
+        staged.code === 0
+          ? await exec(
+              "git",
+              ["commit", "-o", "-m", bumpSubject, "--", ...surfaces.paths],
+              config.root,
+            )
+          : staged;
+      if (committed.code !== 0) {
+        return {
+          ok: false,
+          status: await getReleaseStatus(config, exec),
+          output:
+            captureOutput(committed.stdout, committed.stderr) ||
+            "Could not commit the release changelog.",
+        };
+      }
+      surfacesCommittedThisRun = true;
+    }
   }
   // Rebuild first. `repoos check`'s first gate is a src/-vs-dist/ staleness
   // check — any edit or `bun run fmt` since the operator's last build (or a
@@ -886,7 +1038,7 @@ export async function cutNewRelease(
   }
   mainPushed = true;
   onProgress?.("tagging", `Creating annotated tag ${tag}…`);
-  const trimmedNotes = notes?.trim();
+  const trimmedNotes = releaseNotes;
   // `--cleanup=verbatim` keeps Markdown headings ("# " lines) verbatim.
   // Strictly a belt-and-braces move here: with `-m` supplied (never an
   // editor), git's default cleanup mode is already "whitespace", not
@@ -915,9 +1067,10 @@ export async function cutNewRelease(
         "Could not push the tag; the local tag was removed.",
     );
   }
+  const deployNote = await deployReleaseBranches(config, status.branch, exec);
   return {
     ok: true,
     status: await getReleaseStatus(config, exec),
-    output: `${tag} pushed. CI is now building the release — it becomes downloadable once that finishes.`,
+    output: `${tag} pushed. CI is now building the release — it becomes downloadable once that finishes.${deployNote}`,
   };
 }

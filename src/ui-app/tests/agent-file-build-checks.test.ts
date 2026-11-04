@@ -19,6 +19,7 @@ import {
   collectSkillLinkFailures,
 } from "../../../user-docs/scripts/check-ai-agents.js";
 import { collectLlmsFailures } from "../../../user-docs/scripts/check-llms.js";
+import { RELEASE_LINE } from "../../../user-docs/.vitepress/llms-index.js";
 
 const repoRoot = process.cwd();
 const prompt = readFileSync(join(repoRoot, "agent/starter-prompt.md"), "utf8").trim();
@@ -107,6 +108,8 @@ function docsLlms(): string {
 
 > The repo is the operating system.
 
+${RELEASE_LINE}
+
 Every page below is also published as raw Markdown at the same path with \`.md\` appended — for example https://docs.repoos.org/getting-started.md. Essentials: https://docs.repoos.org/llms-essentials.txt. The whole manual: https://docs.repoos.org/llms-full.txt
 
 - [RepoOS Agent Skill (raw SKILL.md)](https://raw.githubusercontent.com/repo-os/repoos/main/agent/skill/SKILL.md): Portable skill.
@@ -124,11 +127,15 @@ function docsFixture(): string {
   write(docsRoot, "getting-started.md", "# Getting started\n");
   write(docsRoot, "index.md", "# Home\n");
   write(dist, "llms.txt", docsLlms());
-  write(dist, "llms-essentials.txt", "# RepoOS essentials\n\n> A short bundle.\n");
+  write(
+    dist,
+    "llms-essentials.txt",
+    `# RepoOS essentials\n\n> A short bundle.\n\n${RELEASE_LINE}\n`,
+  );
   write(
     dist,
     "llms-full.txt",
-    "# RepoOS\n\n## Getting started\n\nurl: https://docs.repoos.org/getting-started.md\n",
+    `${RELEASE_LINE}\n\n# RepoOS\n\n## Getting started\n\nurl: https://docs.repoos.org/getting-started.md\n`,
   );
   write(dist, "index.html", "<html><body>home</body></html>");
   write(dist, "getting-started.html", '<html><body><h1 id="install">Install</h1></body></html>');
@@ -278,6 +285,15 @@ describe("docs agent-file build checks", () => {
     expect(failures).toContainEqual(expect.stringContaining("missing .vitepress/dist/llms.txt"));
     expect(failures).toContainEqual(
       expect.stringContaining("missing .vitepress/dist/llms-full.txt"),
+    );
+  });
+
+  it("fails when an agent output loses the current release stamp", () => {
+    const docsRoot = join(docsFixture(), "user-docs");
+    const llmsPath = join(docsRoot, ".vitepress/dist/llms-full.txt");
+    writeFileSync(llmsPath, readFileSync(llmsPath, "utf8").replace(RELEASE_LINE, "stale"));
+    expect(collectLlmsFailures({ docsRoot })).toContainEqual(
+      expect.stringContaining("llms-full.txt is missing the current release stamp"),
     );
   });
 

@@ -6,6 +6,7 @@ import {
   readStarterPrompt,
   renderLlmsTxt,
 } from "../../../landing/vite-plugin-llms-txt.js";
+import { CURRENT_RELEASE_URL, releaseStamp } from "../../../shared/release.js";
 
 const repoRoot = process.cwd();
 
@@ -19,6 +20,11 @@ describe("landing llms.txt", () => {
     expect(llms).toMatch(
       /^- \[Documentation index\]\(https:\/\/docs\.repoos\.org\/llms\.txt\): .+$/m,
     );
+  });
+
+  it("publishes the current version and release date", () => {
+    expect(llms).toContain(`Current release: ${releaseStamp()}`);
+    expect(llms).toContain(CURRENT_RELEASE_URL);
   });
 
   it("publishes the six install commands, including mise's long form", () => {

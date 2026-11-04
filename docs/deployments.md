@@ -31,7 +31,11 @@ subdir        = "landing"              # scopes the freshness lookup to this tre
 ```
 
 - **`main` = dev/staging, `prod` = production** (this repo's convention; other
-  repos may use any branch names — nothing is hardcoded).
+  repos may use any branch names — nothing is hardcoded). A RepoOS release cut
+  also fast-forwards and pushes every configured branch that is behind the
+  release branch, so `prod` picks up the new version without a separate manual
+  deploy; a deploy failure is reported in the release output but does not fail
+  the release itself.
 - `provider` is a plain label with zero special-casing. Everything else is
   plain git against the configured `origin` remote, so GitHub, GitLab, or any
   git host works identically.
