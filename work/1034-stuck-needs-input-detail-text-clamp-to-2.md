@@ -1,6 +1,6 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 1748f9633e4b7794615370cd63260f3c737e76b4
+last_close_out_gate_ms: 976765
+last_close_out_gate_at: "2026-11-04T18:29:11.152Z"
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
@@ -15,7 +15,9 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T18:09:36Z"
+updated_at: "2026-11-04T18:29:11Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 1748f9633e4b7794615370cd63260f3c737e76b4
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-04T16:59:01.799Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Board card clamps long check-wait detail (target \"default\"): state \"card:checkWaitDetail\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail); [missing-target] Board card clamps long check-wait detail (target \"default\"): highlight [data-test-id=task-card-needs-input-detail] matched nothing on / (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail)"
@@ -167,4 +169,5 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T18:05:52Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-04T18:06:27Z · note: review pass 3: good to go
 - 2026-11-04T18:09:36Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-04T18:29:11Z · close-out gate completed in 977s
 
