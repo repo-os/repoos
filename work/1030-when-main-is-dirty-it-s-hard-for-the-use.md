@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T14:10:15Z"
+updated_at: "2026-11-04T14:10:20Z"
 dev_error_count: 3
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
@@ -126,12 +126,12 @@ states, panel open/close with shared width, commit success/error paths with the 
 "route": "/",
 "highlight": "[data-testid=\"repo-dirty-panel\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"side-git-dirty\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-test-id=\"side-git-dirty\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "repo:dirtyMain"
 }
