@@ -437,7 +437,22 @@ function isGitRepositoryRoot(root: string): boolean {
 }
 
 export function currentBranch(root: string): string | null {
-  return git(root, ["rev-parse", "--abbrev-ref", "HEAD"]);
+  if (git(root, ["rev-parse", "--is-inside-work-tree"]) !== "true") return null;
+  const abbrev = git(root, ["rev-parse", "--abbrev-ref", "HEAD"]);
+  if (abbrev && abbrev !== "HEAD") return abbrev;
+  // Unborn branch: rev-parse fails until the first commit; symbolic-ref still
+  // names the branch (main/master).
+  return git(root, ["symbolic-ref", "--short", "HEAD"]) || null;
+}
+
+/** True when git can commit with configured identity (config or env vars). */
+export function gitIdentityConfigured(root: string, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (gitConfig(root, "user.name") && gitConfig(root, "user.email")) return true;
+  const authorName = env.GIT_AUTHOR_NAME?.trim();
+  const authorEmail = env.GIT_AUTHOR_EMAIL?.trim();
+  const committerName = env.GIT_COMMITTER_NAME?.trim();
+  const committerEmail = env.GIT_COMMITTER_EMAIL?.trim();
+  return Boolean(authorName && authorEmail && committerName && committerEmail);
 }
 
 /** ISO-8601 commit date of HEAD at `root` (a worktree or the main checkout), or null. */

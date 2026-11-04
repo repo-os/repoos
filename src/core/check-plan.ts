@@ -639,7 +639,7 @@ const LEGACY_MIGRATION =
   "This repo still configures `repoos check` with the legacy per-step [check] keys " +
   "(uiSmoke/uiStylesheet/themeScopes/…). They still work, but the gate now runs a " +
   "declared plan: run `repoos check --print-plan` to emit the equivalent " +
-  "[[check.steps]] and commit it to repoos.toml (see user-docs/check.md).";
+  "[[check.steps]] and commit it to repoos.toml (see https://docs.repoos.org/check).";
 
 /**
  * Resolve the plan for a repo. Never throws and never invents coverage: an
