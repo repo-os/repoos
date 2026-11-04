@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T07:22:46Z"
+updated_at: "2026-11-04T07:45:25Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 31 (3 attempts, no stderr surfaced) and row 33 (a poisoned engineer session keeps failing across harness changes until /start {"mode":"fresh"}, undocumented in the handoff).
 
@@ -33,7 +33,6 @@ When a `pi` engineer ends a turn without requesting handoff, RepoOS tells the hu
 ## Notes for AI
 Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/engineer-crash-recovery.ts`, `src/server/engineer-crash-recovery.ts`, `src/server/task-watchdog.ts`, `src/ui-app/tests/pi-driver.test.ts`, `engineer-stall-resume.test.ts` and `cto-idle-nudge.test.ts`. Do not change CTO routing or the budget allowlist. Do not assign `pi` to this task; use the default engineer.
 
-
 ## Activity
 
 - 2026-10-06T09:14:59Z · created · unknown
@@ -47,3 +46,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T07:17:46Z · message_queued at 2026-11-04T07:17:46.111Z
 - 2026-11-04T07:17:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T07:22:46Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T07:45:25Z · body
