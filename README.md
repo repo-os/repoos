@@ -1,9 +1,9 @@
 # RepoOS
 
-**The repo is the operating system.**
+**The repo is the operating system. Your AI dev team, living in your repo, for CTOs and builders.**
 
 RepoOS is a lightweight, repo-native way to track work that lives as markdown
-files inside your monorepo. Tasks, specs, bugs, and feature requests are plain
+files inside your repo. Tasks, specs, bugs, and feature requests are plain
 `.md` files with YAML frontmatter — versioned in git, readable by humans, and
 designed to be consumed directly by AI coding agents.
 
