@@ -133,3 +133,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T16:59:24Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T16:59:42Z · body
 - 2026-11-04T17:08:50Z · body
+- 2026-11-04T17:08:57Z · note: handoff requested (cli)
