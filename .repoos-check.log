@@ -70398,3 +70398,123 @@ build: up to date (src/ unchanged) — skipping rebuild. Use --force or REPOOS_F
 ::repoos-check-progress::{"stepsDone":7,"stepsTotal":11,"currentStep":8,"stepName":"rendered-contrast","testsDone":null,"testsTotal":null,"testsPass":null}
 $ bun scripts/ui-contrast-audit.mjs
   · contrast audit runtime: Bun 1.4.4
+  · 16 theme scope(s) × 14 screen state(s) · 15378 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 64 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 8335 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (79.8s)
+::repoos-check-step::{"name":"rendered-contrast","status":"passed","durationMs":80164}
+::repoos-check-progress::{"stepsDone":8,"stepsTotal":11}
+  ✔ rendered-contrast (80.2s) — $ bun scripts/ui-contrast-audit.mjs
+  · contrast audit runtime: Bun 1.4.4
+  · 16 theme scope(s) × 14 screen state(s) · 15378 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 64 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 8335 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (79.8s)
+
+  ◆ bare-require
+  · kind: bare-require
+::repoos-check-progress::{"stepsDone":8,"stepsTotal":11,"currentStep":9,"stepName":"bare-require","testsDone":null,"testsTotal":null,"testsPass":null}
+::repoos-check-step::{"name":"bare-require","status":"passed","durationMs":98}
+::repoos-check-progress::{"stepsDone":9,"stepsTotal":11}
+  ✔ bare-require — scanned [check] bareRequireDirs
+::repoos-check-step::{"name":"task-assets","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":9,"stepsTotal":11}
+  ⏭ task-assets — skipped — no changed path matches work/**, inputs/**
+
+  ◆ tests
+  · kind: tests
+::repoos-check-progress::{"stepsDone":9,"stepsTotal":11,"currentStep":10,"stepName":"tests","testsDone":null,"testsTotal":null,"testsPass":null}
+::repoos-check-step::{"name":"tests","status":"skipped","durationMs":1}
+::repoos-check-progress::{"stepsDone":9,"stepsTotal":11}
+  ⏭ tests — skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)
+
+  ◆ ui-smoke
+  · kind: ui-smoke
+::repoos-check-progress::{"stepsDone":9,"stepsTotal":11,"currentStep":10,"stepName":"ui-smoke","testsDone":null,"testsTotal":null,"testsPass":null}
+$ bun scripts/ui-smoke.mjs
+  · UI smoke runtime: Bun 1.4.4
+  ✔ UI smoke test passed
+::repoos-check-step::{"name":"ui-smoke","status":"passed","durationMs":8023}
+::repoos-check-progress::{"stepsDone":10,"stepsTotal":11}
+  ✔ ui-smoke (8.0s) — ran package.json smoke script
+::repoos-check-step::{"name":"user-docs-build","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":10,"stepsTotal":11}
+  ⏭ user-docs-build — skipped — no changed path matches user-docs/**
+::repoos-check-step::{"name":"landing-build","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":10,"stepsTotal":11}
+  ⏭ landing-build — skipped — no changed path matches landing/**
+::repoos-check-step::{"name":"telegram-manager-build","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":10,"stepsTotal":11}
+  ⏭ telegram-manager-build — skipped — no changed path matches telegram-manager/**
+::repoos-check-step::{"name":"telegram-manager-test","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":10,"stepsTotal":11}
+  ⏭ telegram-manager-test — skipped — no changed path matches telegram-manager/**
+::repoos-check-step::{"name":"macos-hub-icon-transparency","status":"skipped","durationMs":0}
+::repoos-check-progress::{"stepsDone":10,"stepsTotal":11}
+  ⏭ macos-hub-icon-transparency — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh
+
+  ── Step timings ──
+  staleness: 56394ms · passed
+  lockfile-sync: 0ms · skipped
+  zero-runtime-deps: 0ms · skipped
+  check-fmt:check: 18969ms · passed
+  check-lint: 641ms · passed
+  build: 224ms · passed
+  css-layers: 20ms · failed
+  theme-contrast: 9ms · passed
+  hardcoded-colors: 23ms · passed
+  rendered-contrast: 80164ms · passed
+  bare-require: 98ms · passed
+  task-assets: 0ms · skipped
+  tests: 1ms · skipped
+  ui-smoke: 8023ms · passed
+  user-docs-build: 0ms · skipped
+  landing-build: 0ms · skipped
+  telegram-manager-build: 0ms · skipped
+  telegram-manager-test: 0ms · skipped
+  macos-hub-icon-transparency: 0ms · skipped
+
+  ── Results ──
+  ✔ staleness  — rebuilt a stale build
+  ⏭ lockfile-sync  — skipped — no changed path matches package.json, bun.lock
+  ⏭ zero-runtime-deps  — skipped — no changed path matches package.json
+  ✔ check-fmt:check
+  ✔ check-lint
+  ✔ build
+  ✗ css-layers  — Unlayered universal/bare-element selectors (they silently beat all Tailwind utilities):
+    1232: button.repo-dirty-file
+    1238: button.repo-dirty-file:hover
+    1242: button.repo-dirty-file:focus-visible
+    Wrap them in @layer base or scope them to a class/id.
+  ✔ theme-contrast
+  ✔ hardcoded-colors  — scanned 145 file(s)
+  ✔ rendered-contrast  — $ bun scripts/ui-contrast-audit.mjs
+  · contrast audit runtime: Bun 1.4.4
+  · 16 theme scope(s) × 14 screen state(s) · 15378 visible text run(s) examined
+  · 256 text run(s) exempt (contrastExempts / data-contrast-ok)
+  · 64 disabled-component run(s) + 0 invisible run(s) skipped (WCAG-exempt)
+  · 8335 text run(s) judged against a gradient's worst stop
+  · 14 text run(s) unchecked: background-clip: text (gradient logo) (14)
+  ✔ no text below the WCAG floor in any theme scope
+  ✔ rendered contrast audit passed (79.8s)
+  ✔ bare-require  — scanned [check] bareRequireDirs
+  ⏭ task-assets  — skipped — no changed path matches work/**, inputs/**
+  ⏭ tests  — skipped — test suite ran on the remote validation runner (REPOOS_SKIP_TESTS=1)
+  ✔ ui-smoke  — ran package.json smoke script
+  ⏭ user-docs-build  — skipped — no changed path matches user-docs/**
+  ⏭ landing-build  — skipped — no changed path matches landing/**
+  ⏭ telegram-manager-build  — skipped — no changed path matches telegram-manager/**
+  ⏭ telegram-manager-test  — skipped — no changed path matches telegram-manager/**
+  ⏭ macos-hub-icon-transparency  — skipped — no changed path matches macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh
+
+  1 check(s) failed.
+
+
+  ── Failed steps ──
+  ✗ css-layers — rerun: repoos check --step css-layers --changed main
