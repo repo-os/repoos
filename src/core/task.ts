@@ -269,8 +269,12 @@ export function removeSection(body: string, heading: string): string {
 
 /**
  * Replace a single `## Heading` section's content without touching the rest
- * of the body. When the heading is absent, it is created at the end (before
- * `## Activity` if present) with a blank line before it. The section content
+ * of the body. When the heading is absent, it is created before the trailing
+ * raw-capture sections (`## Original prompt`, `## Screenshots`) and `## Activity`
+ * — whichever comes first — so fleshed-out spec sections read before the raw
+ * capture at the bottom; `## Original prompt` / `## Screenshots` themselves
+ * are still created immediately before `## Activity` as before. A body with
+ * only `## Activity` behaves as it always has. The section content
  * is the heading line plus the provided `content` (which may itself span
  * multiple lines). All other sections — including `## Activity` — are preserved
  * verbatim.
@@ -286,8 +290,22 @@ export function replaceSection(body: string, heading: string, content: string): 
 
   const lines = body.replace(/\s+$/, "").split("\n");
   const start = sectionStart(lines, normalizedHeading);
-  const activityStart = sectionStart(lines, ACTIVITY_HEADING);
-  const insertAt = start === -1 ? (activityStart === -1 ? lines.length : activityStart) : start;
+  let insertAt: number;
+  if (start !== -1) {
+    insertAt = start;
+  } else if (
+    normalizedHeading === ORIGINAL_PROMPT_HEADING ||
+    normalizedHeading === SCREENSHOTS_HEADING
+  ) {
+    const activityStart = sectionStart(lines, ACTIVITY_HEADING);
+    insertAt = activityStart === -1 ? lines.length : activityStart;
+  } else {
+    insertAt = lines.length;
+    for (const anchor of [ORIGINAL_PROMPT_HEADING, SCREENSHOTS_HEADING, ACTIVITY_HEADING]) {
+      const anchorStart = sectionStart(lines, anchor);
+      if (anchorStart !== -1 && anchorStart < insertAt) insertAt = anchorStart;
+    }
+  }
   const end = start === -1 ? insertAt : nextSection(lines, start + 1);
   const prefix = lines.slice(0, insertAt).join("\n").replace(/\s+$/, "");
   const suffix = lines.slice(end).join("\n").replace(/^\s+/, "");
