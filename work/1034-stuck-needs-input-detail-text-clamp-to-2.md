@@ -108,3 +108,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T15:28:19Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T15:49:27Z · body
 - 2026-11-04T15:53:54Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T15:53:54Z · message_queued at 2026-11-04T15:53:54.434Z
