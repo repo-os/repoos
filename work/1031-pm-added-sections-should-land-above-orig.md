@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/pm-added-sections-should-land-above-orig
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
-updated_at: "2026-11-04T18:29:30Z"
+updated_at: "2026-11-04T18:31:35Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 - 2026-11-04T18:29:16Z · message_queued at 2026-11-04T18:29:16.827Z
 - 2026-11-04T18:29:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T18:29:30Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T18:31:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementation is complete and verified so far; the scoped check is still running in the background. **Status:** - **Fix** (`src/core/task.ts:282-314`): `replaceSection` now inserts a brand-new spec section before the first of `## Original… · stderr: (empty)
