@@ -3,16 +3,13 @@ id: 1008
 title: Review and safely clean task worktrees
 type: chore
 status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: schedule
 branch: ""
 created_at: "2026-11-01T22:00:49Z"
-updated_at: "2026-11-04T17:43:24Z"
+updated_at: "2026-11-04T17:43:30Z"
 ---
 ## Problem
 
@@ -48,3 +45,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-01T22:00:49Z · created · schedule
 - 2026-11-02T03:19:18Z · needs_input
 - 2026-11-04T17:43:24Z · body: Problem (added); Acceptance criteria (added); Notes for AI (added); Purpose (removed); Runbook (removed)
+- 2026-11-04T17:43:30Z · needs_input
