@@ -2,7 +2,7 @@
 id: 1035
 title: "Work page: Pipeline view (horizontal race track for active and review tasks)"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T19:28:43Z"
+updated_at: "2026-11-04T19:41:57Z"
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-11-04T18:48:31.070Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
@@ -119,3 +119,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T19:24:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Check passed. Confirming the summary and handing off. · stderr: (empty)
 - 2026-11-04T19:24:08Z · message_delivered: 2 message(s)
 - 2026-11-04T19:28:43Z · CTO nudge: held — handoff gate is running
+- 2026-11-04T19:41:57Z · status active→review
