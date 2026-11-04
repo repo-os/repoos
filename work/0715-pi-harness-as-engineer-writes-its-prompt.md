@@ -85,3 +85,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T12:20:52Z · body
 - 2026-11-04T12:30:27Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
 - 2026-11-04T12:44:28Z · message_queued at 2026-11-04T12:44:28.118Z
+- 2026-11-04T12:44:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
