@@ -2,18 +2,18 @@
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/stuck-needs-input-detail-text-clamp-to-2
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T14:11:34Z"
+updated_at: "2026-11-04T14:11:38Z"
 ---
 ## Problem
 
@@ -51,3 +51,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:11:31Z · review_cli_override
 - 2026-11-04T14:11:33Z · review_model_override
 - 2026-11-04T14:11:34Z · status inbox→ready
+- 2026-11-04T14:11:38Z · status ready→active, branch
