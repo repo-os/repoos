@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T19:20:55Z"
+updated_at: "2026-11-04T19:58:26Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -124,7 +124,8 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 },
 {
   "target": "default",
-  "route": "/secrets",
+  "route": "/secrets?shotState=secrets:populated",
+  "state": "secrets:populated",
   "label": "New environment accent button",
   "highlight": "[data-testid=\"new-environment\"]"
 },
@@ -180,3 +181,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T19:17:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: no assistant message · stderr: (empty)
 - 2026-11-04T19:17:15Z · message_delivered: 4 message(s)
 - 2026-11-04T19:20:55Z · body
+- 2026-11-04T19:58:26Z · body
