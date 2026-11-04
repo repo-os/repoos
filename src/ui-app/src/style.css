@@ -1308,8 +1308,7 @@
   border-top: 1px solid var(--border);
   background: var(--panel);
 }
-.ff-textarea.repo-dirty-input {
-  min-height: 68px;
+.repo-dirty-input {
   resize: vertical;
 }
 .repo-dirty-optional {
@@ -8300,6 +8299,10 @@
 .ff-textarea:focus {
   outline: none;
   border-color: var(--border-bright);
+}
+/* After .ff-textarea so this min-height wins (same element, higher specificity). */
+.ff-textarea.repo-dirty-input {
+  min-height: 68px;
 }
 .ff-textarea-autogrow {
   max-height: min(420px, 45vh);
