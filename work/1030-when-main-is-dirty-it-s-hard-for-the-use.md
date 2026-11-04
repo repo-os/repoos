@@ -11,7 +11,7 @@ branch: feat/full-width-dirty-main-button-in-sidebar-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T16:43:22Z"
+updated_at: "2026-11-04T16:49:28Z"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: 6ce5d3f347e3d6357dff404c28b0188df3e1f8d5
 handoff_signal_retry_count: 2
@@ -255,3 +255,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:39:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Check passes fully. Worktree clean. Requesting handoff now via the CLI command so I can confirm it synchronously: · stderr: (empty)
 - 2026-11-04T16:39:40Z · message_delivered: 2 message(s)
 - 2026-11-04T16:43:22Z · message_queued at 2026-11-04T16:43:22.617Z
+- 2026-11-04T16:49:28Z · message_delivered: 1 message(s)
