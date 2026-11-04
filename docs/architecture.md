@@ -517,6 +517,18 @@ existing-`<link>` check, same `import.meta.url` use, just reordered. If a
 future Vite or Bun upgrade makes that helper differ in substance, that is a
 reason to run `vite build` on Node, so re-check it when either is upgraded.
 
+**Process-relative clocks differ between the runtimes (#1032).**
+`process.hrtime.bigint()` is system uptime under Node but relative to process
+start under Bun (a fresh `bun -e 'console.log(process.hrtime.bigint())'` prints
+a few milliseconds, not hours). A monotonic reading is therefore only
+comparable inside the process that produced it. Never persist one and subtract
+it in another process: cross-process ages use the wall clock (or file mtime),
+and a persisted record may keep a monotonic value only as a same-process
+shortcut alongside the wall clock and the writer's PID. `cross-process-slots.ts`
+follows this rule for `.heartbeat.json` / `.started.json`; the watchdog and the
+stale-slot reclaim read their `wallMs`, never their `monotonicMs` from another
+PID. Audit any new persisted monotonic field against the same rule.
+
 `repoos check`'s vitest step also runs under Bun — `preferBunForDevTasks()`
 (→ `bun run --bun test`) is true when the repo is Bun-native (has `bun.lock`)
 and not pinned to Node, so RepoOS's own check is fast while a managed repo

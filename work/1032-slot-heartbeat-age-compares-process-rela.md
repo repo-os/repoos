@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-04T13:14:54Z"
-review_passes: 1
 id: 1032
 title: "Slot heartbeat age compares process-relative Bun hrtime across processes: false 'stalled' alarms and possible live-slot reclaim"
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/slot-heartbeat-age-compares-process-rela
 created_at: "2026-11-04T12:04:25Z"
+updated_at: "2026-11-04T13:14:15Z"
 ---
 ## Problem
 
@@ -38,20 +37,4 @@ Search for `monotonicMs` in cross-process-slots.ts (writers at ~380, 385, 484). 
 - 2026-11-04T12:04:25Z · created · njachowski@gmail.com
 - 2026-11-04T12:12:33Z · status inbox→ready
 - 2026-11-04T12:12:36Z · status ready→active, branch
-- 2026-11-04T12:24:28Z · message_queued at 2026-11-04T12:24:28.179Z
-- 2026-11-04T12:24:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T12:29:28Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T12:31:16Z · body
-- 2026-11-04T12:45:40Z · body
-- 2026-11-04T12:56:12Z · note: adopted orphaned engineer pid 55108
-- 2026-11-04T12:57:51Z · body
-- 2026-11-04T12:58:38Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T13:00:59Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-04T13:01:00Z · message_queued at 2026-11-04T13:01:00.184Z
-- 2026-11-04T13:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T13:01:00Z · message_delivered: 2 message(s)
 - 2026-11-04T13:14:15Z · status active→review
-- 2026-11-04T13:14:15Z · message_queued at 2026-11-04T13:14:15.933Z
-- 2026-11-04T13:14:16Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-04T13:14:54Z · note: review pass 1: good to go
-
