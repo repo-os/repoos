@@ -153,6 +153,11 @@ The Reason textarea and the date input use the shared rounded, outlined field st
 
 Check the server hold route (`repoos hold` / `POST /api/tasks/:id/hold`) accepts an empty reason before relaxing the UI; keep CLI behavior unchanged. Dialog must use the shared `ui/dialog/*` components per AGENTS.md. Bundle is now at 7 items; keep this one in its own commit.
 
+## Screenshots
+
+![3](/api/tasks/1026/attachments/att_7f4494fa-3f9a-4412-9743-b2405629c23b.png)
+![4](/api/tasks/1026/attachments/att_a4a037d3-36a5-4f1e-ae9e-5c4c86ada329.png)
+![5](/api/tasks/1026/attachments/att_a3aec7c8-61bc-4ef5-9f11-ace9ee36014d.png)
 
 ## Activity
 
@@ -162,3 +167,4 @@ Check the server hold route (`repoos hold` / `POST /api/tasks/:id/hold`) accepts
 - 2026-11-04T06:46:01Z · needs_input
 - 2026-11-04T12:58:41Z · body: Items (added 1)
 - 2026-11-04T12:58:42Z · body: E7 · Hold dialog styling, optional reason, and held-card padding (added)
+- 2026-11-04T12:58:43Z · screenshots
