@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T15:22:50Z"
+updated_at: "2026-11-04T15:49:45Z"
 close_out_repair_count: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
@@ -115,3 +115,19 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:22:39Z · note: close-out repair: gate-failure
 - 2026-11-04T15:22:39Z · message_delivered: 2 message(s)
 - 2026-11-04T15:22:50Z · message_queued at 2026-11-04T15:22:50.471Z
+- 2026-11-04T15:25:04Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:25:19Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T15:26:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T15:27:04Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 11m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:30:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T15:36:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 21m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:38:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T15:43:35Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 28m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:44:30Z · body
+- 2026-11-04T15:45:05Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T15:46:35Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 14s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:47:50Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T15:49:41Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T15:49:41Z · message_queued at 2026-11-04T15:49:41.426Z
+- 2026-11-04T15:49:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T15:49:45Z · message_delivered: 2 message(s)
