@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T18:14:29Z"
+updated_at: "2026-11-04T18:16:30Z"
 ---
 ## Problem
 
@@ -62,12 +62,6 @@ Area chips and the file-count chip are left off to hold four lines. Build the ca
 - Keep Board code untouched where possible. This is a new view over the same data.
 - Not in scope: dragging cards, a hover popover with extra detail, the three-line variant, showing `ready` tasks as lanes.
 
-## Screenshots
-
-![1](/api/tasks/1035/attachments/att_de823a65-bd9c-48c2-845b-fbd197b59ece.png)
-![2](/api/tasks/1035/attachments/att_4ea308fd-fe8e-43f3-9f15-fee13a945e69.webp)
-![Approved Pipeline view mockup, light and dark](/api/tasks/1035/attachments/att_11dd76d3-db5c-4cb5-a3de-9376193d9be7.png)
-
 ## Visual reference
 Approved mockup (light and dark, solid hairline guides, cards centered in their lanes) is attached above under Screenshots (third image). Colours: card is one step above the page surface in both themes, chips use the page's chip surface, success tint for Merged, amber for sent-back, red for stuck. Use existing theme tokens only.
 
@@ -84,6 +78,12 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 ]
 ```
 
+## Screenshots
+
+![1](/api/tasks/1035/attachments/att_de823a65-bd9c-48c2-845b-fbd197b59ece.png)
+![2](/api/tasks/1035/attachments/att_4ea308fd-fe8e-43f3-9f15-fee13a945e69.webp)
+![Approved Pipeline view mockup, light and dark](/api/tasks/1035/attachments/att_11dd76d3-db5c-4cb5-a3de-9376193d9be7.png)
+
 ## Activity
 
 - 2026-11-04T17:20:01Z · created · njachowski@gmail.com
@@ -98,3 +98,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T18:07:56Z · body
 - 2026-11-04T18:14:29Z · message_queued at 2026-11-04T18:14:29.799Z
 - 2026-11-04T18:14:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T18:16:30Z · body
