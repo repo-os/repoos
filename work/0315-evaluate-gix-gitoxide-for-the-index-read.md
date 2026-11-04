@@ -6,13 +6,15 @@ status: inbox
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
+is_archived: true
+archive_detail: I think we checked and it wasn't much faster...but not 100% sure
 priority: p4
 area: general
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-08-28T09:55:22Z"
-updated_at: "2026-10-05T22:38:17Z"
+updated_at: "2026-11-04T04:20:27Z"
 ---
 `gix` (gitoxide, Rust) is faster than shelling `git` for read-only ops. Candidate
 for the index hot paths only: log, status, branch/worktree/ref enumeration in
@@ -82,3 +84,4 @@ felt problem after everything else landed. Part of the 2026-08 perf initiative
 
 - 2026-08-28T10:11:18Z · body
 - 2026-10-05T11:15:30Z · needs_input
+- 2026-11-04T04:20:27Z · archived: I think we checked and it wasn't much faster...but not 100% sure
