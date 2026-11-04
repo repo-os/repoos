@@ -2,7 +2,7 @@
 id: 1024
 title: "Release pipeline: rebuild docs, changelog, llms files and release notes on every release"
 type: bug
-status: active
+status: review
 priority: p1
 area: [core, docs]
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/release-pipeline-rebuild-docs-changelog-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T06:45:38Z"
-updated_at: "2026-11-04T14:10:39Z"
+updated_at: "2026-11-04T16:50:59Z"
 dev_error_count: 6
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:48:39.951Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:49:23.286Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:08:02.770Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -37,21 +37,21 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 ```json
 [
 {
-  "label": "Docs homepage carries the current release version and date",
-  "target": "Docs site",
-  "route": "/",
-  "highlight": ".release-line"
+"label": "Docs homepage carries the current release version and date",
+"target": "Docs site",
+"route": "/",
+"highlight": ".release-line"
 },
 {
-  "label": "Docs changelog shows the current version pill and release entries",
-  "target": "Docs site",
-  "route": "/changelog",
-  "highlight": ".release-current"
+"label": "Docs changelog shows the current version pill and release entries",
+"target": "Docs site",
+"route": "/changelog",
+"highlight": ".release-current"
 },
 {
-  "label": "repoos.org stats show the current version with its released date",
-  "target": "Landing page",
-  "route": "/"
+"label": "repoos.org stats show the current version with its released date",
+"target": "Landing page",
+"route": "/"
 }
 ]
 ```
@@ -99,3 +99,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T14:09:37Z · cli_override, model_override
 - 2026-11-04T14:10:36Z · body
 - 2026-11-04T14:10:39Z · body
+- 2026-11-04T16:50:59Z · status active→review
