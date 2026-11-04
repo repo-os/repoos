@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: 1029
 title: Indexer warns 'skipped 1 task file with no id' for work/reports/<id>/review-<n>.md
 type: bug
@@ -32,3 +33,4 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:06:32Z · status inbox→ready
 - 2026-11-04T07:06:35Z · status ready→active, branch
 - 2026-11-04T07:11:46Z · message_queued at 2026-11-04T07:11:46.522Z
+
