@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T10:42:33Z"
+updated_at: "2026-11-04T10:42:39Z"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -55,6 +55,32 @@ the working-tree diff inline, like the task drawer's Changes tab. At the bottom 
 is a commit-message textarea and a single Commit button; one click commits all uncommitted changes
 on main and the panel and sidebar chip both update immediately.
 
+## Acceptance criteria
+
+1. With a clean main, the dirty-changes button is not rendered at all (the existing
+`SidebarGitState` clean/unknown states behave as today; no empty commit shell).
+2. With `N` dirty files on main, a full-width amber button appears in the left sidebar directly
+below the branch/`side-git-state` row, labeled with the count (e.g. "3 uncommitted changes").
+3. Clicking the button opens a right-side panel that shares the global drawer width and styling
+(same `drawerWidth` value and `drawer-head`/`drawer-body` scaffolding as TaskDrawer /
+RemindersPanel — no bespoke second width system), is resizable, and closes like the others.
+4. The panel lists every dirty file from `GET /api/repo/status` (added, modified, deleted; count
+matches the sidebar chip) and renders the working-tree diff inline per file, equivalent to
+what `/repo/working-diff` shows, without a full route change.
+5. The bottom of the panel has a commit-message textarea and a Commit button; an empty message
+commits with the server default ("chore: commit uncommitted changes"), the button is disabled
+while a commit is in flight, and clicking it commits all uncommitted changes via the existing
+`POST /api/repo/commit` (no selective staging in this pass).
+6. Commit failures surface inline in the panel with a readable message, including the 409 paths
+(nothing to commit, unresolved conflicts, detached HEAD, pending close-out) and 422 with the
+verbatim pre-commit hook output — never a silent failure or console-only error.
+7. After a successful commit, the file list and diff empty, the bottom controls reset/disable,
+and the sidebar chip returns to `clean` without a reload (porcelain store state from the
+existing `repo.status` SSE update is enough).
+8. The panel renders correctly in both light and dark themes with no hardcoded colors (guards:
+`hardcoded-colors`, contrast audit), and the code passes `repoos check` including the UI
+smoke test.
+
 
 ## Activity
 
@@ -68,3 +94,4 @@ on main and the panel and sidebar chip both update immediately.
 - 2026-11-04T10:42:24Z · area
 - 2026-11-04T10:42:29Z · body: Problem (added)
 - 2026-11-04T10:42:33Z · body: Desired UX (added)
+- 2026-11-04T10:42:39Z · body: Acceptance criteria (added)
