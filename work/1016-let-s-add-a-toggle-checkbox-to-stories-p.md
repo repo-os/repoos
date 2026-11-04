@@ -2,7 +2,7 @@
 id: 1016
 title: "Add \"Hide Completed Stories\" toggle to Stories page"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-hide-completed-stories-toggle-to-sto
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-11-03T09:13:40Z"
-updated_at: "2026-11-04T08:27:50Z"
+updated_at: "2026-11-04T08:53:49Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-04T06:18:27.527Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-04T06:47:42.723Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -119,3 +119,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 - 2026-11-04T07:50:45Z · note: handoff requested (cli)
 - 2026-11-04T08:20:43Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1202 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
 - 2026-11-04T08:27:50Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — ui-review handoff failed at review · Engineering report narrative is 1202 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
+- 2026-11-04T08:53:49Z · status active→review
