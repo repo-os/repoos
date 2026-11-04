@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T13:14:18Z"
+updated_at: "2026-11-04T13:22:58Z"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -114,6 +114,33 @@ states, panel open/close with shared width, commit success/error paths with the 
 (use fakes; do not phrase anything around real credentials). Add captions via
 `repoos update 1030 --shots '<json>'` at handoff and rebuild so the preview serves the button.
 
+## Shots
+```json
+[
+{
+  "label": "Full-width amber dirty-main button under the sidebar git row",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"side-git-dirty\"]",
+  "state": "repo:dirtyMain"
+},
+{
+  "label": "Uncommitted changes panel: file list, inline diff, commit message and button",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-testid=\"repo-dirty-panel\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"side-git-dirty\"]"
+    },
+    {
+      "waitMs": 600
+    }
+  ],
+  "state": "repo:dirtyMain"
+}
+]
+```
 
 ## Activity
 
@@ -136,3 +163,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T13:11:11Z · message_queued at 2026-11-04T13:11:11.788Z
 - 2026-11-04T13:11:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T13:14:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T13:22:58Z · body
