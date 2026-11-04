@@ -42,3 +42,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T13:27:45Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T13:27:45Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T13:27:49Z · needs_input
+- 2026-11-04T13:27:49Z · message_delivered: 1 message(s)
