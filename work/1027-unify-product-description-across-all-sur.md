@@ -2,14 +2,14 @@
 id: 1027
 title: Unify product description across all surfaces
 type: chore
-status: ready
+status: active
 priority: p2
 area: [landing, docs, server, infra]
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/unify-product-description-across-all-sur
 created_at: "2026-11-04T06:53:26Z"
-updated_at: "2026-11-04T06:55:40Z"
+updated_at: "2026-11-04T06:55:47Z"
 ---
 ## Problem
 
@@ -112,3 +112,4 @@ Also grep the repo (README, SKILL.md, llms.txt files, docs index, release templa
 - 2026-11-04T06:53:26Z · created · hello@repoos.org
 - 2026-11-04T06:54:52Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-11-04T06:55:40Z · status inbox→ready
+- 2026-11-04T06:55:47Z · status ready→active, branch
