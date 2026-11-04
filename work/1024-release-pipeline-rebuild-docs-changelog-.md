@@ -145,3 +145,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T15:48:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T15:49:40Z · message_delivered: 2 message(s)
 - 2026-11-04T16:12:12Z · handoff failed · remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-04T16:12:12Z · message_queued at 2026-11-04T16:12:12.893Z
