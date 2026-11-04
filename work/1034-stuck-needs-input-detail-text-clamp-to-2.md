@@ -162,3 +162,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T18:02:12Z · body
 - 2026-11-04T18:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T18:05:51Z · message_queued at 2026-11-04T18:05:51.071Z
+- 2026-11-04T18:05:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: All fixes are in and verified on the final tree. Requesting handoff. · stderr: (empty)
