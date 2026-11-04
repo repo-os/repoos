@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/indexer-warns-skipped-1-task-file-with-n
 created_at: "2026-11-04T07:06:29Z"
-updated_at: "2026-11-04T07:22:46Z"
+updated_at: "2026-11-04T07:38:30Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -35,3 +35,4 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:11:46Z · message_queued at 2026-11-04T07:11:46.522Z
 - 2026-11-04T07:17:01Z · message_queued at 2026-11-04T07:17:01.567Z
 - 2026-11-04T07:22:46Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T07:38:30Z · body
