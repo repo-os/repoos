@@ -3,6 +3,9 @@ id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (1 in 30m): RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1030 --fresh`."
 priority: p2
 area: web
 assigned_to: ai
@@ -11,12 +14,13 @@ branch: feat/full-width-dirty-main-button-in-sidebar-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T16:54:24Z"
+updated_at: "2026-11-04T16:54:46Z"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: 6ce5d3f347e3d6357dff404c28b0188df3e1f8d5
 handoff_signal_retry_count: 2
-dev_error_count: 8
+dev_error_count: 9
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T16:54:46.782Z\",\"kind\":\"dev-error\"}]"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -260,3 +264,5 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:51:02Z · message_queued at 2026-11-04T16:51:02.178Z
 - 2026-11-04T16:51:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T16:54:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T16:54:46Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1230 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-04T16:54:46Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (1/3 crashes in 30m)
