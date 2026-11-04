@@ -110,3 +110,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T15:53:54Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T15:53:54Z · message_queued at 2026-11-04T15:53:54.434Z
 - 2026-11-04T15:53:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T15:53:54Z · message_delivered: 2 message(s)
