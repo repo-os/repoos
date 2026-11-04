@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T18:05:52Z"
+updated_at: "2026-11-04T18:06:27Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/task-card-review-rounds-detail.test.ts > review-rounds-exhausted card detail (#0832) > clamps long detail and does not repeat the verdict under the status chip, tests/task-check-wait-detail-clamp.test.ts > check-wait diagnostic clamp (#1034) > clamps the card detail line and keeps the full text in Status details, tests/task-drawer-status-summary.test.ts > task drawer status summary (#0952) > keeps the landable checklist off the card and opens Status details on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 67af7b1c6e38ccc66c4431bd32a61b4582e8b945
 review_rounds: 2
@@ -165,3 +165,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T18:05:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: All fixes are in and verified on the final tree. Requesting handoff. · stderr: (empty)
 - 2026-11-04T18:05:51Z · status active→review
 - 2026-11-04T18:05:52Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-04T18:06:27Z · note: review pass 3: good to go
