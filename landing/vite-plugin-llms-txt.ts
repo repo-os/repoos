@@ -56,7 +56,7 @@ export function readStarterPrompt(path = defaultStarterPromptPath()): string {
 export function renderLlmsTxt(starterPrompt: string = readStarterPrompt()): string {
   return `# RepoOS
 
-> RepoOS keeps a project's task board in the repository itself: tasks are Markdown files, coding agents work them in isolated Git worktrees, and a person reviews and approves every merge. It is for a small team or an independent developer using a coding agent such as Claude Code, Codex, OpenCode, or Cursor.
+> Your AI dev team, living in your repo, for CTOs and builders. RepoOS keeps a project's task board in the repository itself: tasks are Markdown files, coding agents work them in isolated Git worktrees, and a person reviews and approves every merge. It is for a small team or an independent developer using a coding agent such as Claude Code, Codex, OpenCode, or Cursor.
 
 RepoOS is local-first, source-available, and has zero runtime dependencies. It runs on Bun, with Node 20+ as a fallback.
 

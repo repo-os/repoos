@@ -1,6 +1,7 @@
 # What RepoOS does
 
-RepoOS is a repo-native task board for work done by coding agents.
+Your AI dev team, living in your repo, for CTOs and builders. RepoOS is a
+repo-native task board for work done by coding agents.
 
 - **The repository is the source of truth.** A task is a Markdown file with
   YAML frontmatter in the configured task directory — `repoos/work/` on a fresh
