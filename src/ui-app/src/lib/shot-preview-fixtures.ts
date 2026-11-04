@@ -619,7 +619,8 @@ export function shotFixtureSchedules(fixture: ShotPreviewFixtureId | null): Task
       updatedAt: now,
       path: "schedules/0001-weekly-doc-audit.md",
       templateUnderspecified: true,
-      templateUnderspecifiedDetail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI",
+      templateUnderspecifiedDetail:
+        "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI",
     },
     {
       id: "0002",

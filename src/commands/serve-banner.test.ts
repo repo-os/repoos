@@ -23,7 +23,8 @@ describe("renderServeBanner", () => {
     const tailscale = renderServeBanner("1.0.0", [
       {
         label: "Bind",
-        value: "0.0.0.0 (all interfaces — Tailscale detected; pass --host 127.0.0.1 for localhost only)",
+        value:
+          "0.0.0.0 (all interfaces — Tailscale detected; pass --host 127.0.0.1 for localhost only)",
       },
       { label: "Local", value: "http://127.0.0.1:7515" },
       { label: "Tailnet", value: "http://100.64.0.1:7515" },
