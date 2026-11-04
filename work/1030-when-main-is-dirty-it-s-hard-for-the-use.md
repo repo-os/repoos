@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-04T17:55:47Z"
-review_passes: 1
 id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
@@ -10,11 +8,13 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
-model_override: opencode-go/muse-spark-1.3-contributor
+cli_override: opencode
+model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-handoff_signal_retry_count: 2
-dev_error_count: 9
+updated_at: "2026-11-04T17:55:06Z"
+dev_error_count: 7
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:22:51.475Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:31:00.002Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:31:46.150Z\",\"kind\":\"dev-error\"}]"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -120,20 +120,34 @@ states, panel open/close with shared width, commit success/error paths with the 
 "label": "Sidebar full-width dirty-main button",
 "target": "default",
 "route": "/",
-"highlight": "[data-test-id=\"side-git-dirty\"]",
+"highlight": ".side-git-dirty",
+"steps": [
+{
+"waitFor": ".side-git-dirty"
+},
+{
+"waitMs": 200
+}
+],
 "state": "repo:dirtyMain"
 },
 {
-"label": "Uncommitted-changes panel with file list, diff and commit box",
+"label": "Uncommitted changes panel with file list, diff and commit box",
 "target": "default",
 "route": "/",
 "highlight": "[data-testid=\"repo-dirty-panel\"]",
 "steps": [
 {
+"waitFor": "[data-test-id=\"side-git-dirty\"]"
+},
+{
 "click": "[data-test-id=\"side-git-dirty\"]"
 },
 {
-"waitMs": 600
+"waitFor": "[data-testid=\"repo-dirty-panel\"]"
+},
+{
+"waitMs": 400
 }
 ],
 "state": "repo:dirtyMain"
@@ -219,57 +233,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T14:31:46Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:31:46Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:31:50Z · needs_input
-- 2026-11-04T14:40:54Z · body
-- 2026-11-04T14:45:47Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:45:47Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:52:46Z · body
-- 2026-11-04T15:03:33Z · body
-- 2026-11-04T15:07:55Z · body
-- 2026-11-04T15:08:02Z · body
-- 2026-11-04T15:15:00Z · body
-- 2026-11-04T15:20:37Z · body
-- 2026-11-04T15:31:04Z · watchdog: restarting engineer after 10m with no live process
-- 2026-11-04T15:32:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T15:37:53Z · message_queued at 2026-11-04T15:37:53.067Z
-- 2026-11-04T15:43:05Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-11-04T15:43:06Z · note: handoff requested (cli)
-- 2026-11-04T15:45:05Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 11s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-04T15:47:50Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-04T15:47:59Z · message_queued at 2026-11-04T15:47:59.450Z
-- 2026-11-04T15:47:59Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
-- 2026-11-04T15:51:19Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T15:51:28Z · body
-- 2026-11-04T16:21:31Z · body
-- 2026-11-04T16:23:23Z · handoff_deferred: 2 queued message(s) must be read before review
-- 2026-11-04T16:23:23Z · message_queued at 2026-11-04T16:23:23.280Z
-- 2026-11-04T16:23:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T16:23:23Z · message_delivered: 3 message(s)
-- 2026-11-04T16:31:19Z · message_queued at 2026-11-04T16:31:19.410Z
-- 2026-11-04T16:31:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T16:34:58Z · body
-- 2026-11-04T16:39:25Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T16:39:40Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-04T16:39:40Z · message_queued at 2026-11-04T16:39:40.384Z
-- 2026-11-04T16:39:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Check passes fully. Worktree clean. Requesting handoff now via the CLI command so I can confirm it synchronously: · stderr: (empty)
-- 2026-11-04T16:39:40Z · message_delivered: 2 message(s)
-- 2026-11-04T16:43:22Z · message_queued at 2026-11-04T16:43:22.617Z
-- 2026-11-04T16:49:28Z · message_delivered: 1 message(s)
-- 2026-11-04T16:49:30Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · reused check inputs changed during handoff — run the check again
-- 2026-11-04T16:51:02Z · message_queued at 2026-11-04T16:51:02.178Z
-- 2026-11-04T16:51:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T16:54:24Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T16:54:46Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1230 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
-- 2026-11-04T16:54:46Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (1/3 crashes in 30m)
-- 2026-11-04T16:59:52Z · body
-- 2026-11-04T17:13:08Z · body
-- 2026-11-04T17:30:34Z · cli_override, model_override
-- 2026-11-04T17:30:37Z · needs_input
-- 2026-11-04T17:30:42Z · message_delivered: 1 message(s)
-- 2026-11-04T17:41:38Z · body
-- 2026-11-04T17:44:44Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T17:55:07Z · status active→review
-- 2026-11-04T17:55:07Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-04T17:55:07Z · message_queued at 2026-11-04T17:55:07.581Z
-- 2026-11-04T17:55:07Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-04T17:55:47Z · note: review pass 1: good to go
-
+- 2026-11-04T17:55:06Z · status active→review
