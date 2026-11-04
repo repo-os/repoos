@@ -56,3 +56,4 @@ Evidence is in `.repoos/agent-logs/1016.out.log`. Touch the handoff gate and que
 - 2026-11-04T11:05:09Z · body
 - 2026-11-04T11:20:17Z · body
 - 2026-11-04T11:22:29Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T11:22:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
