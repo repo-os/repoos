@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: 1029
 title: Indexer warns 'skipped 1 task file with no id' for work/reports/<id>/review-<n>.md
 type: bug
@@ -10,7 +11,6 @@ created_by: njachowski@gmail.com
 branch: feat/indexer-warns-skipped-1-task-file-with-n
 created_at: "2026-11-04T07:06:29Z"
 updated_at: "2026-11-04T07:17:01Z"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 Every `repoos` command prints "[repoos] skipped 1 task file(s) with no `id` in frontmatter — use the API…". The cause is `work/reports/1014/review-1.md`, the first committed review report (d2f5c0020). `walkFiles` in `src/core/indexer.ts` (around line 39) walks `work/` recursively for `.md` files, so the report is read as a task file, has no `id`, and trips the warning at lines 122 and 207. Every future review pass under `work/reports/<id>/` adds to the count.
@@ -34,3 +34,4 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:06:35Z · status ready→active, branch
 - 2026-11-04T07:11:46Z · message_queued at 2026-11-04T07:11:46.522Z
 - 2026-11-04T07:17:01Z · message_queued at 2026-11-04T07:17:01.567Z
+
