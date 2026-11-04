@@ -1693,13 +1693,11 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       const building = fixture === "drawer:closeOutBuilding";
       repo.integration = activePipeline(
         SHOT_PREVIEW_FIXTURE_TASK_ID,
-        building ? null : "remote tests",
+        building ? "building candidate" : "remote tests",
         startedAt,
         nowIso(),
       );
-      if (building && repo.integration.active) {
-        repo.integration.active.stage = "building candidate";
-      }
+      if (building && repo.integration.active) repo.integration.active.stage = "build";
       pinnedIntegration = repo.integration;
       break;
     }
