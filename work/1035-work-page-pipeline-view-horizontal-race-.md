@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T18:02:21Z"
+updated_at: "2026-11-04T18:07:56Z"
 ---
 ## Problem
 
@@ -71,6 +71,19 @@ Area chips and the file-count chip are left off to hold four lines. Build the ca
 ## Visual reference
 Approved mockup (light and dark, solid hairline guides, cards centered in their lanes) is attached above under Screenshots (third image). Colours: card is one step above the page surface in both themes, chips use the page's chip surface, success tint for Merged, amber for sent-back, red for stuck. Use existing theme tokens only.
 
+## Shots
+```json
+[
+{
+  "label": "Pipeline view with lanes across every stage",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"pipeline-view\"]",
+  "state": "board:pipeline"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-04T17:20:01Z · created · njachowski@gmail.com
@@ -82,3 +95,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T17:44:39Z · model_override
 - 2026-11-04T17:44:42Z · status inbox→ready
 - 2026-11-04T18:02:21Z · status ready→active, branch
+- 2026-11-04T18:07:56Z · body
