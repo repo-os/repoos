@@ -3,13 +3,17 @@ id: "0715"
 title: pi engineer ends turns cleanly without requesting handoff; stderr not surfaced; recovery is slow and the CTO cannot see why
 type: bug
 status: active
+hold: true
+hold_reason: pause
+hold_by: hello@repoos.org
+hold_at: "2026-11-04T12:55:46.026Z"
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T12:48:40Z"
+updated_at: "2026-11-04T12:55:46Z"
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-04T12:30:27.556Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -88,3 +92,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T12:44:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T12:44:52Z · engineer stopped by request
 - 2026-11-04T12:48:40Z · body
+- 2026-11-04T12:55:46Z · held, held-reason, held-by, held-at
