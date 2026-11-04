@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-04T02:52:22Z"
+review_passes: 1
 id: 1014
 title: "Engineering report word cap: count only the engineer's narrative, soft limit around 1,200"
 type: bug
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-report-word-cap-count-only-t
 created_at: "2026-11-03T07:45:14Z"
-updated_at: "2026-11-04T02:52:22Z"
 ---
 ## Problem
 The engineering report has a hard 1,000-word cap, and `src/server/engineering-reports.ts` enforces it twice: on the engineer's draft (~line 184) and again on the final markdown, which includes the server-generated change summary (~line 274: `${narrative}\n\n${summary}`, summary = base/source tree plus one line per changed file). On a task with many changed files the generated file list alone eats the budget. #1004 (18 files) was rejected at handoff with "final report has 1103 words" even after the engineer cut its own text to 302 words, forcing it to shorten useful content and loop.
@@ -43,3 +44,4 @@ See `MAX_WORDS`, `words()`, and both checks in `src/server/engineering-reports.t
 - 2026-11-04T02:51:40Z · status active→review
 - 2026-11-04T02:51:40Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-04T02:52:22Z · note: review pass 1: good to go
+
