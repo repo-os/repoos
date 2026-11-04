@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T16:05:49Z"
+updated_at: "2026-11-04T16:07:51Z"
 last_close_out_gate_ms: 151585
 last_close_out_gate_at: "2026-11-04T16:05:49.165Z"
 review_passes: 2
@@ -141,4 +141,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T16:01:40Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-04T16:02:49Z · note: review pass 2: good to go
 - 2026-11-04T16:05:49Z · close-out gate completed in 152s
-
+- 2026-11-04T16:07:51Z · status done→done, release:success
