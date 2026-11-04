@@ -253,3 +253,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:39:40Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T16:39:40Z · message_queued at 2026-11-04T16:39:40.384Z
 - 2026-11-04T16:39:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Check passes fully. Worktree clean. Requesting handoff now via the CLI command so I can confirm it synchronously: · stderr: (empty)
+- 2026-11-04T16:39:40Z · message_delivered: 2 message(s)
