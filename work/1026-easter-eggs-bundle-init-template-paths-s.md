@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-04T23:29:41Z"
-review_passes: 2
 id: 1026
 title: "Easter eggs bundle: init template paths, serve banner, CLI docs and empty-repo edge cases"
 type: chore
@@ -14,6 +12,8 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:41Z"
+updated_at: "2026-11-04T23:30:03Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Items
@@ -221,4 +221,4 @@ Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the 
 - 2026-11-04T23:27:42Z · body
 - 2026-11-04T23:27:56Z · status active→review
 - 2026-11-04T23:29:40Z · note: review pass 2: good to go
-
+- 2026-11-04T23:30:03Z · message_queued at 2026-11-04T23:30:03.014Z
