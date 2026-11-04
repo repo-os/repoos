@@ -209,7 +209,9 @@ export function withPiHandoffInstruction(text: string, taskId: string): string {
 
 /** Dev-error detail when finalization never reached a terminal sys line (#0501). */
 export const HANDOFF_FINALIZATION_INTERRUPTED_DETAIL =
-  "handoff finalization was interrupted (server reload) — restart work to hand off again";
+  "handoff finalization was interrupted (server reload) — restart work to hand off again. " +
+  "If the conversation is poisoned (the same failure repeats every turn), reset it with " +
+  "`repoos start <id> --fresh`";
 
 /** True for in-progress server finalization sys lines (not ok/failure summaries). */
 export function isHandoffFinalizationProgressSysLine(text: string): boolean {
