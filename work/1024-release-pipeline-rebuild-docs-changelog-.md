@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 700265
-last_close_out_gate_at: "2026-11-04T17:18:43.055Z"
 id: 1024
 title: "Release pipeline: rebuild docs, changelog, llms files and release notes on every release"
 type: bug
-status: review
+status: done
 priority: p1
 area: [core, docs]
+merged_commit: 24ec6c123a7c9674946538761ae537c17ee8d64b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-pipeline-rebuild-docs-changelog-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T06:45:38Z"
 updated_at: "2026-11-04T17:18:43Z"
+last_close_out_gate_ms: 700265
+last_close_out_gate_at: "2026-11-04T17:18:43.055Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 dev_error_count: 10

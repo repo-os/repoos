@@ -39,18 +39,19 @@ jobs:
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Release notes authored in the "Cut a release" modal travel in the
-      # annotated tag's body (the git-native release record RepoOS writes).
-      # `actions/checkout` fetches the tag's COMMIT into a lightweight local
-      # tag (`--no-tags` plus a SHA refspec), so the annotated tag object — and
-      # with it the notes — is not present. Force-fetch the real tag object
-      # before reading the body back. Surface it as the GitHub release body
-      # when present; when notes were left empty the file is empty and GitHub's
-      # auto-generated notes are used unchanged, exactly as before.
-      - name: Read release notes from the tag
+      # Release notes are written by the release pipeline into the committed
+      # release history (release-history.json) in the same commit as the
+      # version bump, so they are present in the tag itself. Read them from
+      # there first; only an older tag with no history entry falls back to the
+      # annotated tag's body. The old code always read the tag body, which is
+      # why v0.5.73–75 shipped empty release notes.
+      - name: Read release notes from the changelog
         run: |
-          git fetch --depth=1 --force origin "+refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}"
-          git tag -l --format='%(contents:body)' "${{ github.ref_name }}" > release-notes.md
+          bun scripts/release-notes.ts "${GITHUB_REF_NAME}" > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            git fetch --depth=1 --force origin "+refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+            git tag -l --format='%(contents:body)' "${GITHUB_REF_NAME}" > release-notes.md
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

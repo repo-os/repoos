@@ -41,10 +41,21 @@ the latest *stable* tag, and any blockers. A release can't be cut unless:
 - the tag doesn't already exist.
 
 Cutting a release asks you to confirm the exact tag, then runs the same checks as
-task close-out: bump the version file, commit it, rebuild, run `repoos check`,
-push the branch, create the annotated tag, and push the tag. If the tag push
-fails, the local tag is removed so nothing is left half-done. Pushing the tag is
-what triggers your CI workflow.
+task close-out: bump the version file, write and commit the release changelog
+(`release-history.json` and `CHANGELOG.md`), rebuild, run `repoos check`, push
+the branch, create the annotated tag, and push the tag. If the tag push fails,
+the local tag is removed so nothing is left half-done. Pushing the tag is what
+triggers your CI workflow.
+
+The release record is written before the checks, so the docs site, the
+`/changelog` page, `repoos.org` and the generated llms files all show the new
+version and date as soon as they are built — and the GitHub release body is
+read from the same entry. When you have `[[deployments]]` rows, the cut also
+fast-forwards and pushes each deployed branch that is behind the release branch
+(for example `prod` ← `main`), which is what publishes the docs and landing
+sites before anyone visits them. A failed deploy is reported but does not fail
+the release: the tag is already public, so retry that branch from the
+Deployments page.
 
 Tags with a suffix — `v1.2.0-beta.1`, `v1.2.0-rc.1` — are treated as
 **prereleases**: they're flagged as such on GitHub so `GET /releases/latest`
