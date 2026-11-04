@@ -129,3 +129,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:47:50Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T15:49:41Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T15:49:41Z · message_queued at 2026-11-04T15:49:41.426Z
+- 2026-11-04T15:49:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
