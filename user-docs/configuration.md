@@ -1626,7 +1626,12 @@ across a rename, and start no agent. The UI's **New story** keeps the PM
 flesh-out by default. See [`repoos story`](/cli#repoos-story-newlistshowupdate).
 
 A story counts as complete only when every one of its tasks is done, and there
-is no manual completion control.
+is no manual completion control. The Stories page header has a **Hide Completed
+Stories** toggle for when finished slices clutter the list: it is off by
+default (every story shows, exactly as before the toggle existed), and turning
+it on hides only the stories whose tasks are all done. The choice is remembered
+per browser, like the sort order. A story that is registered but still has no
+tasks is not complete, so it stays visible.
 
 Story names are whitespace-normalized and matched case-insensitively, so
 `Project updates email` and `project  updates  email` group together under one

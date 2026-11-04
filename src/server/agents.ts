@@ -99,6 +99,7 @@ import type { Logger } from "../core/logger.js";
 import { getRepoOSDb, type RepoOSDb, type UsageRange } from "../core/db.js";
 import { listSkills } from "./routes/helpers.js";
 import { readHandoffRequest, clearHandoffRequest } from "./handoff-request.js";
+import { deferHandoffStatus, deliverHandoffOutcome } from "./handoff-status.js";
 import { worktreeReviewLockRefusal } from "./worktree-handoff-guard.js";
 import { readProcessOwnership } from "./system.js";
 import {
@@ -4049,13 +4050,15 @@ export function missionFor(
     `2. Run \`REPOOS_CHECK_CHANGED=${baseBranch} repoos check\` and confirm it passes (build, typecheck, tests scoped to what your branch changed vs ${baseBranch}, UI smoke test). It MUST be green before handing off. RepoOS re-verifies it server-side before finalizing your handoff, and runs the full unscoped test suite again when your branch actually merges — so this scoped run is a fast correctness check, not the final word.`,
     "3. Do not run git add/commit and do not edit the main checkout; those privileged paths are intentionally outside your sandbox.",
     "   RepoOS commits only source, work, docs, and config files to the branch — never `dist/`; build artifacts created by `repoos check` stay local.",
-    `4. When the implementation is ready, hand off — EITHER of these, they are synonyms:`,
+    `4. When the implementation is ready, request handoff and END YOUR TURN — do not wait for it. EITHER of these — they are synonyms:`,
     `   - finish your response with this exact line: ${HANDOFF_READY_SIGNAL}`,
     "   - or run `repoos mv <this task's id> review`",
     "   Both record a handoff REQUEST; neither one moves the task. `repoos mv <id> review` from",
     "   inside your own runner session deliberately leaves `status:` alone, precisely so that moving",
     "   your task out of `active` cannot kill the turn you are standing in (#0505).",
+    "   Do NOT call the blocking `repoos review <id>` yourself — it waits for the same server-owned handoff and races it. If you need to check without waiting, run `repoos handoff-status <this task's id>`.",
     "5. Stop. RepoOS re-runs `repoos check`, commits the implementation, moves the worktree task to review, and updates the canonical board copy. It does that when your turn ends — you never set `status: review` yourself.",
+    '   RepoOS queues the outcome for your next turn: "handoff passed — task is now in review" or the failing step and reason. Nothing is needed after a pass; after a failure, fix it and request handoff again.',
     "",
     "If you are blocked or need a decision from the human:",
     "1. Explain the blocker clearly and do NOT emit the handoff-ready signal.",
@@ -6422,6 +6425,33 @@ export class AgentRunner {
         : promptBuilder(text, repositoryContext, agent);
     const { cmd, args } = cliCommand(agent, mission, cwd);
     return this.spawnOrQueue(sessionId, cmd, args, cwd);
+  }
+
+  /**
+   * Queue a message for a task's session WITHOUT starting a turn.
+   *
+   * Used for the handoff outcome (#1028): the engineer has already ended its
+   * turn, so the result must arrive at the start of its NEXT turn rather than
+   * spawning an immediate resume. The existing queued-message delivery
+   * (`prepareQueuedMessages` on the next start/send, or end-of-turn delivery)
+   * carries it with the usual activity record.
+   */
+  queueTaskMessage(
+    taskId: string,
+    text: string,
+    agent: Agent,
+    opts: {
+      resumePreamble?: string;
+      skipBoardDivergence?: boolean;
+      cwd?: string;
+      emitHumanTurn?: boolean;
+    } = {},
+  ): StartResult {
+    if (!DRIVABLE_CLIS.has(agent.cli)) {
+      return { ok: false, reason: unsupportedCliMessage(agent.cli) };
+    }
+    this.checkExpiredMessages();
+    return this.queueMessageForDelivery(taskId, text, agent, opts);
   }
 
   /**
@@ -9207,6 +9237,18 @@ export class AgentRunner {
           "sys",
           "✗ handoff deferred — read the queued message(s) first, then request review again",
         );
+        // #1028: record the deferral so `repoos handoff-status` can answer
+        // immediately, and queue the one outcome message for the next turn.
+        // Keyed by run id so a replay of the same turn cannot queue it twice.
+        const deferred = deferHandoffStatus(
+          this.config,
+          taskId,
+          entry.runId ?? `turn-${Date.now()}`,
+          `${blockingQueuedCount} queued message(s) must be read before review`,
+        );
+        const outcomeTask = this.getTask?.(taskId) ?? entry.task;
+        const outcomeAgent = outcomeTask ? resolveAgentForTask(this.config, outcomeTask) : null;
+        deliverHandoffOutcome(this.config, taskId, deferred, this, outcomeAgent);
       }
     }
     if (

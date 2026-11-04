@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T06:46:01Z"
+updated_at: "2026-11-04T13:13:56Z"
 ---
 ## Items
 
@@ -21,6 +21,7 @@ updated_at: "2026-11-04T06:46:01Z"
 - E6 · Doc and message accuracy nits
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body.
+
 
 ## E1 · Generated AGENTS.md template references nonexistent paths
 
@@ -130,9 +131,19 @@ The message links a docs URL; the docs sentence is accurate.
 
 Source: external QA report on v0.5.75, items 3, 4, 13-18.
 
+## Screenshots
+
+![3](/api/tasks/1026/attachments/att_7f4494fa-3f9a-4412-9743-b2405629c23b.png)
+![4](/api/tasks/1026/attachments/att_a4a037d3-36a5-4f1e-ae9e-5c4c86ada329.png)
+![5](/api/tasks/1026/attachments/att_a3aec7c8-61bc-4ef5-9f11-ace9ee36014d.png)
+
 ## Activity
 
 - 2026-11-04T06:45:41Z · created · njachowski@gmail.com
 - 2026-11-04T06:45:42Z · needs_input
 - 2026-11-04T06:45:56Z · body: Items (added 3, removed 2); E1 · Generated AGENTS.md template references nonexistent paths (added 8, removed 3); E2 · `serve` banner and docs: say which interfaces are bound (added); E3 · cli.md missing commands (added 8, removed 3); E4 · Empty-repo git edge cases (added 8, removed 3); E5 · Quieter `repoos list` with no server (added 8, removed 3); E6 · Doc and message accuracy nits (added); E2 · `serve` banner/docs (removed); E6 · Doc/message accuracy nits (removed); Notes for AI (removed)
 - 2026-11-04T06:46:01Z · needs_input
+- 2026-11-04T12:58:41Z · body: Items (added 1)
+- 2026-11-04T12:58:42Z · body: E7 · Hold dialog styling, optional reason, and held-card padding (added)
+- 2026-11-04T12:58:43Z · screenshots
+- 2026-11-04T13:13:56Z · body: Items (removed 1); E7 · Hold dialog styling, optional reason, and held-card padding (removed)

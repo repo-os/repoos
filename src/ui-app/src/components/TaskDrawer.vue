@@ -60,7 +60,19 @@ import { api, JSON_OPTS } from "../api";
 import { checkRunSkipped } from "../../../core/check-skip.js";
 import { PRIORITIES, TASK_TYPES } from "../../../core/types.js";
 import { useNow } from "../composables/useNow";
-import { integrationActiveCopy, integrationQueuedCopy } from "../lib/integration-pipeline-ui";
+import {
+  integrationActiveCopy,
+  integrationQueuedCopy,
+  integrationPipelineRole,
+  integrationProgressCardLabel,
+} from "../lib/integration-pipeline-ui";
+import { activeEngineerCardHint } from "../lib/active-task-card";
+import {
+  AWAITING_FRESH_REVIEW_LABEL,
+  PM_WORKING_LABEL,
+  REVIEWER_RUNNING_LABEL,
+  runningChecksLabel,
+} from "../lib/task-status-copy";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import { shotPreviewSkipsEngineeringReportsFetch } from "../lib/shot-preview-fixtures";
@@ -310,6 +322,16 @@ const selectableStatuses = computed(() => {
   );
 });
 const isHumanTask = computed(() => ui.active?.assignee === "human");
+/**
+ * The status control must always name the current status (#1023): during a
+ * close-out the selected item can be unmounted, and an empty trigger reads as
+ * "no status". A text fallback is used both as the value and the placeholder.
+ */
+const currentStatusLabel = computed(() => {
+  const current = ui.active?.status;
+  if (!current) return "";
+  return allStatuses.value.find((status) => status.id === current)?.label ?? current;
+});
 const humanCompletionNote = ref("");
 
 /**
@@ -385,22 +407,6 @@ const lastCheckRun = computed(() => {
 const remoteActivity = computed(() => {
   const id = ui.active?.id;
   return id ? (repo.taskRemoteActivity[id] ?? null) : null;
-});
-
-const activeWorkLabel = computed(() => {
-  const task = ui.active;
-  if (!task) return "";
-  const activity = remoteActivity.value;
-  if (activity?.run) {
-    const elapsed = formatDuration(
-      Math.max(0, checkNow.value - Date.parse(activity.run.startedAt)),
-    );
-    return `remote ${activity.run.kind} · ${activity.run.stage ?? "running"} · ${elapsed}`;
-  }
-  if (activity?.queue) {
-    return `queued · runner · #${activity.queue.position} · ${formatDuration(activity.queue.waitedMs)}`;
-  }
-  return repo.pmWorkingFor(task.id) ? "PM working" : "Engineer working";
 });
 
 function remotePhaseText(ms: number | null | undefined): string {
@@ -714,6 +720,93 @@ function cardProgressLine(run: {
   return `${step} · tests ${run.testsDone}/${run.testsTotal} files`;
 }
 
+/**
+ * The board card's live work label for this task (#1023). This is the same
+ * resolution the card runs in `codingOrStuckHint` — auto-repair first, then the
+ * active-engineer evidence stack — so the panel heading can never paraphrase a
+ * different state than the card is showing.
+ */
+const cardWorkHint = computed(() => {
+  const task = ui.active;
+  if (!task) return null;
+  const nowMs = Math.max(now.value, checkNow.value, Date.now());
+  const lastActivityAt = repo.agentActivityAt[task.id] ?? repo.runningSince[task.id];
+  return (
+    autoRepairHint({
+      task,
+      running: repo.isRunning(task.id),
+      lastActivity: lastActivityAt,
+      now: nowMs,
+    }) ??
+    activeEngineerCardHint({
+      taskId: task.id,
+      nowMs,
+      lastActivityAt,
+      taskChecks: repo.taskChecks[task.id],
+      remoteActivity: repo.taskRemoteActivity[task.id],
+      resourceQueueMarkers: repo.resourceQueueMarkers,
+    })
+  );
+});
+
+/**
+ * The board card's close-out label for this task (#1023). One shared source for
+ * the panel's status heading and its Move-to-done pill, so integrating/queued
+ * states read and clock the same as the card.
+ */
+const integrationCardLabel = computed(() => {
+  const task = ui.active;
+  const snap = repo.integration;
+  if (!task || !snap) return null;
+  const role = integrationPipelineRole(snap, task.id);
+  if (role === "active") {
+    const copy = integrationActiveCopy(snap, checkNow.value);
+    const slow = !!notices.slowRunByTask[task.id];
+    const label = slow && !copy.stalled ? `${copy.label} · slow` : copy.label;
+    return integrationProgressCardLabel(label);
+  }
+  if (role === "queued") return integrationQueuedCopy(snap, task.id)?.label ?? null;
+  return null;
+});
+
+/**
+ * The label the board card shows while a check-shaped state is live (#1023):
+ * a local/pool queue, a handoff gate, a close-out pipeline job, or a check
+ * running during ordinary work. Reuses the card's own helpers and sources.
+ */
+const cardChecksHeading = computed(() => {
+  const task = ui.active;
+  if (!task) return runningChecksLabel(false);
+  const wait = localCheckWait.value;
+  if (wait) return wait.label;
+  if (repo.handoffInFlight(task.id)) {
+    const pool = remotePoolQueueHintForTaskChecks(repo.taskChecks[task.id]);
+    return pool?.label ?? runningChecksLabel(!!notices.slowRunByTask[task.id]);
+  }
+  if (inPipeline.value) {
+    return integrationCardLabel.value ?? runningChecksLabel(false);
+  }
+  if (repo.isRunning(task.id) || repo.pmWorkingFor(task.id)) {
+    return cardWorkHint.value?.label ?? runningChecksLabel(false);
+  }
+  return runningChecksLabel(false);
+});
+
+/** Drop blank rows and rows that repeat the heading or an earlier row (#1023). */
+function compactStatusLines(
+  heading: string,
+  ...details: Array<string | null | undefined>
+): string[] {
+  const lines: string[] = [];
+  for (const raw of [heading, ...details]) {
+    const line = (raw ?? "").trim();
+    if (!line) continue;
+    if (lines.some((seen) => seen.toLowerCase() === line.toLowerCase())) continue;
+    lines.push(line);
+  }
+  return lines;
+}
+
 function openStatusDetails(): void {
   ui.activeTab = "debug";
   ui.debugView = "status";
@@ -807,18 +900,40 @@ const drawerStatusSummary = computed(() => {
   const where = scopeWhere(checkRun?.scope, checkMachine.value ?? checkRun?.machine);
   const tone = isError
     ? "fail"
-    : ["checksRunning", "workRunning"].includes(key)
+    : ["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(key)
       ? "running"
       : "neutral";
-  let lines: [string, string, string];
+  /** Activity motion for the panel indicator; mirrors the card's own variant. */
+  let motion: "coding" | "reviewing" | "agent" = "coding";
+  let lines: string[];
   if (key === "checksRunning" && localCheckWait.value) {
-    lines = [
+    motion = "reviewing";
+    lines = compactStatusLines(
       localCheckWait.value.label,
       localCheckWait.value.title,
       "Queued checks are normal — keep waiting.",
-    ];
-  } else if (key === "checksRunning" && activeCheckRun.value) {
-    lines = ["Checks running", where, cardProgressLine(activeCheckRun.value)];
+    );
+  } else if (key === "checksRunning") {
+    motion = "reviewing";
+    const heading = cardChecksHeading.value;
+    if (heading.startsWith("checking ·")) {
+      // The card's live-check label already carries the step and elapsed time,
+      // so only the scope/machine line adds anything.
+      lines = compactStatusLines(heading, where);
+    } else if (
+      heading.startsWith("integrating") ||
+      heading.startsWith("remote ") ||
+      heading.startsWith("queued")
+    ) {
+      // Remote and close-out labels are already "what + where + clock".
+      lines = compactStatusLines(heading);
+    } else {
+      lines = compactStatusLines(
+        heading,
+        where,
+        activeCheckRun.value ? cardProgressLine(activeCheckRun.value) : null,
+      );
+    }
   } else if (key === "checksFailedAfterRetries") {
     const reason =
       checkRun?.output
@@ -827,25 +942,42 @@ const drawerStatusSummary = computed(() => {
         .find(Boolean) ||
       checkChip.value?.title ||
       "After retries";
-    lines = ["Checks failed", where, reason];
+    lines = compactStatusLines("Checks failed", where, reason);
   } else if (key === "confirmingHandoff") {
-    lines = ["Confirming handoff", "Handoff", handoffStepLabel.value || "Starting…"];
+    motion = "reviewing";
+    lines = handoffBusy.value
+      ? compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…")
+      : compactStatusLines(
+          AWAITING_FRESH_REVIEW_LABEL,
+          "The visible review report is older than the latest handoff.",
+        );
   } else if (key === "reviewerRunning") {
-    lines = ["Reviewer running", "Review", "Reviewer is working…"];
+    motion = "reviewing";
+    lines = compactStatusLines(REVIEWER_RUNNING_LABEL);
   } else if (key === "workRunning") {
-    lines = [activeWorkLabel.value, "", ""];
+    const running = repo.isRunning(task.id);
+    const pmWorking = repo.pmWorkingFor(task.id);
+    if (running) {
+      lines = compactStatusLines(cardWorkHint.value?.label ?? "coding");
+    } else {
+      motion = pmWorking ? "agent" : "coding";
+      lines = compactStatusLines(pmWorking ? PM_WORKING_LABEL : "coding");
+    }
   } else if (key === "reviewFailed") {
-    lines = ["Review failed", "Review report", shortDetails.reviewFailed || "No complete report"];
+    lines = compactStatusLines("Review failed", shortDetails.reviewFailed || "No complete report");
   } else if (key === "notLandable") {
     // Row 2 lists what is failing (the row ellipsizes); there is no third row.
     const failing = (landable.value?.checks ?? [])
       .filter((check) => check.status === "fail")
       .map((check) => check.label);
-    lines = ["Not ready to merge", failing.length ? failing.join(", ") : shortDetails.notLandable];
+    lines = compactStatusLines(
+      "Not ready to merge",
+      failing.length ? failing.join(", ") : shortDetails.notLandable,
+    );
   } else if (key === "handoffFailed") {
-    lines = ["Handoff failed", "Handoff", shortDetails.handoffFailed];
+    lines = compactStatusLines("Handoff failed", shortDetails.handoffFailed);
   } else {
-    lines = [labels[key], shortDetails[key] || "Status", "Open Status details"];
+    lines = compactStatusLines(labels[key], shortDetails[key] || "Status", "Open Status details");
   }
   return {
     key,
@@ -854,6 +986,7 @@ const drawerStatusSummary = computed(() => {
     guidance: guidance[key],
     isError,
     tone,
+    motion,
     lines,
   };
 });
@@ -1999,40 +2132,6 @@ const inPipeline = computed(() => {
   const snap = repo.integration;
   if (!ui.active || !snap) return false;
   return snap.active?.taskId === ui.active.id || snap.queue.includes(ui.active.id);
-});
-
-/** The active pipeline stage (sync/merge/build/check/done) for this task, or
- *  null when it's still queued behind another close-out. */
-const pipelineStage = computed(() => {
-  const active = repo.integration?.active;
-  return active && active.taskId === ui.active?.id ? active.stage : null;
-});
-
-/**
- * Human label for the active pipeline stage (#0692). A `resolve-conflict`
- * stage is the narrow resolution path resolving an integration conflict against
- * current main — distinct from new engineering work — so it is named explicitly
- * instead of showing the raw stage id.
- */
-const pipelineStageLabel = computed(() => {
-  const stage = pipelineStage.value;
-  const active = repo.integration?.active;
-  const queued = repo.integration?.queueDetail?.find((q) => q.taskId === ui.active?.id);
-  if (!stage && queued) {
-    const waited = Number.isFinite(Date.parse(queued.enqueuedAt))
-      ? Math.max(0, checkNow.value - Date.parse(queued.enqueuedAt))
-      : queued.waitedMs;
-    const ahead = queued.blockerTaskId
-      ? ` — ahead: #${queued.blockerTaskId} ${queued.blockerPhase ?? ""}`.trimEnd()
-      : "";
-    return `queued #${queued.position} · ${formatDuration(waited)}${ahead}`;
-  }
-  const base = stage === "resolve-conflict" ? "resolving integration conflict" : stage;
-  if (!base) return base;
-  const startedAt = active?.phaseStartedAt ?? null;
-  if (!startedAt) return base;
-  const elapsed = Math.max(0, checkNow.value - Date.parse(startedAt));
-  return `${base} · ${formatDuration(elapsed)}`;
 });
 
 /** Last successful merge-gate duration on this task (#0679), for close-out tuning. */
@@ -5171,7 +5270,9 @@ watch(
                 @update:model-value="(v) => setStatus(v ?? '')"
               >
                 <SelectTrigger :disabled="ui.saving || handoffBusy">
-                  <SelectValue />
+                  <SelectValue :placeholder="currentStatusLabel">{{
+                    currentStatusLabel
+                  }}</SelectValue>
                 </SelectTrigger>
                 <SelectContent position="popper">
                   <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
@@ -5331,7 +5432,7 @@ watch(
                 <ActivityIndicator v-else />
                 {{
                   inPipeline
-                    ? `Integrating…${pipelineStageLabel ? ` (${pipelineStageLabel})` : ""}`
+                    ? (integrationCardLabel ?? "Integrating…")
                     : doingDone
                       ? doneProgress
                       : "Move to done"
@@ -5615,7 +5716,7 @@ watch(
               'is-error': drawerStatusSummary.isError,
               'is-running': drawerStatusSummary.tone === 'running',
               'is-fail': drawerStatusSummary.tone === 'fail',
-              'is-compact': !drawerStatusSummary.lines[1],
+              'is-compact': drawerStatusSummary.lines.length <= 1,
             }"
             :aria-label="
               drawerStatusSummary.key === 'workRunning'
@@ -5627,15 +5728,22 @@ watch(
             @keydown.space.prevent="openStatusDetails"
           >
             <span class="drawer-status-row drawer-status-l1">
-              <span class="drawer-status-mark" aria-hidden="true" />
+              <ActivityIndicator
+                v-if="drawerStatusSummary.tone === 'running'"
+                :variant="drawerStatusSummary.motion === 'reviewing' ? 'reviewing' : 'working'"
+                :activity="drawerStatusSummary.motion === 'agent' ? 'agent' : undefined"
+                :label="drawerStatusSummary.lines[0]"
+              />
+              <span v-else class="drawer-status-mark" aria-hidden="true" />
               {{ drawerStatusSummary.lines[0] }}
             </span>
-            <span v-if="drawerStatusSummary.lines[1]" class="drawer-status-row drawer-status-l2">{{
-              drawerStatusSummary.lines[1]
-            }}</span>
-            <span v-if="drawerStatusSummary.lines[2]" class="drawer-status-row drawer-status-l3">{{
-              drawerStatusSummary.lines[2]
-            }}</span>
+            <span
+              v-for="(line, index) in drawerStatusSummary.lines.slice(1)"
+              :key="index"
+              class="drawer-status-row"
+              :class="index === 0 ? 'drawer-status-l2' : 'drawer-status-l3'"
+              >{{ line }}</span
+            >
           </button>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
@@ -6218,7 +6326,7 @@ watch(
                 :aria-selected="devPane === 'report'"
                 @click="devPane = 'report'"
               >
-                Report <span v-if="engineeringReports.length">{{ engineeringReports.length }}</span>
+                Report
               </button>
               <button
                 type="button"
@@ -7840,10 +7948,9 @@ watch(
 }
 
 .drawer-status-summary {
-  display: grid;
-  grid-template-rows: auto auto auto;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
-  align-content: center;
   /* Same 22px gutter as the drawer header and tab strip above and below. */
   width: calc(100% - 44px);
   margin: 8px 22px;
@@ -7860,7 +7967,6 @@ watch(
 }
 
 .drawer-status-summary.is-compact {
-  grid-template-rows: auto;
   gap: 0;
 }
 
@@ -7910,24 +8016,6 @@ watch(
   flex: none;
   border-radius: 50%;
   background: var(--txt-dim);
-}
-
-.drawer-status-summary.is-running .drawer-status-mark {
-  background: var(--cyan);
-  animation: drawer-status-running-pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes drawer-status-running-pulse {
-  50% {
-    opacity: 0.35;
-    transform: scale(0.8);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .drawer-status-summary.is-running .drawer-status-mark {
-    animation: none;
-  }
 }
 
 .drawer-status-summary.is-fail .drawer-status-mark {

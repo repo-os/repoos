@@ -50,6 +50,51 @@ function monotonicMs(): number {
   return Number(process.hrtime.bigint() / 1_000_000n);
 }
 
+interface SlotTimestamp {
+  wallMs?: number;
+  monotonicMs?: number;
+  /** PID of the process that wrote the timestamp. */
+  pid?: number;
+}
+
+function finiteNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+/**
+ * Read a `.heartbeat.json` / `.started.json` timestamp.
+ *
+ * The monotonic value is process-relative under Bun and system-uptime under
+ * Node, so it must never be compared across processes (#1032). The wall clock
+ * is the only cross-process age source.
+ */
+function readSlotTimestamp(path: string): SlotTimestamp | undefined {
+  try {
+    const raw = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+    const wallMs = finiteNumber(raw.wallMs);
+    const monotonicMs = finiteNumber(raw.monotonicMs);
+    const pid = typeof raw.pid === "number" && Number.isInteger(raw.pid) ? raw.pid : undefined;
+    if (wallMs === undefined && monotonicMs === undefined) return undefined;
+    return { wallMs, monotonicMs, pid };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Age of a slot timestamp. The writer's monotonic reading is only comparable
+ * when this process wrote it; otherwise use its wall clock. An unusable
+ * timestamp returns undefined so callers fall back to the directory mtime.
+ */
+function slotTimestampAgeMs(timestamp: SlotTimestamp | undefined): number | undefined {
+  if (!timestamp) return undefined;
+  if (timestamp.pid === process.pid && timestamp.monotonicMs !== undefined) {
+    return Math.max(0, monotonicMs() - timestamp.monotonicMs);
+  }
+  if (timestamp.wallMs !== undefined) return Math.max(0, Date.now() - timestamp.wallMs);
+  return undefined;
+}
+
 function processGroupHasLiveMembers(pgid: number): boolean {
   if (process.platform !== "win32") {
     const result = spawnSync("ps", ["-axo", "pgid=,stat="], {
@@ -170,15 +215,8 @@ function isStaleSlot(
   try {
     const st = statSync(dir);
     let age = Date.now() - st.mtimeMs;
-    try {
-      const heartbeat = JSON.parse(readFileSync(join(dir, ".heartbeat.json"), "utf8")) as {
-        monotonicMs?: number;
-      };
-      if (Number.isFinite(heartbeat.monotonicMs))
-        age = Math.max(0, monotonicMs() - heartbeat.monotonicMs!);
-    } catch {
-      /* older slot dirs use filesystem time */
-    }
+    const heartbeatAge = slotTimestampAgeMs(readSlotTimestamp(join(dir, ".heartbeat.json")));
+    if (heartbeatAge !== undefined) age = heartbeatAge;
     if (age > staleAfterMs) {
       if (kind !== "local-check") return age > LEGACY_STALE_MS;
       return age >= staleAfterMs + reclaimGraceMs ? terminateHolder(dir) : false;
@@ -229,20 +267,10 @@ export function inspectCrossProcessSlots(
       meta = JSON.parse(readFileSync(join(dir, ".meta.json"), "utf8")) as Record<string, unknown>;
       ageMs = Math.max(0, Date.now() - statSync(dir).mtimeMs);
       heartbeatAgeMs = ageMs;
-      try {
-        const heartbeat = JSON.parse(readFileSync(join(dir, ".heartbeat.json"), "utf8")) as {
-          monotonicMs?: number;
-        };
-        if (Number.isFinite(heartbeat.monotonicMs))
-          heartbeatAgeMs = Math.max(0, monotonicMs() - heartbeat.monotonicMs!);
-        const started = JSON.parse(readFileSync(join(dir, ".started.json"), "utf8")) as {
-          monotonicMs?: number;
-        };
-        if (Number.isFinite(started.monotonicMs))
-          ageMs = Math.max(0, monotonicMs() - started.monotonicMs!);
-      } catch {
-        /* old slot dirs rely on mtime */
-      }
+      const heartbeatAge = slotTimestampAgeMs(readSlotTimestamp(join(dir, ".heartbeat.json")));
+      if (heartbeatAge !== undefined) heartbeatAgeMs = heartbeatAge;
+      const startedAge = slotTimestampAgeMs(readSlotTimestamp(join(dir, ".started.json")));
+      if (startedAge !== undefined) ageMs = startedAge;
     } catch {
       try {
         ageMs = Math.max(0, Date.now() - statSync(dir).mtimeMs);
@@ -375,16 +403,14 @@ function tryTakeSlot(
         );
       }
       writeFileSync(join(dir, ".holder"), String(process.pid), "utf8");
-      writeFileSync(
-        join(dir, ".heartbeat.json"),
-        JSON.stringify({ wallMs: Date.now(), monotonicMs: monotonicMs() }),
-        "utf8",
-      );
-      writeFileSync(
-        join(dir, ".started.json"),
-        JSON.stringify({ wallMs: Date.now(), monotonicMs: monotonicMs() }),
-        "utf8",
-      );
+      const now = Date.now();
+      const timestamp = JSON.stringify({
+        wallMs: now,
+        monotonicMs: monotonicMs(),
+        pid: process.pid,
+      });
+      writeFileSync(join(dir, ".heartbeat.json"), timestamp, "utf8");
+      writeFileSync(join(dir, ".started.json"), timestamp, "utf8");
       return dir;
     } catch {
       /* contested */
@@ -481,7 +507,11 @@ export async function acquireCrossProcessSlot(opts: SlotAcquireOptions): Promise
           utimesSync(held!, now, now);
           writeFileSync(
             join(held!, ".heartbeat.json"),
-            JSON.stringify({ wallMs: Date.now(), monotonicMs: monotonicMs() }),
+            JSON.stringify({
+              wallMs: Date.now(),
+              monotonicMs: monotonicMs(),
+              pid: process.pid,
+            }),
             "utf8",
           );
           opts.onHeartbeat?.();

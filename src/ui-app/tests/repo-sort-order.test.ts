@@ -134,6 +134,18 @@ describe("repo sort order", () => {
       "taskNumberOldest",
     ]);
   });
+
+  it("defaults the stories page to showing completed and persists hide-completed (#1016)", () => {
+    const repo = useRepoStore();
+    expect(repo.storiesPageHideCompleted).toBe(false);
+    expect(localStorage.getItem("repoos.storiesPage.hideCompleted")).toBeNull();
+
+    repo.setStoriesPageHideCompleted(true);
+    expect(localStorage.getItem("repoos.storiesPage.hideCompleted")).toBe(JSON.stringify(true));
+
+    setActivePinia(createPinia());
+    expect(useRepoStore().storiesPageHideCompleted).toBe(true);
+  });
 });
 
 describe("sortTasks", () => {
