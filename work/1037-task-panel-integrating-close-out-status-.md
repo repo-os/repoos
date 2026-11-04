@@ -12,7 +12,7 @@ branch: feat/task-panel-integrating-close-out-status-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T18:25:01Z"
-updated_at: "2026-11-04T21:52:00Z"
+updated_at: "2026-11-04T22:33:08Z"
 last_close_out_gate_ms: 178459
 last_close_out_gate_at: "2026-11-04T21:50:44.213Z"
 review_passes: 1
@@ -102,3 +102,4 @@ Look at where the drawer header renders the integration pill/status (grep TaskDr
 - 2026-11-04T21:48:37Z · note: shots: skipped — 4 handoff shots already captured for this exact plan (9f2ba1b99) during finalization (#0734)
 - 2026-11-04T21:50:44Z · close-out gate completed in 178s
 - 2026-11-04T21:52:00Z · status done→done, release:success
+- 2026-11-04T22:33:08Z · message_dropped: 1 queued message(s) discarded — task is done
