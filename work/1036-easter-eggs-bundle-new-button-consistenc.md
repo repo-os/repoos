@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:35:32Z"
+updated_at: "2026-11-04T18:35:33Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -73,8 +73,29 @@ Find the popover from the robot icon in the board card component under src/ui-ap
 ![6](/api/tasks/1036/attachments/att_e2f6d405-3c84-4ac6-ba15-4653d9b1cc13.png)
 ![7](/api/tasks/1036/attachments/att_c1ed2892-fe58-41a6-987d-d8211aa48a65.png)
 
+## E3 · Driver brief and CTO digest: no "stalled" while a check has a live heartbeat
+### Problem
+
+`repoos driver brief` and the CTO decision digest report an engineer as "stalled" ("Restart the stuck engineer … process is running but output has gone quiet") while its `repoos check` is running with a live progress heartbeat. Engineers pipe the check through `tail`, so the agent is silent for the whole check. The task card already handles this (#1000, `src/core/active-task-card.ts` `checkHeartbeating`), but `src/server/driver-brief.ts` (runningAgents map) takes `stalled` straight from the runner's raw silence timer (`snapshotStats`, `src/server/agents.ts`). Seen 2026-11-05 on #1031 and #1035, both mid-check, both flagged. It also risks the CTO restarting an engineer and killing a healthy check.
+
+### Desired UX
+
+An engineer whose check is running with a valid heartbeat is not listed as stalled in the driver brief, the decision digest or the CTO restart-stalled-agent safe action. Genuine silence (no check, or a check past the stall window) is still flagged.
+
+### Acceptance criteria
+
+- [ai] Test: engineer silent past the stall timeout with a running, heartbeating check → brief `stalled: false`, no "Restart the stuck engineer" action.
+- [ai] Test: same engineer with no check running, or a check whose heartbeat is past the check stall window → still `stalled: true`.
+- [ai] The CTO restart-stalled-agent path uses the same predicate, so it cannot restart an engineer mid-check.
+- [ai] Reuse the existing heartbeat predicate (`checkHeartbeating` / `isCheckHeartbeatStalled`) rather than a new threshold.
+
+### Notes for AI
+
+Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-docs/check.md` "When a check is waiting".
+
 ## Activity
 
 - 2026-11-04T17:57:32Z · created · njachowski@gmail.com
 - 2026-11-04T17:57:32Z · screenshots
 - 2026-11-04T18:35:32Z · body: Items (added 1)
+- 2026-11-04T18:35:33Z · body: E3 · Driver brief and CTO digest: no "stalled" while a check has a live heartbeat (added)
