@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-04T18:06:27Z"
-review_passes: 3
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
@@ -15,6 +13,8 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
+updated_at: "2026-11-04T18:09:36Z"
+review_passes: 3
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/task-card-review-rounds-detail.test.ts > review-rounds-exhausted card detail (#0832) > clamps long detail and does not repeat the verdict under the status chip, tests/task-check-wait-detail-clamp.test.ts > check-wait diagnostic clamp (#1034) > clamps the card detail line and keeps the full text in Status details, tests/task-drawer-status-summary.test.ts > task drawer status summary (#0952) > keeps the landable checklist off the card and opens Status details on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 67af7b1c6e38ccc66c4431bd32a61b4582e8b945
 review_rounds: 2
@@ -166,4 +166,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T18:05:51Z · status active→review
 - 2026-11-04T18:05:52Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-04T18:06:27Z · note: review pass 3: good to go
-
+- 2026-11-04T18:09:36Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
