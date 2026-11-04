@@ -17,6 +17,7 @@ import type { ReviewManager } from "./review.js";
 import type { AttentionEventStore } from "./attention-events.js";
 import { evaluateAutoApprove } from "./approval-policy.js";
 import { DEFAULT_STALL_TIMEOUT_MS } from "./agents.js";
+import { runningAgentIsStalled } from "./driver-brief.js";
 import { getReleaseRunState } from "./routes/release.js";
 import { isProviderFailureReason } from "../core/attention.js";
 
@@ -27,6 +28,9 @@ export interface DecisionDigestDeps {
   jobCoordinator: JobCoordinator;
   reviews: ReviewManager;
   attentionEvents?: AttentionEventStore;
+  taskChecks?: {
+    getRuns(taskId: string): { running: boolean; lastProgressAt: string | null }[];
+  };
 }
 
 function readLogTail(root: string, relPath: string, maxChars = 8000): string | undefined {
@@ -65,7 +69,9 @@ export async function assembleDecisionDigest(deps: DecisionDigestDeps): Promise<
   }> = [];
   for (const run of deps.runner.running()) {
     const stats = deps.runner.stats(run.id);
-    if (!stats.stalled) continue;
+    if (!runningAgentIsStalled(stats.stalled, deps.taskChecks?.getRuns(run.id), Date.now())) {
+      continue;
+    }
     const task = deps.index.getTask(run.id);
     silentRuns.push({
       taskId: run.id,

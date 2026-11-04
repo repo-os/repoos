@@ -15,6 +15,7 @@ import {
 import { refreshMainDependencyInstall } from "../core/dependency-install.js";
 import { parseTask, recordChange, serializeTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
+import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
 import { clearExpiredHoldPauses } from "./hold-guard.js";
 import { commitTaskFile } from "../core/git.js";
 import type { AttentionEventStore } from "./attention-events.js";
@@ -60,6 +61,8 @@ export interface CtoActionDeps {
   reportedDetail?: Record<string, string>;
   /** The live remote validator, when one exists — needed to kill a hung run (#0729). */
   remoteValidator?: RemoteValidator;
+  /** Live check runs. A fresh heartbeat blocks restart-stalled-agent. */
+  checkRuns?: (taskId: string) => { running: boolean; lastProgressAt: string | null }[];
 }
 
 function auditAction(
@@ -113,6 +116,10 @@ function taskFromIndex(deps: CtoActionDeps, taskId: string): Task | null {
 async function isRestartCandidate(deps: CtoActionDeps, task: Task): Promise<string | null> {
   if (task.status !== "active") return "task is not active";
   if (task.needsInput) return "task needs human input";
+  const liveCheck = deps.checkRuns?.(task.id)?.find((run) => run.running) ?? null;
+  if (liveCheck && !agentSilenceCountsAsStalled(true, liveCheck, Date.now())) {
+    return "check is still making progress";
+  }
   if (deps.runner.isRunning(task.id)) return "agent is running";
   if (deps.runner.isPaused(task.id)) return "task is paused";
   if (deps.runner.isHandoffInFlight(task.id) || deps.runner.hasPendingHandoff(task.id)) {

@@ -37,6 +37,7 @@ import type { CloseOutOutcomeStore } from "./close-out-outcome.js";
 import type { LiveIndex } from "./live-index.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import { taskIsHeld } from "../core/task-selection.js";
+import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
 import {
   computeSlowRunFlags,
   type AwakeClock,
@@ -51,6 +52,20 @@ export interface DriverBriefDeps {
   closeOutOutcomes?: CloseOutOutcomeStore;
   remoteValidator?: RemoteValidator;
   awakeClock?: () => AwakeClock;
+  /** Live check runs, so a heartbeating gate is not reported as a stalled engineer. */
+  taskChecks?: {
+    getRuns(taskId: string): { running: boolean; lastProgressAt: string | null }[];
+  };
+}
+
+/** Silence stall after a live check heartbeat is taken into account. */
+export function runningAgentIsStalled(
+  rawStalled: boolean,
+  runs: { running: boolean; lastProgressAt: string | null }[] | undefined,
+  nowMs: number,
+): boolean {
+  const live = runs?.find((run) => run.running) ?? null;
+  return agentSilenceCountsAsStalled(rawStalled, live, nowMs);
 }
 
 /** Recent run history rows the brief summarises. */
@@ -388,7 +403,7 @@ export async function assembleDriverBrief(deps: DriverBriefDeps): Promise<Driver
       role: "engineer",
       pid: run.pid,
       startedAt: run.startedAt,
-      stalled: stats.stalled,
+      stalled: runningAgentIsStalled(stats.stalled, deps.taskChecks?.getRuns(run.id), Date.now()),
       lastOutputAt: stats.lastOutputAt,
     };
   });

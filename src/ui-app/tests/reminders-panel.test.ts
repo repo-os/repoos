@@ -21,8 +21,12 @@ afterEach(() => {
 const drawer = () => document.body.querySelector('[data-testid="reminder-editor-drawer"]');
 it("uses shared teleported drawer and controls; closes on X, outside and Escape", async () => {
   wrapper = mount(RemindersPanel, { attachTo: document.body });
+  const create = wrapper.get('[data-testid="new-reminder"]');
+  expect(create.classes()).toContain("new-btn");
+  expect(create.attributes("class")).toContain("--btn-new-bg");
+  expect(create.html()).toContain("M12 5v14");
   for (const close of ["x", "outside", "escape"]) {
-    await wrapper.get('[data-testid="new-reminder"]').trigger("click");
+    await create.trigger("click");
     await flushPromises();
     expect(drawer()?.querySelector(".drawer-head")).toBeTruthy();
     expect(drawer()?.hasAttribute("data-overlay-layer")).toBe(true);
