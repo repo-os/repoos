@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 976765
-last_close_out_gate_at: "2026-11-04T18:29:11.152Z"
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 6f65bf853b9888a82321ecbefb310242a7d3f82c
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stuck-needs-input-detail-text-clamp-to-2
@@ -16,6 +15,8 @@ review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
 updated_at: "2026-11-04T18:29:11Z"
+last_close_out_gate_ms: 976765
+last_close_out_gate_at: "2026-11-04T18:29:11.152Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 1748f9633e4b7794615370cd63260f3c737e76b4
 review_passes: 3

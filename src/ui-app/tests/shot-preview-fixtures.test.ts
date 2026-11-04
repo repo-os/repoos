@@ -333,6 +333,16 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.reviews["0832"]?.report?.markdown).toContain("contrast audit");
   });
 
+  it("seeds check-wait escalation detail for clamp shots (#1034)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:checkWaitDetail");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task!.needsInputReason).toBe("check-wait");
+    expect(task!.needsInputDetail).toContain("waiting for a local check slot");
+  });
+
   it("seeds a ready card flagged by the decision-model human-step check (#0804)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
