@@ -2,7 +2,7 @@
 id: 1026
 title: "Easter eggs bundle: init template paths, serve banner, CLI docs and empty-repo edge cases"
 type: chore
-status: active
+status: review
 priority: p2
 area: [core, docs]
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T21:17:34Z"
+updated_at: "2026-11-04T22:34:37Z"
 ---
 ## Items
 - E1 · Generated AGENTS.md template references nonexistent paths
@@ -181,3 +181,4 @@ Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the 
 - 2026-11-04T21:17:27Z · model_override
 - 2026-11-04T21:17:31Z · review_model_override
 - 2026-11-04T21:17:34Z · status ready→active, branch
+- 2026-11-04T22:34:37Z · status active→review
