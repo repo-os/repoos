@@ -2,14 +2,14 @@
 id: 1032
 title: "Slot heartbeat age compares process-relative Bun hrtime across processes: false 'stalled' alarms and possible live-slot reclaim"
 type: bug
-status: active
+status: review
 priority: p1
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/slot-heartbeat-age-compares-process-rela
 created_at: "2026-11-04T12:04:25Z"
-updated_at: "2026-11-04T13:01:00Z"
+updated_at: "2026-11-04T13:14:15Z"
 ---
 ## Problem
 
@@ -49,3 +49,4 @@ Search for `monotonicMs` in cross-process-slots.ts (writers at ~380, 385, 484). 
 - 2026-11-04T13:01:00Z · message_queued at 2026-11-04T13:01:00.184Z
 - 2026-11-04T13:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T13:01:00Z · message_delivered: 2 message(s)
+- 2026-11-04T13:14:15Z · status active→review
