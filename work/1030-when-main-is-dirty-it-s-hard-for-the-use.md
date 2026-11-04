@@ -3,6 +3,9 @@ id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1030 check (pid 50649, alive), #1024 check (pid 70210, alive), #1024 check (pid 57029, wedged); slot holder has made no progress for 30 minutes (no heartbeat) for 11s"
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/full-width-dirty-main-button-in-sidebar-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T14:00:19Z"
+updated_at: "2026-11-04T14:03:27Z"
 dev_error_count: 3
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
@@ -185,3 +188,7 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T13:41:53Z · body
 - 2026-11-04T13:54:47Z · body
 - 2026-11-04T14:00:19Z · body
+- 2026-11-04T14:00:31Z · watchdog: check wait escalated · waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1024 check (pid 95652, alive), #1024 check (pid 70210, alive), #1024 check (pid 57029, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 11s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T14:01:01Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T14:01:16Z · watchdog: check wait escalated · waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1030 check (pid 50649, alive), #1024 check (pid 70210, alive), #1024 check (pid 57029, wedged); slot holder has made no progress for 30 minutes (no heartbeat) for 11s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T14:03:27Z · body
