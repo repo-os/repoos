@@ -236,8 +236,13 @@ export function formatNeedsInputDetailForDisplay(
   return raw;
 }
 
-export function needsInputDetailUsesLineClamp(reason: string | undefined): boolean {
-  return reason === "review-rounds-exhausted" || reason === "dev-error";
+/** True when the card or drawer should clamp a needs-input detail line (#1034). */
+export function needsInputDetailUsesLineClamp(
+  reason: string | undefined,
+  detail: string | null | undefined,
+  hasQuestions = false,
+): boolean {
+  return formatNeedsInputDetailForDisplay(reason, detail ?? undefined, hasQuestions) !== null;
 }
 
 export function needsInputSuggestionText(
