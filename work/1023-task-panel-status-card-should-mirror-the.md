@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T05:34:26Z"
-updated_at: "2026-11-04T09:12:03Z"
+updated_at: "2026-11-04T09:12:04Z"
 ---
 ## Problem
 While #1016 ran its handoff checks, the board card showed "RUNNING CHECKS" with the animated activity indicator (the style chosen in Settings, `activityAnimationStyle`). The task panel for the same task showed a different, static three-row block: "Confirming handoff / Handoff / Running checks…". The rows repeat each other, add no information, and leave mostly empty space. The card and the panel disagree about the same state. This was meant to be fixed already (see `eef0c75d6`, `a79124e85`, `68b544019`), but the panel's `confirmingHandoff` case still builds fixed three-line text.
@@ -37,8 +37,20 @@ Reuse whatever the card uses to pick its label and progress line (`cardProgressL
 ![#1027 board card: 'integrating · remote tests · 7m 26s'](/api/tasks/1023/attachments/att_1743f691-e833-44da-8759-834b7a4a5c4e.png)
 ![#1027 panel: pill reads 'Integrating... (check · 7m 17s)' and the status dropdown is blank](/api/tasks/1023/attachments/att_bc803b78-7cff-4365-831d-ad6b102d2c5b.png)
 
+## More examples
+Seen on #1016 and #1027 while both were integrating (Move to done) on 2026-11-04. The card and the panel describe the same state in different words, and the panel loses information.
+
+- #1027 card: "integrating · remote tests · 7m 26s". #1027 panel: "Integrating... (check · 7m 17s)". Same state, two labels ("remote tests" vs "check") and two clocks 9 seconds apart.
+- #1027 panel: the status dropdown at the top left is empty while the task is closing out.
+- #1016 panel: "Integrating... (queued #1 · 7m 29s — ahead: #1027 validating)". The card wording is not shown for queued, and the panel line is long and truncates.
+- Both panels show a static pill with a bar glyph, not the Settings-selected activity animation the card uses.
+
+Acceptance addition: for integrating, queued and validating states, the panel pill and the card use one shared label and elapsed-time source, and the status dropdown always shows the current status.
+
+
 ## Activity
 
 - 2026-11-04T05:34:26Z · created · njachowski@gmail.com
 - 2026-11-04T05:34:27Z · screenshots
 - 2026-11-04T09:12:03Z · screenshots
+- 2026-11-04T09:12:04Z · body: More examples (added)
