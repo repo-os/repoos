@@ -476,7 +476,7 @@ export class CTOMonitor {
     lines.push("## Build and Process Health");
     lines.push("");
     lines.push(`- Build marker: ${build.label}`);
-    lines.push(`- Zombie processes: ${processes.label}`);
+    lines.push(`- Agent turns: ${processes.label}`);
     lines.push("");
 
     // #0715: RepoOS-owned idle evidence. The CTO agent used to be told to work
