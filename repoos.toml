@@ -128,11 +128,11 @@ vitest.maxWorkers = 6
 [[remoteValidation.tailscaleHosts]]
 host = "thinkpad"
 user = "nick"
-maxConcurrent = 2
+maxConcurrent = 3
 [[remoteValidation.tailscaleHosts]]
 host = "bee"
 user = "nick"
-maxConcurrent = 2
+maxConcurrent = 4
 [[remoteValidation.tailscaleHosts]]
 host = "mini"
 user = "peckjachowski"
