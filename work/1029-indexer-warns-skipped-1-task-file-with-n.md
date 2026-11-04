@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 924483
-last_close_out_gate_at: "2026-11-04T08:16:09.214Z"
 id: 1029
 title: Indexer warns 'skipped 1 task file with no id' for work/reports/<id>/review-<n>.md
 type: bug
-status: review
+status: done
 priority: p3
 area: core
+merged_commit: c6d81bb92ac451be241024824660cb725f53220d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/indexer-warns-skipped-1-task-file-with-n
 created_at: "2026-11-04T07:06:29Z"
 updated_at: "2026-11-04T08:16:09Z"
+last_close_out_gate_ms: 924483
+last_close_out_gate_at: "2026-11-04T08:16:09.214Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
