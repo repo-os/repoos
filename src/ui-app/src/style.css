@@ -2755,16 +2755,21 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
-/* #0832 / #1034 — long diagnostics stay compact on the card; full text is in Debug → Status details. */
-.tc-needs-detail--clamp {
+.tc-needs-detail-text {
+  display: block;
+}
+/* #0832 / #1034 — clamp the inner span, not the native button: a button's
+   internal content box ignores -webkit-line-clamp and renders every line. */
+.tc-needs-detail-text--clamp {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   overflow: hidden;
 }
 .diagnostic-details-affordance {
-  display: inline;
-  margin-left: 6px;
+  display: inline-block;
+  margin-top: 2px;
   font-size: 10px;
   font-weight: 600;
   color: var(--txt-dim);
@@ -8591,10 +8596,15 @@
   line-height: 1.5;
   word-break: break-word;
 }
-.agent-waiting-detail--clamp {
+.agent-waiting-detail-text {
+  display: block;
+}
+/* Clamp the inner span, not the native button (see .tc-needs-detail-text). */
+.agent-waiting-detail-text--clamp {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  line-clamp: 3;
   overflow: hidden;
 }
 .agent-waiting-detail--action {
