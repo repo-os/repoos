@@ -2,14 +2,14 @@
 id: 1023
 title: "Task panel status card should mirror the board card: same lines, same activity animation, no blank rows"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-panel-status-card-should-mirror-the
 created_at: "2026-11-04T05:34:26Z"
-updated_at: "2026-11-04T09:12:08Z"
+updated_at: "2026-11-04T11:00:12Z"
 ---
 ## Problem
 While #1016 ran its handoff checks, the board card showed "RUNNING CHECKS" with the animated activity indicator (the style chosen in Settings, `activityAnimationStyle`). The task panel for the same task showed a different, static three-row block: "Confirming handoff / Handoff / Running checks…". The rows repeat each other, add no information, and leave mostly empty space. The card and the panel disagree about the same state. This was meant to be fixed already (see `eef0c75d6`, `a79124e85`, `68b544019`), but the panel's `confirmingHandoff` case still builds fixed three-line text.
@@ -56,3 +56,4 @@ Acceptance addition: for integrating, queued and validating states, the panel pi
 - 2026-11-04T09:12:04Z · body: More examples (added)
 - 2026-11-04T09:12:06Z · status inbox→ready
 - 2026-11-04T09:12:08Z · status ready→active, branch
+- 2026-11-04T11:00:12Z · status active→review
