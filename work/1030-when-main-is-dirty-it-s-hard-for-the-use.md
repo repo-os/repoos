@@ -3,12 +3,6 @@ id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: "A debugger integration test failed after repeated engineer crashes — open the task’s full output, fix the failing test, and retry."
-debug_tldr_at: "2026-11-04T14:46:33Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/full-width-dirty-main-button-in-sidebar-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T15:20:37Z"
+updated_at: "2026-11-04T15:31:04Z"
 dev_error_count: 8
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:22:51.475Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:31:00.002Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:31:46.150Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:45:47.862Z\",\"kind\":\"dev-error\"}]"
@@ -123,26 +117,26 @@ states, panel open/close with shared width, commit success/error paths with the 
 ```json
 [
 {
-  "label": "Sidebar full-width dirty-main button",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"side-git-dirty\"]",
-  "state": "repo:dirtyMain"
+"label": "Sidebar full-width dirty-main button",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"side-git-dirty\"]",
+"state": "repo:dirtyMain"
 },
 {
-  "label": "Uncommitted-changes panel with file list, diff and commit box",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-testid=\"repo-dirty-panel\"]",
-  "steps": [
-    {
-      "click": "[data-test-id=\"side-git-dirty\"]"
-    },
-    {
-      "waitMs": 600
-    }
-  ],
-  "state": "repo:dirtyMain"
+"label": "Uncommitted-changes panel with file list, diff and commit box",
+"target": "default",
+"route": "/",
+"highlight": "[data-testid=\"repo-dirty-panel\"]",
+"steps": [
+  {
+    "click": "[data-test-id=\"side-git-dirty\"]"
+  },
+  {
+    "waitMs": 600
+  }
+],
+"state": "repo:dirtyMain"
 }
 ]
 ```
@@ -234,3 +228,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T15:08:02Z · body
 - 2026-11-04T15:15:00Z · body
 - 2026-11-04T15:20:37Z · body
+- 2026-11-04T15:31:04Z · watchdog: restarting engineer after 10m with no live process
