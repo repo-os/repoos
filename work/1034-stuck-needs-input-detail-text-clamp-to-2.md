@@ -11,12 +11,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stuck-needs-input-detail-text-clamp-to-2
-cli_override: cursor
-model_override: composer-2.5
+cli_override: codex
+model_override: gpt-6-luna
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T14:31:00Z"
+updated_at: "2026-11-04T14:37:47Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:21:54.554Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:22:52.946Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:31:00.632Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -90,3 +90,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:23:18Z · needs_input
 - 2026-11-04T14:31:00Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:31:00Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-04T14:37:47Z · cli_override, model_override
