@@ -3,9 +3,6 @@ id: 1024
 title: "Release pipeline: rebuild docs, changelog, llms files and release notes on every release"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + opencode-go/muse-spark-1.3-contributor) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually."
 priority: p1
 area: [core, docs]
 assigned_to: ai
@@ -13,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/release-pipeline-rebuild-docs-changelog-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T06:45:38Z"
-updated_at: "2026-11-04T14:30:59Z"
+updated_at: "2026-11-04T14:34:32Z"
 dev_error_count: 9
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:08:02.770Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/muse-spark-1.3-contributor\",\"at\":\"2026-11-04T14:21:53.776Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/muse-spark-1.3-contributor\",\"at\":\"2026-11-04T14:22:52.112Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/muse-spark-1.3-contributor\",\"at\":\"2026-11-04T14:30:59.688Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -115,3 +112,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T14:30:20Z · body
 - 2026-11-04T14:30:59Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:30:59Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/muse-spark-1.3-contributor) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-04T14:34:32Z · needs_input
