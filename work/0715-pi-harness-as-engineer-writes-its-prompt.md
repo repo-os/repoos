@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T11:03:19Z"
+updated_at: "2026-11-04T11:03:20Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -74,3 +74,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T10:41:19Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T11:00:51Z · body
 - 2026-11-04T11:03:19Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T11:03:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
