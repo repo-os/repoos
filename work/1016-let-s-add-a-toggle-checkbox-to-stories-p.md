@@ -2,14 +2,14 @@
 id: 1016
 title: "Add \"Hide Completed Stories\" toggle to Stories page"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-11-03T09:13:40Z"
-updated_at: "2026-11-03T09:14:09Z"
+updated_at: "2026-11-04T04:22:41Z"
 ---
 ## Problem
 
@@ -65,3 +65,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 
 - 2026-11-03T09:13:40Z · created · hello@repoos.org
 - 2026-11-03T09:14:09Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
+- 2026-11-04T04:22:41Z · status inbox→ready
