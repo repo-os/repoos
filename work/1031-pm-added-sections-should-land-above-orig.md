@@ -11,7 +11,7 @@ created_by: njachowski@gmail.com
 branch: feat/pm-added-sections-should-land-above-orig
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
-updated_at: "2026-11-04T19:44:39Z"
+updated_at: "2026-11-04T19:54:53Z"
 last_close_out_gate_ms: 522845
 last_close_out_gate_at: "2026-11-04T19:43:21.457Z"
 review_passes: 1
@@ -59,3 +59,4 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 - 2026-11-04T19:09:47Z · note: review pass 1: good to go
 - 2026-11-04T19:43:21Z · close-out gate completed in 523s
 - 2026-11-04T19:44:39Z · status done→done, release:success
+- 2026-11-04T19:54:53Z · message_dropped: 1 queued message(s) discarded — task is done
