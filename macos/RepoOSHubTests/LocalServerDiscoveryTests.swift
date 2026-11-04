@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import RepoOSHub
 
@@ -152,7 +153,7 @@ final class LocalServerDiscoveryTests: XCTestCase {
             ]
         )
 
-        var snapshots: [[Int]] = []
+        let recorder = PartialSnapshotRecorder()
         _ = await LocalServerDiscovery.discover(
             knownLocalPorts: [],
             configuration: LocalServerDiscoveryConfiguration(
@@ -163,10 +164,11 @@ final class LocalServerDiscoveryTests: XCTestCase {
             listeningPortEnumerator: { _ in nil },
             portsToProbe: [7010, 7020],
             onUpdate: { partial in
-                snapshots.append(partial.map(\.port))
+                recorder.append(partial.map(\.port))
             }
         )
 
+        let snapshots = recorder.snapshotList
         XCTAssertFalse(snapshots.isEmpty)
         XCTAssertTrue(snapshots.contains { $0 == [7010] })
         XCTAssertEqual(snapshots.last, [7010, 7020])
@@ -220,12 +222,27 @@ final class LocalServerDiscoveryTests: XCTestCase {
 
 // MARK: - Test doubles
 
+private final class PartialSnapshotRecorder: @unchecked Sendable {
+    private let snapshots = OSAllocatedUnfairLock(initialState: [[Int]]())
+
+    func append(_ ports: [Int]) {
+        snapshots.withLock { $0.append(ports) }
+    }
+
+    var snapshotList: [[Int]] {
+        snapshots.withLock { $0 }
+    }
+}
+
+private struct LatencyTrackingState {
+    var inFlight = 0
+    var peak = 0
+    var attemptCounts: [Int: Int] = [:]
+    var probedPortOrder: [Int] = []
+}
+
 private final class LatencyTrackingHealthChecker: HealthChecking, @unchecked Sendable {
-    private let lock = NSLock()
-    private var inFlight = 0
-    private var peak = 0
-    private var attemptCounts: [Int: Int] = [:]
-    private var probedPortOrder: [Int] = []
+    private let state = OSAllocatedUnfairLock(initialState: LatencyTrackingState())
 
     let latency: Duration
     let responders: [Int: HealthCheckOutcome]
@@ -237,21 +254,21 @@ private final class LatencyTrackingHealthChecker: HealthChecking, @unchecked Sen
 
     func checkHealth(origin: URL) async -> HealthCheckOutcome {
         let port = origin.port ?? -1
-        lock.lock()
-        inFlight += 1
-        peak = max(peak, inFlight)
-        attemptCounts[port, default: 0] += 1
-        probedPortOrder.append(port)
-        lock.unlock()
+        state.withLock { tracked in
+            tracked.inFlight += 1
+            tracked.peak = max(tracked.peak, tracked.inFlight)
+            tracked.attemptCounts[port, default: 0] += 1
+            tracked.probedPortOrder.append(port)
+        }
 
         if latency != .zero {
             try? await Task.sleep(for: latency)
             if Task.isCancelled { return .failure(.network("cancelled")) }
         }
 
-        lock.lock()
-        inFlight -= 1
-        lock.unlock()
+        state.withLock { tracked in
+            tracked.inFlight -= 1
+        }
 
         if let outcome = responders[port] {
             return outcome
@@ -260,27 +277,20 @@ private final class LatencyTrackingHealthChecker: HealthChecking, @unchecked Sen
     }
 
     func peakConcurrency() -> Int {
-        lock.lock()
-        defer { lock.unlock() }
-        return peak
+        state.withLock { $0.peak }
     }
 
     func attempts(for port: Int) -> Int {
-        lock.lock()
-        defer { lock.unlock() }
-        return attemptCounts[port, default: 0]
+        state.withLock { $0.attemptCounts[port, default: 0] }
     }
 
     func probedPorts() -> [Int] {
-        lock.lock()
-        defer { lock.unlock() }
-        return probedPortOrder
+        state.withLock { $0.probedPortOrder }
     }
 }
 
 private final class FlakyTimeoutHealthChecker: HealthChecking, @unchecked Sendable {
-    private let lock = NSLock()
-    private var attemptCounts: [Int: Int] = [:]
+    private let attemptCounts = OSAllocatedUnfairLock(initialState: [Int: Int]())
 
     let succeedOnPort: Int
     let failAttemptsBeforeSuccess: Int
@@ -292,10 +302,11 @@ private final class FlakyTimeoutHealthChecker: HealthChecking, @unchecked Sendab
 
     func checkHealth(origin: URL) async -> HealthCheckOutcome {
         let port = origin.port ?? -1
-        lock.lock()
-        let attempt = attemptCounts[port, default: 0]
-        attemptCounts[port] = attempt + 1
-        lock.unlock()
+        let attempt = attemptCounts.withLock { counts -> Int in
+            let next = counts[port, default: 0]
+            counts[port] = next + 1
+            return next
+        }
 
         guard port == succeedOnPort else {
             return .failure(.network("refused"))
@@ -307,8 +318,6 @@ private final class FlakyTimeoutHealthChecker: HealthChecking, @unchecked Sendab
     }
 
     func attempts(for port: Int) -> Int {
-        lock.lock()
-        defer { lock.unlock() }
-        return attemptCounts[port, default: 0]
+        attemptCounts.withLock { $0[port, default: 0] }
     }
 }

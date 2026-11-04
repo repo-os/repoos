@@ -84,22 +84,56 @@ final class HubFindBarContainerTests: XCTestCase {
     func testHidingFindBarReturnsFocusToThePage() {
         let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         let container = HubServerWebContainerView(webView: webView)
+        container.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
             styleMask: [.titled],
             backing: .buffered,
             defer: false
         )
+        window.isReleasedWhenClosed = false
         window.contentView = container
+        defer {
+            window.orderOut(nil)
+            window.contentView = nil
+            RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+            window.close()
+        }
+
         window.makeKeyAndOrderFront(nil)
+        settleFocusWindow(window)
         container.presentFindInterface()
+        settleFocusWindow(window)
+        XCTAssertTrue(
+            container.containsKeyboardFocus(in: window),
+            "the find field must hold focus before Done closes the bar"
+        )
 
         container.hideFindInterface()
-        // Focus moves back on the next run loop.
-        RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+        let deadline = Date().addingTimeInterval(1)
+        while Date() < deadline,
+            !container.containsKeyboardFocus(in: window)
+                || container.isFindBarVisible
+        {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        }
 
-        XCTAssertTrue(window.firstResponder === container.webView)
-        window.close()
+        XCTAssertFalse(container.isFindBarVisible)
+        XCTAssertTrue(
+            container.containsKeyboardFocus(in: window),
+            "keyboard focus must return to the page after hiding the find bar"
+        )
+    }
+
+    /// Lets AppKit install key-window focus and `hideFindInterface`'s async
+    /// first-responder handoff before assertions run.
+    @MainActor
+    private func settleFocusWindow(_ window: NSWindow) {
+        for _ in 0..<3 {
+            window.layoutIfNeeded()
+            window.contentView?.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+        }
     }
 
     @MainActor
