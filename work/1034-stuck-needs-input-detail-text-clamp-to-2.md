@@ -81,3 +81,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:21:54Z · agent exited with an error (cursor) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:21:54Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:22:05Z · needs_input
+- 2026-11-04T14:22:05Z · message_delivered: 1 message(s)
