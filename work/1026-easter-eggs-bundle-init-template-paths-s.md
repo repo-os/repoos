@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T23:15:10Z"
+updated_at: "2026-11-04T23:15:54Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -157,6 +157,19 @@ Saving a schedule (create or update) runs the same underspecified check the boar
 
 Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the template's `task_area` and `task_assigned_to`. Save paths are `createSchedule` / `updateSchedule` in `src/core/schedule.ts` and the routes in `src/server/routes/schedules.ts`; keep the existing hard validation errors as they are and add the warning as a separate, non-blocking field. Keep it to that: if it grows beyond a warning field plus a badge, split it into its own task. Source: Nick, 2026-11-05, after #1008.
 
+## Shots
+```json
+[
+{
+  "label": "Schedule card template incomplete badge and detail row",
+  "target": "default",
+  "route": "/agents?tab=scheduled",
+  "highlight": "[data-testid=\"schedule-template-warn\"]",
+  "state": "agents:scheduledSeeded"
+}
+]
+```
+
 ## Screenshots
 
 ![3](/api/tasks/1026/attachments/att_7f4494fa-3f9a-4412-9743-b2405629c23b.png)
@@ -201,3 +214,4 @@ Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the 
 - 2026-11-04T23:10:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T23:15:09Z · message_delivered: 1 message(s)
 - 2026-11-04T23:15:10Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-04T23:15:54Z · body
