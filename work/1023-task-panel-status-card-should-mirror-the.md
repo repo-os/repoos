@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-panel-status-card-should-mirror-the
 created_at: "2026-11-04T05:34:26Z"
-updated_at: "2026-11-04T10:25:55Z"
+updated_at: "2026-11-04T10:25:56Z"
 ---
 ## Problem
 While #1016 ran its handoff checks, the board card showed "RUNNING CHECKS" with the animated activity indicator (the style chosen in Settings, `activityAnimationStyle`). The task panel for the same task showed a different, static three-row block: "Confirming handoff / Handoff / Running checks…". The rows repeat each other, add no information, and leave mostly empty space. The card and the panel disagree about the same state. This was meant to be fixed already (see `eef0c75d6`, `a79124e85`, `68b544019`), but the panel's `confirmingHandoff` case still builds fixed three-line text.
@@ -85,3 +85,4 @@ Acceptance addition: for integrating, queued and validating states, the panel pi
 - 2026-11-04T10:25:40Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T10:25:55Z · queued message undelivered for 61m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-04T10:25:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T10:25:56Z · message_delivered: 1 message(s)
