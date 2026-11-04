@@ -13,7 +13,7 @@
  * part of the task file, so writing it can never dirty main or a task branch.
  * All writes are best-effort: a status write must never fail a handoff.
  */
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Agent, RepoOSConfig } from "../core/types.js";
 import type { AgentRunner } from "./agents.js";
@@ -113,9 +113,10 @@ function writeHandoffStatus(config: RepoOSConfig, status: HandoffStatus): void {
   try {
     const path = handoffStatusPath(config, status.taskId);
     mkdirSync(dirname(path), { recursive: true });
-    const tmp = `${path}.${process.pid}.tmp`;
-    writeFileSync(tmp, `${JSON.stringify(status, null, 2)}\n`);
-    renameSync(tmp, path);
+    // Direct write: only this server writes the record and the CLI reads it
+    // through the API, so atomic replace (which is not portable to Windows
+    // when the destination exists) buys nothing here.
+    writeFileSync(path, `${JSON.stringify(status, null, 2)}\n`);
   } catch {
     // Best-effort only: the handoff is the important operation.
   }
@@ -268,8 +269,13 @@ export function deliverHandoffOutcome(
   if (status.outcomeQueued) return false;
   const text = formatHandoffOutcomeMessage(status);
   if (!text) return false;
-  const result = runner.queueTaskMessage(taskId, text, agent);
-  if (!result.ok) return false;
-  markHandoffOutcomeQueued(config, taskId, status.attemptKey ?? "");
-  return true;
+  try {
+    const result = runner.queueTaskMessage(taskId, text, agent);
+    if (!result.ok) return false;
+    markHandoffOutcomeQueued(config, taskId, status.attemptKey ?? "");
+    return true;
+  } catch {
+    // A failed notification must never turn a completed handoff into an error.
+    return false;
+  }
 }
