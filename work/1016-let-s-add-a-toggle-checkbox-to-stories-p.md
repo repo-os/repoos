@@ -12,7 +12,7 @@ branch: feat/add-hide-completed-stories-toggle-to-sto
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-11-03T09:13:40Z"
-updated_at: "2026-11-04T10:30:58Z"
+updated_at: "2026-11-04T10:36:25Z"
 last_close_out_gate_ms: 646089
 last_close_out_gate_at: "2026-11-04T10:30:58.037Z"
 review_passes: 1
@@ -126,4 +126,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 - 2026-11-04T08:53:49Z · status active→review
 - 2026-11-04T08:54:46Z · note: review pass 1: good to go
 - 2026-11-04T10:30:58Z · close-out gate completed in 646s
-
+- 2026-11-04T10:36:25Z · status done→done, release:success
