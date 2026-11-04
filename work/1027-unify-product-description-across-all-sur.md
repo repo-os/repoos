@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 957678
-last_close_out_gate_at: "2026-11-04T10:52:45.920Z"
 id: 1027
 title: Unify product description across all surfaces
 type: chore
-status: review
+status: done
 priority: p2
 area: [landing, docs, server, infra]
+merged_commit: "096f9d8b997a61945859ee69b22a7263791200b3"
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-product-description-across-all-sur
 created_at: "2026-11-04T06:53:26Z"
 updated_at: "2026-11-04T10:52:45Z"
+last_close_out_gate_ms: 957678
+last_close_out_gate_at: "2026-11-04T10:52:45.920Z"
 review_passes: 1
 ---
 ## Problem

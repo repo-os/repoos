@@ -6,7 +6,8 @@ license: FSL-1.1-MIT
 
 # RepoOS
 
-RepoOS keeps a project's task board in the repository itself. Tasks are Markdown
+Your AI dev team, living in your repo, for CTOs and builders. RepoOS keeps a
+project's task board in the repository itself. Tasks are Markdown
 files with their status in YAML frontmatter, coding agents work them in isolated
 Git worktrees, and a person reviews and approves every merge. It is local-first
 and has no hosted service behind it.
