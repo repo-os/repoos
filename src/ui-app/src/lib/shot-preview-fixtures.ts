@@ -1370,6 +1370,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     case "drawer:statusChecksRunning": {
       ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      // Handoff in flight: the card and the panel both read "running checks"
+      // while this gate runs (#1023).
+      repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "check";
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
         {
           id: "shot-drawer-check-running",
