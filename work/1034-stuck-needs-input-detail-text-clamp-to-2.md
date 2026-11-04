@@ -115,3 +115,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T16:24:12Z · message_queued at 2026-11-04T16:24:12.417Z
 - 2026-11-04T16:24:15Z · message_delivered: 1 message(s)
 - 2026-11-04T16:26:19Z · CTO nudge: held — remote validation is running
+- 2026-11-04T16:29:42Z · note: handoff requested (cli)
