@@ -97,3 +97,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T14:38:03Z · note: handoff requested (cli)
 - 2026-11-04T14:54:59Z · message_queued at 2026-11-04T14:54:59.206Z
 - 2026-11-04T14:54:59Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1218 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
+- 2026-11-04T14:54:59Z · message_delivered: 2 message(s)
