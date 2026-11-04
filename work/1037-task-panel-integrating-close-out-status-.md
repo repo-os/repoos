@@ -11,7 +11,7 @@ branch: feat/task-panel-integrating-close-out-status-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T18:25:01Z"
-updated_at: "2026-11-04T20:45:23Z"
+updated_at: "2026-11-04T20:51:43Z"
 ---
 ## Problem
 
@@ -40,6 +40,40 @@ This was already asked for in #0952 (all status content between the preview line
 
 Look at where the drawer header renders the integration pill/status (grep TaskDrawer.vue for the integrating label and the Stop MTD button) and at the status-line component used for `coding · active …`. Reuse them; do not add bespoke styles (AGENTS.md: shared dialog and form classes, aligned layouts). Related: #0952 (one card + one status line above the tabs), #0922, #0995 (card integrating text).
 
+## Shots
+```json
+[
+{
+  "label": "Close-out building candidate on the status line",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:closeOutBuilding"
+},
+{
+  "label": "Close-out building candidate at a narrow panel width",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:closeOutBuildingNarrow"
+},
+{
+  "label": "Close-out remote tests on the status line",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:closeOutRemoteTests"
+},
+{
+  "label": "Close-out remote tests at a narrow panel width",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:closeOutRemoteTestsNarrow"
+}
+]
+```
+
 ## Screenshots
 
 ![Correct: #1035 'coding · active 3m ago' status is its own full-width info card directly above the tabs](/api/tasks/1037/attachments/att_60b8edd5-80a0-4ef7-9311-ead64b507da4.png)
@@ -53,3 +87,4 @@ Look at where the drawer header renders the integration pill/status (grep TaskDr
 - 2026-11-04T20:35:03Z · cli_override
 - 2026-11-04T20:35:04Z · model_override
 - 2026-11-04T20:45:23Z · status ready→active, branch
+- 2026-11-04T20:51:43Z · body
