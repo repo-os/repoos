@@ -3,6 +3,9 @@ id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: Reading additional input from stdin...
 priority: p2
 area: web
 assigned_to: ai
@@ -13,9 +16,9 @@ model_override: gpt-6-luna
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T14:39:01Z"
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:21:54.554Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:22:52.946Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:31:00.632Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-04T14:45:47Z"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:21:54.554Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:22:52.946Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:31:00.632Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-04T14:45:47.073Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -48,18 +51,18 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 ```json
 [
 {
-  "label": "Board card clamps long check-wait detail",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-needs-input-detail\"]",
-  "state": "card:checkWaitDetail"
+"label": "Board card clamps long check-wait detail",
+"target": "default",
+"route": "/",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-needs-input-detail\"]",
+"state": "card:checkWaitDetail"
 },
 {
-  "label": "Drawer waiting block clamps check-wait detail",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": "[data-test-id=\"drawer-needs-input-detail\"]",
-  "state": "drawer:checkWaitDetail"
+"label": "Drawer waiting block clamps check-wait detail",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": "[data-test-id=\"drawer-needs-input-detail\"]",
+"state": "drawer:checkWaitDetail"
 }
 ]
 ```
@@ -90,3 +93,5 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:37:47Z · cli_override, model_override
 - 2026-11-04T14:37:49Z · needs_input
 - 2026-11-04T14:39:01Z · body
+- 2026-11-04T14:45:47Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-11-04T14:45:47Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · Reading additional input from stdin...
