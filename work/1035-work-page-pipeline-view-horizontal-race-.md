@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T17:31:58Z"
+updated_at: "2026-11-04T17:31:59Z"
 ---
 ## Problem
 
@@ -68,7 +68,7 @@ Area chips and the file-count chip are left off to hold four lines. Build the ca
 ![Approved Pipeline view mockup, light and dark](/api/tasks/1035/attachments/att_11dd76d3-db5c-4cb5-a3de-9376193d9be7.png)
 
 ## Visual reference
-Approved mockup (light and dark, solid hairline guides, cards centered in their lanes) is attached below under Screenshots. Summary of colours: card is one step above the page surface in both themes, chips use the page's chip surface, success tint for Merged, amber for sent-back, red for stuck. Use existing theme tokens only.
+Approved mockup (light and dark, solid hairline guides, cards centered in their lanes) is attached above under Screenshots (third image). Colours: card is one step above the page surface in both themes, chips use the page's chip surface, success tint for Merged, amber for sent-back, red for stuck. Use existing theme tokens only.
 
 ## Activity
 
@@ -77,3 +77,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T17:22:46Z · screenshots
 - 2026-11-04T17:31:45Z · body: Visual reference (added)
 - 2026-11-04T17:31:58Z · body: Desired UX (removed 2)
+- 2026-11-04T17:31:59Z · body: Visual reference (added 1, removed 1)
