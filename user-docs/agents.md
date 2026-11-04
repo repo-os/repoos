@@ -50,9 +50,10 @@ See `docs/reminders.md` for the storage format and API.
 Before handing off after a passing check, engineers write a report draft in the
 worktree's configured cache directory (`.repoos` by default) at
 `<cacheDir>/engineering-report-drafts/<task-id>.md`. Use the
-five required sections and aim for 500–600 words; RepoOS rejects drafts above
-1,000 words, finalizes one immutable report per round, and generates the Git
-change summary itself. See [Engineering reports](/engineering-reports) for the
+five required sections and aim for around 1,000 words as a soft target; RepoOS
+rejects narratives above 1,200 words (the generated change summary never
+counts), finalizes one immutable report per round, and generates the Git change
+summary itself. See [Engineering reports](/engineering-reports) for the
 format and lifecycle. Reviewers receive the latest round in their prompt and
 must weigh its rationale, experiments, and known limitations with the diff.
 
