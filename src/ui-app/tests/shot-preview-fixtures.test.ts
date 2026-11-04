@@ -14,6 +14,7 @@ import {
   shotFixturePinnedIntegration,
   shotFixturePinnedRemoteStatus,
   shotFixturePinnedTaskRemoteActivity,
+  shotFixturePinnedWorkingDiff,
   shotFixtureSchedules,
   shotPreviewSkipsEngineeringReportsFetch,
 } from "../src/lib/shot-preview-fixtures";
@@ -55,6 +56,23 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(new Set(repo.tasks.map((t) => t.story)).size).toBe(15);
     expect(repo.tasks.every((t) => !t.branch)).toBe(true);
     expect(config.data.stories).toEqual({ enabled: true });
+  });
+
+  it("pins a dirty repo-root checkout for the dirty-main button shot (#1030)", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "repo:dirtyMain");
+    expect(repo.gitStatus).toMatchObject({ ok: true, branch: "main", detached: false });
+    expect(repo.gitStatus?.dirty.map((f) => f.path)).toEqual([
+      "src/ui-app/src/components/SidebarGitState.vue",
+      "src/ui-app/src/style.css",
+      "notes/scratch.md",
+    ]);
+    expect(shotFixturePinnedWorkingDiff()?.patch).toContain("side-git-dirty");
+
+    // A different fixture resets the pin so the next capture sees live state.
+    applyShotPreviewFixture(repo, "pages:scroll");
+    expect(shotFixturePinnedWorkingDiff()).toBeNull();
   });
 
   it("seeds six working task cards for activity captures", () => {
