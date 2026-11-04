@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 1
 id: "0715"
 title: pi engineer ends turns cleanly without requesting handoff; stderr not surfaced; recovery is slow and the CTO cannot see why
 type: bug
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T15:22:39Z"
+updated_at: "2026-11-04T15:22:50Z"
+close_out_repair_count: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -114,4 +114,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:22:39Z · status review→active
 - 2026-11-04T15:22:39Z · note: close-out repair: gate-failure
 - 2026-11-04T15:22:39Z · message_delivered: 2 message(s)
-
+- 2026-11-04T15:22:50Z · message_queued at 2026-11-04T15:22:50.471Z
