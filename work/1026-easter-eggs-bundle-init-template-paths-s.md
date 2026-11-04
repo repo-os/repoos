@@ -12,50 +12,129 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T06:45:42Z"
+updated_at: "2026-11-04T06:45:56Z"
 ---
 ## Items
+
 - E1 · Generated AGENTS.md template references nonexistent paths
-- E2 · `serve` banner/docs: say which interfaces are bound
+- E2 · `serve` banner and docs: say which interfaces are bound
 - E3 · cli.md missing commands
 - E4 · Empty-repo git edge cases
 - E5 · Quieter `repoos list` with no server
-- E6 · Doc/message accuracy nits
+- E6 · Doc and message accuracy nits
+
+Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body.
 
 ## E1 · Generated AGENTS.md template references nonexistent paths
-Problem: `repoos init` template in src/commands/init.ts (~L211, ~L335) cites `docs/agent-process-safety.md` and `src/core/shot-plan.ts` (and 4 other RepoOS-internal paths), so `repoos doctor` warns on a brand-new project.
-Fix: strip RepoOS-internal paths from the template (link to docs.repoos.org URLs where useful).
-Test: fresh `repoos init` project passes `repoos doctor` with no warnings.
 
-## E2 · `serve` banner/docs
-Problem: serve binds 127.0.0.1 by default but 0.0.0.0 when Tailscale is detected (src/commands/serve.ts ~L72-91), advertises the Tailscale IP with an HTTPS warning, while docs call it a local server. Behavior is intentional; do not change it.
-Fix: startup banner states bound interfaces; docs state that Tailscale detection widens the bind and how to force localhost (`--host`).
-Test: banner text for both branches.
+### Problem
+
+`repoos init`'s template (src/commands/init.ts ~L211, ~L335) cites RepoOS-internal paths such as `docs/agent-process-safety.md` and `src/core/shot-plan.ts` (6 in total), so `repoos doctor` warns on a brand-new project.
+
+### Desired UX
+
+A fresh `repoos init` project passes `repoos doctor` with no warnings.
+
+### Acceptance criteria
+
+- [ai] Test: init a temp project and assert doctor reports no missing-path warnings.
+
+### Notes for AI
+
+Strip RepoOS-internal paths from the template; link docs.repoos.org URLs where a reference is useful. This edits the `repoos init` template, not this repo's AGENTS.md.
+
+## E2 · `serve` banner and docs: say which interfaces are bound
+
+### Problem
+
+`serve` binds 127.0.0.1 by default but 0.0.0.0 when Tailscale is detected (src/commands/serve.ts ~L72-91), advertises the Tailscale IP with an HTTPS warning, while docs call it a local server.
+
+### Desired UX
+
+The startup banner states the bound interface; docs explain that Tailscale detection widens the bind and that `--host 127.0.0.1` forces localhost.
+
+### Acceptance criteria
+
+- [ai] Test: banner text for both the Tailscale and plain branches.
+
+### Notes for AI
+
+Behavior is intentional; do not change the default bind.
 
 ## E3 · cli.md missing commands
-Problem: cli.md lacks `repoos uninstall`, `repoos service`, `--version`.
-Fix: document them.
-Test: docs-vs-CLI command list check if one exists, else a simple assertion.
+
+### Problem
+
+cli.md lacks `repoos uninstall`, `repoos service` and `--version`.
+
+### Desired UX
+
+All three are documented.
+
+### Acceptance criteria
+
+- [ai] Test: assert each command name appears in the CLI docs.
+
+### Notes for AI
+
+Match the existing cli.md format.
 
 ## E4 · Empty-repo git edge cases
-Problem: in a git-init'd repo with no commits, `repoos status` says "git: not a git repository"; first `repoos new` prints "commit failed" even with identity set via env vars; `init --new` identity warning ignores env-var identity (GIT_AUTHOR_*/GIT_COMMITTER_*). `new` auto-commits and this is undocumented.
-Fix: correct repo/identity detection (likely one shared cause), document the auto-commit.
-Test: zero-commit repo and env-var identity fixtures.
+
+### Problem
+
+In a git-init'd repo with no commits: `repoos status` says "git: not a git repository"; the first `repoos new` prints "commit failed" even with identity set via env vars; the `init --new` identity warning ignores env-var identity (GIT_AUTHOR_*/GIT_COMMITTER_*). `new` auto-commits and this is undocumented.
+
+### Desired UX
+
+Repo and identity detection are correct in a zero-commit repo and with env-var identity; auto-commit is documented.
+
+### Acceptance criteria
+
+- [ai] Test: zero-commit repo and env-var identity fixtures for status, new and init --new.
+
+### Notes for AI
+
+Likely one shared cause in repo/identity detection; check before fixing three times.
 
 ## E5 · Quieter `repoos list` with no server
-Problem: prints a long "Can't reach the RepoOS server…" warning before the board.
-Fix: shorten to one line.
-Test: output snapshot.
 
-## E6 · Doc/message accuracy nits
-Problem: `repoos check` points at `user-docs/check.md` instead of a URL; docs say "no board database" but serve creates gitignored `.repoos/repoos.db`.
-Fix: use a docs URL; correct the docs sentence.
-Test: string assertions.
+### Problem
 
-## Notes for AI
-Source: external QA report on v0.5.75 (items 3, 4, 13–18). Commit per item. Item 12 (VitePress `:::` markers raw in .md pages, llms.txt descriptions, .md links to HTML) is a possible later add if the bundle is under 6 items — otherwise leave it.
+With no server running, `repoos list` prints a long "Can't reach the RepoOS server…" warning before the board.
+
+### Desired UX
+
+One short line, then the board.
+
+### Acceptance criteria
+
+- [ai] Test: output snapshot.
+
+### Notes for AI
+
+Keep the actionable hint (how to start the server).
+
+## E6 · Doc and message accuracy nits
+
+### Problem
+
+`repoos check` references `user-docs/check.md` instead of a URL; docs say "no board database" but serve creates gitignored `.repoos/repoos.db`.
+
+### Desired UX
+
+The message links a docs URL; the docs sentence is accurate.
+
+### Acceptance criteria
+
+- [ai] Test: string assertions on both.
+
+### Notes for AI
+
+Source: external QA report on v0.5.75, items 3, 4, 13-18.
 
 ## Activity
 
 - 2026-11-04T06:45:41Z · created · njachowski@gmail.com
 - 2026-11-04T06:45:42Z · needs_input
+- 2026-11-04T06:45:56Z · body: Items (added 3, removed 2); E1 · Generated AGENTS.md template references nonexistent paths (added 8, removed 3); E2 · `serve` banner and docs: say which interfaces are bound (added); E3 · cli.md missing commands (added 8, removed 3); E4 · Empty-repo git edge cases (added 8, removed 3); E5 · Quieter `repoos list` with no server (added 8, removed 3); E6 · Doc and message accuracy nits (added); E2 · `serve` banner/docs (removed); E6 · Doc/message accuracy nits (removed); Notes for AI (removed)
