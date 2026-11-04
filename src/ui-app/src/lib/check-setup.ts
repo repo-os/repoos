@@ -33,7 +33,7 @@ export function checkSetupTaskBody(): string {
     "4. Run `repoos check` until it passes — the gate must not report green on an empty plan,",
     "   but a configured plan has nothing to pass yet if the steps skip cleanly.",
     "",
-    "Reference: user-docs/check.md.",
+    "Reference: https://docs.repoos.org/check.",
   ].join("\n");
 }
 
@@ -42,7 +42,7 @@ export function checkSetupCliHint(): string {
   return (
     "Add checks: `repoos check --print-plan` prints a starting [[check.steps]] TOML " +
     "(works once a package.json, go.mod, Cargo.toml or gradlew exists) — commit the steps " +
-    "to repoos.toml. See user-docs/check.md."
+    "to repoos.toml. See https://docs.repoos.org/check."
   );
 }
 

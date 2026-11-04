@@ -22,7 +22,7 @@ features:
     link: /getting-started
     linkText: Install and initialize
   - title: Tasks are files, status is a field
-    details: Every task is a markdown file in your configured task directory (repoos/work/ on a fresh install), with its status in YAML frontmatter — inbox, ready, active, review, done. Edited in place, versioned by git, no board database to lose.
+    details: Every task is a markdown file in your configured task directory (repoos/work/ on a fresh install), with its status in YAML frontmatter — inbox, ready, active, review, done. Edited in place, versioned by git. There is no separate board database; RepoOS may create gitignored runtime files under `.repoos/` (such as `repoos.db` when auth is on). The UI is a view over the task files.
     link: /concepts
     linkText: How tasks work
   - title: Agents work in isolation

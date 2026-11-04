@@ -4,9 +4,11 @@
 
 A task is a markdown file in your configured task directory (`repoos/work/` on
 a fresh install). Its status is a field in that file's
-YAML frontmatter. There's no board database behind the UI — the UI is a view
-over the files, and anything derived (the index, caches) can be deleted and
-rebuilt.
+YAML frontmatter. Tasks are markdown files — there is no separate board
+database behind the UI. RepoOS may create gitignored runtime files under
+`.repoos/` (for example `repoos.db` when login is enabled); those are not the
+task board. The UI is a view over the task files, and anything derived (the
+index, caches) can be deleted and rebuilt.
 
 This has practical consequences you'll feel immediately:
 

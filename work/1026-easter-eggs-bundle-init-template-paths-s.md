@@ -12,11 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T23:41:57Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-04T23:30:06.243Z: repoos check failed: reused check inputs changed during handoff — run the check again"
-review_passes: 2
-review_rounds: 1
+updated_at: "2026-11-04T22:34:37Z"
 ---
 ## Items
 - E1 · Generated AGENTS.md template references nonexistent paths
@@ -159,19 +155,6 @@ Saving a schedule (create or update) runs the same underspecified check the boar
 
 Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the template's `task_area` and `task_assigned_to`. Save paths are `createSchedule` / `updateSchedule` in `src/core/schedule.ts` and the routes in `src/server/routes/schedules.ts`; keep the existing hard validation errors as they are and add the warning as a separate, non-blocking field. Keep it to that: if it grows beyond a warning field plus a badge, split it into its own task. Source: Nick, 2026-11-05, after #1008.
 
-## Shots
-```json
-[
-{
-"label": "Schedule card template incomplete badge and detail row",
-"target": "default",
-"route": "/agents?tab=scheduled",
-"highlight": "[data-testid=\"schedule-template-warn\"]",
-"state": "agents:scheduledSeeded"
-}
-]
-```
-
 ## Screenshots
 
 ![3](/api/tasks/1026/attachments/att_7f4494fa-3f9a-4412-9743-b2405629c23b.png)
@@ -198,32 +181,4 @@ Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the 
 - 2026-11-04T21:17:27Z · model_override
 - 2026-11-04T21:17:31Z · review_model_override
 - 2026-11-04T21:17:34Z · status ready→active, branch
-- 2026-11-04T21:30:05Z · message_queued at 2026-11-04T21:30:05.970Z
-- 2026-11-04T21:30:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T21:32:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T22:03:52Z · body
-- 2026-11-04T22:14:19Z · body
-- 2026-11-04T22:20:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T22:34:37Z · status active→review
-- 2026-11-04T22:34:38Z · message_queued at 2026-11-04T22:34:38.106Z
-- 2026-11-04T22:37:12Z · note: review pass 1: needs some work
-- 2026-11-04T22:37:13Z · message_delivered: 1 message(s)
-- 2026-11-04T22:37:13Z · status review→active
-- 2026-11-04T22:37:16Z · CTO nudge: held — remote validation is running
-- 2026-11-04T22:49:44Z · body
-- 2026-11-04T22:55:05Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T23:07:44Z · message_queued at 2026-11-04T23:07:44.065Z
-- 2026-11-04T23:10:05Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T23:15:09Z · message_delivered: 1 message(s)
-- 2026-11-04T23:15:10Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-- 2026-11-04T23:15:54Z · body
-- 2026-11-04T23:25:05Z · message_queued at 2026-11-04T23:25:05.839Z
-- 2026-11-04T23:25:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T23:25:17Z · body
-- 2026-11-04T23:27:42Z · body
-- 2026-11-04T23:27:56Z · status active→review
-- 2026-11-04T23:29:40Z · note: review pass 2: good to go
-- 2026-11-04T23:30:03Z · message_queued at 2026-11-04T23:30:03.014Z
-- 2026-11-04T23:30:06Z · message_delivered: 1 message(s)
-- 2026-11-04T23:39:50Z · body
-- 2026-11-04T23:41:57Z · message_queued at 2026-11-04T23:41:57.005Z

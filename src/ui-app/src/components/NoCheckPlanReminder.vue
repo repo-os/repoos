@@ -63,7 +63,7 @@ async function copyHint(): Promise<void> {
       <code class="ncpr-code">package.json</code>, <code class="ncpr-code">go.mod</code>,
       <code class="ncpr-code">Cargo.toml</code> or <code class="ncpr-code">gradlew</code>) — then
       commit the steps to <code class="ncpr-code">repoos.toml</code>. Docs:
-      <code class="ncpr-code">user-docs/check.md</code>.
+      <a class="ncpr-link" href="https://docs.repoos.org/check">docs.repoos.org/check</a>.
     </p>
     <div class="ncpr-actions">
       <button type="button" class="ncpr-btn ncpr-primary" :disabled="filing" @click="fileTask">

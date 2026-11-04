@@ -143,9 +143,7 @@ async function listTasksViaApi(
     const { root } = boardRoot();
     return { rootName: root.split("/").pop() ?? "repo", tasks };
   } catch (error) {
-    console.warn(
-      `[repoos] task API unavailable; falling back to the local index: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    console.warn(`[repoos] Server unavailable — using local index. Start with \`repoos serve\`.`);
     return null;
   }
 }
