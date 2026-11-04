@@ -11,7 +11,7 @@ branch: feat/review-and-safely-clean-task-worktrees
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-01T22:00:49Z"
-updated_at: "2026-11-04T23:14:41Z"
+updated_at: "2026-11-04T23:15:20Z"
 ---
 ## Problem
 
@@ -87,3 +87,4 @@ Done and archived worktrees that `repoos gc` still retains stay for the safety r
 - 2026-11-04T23:12:45Z · body: Cleanup report (added)
 - 2026-11-04T23:12:45Z · message_queued at 2026-11-04T23:12:45.945Z
 - 2026-11-04T23:14:41Z · body
+- 2026-11-04T23:15:20Z · handoff_deferred: 1 queued message(s) must be read before review
