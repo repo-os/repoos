@@ -71,7 +71,7 @@ function pipeline(over: Partial<IntegrationPipelineSnapshot> = {}): IntegrationP
   };
 }
 
-function stubApi(task: Task): void {
+function stubApi(task: Task, opts: { reviewRunning?: boolean } = {}): void {
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal(
     "fetch",
@@ -86,7 +86,13 @@ function stubApi(task: Task): void {
         });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/review"))
-        return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        return json({
+          ok: true,
+          running: opts.reviewRunning ?? false,
+          enabled: true,
+          review: null,
+          lines: [],
+        });
       if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
       return json({ ok: true });
     }),
@@ -173,6 +179,57 @@ describe("task panel status label matches the board card (#1023)", () => {
     const rows = summary.findAll(".drawer-status-row").map((row) => row.text().trim());
     expect(rows.every(Boolean)).toBe(true);
     expect(new Set(rows).size).toBe(rows.length);
+    card.unmount();
+    drawer.unmount();
+  });
+
+  it("names live engineering work exactly as the card does", async () => {
+    const task = activeTask();
+    stubApi(task);
+    const repo = useRepoStore();
+    repo.runningIds = [task.id];
+
+    const card = await mountCard(pinia, task);
+    const drawer = await mountDrawer(pinia, task);
+
+    const expected = cardLabel(card);
+    expect(expected).toBe("coding");
+    const summary = drawer.find(".drawer-status-summary");
+    expect(summary.find(".drawer-status-l1").text()).toBe(expected);
+    expect(summary.find(".drawer-status-l1 .ai").exists()).toBe(true);
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
+    card.unmount();
+    drawer.unmount();
+  });
+
+  it("names a running reviewer exactly as the card does", async () => {
+    const task = makeTask({
+      status: "review",
+      branch: "feat/status-summary",
+      git: {
+        branchExists: true,
+        worktreeExists: true,
+        lastCommit: null,
+        lastCommitAt: null,
+        worktreePath: "/tmp/repo/.worktrees/0001",
+        dirty: false,
+      },
+    });
+    stubApi(task, { reviewRunning: true });
+    const repo = useRepoStore();
+    repo.reviews = {
+      [task.id]: { running: true, enabled: true, lines: [], report: null },
+    };
+
+    const card = await mountCard(pinia, task);
+    const drawer = await mountDrawer(pinia, task);
+
+    const expected = cardLabel(card);
+    expect(expected).toBe("Reviewing…");
+    const summary = drawer.find(".drawer-status-summary");
+    expect(summary.find(".drawer-status-l1").text()).toBe(expected);
+    expect(summary.find(".drawer-status-l1 .ai").exists()).toBe(true);
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
     card.unmount();
     drawer.unmount();
   });
