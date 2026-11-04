@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 565975
-last_close_out_gate_at: "2026-11-04T13:31:29.358Z"
 id: 1032
 title: "Slot heartbeat age compares process-relative Bun hrtime across processes: false 'stalled' alarms and possible live-slot reclaim"
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: 8f3ce052168bdd397ce02cdad881dba32f7a206a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/slot-heartbeat-age-compares-process-rela
 created_at: "2026-11-04T12:04:25Z"
 updated_at: "2026-11-04T13:31:29Z"
+last_close_out_gate_ms: 565975
+last_close_out_gate_at: "2026-11-04T13:31:29.358Z"
 review_passes: 1
 ---
 ## Problem
