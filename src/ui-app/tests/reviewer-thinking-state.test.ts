@@ -136,11 +136,13 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     // One short status card and one live status line sit above the tabs.
     const working = wrapper.find(".drawer-status-summary");
     expect(working.exists()).toBe(true);
-    expect(working.find(".drawer-status-l1").text()).toContain("Reviewer running");
-    expect(working.find(".drawer-status-l3").text()).toContain("Reviewer is working…");
+    expect(working.find(".drawer-status-l1").text()).toContain("Reviewing…");
+    // The heading and its animation carry the state; no row repeats it.
+    expect(working.findAll(".drawer-status-row")).toHaveLength(1);
+    expect(working.find(".drawer-status-l1 .ai").exists()).toBe(true);
     expect(wrapper.findAll(".drawer-status-summary")).toHaveLength(1);
     expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
-    expect(wrapper.text().match(/Reviewer is working…/g)).toHaveLength(1);
+    expect(wrapper.text().match(/Reviewing…/g)).toHaveLength(1);
 
     // Switching to another tab must not surface a second reviewer indicator —
     // historically the Review tab carried its own animated badge here.
@@ -148,7 +150,7 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     ui.activeTab = "details";
     await flush();
     expect(wrapper.findAll(".tab-btn .ai")).toHaveLength(0);
-    expect(wrapper.text().match(/Reviewer is working…/g)).toHaveLength(1);
+    expect(wrapper.text().match(/Reviewing…/g)).toHaveLength(1);
 
     // The Review tab no longer repeats the working status as its own banner or
     // an animated "thinking" placeholder.
@@ -192,7 +194,7 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     await repo.init();
 
     const wrapper = await mountDrawer(pinia, task);
-    expect(wrapper.find(".drawer-status-l3").text()).toContain("Reviewer is working…");
+    expect(wrapper.find(".drawer-status-l1").text()).toContain("Reviewing…");
 
     // The review finishes: SSE marks it ready and the report is loaded.
     FakeEventSource.instances[0].emit("review", {
@@ -205,7 +207,7 @@ describe("reviewer thinking state in the task panel (#0209)", () => {
     await flush();
 
     expect(repo.reviewFor("0001")?.running).toBe(false);
-    expect(wrapper.text()).not.toContain("Reviewer is working…");
+    expect(wrapper.text()).not.toContain("Reviewing…");
     expect(wrapper.find(".review-running").exists()).toBe(false);
     expect(wrapper.find(".review-thinking").exists()).toBe(false);
     // The report now appears as usual.

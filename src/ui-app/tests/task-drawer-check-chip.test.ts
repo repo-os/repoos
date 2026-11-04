@@ -172,7 +172,7 @@ describe("task drawer check chip (#0564)", () => {
     ];
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    expect(wrapper.find(".drawer-status-l1").text()).toContain("Checks running");
+    expect(wrapper.find(".drawer-status-l1").text()).toContain("running checks");
     expect(wrapper.find(".drawer-status-l2").text()).toContain("on macbook");
     expect(wrapper.find(".drawer-status-l3").text()).toContain(
       "Step 5 of 12 · tests 140/289 files",
@@ -248,7 +248,7 @@ describe("task drawer check chip (#0564)", () => {
     );
 
     const wrapper = await mountDrawer(pinia, makeTask());
-    expect(wrapper.find(".drawer-status-l1").text()).toContain("Checks running");
+    expect(wrapper.find(".drawer-status-l1").text()).toContain("running checks");
     expect(wrapper.find(".drawer-status-l2").text()).toContain("on macbook");
   });
 
