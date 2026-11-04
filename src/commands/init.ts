@@ -224,7 +224,8 @@ hand off with \`repoos mv <id> review\`; see the operating loop below.
 For a RepoOS-managed task runner:
 
 1. Read this file, your assigned task under \`${workDir}/\`, and relevant
-   project docs under \`${docsDir}/\`. Before reading a
+   project docs under \`${docsDir}/\`. Maintain ${docsDir}/README.md as the
+   reading-order index as the doc set grows. Before reading a
    large file, run \`repoos outline <path>\` to get its symbols with line
    numbers, then read only the range you need instead of the whole file.
 2. Work in the task branch and dedicated worktree RepoOS assigned. The server
