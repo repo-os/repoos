@@ -112,10 +112,9 @@ function progressSuffix(p: PipelineCheckProgress | null): string {
  * but no bounce counter (manual "Review again" / older records) counts once.
  * A task still in `review` was never sent back by the pass it is showing.
  */
-export function pipelineSentBackCount(input: Pick<
-  PipelineTaskInput,
-  "status" | "reviewPasses" | "reviewRounds"
->): number {
+export function pipelineSentBackCount(
+  input: Pick<PipelineTaskInput, "status" | "reviewPasses" | "reviewRounds">,
+): number {
   if (input.reviewRounds > 0) return input.reviewRounds;
   if (input.status === "active" && input.reviewPasses > 0) return 1;
   return 0;
@@ -134,10 +133,7 @@ export function isPipelineVisible(
 }
 
 /** Map one task to its stage column, card state and step label. */
-export function resolvePipelineCard(
-  input: PipelineTaskInput,
-  _nowMs: number,
-): PipelineCardModel {
+export function resolvePipelineCard(input: PipelineTaskInput, _nowMs: number): PipelineCardModel {
   const sentBackCount = pipelineSentBackCount(input);
 
   if (input.status === "done") {
@@ -201,10 +197,9 @@ function laneTimeMs(t: Pick<PipelineTaskInput, "createdAt" | "id">): number {
  * (oldest `created_at`) rides at the top so a stale lane is visible without
  * scrolling. Ties break by id so the order is stable frame to frame.
  */
-export function sortPipelineLanes<T extends Pick<
-  PipelineTaskInput,
-  "priority" | "createdAt" | "id"
->>(tasks: readonly T[]): T[] {
+export function sortPipelineLanes<
+  T extends Pick<PipelineTaskInput, "priority" | "createdAt" | "id">,
+>(tasks: readonly T[]): T[] {
   return [...tasks].sort((a, b) => {
     const pa = PIPELINE_PRIORITY_RANK[a.priority] ?? 99;
     const pb = PIPELINE_PRIORITY_RANK[b.priority] ?? 99;

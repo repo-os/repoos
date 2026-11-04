@@ -1136,12 +1136,27 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         if (!repo.runningIds.includes(taskId)) repo.runningIds.push(taskId);
         repo.agentActivityAt = { ...repo.agentActivityAt, [taskId]: agoMin(activeMinAgo) };
       };
-      ensureFixtureTask(repo, "active", { title: "Coding lane: engineer writing code", priority: "p1" }, "pipe-coding");
+      ensureFixtureTask(
+        repo,
+        "active",
+        { title: "Coding lane: engineer writing code", priority: "p1" },
+        "pipe-coding",
+      );
       runAgent("pipe-coding", 0);
-      ensureFixtureTask(repo, "active", { title: "Checks lane: self-check running", priority: "p2" }, "pipe-checks");
+      ensureFixtureTask(
+        repo,
+        "active",
+        { title: "Checks lane: self-check running", priority: "p2" },
+        "pipe-checks",
+      );
       runAgent("pipe-checks", 9);
       runCheck("pipe-checks", "merge-gate", 6, 3, 8);
-      ensureFixtureTask(repo, "active", { title: "Handoff lane: confirming handoff", priority: "p0" }, "pipe-handoff");
+      ensureFixtureTask(
+        repo,
+        "active",
+        { title: "Handoff lane: confirming handoff", priority: "p0" },
+        "pipe-handoff",
+      );
       runAgent("pipe-handoff", 12);
       runCheck("pipe-handoff", "handoff-finalize", 4, 2, 8);
       pinnedTaskRemoteActivity["pipe-handoff"] = {
@@ -1158,12 +1173,22 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         queue: null,
       };
       repo.taskRemoteActivity["pipe-handoff"] = pinnedTaskRemoteActivity["pipe-handoff"]!;
-      ensureFixtureTask(repo, "review", { title: "Review lane: reviewer inspecting", priority: "p1" }, "pipe-review");
+      ensureFixtureTask(
+        repo,
+        "review",
+        { title: "Review lane: reviewer inspecting", priority: "p1" },
+        "pipe-review",
+      );
       repo.reviews = {
         ...repo.reviews,
         ["pipe-review"]: { running: true, enabled: true, lines: [], report: null },
       };
-      ensureFixtureTask(repo, "review", { title: "Close-out lane: merging to main", priority: "p1" }, "pipe-closeout");
+      ensureFixtureTask(
+        repo,
+        "review",
+        { title: "Close-out lane: merging to main", priority: "p1" },
+        "pipe-closeout",
+      );
       repo.integration = activePipeline("pipe-closeout");
       pinnedIntegration = repo.integration;
       ensureFixtureTask(

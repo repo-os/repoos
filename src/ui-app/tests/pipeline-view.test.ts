@@ -106,7 +106,9 @@ describe("PipelineCard", () => {
   });
 
   it("uses a coloured chip for stuck instead of dot plus step", () => {
-    const wrapper = track(mount(PipelineCard, { props: cardProps({ state: "stuck", chipText: "Stuck" }) }));
+    const wrapper = track(
+      mount(PipelineCard, { props: cardProps({ state: "stuck", chipText: "Stuck" }) }),
+    );
     expect(wrapper.find(".pl-status-chip").text()).toBe("Stuck");
     expect(wrapper.find(".pl-dot").exists()).toBe(false);
   });
@@ -186,9 +188,30 @@ describe("PipelineView", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();
     repo.tasks = [
-      makeTask({ id: "2001", title: "newer p1", status: "active", priority: "p1", created_at: "2026-11-03T10:00:00Z", updated_at: new Date().toISOString() }),
-      makeTask({ id: "2002", title: "older p1", status: "active", priority: "p1", created_at: "2026-11-01T10:00:00Z", updated_at: new Date().toISOString() }),
-      makeTask({ id: "2003", title: "p0 wins", status: "active", priority: "p0", created_at: "2026-11-03T10:00:00Z", updated_at: new Date().toISOString() }),
+      makeTask({
+        id: "2001",
+        title: "newer p1",
+        status: "active",
+        priority: "p1",
+        created_at: "2026-11-03T10:00:00Z",
+        updated_at: new Date().toISOString(),
+      }),
+      makeTask({
+        id: "2002",
+        title: "older p1",
+        status: "active",
+        priority: "p1",
+        created_at: "2026-11-01T10:00:00Z",
+        updated_at: new Date().toISOString(),
+      }),
+      makeTask({
+        id: "2003",
+        title: "p0 wins",
+        status: "active",
+        priority: "p0",
+        created_at: "2026-11-03T10:00:00Z",
+        updated_at: new Date().toISOString(),
+      }),
     ] as never;
     const wrapper = track(mount(PipelineView));
     const ids = wrapper.findAll(".pipeline-card").map((c) => c.attributes("data-task-id"));

@@ -29,10 +29,7 @@ import {
 } from "../lib/integration-pipeline-ui";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
-import {
-  needsInputStatusLabel,
-  needsInputSurfaces,
-} from "../lib/needs-input-ui";
+import { needsInputStatusLabel, needsInputSurfaces } from "../lib/needs-input-ui";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import type { Task } from "../types";
 import PipelineCard, { type PipelineCardAction } from "./PipelineCard.vue";
@@ -82,8 +79,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
   const runningCheck = checks.find((r) => r.running) ?? null;
   const remoteActivity = repo.taskRemoteActivity[task.id] ?? null;
   const reviewState = repo.reviewFor(task.id);
-  const reviewRunning =
-    reviewState?.running ?? task.automaticReview?.running ?? false;
+  const reviewRunning = reviewState?.running ?? task.automaticReview?.running ?? false;
   const role = integrationPipelineRole(repo.integration, task.id);
   const closeoutActive = role === "active";
   const closeoutQueued = role === "queued";
@@ -160,7 +156,11 @@ function laneFor(task: Task, nowMs: number): Lane | null {
   const enabledAgents = (config.agents ?? []).filter((a) => a.enabled);
   const engineer = resolveEffectiveAgent(
     enabledAgents,
-    { agentOverride: task.agentOverride, cliOverride: task.cliOverride, modelOverride: task.modelOverride },
+    {
+      agentOverride: task.agentOverride,
+      cliOverride: task.cliOverride,
+      modelOverride: task.modelOverride,
+    },
     "engineer",
   );
   const reviewer = resolveEffectiveAgent(
@@ -191,7 +191,11 @@ function laneFor(task: Task, nowMs: number): Lane | null {
     chipText,
     stateSince: model.state === "merged" ? (task.releasedAt ?? task.updated_at) : task.updated_at,
     engineerRound: rounds.dev,
-    reviewerChipText: reviewerChip({ passes: rounds.review, tone: verdict?.tone ?? null, reviewRunning }),
+    reviewerChipText: reviewerChip({
+      passes: rounds.review,
+      tone: verdict?.tone ?? null,
+      reviewRunning,
+    }),
     reviewerTone: verdict?.tone ?? null,
     models: pipelineModelsLabel(engineer.model, reviewer.model),
     host: pipelineHostLabel(remoteActivity?.run?.host, remoteActivity?.queue?.host),
@@ -213,7 +217,9 @@ const lanes = computed<Lane[]>(() => {
     if (lane) out.push(lane);
   }
   // Priority, then longest in flight first — decided while building (#1035).
-  const order = new Map(sortPipelineLanes(out.map((l) => l.input)).map((input, i) => [input.id, i]));
+  const order = new Map(
+    sortPipelineLanes(out.map((l) => l.input)).map((input, i) => [input.id, i]),
+  );
   return out.sort((a, b) => (order.get(a.task.id) ?? 0) - (order.get(b.task.id) ?? 0));
 });
 
@@ -277,7 +283,11 @@ function stageCells(stage: PipelineStage): string {
               sentBackNote(lane.model.sentBackCount)
             }}</span>
           </div>
-          <div v-for="stage in PIPELINE_STAGES" :key="`${lane.task.id}-${stage}`" :class="stageCells(stage)">
+          <div
+            v-for="stage in PIPELINE_STAGES"
+            :key="`${lane.task.id}-${stage}`"
+            :class="stageCells(stage)"
+          >
             <PipelineCard
               v-if="lane.model.stage === stage"
               :task-id="lane.task.id"
