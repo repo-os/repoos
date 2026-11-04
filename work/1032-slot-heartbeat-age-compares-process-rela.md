@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/slot-heartbeat-age-compares-process-rela
 created_at: "2026-11-04T12:04:25Z"
-updated_at: "2026-11-04T12:45:40Z"
+updated_at: "2026-11-04T12:56:12Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ Search for `monotonicMs` in cross-process-slots.ts (writers at ~380, 385, 484). 
 - 2026-11-04T12:29:28Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T12:31:16Z · body
 - 2026-11-04T12:45:40Z · body
+- 2026-11-04T12:56:12Z · note: adopted orphaned engineer pid 55108
