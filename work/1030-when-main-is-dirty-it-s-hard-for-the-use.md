@@ -247,3 +247,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:23:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T16:23:23Z · message_delivered: 3 message(s)
 - 2026-11-04T16:31:19Z · message_queued at 2026-11-04T16:31:19.410Z
+- 2026-11-04T16:31:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
