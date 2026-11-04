@@ -2,7 +2,7 @@
 id: 1036
 title: "Easter eggs bundle: New-button consistency and card popover"
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:39:58Z"
+updated_at: "2026-11-04T18:40:01Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -104,3 +104,4 @@ Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-doc
 - 2026-11-04T18:35:34Z · area
 - 2026-11-04T18:39:56Z · cli_override
 - 2026-11-04T18:39:58Z · model_override
+- 2026-11-04T18:40:01Z · status inbox→ready
