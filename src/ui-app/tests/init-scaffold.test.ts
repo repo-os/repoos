@@ -550,7 +550,9 @@ describe("scaffoldInto starter tasks", () => {
   it("does not scaffold starter docs unless asked", () => {
     const root = scratch();
     scaffoldInto(root, "desc", "", "new");
-    expect(existsSync(join(root, "docs/README.md"))).toBe(false);
+    expect(existsSync(join(root, "docs/product.md"))).toBe(false);
+    // Minimal docs index only — not the full starter set; satisfies AGENTS.md (#1026).
+    expect(existsSync(join(root, "docs/README.md"))).toBe(true);
   });
 
   it("writes starter docs into the configured docsDir when requested", () => {
