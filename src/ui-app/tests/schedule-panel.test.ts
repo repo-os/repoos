@@ -413,6 +413,11 @@ describe("schedule dialog layering and capture fixture (#1005)", () => {
     ).toBe(true);
     expect(
       wrapper
+        .find('[data-testid="schedule-card-0001"] [data-testid="schedule-template-warn-detail"]')
+        .text(),
+    ).toContain("missing sections");
+    expect(
+      wrapper
         .find('[data-testid="schedule-card-0002"] [data-testid="schedule-template-warn"]')
         .exists(),
     ).toBe(false);

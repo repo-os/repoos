@@ -8,7 +8,11 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { scaffoldInto } from "../../commands/init.js";
-import { renderServeBanner, resolveServeHost } from "../../commands/serve.js";
+import {
+  renderServeBanner,
+  resolveServeHost,
+  formatServeBindBannerValue,
+} from "../../commands/serve.js";
 import { collectStatus } from "../../commands/status.js";
 import { cmdScheduleNew, cmdScheduleUpdate } from "../../commands/schedule.js";
 import { NO_CHECK_PLAN_CLI_HINT } from "../../core/check-skip.js";
@@ -41,8 +45,9 @@ describe("easter eggs #1026", () => {
 
   it("E2: serve banner and resolveServeHost name bind interfaces", () => {
     expect(resolveServeHost(undefined).host).toBe("127.0.0.1");
+    expect(resolveServeHost("0.0.0.0").tailscaleDetected).toBe(false);
     const plain = renderServeBanner("0.1.0", [
-      { label: "Bind", value: "127.0.0.1 (localhost only)" },
+      { label: "Bind", value: formatServeBindBannerValue("127.0.0.1", false) },
       { label: "Local", value: "http://127.0.0.1:1" },
     ]);
     expect(plain).toContain("127.0.0.1 (localhost only)");
@@ -50,13 +55,13 @@ describe("easter eggs #1026", () => {
     const wide = renderServeBanner("0.1.0", [
       {
         label: "Bind",
-        value:
-          "0.0.0.0 (all interfaces — Tailscale detected; pass --host 127.0.0.1 for localhost only)",
+        value: formatServeBindBannerValue("0.0.0.0", true),
       },
       { label: "Local", value: "http://127.0.0.1:1" },
     ]);
     expect(wide).toContain("0.0.0.0 (all interfaces");
     expect(wide).toContain("--host 127.0.0.1");
+    expect(formatServeBindBannerValue("0.0.0.0", false)).toContain("explicit --host");
   });
 
   it("E3: cli.md documents uninstall, service, and version", () => {
@@ -146,10 +151,11 @@ describe("easter eggs #1026", () => {
     expect(complete).toBeNull();
     expect(
       scheduleTemplateWarning({
-        body: "## Purpose\n",
+        body: "",
         taskAssignedTo: "human",
       }),
     ).toBeNull();
+    expect(scheduleTemplateWarning({ body: "", taskAssignedTo: "ai" })).not.toBeNull();
   });
 
   it("E7: schedule CLI prints template warning on new and update", () => {

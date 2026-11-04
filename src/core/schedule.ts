@@ -246,9 +246,6 @@ export function scheduleTemplateWarning(input: {
   taskAssignedTo?: string;
 }): string | null {
   const body = (input.body ?? "").trim();
-  if (!body) {
-    return "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI";
-  }
   const { underspecified, detail } = assessTaskUnderspecified(body, {
     area: input.taskArea ?? "general",
     assignee: input.taskAssignedTo?.trim() || "ai",

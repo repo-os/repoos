@@ -360,7 +360,6 @@ onMounted(() => {
               v-if="row.templateUnderspecified"
               class="schedule-template-warn"
               data-testid="schedule-template-warn"
-              :title="row.templateUnderspecifiedDetail"
             >
               Template incomplete
             </span>
@@ -376,6 +375,12 @@ onMounted(() => {
             <div>
               <dt>Cadence</dt>
               <dd>{{ cadenceLabel(row) }} ({{ row.timezone }})</dd>
+            </div>
+            <div v-if="row.templateUnderspecified">
+              <dt>Template spec</dt>
+              <dd class="kv-wrap" data-testid="schedule-template-warn-detail">
+                {{ row.templateUnderspecifiedDetail }}
+              </dd>
             </div>
             <div>
               <dt>Next run</dt>
