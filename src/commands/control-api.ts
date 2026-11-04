@@ -21,6 +21,7 @@ import {
 } from "../core/budget-allowlist.js";
 import type { RepoOSConfig } from "../core/types.js";
 import type { LandableCheck, LandableResult } from "../core/landable.js";
+import type { HandoffStatus } from "../server/handoff-status.js";
 
 interface CommonOpts {
   json: boolean;
@@ -1669,6 +1670,61 @@ function landableIcon(status: LandableCheck["status"]): string {
   if (status === "pass") return c.green("✓");
   if (status === "warn") return c.yellow("!");
   return c.red("✗");
+}
+
+/**
+ * `repoos handoff-status <id>` (#1028): print the latest handoff attempt's
+ * state immediately. Never waits for, starts, or alters a handoff — safe to
+ * call from an engineer that is unsure whether its request reached the server.
+ */
+export async function cmdHandoffStatus(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr("Usage: repoos handoff-status <id> [--json] [--port N]");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const status = (await api.requestOk(
+      "GET",
+      `/api/tasks/${id}/handoff-status`,
+    )) as unknown as HandoffStatus;
+    if (opts.json) {
+      printJson(status);
+      return 0;
+    }
+    const label =
+      status.state === "passed"
+        ? c.green("passed")
+        : status.state === "failed"
+          ? c.red("failed")
+          : status.state === "running"
+            ? c.yellow("running")
+            : status.state === "deferred"
+              ? c.yellow("deferred")
+              : c.dim("not requested");
+    console.log(`  ${c.bold(`#${id}`)} handoff: ${label}`);
+    if (status.step) console.log(`    step:   ${status.step}`);
+    if (status.reason) console.log(`    reason: ${status.reason}`);
+    if (status.updatedAt) console.log(`    at:     ${status.updatedAt}`);
+    if (status.state === "not_requested") {
+      console.log(
+        c.dim(
+          `    no handoff has been requested for this task (request it with \`repoos mv ${id} review\`)`,
+        ),
+      );
+    }
+    return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
 }
 
 /**

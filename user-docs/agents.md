@@ -266,7 +266,10 @@ These run as part of a task's life. They're what the `pm`, `engineer`, and
   the task's own worktree, runs `repoos check`, and then *asks* for the task to
   move to `review` (via `repoos mv <id> review` or the handoff signal) rather
   than moving it. RepoOS finalizes that request when the turn ends: it re-runs
-  the check, commits the branch and moves the status. It never merges.
+  the check, commits the branch and moves the status. It never merges. The
+  engineer ends its turn after requesting; RepoOS queues the outcome (pass, or
+  the failing step and reason) for its next turn, and `repoos handoff-status
+  <id>` answers "did it land?" immediately without the blocking `repoos review`.
 - **reviewer** — reads the branch diff the moment a task lands in `review` and
   writes an advisory report: bugs, edge cases, suggestions. It changes nothing
   and never moves a task. See [Review and close-out](/review-and-close-out).

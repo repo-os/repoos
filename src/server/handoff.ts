@@ -23,6 +23,7 @@ import {
  * funnels through it; the shared body below is what both entry points run.
  */
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
@@ -55,6 +56,11 @@ import { notifyGitMutation } from "../core/git-activity.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import type { AgentHandoffRequest, AgentRunner } from "./agents.js";
 import { resolveAgentForTask } from "./agents.js";
+import {
+  beginHandoffStatus,
+  finishHandoffStatus,
+  updateHandoffStatusStep,
+} from "./handoff-status.js";
 import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { guardReviewTransition } from "./review-guard.js";
@@ -1190,9 +1196,18 @@ export async function handoffTask(
   /** #0960 round-3: when true, refuse to finalize a held task (agent handoff only). */
   holdGuard?: boolean,
 ): Promise<HandoffResult> {
-  return withHandoffDeadline(async (markSettled) => {
+  // #1028: the runner turn's id is this attempt's identity. A replayed request
+  // (server recovery, or the same callback firing twice) keeps the existing
+  // record, so its outcome message is never queued twice.
+  const attemptKey = request.runId || `agent-${randomUUID()}`;
+  beginHandoffStatus(config, task.id, { attemptKey, origin: "agent", step: "validate" });
+  const trackedProgress = (step: HandoffStep): void => {
+    updateHandoffStatusStep(config, task.id, attemptKey, step);
+    onProgress?.(step);
+  };
+  const result = await withHandoffDeadline(async (markSettled) => {
     try {
-      onProgress?.("validate");
+      trackedProgress("validate");
       if (!request.runId || request.taskId !== task.id) {
         return fail("validate", "handoff does not match the active runner session");
       }
@@ -1202,7 +1217,7 @@ export async function handoffTask(
       const resolved = await resolveWorktree(config, task, request.workdir);
       if (!resolved.ok) return resolved.result;
       return await runHandoffFinalization(config, task, resolved.resolved, {
-        onProgress,
+        onProgress: trackedProgress,
         onStatusChange,
         taskChecks,
         onTaskCheckEvent,
@@ -1217,6 +1232,8 @@ export async function handoffTask(
       return fail("validate", `unexpected error: ${message}`);
     }
   });
+  finishHandoffStatus(config, task.id, attemptKey, result);
+  return result;
 }
 
 /**
@@ -1236,18 +1253,36 @@ export async function finalizeReviewHandoff(
   task: Task,
   opts: ReviewHandoffOptions = {},
 ): Promise<HandoffResult> {
-  return withHandoffDeadline(async (markSettled) => {
+  // Each explicit non-agent route asks for a fresh attempt. The attempt id
+  // dedupes its outcome message; a replayed agent request keeps the runner's
+  // run id instead (see `handoffTask`).
+  const attemptKey = `review-${randomUUID()}`;
+  beginHandoffStatus(config, task.id, {
+    attemptKey,
+    origin: opts.origin ?? null,
+    step: "validate",
+  });
+  const trackedProgress = (step: HandoffStep): void => {
+    updateHandoffStatusStep(config, task.id, attemptKey, step);
+    opts.onProgress?.(step);
+  };
+  const result = await withHandoffDeadline(async (markSettled) => {
     try {
-      opts.onProgress?.("validate");
+      trackedProgress("validate");
       const resolved = await resolveWorktree(config, task);
       if (!resolved.ok) return resolved.result;
-      return await runHandoffFinalization(config, task, resolved.resolved, opts);
+      return await runHandoffFinalization(config, task, resolved.resolved, {
+        ...opts,
+        onProgress: trackedProgress,
+      });
     } catch (err) {
       markSettled();
       const message = err instanceof Error ? err.message : String(err);
       return fail("validate", `unexpected error: ${message}`);
     }
   });
+  finishHandoffStatus(config, task.id, attemptKey, result);
+  return result;
 }
 
 /** Automatic retries allowed for a `check`-step finalization failure before
