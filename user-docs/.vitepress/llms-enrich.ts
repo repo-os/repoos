@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { SITE_ORIGIN, discoverDocsPages, type DocsPage } from "./llms-index";
+import { SITE_ORIGIN, RELEASE_LINE, discoverDocsPages, type DocsPage } from "./llms-index";
 
 /**
  * Pages concatenated into `/llms-essentials.txt`. Chosen so an agent can
@@ -81,6 +81,8 @@ export function renderEssentials(
     "",
     "> Install RepoOS, learn the concepts, and hand setup to a coding agent. For every other page, fetch https://docs.repoos.org/llms.txt. The whole manual is https://docs.repoos.org/llms-full.txt.",
     "",
+    RELEASE_LINE,
+    "",
   ];
   for (const section of sections) {
     const body = section.markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "").trim();
@@ -107,6 +109,15 @@ export function enrichLlmsOutputs(docsRoot: string, distRoot: string): void {
   const indexPath = path.join(distRoot, "llms.txt");
   const index = withDescriptions(readFileSync(indexPath, "utf8"), descriptions);
   writeFileSync(indexPath, index.endsWith("\n") ? index : `${index}\n`);
+
+  // llms-full.txt is the concatenation the plugin writes from page sources and
+  // does not go through the index template, so stamp it here. The release
+  // version must be present in every agent-facing output, not only the index.
+  const fullPath = path.join(distRoot, "llms-full.txt");
+  const full = readFileSync(fullPath, "utf8");
+  if (!full.includes(RELEASE_LINE)) {
+    writeFileSync(fullPath, `${RELEASE_LINE}\n\n${full}`);
+  }
 
   const sections = ESSENTIAL_SOURCES.map((source) => {
     const page = byPath.get(source);

@@ -35,6 +35,8 @@ features:
     linkText: Configure it
 ---
 
+<ReleaseLine />
+
 ## Try it now
 
 Three commands, inside a repo you already have:

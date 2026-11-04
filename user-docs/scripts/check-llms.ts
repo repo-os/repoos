@@ -20,6 +20,7 @@ import {
 } from "../.vitepress/llms-enrich";
 import {
   LLMS_INDEX_EXCLUDED_SOURCES,
+  RELEASE_LINE,
   SITE_ORIGIN,
   discoverDocsPages,
 } from "../.vitepress/llms-index";
@@ -72,6 +73,19 @@ export function collectLlmsFailures(options: LlmsCheckOptions = {}): string[] {
   const llmsTxt = readDist("llms.txt");
   const llmsFull = readDist("llms-full.txt");
   const essentials = readDist(ESSENTIALS_FILE);
+
+  // The release pipeline writes release-history.json in the same commit as the
+  // version bump; every agent output must name that release, so docs built
+  // after a cut cannot describe an older version (the v0.5.75 QA regression).
+  for (const [label, text] of [
+    ["llms.txt", llmsTxt],
+    ["llms-full.txt", llmsFull],
+    [ESSENTIALS_FILE, essentials],
+  ] as const) {
+    if (text && !text.includes(RELEASE_LINE)) {
+      fail(`${label} is missing the current release stamp: ${RELEASE_LINE}`);
+    }
+  }
 
   const pages = discoverDocsPages(docsRoot);
   if (pages.length === 0) fail("no Markdown pages found under user-docs/");
