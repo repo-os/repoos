@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T17:31:59Z"
+updated_at: "2026-11-04T17:44:39Z"
 ---
 ## Problem
 
@@ -78,3 +79,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T17:31:45Z · body: Visual reference (added)
 - 2026-11-04T17:31:58Z · body: Desired UX (removed 2)
 - 2026-11-04T17:31:59Z · body: Visual reference (added 1, removed 1)
+- 2026-11-04T17:44:39Z · model_override
