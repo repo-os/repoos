@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T15:22:41Z"
+updated_at: "2026-11-04T15:26:20Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:21:54.554Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:22:52.946Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-04T14:31:00.632Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-04T14:45:47.073Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-04T14:46:44.154Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -39,11 +39,6 @@ When a task is stuck or waiting (needs input, 'STUCK · SILENT 16M', check-wait 
 
 Source of the strings is the check-wait/queue-marker message and the stuck-card state in src/core/active-task-card.ts; the panel block is the 'Waiting for you' component in the task drawer. Reuse the existing `?tab=debug` route handling (/work?task=<id>&tab=debug). Related: #0272 (card error UX). Observation, not in scope: these cards also say 'slot holder has made no progress for 30 minutes (no heartbeat)' and '#1024 check (pid 57029, wedged)' for live holders — that false alarm is #1032.
 
-## Screenshots
-
-![6](/api/tasks/1034/attachments/att_2364700c-13b6-4d61-bae3-26951e1331f9.png)
-![7](/api/tasks/1034/attachments/att_2b28ec2f-cbb2-4e29-bb45-ba83d5e3099c.png)
-
 ## Shots
 ```json
 [
@@ -63,6 +58,11 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 }
 ]
 ```
+
+## Screenshots
+
+![6](/api/tasks/1034/attachments/att_2364700c-13b6-4d61-bae3-26951e1331f9.png)
+![7](/api/tasks/1034/attachments/att_2b28ec2f-cbb2-4e29-bb45-ba83d5e3099c.png)
 
 ## Activity
 
@@ -103,3 +103,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T15:21:19Z · message_queued at 2026-11-04T15:21:19.332Z
 - 2026-11-04T15:21:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T15:22:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T15:26:20Z · body
