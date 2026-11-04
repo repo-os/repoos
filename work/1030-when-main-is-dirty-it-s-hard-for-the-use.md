@@ -3,9 +3,6 @@ id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (1 in 30m): RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1030 --fresh`."
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +10,7 @@ created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T17:30:34Z"
+updated_at: "2026-11-04T17:30:37Z"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: 6ce5d3f347e3d6357dff404c28b0188df3e1f8d5
 handoff_signal_retry_count: 2
@@ -268,3 +265,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:59:52Z · body
 - 2026-11-04T17:13:08Z · body
 - 2026-11-04T17:30:34Z · cli_override, model_override
+- 2026-11-04T17:30:37Z · needs_input
