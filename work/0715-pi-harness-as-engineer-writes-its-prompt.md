@@ -49,3 +49,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T07:45:25Z · body
 - 2026-11-04T08:01:49Z · body
 - 2026-11-04T08:04:26Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T08:04:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
