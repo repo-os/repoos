@@ -100,3 +100,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T14:54:59Z · message_delivered: 2 message(s)
 - 2026-11-04T14:55:12Z · message_queued at 2026-11-04T14:55:12.805Z
 - 2026-11-04T14:56:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T15:04:49Z · note: handoff requested (cli)
