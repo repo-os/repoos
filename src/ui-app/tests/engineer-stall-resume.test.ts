@@ -17,6 +17,8 @@ import {
   DEFAULT_ENGINEER_STALL_RESUME_WINDOW_MS,
   ENGINEER_STALL_RESUME_LOG_KEY,
   countEngineerStallResumes,
+  countEngineerStallResumesSince,
+  lastEngineerCleanExitAt,
   parseEngineerStallResumeLog,
   planEngineerStallResume,
   readEngineerCleanExitSignal,
@@ -222,6 +224,7 @@ describe("stalled clean-exit policy (#0888)", () => {
 
 describe("clean-exit activity signal (#0888)", () => {
   const transition = "- 2026-10-21T11:00:00Z · status ready→active";
+  const episodeStart = "2026-10-21T11:00:00Z";
 
   it("reads a clean-exit marker in the current active episode", () => {
     const body = `## Activity\n\n${transition}\n- 2026-10-21T11:10:00Z · engineer turn ended without a handoff: the turn exited cleanly\n`;
@@ -229,6 +232,7 @@ describe("clean-exit activity signal (#0888)", () => {
       clean: true,
       deferred: 0,
       stoppedByPerson: false,
+      episodeStart,
     });
   });
 
@@ -253,6 +257,7 @@ describe("clean-exit activity signal (#0888)", () => {
       clean: true,
       deferred: 2,
       stoppedByPerson: false,
+      episodeStart,
     });
   });
 
@@ -265,6 +270,7 @@ describe("clean-exit activity signal (#0888)", () => {
       clean: false,
       deferred: 0,
       stoppedByPerson: true,
+      episodeStart,
     });
   });
 
@@ -277,6 +283,7 @@ describe("clean-exit activity signal (#0888)", () => {
       clean: false,
       deferred: 0,
       stoppedByPerson: true,
+      episodeStart,
     });
   });
 
@@ -289,6 +296,7 @@ describe("clean-exit activity signal (#0888)", () => {
       clean: true,
       deferred: 0,
       stoppedByPerson: false,
+      episodeStart,
     });
   });
 
@@ -301,6 +309,7 @@ describe("clean-exit activity signal (#0888)", () => {
       clean: false,
       deferred: 0,
       stoppedByPerson: false,
+      episodeStart,
     });
   });
 
@@ -309,7 +318,17 @@ describe("clean-exit activity signal (#0888)", () => {
       clean: false,
       deferred: 0,
       stoppedByPerson: false,
+      episodeStart: null,
     });
+  });
+
+  it("reports the most recent clean exit in the current episode", () => {
+    const body =
+      `## Activity\n\n${transition}\n` +
+      `- 2026-10-21T11:10:00Z · engineer turn ended without a handoff: first\n` +
+      `- 2026-10-21T11:20:00Z · engineer turn ended without a handoff: second\n`;
+    expect(lastEngineerCleanExitAt(body)).toBe("2026-10-21T11:20:00Z");
+    expect(lastEngineerCleanExitAt(`## Activity\n\n${transition}\n`)).toBeNull();
   });
 });
 
@@ -333,6 +352,39 @@ describe("resume log (#0888)", () => {
     expect(parsed[0].reason).toBe("handoff-deferred");
     expect(countEngineerStallResumes(parsed, new Date(NOW).toISOString(), WINDOW)).toBe(1);
     expect(parseEngineerStallResumeLog("not json")).toEqual([]);
+  });
+
+  it("replays the #1016 sequence as 1/3, 2/3, 3/3 instead of repeating 2/3", () => {
+    const episodeStart = "2026-11-04T04:23:00Z";
+    const times = ["2026-11-04T05:56:00Z", "2026-11-04T06:18:00Z", "2026-11-04T06:47:00Z"];
+    let records: EngineerStallResumeRecord[] = [];
+    const attempts: number[] = [];
+    for (const at of times) {
+      // The old 30-minute rolling window pruned the 05:56 record before 06:47,
+      // so the third resume re-printed 2/3. An episode keeps the whole history
+      // (the non-finite window) and counts from the →active transition.
+      records = recordEngineerStallResume(
+        records,
+        at,
+        "clean-exit-without-handoff",
+        Number.POSITIVE_INFINITY,
+      );
+      attempts.push(countEngineerStallResumesSince(records, episodeStart));
+    }
+    expect(attempts).toEqual([1, 2, 3]);
+
+    // Three resumes are the budget; the next watchdog pass surfaces needs-input
+    // rather than waiting for a fourth attempt.
+    const plan = planInput({
+      episodeStart,
+      resumes: records,
+      now: Date.parse("2026-11-04T06:48:00Z"),
+    });
+    expect(planEngineerStallResume(plan)).toMatchObject({
+      action: "surface",
+      reason: "resume-limit",
+      resumes: 3,
+    });
   });
 });
 
