@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: 1035
 title: "Work page: Pipeline view (horizontal race track for active and review tasks)"
 type: feature
@@ -111,3 +112,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T18:58:45Z · message_delivered: 1 message(s)
 - 2026-11-04T18:58:47Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-11-04T18:58:49Z · message_queued at 2026-11-04T18:58:49.444Z
+
