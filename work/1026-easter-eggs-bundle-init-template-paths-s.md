@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-04T23:30:06.243Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: 1026
 title: "Easter eggs bundle: init template paths, serve banner, CLI docs and empty-repo edge cases"
 type: chore
@@ -223,3 +225,4 @@ Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the 
 - 2026-11-04T23:29:40Z · note: review pass 2: good to go
 - 2026-11-04T23:30:03Z · message_queued at 2026-11-04T23:30:03.014Z
 - 2026-11-04T23:30:06Z · message_delivered: 1 message(s)
+
