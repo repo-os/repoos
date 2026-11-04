@@ -5735,8 +5735,6 @@ watch(
                 : 'Task status. Open Status details.'
             "
             @click="openStatusDetails"
-            @keydown.enter.prevent="openStatusDetails"
-            @keydown.space.prevent="openStatusDetails"
           >
             <span class="drawer-status-row drawer-status-l1">
               <ActivityIndicator
@@ -5849,12 +5847,14 @@ watch(
                 <button
                   v-if="activeNeedsInputDetailLine"
                   type="button"
-                  class="agent-waiting-detail agent-waiting-detail--clamp agent-waiting-detail--action"
+                  class="agent-waiting-detail agent-waiting-detail--action"
                   data-test-id="drawer-needs-input-detail"
                   :aria-label="`${activeNeedsInputDetailLine}. Open Status details.`"
                   @click="openStatusDetails"
                 >
-                  {{ activeNeedsInputDetailLine }}
+                  <span class="agent-waiting-detail-text agent-waiting-detail-text--clamp">{{
+                    activeNeedsInputDetailLine
+                  }}</span>
                   <span class="diagnostic-details-affordance">Details</span>
                 </button>
                 <div class="agent-waiting-actions">
