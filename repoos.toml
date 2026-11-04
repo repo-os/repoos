@@ -755,3 +755,6 @@ models = ["composer-2.5", "grok-4.7-low"]
 [[budget.allowlist]]
 cli = "codex"
 models = ["gpt-6-luna"]
+[[budget.allowlist]]
+cli = "pi"
+models = ["openrouter/deepseek/deepseek-v4.1-flash"]
