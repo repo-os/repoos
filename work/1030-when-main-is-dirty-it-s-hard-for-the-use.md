@@ -13,7 +13,6 @@ model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
 updated_at: "2026-11-04T13:39:00Z"
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:27:46.133Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:34:30.563Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:35:15.692Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
@@ -135,12 +134,12 @@ states, panel open/close with shared width, commit success/error paths with the 
 "route": "/",
 "highlight": "[data-testid=\"repo-dirty-panel\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"side-git-dirty\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-test-id=\"side-git-dirty\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "repo:dirtyMain"
 }
