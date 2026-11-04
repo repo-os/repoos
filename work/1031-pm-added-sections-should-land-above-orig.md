@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-04T19:09:47Z"
-review_passes: 1
+last_close_out_gate_ms: 522845
+last_close_out_gate_at: "2026-11-04T19:43:21.457Z"
 id: 1031
 title: PM-added sections should land above Original prompt and Screenshots
 type: bug
@@ -12,6 +12,8 @@ created_by: njachowski@gmail.com
 branch: feat/pm-added-sections-should-land-above-orig
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
+updated_at: "2026-11-04T19:43:21Z"
+review_passes: 1
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -54,4 +56,5 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 - 2026-11-04T19:09:00Z · message_queued at 2026-11-04T19:09:00.565Z
 - 2026-11-04T19:09:00Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-04T19:09:47Z · note: review pass 1: good to go
+- 2026-11-04T19:43:21Z · close-out gate completed in 523s
 
