@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: 1016
 title: "Add \"Hide Completed Stories\" toggle to Stories page"
 type: feature
@@ -12,7 +11,9 @@ branch: feat/add-hide-completed-stories-toggle-to-sto
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-11-03T09:13:40Z"
-updated_at: "2026-11-04T05:09:29Z"
+updated_at: "2026-11-04T05:56:27Z"
+handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-11-04T05:56:27.419Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -108,4 +109,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 - 2026-11-04T04:45:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T04:45:37Z · message_delivered: 1 message(s)
 - 2026-11-04T05:09:29Z · body
-
+- 2026-11-04T05:56:27Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
