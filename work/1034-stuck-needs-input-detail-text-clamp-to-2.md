@@ -75,3 +75,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:14:41Z · body
 - 2026-11-04T14:15:26Z · body
 - 2026-11-04T14:21:12Z · message_queued at 2026-11-04T14:21:12.282Z
+- 2026-11-04T14:21:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
