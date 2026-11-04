@@ -79,9 +79,7 @@ const visibleStories = computed(() =>
 );
 
 /** How many completed stories the filter is currently hiding, for the empty state. */
-const hiddenCompleteCount = computed(
-  () => stories.value.length - visibleStories.value.length,
-);
+const hiddenCompleteCount = computed(() => stories.value.length - visibleStories.value.length);
 
 /** Stories the PM agent is still fleshing out after a New story submit. */
 const pmWorkingKeys = computed(
