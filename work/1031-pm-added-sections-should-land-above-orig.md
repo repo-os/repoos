@@ -1,8 +1,10 @@
 ---
+updated_at: "2026-11-04T19:09:47Z"
+review_passes: 1
 id: 1031
 title: PM-added sections should land above Original prompt and Screenshots
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -10,7 +12,7 @@ created_by: njachowski@gmail.com
 branch: feat/pm-added-sections-should-land-above-orig
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
-updated_at: "2026-11-04T18:35:54Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -40,3 +42,16 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 - 2026-11-04T18:29:30Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T18:31:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementation is complete and verified so far; the scoped check is still running in the background. **Status:** - **Fix** (`src/core/task.ts:282-314`): `replaceSection` now inserts a brand-new spec section before the first of `## Original… · stderr: (empty)
 - 2026-11-04T18:35:54Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T18:41:10Z · message_delivered: 1 message(s)
+- 2026-11-04T18:42:05Z · message_queued at 2026-11-04T18:42:05.900Z
+- 2026-11-04T18:42:06Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T18:43:32Z · body
+- 2026-11-04T18:47:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T18:48:48Z · note: adopted orphaned engineer pid 52394
+- 2026-11-04T18:50:51Z · body
+- 2026-11-04T18:53:42Z · CTO nudge: held — handoff gate is running
+- 2026-11-04T19:09:00Z · status active→review
+- 2026-11-04T19:09:00Z · message_queued at 2026-11-04T19:09:00.565Z
+- 2026-11-04T19:09:00Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-04T19:09:47Z · note: review pass 1: good to go
+

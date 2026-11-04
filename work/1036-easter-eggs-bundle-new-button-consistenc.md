@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:52:57Z"
+updated_at: "2026-11-04T19:17:15Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -68,13 +68,6 @@ The popover closes itself after 15 seconds, fading out smoothly rather than disa
 
 Find the popover from the robot icon in the board card component under src/ui-app/src/components. Reuse the existing styled popover, no native tooltip. Source: Nick, 2026-11-04. Moved here from #1026 (was E7 there).
 
-## Screenshots
-
-![4](/api/tasks/1036/attachments/att_ff8d8ab7-9f80-4d8d-9282-691190506b8b.png)
-![5](/api/tasks/1036/attachments/att_0f3fe446-3b8b-4f80-b171-a4b8982c0288.png)
-![6](/api/tasks/1036/attachments/att_e2f6d405-3c84-4ac6-ba15-4653d9b1cc13.png)
-![7](/api/tasks/1036/attachments/att_c1ed2892-fe58-41a6-987d-d8211aa48a65.png)
-
 ## E3 · Driver brief and CTO digest: no "stalled" while a check has a live heartbeat
 ### Problem
 
@@ -95,29 +88,55 @@ An engineer whose check is running with a valid heartbeat is not listed as stall
 
 Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-docs/check.md` "When a check is waiting".
 
+## E4 · Commit message textarea too tall in Uncommitted changes panel
+### Problem
+
+In the Uncommitted changes panel (`src/ui-app/src/components/RepoDirtyPanel.vue`) the optional commit message textarea renders roughly 230px tall (8-9 lines) even though it has `rows="3"` and commit messages are short. Cause: `.repo-dirty-input { min-height: 68px }` (`style.css`, ~line 1311) has the same specificity as the shared `.ff-textarea { min-height: 230px }` (~line 8282), which comes later in the file and wins, so the 68px override never applies.
+
+### Desired UX
+
+The textarea is about 3 lines tall (roughly 68px) and still resizable vertically. The panel gives the freed space to the diff above it.
+
+### Acceptance criteria
+
+- [ai] The override actually wins: raise specificity (for example `.ff-textarea.repo-dirty-input`) or move the rule after `.ff-textarea`, with no `!important`.
+- [ai] Test: the rendered textarea's computed min-height is below 100px.
+- [ai] Declared `## Shots`: the Uncommitted changes panel with a dirty-main state fixture if one exists.
+
+### Notes for AI
+
+Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` call sites that set a smaller min-height the same way and list them in the handoff report; fix only this panel.
+
 ## Shots
 ```json
 [
 {
-  "target": "default",
-  "route": "/agents?tab=scheduled",
-  "label": "New schedule accent button",
-  "highlight": "[data-testid=\"new-schedule\"]"
+"label": "New schedule accent button",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": "[data-testid=\"new-schedule\"]"
 },
 {
-  "target": "default",
-  "route": "/agents?tab=reminders",
-  "label": "New reminder accent button",
-  "highlight": "[data-testid=\"new-reminder\"]"
+"label": "New reminder accent button",
+"target": "default",
+"route": "/agents?tab=reminders",
+"highlight": "[data-testid=\"new-reminder\"]"
 },
 {
-  "target": "default",
-  "route": "/secrets",
-  "label": "New environment accent button",
-  "highlight": "[data-testid=\"new-environment\"]"
+"label": "New environment accent button",
+"target": "default",
+"route": "/secrets",
+"highlight": "[data-testid=\"new-environment\"]"
 }
 ]
 ```
+
+## Screenshots
+
+![4](/api/tasks/1036/attachments/att_ff8d8ab7-9f80-4d8d-9282-691190506b8b.png)
+![5](/api/tasks/1036/attachments/att_0f3fe446-3b8b-4f80-b171-a4b8982c0288.png)
+![6](/api/tasks/1036/attachments/att_e2f6d405-3c84-4ac6-ba15-4653d9b1cc13.png)
+![7](/api/tasks/1036/attachments/att_c1ed2892-fe58-41a6-987d-d8211aa48a65.png)
 
 ## Activity
 
@@ -130,4 +149,18 @@ Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-doc
 - 2026-11-04T18:39:58Z · model_override
 - 2026-11-04T18:40:01Z · status inbox→ready
 - 2026-11-04T18:40:05Z · status ready→active, branch
-- 2026-11-04T18:52:57Z · body
+- 2026-11-04T18:46:42Z · body: Items (added 1)
+- 2026-11-04T18:46:42Z · message_queued at 2026-11-04T18:46:42.738Z
+- 2026-11-04T18:46:43Z · body: E4 · Commit message textarea too tall in Uncommitted changes panel (added)
+- 2026-11-04T18:46:43Z · message_queued at 2026-11-04T18:46:43.942Z
+- 2026-11-04T18:47:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T18:48:35Z · body: Items (removed 1)
+- 2026-11-04T18:48:37Z · message_queued at 2026-11-04T18:48:37.676Z
+- 2026-11-04T18:48:47Z · note: adopted orphaned engineer pid 50901
+- 2026-11-04T18:50:42Z · body
+- 2026-11-04T18:53:42Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T19:08:13Z · body
+- 2026-11-04T19:17:14Z · handoff_deferred: 3 queued message(s) must be read before review
+- 2026-11-04T19:17:14Z · message_queued at 2026-11-04T19:17:14.711Z
+- 2026-11-04T19:17:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: no assistant message · stderr: (empty)
+- 2026-11-04T19:17:15Z · message_delivered: 4 message(s)
