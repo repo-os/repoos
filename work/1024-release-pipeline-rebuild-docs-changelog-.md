@@ -11,7 +11,7 @@ created_by: njachowski@gmail.com
 branch: feat/release-pipeline-rebuild-docs-changelog-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T06:45:38Z"
-updated_at: "2026-11-04T17:20:00Z"
+updated_at: "2026-11-04T17:22:50Z"
 last_close_out_gate_ms: 700265
 last_close_out_gate_at: "2026-11-04T17:18:43.055Z"
 review_passes: 1
@@ -161,3 +161,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T17:04:15Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (24ec6c123) during finalization (#0734)
 - 2026-11-04T17:18:43Z · close-out gate completed in 700s
 - 2026-11-04T17:20:00Z · status done→done, release:success
+- 2026-11-04T17:22:50Z · message_dropped: 1 queued message(s) discarded — task is done
