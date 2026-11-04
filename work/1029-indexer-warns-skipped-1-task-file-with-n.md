@@ -37,3 +37,4 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:22:46Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T07:38:30Z · body
 - 2026-11-04T07:40:52Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-04T07:40:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
