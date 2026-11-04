@@ -9,11 +9,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T17:57:32Z"
+updated_at: "2026-11-04T18:35:32Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
 - E2 · Task-card agent popover auto-closes after a configurable delay (moved from #1026 E7)
+- E3 · Driver brief / CTO digest: do not call an engineer "stalled" while its check has a live heartbeat
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body. This is a second open easter-eggs bundle, started on purpose because #1026 was already full (core and docs items); this one holds the web items.
 
@@ -76,3 +77,4 @@ Find the popover from the robot icon in the board card component under src/ui-ap
 
 - 2026-11-04T17:57:32Z · created · njachowski@gmail.com
 - 2026-11-04T17:57:32Z · screenshots
+- 2026-11-04T18:35:32Z · body: Items (added 1)
