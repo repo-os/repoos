@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-panel-status-card-should-mirror-the
 created_at: "2026-11-04T05:34:26Z"
-updated_at: "2026-11-04T09:40:15Z"
+updated_at: "2026-11-04T09:54:10Z"
 ---
 ## Problem
 While #1016 ran its handoff checks, the board card showed "RUNNING CHECKS" with the animated activity indicator (the style chosen in Settings, `activityAnimationStyle`). The task panel for the same task showed a different, static three-row block: "Confirming handoff / Handoff / Running checks…". The rows repeat each other, add no information, and leave mostly empty space. The card and the panel disagree about the same state. This was meant to be fixed already (see `eef0c75d6`, `a79124e85`, `68b544019`), but the panel's `confirmingHandoff` case still builds fixed three-line text.
@@ -47,6 +47,25 @@ Seen on #1016 and #1027 while both were integrating (Move to done) on 2026-11-04
 
 Acceptance addition: for integrating, queued and validating states, the panel pill and the card use one shared label and elapsed-time source, and the status dropdown always shows the current status.
 
+## Shots
+```json
+[
+{
+  "label": "Panel and card both read running checks during a handoff gate",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusChecksRunning"
+},
+{
+  "label": "Confirming handoff: one shared heading plus the current step, no filler rows",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".drawer-status-summary",
+  "state": "drawer:statusConfirmingHandoff"
+}
+]
+```
 
 ## Activity
 
@@ -59,3 +78,4 @@ Acceptance addition: for integrating, queued and validating states, the panel pi
 - 2026-11-04T09:24:55Z · message_queued at 2026-11-04T09:24:55.700Z
 - 2026-11-04T09:24:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T09:40:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T09:54:10Z · body
