@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-04T19:42:56Z"
+review_passes: 1
 id: 1035
 title: "Work page: Pipeline view (horizontal race track for active and review tasks)"
 type: feature
@@ -10,7 +12,6 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T19:42:56Z"
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-11-04T18:48:31.070Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
@@ -122,3 +123,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T19:41:57Z · status active→review
 - 2026-11-04T19:41:57Z · message_queued at 2026-11-04T19:41:57.647Z
 - 2026-11-04T19:42:56Z · note: review pass 1: good to go
+
