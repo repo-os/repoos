@@ -2,7 +2,7 @@
 id: 1036
 title: "Easter eggs bundle: New-button consistency and card popover"
 type: chore
-status: active
+status: review
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T19:58:26Z"
+updated_at: "2026-11-04T21:27:12Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -111,38 +111,38 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 ```json
 [
 {
-  "target": "default",
-  "route": "/agents?tab=scheduled",
-  "label": "New schedule accent button",
-  "highlight": "[data-testid=\"new-schedule\"]"
+"target": "default",
+"route": "/agents?tab=scheduled",
+"label": "New schedule accent button",
+"highlight": "[data-testid=\"new-schedule\"]"
 },
 {
-  "target": "default",
-  "route": "/agents?tab=reminders",
-  "label": "New reminder accent button",
-  "highlight": "[data-testid=\"new-reminder\"]"
+"target": "default",
+"route": "/agents?tab=reminders",
+"label": "New reminder accent button",
+"highlight": "[data-testid=\"new-reminder\"]"
 },
 {
-  "target": "default",
-  "route": "/secrets?shotState=secrets:populated",
-  "state": "secrets:populated",
-  "label": "New environment accent button",
-  "highlight": "[data-testid=\"new-environment\"]"
+"target": "default",
+"route": "/secrets?shotState=secrets:populated",
+"state": "secrets:populated",
+"label": "New environment accent button",
+"highlight": "[data-testid=\"new-environment\"]"
 },
 {
-  "target": "default",
-  "route": "/?shotState=repo:dirtyMain",
-  "state": "repo:dirtyMain",
-  "label": "Commit message field is three lines",
-  "highlight": ".repo-dirty-input",
-  "steps": [
-    {
-      "click": "[data-test-id=\"side-git-dirty\"]"
-    },
-    {
-      "waitFor": ".repo-dirty-input"
-    }
-  ]
+"target": "default",
+"route": "/?shotState=repo:dirtyMain",
+"state": "repo:dirtyMain",
+"label": "Commit message field is three lines",
+"highlight": ".repo-dirty-input",
+"steps": [
+  {
+    "click": "[data-test-id=\"side-git-dirty\"]"
+  },
+  {
+    "waitFor": ".repo-dirty-input"
+  }
+]
 }
 ]
 ```
@@ -182,3 +182,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T19:17:15Z · message_delivered: 4 message(s)
 - 2026-11-04T19:20:55Z · body
 - 2026-11-04T19:58:26Z · body
+- 2026-11-04T21:27:12Z · status active→review
