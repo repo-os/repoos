@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-11-04T13:14:03Z"
-updated_at: "2026-11-04T23:49:16Z"
+updated_at: "2026-11-04T23:49:17Z"
 ---
 ## Problem
 
@@ -43,3 +44,4 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 - 2026-11-04T13:14:04Z · screenshots
 - 2026-11-04T23:49:03Z · status inbox→ready
 - 2026-11-04T23:49:16Z · cli_override
+- 2026-11-04T23:49:17Z · model_override
