@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T22:01:51Z"
+updated_at: "2026-11-04T22:03:10Z"
 last_close_out_gate_ms: 578518
 last_close_out_gate_at: "2026-11-04T22:01:51.305Z"
 review_passes: 1
@@ -208,4 +208,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T21:28:13Z · note: review pass 1: good to go
 - 2026-11-04T21:41:34Z · note: shots: skipped — 4 handoff shots already captured for this exact plan (9a7c31bb0) during finalization (#0734)
 - 2026-11-04T22:01:51Z · close-out gate completed in 579s
-
+- 2026-11-04T22:03:10Z · status done→done, release:success
