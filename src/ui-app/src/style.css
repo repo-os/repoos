@@ -1251,17 +1251,17 @@
   text-align: left;
   font: 11.5px/1.45 var(--font-mono);
 }
-button.repo-dirty-file {
+.repo-dirty-file-btn {
   cursor: pointer;
   transition:
     background-color 0.15s ease,
     border-color 0.15s ease;
 }
-button.repo-dirty-file:hover {
+.repo-dirty-file-btn:hover {
   background: var(--chip-bg);
   border-color: var(--border);
 }
-button.repo-dirty-file:focus-visible {
+.repo-dirty-file-btn:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
 }

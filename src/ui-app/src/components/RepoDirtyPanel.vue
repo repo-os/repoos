@@ -196,7 +196,7 @@ function onKeydown(e: KeyboardEvent): void {
                 <button
                   v-if="diffNames.has(f.path)"
                   type="button"
-                  class="repo-dirty-file"
+                  class="repo-dirty-file repo-dirty-file-btn"
                   :title="`${statusWord(f.status)}: ${f.path}`"
                   @click="showFile(f.path)"
                 >
