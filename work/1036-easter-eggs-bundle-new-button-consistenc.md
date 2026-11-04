@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-04T20:40:10.142Z: repoos check failed: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:52583/api/project-environments (http://127.0.0.1:52583/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:52583/api/project-environments); [missing-target] New environment accent button (target \"default\"): highlight [data-testid=\"new-environment\"] matched nothing on /secrets (http://127.0.0.1:52583/secrets)"
 id: 1036
 title: "Easter eggs bundle: New-button consistency and card popover"
 type: chore
@@ -12,7 +14,6 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
 updated_at: "2026-11-04T20:40:09Z"
-last_check_failure: "repoos check at 2026-11-04T19:57:32.347Z: repoos check failed: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:62758/api/project-environments (http://127.0.0.1:62758/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:62758/api/project-environments); [missing-target] New environment accent button (target \"default\"): highlight [data-testid=\"new-environment\"] matched nothing on /secrets (http://127.0.0.1:62758/secrets)"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -179,3 +180,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T20:40:06Z · note: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:52583/api/project-environments (http://127.0.0.1:52583/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:52583/api/project-environments); [missing-target] New environment accent button (target "default"): highlight [data-testid="new-environment"] matched nothing on /secrets (http://127.0.0.1:52583/secrets)
 - 2026-11-04T20:40:06Z · message_queued at 2026-11-04T20:40:06.920Z
 - 2026-11-04T20:40:09Z · message_delivered: 1 message(s)
+
