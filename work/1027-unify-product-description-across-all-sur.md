@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-product-description-across-all-sur
 created_at: "2026-11-04T06:53:26Z"
-updated_at: "2026-11-04T06:55:47Z"
+updated_at: "2026-11-04T07:06:34Z"
 ---
 ## Problem
 
@@ -113,3 +113,4 @@ Also grep the repo (README, SKILL.md, llms.txt files, docs index, release templa
 - 2026-11-04T06:54:52Z · status draft→inbox, title, area, type, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-11-04T06:55:40Z · status inbox→ready
 - 2026-11-04T06:55:47Z · status ready→active, branch
+- 2026-11-04T07:06:34Z · message_queued at 2026-11-04T07:06:34.581Z
