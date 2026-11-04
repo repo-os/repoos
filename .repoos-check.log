@@ -21,3 +21,57 @@
       telegram-manager-test: bun run test (in telegram-manager) · when telegram-manager/** changes
       macos-hub-icon-transparency: bash macos/scripts/verify-dock-icon-transparency.sh · when macos/RepoOSHub/Assets.xcassets/**, macos/scripts/generate-app-icons.swift, macos/scripts/verify-dock-icon-transparency.swift, macos/scripts/verify-dock-icon-transparency.sh changes
   · Changed-path mode: 12 path(s) differ from main (fast pre-review pass — close-out runs changed tests plus always-run safety suites)
+  · uncommitted work committed as a WIP checkpoint so the remote runner tests this tree
+
+
+  ◆ Remote validation
+
+── remote validation (tailscale) for #1030 @ d510ffde0e56 ──
+[runner nick@thinkpad]
+[link probe thinkpad: 139 ms RTT, 2241 KB/s]
+[uploading bundle to thinkpad · 256 KB / 1.7 MB (15%) · 83.3 MB/s · attempt 1 · 7s in stage · incremental]
+[uploading bundle to thinkpad · 512 KB / 1.7 MB (30%) · 125.0 MB/s · attempt 1 · 7s in stage · incremental]
+[uploading bundle to thinkpad · 768 KB / 1.7 MB (45%) · 150.0 MB/s · attempt 1 · 7s in stage · incremental]
+[uploading bundle to thinkpad · 1.0 MB / 1.7 MB (61%) · 7.8 MB/s · attempt 1 · 7s in stage · incremental]
+[uploading bundle to thinkpad · 1.3 MB / 1.7 MB (76%) · 9.7 MB/s · attempt 1 · 7s in stage · incremental]
+[uploading bundle to thinkpad · 1.5 MB / 1.7 MB (91%) · 11.5 MB/s · attempt 1 · 7s in stage · incremental]
+[uploading bundle to thinkpad · 1.7 MB / 1.7 MB (100%) · 12.6 MB/s · attempt 1 · 7s in stage · incremental]
+[uploaded bundle 1.7 MB (only new commits since 983b26609a3c) in 0.6s]
+[running build + test in repoos-ci on thinkpad (tests scoped to changed vs b895492b89115cb798b9fa5fbe54cab8e0cb7547)]
+[lock] slot 0 acquired after 0s
+[validate] cloning mirror /home/nick/.repoos-cache/repoos-746fff46.git at d510ffde0e56cf76f5c06d4a7dae15ee5f6504d2
+warning: remote HEAD refers to nonexistent ref, unable to checkout
+[validate] HEAD verified at d510ffde0e56cf76f5c06d4a7dae15ee5f6504d2
+bun install v1.4.3 (c6da4a4d3)
+
++ @playwright/test@1.63.0
++ @tailwindcss/vite@4.3.3
++ @types/jsdom@30.0.0
++ @types/node@26.2.0
++ @vitejs/plugin-vue@6.0.8
++ @vitest/coverage-v8@4.1.10
++ @vue/test-utils@2.4.11
++ class-variance-authority@0.7.1
++ clsx@2.1.1
++ jsdom@30.0.1
++ lucide-vue-next@1.0.0
++ mermaid@11.17.2
++ oxfmt@0.62.0
++ oxlint@1.77.0
++ pinia@4.0.2
++ radix-vue@1.9.17
++ shiki@4.4.3
++ tailwind-merge@3.6.0
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ vite@8.2.0
++ vitest@4.1.10
++ vue@3.5.40
++ vue-router@5.2.0
++ vue-tsc@3.3.9
+
+422 packages installed [565.00ms]
+
+$ git config core.hooksPath .githooks 2>/dev/null || true
+$ bun scripts/build.mjs
+$ tsc -p tsconfig.json && bun run build:ui && bun scripts/copy-assets.mjs
