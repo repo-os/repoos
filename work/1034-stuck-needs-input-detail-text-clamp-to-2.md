@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T16:26:19Z"
+updated_at: "2026-11-04T16:29:42Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-04T16:24:15.644Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 5
