@@ -53,8 +53,9 @@ when to ask.
   and whether this repository is already initialized (`repoos.toml`).
 - If RepoOS is missing, it picks a method from
   [Install](/getting-started#install) that fits the machine — curl is the
-  zero-dependency default, and Homebrew, npm, Bun, pnpm, and mise are also
-  supported — and asks before running a global install.
+  default (it needs Bun or Node.js 20.6.0+), and Homebrew, npm, Bun, and pnpm
+  are also supported — and asks before running a global install. mise is not
+  a recommended method.
 - It runs `repoos init` only after you agree. An existing repo uses `repoos init`
   from the repository root. A new project uses
   `repoos init <name> --new --description "..." --areas web,api --no-launch`

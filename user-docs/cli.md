@@ -68,8 +68,8 @@ interactive init offers to move it into `repoos.toml`. See
 
 Self-updates a standalone (curl-installed) RepoOS to the latest release.
 Tracks stable by default; `--channel` follows a prerelease line. Package-manager
-installs are not modified: RepoOS detects the usual npm, Bun, pnpm, mise, and
-Homebrew paths and prints the matching update command instead. `--channel`
+installs are not modified: RepoOS detects the usual npm, Bun, pnpm, Homebrew,
+and legacy mise paths and prints the matching update command instead. `--channel`
 applies only to the standalone curl install.
 
 See [Updating RepoOS](/getting-started#updating-repoos) for every install method.

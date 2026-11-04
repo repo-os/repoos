@@ -61,7 +61,7 @@ export function renderLlmsTxt(starterPrompt: string = readStarterPrompt()): stri
 
 Current release: ${releaseStamp()} — ${CURRENT_RELEASE_URL}
 
-RepoOS is local-first, source-available, and has zero runtime dependencies. It runs on Bun, with Node 20+ as a fallback.
+RepoOS is local-first and source-available. The package has no runtime npm dependencies. It runs on Bun, with Node.js 20.6.0 or newer as a fallback.
 
 ## How it works
 
@@ -71,7 +71,7 @@ RepoOS is local-first, source-available, and has zero runtime dependencies. It r
 
 ## Install
 
-Choose one. curl is the zero-dependency default; the package managers below install the same CLI.
+Choose one. curl is the default (Bun, or Node.js 20.6.0+); the package managers below install the same CLI.
 
 \`\`\`bash
 ${INSTALL_COMMANDS.join("\n")}

@@ -1,15 +1,14 @@
-// The six published install commands, in the order both public sites show them.
-// The landing llms.txt, the portable skill, and user-docs/getting-started.md are
-// checked against this list by their builds. mise's short `-g` flag (used in
-// landing/src/components/InstallBox.vue) is the same as `--global`; everything
-// else must match exactly.
+// The published install commands, in the order both public sites show them.
+// mise is intentionally absent: its npm backend does not install the current
+// release reliably (see docs/install-layout.md). The landing llms.txt, the
+// portable skill, and user-docs/getting-started.md are checked against this
+// list by their builds.
 export const INSTALL_COMMANDS = [
   "curl -fsSL https://repoos.org/install | bash",
   "brew install repo-os/tap/repoos",
   "npm install -g @repo-os/repoos",
   "bun add -g @repo-os/repoos",
   "pnpm add -g @repo-os/repoos",
-  "mise use --global npm:@repo-os/repoos",
 ] as const;
 
 /** Collapse whitespace and treat mise's `-g` and `--global` as the same flag. */

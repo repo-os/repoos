@@ -30,7 +30,7 @@ features:
     link: /concepts
     linkText: The task lifecycle
   - title: Local-first, zero lock-in
-    details: Runs on your machine. Source-available, zero runtime dependencies. Your tasks are markdown in your repo, with no hosted board database to export or migrate.
+    details: Runs on your machine. Source-available, no runtime npm dependencies. It needs Bun or Node.js 20.6.0+. Your tasks are markdown in your repo, with no hosted board database to export or migrate.
     link: /configuration
     linkText: Configure it
 ---
@@ -76,7 +76,7 @@ repoos serve   # local server plus background agents — check [[agents]] first
 
 `repoos init` seeds a real starter task (as an `inbox` suggestion, not work to
 auto-run), so the board is never empty on first run — read it and follow along,
-no agent required. Runs on Bun or Node 20+. No account, no telemetry.
+no agent required. Runs on Bun or Node.js 20.6.0+. No account, no telemetry.
 
 <AgentPromptCta />
 
