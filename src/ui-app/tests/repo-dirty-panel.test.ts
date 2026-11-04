@@ -64,6 +64,7 @@ function installFetch(): void {
       if (url.includes("/api/repo/working-diff")) return response(diffReply);
       if (url.includes("/api/repo/commit")) {
         commits.push(JSON.parse(String(init?.body ?? "{}")) as { message: string });
+        if (commitGate) await commitGate;
         if ((commitReply.status ?? 200) < 400) currentStatus = status({ dirty: [] });
         return response(commitReply);
       }
@@ -90,6 +91,7 @@ beforeEach(() => {
   diffReply = { body: { ok: true, patch: PATCH, truncated: false } };
   commits = [];
   fetches = [];
+  commitGate = null;
   installFetch();
 });
 
@@ -171,6 +173,27 @@ describe("uncommitted-changes panel (#1030)", () => {
     await flushPromises();
 
     expect(commits).toEqual([{ message: "" }]);
+  });
+
+  it("disables the commit button and message box while a commit is in flight", async () => {
+    await openPanel();
+    let release!: () => void;
+    commitGate = new Promise<void>((resolve) => (release = resolve));
+
+    const button = document.querySelector(".repo-dirty-commit") as HTMLButtonElement;
+    const textarea = document.querySelector("#repo-dirty-message") as HTMLTextAreaElement;
+    button.click();
+    await flushPromises();
+
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain("Committing…");
+    expect(textarea.disabled).toBe(true);
+
+    release();
+    await flushPromises();
+    // Committed, so the panel is now clean and the control stays disabled.
+    expect(button.disabled).toBe(true);
+    expect(panel()!.textContent).toContain("Committed 2 files to main (abc1234).");
   });
 
   it("shows a 409 refusal inline instead of failing silently", async () => {
