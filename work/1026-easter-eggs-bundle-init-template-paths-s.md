@@ -9,19 +9,18 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T13:13:56Z"
+updated_at: "2026-11-04T15:51:19Z"
 ---
 ## Items
-
 - E1 · Generated AGENTS.md template references nonexistent paths
 - E2 · `serve` banner and docs: say which interfaces are bound
 - E3 · cli.md missing commands
 - E4 · Empty-repo git edge cases
 - E5 · Quieter `repoos list` with no server
 - E6 · Doc and message accuracy nits
+- E7 · Task-card agent popover auto-closes after a configurable delay
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body.
-
 
 ## E1 · Generated AGENTS.md template references nonexistent paths
 
@@ -147,3 +146,4 @@ Source: external QA report on v0.5.75, items 3, 4, 13-18.
 - 2026-11-04T12:58:42Z · body: E7 · Hold dialog styling, optional reason, and held-card padding (added)
 - 2026-11-04T12:58:43Z · screenshots
 - 2026-11-04T13:13:56Z · body: Items (removed 1); E7 · Hold dialog styling, optional reason, and held-card padding (removed)
+- 2026-11-04T15:51:19Z · body: Items (added 1)
