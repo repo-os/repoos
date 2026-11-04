@@ -5,7 +5,7 @@
  * prove the snapshot is wired to the decision and the reason is recorded once.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { CTOMonitor, type CTOMonitorProbes } from "../../server/cto-monitor.js";
@@ -102,6 +102,8 @@ function baseSignals(over: Partial<IdleNudgeSignals> = {}): IdleNudgeSignals {
     remoteValidationRunning: false,
     messageQueued: false,
     recentWorktreeActivity: false,
+    cleanExitSinceNudge: false,
+    agentLogRecent: false,
     idleForMs: DEFAULT_CTO_NUDGE_IDLE_MS + 60_000,
     idleThresholdMs: DEFAULT_CTO_NUDGE_IDLE_MS,
     cooldownActive: false,
@@ -195,6 +197,23 @@ describe("decideIdleNudge (#0873)", () => {
       over: { pressureReason: "swap is nearly full (13 GB of 15 GB swap, 87%)" },
       nudge: false,
       reason: "machine-pressure",
+    },
+    {
+      name: "a clean exit after a completion nudge resumes even with no live process",
+      over: {
+        runnerRunning: false,
+        processGroupAlive: false,
+        cleanExitSinceNudge: true,
+        cooldownActive: true,
+      },
+      nudge: true,
+      reason: null,
+    },
+    {
+      name: "recent agent-log output means slow, not stalled",
+      over: { agentLogRecent: true },
+      nudge: false,
+      reason: "recent-activity",
     },
   ];
 
@@ -388,6 +407,58 @@ describe("CTO monitor idle nudge (#0873)", () => {
     expect(message).toContain("repoos mv <this task's id> review");
     expect(message).toContain("::repoos-handoff-ready::");
     expect(cto.recordAutomaticNudge).toHaveBeenCalledWith(theTask, 5);
+    expect(cto.recordIdleNudgeSkip).not.toHaveBeenCalled();
+  });
+
+  it("resumes a clean exit that followed a completion nudge instead of reporting idle (#1016)", async () => {
+    const now = Date.now();
+    const body = [
+      "## Activity",
+      "",
+      `- ${new Date(now - 30 * 60_000).toISOString()} · status ready→active`,
+      `- ${new Date(now - 20 * 60_000).toISOString()} · CTO nudge: sent engineer a completion reminder after 5m without worktree activity`,
+      `- ${new Date(now - 10 * 60_000).toISOString()} · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0`,
+      "",
+    ].join("\n");
+    const { monitor, cto } = monitorFor({
+      tasks: [task({ id: "1016", body, updated_at: new Date(now - 10 * 60_000).toISOString() })],
+      runner: { running: false, process: { tracked: false, groupAlive: false, busyChild: null } },
+    });
+
+    await monitor.checkNow("timer");
+
+    expect(cto.sendTaskMessage).toHaveBeenCalledTimes(1);
+    expect(String(cto.sendTaskMessage.mock.calls[0]![1])).toContain("::repoos-handoff-ready::");
+    expect(cto.recordAutomaticNudge).toHaveBeenCalledTimes(1);
+    expect(cto.recordIdleNudgeSkip).not.toHaveBeenCalled();
+  });
+
+  it("uses the agent-log mtime to treat fresh output as slow, not stalled", async () => {
+    const root = tempRoot();
+    mkdirSync(join(root, ".repoos", "agent-logs"), { recursive: true });
+    writeFileSync(join(root, ".repoos", "agent-logs", "0001.out.log"), "still working\n");
+    const cto = fakeCto();
+    const theTask = task({ id: "0001", branch: "feat/x" });
+    const monitor = new CTOMonitor(
+      configFor(root),
+      indexWith([theTask]),
+      cto as unknown as CTOManager,
+      fakeRunner({ running: true }) as never,
+      { pressureReason: () => null },
+    );
+    (monitor as unknown as Record<string, unknown>).buildHealth = () => ({
+      healthy: true,
+      label: "✓ fresh",
+    });
+    (monitor as unknown as Record<string, unknown>).processHealth = () => ({
+      healthy: true,
+      label: "✓ processes look normal",
+    });
+
+    await monitor.checkNow("timer");
+
+    expect(cto.sendTaskMessage).not.toHaveBeenCalled();
+    // Silently held: fresh log output inside the window is "slow", not a stall.
     expect(cto.recordIdleNudgeSkip).not.toHaveBeenCalled();
   });
 
