@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 957678
+last_close_out_gate_at: "2026-11-04T10:52:45.920Z"
 id: 1027
 title: Unify product description across all surfaces
 type: chore
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/unify-product-description-across-all-sur
 created_at: "2026-11-04T06:53:26Z"
-updated_at: "2026-11-04T08:25:31Z"
+updated_at: "2026-11-04T10:52:45Z"
 review_passes: 1
 ---
 ## Problem
@@ -126,3 +128,5 @@ Also grep the repo (README, SKILL.md, llms.txt files, docs index, release templa
 - 2026-11-04T08:13:10Z · status active→review
 - 2026-11-04T08:13:54Z · note: review pass 1: good to go
 - 2026-11-04T08:25:31Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (096f9d8b9) during finalization (#0734)
+- 2026-11-04T10:52:45Z · close-out gate completed in 958s
+
