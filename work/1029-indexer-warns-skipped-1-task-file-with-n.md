@@ -2,14 +2,14 @@
 id: 1029
 title: Indexer warns 'skipped 1 task file with no id' for work/reports/<id>/review-<n>.md
 type: bug
-status: active
+status: review
 priority: p3
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/indexer-warns-skipped-1-task-file-with-n
 created_at: "2026-11-04T07:06:29Z"
-updated_at: "2026-11-04T07:40:52Z"
+updated_at: "2026-11-04T07:43:04Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -39,3 +39,4 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:40:52Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-04T07:40:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T07:40:52Z · message_delivered: 2 message(s)
+- 2026-11-04T07:43:04Z · status active→review
