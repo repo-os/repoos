@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T17:31:45Z"
+updated_at: "2026-11-04T17:31:58Z"
 ---
 ## Problem
 
@@ -38,9 +38,7 @@ Pipeline shows every task in `active` or `review`, plus tasks that finished rece
 
 Area chips and the file-count chip are left off to hold four lines. Build the card as separate rows so it can later drop to three lines (fold line 4 into line 3, or move it into a hover/popover) without a rewrite; keep that as a later option, not part of this task.
 
-### Visual reference
 
-Approved mockup (light and dark, solid hairline guides, centered cards): rendered in the originating chat session, not saved as a file. Summary of colours: card is one step above the page surface in both themes, chips use the page's chip surface, success tint for Merged, amber for sent-back, red for stuck. Use existing theme tokens only.
 
 ## Acceptance criteria
 
@@ -78,3 +76,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T17:20:02Z · screenshots
 - 2026-11-04T17:22:46Z · screenshots
 - 2026-11-04T17:31:45Z · body: Visual reference (added)
+- 2026-11-04T17:31:58Z · body: Desired UX (removed 2)
