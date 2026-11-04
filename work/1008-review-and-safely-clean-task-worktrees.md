@@ -11,7 +11,7 @@ branch: feat/review-and-safely-clean-task-worktrees
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-01T22:00:49Z"
-updated_at: "2026-11-04T23:10:10Z"
+updated_at: "2026-11-04T23:12:45Z"
 ---
 ## Problem
 
@@ -42,6 +42,34 @@ Do not edit product code, push, or start unrelated tasks as part of this run.
 
 Context: `repoos gc` is the only sanctioned way to remove worktrees and branches; it decides what is safe. Worktrees outside RepoOS's managed task-worktree directory (for example other tools' worktrees) are not this task's to remove. This task comes from the "Safe worktree cleanup" schedule in `schedules/`; a normal run has an empty code diff, so there is nothing for the scoped check to test beyond the task's own files. Once #1004 lands and changes what `repoos gc` collects, update this runbook and the schedule template to match.
 
+## Cleanup report
+Run at 2026-11-04T23:10Z from this worktree. `repoos status --json` reported 22 worktrees (19 managed). `repoos gc --dry-run` reported 0 safe candidates, 18 retained, 3 outside RepoOS's managed directory. `repoos gc --yes` was not run. Nothing was removed with `git worktree remove` or `git branch -D`. Before and after counts are the same because this run changed no worktree or branch.
+
+Protected worktrees and the exact `repoos gc` reason:
+
+- `feat/repoos-doctor-warn-when-macos-syspolicyd` (#0898, done) — task file content not represented in main (work/0826, work/0829, work/0833, work/0840, work/0842); 3 commits ahead.
+- `feat/handoff-a-shot-whose-waitfor-click-highl` (#0830, done) — task file content not represented in main (work/0826, work/0829, work/0830, work/0833, work/0834); 1 commit ahead.
+- `feat/easter-eggs-bundle-init-template-paths-s` (#1026, active) — task agent still active; 10 commits ahead.
+- `feat/install-uninstall-fix-mise-path-friction` (#1025, review) — task agent still active; 5 commits ahead.
+- `feat/link-telegram-chats-to-a-repository-from` — uncommitted task-file changes with unique data: work/0534-authorize-every-telegram-message-against.md.
+- `feat/live-verification-of-jev-and-clef-flash-` (#0794) — human-assigned task (not resolved by close-out).
+- `feat/model-list-per-cli-loading-visible-failu` — uncommitted task-file changes with unique data: work/0591-width-aware-cli-layout-shared-layout-hel.md.
+- `feat/protect-a-task-worktree-from-edits-after` — uncommitted task-file changes with unique data: work/0595-failure-tl-dr-for-move-to-done-errors.md.
+- `feat/remote-bundle-mirror-path-is-quoted-so-r` (#1009, active) — task agent still active; dirty `src/ui-app/tests/remote-validation.test.ts`.
+- `feat/rendered-contrast-audit-across-themes-an` — uncommitted task-file changes with unique data: work/0589 and work/0592.
+- `feat/repoos-check-cache-step-results-by-tree-` — task file content not represented in main: work/0652; 4 commits ahead.
+- `feat/repoos-shot-capture-the-app-target-for-m` — changes not in main: src/commands/shot.ts, src/core/shot-page.ts, src/core/shot-plan.ts, src/server/shot-capture.ts; 1 commit ahead.
+- `feat/review-and-safely-clean-task-worktrees` (#1008, active) — task agent still active.
+- `feat/task-hold-one-durable-documented-state-t` (#0960, done) — ignored files may hold local data (`src/ui-app/.repoos/auto-engineering-decision.json`, `work/.attachments`); dirty task file.
+- `feat/upload-state-retry-ux` — task file content not represented in main: work/0840; 9 commits ahead and a dirty tree.
+- `feat/close-out-engineer-checkpoint-commits-af` (#0834, done) — task file content not represented in main (work/0664, work/0666, work/0826, work/0829, work/0833); 1 commit ahead.
+- `feat/diagnose-4-pre-existing-full-suite-test-` (#0840, done) — task file content not represented in main (work/0664, work/0826, work/0829, work/0833, work/0840); 5 commits ahead.
+- `feat/worktree-handoff-guard-false-positives-o` (#0600, done) — uncommitted task-file changes with unique data: work/0599-fix-the-gitignore-generated-by-repoos-in.md.
+
+External, left in place: `codex/chat-diagnostics`, `codex/unsandboxed-engineering`, `codex/dependency-confirm-dialog` (outside RepoOS's managed worktree directory).
+
+Done and archived worktrees that `repoos gc` still retains stay for the safety rules tracked in #1004. This pass did not judge them safe by hand.
+
 ## Activity
 
 - 2026-11-01T22:00:49Z · created · schedule
@@ -56,3 +84,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-04T23:05:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T23:10:08Z · message_delivered: 1 message(s)
 - 2026-11-04T23:10:10Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-04T23:12:45Z · body: Cleanup report (added)
