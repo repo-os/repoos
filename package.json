@@ -1,7 +1,7 @@
 {
   "name": "@repo-os/repoos",
   "version": "0.5.75",
-  "description": "The repo is the operating system. Repo-native, AI-agent-friendly task tracking that lives as markdown files in your monorepo.",
+  "description": "The repo is the operating system. Your AI dev team, living in your repo, for CTOs and builders.",
   "type": "module",
   "bin": {
     "repoos": "dist/cli/index.js"
@@ -41,7 +41,7 @@
     "prepublishOnly": "REPOOS_SHIP=1 bun run build"
   },
   "keywords": [
-    "monorepo",
+    "git",
     "ai-agents",
     "task-management",
     "repo-native",

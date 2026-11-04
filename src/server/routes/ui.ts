@@ -73,7 +73,7 @@ export function buildPwaManifest(name: string, color: string | null): PwaManifes
     id: "/",
     name: `RepoOS · ${name}`,
     short_name: `RepoOS · ${name}`,
-    description: `Repo-native task tracking for ${name}`,
+    description: `${name} · RepoOS`,
     start_url: "/",
     scope: "/",
     display: "standalone",
