@@ -20,8 +20,10 @@ when main is dirty it's hard for the user to notice now (because it's just a sma
 ## Screenshots
 
 ![Screenshot-2026-11-04-at-17.43.22](/api/tasks/1030/attachments/att_3f784343-fc8e-4acb-8db8-aaa9caa78ced.png)
+![Screenshot-2026-11-04-at-17.45.29](/api/tasks/1030/attachments/att_b38279eb-7746-41c4-ace8-cbf8287fa894.png)
 
 ## Activity
 
 - 2026-11-04T10:30:51Z · created · hello@repoos.org
+- 2026-11-04T10:30:58Z · screenshots
 - 2026-11-04T10:30:58Z · screenshots
