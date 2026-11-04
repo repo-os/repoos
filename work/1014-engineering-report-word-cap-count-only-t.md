@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineering-report-word-cap-count-only-t
 created_at: "2026-11-03T07:45:14Z"
-updated_at: "2026-11-04T03:06:46Z"
+updated_at: "2026-11-04T03:07:40Z"
 last_close_out_gate_ms: 765176
 last_close_out_gate_at: "2026-11-04T03:06:46.722Z"
 review_passes: 1
@@ -48,4 +48,4 @@ See `MAX_WORDS`, `words()`, and both checks in `src/server/engineering-reports.t
 - 2026-11-04T02:51:40Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-04T02:52:22Z · note: review pass 1: good to go
 - 2026-11-04T03:06:46Z · close-out gate completed in 765s
-
+- 2026-11-04T03:07:40Z · status done→done, release:success
