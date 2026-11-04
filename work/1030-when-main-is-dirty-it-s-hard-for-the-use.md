@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
+last_handoff_failure_sha: 6ce5d3f347e3d6357dff404c28b0188df3e1f8d5
 id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
@@ -237,3 +239,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T15:47:50Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T15:47:59Z · message_queued at 2026-11-04T15:47:59.450Z
 - 2026-11-04T15:47:59Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
+
