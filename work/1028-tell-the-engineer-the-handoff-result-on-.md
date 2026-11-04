@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 834453
-last_close_out_gate_at: "2026-11-04T12:48:02.176Z"
 id: 1028
 title: Tell the engineer the handoff result on its next turn; add non-blocking repoos handoff-status
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, core]
+merged_commit: bf7d7a6b04e2445f14e049f035b821d17607ee0a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/tell-the-engineer-the-handoff-result-on-
 created_at: "2026-11-04T07:04:31Z"
 updated_at: "2026-11-04T12:48:02Z"
+last_close_out_gate_ms: 834453
+last_close_out_gate_at: "2026-11-04T12:48:02.176Z"
 review_passes: 1
 ---
 ## Problem

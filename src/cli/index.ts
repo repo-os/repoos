@@ -42,6 +42,7 @@ import {
   cmdConfig,
   cmdDone,
   cmdLandable,
+  cmdHandoffStatus,
   cmdMessage,
   cmdSendBack,
   cmdOverride,
@@ -352,6 +353,11 @@ function main(): void {
       break;
     case "landable":
       void cmdLandable(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
+      break;
+    case "handoff-status":
+      void cmdHandoffStatus(rest).then((code) => {
         if (code !== 0) process.exitCode = code;
       });
       break;
