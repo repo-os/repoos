@@ -41,3 +41,4 @@ See `MAX_WORDS`, `words()`, and both checks in `src/server/engineering-reports.t
 - 2026-11-04T02:48:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T02:48:54Z · message_delivered: 1 message(s)
 - 2026-11-04T02:51:40Z · status active→review
+- 2026-11-04T02:51:40Z · note: shots: skipped — Docs site skipped: no docs shot declared
