@@ -64,6 +64,8 @@ function mockFetch(): void {
         // open, and a fixture default must not overwrite a test's setup.
         return json(store?.gitStatus ?? status());
       }
+      if (url.includes("/api/repo/working-diff"))
+        return json({ ok: true, patch: "", truncated: false });
       if (url.includes("/api/health"))
         return json({
           ok: true,
@@ -217,6 +219,58 @@ describe("sidebar git-state row (#0584)", () => {
     const wrapper = await mountRow();
 
     expect(wrapper.find(".side-git-state").text()).toContain("unknown");
+  });
+});
+
+describe("dirty-main button (#1030)", () => {
+  it("is not rendered while the checkout is clean", async () => {
+    const repo = useRepoStore();
+    repo.gitStatus = status({ dirty: [] });
+    const wrapper = await mountRow();
+
+    expect(wrapper.find(".side-git-dirty").exists()).toBe(false);
+  });
+
+  it("is not rendered while the state is unknown", async () => {
+    const repo = useRepoStore();
+    repo.gitStatus = status({ ok: false, branch: null, dirty: [] });
+    const wrapper = await mountRow();
+
+    expect(wrapper.find(".side-git-dirty").exists()).toBe(false);
+  });
+
+  it("fills the sidebar with the dirty count and opens the panel", async () => {
+    const repo = useRepoStore();
+    repo.gitStatus = status({
+      dirty: [
+        { path: "a.ts", status: " M" },
+        { path: "b.ts", status: " M" },
+        { path: "notes.md", status: "??" },
+      ],
+    });
+    const wrapper = await mountRow();
+
+    const button = wrapper.find(".side-git-dirty");
+    expect(button.exists()).toBe(true);
+    expect(button.text()).toBe("3 uncommitted changes");
+    expect(button.attributes("aria-label")).toContain("3 uncommitted changes on main");
+    // Directly below the branch/status row, not somewhere else in the foot.
+    expect(wrapper.find(".side-git").element.nextElementSibling).toBe(button.element);
+
+    await button.trigger("click");
+    await flushPromises();
+
+    const panel = document.querySelector('[data-testid="repo-dirty-panel"]');
+    expect(panel).not.toBeNull();
+    expect(panel!.textContent).toContain("3 files on main");
+  });
+
+  it("uses the singular for one change", async () => {
+    const repo = useRepoStore();
+    repo.gitStatus = status({ dirty: [{ path: "a.ts", status: " M" }] });
+    const wrapper = await mountRow();
+
+    expect(wrapper.find(".side-git-dirty").text()).toBe("1 uncommitted change");
   });
 });
 
