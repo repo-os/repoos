@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T21:17:26Z"
+updated_at: "2026-11-04T21:17:27Z"
 ---
 ## Items
 - E1 · Generated AGENTS.md template references nonexistent paths
@@ -176,3 +177,4 @@ Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the 
 - 2026-11-04T17:58:02Z · body: E7 · Flag underspecified schedule templates on save (added); E7 · Task-card agent popover auto-closes after a configurable delay (removed)
 - 2026-11-04T18:35:52Z · status inbox→ready
 - 2026-11-04T21:17:26Z · cli_override
+- 2026-11-04T21:17:27Z · model_override
