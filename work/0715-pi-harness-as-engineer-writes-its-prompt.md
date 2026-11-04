@@ -135,3 +135,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:51:19Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T16:01:39Z · status active→review
 - 2026-11-04T16:01:40Z · message_queued at 2026-11-04T16:01:40.268Z
+- 2026-11-04T16:01:40Z · note: shots: skipped — Docs site skipped: no docs shot declared
