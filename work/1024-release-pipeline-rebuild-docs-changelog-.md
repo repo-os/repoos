@@ -152,3 +152,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T16:24:42Z · body
 - 2026-11-04T16:39:24Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T16:50:59Z · status active→review
+- 2026-11-04T16:50:59Z · message_queued at 2026-11-04T16:50:59.921Z
