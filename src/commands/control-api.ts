@@ -211,9 +211,9 @@ export async function cmdHold(args: string[]): Promise<number> {
     return 1;
   }
   const api = new RepoOsApi({ port: opts.port });
-  // #0960 input validation (mirrors the API guard): a hold needs a reason so it
-  // is visible on the board, and `--until` must be a real date or it would
-  // never auto-release and become a permanent hold.
+  // #0960: the CLI still requires `--reason`. The HTTP hold route accepts a
+  // missing reason (#1033). `--until` must be a real date or it would never
+  // auto-release and become a permanent hold.
   if (!opts.reason || !opts.reason.trim()) {
     printErr("hold requires a --reason (free text documenting why the task is parked)");
     return 1;
