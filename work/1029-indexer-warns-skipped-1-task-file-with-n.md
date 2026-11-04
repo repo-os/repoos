@@ -40,3 +40,4 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:40:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T07:40:52Z · message_delivered: 2 message(s)
 - 2026-11-04T07:43:04Z · status active→review
+- 2026-11-04T07:43:04Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
