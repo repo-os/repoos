@@ -797,6 +797,7 @@ export class TaskWatchdog {
       handoffDeferred: queuedMessages > 0,
       queuedMessages,
       handoffSinceLastCommit: handedOff,
+      episodeStart: signal.episodeStart,
       resumes: parseEngineerStallResumeLog(task.extra?.[ENGINEER_STALL_RESUME_LOG_KEY]),
       now: Date.now(),
       limit: DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
