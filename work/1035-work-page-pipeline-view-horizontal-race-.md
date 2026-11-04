@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T18:16:30Z"
+updated_at: "2026-11-04T18:18:36Z"
 ---
 ## Problem
 
@@ -99,3 +99,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T18:14:29Z · message_queued at 2026-11-04T18:14:29.799Z
 - 2026-11-04T18:14:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T18:16:30Z · body
+- 2026-11-04T18:18:36Z · CTO nudge: held — an undelivered message is already queued
