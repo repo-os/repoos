@@ -8,19 +8,24 @@ import { diffLineClass, parseDiffFiles, type DiffFile } from "../lib/diff-files"
  * tab's Merge conflict view so both read identically. Pass `expandable` to show
  * the full-screen button (`expand` fires with the file).
  */
-const props = defineProps<{
-  patch: string;
-  truncated?: boolean;
-  expandable?: boolean;
-  /** Distinguishes section anchors when more than one viewer exists on a page. */
-  idPrefix?: string;
-  /**
-   * Render the compact file list above the sections. Off when the caller
-   * already lists every changed file itself (the uncommitted-changes panel
-   * lists untracked files too, which `git diff HEAD` does not carry).
-   */
-  showFileList?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    patch: string;
+    truncated?: boolean;
+    expandable?: boolean;
+    /** Distinguishes section anchors when more than one viewer exists on a page. */
+    idPrefix?: string;
+    /**
+     * Render the compact file list above the sections. Off when the caller
+     * already lists every changed file itself (the uncommitted-changes panel
+     * lists untracked files too, which `git diff HEAD` does not carry).
+     */
+    showFileList?: boolean;
+  }>(),
+  // Boolean props default to false in Vue; this one is on unless a caller
+  // explicitly turns it off.
+  { showFileList: true },
+);
 const emit = defineEmits<{ (e: "expand", file: DiffFile): void }>();
 
 const diffFiles = computed(() => parseDiffFiles(props.patch));
@@ -45,7 +50,7 @@ watch(
 </script>
 
 <template>
-  <div v-if="props.showFileList !== false && diffFiles.length > 0" class="diff-file-list">
+  <div v-if="showFileList && diffFiles.length > 0" class="diff-file-list">
     <div
       v-for="file in diffFiles"
       :key="file.filename"
