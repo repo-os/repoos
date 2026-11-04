@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-04T16:24:15.644Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
@@ -112,3 +114,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T15:53:54Z · message_delivered: 2 message(s)
 - 2026-11-04T16:24:12Z · message_queued at 2026-11-04T16:24:12.417Z
 - 2026-11-04T16:24:15Z · message_delivered: 1 message(s)
+
