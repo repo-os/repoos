@@ -97,3 +97,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T18:02:21Z · status ready→active, branch
 - 2026-11-04T18:07:56Z · body
 - 2026-11-04T18:14:29Z · message_queued at 2026-11-04T18:14:29.799Z
+- 2026-11-04T18:14:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
