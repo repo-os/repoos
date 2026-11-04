@@ -11,7 +11,7 @@ created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T18:12:36Z"
+updated_at: "2026-11-04T18:14:29Z"
 last_close_out_gate_ms: 662473
 last_close_out_gate_at: "2026-11-04T18:10:32.569Z"
 review_passes: 1
@@ -277,3 +277,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T17:55:47Z · note: review pass 1: good to go
 - 2026-11-04T18:10:32Z · close-out gate completed in 662s
 - 2026-11-04T18:12:36Z · status done→done, release:success
+- 2026-11-04T18:14:29Z · message_dropped: 1 queued message(s) discarded — task is done
