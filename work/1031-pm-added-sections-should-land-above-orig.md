@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: 1031
 title: PM-added sections should land above Original prompt and Screenshots
 type: bug
@@ -11,7 +10,8 @@ created_by: njachowski@gmail.com
 branch: feat/pm-added-sections-should-land-above-orig
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
-updated_at: "2026-11-04T18:41:10Z"
+updated_at: "2026-11-04T18:42:05Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -42,4 +42,4 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 - 2026-11-04T18:31:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementation is complete and verified so far; the scoped check is still running in the background. **Status:** - **Fix** (`src/core/task.ts:282-314`): `replaceSection` now inserts a brand-new spec section before the first of `## Original… · stderr: (empty)
 - 2026-11-04T18:35:54Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T18:41:10Z · message_delivered: 1 message(s)
-
+- 2026-11-04T18:42:05Z · message_queued at 2026-11-04T18:42:05.900Z
