@@ -95,3 +95,4 @@ Done and archived worktrees that `repoos gc` still retains stay for the safety r
 - 2026-11-04T23:20:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T23:28:37Z · status active→review
 - 2026-11-04T23:28:37Z · message_queued at 2026-11-04T23:28:37.690Z
+- 2026-11-04T23:28:37Z · note: shots: skipped — the diff (2 changed paths) touches no capture target's globs — no UI change to capture
