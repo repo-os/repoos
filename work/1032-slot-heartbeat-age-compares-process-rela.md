@@ -47,3 +47,4 @@ Search for `monotonicMs` in cross-process-slots.ts (writers at ~380, 385, 484). 
 - 2026-11-04T12:58:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T13:00:59Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T13:01:00Z · message_queued at 2026-11-04T13:01:00.184Z
+- 2026-11-04T13:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
