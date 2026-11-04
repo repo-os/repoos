@@ -3,6 +3,8 @@
  * toggles a compact PM / Engineer / Reviewer agent assignment panel — override
  * when set, else the enabled board-default agent for that role.
  */
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
@@ -339,4 +341,51 @@ describe("TaskCard agent assignments panel (0455)", () => {
       pmModelOverride: "opencode-go/nimo-v2.5",
     });
   });
+
+  async function mountWithPopoverSeconds(seconds: number) {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask();
+    stubFetch(task);
+    await useRepoStore().init();
+    const config = useConfigStore();
+    config.agents = [
+      { name: "engineer", cli: "opencode", model: "default", enabled: true },
+      { name: "pm", cli: "opencode", model: "default", enabled: true },
+      { name: "reviewer", cli: "opencode", model: "default", enabled: true },
+    ];
+    config.data = { board: { agentPopoverCloseSeconds: seconds } };
+    return mountCard(pinia, task);
+  }
+
+  it("closes the agent popover after the configured delay and restarts it on hover", async () => {
+    const wrapper = await mountWithPopoverSeconds(15);
+    await wrapper.find(".tc-agent-btn").trigger("click");
+    expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
+    await vi.advanceTimersByTimeAsync(14_000);
+    expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
+    await wrapper.find(".tc-agent-panel").trigger("mouseenter");
+    await vi.advanceTimersByTimeAsync(14_000);
+    expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
+  });
+
+  it("leaves the agent popover open when the delay is 0", async () => {
+    const wrapper = await mountWithPopoverSeconds(0);
+    await wrapper.find(".tc-agent-btn").trigger("click");
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
+  });
+});
+
+it("fades the agent popover out and skips that fade when motion is reduced", () => {
+  const css = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
+  expect(css).toMatch(/\.tc-agent-panel-leave-active\s*\{[^}]*opacity 0\.28s/);
+  expect(css).toMatch(
+    /@media \(prefers-reduced-motion: reduce\)\s*\{[^}]*\.tc-agent-panel-leave-active[^}]*transition:\s*none/s,
+  );
 });

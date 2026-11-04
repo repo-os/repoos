@@ -321,16 +321,20 @@ onMounted(() => {
 
 <template>
   <div class="scheduled-tasks-panel">
-    <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
-      <span class="live-dot" style="background: var(--cyan)"></span>
-      Scheduled tasks
-      <Button
-        variant="outline"
-        size="sm"
-        style="margin-left: 12px"
-        data-testid="new-schedule"
-        @click="openCreate"
-      >
+    <div class="panel-create-row">
+      <div class="sec-label" style="padding-top: 16px; margin-bottom: 4px">
+        <span class="live-dot" style="background: var(--cyan)"></span>
+        Scheduled tasks
+      </div>
+      <Button variant="accent" class="new-btn" data-testid="new-schedule" @click="openCreate">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M12 5v14M5 12h14"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
         New schedule
       </Button>
     </div>

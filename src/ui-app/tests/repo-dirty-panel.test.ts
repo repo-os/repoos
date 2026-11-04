@@ -6,6 +6,8 @@
  * the same viewer as the task drawer's Changes tab, and commits through the
  * one existing commit pipeline (`POST /api/repo/commit`).
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
@@ -250,5 +252,21 @@ describe("uncommitted-changes panel (#1030)", () => {
     expect((document.querySelector(".repo-dirty-commit") as HTMLButtonElement).disabled).toBe(true);
     expect(panel()!.textContent).toContain("HEAD is detached");
     expect(fetches.filter((u) => u.includes("/api/repo/commit"))).toEqual([]);
+  });
+
+  it("keeps the commit message field about three lines tall", async () => {
+    const css = readFileSync(join(__dirname, "../src/style.css"), "utf8");
+    const sharedAt = css.indexOf(".ff-textarea {");
+    const overrideAt = css.indexOf(".ff-textarea.repo-dirty-input {");
+    expect(overrideAt).toBeGreaterThan(sharedAt);
+    const style = document.createElement("style");
+    style.textContent = css.slice(sharedAt, overrideAt + css.slice(overrideAt).indexOf("}") + 1);
+    document.head.appendChild(style);
+    await openPanel();
+    const field = document.querySelector(".repo-dirty-input") as HTMLTextAreaElement;
+    const min = Number.parseFloat(getComputedStyle(field).minHeight);
+    expect(min).toBeGreaterThan(0);
+    expect(min).toBeLessThan(100);
+    style.remove();
   });
 });

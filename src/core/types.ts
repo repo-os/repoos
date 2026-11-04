@@ -743,6 +743,14 @@ export interface RepoOSConfig {
    */
   worktreeWarnThreshold?: number;
   /**
+   * Board UI preferences that are not column labels.
+   * `agentPopoverCloseSeconds` is how long the task-card agent popover stays
+   * open after the last interaction. `0` leaves it open until dismissed.
+   */
+  board?: {
+    agentPopoverCloseSeconds?: number;
+  };
+  /**
    * Port `repoos serve` binds by default (overridable with `--port`). Unset
    * means "derive a stable per-repo port from the repo root path" so two
    * checkouts on one machine don't both grab 7171. Pin it here for a repo
