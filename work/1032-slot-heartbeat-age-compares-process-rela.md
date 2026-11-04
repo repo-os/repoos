@@ -50,3 +50,4 @@ Search for `monotonicMs` in cross-process-slots.ts (writers at ~380, 385, 484). 
 - 2026-11-04T13:01:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T13:01:00Z · message_delivered: 2 message(s)
 - 2026-11-04T13:14:15Z · status active→review
+- 2026-11-04T13:14:15Z · message_queued at 2026-11-04T13:14:15.933Z
