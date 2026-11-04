@@ -56,9 +56,10 @@ input.
 The modal also has an **optional release-notes text area**. Type notes by hand,
 or click **Generate with AI** to draft them from the commits since the last
 release tag (or the full history when there is no previous release) and fill
-the text area; the draft is editable before you confirm. Notes are optional end
-to end — leaving the field empty cuts the release exactly as before. See
-"Release notes" below.
+the text area; the draft is editable before you confirm. Leaving the field empty
+is still valid — the cut falls back to the release-relevant commit subjects so
+the changelog, tag and GitHub release body are never blank. See "Release notes"
+below.
 
 `POST /api/release` kicks off `cutNewRelease` in the background and returns
 immediately; the page polls `GET /api/release/run` for progress. The run
@@ -184,8 +185,8 @@ the Agents page.
 ## Release notes
 
 The cut modal's notes field is optional. Anything typed or generated is sent
-with the cut and stored in the **annotated tag's body** — the git-native
-release record this provider creates:
+with the cut and stored in both the committed release history and the
+**annotated tag's body** — the git-native release record this provider creates:
 
 ```
 git tag -a v1.2.3 --cleanup=verbatim -m "Release v1.2.3" -m "<the notes>"
@@ -193,15 +194,15 @@ git tag -a v1.2.3 --cleanup=verbatim -m "Release v1.2.3" -m "<the notes>"
 
 RepoOS passes notes as a second `-m` and adds `--cleanup=verbatim` so Markdown
 headings survive (git's default message cleanup strips `#`-prefixed lines as
-comments). With the field empty, the annotation is the unchanged single
-`Release v<x>` line.
+comments). With the field empty, the cut writes a deterministic fallback from
+the release-relevant commit subjects, so the body is never empty.
 
-`.github/workflows/release.yml` reads the tag's annotation body back with
-`git tag -l --format='%(contents:body)' <tag>` and passes it to
-`softprops/action-gh-release` as `body_path`, so the notes become the GitHub
-release body (prepended to GitHub's auto-generated notes). When no notes were
-supplied the extracted body is empty and GitHub's auto-generated notes are used
-exactly as before.
+`.github/workflows/release.yml` reads the notes from
+`release-history.json` (the committed entry for the tag) with
+`scripts/release-notes.ts` and passes them to `softprops/action-gh-release` as
+`body_path`, so the notes become the GitHub release body (prepended to GitHub's
+auto-generated notes). Only a tag that predates the release history falls back
+to the annotation body.
 
 **Generate with AI** calls `POST /api/release/notes`, which resolves the enabled
 PM agent (falling back to the engineer), collects the release-relevant commit

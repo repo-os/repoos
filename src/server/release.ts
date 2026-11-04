@@ -847,10 +847,9 @@ export async function cutNewRelease(
   // skips this block and safely resumes from the gate.
   if (status.version !== version) {
     onProgress?.("committing", `Committing the ${version} version bump…`);
+    let manifest: Record<string, unknown>;
     try {
-      const manifest = JSON.parse(readFileSync(versionPath, "utf8")) as Record<string, unknown>;
-      manifest.version = version;
-      writeFileSync(versionPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+      manifest = JSON.parse(readFileSync(versionPath, "utf8")) as Record<string, unknown>;
     } catch {
       return { ok: false, status, output: "Could not update the configured version file." };
     }
@@ -862,6 +861,12 @@ export async function cutNewRelease(
         status,
         output: `Could not write the release changelog: ${error instanceof Error ? error.message : String(error)}`,
       };
+    }
+    manifest.version = version;
+    try {
+      writeFileSync(versionPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+    } catch {
+      return { ok: false, status, output: "Could not update the configured version file." };
     }
     const commitPaths = [relVersionPath, ...surfacePaths];
     const staged = await exec("git", ["add", "--", ...commitPaths], config.root);
