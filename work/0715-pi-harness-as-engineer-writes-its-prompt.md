@@ -3,13 +3,16 @@ id: "0715"
 title: pi engineer ends turns cleanly without requesting handoff; stderr not surfaced; recovery is slow and the CTO cannot see why
 type: bug
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 28m"
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T15:26:19Z"
+updated_at: "2026-11-04T15:44:30Z"
 close_out_repair_count: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
@@ -118,3 +121,9 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:25:04Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-04T15:25:19Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T15:26:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T15:27:04Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 11m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:30:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T15:36:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 21m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:38:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T15:43:35Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 28m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:44:30Z · body
