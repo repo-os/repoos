@@ -125,14 +125,22 @@ function onKey(e: KeyboardEvent): void {
 
 <style scoped>
 .pipeline-card {
-  width: 250px;
-  min-height: 84px;
+  /* Cards are about twice the old 250px: wider than their column, anchored to
+     its left edge (right edge for the last two columns) and overlapping the
+     neighbouring empty lane space. */
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  width: min(500px, 155%);
+  min-height: 116px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 3px;
-  padding: 8px 10px;
+  gap: 8px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--panel-solid);
@@ -150,7 +158,7 @@ function onKey(e: KeyboardEvent): void {
 }
 .pipeline-card.is-held,
 .pipeline-card.is-paused {
-  opacity: 0.55;
+  border-style: dashed;
 }
 .pl-row {
   display: flex;

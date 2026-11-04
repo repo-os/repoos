@@ -341,26 +341,6 @@ function openHeld(task: Task): void {
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 10px">
-        <div class="view-toggle" role="group" aria-label="Work view">
-          <button
-            type="button"
-            class="view-toggle-btn"
-            :class="{ active: effectiveView === 'pipeline' }"
-            :aria-pressed="effectiveView === 'pipeline'"
-            @click="setWorkViewMode('pipeline')"
-          >
-            <Route class="size-3.5" /><span>Pipeline</span>
-          </button>
-          <button
-            type="button"
-            class="view-toggle-btn"
-            :class="{ active: effectiveView === 'board' }"
-            :aria-pressed="effectiveView === 'board'"
-            @click="setWorkViewMode('board')"
-          >
-            <Columns3 class="size-3.5" /><span>Board</span>
-          </button>
-        </div>
         <Button
           v-if="!statusFilter && effectiveView === 'board'"
           variant="outline"
@@ -405,6 +385,26 @@ function openHeld(task: Task): void {
             </SelectViewport>
           </SelectContent>
         </Select>
+        <div class="view-toggle" role="group" aria-label="Work view">
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: effectiveView === 'pipeline' }"
+            :aria-pressed="effectiveView === 'pipeline'"
+            @click="setWorkViewMode('pipeline')"
+          >
+            <Route class="size-3.5" /><span>Pipeline</span>
+          </button>
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: effectiveView === 'board' }"
+            :aria-pressed="effectiveView === 'board'"
+            @click="setWorkViewMode('board')"
+          >
+            <Columns3 class="size-3.5" /><span>Board</span>
+          </button>
+        </div>
         <Button variant="accent" class="new-btn" @click="ui.openNewTask()">
           <svg viewBox="0 0 24 24" fill="none">
             <path

@@ -265,29 +265,34 @@ function stageCells(stage: PipelineStage): string {
 <template>
   <div class="pipeline" data-test-id="pipeline-view">
     <div class="pipeline-scroll">
-      <div class="pipeline-grid">
-        <div class="pipeline-gutter pipeline-head-gutter">
-          <span v-if="readyCount > 0" class="pipeline-queue">Ready · {{ readyCount }}</span>
-        </div>
+      <div
+        class="pipeline-grid"
+        :style="{
+          gridTemplateRows: `28px repeat(${lanes.length}, var(--pl-lane-h)) minmax(var(--pl-lane-h), 1fr)`,
+        }"
+      >
         <div
           v-for="stage in PIPELINE_STAGES"
           :key="`head-${stage}`"
           class="pipeline-head"
           :class="`stage-${stage}`"
         >
+          <span v-if="stage === 'coding' && readyCount > 0" class="pipeline-queue"
+            >Ready · {{ readyCount }}</span
+          >
           {{ PIPELINE_STAGE_LABELS[stage] }}
         </div>
         <template v-for="lane in lanes" :key="lane.task.id">
-          <div class="pipeline-gutter">
-            <span v-if="lane.model.sentBackCount > 0" class="pipeline-sent-back">{{
-              sentBackNote(lane.model.sentBackCount)
-            }}</span>
-          </div>
           <div
             v-for="stage in PIPELINE_STAGES"
             :key="`${lane.task.id}-${stage}`"
             :class="stageCells(stage)"
           >
+            <span
+              v-if="lane.model.stage === stage && lane.model.sentBackCount > 0"
+              class="pipeline-sent-back"
+              >{{ sentBackNote(lane.model.sentBackCount) }}</span
+            >
             <PipelineCard
               v-if="lane.model.stage === stage"
               :task-id="lane.task.id"
@@ -310,6 +315,12 @@ function stageCells(stage: PipelineStage): string {
             />
           </div>
         </template>
+        <div
+          v-for="stage in PIPELINE_STAGES"
+          :key="`fill-${stage}`"
+          :class="['pipeline-fill', `stage-${stage}`]"
+          aria-hidden="true"
+        ></div>
       </div>
       <div v-if="lanes.length === 0" class="pipeline-empty">
         <div class="pipeline-empty-title">Nothing in flight</div>
@@ -321,37 +332,61 @@ function stageCells(stage: PipelineStage): string {
 
 <style scoped>
 .pipeline {
+  --pl-lane-h: 152px;
+  --pl-hair: color-mix(in srgb, var(--txt) 7%, transparent);
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  padding: 0 0 var(--page-bottom-inset);
   box-sizing: border-box;
 }
 .pipeline-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  /* Lanes deliberately run under the floating avatars / status pill (they
+     float above the page), so only a small gap is kept at the bottom. */
+  padding-bottom: 16px;
 }
 .pipeline-grid {
   display: grid;
-  grid-template-columns: 150px repeat(6, minmax(258px, 1fr));
-  min-width: 1700px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  flex: 1 1 auto;
+  /* Only very narrow panes scroll sideways; every normal width fits all six. */
+  min-width: 1080px;
 }
-.pipeline-head-gutter {
-  display: flex;
-  align-items: center;
-  min-height: 32px;
+/* The trailing filler row soaks up the leftover height so the guides and the
+   green Merged column run to the bottom of the pane; the hairlines repeat at
+   the lane height so empty space still reads as lanes. */
+.pipeline-fill {
+  background-image: linear-gradient(var(--pl-hair) 1px, transparent 1px);
+  background-size: 100% var(--pl-lane-h);
+  border-top: 1px solid var(--pl-hair);
 }
 .pipeline-queue {
+  position: absolute;
+  left: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--chip-bg);
   color: var(--txt-dim);
   font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
   padding: 1px 7px;
   white-space: nowrap;
 }
 .pipeline-head {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
+  height: 28px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -364,35 +399,42 @@ function stageCells(stage: PipelineStage): string {
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
 }
-.pipeline-gutter {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 10px;
-  height: 96px;
-  border-top: 1px solid color-mix(in srgb, var(--txt) 7%, transparent);
+.pipeline-cell.stage-closeout :deep(.pipeline-card),
+.pipeline-cell.stage-merged :deep(.pipeline-card) {
+  left: auto;
+  right: 12px;
 }
 .pipeline-sent-back {
+  position: absolute;
+  top: 4px;
+  left: 14px;
   color: var(--amber);
   font-size: 10px;
   white-space: nowrap;
 }
 .pipeline-cell {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 96px;
-  border-top: 1px solid color-mix(in srgb, var(--txt) 7%, transparent);
+  box-sizing: border-box;
+  border-top: 1px solid var(--pl-hair);
 }
 .pipeline-cell.stage-checks,
 .pipeline-cell.stage-handoff,
 .pipeline-cell.stage-review,
 .pipeline-cell.stage-closeout,
-.pipeline-cell.stage-merged {
-  border-left: 1px solid color-mix(in srgb, var(--txt) 7%, transparent);
+.pipeline-cell.stage-merged,
+.pipeline-fill.stage-checks,
+.pipeline-fill.stage-handoff,
+.pipeline-fill.stage-review,
+.pipeline-fill.stage-closeout,
+.pipeline-fill.stage-merged {
+  border-left: 1px solid var(--pl-hair);
 }
-.pipeline-cell.stage-merged {
-  background: var(--green-tint);
+.pipeline-cell.stage-merged,
+.pipeline-fill.stage-merged {
+  background-color: var(--green-tint);
 }
 .pipeline-empty {
   padding: 40px 0;
