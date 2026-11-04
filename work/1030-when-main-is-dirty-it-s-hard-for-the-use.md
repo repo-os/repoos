@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: the agent process exited with an error — open the task to see the full output
+debug_tldr: "A debugger integration test failed after repeated engineer crashes — open the task’s full output, fix the failing test, and retry."
+debug_tldr_at: "2026-11-04T14:46:33Z"
+debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/full-width-dirty-main-button-in-sidebar-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T14:45:47Z"
+updated_at: "2026-11-04T14:46:33Z"
 dev_error_count: 8
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:22:51.475Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:31:00.002Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:31:46.150Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:45:47.862Z\",\"kind\":\"dev-error\"}]"
@@ -126,7 +129,7 @@ states, panel open/close with shared width, commit success/error paths with the 
 "highlight": ".side-git-dirty",
 "steps": [
 {
-  "waitFor": ".side-git-dirty"
+"waitFor": ".side-git-dirty"
 }
 ],
 "state": "repo:dirtyMain"
@@ -138,13 +141,13 @@ states, panel open/close with shared width, commit success/error paths with the 
 "highlight": "[data-testid=\"repo-dirty-panel\"]",
 "steps": [
 {
-  "waitFor": ".side-git-dirty"
+"waitFor": ".side-git-dirty"
 },
 {
-  "click": ".side-git-dirty"
+"click": ".side-git-dirty"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "repo:dirtyMain"
