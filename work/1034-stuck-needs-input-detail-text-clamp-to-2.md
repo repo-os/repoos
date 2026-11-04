@@ -11,8 +11,9 @@ branch: ""
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: opencode
+review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T14:11:31Z"
+updated_at: "2026-11-04T14:11:33Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:11:24Z · cli_override
 - 2026-11-04T14:11:25Z · model_override
 - 2026-11-04T14:11:31Z · review_cli_override
+- 2026-11-04T14:11:33Z · review_model_override
