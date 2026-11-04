@@ -162,3 +162,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T19:08:13Z · body
 - 2026-11-04T19:17:14Z · handoff_deferred: 3 queued message(s) must be read before review
 - 2026-11-04T19:17:14Z · message_queued at 2026-11-04T19:17:14.711Z
+- 2026-11-04T19:17:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: no assistant message · stderr: (empty)
