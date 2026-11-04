@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T14:14:41Z"
+updated_at: "2026-11-04T14:15:26Z"
 ---
 ## Problem
 
@@ -73,3 +73,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:11:34Z · status inbox→ready
 - 2026-11-04T14:11:38Z · status ready→active, branch
 - 2026-11-04T14:14:41Z · body
+- 2026-11-04T14:15:26Z · body
