@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: schedule
 branch: ""
 cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-11-01T22:00:49Z"
-updated_at: "2026-11-04T22:59:00Z"
+updated_at: "2026-11-04T22:59:01Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-04T17:43:24Z · body: Problem (added); Acceptance criteria (added); Notes for AI (added); Purpose (removed); Runbook (removed)
 - 2026-11-04T17:43:30Z · needs_input
 - 2026-11-04T22:59:00Z · cli_override
+- 2026-11-04T22:59:01Z · model_override
