@@ -11,12 +11,13 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:40:05Z"
+updated_at: "2026-11-04T18:46:42Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
 - E2 · Task-card agent popover auto-closes after a configurable delay (moved from #1026 E7)
 - E3 · Driver brief / CTO digest: do not call an engineer "stalled" while its check has a live heartbeat
+- E4 · Uncommitted-changes panel: commit message textarea is far too tall (min-height 230px from .ff-textarea wins)
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body. This is a second open easter-eggs bundle, started on purpose because #1026 was already full (core and docs items); this one holds the web items.
 
@@ -106,3 +107,4 @@ Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-doc
 - 2026-11-04T18:39:58Z · model_override
 - 2026-11-04T18:40:01Z · status inbox→ready
 - 2026-11-04T18:40:05Z · status ready→active, branch
+- 2026-11-04T18:46:42Z · body: Items (added 1)
