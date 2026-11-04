@@ -31,7 +31,7 @@ function fixture(installDir?: string): {
 }
 
 describe("install.sh layout", () => {
-  const script = readFileSync(new URL("../../../install.sh", import.meta.url), "utf8");
+  const script = readFileSync(join(process.cwd(), "install.sh"), "utf8");
 
   it("installs outside ~/.repoos and refuses Node older than 20.6", () => {
     expect(script).toContain('INSTALL_DIR="${REPOOS_INSTALL_DIR:-$HOME/.local/share/repoos}"');
