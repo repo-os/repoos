@@ -179,8 +179,26 @@ export async function handleEnquiry(request: Request, env: LandingEnv): Promise<
  * A miss is never cacheable; a hit is cached briefly and revalidated, so a new
  * deploy shows up within minutes without a manual purge.
  */
-const AGENT_TEXT_PATHS = new Set(["/llms.txt", "/llms-full.txt"]);
+const AGENT_TEXT_PATHS = new Set(["/llms.txt"]);
 export const AGENT_TEXT_CACHE_CONTROL = "public, max-age=300, must-revalidate";
+
+/**
+ * Guessable agent entry points that used to 404 (v0.5.75 QA). Each one is
+ * either served elsewhere for real (`/llms-full.txt` lives with the docs) or
+ * pointed at the canonical raw file (`AGENTS.md` in the repository). A
+ * permanent redirect keeps a single source and resolves the URL.
+ */
+const AGENT_REDIRECTS = new Map<string, string>([
+  ["/llms-full.txt", "https://docs.repoos.org/llms-full.txt"],
+  ["/AGENTS.md", "https://raw.githubusercontent.com/repo-os/repoos/main/AGENTS.md"],
+  ["/.well-known/llms.txt", "/llms.txt"],
+  ["/docs", "https://docs.repoos.org/"],
+]);
+
+/** Absolute-or-site-relative redirect target for a guessable agent URL. */
+export function agentRedirect(pathname: string): string | null {
+  return AGENT_REDIRECTS.get(pathname) ?? null;
+}
 
 /**
  * Same rule as user-docs/worker.ts: Markdown wins only when it is listed and
@@ -233,6 +251,8 @@ export default {
         });
       }
     }
+    const redirect = agentRedirect(url.pathname);
+    if (redirect) return Response.redirect(new URL(redirect, request.url).href, 308);
     if (AGENT_TEXT_PATHS.has(url.pathname)) return serveAgentText(request, env);
     if (url.pathname === "/api/enquiry") return handleEnquiry(request, env);
     if (url.pathname.startsWith("/api/")) return json(404, false);

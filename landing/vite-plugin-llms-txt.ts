@@ -8,6 +8,7 @@ import {
   extractInstallCommands,
   normalizeInstallCommand,
 } from "../agent/install-commands.js";
+import { CURRENT_RELEASE_URL, releaseStamp } from "../shared/release.js";
 
 // Re-exported for the tests and for callers that read the published list.
 export { INSTALL_COMMANDS };
@@ -57,6 +58,8 @@ export function renderLlmsTxt(starterPrompt: string = readStarterPrompt()): stri
   return `# RepoOS
 
 > Your AI dev team, living in your repo, for CTOs and builders. RepoOS keeps a project's task board in the repository itself: tasks are Markdown files, coding agents work them in isolated Git worktrees, and a person reviews and approves every merge. It is for a small team or an independent developer using a coding agent such as Claude Code, Codex, OpenCode, or Cursor.
+
+Current release: ${releaseStamp()} — ${CURRENT_RELEASE_URL}
 
 RepoOS is local-first, source-available, and has zero runtime dependencies. It runs on Bun, with Node 20+ as a fallback.
 

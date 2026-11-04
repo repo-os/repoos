@@ -10,12 +10,10 @@ created_by: njachowski@gmail.com
 branch: feat/release-pipeline-rebuild-docs-changelog-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T06:45:38Z"
-updated_at: "2026-11-04T17:04:15Z"
-review_passes: 1
-handoff_signal_retry_count: 1
-dev_error_count: 10
+updated_at: "2026-11-04T16:50:59Z"
+dev_error_count: 6
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:48:39.951Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:49:23.286Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:08:02.770Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
-engineer_stall_resume_log: "[{\"at\":\"2026-11-04T16:17:21.858Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 v0.5.75 QA found the release leaves public surfaces stale: docs.repoos.org/changelog stops at v0.5.74, changelog.md "Recent releases" is empty, llms-full.txt is stale (docs built 11:07 SGT, release published 11:49 SGT). GitHub release notes for v0.5.73–75 are empty apart from a "Full Changelog" link. No current version/date is shown on repoos.org, llms.txt or docs. Guessable agent URLs 404: repoos.org `/llms-full.txt`, `/AGENTS.md`, `/.well-known/llms.txt`, `/docs`; repo `CHANGELOG.md`.
@@ -101,58 +99,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T14:09:37Z · cli_override, model_override
 - 2026-11-04T14:10:36Z · body
 - 2026-11-04T14:10:39Z · body
-- 2026-11-04T14:20:02Z · body
-- 2026-11-04T14:21:53Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:21:53Z · engineer crash recovery: resuming opencode + opencode-go/muse-spark-1.3-contributor (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:21:57Z · needs_input
-- 2026-11-04T14:22:52Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:22:52Z · engineer crash recovery: resuming opencode + opencode-go/muse-spark-1.3-contributor (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:23:14Z · needs_input
-- 2026-11-04T14:24:59Z · body
-- 2026-11-04T14:27:05Z · body
-- 2026-11-04T14:30:19Z · body
-- 2026-11-04T14:30:20Z · body
-- 2026-11-04T14:30:59Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:30:59Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/muse-spark-1.3-contributor) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
-- 2026-11-04T14:34:32Z · needs_input
-- 2026-11-04T14:45:49Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
-- 2026-11-04T14:45:49Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/muse-spark-1.3-contributor) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
-- 2026-11-04T14:48:13Z · body
-- 2026-11-04T14:48:27Z · body
-- 2026-11-04T14:58:14Z · body
-- 2026-11-04T15:00:44Z · body
-- 2026-11-04T15:13:34Z · watchdog: restarting engineer after 13m with no live process
-- 2026-11-04T15:13:59Z · body
-- 2026-11-04T15:14:04Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 2s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-04T15:15:34Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-04T15:16:57Z · body
-- 2026-11-04T15:17:19Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-04T15:18:19Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-04T15:24:46Z · body
-- 2026-11-04T15:26:13Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T15:26:32Z · body
-- 2026-11-04T15:28:19Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-04T15:29:49Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-04T15:36:20Z · message_queued at 2026-11-04T15:36:20.056Z
-- 2026-11-04T15:36:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T15:36:21Z · body
-- 2026-11-04T15:41:19Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T15:44:59Z · body
-- 2026-11-04T15:45:20Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-04T15:46:35Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-04T15:47:50Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 8s · next step: investigate the abnormal wait; the flag clears when the check starts
-- 2026-11-04T15:48:05Z · watchdog: check wait ended or recovered — cleared needs_input
-- 2026-11-04T15:48:33Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-04T15:48:34Z · message_queued at 2026-11-04T15:48:34.295Z
-- 2026-11-04T15:48:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T15:49:40Z · message_delivered: 2 message(s)
-- 2026-11-04T16:12:12Z · handoff failed · remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on thinkpad — fix it in the feature branch and re-run the gate
-- 2026-11-04T16:12:12Z · message_queued at 2026-11-04T16:12:12.893Z
-- 2026-11-04T16:17:21Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3 in 30m
-- 2026-11-04T16:17:24Z · message_delivered: 1 message(s)
-- 2026-11-04T16:24:42Z · body
-- 2026-11-04T16:39:24Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T16:50:59Z · status active→review
-- 2026-11-04T16:50:59Z · message_queued at 2026-11-04T16:50:59.921Z
-- 2026-11-04T16:52:08Z · note: review pass 1: good to go
-- 2026-11-04T17:04:15Z · note: shots: skipped — 3 handoff shots already captured for this exact plan (24ec6c123) during finalization (#0734)

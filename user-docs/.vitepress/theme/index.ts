@@ -2,6 +2,7 @@ import DefaultTheme from "vitepress/theme";
 import { h } from "vue";
 import AgentPromptCta from "./AgentPromptCta.vue";
 import NavBarLogo from "./NavBarLogo.vue";
+import ReleaseLine from "./ReleaseLine.vue";
 import ThemePicker from "./ThemePicker.vue";
 import "./custom.css";
 
@@ -21,5 +22,8 @@ export default {
     // Registered globally so the docs homepage (layout: home, plain Markdown)
     // can mount the same prompt call to action the landing page uses.
     app.component("AgentPromptCta", AgentPromptCta);
+    // The current version + release date on the docs homepage, read from the
+    // committed release history so it matches repoos.org and llms.txt.
+    app.component("ReleaseLine", ReleaseLine);
   },
 };

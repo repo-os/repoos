@@ -140,14 +140,20 @@ describe("git-tag release status", () => {
     const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner);
     expect(result.ok).toBe(true);
     expect(JSON.parse(readFileSync(join(cfg.root, "package.json"), "utf8")).version).toBe("1.2.4");
+    const history = JSON.parse(readFileSync(join(cfg.root, "release-history.json"), "utf8")) as {
+      releases: { version: string; tag: string; notes: string }[];
+    };
+    expect(history.releases[0]).toMatchObject({ version: "1.2.4", tag: "v1.2.4" });
+    expect(history.releases[0]?.notes).toBe("Maintenance release.");
+    expect(readFileSync(join(cfg.root, "CHANGELOG.md"), "utf8")).toContain("## [v1.2.4]");
     expect(calls).toEqual(
       expect.arrayContaining([
-        "git add -- package.json",
-        "git commit -o -m release: v1.2.4 -- package.json",
+        "git add -- package.json release-history.json CHANGELOG.md",
+        "git commit -o -m release: v1.2.4 -- package.json release-history.json CHANGELOG.md",
         "bun run build",
         "repoos check --profile full",
         "git push origin main",
-        "git tag -a v1.2.4 -m Release v1.2.4",
+        "git tag -a v1.2.4 --cleanup=verbatim -m Release v1.2.4 -m Maintenance release.",
         "git push origin v1.2.4",
       ]),
     );
@@ -160,6 +166,42 @@ describe("git-tag release status", () => {
       calls.findIndex((c) => c.startsWith("repoos check")),
     );
     expect(calls.indexOf("bun run build")).toBeLessThan(calls.indexOf("git push origin main"));
+  });
+
+  it("fast-forwards and pushes configured production branches after the tag", async () => {
+    const cfg: RepoOSConfig = {
+      ...config(),
+      deployments: [
+        { name: "Docs (dev)", branch: "main", subdir: "user-docs" },
+        { name: "Docs (prod)", branch: "prod", subdir: "user-docs" },
+      ],
+    };
+    const calls: string[] = [];
+    const runner: ReleaseCommandRunner = async (command, args) => {
+      calls.push([command, ...args].join(" "));
+      if (command !== "git") return { code: 0, stdout: "check passed", stderr: "" };
+      const key = args.join(" ");
+      if (key === "rev-list --count prod..main") return { code: 0, stdout: "2\n", stderr: "" };
+      if (key === "rev-parse prod") return { code: 0, stdout: "abc123\n", stderr: "" };
+      if (key === "rev-parse main") return { code: 0, stdout: "def456\n", stderr: "" };
+      if (key === "rev-parse --verify --quiet prod" || key === "rev-parse --verify --quiet main")
+        return { code: 0, stdout: "abc123\n", stderr: "" };
+      if (key === "merge-base --is-ancestor prod main") return { code: 0, stdout: "", stderr: "" };
+      if (
+        ["add", "commit", "push", "fetch"].includes(args[0]!) ||
+        (args[0] === "tag" && args[1] === "-a")
+      )
+        return { code: 0, stdout: "", stderr: "" };
+      return git()("git", args, cfg.root);
+    };
+    const result = await cutNewRelease(cfg, "1.2.4", "v1.2.4", runner);
+    expect(result.ok).toBe(true);
+    expect(result.output).toContain("Production deploy:");
+    expect(result.output).toContain("Fast-forwarded prod to main and pushed to origin.");
+    expect(calls).toContain("git fetch . main:prod");
+    expect(calls.indexOf("git push origin v1.2.4")).toBeLessThan(
+      calls.indexOf("git push origin prod"),
+    );
   });
 
   it("checkpoints a routine repoos.toml save that lands during the check window", async () => {
@@ -528,7 +570,11 @@ describe("failed-release version-bump handling (#0780)", () => {
         gitOverrides: {
           "log -1 --format=%s": { code: 0, stdout: "release: v1.2.4\n", stderr: "" },
           "reset --soft HEAD~1": { code: 0, stdout: "", stderr: "" },
-          "checkout HEAD -- package.json": { code: 0, stdout: "", stderr: "" },
+          "checkout HEAD -- package.json release-history.json CHANGELOG.md": {
+            code: 0,
+            stdout: "",
+            stderr: "",
+          },
         },
       }),
     );
@@ -536,7 +582,7 @@ describe("failed-release version-bump handling (#0780)", () => {
     expect(result.output).toContain("gate red");
     expect(result.output).toContain("rolled back");
     expect(calls).toContain("git reset --soft HEAD~1");
-    expect(calls).toContain("git checkout HEAD -- package.json");
+    expect(calls).toContain("git checkout HEAD -- package.json release-history.json CHANGELOG.md");
     expect(calls).not.toContain("git push origin main");
   });
 
@@ -573,7 +619,11 @@ describe("failed-release version-bump handling (#0780)", () => {
       "v1.2.4",
       releaseRunner(cfg, calls, {
         gitOverrides: {
-          "tag -a v1.2.4 -m Release v1.2.4": { code: 1, stdout: "", stderr: "tag boom" },
+          "tag -a v1.2.4 --cleanup=verbatim -m Release v1.2.4 -m Maintenance release.": {
+            code: 1,
+            stdout: "",
+            stderr: "tag boom",
+          },
         },
       }),
     );
@@ -599,6 +649,7 @@ describe("failed-release version-bump handling (#0780)", () => {
         check: failingCheck,
         gitOverrides: {
           "log -1 --format=%s": { code: 0, stdout: "release: v1.2.4\n", stderr: "" },
+          "reset --soft HEAD~1": { code: 0, stdout: "", stderr: "" },
         },
       }),
     );
@@ -607,8 +658,10 @@ describe("failed-release version-bump handling (#0780)", () => {
     expect(result.output).toContain('version-bump commit ("release: v1.2.4")');
     expect(result.output).toContain("still HEAD");
     expect(result.output).toContain("git reset --soft HEAD~1");
-    // We never rewrite a commit this run did not create.
-    expect(calls.some((c) => c.includes("reset --soft"))).toBe(false);
+    expect(result.output).toContain("separate release-changelog commit");
+    // The bump this run did not create is never reset; only the changelog
+    // commit this attempt made is.
+    expect(calls.filter((c) => c === "git reset --soft HEAD~1")).toHaveLength(1);
     expect(calls).not.toContain("git push origin main");
   });
 
@@ -628,6 +681,8 @@ describe("failed-release version-bump handling (#0780)", () => {
             stdout: "docs: bookkeeping\nrelease: v1.2.4\n",
             stderr: "",
           },
+          "log -1 --format=%s": { code: 0, stdout: "release: v1.2.4\n", stderr: "" },
+          "reset --soft HEAD~1": { code: 0, stdout: "", stderr: "" },
         },
       }),
     );
@@ -636,7 +691,8 @@ describe("failed-release version-bump handling (#0780)", () => {
     expect(result.output).toContain('version-bump commit ("release: v1.2.4")');
     expect(result.output).toContain("git log --oneline --grep='^release: v1.2.4$'");
     expect(result.output).not.toContain("still HEAD");
-    expect(calls.some((c) => c.includes("reset --soft"))).toBe(false);
+    expect(result.output).toContain("separate release-changelog commit");
+    expect(calls.filter((c) => c === "git reset --soft HEAD~1")).toHaveLength(1);
   });
 });
 
@@ -818,7 +874,7 @@ describe("AI-draftable release notes (#0361)", () => {
     );
   });
 
-  it("keeps the plain tag annotation when notes are empty or whitespace", async () => {
+  it("writes fallback notes instead of an empty tag body when none are supplied", async () => {
     const cfg = config();
     const calls: string[] = [];
     const runner: ReleaseCommandRunner = async (command, args) => {
@@ -839,7 +895,9 @@ describe("AI-draftable release notes (#0361)", () => {
       "   \n  ",
     );
     expect(result.ok).toBe(true);
-    expect(calls).toContain("git tag -a v1.2.4 -m Release v1.2.4");
+    expect(calls).toContain(
+      "git tag -a v1.2.4 --cleanup=verbatim -m Release v1.2.4 -m Maintenance release.",
+    );
   });
 });
 
