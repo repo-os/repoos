@@ -144,6 +144,14 @@ describe("missionFor header ordering", () => {
     expect(mission).not.toContain(".repoos/engineering-report-drafts");
   });
 
+  it("describes the narrative-only word limit in the engineering report guidance", () => {
+    const mission = missionFor(task(), "feat/0654-task", WORKDIR, agent, config(ROOT));
+
+    expect(mission).toContain("around 1,000 words as a soft target");
+    expect(mission).toContain("hard limit is 1,200 words of narrative");
+    expect(mission).toContain("generated change summary never counts");
+  });
+
   it("uses the hotfix wording in the mission when the task is a main-checkout hotfix", () => {
     const hotfix = task({ hotfix: true, hotfixTarget: "branch" });
     const mission = missionFor(hotfix, "hotfix/0654-task", ROOT, agent, config(ROOT));
