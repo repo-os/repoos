@@ -11,10 +11,9 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
-cli_override: opencode
-model_override: opencode-go/glm-5.3-flash
+model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T17:13:08Z"
+updated_at: "2026-11-04T17:30:34Z"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: 6ce5d3f347e3d6357dff404c28b0188df3e1f8d5
 handoff_signal_retry_count: 2
@@ -268,3 +267,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:54:46Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (1/3 crashes in 30m)
 - 2026-11-04T16:59:52Z · body
 - 2026-11-04T17:13:08Z · body
+- 2026-11-04T17:30:34Z · cli_override, model_override
