@@ -127,7 +127,16 @@ export function agentSilenceCountsAsStalled(
   stallMs = DEFAULT_CHECK_STALL_MS,
 ): boolean {
   if (!rawStalled) return false;
-  if (check && checkHeartbeating(check, nowMs, stallMs)) return false;
+  if (
+    check &&
+    checkHeartbeating(
+      { running: check.running, lastProgressAt: check.lastProgressAt ?? null },
+      nowMs,
+      stallMs,
+    )
+  ) {
+    return false;
+  }
   return true;
 }
 
