@@ -2,7 +2,7 @@
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,9 +13,9 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T17:29:05Z"
+updated_at: "2026-11-04T17:29:06Z"
+review_rounds: 2
 review_passes: 2
-review_rounds: 1
 last_check_failure: "repoos check at 2026-11-04T16:59:01.799Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Board card clamps long check-wait detail (target \"default\"): state \"card:checkWaitDetail\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail); [missing-target] Board card clamps long check-wait detail (target \"default\"): highlight [data-test-id=task-card-needs-input-detail] matched nothing on / (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail)"
 dev_error_count: 5
 ---
@@ -147,3 +147,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T17:26:37Z · status active→review
 - 2026-11-04T17:29:05Z · note: review pass 2: needs some work
 - 2026-11-04T17:29:05Z · message_delivered: 3 message(s)
+- 2026-11-04T17:29:06Z · status review→active
