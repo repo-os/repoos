@@ -1,15 +1,16 @@
 ---
+updated_at: "2026-11-04T11:26:03Z"
+review_passes: 1
 id: 1028
 title: Tell the engineer the handoff result on its next turn; add non-blocking repoos handoff-status
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/tell-the-engineer-the-handoff-result-on-
 created_at: "2026-11-04T07:04:31Z"
-updated_at: "2026-11-04T11:22:29Z"
 ---
 ## Problem
 A runner engineer requests handoff with `repoos mv <id> review` or the `::repoos-handoff-ready::` line and ends its turn, then hears nothing about the outcome. On #1016 (`pi` + deepseek-v4.1-flash, 2026-11-04) the engineer could not tell whether a review had started, so it kept calling the blocking `repoos review 1016` itself, a call of up to 25 minutes that races the server-owned handoff. A failed handoff (format, check failure, queued check slot) costs a whole turn plus a watchdog or CTO nudge cycle before the engineer learns of it. #1016 took about 2h25m from start to handoff.
@@ -58,3 +59,7 @@ Evidence is in `.repoos/agent-logs/1016.out.log`. Touch the handoff gate and que
 - 2026-11-04T11:22:29Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T11:22:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T11:22:29Z · message_delivered: 1 message(s)
+- 2026-11-04T11:25:02Z · status active→review
+- 2026-11-04T11:25:03Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-04T11:26:02Z · note: review pass 1: good to go
+
