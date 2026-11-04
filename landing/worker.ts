@@ -179,7 +179,7 @@ export async function handleEnquiry(request: Request, env: LandingEnv): Promise<
  * A miss is never cacheable; a hit is cached briefly and revalidated, so a new
  * deploy shows up within minutes without a manual purge.
  */
-const AGENT_TEXT_PATHS = new Set(["/llms.txt", "/llms-full.txt"]);
+const AGENT_TEXT_PATHS = new Set(["/llms.txt"]);
 export const AGENT_TEXT_CACHE_CONTROL = "public, max-age=300, must-revalidate";
 
 /**
