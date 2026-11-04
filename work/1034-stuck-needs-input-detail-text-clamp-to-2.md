@@ -2,7 +2,7 @@
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T17:12:21Z"
+updated_at: "2026-11-04T17:21:59Z"
 last_check_failure: "repoos check at 2026-11-04T16:59:01.799Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Board card clamps long check-wait detail (target \"default\"): state \"card:checkWaitDetail\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail); [missing-target] Board card clamps long check-wait detail (target \"default\"): highlight [data-test-id=task-card-needs-input-detail] matched nothing on / (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail)"
 dev_error_count: 5
 ---
@@ -137,3 +137,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T17:12:21Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T17:12:21Z · message_queued at 2026-11-04T17:12:21.685Z
 - 2026-11-04T17:12:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: All checks pass. Re-requesting handoff with the corrected card shot route. · stderr: (empty)
+- 2026-11-04T17:21:59Z · status active→review
