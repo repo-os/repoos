@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { User } from "lucide-vue-next";
+import { Columns3, Route, User } from "lucide-vue-next";
 import { api } from "../api";
 import {
   COLUMNS,
@@ -23,6 +23,7 @@ import {
   revealArrivals,
 } from "../lib/boardCollapse";
 import BoardColumn from "../components/BoardColumn.vue";
+import PipelineView from "../components/PipelineView.vue";
 import Button from "../components/ui/button.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
@@ -264,6 +265,36 @@ function openHuman(task: Task): void {
   void ui.openTask(task);
 }
 
+// ── #1035 Pipeline | Board toggle ─────────────────────────────────────
+// Board stays the default and is unchanged; the last choice persists per
+// user in localStorage, mirroring the Inputs page List | Board switch.
+type WorkViewMode = "pipeline" | "board";
+const WORK_VIEW_STORAGE_KEY = "repoos.work.view-mode";
+const viewMode = ref<WorkViewMode>("board");
+function loadWorkViewMode(): void {
+  try {
+    viewMode.value = localStorage.getItem(WORK_VIEW_STORAGE_KEY) === "pipeline" ? "pipeline" : "board";
+  } catch {
+    viewMode.value = "board";
+  }
+}
+function setWorkViewMode(mode: WorkViewMode): void {
+  viewMode.value = mode;
+  try {
+    localStorage.setItem(WORK_VIEW_STORAGE_KEY, mode);
+  } catch {
+    /* ignore quota / privacy-mode failures */
+  }
+}
+onMounted(loadWorkViewMode);
+// A `board:pipeline` shot capture must land on the track even though the
+// stored preference is board-first. Preview builds only — production
+// behaviour always follows the stored choice.
+const effectiveView = computed<WorkViewMode>(() => {
+  if (repo.health?.isPreviewBuild && route.query.shotState === "board:pipeline") return "pipeline";
+  return viewMode.value;
+});
+
 // ── #0960 Held list ───────────────────────────────────────────────────
 // Tasks parked out of ALL automation live in a collapsible list beside the
 // Archived/Human lists, so a hold is visible from the board at a glance. The
@@ -309,8 +340,28 @@ function openHeld(task: Task): void {
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 10px">
+        <div class="view-toggle" role="group" aria-label="Work view">
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: effectiveView === 'pipeline' }"
+            :aria-pressed="effectiveView === 'pipeline'"
+            @click="setWorkViewMode('pipeline')"
+          >
+            <Route class="size-3.5" /><span>Pipeline</span>
+          </button>
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: effectiveView === 'board' }"
+            :aria-pressed="effectiveView === 'board'"
+            @click="setWorkViewMode('board')"
+          >
+            <Columns3 class="size-3.5" /><span>Board</span>
+          </button>
+        </div>
         <Button
-          v-if="!statusFilter"
+          v-if="!statusFilter && effectiveView === 'board'"
           variant="outline"
           size="icon"
           class="h-[34px] w-[34px] rounded-[9px]"
@@ -338,6 +389,7 @@ function openHeld(task: Task): void {
           </svg>
         </Button>
         <Select
+          v-if="effectiveView === 'board'"
           :model-value="repo.sortOrder"
           @update:model-value="(v) => repo.setSortOrder(v as SortOrder)"
         >
@@ -366,7 +418,7 @@ function openHeld(task: Task): void {
       </div>
     </div>
 
-    <div v-if="statusFilter" class="filter-bar">
+    <div v-if="statusFilter && effectiveView === 'board'" class="filter-bar">
       <span class="filter-chip">
         <span
           class="cdot"
@@ -377,7 +429,9 @@ function openHeld(task: Task): void {
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
 
-    <div ref="boardEl" class="board">
+    <PipelineView v-if="effectiveView === 'pipeline'" />
+
+    <div v-else ref="boardEl" class="board">
       <template v-if="statusFilter">
         <BoardColumn
           :col="filterCol!"
@@ -406,6 +460,7 @@ function openHeld(task: Task): void {
 
     <section
       v-if="
+        effectiveView === 'board' &&
         !statusFilter &&
         (repo.humanTasks.length || repo.archivedTasks.length || repo.heldTasks.length)
       "
@@ -517,6 +572,39 @@ function openHeld(task: Task): void {
 </template>
 
 <style scoped>
+/* Pipeline | Board switch — same styled toggle as the Inputs page List | Board. */
+.view-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.view-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--txt-faint);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.view-toggle-btn:hover {
+  color: var(--txt);
+  background: var(--nav-hover-bg);
+}
+.view-toggle-btn.active {
+  color: var(--txt);
+  background: var(--bg-secondary);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
 /* Reserve room at the bottom of the scrollable work queue so the pinned
    integration status bar never covers the last board rows. */
 .ibar-spacer {
