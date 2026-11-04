@@ -207,7 +207,7 @@ export async function finalizeEngineeringReport(args: {
   if (!narrative || narrativeWords > MAX_WORDS)
     return {
       report: null,
-      error: `Engineering report must contain 1–1,200 words (draft has ${narrativeWords}); shorten it and request handoff again.`,
+      error: `Engineering report narrative is ${narrativeWords} words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.`,
     };
   const requiredSections = [
     "## TL;DR",

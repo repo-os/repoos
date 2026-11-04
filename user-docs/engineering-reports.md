@@ -27,9 +27,12 @@ The engineer writes a draft under the worktree's configured cache directory
 RepoOS finalizes it only after
 the handoff check passes and confirms that the checked source commit has not
 changed. A missing draft blocks every new handoff; work already handed off before
-reports were introduced remains reviewable without one. A draft over 1,200
-words (the generated change summary never counts) or missing a required section blocks that handoff with an actionable error;
-shorten or complete the draft and hand off again. Aim for 500–600 words.
+reports were introduced remains reviewable without one. The limit applies to
+the engineer-authored narrative only: aim for around 1,000 words as a soft
+target, and treat 1,200 words of narrative as the hard limit. The server-generated
+change summary is never counted. A draft over 1,200 narrative words or missing a
+required section blocks that handoff with an actionable error; shorten or
+complete the draft and hand off again.
 
 Required narrative sections, in order, with nothing before the first heading:
 

@@ -4002,7 +4002,7 @@ export function missionFor(
     "1. Read the task file and implement what it describes.",
     `   Before your final handoff, write an engineer-authored report draft to ${config.cacheDir}/engineering-report-drafts/<task-id>.md.`,
     "   Start with `## TL;DR`, then include `## Work and rationale`, `## Approaches tried`, `## Challenges and blockers`, and `## Key learnings`.",
-    "   Target 500–600 words; write as much as the report needs; the hard limit is 1,200 words. Do not include file counts: RepoOS generates those from Git.",
+    "   Aim for around 1,000 words as a soft target; write as much as the report needs. The hard limit is 1,200 words of narrative — the generated change summary never counts. Do not include file counts: RepoOS generates those from Git.",
     "   Explain actual decisions and outcomes from this session. After checks pass, leave the report draft for RepoOS to finalize and bind to the checked tree.",
     "   Read efficiently: for any file over ~20KB, run `repoos outline <file>` first, then read only the ranges you need with offset/limit — never cat or read the whole file. Pipe noisy shell commands through `head`.",
     `2. Run \`REPOOS_CHECK_CHANGED=${baseBranch} repoos check\` and confirm it passes (build, typecheck, tests scoped to what your branch changed vs ${baseBranch}, UI smoke test). It MUST be green before handing off. RepoOS re-verifies it server-side before finalizing your handoff, and runs the full unscoped test suite again when your branch actually merges — so this scoped run is a fast correctness check, not the final word.`,
