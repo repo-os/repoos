@@ -293,7 +293,7 @@ describe("task panel status label matches the board card (#1023)", () => {
       cli: "opencode",
       model: "default",
       branch: "feat/status-summary",
-      state: "incomplete",
+      state: "incomplete" as const,
       markdown: "",
     };
     stubApi(task, { review: report });
