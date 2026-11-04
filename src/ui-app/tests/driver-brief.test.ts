@@ -19,7 +19,9 @@ import {
 import {
   BLOCKED_VALIDATION_THRESHOLD_MS,
   collectBlockedValidations,
+  runningAgentIsStalled,
 } from "../../server/driver-brief.js";
+import { DEFAULT_CHECK_STALL_MS } from "../../core/active-task-card.js";
 import type { RemoteValidator } from "../../server/remote-validation.js";
 
 function baseInput(overrides: Partial<DriverBriefInput> = {}): DriverBriefInput {
@@ -95,6 +97,65 @@ describe("buildDriverBrief — board grouping", () => {
 });
 
 describe("recommendActions", () => {
+  it("does not treat a heartbeating check as a stalled engineer", () => {
+    const now = Date.parse("2026-11-05T00:00:00Z");
+    const stalled = runningAgentIsStalled(
+      true,
+      [{ running: true, lastProgressAt: new Date(now).toISOString() }],
+      now,
+    );
+    expect(stalled).toBe(false);
+    const actions = recommendActions(
+      baseInput({
+        runningAgents: [
+          {
+            taskId: "1031",
+            role: "engineer",
+            pid: 1,
+            startedAt: "x",
+            stalled,
+            lastOutputAt: null,
+          },
+        ],
+      }),
+    );
+    expect(actions.some((a) => a.title.startsWith("Restart the stuck engineer"))).toBe(false);
+  });
+
+  it("still flags silence when no check is running or the heartbeat is stale", () => {
+    const now = Date.parse("2026-11-05T00:00:00Z");
+    expect(runningAgentIsStalled(true, undefined, now)).toBe(true);
+    expect(
+      runningAgentIsStalled(
+        true,
+        [{ running: false, lastProgressAt: new Date(now).toISOString() }],
+        now,
+      ),
+    ).toBe(true);
+    expect(
+      runningAgentIsStalled(
+        true,
+        [{ running: true, lastProgressAt: new Date(now - DEFAULT_CHECK_STALL_MS).toISOString() }],
+        now,
+      ),
+    ).toBe(true);
+    const actions = recommendActions(
+      baseInput({
+        runningAgents: [
+          {
+            taskId: "1035",
+            role: "engineer",
+            pid: 1,
+            startedAt: "x",
+            stalled: true,
+            lastOutputAt: null,
+          },
+        ],
+      }),
+    );
+    expect(actions[0]?.title).toBe("Restart the stuck engineer on #1035");
+  });
+
   it("puts stalled-run recovery first and marks it CTO-owned", () => {
     const actions = recommendActions(
       baseInput({

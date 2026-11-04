@@ -2657,11 +2657,15 @@
 .app-tooltip.show {
   display: block;
 }
-.tc-agent-panel-enter-active,
-.tc-agent-panel-leave-active {
+.tc-agent-panel-enter-active {
   transition:
     opacity 0.12s ease,
     transform 0.12s ease;
+}
+.tc-agent-panel-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
 }
 .tc-agent-panel-enter-from,
 .tc-agent-panel-leave-to {
@@ -9153,6 +9157,13 @@
 .new-btn svg {
   width: 14px;
   height: 14px;
+}
+/* Create action on a tab that has no page-level header slot (schedules). */
+.panel-create-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 /* mobile bottom nav */

@@ -12,6 +12,7 @@ export const getDecisions: RouteHandler = async (ctx, _req, res) => {
     jobCoordinator: ctx.jobCoordinator,
     reviews: ctx.reviews,
     attentionEvents: ctx.attentionEvents,
+    taskChecks: ctx.taskChecks,
   });
   return json(res, 200, { ok: true, ...digest });
 };

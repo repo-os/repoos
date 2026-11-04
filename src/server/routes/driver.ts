@@ -13,6 +13,7 @@ export const getDriverBrief: RouteHandler = async (ctx, _req, res) => {
     closeOutOutcomes: ctx.closeOutOutcomes,
     remoteValidator: ctx.remoteValidator,
     awakeClock: ctx.awakeClock,
+    taskChecks: ctx.taskChecks,
   });
   return json(res, 200, { ok: true, ...brief });
 };

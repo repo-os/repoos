@@ -139,8 +139,34 @@ const agentAssignments = computed(() => {
 
 /** The compact assignment table only opens or closes from the robot button. */
 const agentPanelOpen = ref(false);
+const DEFAULT_AGENT_POPOVER_CLOSE_S = 15;
+const agentPopoverCloseSeconds = computed(() => {
+  const board = config.data?.board as { agentPopoverCloseSeconds?: unknown } | undefined;
+  const seconds = board?.agentPopoverCloseSeconds;
+  if (typeof seconds === "number" && Number.isFinite(seconds) && seconds >= 0) {
+    return Math.floor(seconds);
+  }
+  return DEFAULT_AGENT_POPOVER_CLOSE_S;
+});
+let agentPanelTimer: ReturnType<typeof setTimeout> | null = null;
+function clearAgentPanelTimer(): void {
+  if (agentPanelTimer) clearTimeout(agentPanelTimer);
+  agentPanelTimer = null;
+}
+/** Restarts the auto-close timer. Zero seconds leaves the panel open. */
+function armAgentPanelTimer(): void {
+  clearAgentPanelTimer();
+  const seconds = agentPopoverCloseSeconds.value;
+  if (!agentPanelOpen.value || seconds <= 0) return;
+  agentPanelTimer = setTimeout(() => {
+    agentPanelOpen.value = false;
+    agentPanelTimer = null;
+  }, seconds * 1000);
+}
 function toggleAgentPanel(): void {
   agentPanelOpen.value = !agentPanelOpen.value;
+  if (agentPanelOpen.value) armAgentPanelTimer();
+  else clearAgentPanelTimer();
 }
 
 const agentPreviewOpen = ref(false);
@@ -188,7 +214,10 @@ function openAgentAssignments(): void {
   agentPreviewOpen.value = false;
   toggleAgentPanel();
 }
-onBeforeUnmount(() => clearAgentPreviewDismiss());
+onBeforeUnmount(() => {
+  clearAgentPreviewDismiss();
+  clearAgentPanelTimer();
+});
 
 const assignmentModalOpen = ref(false);
 const assignmentModalRole = ref<AssignmentRole | null>(null);
@@ -1641,7 +1670,10 @@ async function openDebuggerFromError(): Promise<void> {
         v-if="agentPanelOpen"
         :id="`task-agent-panel-${task.id}`"
         class="tc-agent-panel"
-        @click.stop
+        @click.stop="armAgentPanelTimer"
+        @mouseenter="armAgentPanelTimer"
+        @mousemove="armAgentPanelTimer"
+        @focusin="armAgentPanelTimer"
       >
         <button
           v-for="a in agentAssignments"
