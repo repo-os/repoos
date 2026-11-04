@@ -206,6 +206,19 @@ describe("SecretsView (#0929)", () => {
     const ids = navFromConfig({ dev: { targets: [{ name: "web" }] } }).map((item) => item.id);
     expect(ids.slice(ids.indexOf("dev") + 1, ids.indexOf("agents"))).toEqual(["secrets"]);
   });
+  it("puts New environment on the accent create button and still opens the panel", async () => {
+    const wrapper = mountPage();
+    await flushPromises();
+    const create = wrapper.get('[data-testid="new-environment"]');
+    expect(create.classes()).toContain("new-btn");
+    expect(create.attributes("class")).toContain("--btn-new-bg");
+    expect(create.html()).toContain("M12 5v14");
+    expect(create.text()).toContain("New environment");
+    await create.trigger("click");
+    expect(document.body.textContent).toContain("Create environment");
+    wrapper.unmount();
+  });
+
   it("shows a clear empty-project state and environment creation affordance", async () => {
     api.mockImplementation(async (path: string) =>
       path === "/api/project-environments" ? ({ environments: [] } as never) : ({} as never),

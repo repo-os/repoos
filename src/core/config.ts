@@ -320,6 +320,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   skillSuggestions: false,
   maxActiveTasks: 3,
   worktreeWarnThreshold: 20,
+  board: {
+    agentPopoverCloseSeconds: 15,
+  },
   whisper: {
     provider: "none",
     apiKey: "",
@@ -1646,6 +1649,24 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.worktreeWarnThreshold = Math.floor(worktreeWarnThreshold);
     else if (typeof worktreeWarnThreshold === "string" && /^\d+$/.test(worktreeWarnThreshold))
       cfg.worktreeWarnThreshold = Number(worktreeWarnThreshold);
+    const popoverClose = get("board.agentPopoverCloseSeconds");
+    const popoverCloseNum =
+      typeof popoverClose === "number"
+        ? popoverClose
+        : typeof popoverClose === "string" && /^\d+$/.test(popoverClose)
+          ? Number(popoverClose)
+          : undefined;
+    if (popoverCloseNum !== undefined && Number.isFinite(popoverCloseNum) && popoverCloseNum >= 0) {
+      cfg.board = {
+        ...cfg.board,
+        agentPopoverCloseSeconds: Math.min(3600, Math.floor(popoverCloseNum)),
+      };
+    } else if (popoverClose !== undefined) {
+      console.warn(
+        `[board] agentPopoverCloseSeconds must be a number of seconds >= 0 (0 disables auto-close), ` +
+          `got ${JSON.stringify(popoverClose)} — using 15`,
+      );
+    }
     // [worktrees] section (#0373): opt-in to linking the main checkout's
     // gitignored `.env` into task worktrees. Absent means false (unchanged).
     const worktreesInheritEnvFlag = get("worktrees.inheritEnv");
@@ -3071,6 +3092,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Advisory ceiling on registered git worktrees. Above it, the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task.",
     },
     {
+      key: "board.agentPopoverCloseSeconds",
+      label: "Agent popover auto-close",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.board?.agentPopoverCloseSeconds ?? 15,
+      description:
+        "Seconds before the task-card agent popover fades closed. Any hover, focus, or click inside starts the timer again. Set 0 to leave it open until you click away.",
+    },
+    {
       key: "attention.spendAlertUsd",
       label: "Spend alert threshold (USD)",
       type: "number",
@@ -4279,6 +4310,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "cto.nudgeCooldownMs",
   "skillSuggestions",
   "worktreeWarnThreshold",
+  "board.agentPopoverCloseSeconds",
   "dev.inspector.enabled",
   "dev.inspector.editorCommand",
   "editor.command",

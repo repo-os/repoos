@@ -11,9 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T21:41:34Z"
-review_passes: 1
-last_check_failure: "repoos check at 2026-11-04T20:40:10.142Z: repoos check failed: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:52583/api/project-environments (http://127.0.0.1:52583/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:52583/api/project-environments); [missing-target] New environment accent button (target \"default\"): highlight [data-testid=\"new-environment\"] matched nothing on /secrets (http://127.0.0.1:52583/secrets)"
+updated_at: "2026-11-04T21:27:12Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -113,38 +111,38 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 ```json
 [
 {
-"label": "New schedule accent button",
 "target": "default",
 "route": "/agents?tab=scheduled",
+"label": "New schedule accent button",
 "highlight": "[data-testid=\"new-schedule\"]"
 },
 {
-"label": "New reminder accent button",
 "target": "default",
 "route": "/agents?tab=reminders",
+"label": "New reminder accent button",
 "highlight": "[data-testid=\"new-reminder\"]"
 },
 {
-"label": "New environment accent button",
 "target": "default",
-"route": "/secrets",
-"highlight": "[data-testid=\"new-environment\"]",
-"state": "secrets:populated"
+"route": "/secrets?shotState=secrets:populated",
+"state": "secrets:populated",
+"label": "New environment accent button",
+"highlight": "[data-testid=\"new-environment\"]"
 },
 {
-"label": "Commit message field is three lines",
 "target": "default",
-"route": "/",
+"route": "/?shotState=repo:dirtyMain",
+"state": "repo:dirtyMain",
+"label": "Commit message field is three lines",
 "highlight": ".repo-dirty-input",
 "steps": [
-{
-"click": "[data-test-id=\"side-git-dirty\"]"
-},
-{
-"waitFor": ".repo-dirty-input"
-}
-],
-"state": "repo:dirtyMain"
+  {
+    "click": "[data-test-id=\"side-git-dirty\"]"
+  },
+  {
+    "waitFor": ".repo-dirty-input"
+  }
+]
 }
 ]
 ```
@@ -182,25 +180,6 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T19:17:14Z · message_queued at 2026-11-04T19:17:14.711Z
 - 2026-11-04T19:17:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: no assistant message · stderr: (empty)
 - 2026-11-04T19:17:15Z · message_delivered: 4 message(s)
-- 2026-11-04T19:28:44Z · message_queued at 2026-11-04T19:28:44.512Z
-- 2026-11-04T19:28:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T19:30:36Z · body
-- 2026-11-04T19:33:44Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T19:41:59Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T19:57:28Z · note: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:62758/api/project-environments (http://127.0.0.1:62758/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:62758/api/project-environments); [missing-target] New environment accent button (target "default"): highlight [data-testid="new-environment"] matched nothing on /secrets (http://127.0.0.1:62758/secrets)
-- 2026-11-04T19:57:28Z · message_queued at 2026-11-04T19:57:28.994Z
-- 2026-11-04T19:57:32Z · message_delivered: 1 message(s)
-- 2026-11-04T20:08:19Z · body
-- 2026-11-04T20:12:08Z · note: adopted orphaned engineer pid 55874
-- 2026-11-04T20:17:06Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T20:40:06Z · note: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:52583/api/project-environments (http://127.0.0.1:52583/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:52583/api/project-environments); [missing-target] New environment accent button (target "default"): highlight [data-testid="new-environment"] matched nothing on /secrets (http://127.0.0.1:52583/secrets)
-- 2026-11-04T20:40:06Z · message_queued at 2026-11-04T20:40:06.920Z
-- 2026-11-04T20:40:09Z · message_delivered: 1 message(s)
-- 2026-11-04T20:43:37Z · body
-- 2026-11-04T20:52:59Z · body
-- 2026-11-04T20:56:42Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T21:05:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-04T19:20:55Z · body
+- 2026-11-04T19:58:26Z · body
 - 2026-11-04T21:27:12Z · status active→review
-- 2026-11-04T21:27:12Z · message_queued at 2026-11-04T21:27:12.460Z
-- 2026-11-04T21:28:13Z · note: review pass 1: good to go
-- 2026-11-04T21:41:34Z · note: shots: skipped — 4 handoff shots already captured for this exact plan (9a7c31bb0) during finalization (#0734)

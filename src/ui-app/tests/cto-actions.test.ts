@@ -423,4 +423,40 @@ describe("CTO restart skips held tasks (#0960)", () => {
       .calls[0][1] as { id: string };
     expect(launchedTask.id).toBe("0002");
   });
+
+  it("does not restart an engineer while its check heartbeat is fresh", async () => {
+    vi.mocked(relaunchEngineerOnActiveTask).mockClear();
+    const root = mkdtempSync(join(tmpdir(), "repoos-cto-heartbeat-"));
+    const task = stalledTask("0003", false);
+    const config = {
+      ...DEFAULT_CONFIG,
+      root,
+      cto: { actions: ["restart-stalled-agent"] },
+    };
+    await runCtoMonitorSafeActions({
+      config,
+      index: {
+        getTask: () => task,
+        getTasks: () => [task],
+        applyFileChange: () => {},
+      } as never,
+      runner: {
+        isRunning: () => false,
+        isPaused: () => false,
+        isHandoffInFlight: () => false,
+        hasPendingHandoff: () => false,
+        output: vi.fn(() => null),
+      } as never,
+      jobCoordinator: { allJobs: () => [], getJob: () => null, enqueue: () => null } as never,
+      attentionEvents: createAttentionEventStore(root),
+      rates: createCtoActionRateStore(root),
+      logger: { agent: vi.fn(), task: vi.fn() } as never,
+      emitEvent: vi.fn(),
+      triggerJobProcessing: vi.fn(),
+      reportedStages: {},
+      reportedStageAt: {},
+      checkRuns: () => [{ running: true, lastProgressAt: new Date().toISOString() }],
+    } as never);
+    expect(relaunchEngineerOnActiveTask).not.toHaveBeenCalled();
+  });
 });

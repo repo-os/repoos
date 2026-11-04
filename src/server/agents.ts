@@ -15,6 +15,7 @@ import {
   removeAgentRunTmpdir,
   sweepStaleAgentRunTmpdirs,
 } from "../core/agent-run-tmpdir.js";
+import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
 import {
   patternKillWarning,
   processGroupKillSupported,
@@ -8610,12 +8611,28 @@ export class AgentRunner {
     this.emit({ type: "agent.stats", id: taskId, stats: this.snapshotStats(taskId), at: now() });
   }
 
+  private checkProgressProbe: (
+    taskId: string,
+  ) => { running: boolean; lastProgressAt: string | null } | null = () => null;
+
+  /** Live check for this task, used so a heartbeating gate is not `stalled`. */
+  setCheckProgressProbe(
+    probe: (taskId: string) => { running: boolean; lastProgressAt: string | null } | null,
+  ): void {
+    this.checkProgressProbe = probe;
+  }
+
   /** Compute a fresh stats snapshot — always safe to call, even with no session. */
   private snapshotStats(taskId: string): AgentSessionStats {
     const session = this.sessions.get(taskId);
     const running = this.entries.has(taskId);
     const lastOutputAt = session?.lastOutputAt ?? null;
-    const stalled = running && !!session && (session.silentAwakeMs ?? 0) >= this.stallTimeoutMs;
+    const rawStalled = running && !!session && (session.silentAwakeMs ?? 0) >= this.stallTimeoutMs;
+    const stalled = agentSilenceCountsAsStalled(
+      rawStalled,
+      this.checkProgressProbe(taskId),
+      Date.now(),
+    );
     return {
       accumulatedMs: session?.accumulatedMs ?? 0,
       turnStartedAt: running ? (session?.turnStartedAt ?? null) : null,

@@ -145,9 +145,17 @@ onMounted(() => {
           Keep track of when an agent or provider is available again. Nothing resumes automatically.
         </p>
       </div>
-      <Button variant="outline" size="sm" data-testid="new-reminder" @click="show()"
-        >New reminder</Button
-      >
+      <Button variant="accent" class="new-btn" data-testid="new-reminder" @click="show()">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="M12 5v14M5 12h14"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+        New reminder
+      </Button>
     </div>
     <p v-if="error || store.error" class="ff-error" role="alert">{{ error || store.error }}</p>
     <PageSkeleton v-if="store.loading && !store.reminders.length" kind="rows" />
