@@ -251,3 +251,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:34:58Z · body
 - 2026-11-04T16:39:25Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T16:39:40Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T16:39:40Z · message_queued at 2026-11-04T16:39:40.384Z
