@@ -44,32 +44,32 @@ Look at where the drawer header renders the integration pill/status (grep TaskDr
 ```json
 [
 {
-  "label": "Close-out building candidate on the status line",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:closeOutBuilding"
+"label": "Close-out building candidate on the status line",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:closeOutBuilding"
 },
 {
-  "label": "Close-out building candidate at a narrow panel width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:closeOutBuildingNarrow"
+"label": "Close-out building candidate at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:closeOutBuildingNarrow"
 },
 {
-  "label": "Close-out remote tests on the status line",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:closeOutRemoteTests"
+"label": "Close-out remote tests on the status line",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:closeOutRemoteTests"
 },
 {
-  "label": "Close-out remote tests at a narrow panel width",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-status-summary",
-  "state": "drawer:closeOutRemoteTestsNarrow"
+"label": "Close-out remote tests at a narrow panel width",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-status-summary",
+"state": "drawer:closeOutRemoteTestsNarrow"
 }
 ]
 ```
