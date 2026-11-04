@@ -1,7 +1,7 @@
 /**
  * Local check and Playwright caps (#0836): third waiter blocks until a slot frees.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { existsSync, mkdtempSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
@@ -185,13 +185,14 @@ describe("cross-process local check slots", () => {
     mkdirSync(slot, { recursive: true });
     writeFileSync(join(slot, ".holder"), String(process.pid));
     writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
+    const monotonicNow = Number(process.hrtime.bigint() / 1_000_000n);
     writeFileSync(
       join(slot, ".heartbeat.json"),
-      JSON.stringify({ wallMs: 0, monotonicMs: Number(process.hrtime.bigint() / 1_000_000n) }),
+      JSON.stringify({ pid: process.pid, wallMs: 0, monotonicMs: monotonicNow }),
     );
     writeFileSync(
       join(slot, ".started.json"),
-      JSON.stringify({ wallMs: 0, monotonicMs: Number(process.hrtime.bigint() / 1_000_000n) }),
+      JSON.stringify({ pid: process.pid, wallMs: 0, monotonicMs: monotonicNow }),
     );
     const old = new Date(0);
     utimesSync(slot, old, old);
@@ -209,12 +210,101 @@ describe("cross-process local check slots", () => {
     writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
     writeFileSync(
       join(slot, ".heartbeat.json"),
-      JSON.stringify({ monotonicMs: monotonicNow - 30_000 }),
+      JSON.stringify({ pid: process.pid, monotonicMs: monotonicNow - 30_000 }),
     );
     expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ wedged: false });
     expect(inspectCrossProcessSlots(lockRoot, undefined, 15_000)[0]).toMatchObject({
       wedged: true,
     });
+  });
+
+  it("uses the writer's wall clock for a cross-process heartbeat with a tiny monotonic value", () => {
+    // Bun's process.hrtime is relative to process start, so a heartbeat written
+    // by a fresh process has a tiny monotonic value while an older reader's is
+    // large. Comparing them reported the reader's uptime as the heartbeat age
+    // (#1032). The reader's monotonic clock is stubbed large here to reproduce
+    // that shape deterministically.
+    const root = mkdtempSync(join(tmpdir(), "repoos-slot-cross-process-heartbeat-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
+    const writerPid = process.pid + 1;
+    const now = Date.now();
+    const timestamp = JSON.stringify({ pid: writerPid, wallMs: now, monotonicMs: 1 });
+    writeFileSync(join(slot, ".heartbeat.json"), timestamp);
+    writeFileSync(join(slot, ".started.json"), timestamp);
+    const hrtime = vi.spyOn(process.hrtime, "bigint").mockReturnValue(6_000_000_000_000n);
+    try {
+      const holder = inspectCrossProcessSlots(lockRoot)[0];
+      expect(holder.heartbeatAgeMs).toBeLessThan(5_000);
+      expect(holder.ageMs).toBeLessThan(5_000);
+      expect(holder.wedged).toBe(false);
+      expect(holder.dead).toBe(false);
+    } finally {
+      hrtime.mockRestore();
+    }
+  });
+
+  it("reports a stalled cross-process holder from an old wall-clock heartbeat", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-slot-old-wall-heartbeat-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ processStartToken: "" }));
+    const writerPid = process.pid + 1;
+    const oldWallMs = Date.now() - 31 * 60_000;
+    const monotonicNow = Number(process.hrtime.bigint() / 1_000_000n);
+    writeFileSync(
+      join(slot, ".heartbeat.json"),
+      JSON.stringify({ pid: writerPid, wallMs: oldWallMs, monotonicMs: monotonicNow }),
+    );
+    writeFileSync(
+      join(slot, ".started.json"),
+      JSON.stringify({ pid: writerPid, wallMs: oldWallMs, monotonicMs: monotonicNow }),
+    );
+    const holder = inspectCrossProcessSlots(lockRoot)[0];
+    expect(holder.heartbeatAgeMs).toBeGreaterThanOrEqual(30 * 60_000);
+    expect(holder.ageMs).toBeGreaterThanOrEqual(30 * 60_000);
+    expect(holder.wedged).toBe(true);
+    expect(holder.dead).toBe(false);
+  });
+
+  it("never reclaims a slot with a fresh heartbeat held by a live process", async () => {
+    if (process.platform === "win32") return;
+    const root = mkdtempSync(join(tmpdir(), "repoos-slot-fresh-live-heartbeat-"));
+    dirs.push(root);
+    const lockRoot = localCheckLockRoot(root, ".repoos");
+    const child = spawnTestProcess("sleep", ["30"], { cwd: root, stdio: "ignore" });
+    if (!child.pid) throw new Error("could not start slot holder fixture");
+    child.unref();
+    const slot = join(lockRoot, "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(child.pid));
+    writeFileSync(join(slot, ".meta.json"), JSON.stringify({ kind: "local-check" }));
+    const now = Date.now();
+    const timestamp = JSON.stringify({ pid: child.pid, wallMs: now, monotonicMs: 1 });
+    writeFileSync(join(slot, ".heartbeat.json"), timestamp);
+    writeFileSync(join(slot, ".started.json"), timestamp);
+    const hrtime = vi.spyOn(process.hrtime, "bigint").mockReturnValue(6_000_000_000_000n);
+    try {
+      await expect(
+        acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 0 }),
+      ).rejects.toThrow(/timed out/);
+      expect(existsSync(slot)).toBe(true);
+      expect(() => process.kill(child.pid!, 0)).not.toThrow();
+    } finally {
+      hrtime.mockRestore();
+      try {
+        child.kill("SIGKILL");
+      } catch {
+        /* already exited */
+      }
+    }
   });
 
   it("marks a silent live holder wedged, preserves the grace, then kills its process group", async () => {
@@ -239,7 +329,14 @@ describe("cross-process local check slots", () => {
       join(slot, ".meta.json"),
       JSON.stringify({ kind: "local-check", processGroup: true, worktree: candidate }),
     );
-    writeFileSync(join(slot, ".heartbeat.json"), JSON.stringify({ monotonicMs: monoNow - 90_000 }));
+    writeFileSync(
+      join(slot, ".heartbeat.json"),
+      JSON.stringify({
+        pid: child.pid,
+        wallMs: Date.now() - 90_000,
+        monotonicMs: monoNow - 90_000,
+      }),
+    );
     try {
       expect(inspectCrossProcessSlots(lockRoot)[0]).toMatchObject({ dead: false, wedged: true });
       await expect(
@@ -248,7 +345,11 @@ describe("cross-process local check slots", () => {
       expect(existsSync(slot)).toBe(true);
       writeFileSync(
         join(slot, ".heartbeat.json"),
-        JSON.stringify({ monotonicMs: monoNow - 240_000 }),
+        JSON.stringify({
+          pid: child.pid,
+          wallMs: Date.now() - 240_000,
+          monotonicMs: monoNow - 240_000,
+        }),
       );
       const release = await acquireCrossProcessSlot({ slots: 1, lockRoot, waitTimeoutMs: 100 });
       release();
