@@ -407,10 +407,14 @@ describe("schedule dialog layering and capture fixture (#1005)", () => {
     const wrapper = mountPanel();
     await flushPromises();
     expect(
-      wrapper.find('[data-testid="schedule-card-0001"] [data-testid="schedule-template-warn"]').exists(),
+      wrapper
+        .find('[data-testid="schedule-card-0001"] [data-testid="schedule-template-warn"]')
+        .exists(),
     ).toBe(true);
     expect(
-      wrapper.find('[data-testid="schedule-card-0002"] [data-testid="schedule-template-warn"]').exists(),
+      wrapper
+        .find('[data-testid="schedule-card-0002"] [data-testid="schedule-template-warn"]')
+        .exists(),
     ).toBe(false);
   });
 

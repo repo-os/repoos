@@ -446,10 +446,7 @@ export function currentBranch(root: string): string | null {
 }
 
 /** True when git can commit with configured identity (config or env vars). */
-export function gitIdentityConfigured(
-  root: string,
-  env: NodeJS.ProcessEnv = process.env,
-): boolean {
+export function gitIdentityConfigured(root: string, env: NodeJS.ProcessEnv = process.env): boolean {
   if (gitConfig(root, "user.name") && gitConfig(root, "user.email")) return true;
   const authorName = env.GIT_AUTHOR_NAME?.trim();
   const authorEmail = env.GIT_AUTHOR_EMAIL?.trim();

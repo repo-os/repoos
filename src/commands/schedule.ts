@@ -191,9 +191,7 @@ function printScheduleTemplateWarning(input: ScheduleCreateInput): void {
     taskAssignedTo: input.taskAssignedTo,
   });
   if (detail) {
-    console.log(
-      c.yellow("  warning: ") + c.dim("schedule template is underspecified — ") + detail,
-    );
+    console.log(c.yellow("  warning: ") + c.dim("schedule template is underspecified — ") + detail);
   }
 }
 
