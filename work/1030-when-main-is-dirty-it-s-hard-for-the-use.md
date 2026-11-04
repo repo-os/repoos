@@ -11,7 +11,7 @@ branch: feat/full-width-dirty-main-button-in-sidebar-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T14:31:50Z"
+updated_at: "2026-11-04T14:40:54Z"
 dev_error_count: 7
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:22:51.475Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:31:00.002Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:31:46.150Z\",\"kind\":\"dev-error\"}]"
@@ -117,40 +117,34 @@ states, panel open/close with shared width, commit success/error paths with the 
 ```json
 [
 {
-"label": "Sidebar full-width dirty-main button",
-"target": "default",
-"route": "/",
-"highlight": ".side-git-dirty",
-"steps": [
-{
-"waitFor": ".side-git-dirty"
+  "label": "Full-width uncommitted-changes button in the sidebar",
+  "target": "default",
+  "route": "/",
+  "highlight": ".side-git-dirty",
+  "steps": [
+    {
+      "waitFor": ".side-git-dirty"
+    }
+  ],
+  "state": "repo:dirtyMain"
 },
 {
-"waitMs": 200
-}
-],
-"state": "repo:dirtyMain"
-},
-{
-"label": "Uncommitted changes panel with file list, diff and commit box",
-"target": "default",
-"route": "/",
-"highlight": "[data-testid=\"repo-dirty-panel\"]",
-"steps": [
-{
-"waitFor": "[data-test-id=\"side-git-dirty\"]"
-},
-{
-"click": "[data-test-id=\"side-git-dirty\"]"
-},
-{
-"waitFor": "[data-testid=\"repo-dirty-panel\"]"
-},
-{
-"waitMs": 400
-}
-],
-"state": "repo:dirtyMain"
+  "label": "Uncommitted-changes panel with files, inline diff and commit box",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-testid=\"repo-dirty-panel\"]",
+  "steps": [
+    {
+      "waitFor": ".side-git-dirty"
+    },
+    {
+      "click": ".side-git-dirty"
+    },
+    {
+      "waitMs": 500
+    }
+  ],
+  "state": "repo:dirtyMain"
 }
 ]
 ```
@@ -233,3 +227,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T14:31:46Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:31:46Z · engineer crash recovery: resuming opencode + opencode-go/glm-5.3-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T14:31:50Z · needs_input
+- 2026-11-04T14:40:54Z · body
