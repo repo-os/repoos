@@ -3,16 +3,13 @@ id: "0715"
 title: pi engineer ends turns cleanly without requesting handoff; stderr not surfaced; recovery is slow and the CTO cannot see why
 type: bug
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: ""
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T06:55:58Z"
+updated_at: "2026-11-04T06:56:02Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 31 (3 attempts, no stderr surfaced) and row 33 (a poisoned engineer session keeps failing across harness changes until /start {"mode":"fresh"}, undocumented in the handoff).
 
@@ -44,3 +41,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T06:55:55Z · title, body: Problem (added)
 - 2026-11-04T06:55:57Z · body: Desired UX (added)
 - 2026-11-04T06:55:58Z · body: Acceptance criteria (added); Notes for AI (added)
+- 2026-11-04T06:56:02Z · needs_input
