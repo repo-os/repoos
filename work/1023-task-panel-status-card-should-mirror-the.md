@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 663910
+last_close_out_gate_at: "2026-11-04T12:31:06.432Z"
 id: 1023
 title: "Task panel status card should mirror the board card: same lines, same activity animation, no blank rows"
 type: bug
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-panel-status-card-should-mirror-the
 created_at: "2026-11-04T05:34:26Z"
-updated_at: "2026-11-04T11:16:21Z"
+updated_at: "2026-11-04T12:31:06Z"
 review_passes: 1
 ---
 ## Problem
@@ -92,3 +94,7 @@ Acceptance addition: for integrating, queued and validating states, the panel pi
 - 2026-11-04T11:00:12Z · status active→review
 - 2026-11-04T11:01:12Z · note: review pass 1: good to go
 - 2026-11-04T11:16:21Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (7128a2cb4) during finalization (#0734)
+- 2026-11-04T11:50:12Z · watchdog: check wait escalated · waiting: waiting for a local check slot (1 ahead, position 2); waiting behind #0715 check (pid 68910, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T12:05:12Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T12:31:06Z · close-out gate completed in 664s
+
