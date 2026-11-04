@@ -36,7 +36,7 @@ describe("easter eggs #1026", () => {
     expect(findMissingAgentsMdPaths(root, agents)).toEqual([]);
     const report = await runDoctor({ root, probePort: 1, hasBinary: () => true });
     const agentsFinding = report.findings.find((f) => f.title.includes("AGENTS.md path"));
-    expect(agentsFinding?.level).not.toBe("warn");
+    expect(agentsFinding?.severity).not.toBe("warn");
   });
 
   it("E2: serve banner and resolveServeHost name bind interfaces", () => {
