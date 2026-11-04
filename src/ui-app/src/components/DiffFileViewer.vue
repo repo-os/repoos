@@ -14,6 +14,12 @@ const props = defineProps<{
   expandable?: boolean;
   /** Distinguishes section anchors when more than one viewer exists on a page. */
   idPrefix?: string;
+  /**
+   * Render the compact file list above the sections. Off when the caller
+   * already lists every changed file itself (the uncommitted-changes panel
+   * lists untracked files too, which `git diff HEAD` does not carry).
+   */
+  showFileList?: boolean;
 }>();
 const emit = defineEmits<{ (e: "expand", file: DiffFile): void }>();
 
@@ -39,7 +45,7 @@ watch(
 </script>
 
 <template>
-  <div v-if="diffFiles.length > 0" class="diff-file-list">
+  <div v-if="props.showFileList !== false && diffFiles.length > 0" class="diff-file-list">
     <div
       v-for="file in diffFiles"
       :key="file.filename"

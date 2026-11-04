@@ -18,8 +18,10 @@ import { storeToRefs } from "pinia";
 import { useRepoStore } from "../stores/repo";
 import { relTime } from "../lib/time";
 import { authorInitials } from "../lib/repo-history";
+import { statusLetter, statusWord } from "../lib/git-status";
 import { useNow } from "../composables/useNow";
 import CommitDialog from "./CommitDialog.vue";
+import RepoDirtyPanel from "./RepoDirtyPanel.vue";
 
 /** A snapshot older than this is history, not state — show `unknown`. */
 const STALE_MS = 90_000;
@@ -78,6 +80,11 @@ const branchTitle = computed(() => {
 
 const dirtyCount = computed(() => (live.value ? (gitStatus.value?.dirty.length ?? 0) : 0));
 
+/** The full-width button's label: "3 uncommitted changes". */
+const dirtyLabel = computed(
+  () => `${dirtyCount.value} uncommitted change${dirtyCount.value === 1 ? "" : "s"}`,
+);
+
 const stateLabel = computed(() => {
   if (!live.value) return "unknown";
   return dirtyCount.value > 0 ? "dirty" : "clean";
@@ -117,28 +124,11 @@ const hiddenFiles = computed(() => Math.max(0, files.value.length - MAX_FILES));
 
 const commits = computed(() => (live.value ? (gitStatus.value?.recentCommits ?? []) : []));
 
-/** Porcelain `XY` → the short chip drawn next to a path (`??`, `M`, `A`, …). */
-function statusLetter(code: string): string {
-  if (code === "??") return "??";
-  if (code.includes("U")) return "UU";
-  const x = (code[0] ?? "").trim();
-  if (x && x !== "?") return x;
-  const y = (code[1] ?? "").trim();
-  return y || "?";
-}
-
-/** The same code as the word a person reads: modified, added, untracked, … */
-function statusWord(code: string): string {
-  if (code === "??") return "untracked";
-  if (code.includes("U")) return "conflicted";
-  const words: Record<string, string> = {
-    A: "added",
-    D: "deleted",
-    M: "modified",
-    R: "renamed",
-    C: "copied",
-  };
-  return words[statusLetter(code)] ?? "changed";
+/** Uncommitted-changes panel (#1030), opened by the full-width amber button. */
+const dirtyPanelOpen = ref(false);
+function openDirtyPanel(): void {
+  closeNow();
+  dirtyPanelOpen.value = true;
 }
 
 /** Commit is only offered for a live, readable, dirty checkout on a real branch. */
@@ -368,6 +358,43 @@ onBeforeUnmount(() => {
     </span>
   </div>
 
+  <!-- #1030: the amber chip above is easy to miss. When the checkout is dirty
+       this full-width row is the one-click way to see and commit the changes. -->
+  <button
+    v-if="dirtyCount > 0"
+    type="button"
+    class="side-git-dirty"
+    data-test-id="side-git-dirty"
+    :aria-label="`${dirtyLabel} on ${branchLabel} — review and commit`"
+    aria-haspopup="dialog"
+    @click="openDirtyPanel"
+  >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 8.5v5M12 16.6v.1"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <path
+        d="M10.3 4.6 2.8 17.8A2 2 0 0 0 4.5 20.8h15a2 2 0 0 0 1.7-3L13.7 4.6a2 2 0 0 0-3.4 0Z"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linejoin="round"
+      />
+    </svg>
+    <span class="side-git-dirty-label">{{ dirtyLabel }}</span>
+    <svg class="side-git-dirty-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="m9 5 7 7-7 7"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  </button>
+
   <Teleport to="body">
     <div
       v-if="open"
@@ -457,4 +484,6 @@ onBeforeUnmount(() => {
     :branch="gitStatus?.branch ?? ''"
     :files="files.map((f) => f.path)"
   />
+
+  <RepoDirtyPanel v-model:open="dirtyPanelOpen" />
 </template>

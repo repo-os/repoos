@@ -22,6 +22,7 @@ import type {
   IntegrationPipelineSnapshot,
   RemoteTaskActivity,
   RemoteValidationStatusView,
+  RepoStatus,
   ShotMeta,
   SystemStats,
   Task,
@@ -154,6 +155,22 @@ export function shotFixturePinnedRemoteStatus(): RemoteValidationStatusView | nu
 
 /** Fixture-pinned remote run/queue detail per task, for drawer shots (#0897). */
 const pinnedTaskRemoteActivity: Record<string, RemoteTaskActivity> = {};
+
+/** Fixture-pinned repo-root git status for the dirty-main button shot (#1030). */
+let pinnedGitStatus: RepoStatus | null = null;
+
+/** Fixture-pinned working-tree diff for the uncommitted-changes panel shot (#1030). */
+let pinnedWorkingDiff: { patch: string; truncated: boolean } | null = null;
+
+/** The fixture-pinned repo status, or null when nothing is pinned (#1030). */
+export function shotFixturePinnedGitStatus(): RepoStatus | null {
+  return pinnedGitStatus;
+}
+
+/** The fixture-pinned working-tree diff, or null when nothing is pinned (#1030). */
+export function shotFixturePinnedWorkingDiff(): { patch: string; truncated: boolean } | null {
+  return pinnedWorkingDiff;
+}
 
 /** The fixture-pinned remote activity for one task, or null (#0897). */
 export function shotFixturePinnedTaskRemoteActivity(taskId: string): RemoteTaskActivity | null {
@@ -761,6 +778,8 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   pinnedCheckRuns = null;
   pinnedTestCasesByRun = null;
   pinnedRemoteStatus = null;
+  pinnedGitStatus = null;
+  pinnedWorkingDiff = null;
   for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
   switch (fixture) {
     case "secrets:populated":
@@ -1081,6 +1100,66 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           failedAt: nowIso(),
           tldr: "Fixture done-error for handoff shots",
         },
+      };
+      break;
+    // #1030 — a dirty repo-root checkout, so a capture can show the full-width
+    // amber button under the sidebar git-state row and the panel it opens.
+    case "repo:dirtyMain":
+      pinnedGitStatus = {
+        ok: true,
+        branch: "main",
+        detached: false,
+        baseBranch: "main",
+        dirty: [
+          { path: "src/ui-app/src/components/SidebarGitState.vue", status: " M" },
+          { path: "src/ui-app/src/style.css", status: " M" },
+          { path: "notes/scratch.md", status: "??" },
+        ],
+        head: "9f3c2a1",
+        recentCommits: [
+          {
+            sha: "9f3c2a1d4e5f60718293a4b5c6d7e8f901234567",
+            shortSha: "9f3c2a1",
+            subject: "feat: full-width dirty-main button",
+            body: "",
+            authorName: "Ada Lovelace",
+            authorEmail: "ada@example.com",
+            date: nowIso(),
+            refs: ["main"],
+            parents: [],
+            taskId: null,
+          },
+        ],
+        path: "/Users/you/repoos",
+        computedAt: nowIso(),
+      };
+      // Seed the row now; the pin above keeps a late initial fetch/SSE push
+      // from replacing it during the capture.
+      repo.gitStatus = pinnedGitStatus;
+      pinnedWorkingDiff = {
+        truncated: false,
+        patch: [
+          "diff --git a/src/ui-app/src/components/SidebarGitState.vue b/src/ui-app/src/components/SidebarGitState.vue",
+          "index 1111111..2222222 100644",
+          "--- a/src/ui-app/src/components/SidebarGitState.vue",
+          "+++ b/src/ui-app/src/components/SidebarGitState.vue",
+          "@@ -330,3 +330,12 @@",
+          '   <div class="row side-git">',
+          '+  <button class="side-git-dirty">',
+          "+    3 uncommitted changes",
+          "+  </button>",
+          "   </div>",
+          "",
+          "diff --git a/src/ui-app/src/style.css b/src/ui-app/src/style.css",
+          "index 3333333..4444444 100644",
+          "--- a/src/ui-app/src/style.css",
+          "+++ b/src/ui-app/src/style.css",
+          "@@ -930,2 +930,9 @@",
+          "+.side-git-dirty {",
+          "+  width: 100%;",
+          "+}",
+          "",
+        ].join("\n"),
       };
       break;
     case "pages:scroll":
