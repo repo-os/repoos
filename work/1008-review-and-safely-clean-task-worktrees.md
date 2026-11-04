@@ -2,7 +2,7 @@
 id: 1008
 title: Review and safely clean task worktrees
 type: chore
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/review-and-safely-clean-task-worktrees
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-01T22:00:49Z"
-updated_at: "2026-11-04T23:20:05Z"
+updated_at: "2026-11-04T23:28:37Z"
 ---
 ## Problem
 
@@ -93,3 +93,4 @@ Done and archived worktrees that `repoos gc` still retains stay for the safety r
 - 2026-11-04T23:15:21Z · message_delivered: 2 message(s)
 - 2026-11-04T23:17:42Z · body
 - 2026-11-04T23:20:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-04T23:28:37Z · status active→review
