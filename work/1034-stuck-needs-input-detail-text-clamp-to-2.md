@@ -14,7 +14,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T18:29:11Z"
+updated_at: "2026-11-04T18:29:16Z"
 last_close_out_gate_ms: 976765
 last_close_out_gate_at: "2026-11-04T18:29:11.152Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -171,4 +171,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T18:06:27Z · note: review pass 3: good to go
 - 2026-11-04T18:09:36Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-04T18:29:11Z · close-out gate completed in 977s
-
+- 2026-11-04T18:29:16Z · message_dropped: 2 queued message(s) discarded — task is done
