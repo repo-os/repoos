@@ -89,3 +89,4 @@ Done and archived worktrees that `repoos gc` still retains stay for the safety r
 - 2026-11-04T23:14:41Z · body
 - 2026-11-04T23:15:20Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T23:15:20Z · message_queued at 2026-11-04T23:15:20.674Z
+- 2026-11-04T23:15:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: `repoos gc` reports zero safe candidates, so this run will not remove anything. The last handoff failed because a no-op still needs `no_source_change: true`; I’ll record the protected worktrees and set that flag through the task update pat… · stderr: (empty)
