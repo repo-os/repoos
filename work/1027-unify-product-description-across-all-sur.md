@@ -120,3 +120,4 @@ Also grep the repo (README, SKILL.md, llms.txt files, docs index, release templa
 - 2026-11-04T07:36:23Z · body
 - 2026-11-04T07:55:00Z · body
 - 2026-11-04T07:57:48Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T07:57:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
