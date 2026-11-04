@@ -113,38 +113,38 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 ```json
 [
 {
-  "label": "New schedule accent button",
-  "target": "default",
-  "route": "/agents?tab=scheduled",
-  "highlight": "[data-testid=\"new-schedule\"]"
+"label": "New schedule accent button",
+"target": "default",
+"route": "/agents?tab=scheduled",
+"highlight": "[data-testid=\"new-schedule\"]"
 },
 {
-  "label": "New reminder accent button",
-  "target": "default",
-  "route": "/agents?tab=reminders",
-  "highlight": "[data-testid=\"new-reminder\"]"
+"label": "New reminder accent button",
+"target": "default",
+"route": "/agents?tab=reminders",
+"highlight": "[data-testid=\"new-reminder\"]"
 },
 {
-  "label": "New environment accent button",
-  "target": "default",
-  "route": "/secrets",
-  "highlight": "[data-testid=\"new-environment\"]",
-  "state": "secrets:populated"
+"label": "New environment accent button",
+"target": "default",
+"route": "/secrets",
+"highlight": "[data-testid=\"new-environment\"]",
+"state": "secrets:populated"
 },
 {
-  "label": "Commit message field is three lines",
-  "target": "default",
-  "route": "/",
-  "highlight": ".repo-dirty-input",
-  "steps": [
-    {
-      "click": "[data-test-id=\"side-git-dirty\"]"
-    },
-    {
-      "waitFor": ".repo-dirty-input"
-    }
-  ],
-  "state": "repo:dirtyMain"
+"label": "Commit message field is three lines",
+"target": "default",
+"route": "/",
+"highlight": ".repo-dirty-input",
+"steps": [
+  {
+    "click": "[data-test-id=\"side-git-dirty\"]"
+  },
+  {
+    "waitFor": ".repo-dirty-input"
+  }
+],
+"state": "repo:dirtyMain"
 }
 ]
 ```
