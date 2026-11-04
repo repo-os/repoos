@@ -479,7 +479,9 @@ export class CTOManager {
   sendTaskMessage(taskId: string, message: string, agent: Agent | null): boolean {
     if (!this.runner || !agent) return false;
     try {
-      return this.runner.send(taskId, message, agent).ok;
+      // The completion nudge is advisory: it may queue, but it must not defer a
+      // handoff the engineer requests in the same turn (#0715).
+      return this.runner.send(taskId, message, agent, { automatic: true }).ok;
     } catch {
       return false;
     }

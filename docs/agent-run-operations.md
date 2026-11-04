@@ -114,6 +114,10 @@ forever. TaskWatchdog detects that shape without waiting for the CTO:
 4. A **deferred handoff** (`handoff_deferred: N queued message(s)…`) always
    resumes the engineer to read the queued message, even when the legacy
    handoff-signal retry still has budget. The resumed turn drains that queue.
+   Only a **human** message blocks a handoff. An automatic CTO completion nudge
+   that queued while the engineer was working is advisory: it is dropped when
+   the handoff finalizes, so it cannot create a deferred-handoff loop (#0715;
+   the #1016 Activity showed every turn deferred by one stale nudge).
 5. Resume budget: **3 resumes per active episode**, counted from the
    `→active` transition and monotonic (`1/3`, `2/3`, `3/3`). A rolling 30-minute
    window let the attempt number repeat on a long episode (#1016 resumed at
