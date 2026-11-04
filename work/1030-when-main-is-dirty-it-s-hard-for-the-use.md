@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
@@ -12,7 +11,8 @@ branch: feat/full-width-dirty-main-button-in-sidebar-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T15:32:23Z"
+updated_at: "2026-11-04T15:37:53Z"
+handoff_signal_retry_count: 1
 dev_error_count: 8
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
@@ -230,4 +230,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T15:20:37Z · body
 - 2026-11-04T15:31:04Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-04T15:32:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-
+- 2026-11-04T15:37:53Z · message_queued at 2026-11-04T15:37:53.067Z
