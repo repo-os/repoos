@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T17:22:46Z"
+updated_at: "2026-11-04T17:31:45Z"
 ---
 ## Problem
 
@@ -69,8 +69,12 @@ Approved mockup (light and dark, solid hairline guides, centered cards): rendere
 ![2](/api/tasks/1035/attachments/att_4ea308fd-fe8e-43f3-9f15-fee13a945e69.webp)
 ![Approved Pipeline view mockup, light and dark](/api/tasks/1035/attachments/att_11dd76d3-db5c-4cb5-a3de-9376193d9be7.png)
 
+## Visual reference
+Approved mockup (light and dark, solid hairline guides, cards centered in their lanes) is attached below under Screenshots. Summary of colours: card is one step above the page surface in both themes, chips use the page's chip surface, success tint for Merged, amber for sent-back, red for stuck. Use existing theme tokens only.
+
 ## Activity
 
 - 2026-11-04T17:20:01Z · created · njachowski@gmail.com
 - 2026-11-04T17:20:02Z · screenshots
 - 2026-11-04T17:22:46Z · screenshots
+- 2026-11-04T17:31:45Z · body: Visual reference (added)
