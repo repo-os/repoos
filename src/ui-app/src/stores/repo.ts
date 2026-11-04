@@ -448,6 +448,7 @@ const STATUS_PIPELINE: Status[] = ["draft", "inbox", "ready", "active", "review"
 const SORT_ORDER_KEY = "repoos.board.sortOrder";
 const STORY_SORT_ORDER_KEY = "repoos.storyPanel.sortOrder";
 const STORIES_PAGE_SORT_ORDER_KEY = "repoos.storiesPage.sortOrder";
+const STORIES_PAGE_HIDE_COMPLETED_KEY = "repoos.storiesPage.hideCompleted";
 const BOARD_USAGE_RANGE_KEY = "repoos.board.usageRange";
 const NEW_VERSION_KEY = "repoos.newVersion";
 
@@ -581,6 +582,22 @@ function readStoriesPageSortOrder(): StoryListSortOrder {
     return v === "recent" || v === "taskNumberNewest" || v === "taskNumberOldest" ? v : "recent";
   } catch {
     return "recent";
+  }
+}
+
+/**
+ * Stories page "Hide Completed Stories" toggle (#1016). Defaults to `false`
+ * (show everything), preserving the page's behaviour before the filter
+ * existed; once the human toggles it, the choice persists like the sort order
+ * above so a reload does not silently reveal completed stories again.
+ */
+function readStoriesPageHideCompleted(): boolean {
+  try {
+    const raw = localStorage.getItem(STORIES_PAGE_HIDE_COMPLETED_KEY);
+    if (raw === null) return false;
+    return JSON.parse(raw) === true;
+  } catch {
+    return false;
   }
 }
 
@@ -916,6 +933,8 @@ export const useRepoStore = defineStore("repo", () => {
   const sortOrder = ref<SortOrder>(readSortOrder());
   const storySortOrder = ref<SortOrder>(readStorySortOrder());
   const storiesPageSortOrder = ref<StoryListSortOrder>(readStoriesPageSortOrder());
+  /** Stories page filter (#1016): when true, completed stories are hidden. */
+  const storiesPageHideCompleted = ref<boolean>(readStoriesPageHideCompleted());
   /** Done-task ids the human has acknowledged (0278). Persisted; a task whose
    *  id is here stays un-highlighted across reloads. */
   const doneAcked = ref<Set<string>>(readDoneAcked());
@@ -1097,6 +1116,15 @@ export const useRepoStore = defineStore("repo", () => {
     storiesPageSortOrder.value = order;
     try {
       localStorage.setItem(STORIES_PAGE_SORT_ORDER_KEY, JSON.stringify(order));
+    } catch {
+      /* ignore quota / privacy-mode failures */
+    }
+  }
+
+  function setStoriesPageHideCompleted(value: boolean): void {
+    storiesPageHideCompleted.value = value;
+    try {
+      localStorage.setItem(STORIES_PAGE_HIDE_COMPLETED_KEY, JSON.stringify(value));
     } catch {
       /* ignore quota / privacy-mode failures */
     }
@@ -4332,6 +4360,7 @@ export const useRepoStore = defineStore("repo", () => {
     sortOrder,
     storySortOrder,
     storiesPageSortOrder,
+    storiesPageHideCompleted,
     doneAcked,
     doneAckCount,
     needsAck,
@@ -4370,6 +4399,7 @@ export const useRepoStore = defineStore("repo", () => {
     setSortOrder,
     setStorySortOrder,
     setStoriesPageSortOrder,
+    setStoriesPageHideCompleted,
     restartServer,
     clearNewVersion,
     repoName,
