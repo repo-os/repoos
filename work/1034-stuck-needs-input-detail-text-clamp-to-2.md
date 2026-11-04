@@ -13,7 +13,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T17:08:50Z"
+updated_at: "2026-11-04T17:08:57Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-04T16:59:01.799Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Board card clamps long check-wait detail (target \"default\"): state \"card:checkWaitDetail\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail); [missing-target] Board card clamps long check-wait detail (target \"default\"): highlight [data-test-id=task-card-needs-input-detail] matched nothing on / (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail)"
 dev_error_count: 5
@@ -49,9 +49,9 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 "route": "/work?status=active",
 "highlight": "[data-test-id=task-card-needs-input-detail]",
 "steps": [
-  {
-    "waitFor": "[data-test-id=task-card-needs-input-detail]"
-  }
+{
+"waitFor": "[data-test-id=task-card-needs-input-detail]"
+}
 ],
 "state": "card:checkWaitDetail"
 },
