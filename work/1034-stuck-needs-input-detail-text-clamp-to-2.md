@@ -150,3 +150,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T17:29:06Z · status review→active
 - 2026-11-04T17:29:08Z · CTO nudge: held — remote validation is running
 - 2026-11-04T17:29:30Z · note: adopted orphaned engineer pid 43820
+- 2026-11-04T17:29:33Z · note: handoff requested (cli)
