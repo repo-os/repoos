@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T06:56:09Z"
+updated_at: "2026-11-04T07:17:46Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 31 (3 attempts, no stderr surfaced) and row 33 (a poisoned engineer session keeps failing across harness changes until /start {"mode":"fresh"}, undocumented in the handoff).
 
@@ -44,3 +44,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T06:56:02Z · needs_input
 - 2026-11-04T06:56:06Z · status inbox→ready
 - 2026-11-04T06:56:09Z · status ready→active, branch
+- 2026-11-04T07:17:46Z · message_queued at 2026-11-04T07:17:46.111Z
