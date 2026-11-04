@@ -2,7 +2,7 @@
 id: 1035
 title: "Work page: Pipeline view (horizontal race track for active and review tasks)"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-updated_at: "2026-11-04T18:02:21Z"
+updated_at: "2026-11-04T19:41:57Z"
 ---
 ## Problem
 
@@ -82,3 +82,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T17:44:39Z · model_override
 - 2026-11-04T17:44:42Z · status inbox→ready
 - 2026-11-04T18:02:21Z · status ready→active, branch
+- 2026-11-04T19:41:57Z · status active→review
