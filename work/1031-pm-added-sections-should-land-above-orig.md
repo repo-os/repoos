@@ -2,7 +2,7 @@
 id: 1031
 title: PM-added sections should land above Original prompt and Screenshots
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: ""
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
-updated_at: "2026-11-04T17:44:20Z"
+updated_at: "2026-11-04T17:44:27Z"
 ---
 ## Problem
 
@@ -33,3 +33,4 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 
 - 2026-11-04T12:03:10Z · created · njachowski@gmail.com
 - 2026-11-04T17:44:20Z · model_override
+- 2026-11-04T17:44:27Z · status inbox→ready
