@@ -2,7 +2,7 @@
 id: 1016
 title: "Add \"Hide Completed Stories\" toggle to Stories page"
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/add-hide-completed-stories-toggle-to-sto
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-11-03T09:13:40Z"
-updated_at: "2026-11-04T04:23:31Z"
+updated_at: "2026-11-04T08:53:49Z"
 ---
 ## Problem
 
@@ -71,3 +71,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 - 2026-11-04T04:22:46Z · cli_override
 - 2026-11-04T04:23:01Z · model_override
 - 2026-11-04T04:23:31Z · status ready→active, branch
+- 2026-11-04T08:53:49Z · status active→review
