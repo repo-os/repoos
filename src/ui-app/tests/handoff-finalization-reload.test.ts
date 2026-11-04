@@ -149,5 +149,8 @@ describe("handoff finalization reload recovery (#0501)", () => {
     };
     expect(handoffFinalizationWasInterrupted(finished as never)).toBe(false);
     expect(HANDOFF_FINALIZATION_INTERRUPTED_DETAIL).toMatch(/interrupted/);
+    // #0715: a poisoned conversation's one-step recovery is named on the
+    // handoff-failure message the human sees.
+    expect(HANDOFF_FINALIZATION_INTERRUPTED_DETAIL).toContain("repoos start <id> --fresh");
   });
 });

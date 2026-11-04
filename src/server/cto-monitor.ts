@@ -23,7 +23,6 @@
  * completion nudge to an active engineer after five minutes of real inactivity.
  */
 import { existsSync, statSync } from "node:fs";
-import { execFile } from "node:child_process";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { LiveIndex } from "./live-index.js";
@@ -33,6 +32,10 @@ import { isHoldActive } from "../core/task-selection.js";
 import { clearExpiredHoldPauses } from "./hold-guard.js";
 import { hasRecentWorktreeActivity } from "./task-watchdog.js";
 import { pressureReason } from "../core/pressure-guard.js";
+import {
+  lastEngineerCleanExitAt,
+  readEngineerCleanExitSignal,
+} from "../core/engineer-crash-recovery.js";
 import {
   NO_ENGINEER_PROCESS,
   decideIdleNudge,
@@ -87,6 +90,14 @@ function simpleHash(text: string): string {
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash).toString(36);
+}
+
+/** Compact human age for the CTO digest (seconds / minutes / hours). */
+function describeAge(ms: number): string {
+  if (ms < 60_000) return `${Math.max(0, Math.round(ms / 1000))}s`;
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.round(minutes / 6) / 10}h`;
 }
 
 export class CTOMonitor {
@@ -258,10 +269,24 @@ export class CTOMonitor {
       }
 
       const runnerRunning = this.runner?.isRunning(task.id) ?? false;
-      const process = await this.processStateFor(task.id, runnerRunning);
+      // Only a tracked turn needs a process sample. For an idle task the
+      // RepoOS-owned data below (run state, agent-log mtime, turn-end event)
+      // decides — no process inspection, which a sandbox may deny (#0715).
+      const process = runnerRunning
+        ? await this.processStateFor(task.id, true)
+        : NO_ENGINEER_PROCESS;
       const recentWorktreeActivity =
         runnerRunning &&
         (await hasRecentWorktreeActivity(this.config.root, task.branch, idleMs, now));
+      const agentLogRecent = this.agentLogRecent(task.id, idleMs, now);
+      const signal = readEngineerCleanExitSignal(task.body);
+      const lastCleanExitAt = lastEngineerCleanExitAt(task.body);
+      const lastNudgeAt = this.lastNudgedAt(task);
+      const cleanExitSinceNudge =
+        signal.clean &&
+        lastCleanExitAt !== null &&
+        lastNudgeAt !== null &&
+        Date.parse(lastCleanExitAt) > lastNudgeAt;
       const decision = decideIdleNudge({
         runnerRunning,
         processGroupAlive: process.groupAlive,
@@ -273,6 +298,8 @@ export class CTOMonitor {
         remoteValidationRunning: this.probes.remoteValidationRunning?.(task.id) ?? false,
         messageQueued: this.runner?.hasQueuedMessages?.(task.id) ?? false,
         recentWorktreeActivity,
+        agentLogRecent,
+        cleanExitSinceNudge,
         idleForMs: this.idleFor(task, now),
         idleThresholdMs: idleMs,
         cooldownActive: this.wasRecentlyNudged(task, now, cooldownMs),
@@ -369,8 +396,29 @@ export class CTOMonitor {
     }
   }
 
-  /** Cooldown survives a server reload, while the in-memory set handles normal idle stretches. */
-  private wasRecentlyNudged(task: Task, now: number, cooldownMs: number): boolean {
+  /** Whether an agent log for this task was written inside the idle window. */
+  private agentLogRecent(taskId: string, idleMs: number, now: number): boolean {
+    const age = this.agentLogAgeMs(taskId, now);
+    return age !== null && age < idleMs;
+  }
+
+  /** Milliseconds since the newest agent log for this task, or null when none exists. */
+  private agentLogAgeMs(taskId: string, now: number = Date.now()): number | null {
+    const cacheDir = join(this.config.root, this.config.cacheDir ?? ".repoos", "agent-logs");
+    let newest: number | null = null;
+    for (const name of [`${taskId}.out.log`, `${taskId}.err.log`]) {
+      try {
+        const stat = statSync(join(cacheDir, name));
+        newest = newest === null ? stat.mtimeMs : Math.max(newest, stat.mtimeMs);
+      } catch {
+        /* no log for this task */
+      }
+    }
+    return newest === null ? null : Math.max(0, now - newest);
+  }
+
+  /** When the most recent durable CTO completion nudge was recorded. */
+  private lastNudgedAt(task: Task): number | null {
     const marker = new RegExp(`- ([^\\n]+) · ${AUTOMATIC_NUDGE_MARKER}`, "g");
     let match: RegExpExecArray | null;
     let last = 0;
@@ -378,7 +426,13 @@ export class CTOMonitor {
       const at = Date.parse(match[1]);
       if (Number.isFinite(at)) last = Math.max(last, at);
     }
-    return last > 0 && now - last < cooldownMs;
+    return last > 0 ? last : null;
+  }
+
+  /** Cooldown survives a server reload, while the in-memory set handles normal idle stretches. */
+  private wasRecentlyNudged(task: Task, now: number, cooldownMs: number): boolean {
+    const last = this.lastNudgedAt(task);
+    return last !== null && now - last < cooldownMs;
   }
 
   private async buildDigest(): Promise<BuiltDigest | null> {
@@ -422,8 +476,46 @@ export class CTOMonitor {
     lines.push("## Build and Process Health");
     lines.push("");
     lines.push(`- Build marker: ${build.label}`);
-    lines.push(`- Zombie processes: ${processes.label}`);
+    lines.push(`- Agent turns: ${processes.label}`);
     lines.push("");
+
+    // #0715: RepoOS-owned idle evidence. The CTO agent used to be told to work
+    // out "slow vs stalled" from `ps`, which a sandbox may deny (the 2026-11-04
+    // report: "sandbox denied process inspection", "server unavailable"). Run
+    // state, agent-log mtime and the durable turn-end event say the same thing
+    // from data RepoOS already owns.
+    const activeTasks = tasks.filter((task) => task.status === "active");
+    if (activeTasks.length) {
+      lines.push("## Active engineer state");
+      lines.push("");
+      for (const task of activeTasks) {
+        const signal = readEngineerCleanExitSignal(task.body);
+        const lastCleanExit = lastEngineerCleanExitAt(task.body);
+        const lastNudge = this.lastNudgedAt(task);
+        const logAge = this.agentLogAgeMs(task.id);
+        const runState =
+          this.runner?.isRunning(task.id) === true
+            ? "running"
+            : this.runner?.isPaused(task.id) === true
+              ? "paused"
+              : this.runner?.isHandoffInFlight(task.id) === true
+                ? "handoff-in-flight"
+                : "idle";
+        const turnEnd = signal.stoppedByPerson
+          ? "stopped by request"
+          : signal.clean
+            ? "clean exit without a handoff"
+            : "no clean-exit event";
+        const nudgeAfter =
+          lastCleanExit !== null && lastNudge !== null && lastNudge >= Date.parse(lastCleanExit);
+        lines.push(
+          `- **#${task.id}** (active): run=${runState}; agent log ${
+            logAge === null ? "not found" : `updated ${describeAge(logAge)} ago`
+          }; last turn end=${turnEnd}; completion nudge sent after it=${nudgeAfter ? "yes" : "no"}`,
+        );
+      }
+      lines.push("");
+    }
 
     const healthy = stuckTasks.length === 0 && build.healthy && processes.healthy;
 
@@ -483,35 +575,20 @@ export class CTOMonitor {
     }
   }
 
+  /**
+   * RepoOS-owned process signal (#0715): report the live turns the runner is
+   * tracking instead of shelling out to `ps aux`. The old check failed outright
+   * in a sandbox and then blamed "unable to check processes", while the real
+   * idle question (is a turn running, is its agent log moving, did it end
+   * without a handoff) is answerable from the digest's own state.
+   */
   private async processHealth(): Promise<HealthSignal> {
-    const psOutput = await new Promise<string | null>((resolve) => {
-      execFile("ps", ["aux"], { encoding: "utf8", timeout: 5000 }, (error, stdout) => {
-        resolve(error ? null : stdout);
-      });
-    });
-    if (psOutput === null) return { healthy: false, label: "? unable to check processes" };
-    try {
-      const lines = psOutput
-        .trim()
-        .split("\n")
-        .filter((line) => /serve|bun|node/.test(line) && !line.includes("grep"));
-      if (lines.length === 0) {
-        return { healthy: true, label: "✓ no stale processes detected" };
-      }
-
-      // Simple heuristic: if we have more than 2 serve/node processes running,
-      // there may be zombies. This is a conservative check.
-      const staleCount = Math.max(0, lines.length - 2);
-      if (staleCount > 0) {
-        return {
-          healthy: false,
-          label: `⚠️ possibly stale — ${staleCount} extra process(es) running`,
-        };
-      }
-      return { healthy: true, label: "✓ processes look normal" };
-    } catch {
-      return { healthy: false, label: "? unable to check processes" };
+    const running =
+      typeof this.runner?.running === "function" ? this.runner.running() : ([] as unknown[]);
+    if (running.length === 0) {
+      return { healthy: true, label: "✓ no live agent turns" };
     }
+    return { healthy: true, label: `✓ ${running.length} tracked agent turn(s) running` };
   }
 
   private isTaskStuck(task: Task): boolean {

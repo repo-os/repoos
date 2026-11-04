@@ -182,9 +182,37 @@ export type AgentEvent =
 
 export const HANDOFF_READY_SIGNAL = "::repoos-handoff-ready::";
 
+/**
+ * The final instruction a pi engineer must see. pi is the driver that most often
+ * ends a turn with prose and no request (#0715, #1016): the launch mission and
+ * every resume turn therefore end with the same unambiguous trigger instead of
+ * relying on the checklist block being remembered from the first prompt.
+ */
+export function piHandoffInstruction(taskId: string): string {
+  return [
+    "## Finish the turn",
+    "",
+    `When the work is complete and \`repoos check\` passes, hand off explicitly: end your reply with \`${HANDOFF_READY_SIGNAL}\` or run \`repoos mv ${taskId} review\`.`,
+    "Both ask RepoOS to run the checks and move the task; neither changes the status yourself. If you are blocked, say what you need and do not hand off.",
+  ].join("\n");
+}
+
+/**
+ * Append the pi handoff instruction to a prompt unless it already carries the
+ * signal. Used for resume turns, whose text is often just "continue" and would
+ * otherwise never mention how to end the turn.
+ */
+export function withPiHandoffInstruction(text: string, taskId: string): string {
+  if (text.includes(HANDOFF_READY_SIGNAL)) return text;
+  const reminder = piHandoffInstruction(taskId);
+  return text.trim() ? `${text.trim()}\n\n${reminder}` : reminder;
+}
+
 /** Dev-error detail when finalization never reached a terminal sys line (#0501). */
 export const HANDOFF_FINALIZATION_INTERRUPTED_DETAIL =
-  "handoff finalization was interrupted (server reload) — restart work to hand off again";
+  "handoff finalization was interrupted (server reload) — restart work to hand off again. " +
+  "If the conversation is poisoned (the same failure repeats every turn), reset it with " +
+  "`repoos start <id> --fresh`";
 
 /** True for in-progress server finalization sys lines (not ok/failure summaries). */
 export function isHandoffFinalizationProgressSysLine(text: string): boolean {
@@ -226,6 +254,17 @@ export function sysLineDescribesFailure(text: string): boolean {
   return /\b(?:failed|failure|error|rejected|could not|couldn't|unable to|timed out|timeout|not found|denied|unauthorized)\b/i.test(
     t,
   );
+}
+
+/**
+ * Collapse arbitrary output to one bounded line for a task Activity entry.
+ * Clean-exit diagnostics are pasted into frontmatter, so keep them short and
+ * newline-free; the full transcript stays in the task drawer.
+ */
+function oneLineTail(value: string, maxChars: number): string {
+  const oneLine = stripNulBytes(value).replace(/\s+/g, " ").trim();
+  if (!oneLine) return "(empty)";
+  return oneLine.length > maxChars ? `${oneLine.slice(0, maxChars - 1)}…` : oneLine;
 }
 
 /** True when finalization started but never recorded complete/stopped/rejected. */
@@ -646,6 +685,8 @@ interface QueuedMessageRecord {
     skipBoardDivergence?: boolean;
     cwd?: string;
     emitHumanTurn?: boolean;
+    /** Automatic advisory message (CTO nudge) — never blocks a handoff. */
+    automatic?: boolean;
   };
   queuedAt: string;
 }
@@ -4061,6 +4102,9 @@ export function missionFor(
       SHOT_PREVIEW_FIXTURE_IDS.map((id) => `\`${id}\``).join(", ") +
       ". Keep it short: the shots a reviewer needs, usually 1–3. Shots are captured automatically only when the task declares them or the diff touches a UI target's paths and a route exists to shoot — a tests-only or docs-wording-only diff gets a visible `shots: skipped`, which is correct, not a failure. When the task is handed off to review, RepoOS captures declared shots through the managed preview (`repoos shot` by hand stays available), so writing the list is the whole job.",
   );
+  // #0715: pi tends to end a turn with prose instead of a handoff. Put the
+  // trigger last so it is the final thing in both the launch and resume prompt.
+  if (agent.cli === "pi") parts.push("", piHandoffInstruction(task.id));
   return parts.join("\n");
 }
 
@@ -5232,20 +5276,7 @@ export class AgentRunner {
   /** FIFO of deferred spawns, drained as running agents exit (see cleanup()). */
   private readonly startQueue: (() => void)[] = [];
   /** Queued messages for tasks whose agent is currently busy. Mapped by taskId to list of messages. */
-  private readonly queuedMessages = new Map<
-    string,
-    Array<{
-      text: string;
-      agent: Agent;
-      opts: {
-        resumePreamble?: string;
-        skipBoardDivergence?: boolean;
-        cwd?: string;
-        emitHumanTurn?: boolean;
-      };
-      queuedAt: string;
-    }>
-  >();
+  private readonly queuedMessages = new Map<string, QueuedMessageRecord[]>();
   /** Tracks when messages were queued for timeout purposes (ISO timestamps). */
   private readonly messageQueuedAt = new Map<string, string>();
   /** Message timeout for the overdue flag: 1 hour. Messages are never dropped. */
@@ -6544,6 +6575,12 @@ export class AgentRunner {
       skipBoardDivergence?: boolean;
       cwd?: string;
       emitHumanTurn?: boolean;
+      /**
+       * An automatic/advisory message (the CTO completion nudge). It is still
+       * delivered when the turn ends, but it must never defer a handoff the
+       * engineer already requested (#0715/#1016). A human message still does.
+       */
+      automatic?: boolean;
       /** Internal: an automatic resume keeps the crash guard (#0869). */
       fromCrashRecovery?: boolean;
     } = {},
@@ -6587,6 +6624,7 @@ export class AgentRunner {
       skipBoardDivergence?: boolean;
       cwd?: string;
       emitHumanTurn?: boolean;
+      automatic?: boolean;
     },
   ): StartResult {
     const messages = this.queuedMessages.get(id) ?? [];
@@ -6713,6 +6751,13 @@ export class AgentRunner {
       }
     }
     const fullText = (fullPreamble ? `${fullPreamble}\n\n${text}` : text).trim();
+    // #0715: a pi resume prompt is usually just "continue" (or a recovery
+    // instruction), so the handoff trigger must be appended here too. Only the
+    // engineer conversation gets it — a review/chat turn has its own ending.
+    const resumeText =
+      agent.cli === "pi" && classifySessionType(agent.name, id) === "engineer"
+        ? withPiHandoffInstruction(fullText, id)
+        : fullText;
     // session.sessionId is only meaningful to the CLI that produced it — if
     // agent.cli has since changed (override edited/cleared between turns),
     // reusing it would hand one CLI's session id to a different CLI's
@@ -6743,7 +6788,7 @@ export class AgentRunner {
         d: "Antigravity conversation id unavailable; starting a clearly-labelled fresh turn instead of guessing a session.",
       });
     }
-    const { cmd, args } = resumeCommand(agent, fullText, sessionId, cwd);
+    const { cmd, args } = resumeCommand(agent, resumeText, sessionId, cwd);
     return this.spawnOrQueue(id, cmd, args, cwd, session.task, session.branch, {
       skipBoardDivergence: opts.skipBoardDivergence,
       onSpawn,
@@ -7055,6 +7100,37 @@ export class AgentRunner {
   hasQueuedMessages(taskId: string): boolean {
     const msgs = this.queuedMessages.get(taskId);
     return !!msgs && msgs.length > 0;
+  }
+
+  /**
+   * Queued messages that must be read before a handoff may finalize (#0865).
+   * Automatic advisory messages (a CTO completion nudge) are excluded: they are
+   * delivered on the next turn, but a nudge that happened to queue while the
+   * engineer was working must not defer the very handoff it was nudging toward
+   * (#0715 — the #1016 Activity showed every turn deferred by one stale nudge).
+   */
+  private blockingQueuedMessages(taskId: string): QueuedMessageRecord[] {
+    return (this.queuedMessages.get(taskId) ?? []).filter((m) => m.opts?.automatic !== true);
+  }
+
+  private hasBlockingQueuedMessages(taskId: string): boolean {
+    return this.blockingQueuedMessages(taskId).length > 0;
+  }
+
+  /** Drop automatic advisory messages once a handoff owns the turn. */
+  private dropAutomaticQueuedMessages(taskId: string): number {
+    const msgs = this.queuedMessages.get(taskId);
+    if (!msgs?.length) return 0;
+    const kept = msgs.filter((m) => m.opts?.automatic !== true);
+    const dropped = msgs.length - kept.length;
+    if (!dropped) return 0;
+    if (kept.length) this.queuedMessages.set(taskId, kept);
+    else {
+      this.queuedMessages.delete(taskId);
+      this.messageQueuedAt.delete(taskId);
+    }
+    this.persistQueuedMessages();
+    return dropped;
   }
 
   /** Age in ms of the OLDEST queued message for this id, or null when none. */
@@ -8709,8 +8785,9 @@ export class AgentRunner {
    */
   private adoptHandoffRequestFile(taskId: string, entry: Entry): void {
     if (entry.handoffRequested || !entry.runId) return;
-    // A queued human message must be delivered before any handoff finalizes (#0865).
-    if (this.hasQueuedMessages(taskId)) return;
+    // A queued HUMAN message must be delivered before any handoff finalizes
+    // (#0865). An automatic CTO nudge does not block it (#0715).
+    if (this.hasBlockingQueuedMessages(taskId)) return;
     const root = this.config.root;
     const cacheDir = this.config.cacheDir;
     const request = readHandoffRequest(root, cacheDir, taskId);
@@ -9135,8 +9212,13 @@ export class AgentRunner {
     // #0865: a handoff requested while messages are still queued must not run
     // review before the engineer reads them. Defer it (and the queue stays
     // persisted) so the next turn delivers the messages first.
-    const queuedCount = this.queuedMessages.get(taskId)?.length ?? 0;
-    const handoffBlockedByQueue = queuedCount > 0;
+    // #0865/#0715: only a HUMAN message must be read before review. An
+    // automatic CTO nudge that queued while the engineer worked is advisory; it
+    // must not defer the handoff. #1016 showed the loop clearly: every turn
+    // ended `handoff_deferred: 1 queued message`, and the resumed turn read the
+    // stale nudge only for the next nudge to queue behind it.
+    const blockingQueuedCount = this.blockingQueuedMessages(taskId).length;
+    const handoffBlockedByQueue = blockingQueuedCount > 0;
     if (handoffBlockedByQueue) {
       const root = this.config.root;
       const cacheDir = this.config.cacheDir ?? ".repoos";
@@ -9148,7 +9230,7 @@ export class AgentRunner {
         clearHandoffRequest(root, cacheDir, taskId);
         this.recordTaskActivity(
           taskId,
-          `handoff_deferred: ${queuedCount} queued message(s) must be read before review`,
+          `handoff_deferred: ${blockingQueuedCount} queued message(s) must be read before review`,
         );
         this.appendLine(
           taskId,
@@ -9162,7 +9244,7 @@ export class AgentRunner {
           this.config,
           taskId,
           entry.runId ?? `turn-${Date.now()}`,
-          `${queuedCount} queued message(s) must be read before review`,
+          `${blockingQueuedCount} queued message(s) must be read before review`,
         );
         const outcomeTask = this.getTask?.(taskId) ?? entry.task;
         const outcomeAgent = outcomeTask ? resolveAgentForTask(this.config, outcomeTask) : null;
@@ -9236,10 +9318,22 @@ export class AgentRunner {
       taskForHandoff?.status === "active" &&
       !taskForHandoff.isArchived
     ) {
-      this.recordTaskActivity(
-        taskId,
+      // #0715: this line is the only thing a human (and the watchdog) sees for
+      // a turn that ended without a handoff. Recording just "it exited cleanly"
+      // hid a non-empty stderr and the assistant's final words, which are
+      // exactly what distinguishes "slow, still working" from "gave up/looped".
+      const reason = interruptedForQueue
+        ? `ended to deliver a queued message (exit code ${exitCode ?? "unknown"})`
+        : `exited with code ${exitCode ?? "unknown"}`;
+      const assistant = this.lastAssistantText(session);
+      const stderr = this.stderrTail(taskId, entry, wasReview, session);
+      const detail = [
         "engineer turn ended without a handoff: the turn exited cleanly and did not request review",
-      );
+        `reason: ${reason}`,
+        `last assistant: ${oneLineTail(assistant ?? "no assistant message", 240)}`,
+        `stderr: ${stderr ? oneLineTail(stderr, 320) : "(empty)"}`,
+      ].join(" · ");
+      this.recordTaskActivity(taskId, detail);
     }
     // Any non-clean exit that isn't a deliberate stop means the task is about
     // to sit silently in its current status with nothing left running — flag it
@@ -9341,7 +9435,11 @@ export class AgentRunner {
       this.crashedNoHandoff.delete(taskId);
       if (this.onEngineerProgress) queueMicrotask(() => this.onEngineerProgress?.(taskId));
     }
-    if (entry.handoffRequested && !this.hasQueuedMessages(taskId)) {
+    if (entry.handoffRequested && !this.hasBlockingQueuedMessages(taskId)) {
+      // Any automatic nudge that queued during this turn is now stale: the
+      // engineer is handing off, so drop it instead of delivering it and
+      // starting a pointless resumed turn after review.
+      this.dropAutomaticQueuedMessages(taskId);
       if (taskForHandoff && entry.branch && entry.workdir) {
         // Server is alive — finalize now for both clean and unclean exits (#0505).
         // Persist-at-signal time still covers a server crash mid-turn (#0235).
@@ -9866,6 +9964,48 @@ export class AgentRunner {
     return "the agent process exited with an error — open the task to see the full output";
   }
 
+  /** Last assistant prose in the transcript, for a clean-exit explanation. */
+  private lastAssistantText(session: Session | undefined): string | undefined {
+    if (!session) return undefined;
+    for (let i = session.lines.length - 1; i >= 0; i--) {
+      const line = session.lines[i];
+      if ("type" in line && line.type === "text" && line.text.trim()) return line.text.trim();
+    }
+    return undefined;
+  }
+
+  /**
+   * Tail of the durable stderr log for the turn that just ended. Engineers keep
+   * a stable `taskId.err.log`; a review uses `taskId.runId.err.log`. Falls back
+   * to replayed `err` transcript lines when the file is missing (adopted turns
+   * after a reload may not have a file this process wrote).
+   */
+  private stderrTail(
+    taskId: string,
+    entry: Entry,
+    wasReview: boolean,
+    session: Session | undefined,
+  ): string | undefined {
+    const stems = wasReview
+      ? [`${taskId}.${entry.runId}`, taskId]
+      : [taskId, `${taskId}.${entry.runId}`];
+    for (const stem of stems) {
+      try {
+        const raw = stripAnsi(readFileSync(join(this.logDir, `${stem}.err.log`), "utf8")).trim();
+        if (raw) return raw;
+      } catch {
+        /* no durable file for this turn */
+      }
+    }
+    if (!session) return undefined;
+    const lines: string[] = [];
+    for (let i = session.lines.length - 1; i >= 0 && lines.length < 8; i--) {
+      const line = session.lines[i];
+      if ("s" in line && line.s === "err" && line.d.trim()) lines.unshift(line.d.trim());
+    }
+    return lines.length ? lines.join("\n") : undefined;
+  }
+
   /** needs_input when a handoff was requested but never reached review (#0505). */
   private escalateHandoffExitWithoutFinalization(
     taskId: string,
@@ -9874,7 +10014,9 @@ export class AgentRunner {
     session: Session | undefined,
   ): void {
     const code = exitCode ?? "unknown";
-    const detail = `agent exited with code ${code} after requesting handoff — Restart work or click Review`;
+    const detail =
+      `agent exited with code ${code} after requesting handoff — Restart work or click Review. ` +
+      `If the conversation is poisoned, reset it with \`repoos start ${task.id} --fresh\`.`;
     this.persistHandoffFailure(taskId, task, detail);
     this.escalateFailedExit(taskId, task, session, detail);
   }
