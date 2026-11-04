@@ -1686,6 +1686,33 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       setShotPreviewAppliedAttr("drawer:statusChecksRunningNarrow");
       setNarrowDrawerWidth();
       break;
+    case "drawer:closeOutBuilding":
+    case "drawer:closeOutRemoteTests": {
+      ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
+      const startedAt = new Date(Date.now() - 4 * 60 * 1000).toISOString();
+      const building = fixture === "drawer:closeOutBuilding";
+      repo.integration = activePipeline(
+        SHOT_PREVIEW_FIXTURE_TASK_ID,
+        building ? null : "remote tests",
+        startedAt,
+        nowIso(),
+      );
+      if (building && repo.integration.active) {
+        repo.integration.active.stage = "building candidate";
+      }
+      pinnedIntegration = repo.integration;
+      break;
+    }
+    case "drawer:closeOutBuildingNarrow":
+      applyShotPreviewFixture(repo, "drawer:closeOutBuilding");
+      setShotPreviewAppliedAttr("drawer:closeOutBuildingNarrow");
+      setNarrowDrawerWidth();
+      break;
+    case "drawer:closeOutRemoteTestsNarrow":
+      applyShotPreviewFixture(repo, "drawer:closeOutRemoteTests");
+      setShotPreviewAppliedAttr("drawer:closeOutRemoteTestsNarrow");
+      setNarrowDrawerWidth();
+      break;
     case "drawer:statusConfirmingHandoffNarrow":
       applyShotPreviewFixture(repo, "drawer:statusConfirmingHandoff");
       setShotPreviewAppliedAttr("drawer:statusConfirmingHandoffNarrow");
