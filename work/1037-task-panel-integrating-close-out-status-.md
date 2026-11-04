@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 178459
-last_close_out_gate_at: "2026-11-04T21:50:44.213Z"
 id: 1037
 title: "Task panel: integrating/close-out status belongs in the info card above the tabs, not as a variable-width button in the action row"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 9f2ba1b992727f45f89009c57bde3d2c01d4ccff
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-panel-integrating-close-out-status-
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T18:25:01Z"
 updated_at: "2026-11-04T21:50:44Z"
+last_close_out_gate_ms: 178459
+last_close_out_gate_at: "2026-11-04T21:50:44.213Z"
 review_passes: 1
 ---
 ## Problem

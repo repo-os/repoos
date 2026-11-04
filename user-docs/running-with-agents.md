@@ -191,7 +191,8 @@ the underlying code or environment.
   **block handoff** (#0830). Auto-matched captures still record a target miss as
   a **warning** only (#0743). Tooltip and hover shots need a `hover` or `click`
   step plus a `state` fixture. Use `state` fixtures (`closeOut:active`,
-  `closeOut:uploading`, `closeOut:remoteTests`, `card:doneError`,
+  `closeOut:uploading`, `closeOut:remoteTests`, `drawer:closeOutBuilding`,
+  `drawer:closeOutRemoteTests`, `card:doneError`,
   `card:agentFailed`, `board:withReviewTask`, `board:cardChips`, `dev:failed`)
   when the UI only
   exists in a particular board

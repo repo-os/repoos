@@ -71,7 +71,10 @@ function pipeline(over: Partial<IntegrationPipelineSnapshot> = {}): IntegrationP
   };
 }
 
-function stubApi(task: Task, opts: { reviewRunning?: boolean } = {}): void {
+function stubApi(
+  task: Task,
+  opts: { reviewRunning?: boolean; review?: Record<string, unknown> | null } = {},
+): void {
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal(
     "fetch",
@@ -90,7 +93,7 @@ function stubApi(task: Task, opts: { reviewRunning?: boolean } = {}): void {
           ok: true,
           running: opts.reviewRunning ?? false,
           enabled: true,
-          review: null,
+          review: opts.review ?? null,
           lines: [],
         });
       if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
@@ -256,8 +259,61 @@ describe("task panel status label matches the board card (#1023)", () => {
 
     const expected = cardLabel(card);
     expect(expected).toContain("integrating · merge");
-    expect(drawer.text()).toContain(expected);
+    const summary = drawer.find(".drawer-status-summary");
+    expect(summary.text()).toContain(expected);
+    expect(summary.classes()).toContain("is-running");
+    const actionText = drawer
+      .findAll(".quickbar-row")
+      .map((row) => row.text())
+      .join("\n");
+    expect(actionText).not.toContain("integrating");
+    expect(actionText).toContain("Stop MTD");
+    expect(actionText).not.toContain("Move to done");
     card.unmount();
+    drawer.unmount();
+  });
+
+  it("folds close-out progress into a higher-priority card instead of a second line", async () => {
+    const task = makeTask({
+      status: "review",
+      branch: "feat/status-summary",
+      git: {
+        branchExists: true,
+        worktreeExists: true,
+        lastCommit: null,
+        lastCommitAt: null,
+        worktreePath: "/tmp/repo/.worktrees/0001",
+        dirty: false,
+      },
+    });
+    const report = {
+      id: task.id,
+      at: "2026-11-04T08:00:00.000Z",
+      agent: "reviewer",
+      cli: "opencode",
+      model: "default",
+      branch: "feat/status-summary",
+      state: "incomplete" as const,
+      markdown: "",
+    };
+    stubApi(task, { review: report });
+    const repo = useRepoStore();
+    repo.integration = pipeline();
+    repo.reviews = {
+      [task.id]: {
+        running: false,
+        enabled: true,
+        lines: [],
+        report,
+      },
+    };
+
+    const drawer = await mountDrawer(pinia, task);
+    const summaries = drawer.findAll(".drawer-status-summary");
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0].text()).toContain("Review failed");
+    expect(summaries[0].text()).toContain("integrating · merge");
+    expect(drawer.find(".quickbar-row").text()).not.toContain("integrating");
     drawer.unmount();
   });
 });
