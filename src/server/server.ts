@@ -230,6 +230,7 @@ import {
   scheduleMergeConflictRetry,
   type HandoffOrigin,
 } from "./handoff.js";
+import { deliverHandoffOutcome, readHandoffStatus } from "./handoff-status.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import {
   clearEngineerCrashRecoveryState,
@@ -408,6 +409,7 @@ import {
   getDiffForTask,
   getMergeConflictForTask,
   getTaskLandable,
+  getTaskHandoffStatus,
   getWorktreeDirtyForTask,
   getTaskFile,
   taskAction,
@@ -2093,6 +2095,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
               index.applyFileChange(absPath, { guarded: true }),
             );
           }
+          // #1028: the engineer's next turn opens with the outcome, so it never
+          // has to guess (or run the blocking `repoos review`) to learn it.
+          deliverHandoffOutcome(
+            config,
+            task.id,
+            readHandoffStatus(config, task.id),
+            runner,
+            resolveAgentForTask(config, task),
+          );
         } finally {
           if (reachedFinalization) runner.completeHandoffFinalization(request.taskId);
         }
@@ -3170,6 +3181,15 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       },
     })
       .then((result) => {
+        // #1028: queue the outcome for the engineer's next turn (never a new
+        // turn of its own) before the pass/fail branches below.
+        deliverHandoffOutcome(
+          config,
+          task.id,
+          readHandoffStatus(config, task.id),
+          runner,
+          resolveAgentForTask(config, task),
+        );
         if (result.ok) {
           // The finalization wrote both the worktree and the canonical copy;
           // re-read the canonical file into the live index as a guarded change
@@ -3716,6 +3736,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("GET", /^\/api\/tasks\/([^/]+)\/merge-conflict$/, getMergeConflictForTask);
   // Read-only landing pre-checks (#0867), shared with the approval policy.
   router.register("GET", /^\/api\/tasks\/([^/]+)\/landable$/, getTaskLandable);
+  // Non-blocking handoff outcome for `repoos handoff-status` (#1028).
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/handoff-status$/, getTaskHandoffStatus);
   // Uncommitted files in a task's worktree — fetched by the restart dialog so
   // "Start clean" can name what it would discard (#0512).
   router.register("GET", /^\/api\/tasks\/([^/]+)\/worktree-dirty$/, getWorktreeDirtyForTask);

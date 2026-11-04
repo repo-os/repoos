@@ -13,6 +13,7 @@ import {
   cmdAgentsRunning,
   cmdConfig,
   cmdDone,
+  cmdHandoffStatus,
   cmdLandable,
   cmdMessage,
   cmdOverride,
@@ -30,7 +31,8 @@ import {
   waitForReviewHandoff,
 } from "../../commands/control-api";
 import { RepoOsApi } from "../../cli/repoos-api";
-
+import { beginHandoffStatus, finishHandoffStatus } from "../../server/handoff-status";
+import type { RepoOSConfig } from "../../core/types";
 const tmpRoots: string[] = [];
 const FIXTURE_PREFIX = "repoos-cli-api-";
 
@@ -696,6 +698,52 @@ describe("control API CLI", () => {
     const out = log.mock.calls.map((c) => String(c[0])).join("\n");
     expect(out).toMatch(/src\/core\/types\.ts conflicts with main/);
     expect(out).toMatch(/next: Merge main into the branch/);
+    log.mockRestore();
+    health.mockRestore();
+    requestOk.mockRestore();
+  });
+
+  it("handoff-status API serves the latest attempt without blocking", async () => {
+    const fx = makeFixture(false);
+    await withServer(fx.root, async (s) => {
+      const id = await createReadyTask(s);
+      const config = { root: fx.root, cacheDir: ".repoos" } as RepoOSConfig;
+      beginHandoffStatus(config, id, { attemptKey: "run-api", origin: "agent" });
+      finishHandoffStatus(config, id, "run-api", {
+        ok: false,
+        step: "check",
+        detail: "repoos check failed: test failure",
+      });
+      const r = await api(s, "GET", `/api/tasks/${id}/handoff-status`);
+      expect(r.status).toBe(200);
+      expect(r.body).toMatchObject({
+        ok: true,
+        state: "failed",
+        step: "check",
+        reason: "repoos check failed: test failure",
+      });
+    });
+    killSpawns(fx);
+  });
+
+  it("handoff-status --json prints the state and exits 0", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const requestOk = vi.spyOn(RepoOsApi.prototype, "requestOk").mockResolvedValue({
+      taskId: "1028",
+      state: "not_requested",
+      step: null,
+      reason: null,
+      origin: null,
+      attempt: 0,
+      attemptKey: null,
+      outcomeQueued: false,
+      updatedAt: null,
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdHandoffStatus(["1028", "--json"]);
+    expect(code).toBe(0);
+    expect(requestOk).toHaveBeenCalledWith("GET", "/api/tasks/1028/handoff-status");
+    expect(JSON.parse(String(log.mock.calls[0]?.[0]))).toMatchObject({ state: "not_requested" });
     log.mockRestore();
     health.mockRestore();
     requestOk.mockRestore();
