@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-04T11:26:03Z"
-review_passes: 1
 id: 1028
 title: Tell the engineer the handoff result on its next turn; add non-blocking repoos handoff-status
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/tell-the-engineer-the-handoff-result-on-
 created_at: "2026-11-04T07:04:31Z"
+updated_at: "2026-11-04T11:25:02Z"
 ---
 ## Problem
 A runner engineer requests handoff with `repoos mv <id> review` or the `::repoos-handoff-ready::` line and ends its turn, then hears nothing about the outcome. On #1016 (`pi` + deepseek-v4.1-flash, 2026-11-04) the engineer could not tell whether a review had started, so it kept calling the blocking `repoos review 1016` itself, a call of up to 25 minutes that races the server-owned handoff. A failed handoff (format, check failure, queued check slot) costs a whole turn plus a watchdog or CTO nudge cycle before the engineer learns of it. #1016 took about 2h25m from start to handoff.
@@ -33,33 +32,4 @@ Evidence is in `.repoos/agent-logs/1016.out.log`. Touch the handoff gate and que
 - 2026-11-04T07:04:31Z · created · njachowski@gmail.com
 - 2026-11-04T08:19:52Z · status inbox→ready
 - 2026-11-04T08:19:55Z · status ready→active, branch
-- 2026-11-04T08:27:46Z · message_queued at 2026-11-04T08:27:46.342Z
-- 2026-11-04T08:27:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T08:32:46Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T08:59:10Z · body
-- 2026-11-04T09:05:43Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T09:25:02Z · body
-- 2026-11-04T09:40:08Z · queued message undelivered for 72m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-04T09:40:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T09:40:12Z · message_delivered: 1 message(s)
-- 2026-11-04T09:40:15Z · message_queued at 2026-11-04T09:40:15.986Z
-- 2026-11-04T09:40:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T09:45:10Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T09:52:50Z · body
-- 2026-11-04T10:06:27Z · body
-- 2026-11-04T10:40:18Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-04T10:40:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T10:40:38Z · message_delivered: 1 message(s)
-- 2026-11-04T10:45:49Z · message_queued at 2026-11-04T10:45:49.038Z
-- 2026-11-04T10:45:49Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T10:50:48Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T10:53:32Z · body
-- 2026-11-04T11:05:09Z · body
-- 2026-11-04T11:20:17Z · body
-- 2026-11-04T11:22:29Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-04T11:22:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T11:22:29Z · message_delivered: 1 message(s)
 - 2026-11-04T11:25:02Z · status active→review
-- 2026-11-04T11:25:03Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-11-04T11:26:02Z · note: review pass 1: good to go
-

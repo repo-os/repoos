@@ -107,6 +107,7 @@ import {
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
+import { readHandoffStatus } from "../handoff-status.js";
 import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
 import { checkGenericStatusPatch, checkHumanTaskStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
@@ -5045,6 +5046,18 @@ export const getTaskLandable: RouteHandler = async (ctx, _req, res, params) => {
   if (!task) return json(res, 404, { error: `Task #${id} not found` });
   const result = await gatherLandable(config, task, reviews.read(id));
   return json(res, 200, result);
+};
+
+/**
+ * Non-blocking handoff outcome for `repoos handoff-status <id>` (#1028).
+ * Reads the last attempt's persisted state; it never starts, waits for, or
+ * touches a handoff. A task with no attempt is `not_requested`, not an error.
+ */
+export const getTaskHandoffStatus: RouteHandler = async (ctx, _req, res, params) => {
+  const { index, config } = ctx;
+  const id = params.param1;
+  if (!index.getTask(id)) return json(res, 404, { error: `Task #${id} not found` });
+  return json(res, 200, { ok: true, ...readHandoffStatus(config, id) });
 };
 
 /** Return one file's committed contents from the task's before/after revisions. */

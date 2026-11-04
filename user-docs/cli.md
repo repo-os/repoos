@@ -227,6 +227,7 @@ done wait by default in human mode).
 | `repoos done <id> --cancel` (`repoos abort <id>`) | `POST /api/tasks/:id/done/cancel` |
 | `repoos api <METHOD> /api/<path> [--json body] [--port N]` | Any `/api/` route |
 | `repoos landable <id>` | `GET /api/tasks/:id/landable` — read-only merge readiness checks; exits non-zero unless the task is ready to merge (`--json` for a stable checklist shape) |
+| `repoos handoff-status <id>` | `GET /api/tasks/:id/handoff-status` — non-blocking latest handoff state (`not_requested`, `running`, `passed`, `failed`, `deferred`), step and reason; never starts or waits for a handoff |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
 | `repoos dev [list]` · `repoos dev <name> start\|stop\|restart\|status\|logs` | `GET`/`POST /api/dev/targets` |
@@ -708,6 +709,21 @@ repoos shot --selector ".sidebar"    # capture one element instead of the page
 repoos shot --wait 2000              # wait longer before capturing (default 900ms)
 repoos shot https://example.test/x   # capture an arbitrary URL
 repoos shot --target "macOS app"     # run a command capture target (non-web app)
+```
+
+### `repoos handoff-status`
+
+Prints the latest handoff attempt for a task and returns immediately: `not
+requested`, `running`, `passed`, `failed` or `deferred`, with the current step
+and any failure/deferral reason. It never starts, waits for, or changes a
+handoff, so it is safe to call while a finalization is running — including from
+an engineer that is unsure whether its request reached the server. After a
+pass, fail or deferral, RepoOS also queues one message with the outcome for the
+engineer's next turn, so request-then-end-turn needs no polling.
+
+```bash
+repoos handoff-status 1028
+repoos handoff-status 1028 --json
 ```
 
 ### `repoos review again`

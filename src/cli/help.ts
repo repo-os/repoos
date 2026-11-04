@@ -181,6 +181,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--json · --port",
       },
       {
+        name: "handoff-status",
+        usage: "handoff-status <id> [--json] [--port N]",
+        desc: "Non-blocking state of the latest handoff attempt: not requested, running, passed, failed or deferred (GET /api/tasks/:id/handoff-status)",
+        flags: "--json · --port",
+      },
+      {
         name: "override",
         usage: "override <id> [--cli <name>] [--model <model>] [--json] [--port N]",
         desc: "Set per-task engineer overrides (PATCH /api/tasks/:id). --help prints the agent-driver budget allowlist",
