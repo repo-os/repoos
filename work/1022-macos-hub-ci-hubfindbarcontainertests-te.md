@@ -43,3 +43,4 @@ This needs a macOS runner to confirm: the fix cannot be fully verified locally i
 - 2026-11-04T20:01:58Z · body
 - 2026-11-04T20:03:44Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T20:03:48Z · status active→review
+- 2026-11-04T20:03:48Z · message_queued at 2026-11-04T20:03:48.628Z
