@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T10:15:11Z"
+updated_at: "2026-11-04T10:20:11Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
@@ -68,3 +68,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T10:04:39Z · message_delivered: 1 message(s)
 - 2026-11-04T10:15:10Z · message_queued at 2026-11-04T10:15:10.809Z
 - 2026-11-04T10:15:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T10:20:11Z · CTO nudge: held — an undelivered message is already queued
