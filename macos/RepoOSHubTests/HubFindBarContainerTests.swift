@@ -105,24 +105,42 @@ final class HubFindBarContainerTests: XCTestCase {
         container.presentFindInterface()
         settleFocusWindow(window)
         XCTAssertTrue(
-            container.containsKeyboardFocus(in: window),
+            Self.findBarOwnsFocus(in: window, findBar: container.findBar),
             "the find field must hold focus before Done closes the bar"
         )
 
         container.hideFindInterface()
         let deadline = Date().addingTimeInterval(1)
-        while Date() < deadline,
-            !container.containsKeyboardFocus(in: window)
-                || container.isFindBarVisible
-        {
+        while Date() < deadline {
+            if !container.isFindBarVisible, window.firstResponder === container.webView {
+                break
+            }
             RunLoop.main.run(until: Date().addingTimeInterval(0.05))
         }
 
         XCTAssertFalse(container.isFindBarVisible)
         XCTAssertTrue(
-            container.containsKeyboardFocus(in: window),
-            "keyboard focus must return to the page after hiding the find bar"
+            window.firstResponder === container.webView,
+            "hideFindInterface must make the web view first responder when the bar had focus"
         )
+    }
+
+    /// Matches `HubServerWebContainerView`'s find-bar focus bookkeeping: the
+    /// search field, its subviews, or the shared field editor editing that field.
+    @MainActor
+    private static func findBarOwnsFocus(in window: NSWindow, findBar: HubFindBarView) -> Bool {
+        if let view = window.firstResponder as? NSView,
+            view === findBar || view.isDescendant(of: findBar)
+        {
+            return true
+        }
+        if let editor = window.firstResponder as? NSTextView,
+            let control = editor.delegate as? NSControl,
+            control === findBar.searchField
+        {
+            return true
+        }
+        return false
     }
 
     /// Lets AppKit install key-window focus and `hideFindInterface`'s async

@@ -50,10 +50,13 @@ installation copy.
   hosted a real `WKWebView` in an `NSWindow` without the teardown pattern other
   Hub window tests use (`isReleasedWhenClosed = false`, `orderOut`, nil
   `contentView`, a short main-run-loop drain). That abort looked like an instant
-  (0.000 s) failure on CI. The fix keeps the same product assertion—focus
-  returns to the page via `containsKeyboardFocus(in:)` after `hideFindInterface`
-  — but settles key-window focus before presenting the bar, polls through the
-  async first-responder handoff, and tears the window down safely.
+  (0.000 s) failure on CI. The fix keeps the original strict check that
+  `hideFindInterface` makes the web view first responder (`window.firstResponder
+  === webView`, matching the production `makeFirstResponder` call), verifies
+  the find field held focus first (field editor delegate or find-bar subtree),
+  settles key-window focus before presenting the bar, polls through the async
+  handoff, and tears the window down safely so XCTest's memory checker does not
+  abort at scope exit.
 - **`LocalServerDiscoveryTests`** still compiled with Swift 6 concurrency
   warnings (`NSLock` and a captured `var` in `onUpdate`); those were cleaned up
   with `OSAllocatedUnfairLock` so a future strict mode does not turn warnings
