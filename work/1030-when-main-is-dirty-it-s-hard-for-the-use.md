@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
@@ -229,3 +230,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T15:20:37Z · body
 - 2026-11-04T15:31:04Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-04T15:32:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+
