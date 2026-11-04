@@ -92,6 +92,34 @@ consistent. Use `repoos mv`, `repoos update`, `repoos note`, or the UI.
 | `review` | Implementation finished and checks pass. Waiting on a human. |
 | `done` | Approved and merged. |
 
+## Pipeline view
+
+The Work Queue page has two views, switched with the **Pipeline | Board**
+toggle in the header. **Board** is the default and shows every status.
+**Pipeline** is a horizontal race track for the work in flight: one lane per
+task in `active` or `review`, plus recently merged tasks. Your last choice is
+remembered.
+
+Lanes run through six stage columns, left to right: **Coding**, **Checks**,
+**Handoff**, **Review**, **Close-out**, **Merged**. Each card sits in the
+column of its current stage and moves backwards too — when review sends a
+task back, it returns to Coding with a small amber "sent back" note on its
+lane. `ready` tasks are not lanes; a **Ready · n** count sits at the left
+edge. The **Merged** column is the tinted goal: recently merged tasks sit in
+it for ten minutes, then drop off the track.
+
+Stuck, needs-input, paused and held are states, not stages: the card stays
+where it stalled, with a red (stuck), amber (needs input) or green (merged)
+chip, and held/paused cards render dimmed.
+
+Each card shows four lines: id, type and priority; the title; the live step
+("Coding", "Running checks 3/5", "Confirming handoff", "In review",
+"Merging") with time in this state; and the engineer round (`E2`), reviewer
+round (`R1 ✓`), model(s) and run host (`this Mac` or the remote host name).
+Click a card to open the task panel, exactly like a board card. The small
+icon button (pause, resume, or a check mark once merged) acts without opening
+the panel and is reachable by keyboard.
+
 ## Archiving a task
 
 Archive parks a task you don't intend to finish right now **without changing

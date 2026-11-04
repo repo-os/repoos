@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 695421
-last_close_out_gate_at: "2026-11-04T19:59:22.178Z"
 id: 1035
 title: "Work page: Pipeline view (horizontal race track for active and review tasks)"
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: b8725635dfb256ec9a7c5243b0097231a991d6b7
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
 updated_at: "2026-11-04T19:59:22Z"
+last_close_out_gate_ms: 695421
+last_close_out_gate_at: "2026-11-04T19:59:22.178Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-11-04T18:48:31.070Z: repoos check failed: reused check inputs changed during handoff — run the check again"
