@@ -1624,8 +1624,6 @@ async function openDebuggerFromError(): Promise<void> {
           data-test-id="task-card-needs-input-detail"
           :aria-label="`${needsInputDetailLine}. Open Status details.`"
           @click.stop="onNeedsInputDetailClick"
-          @keydown.enter.stop="onNeedsInputDetailClick"
-          @keydown.space.prevent.stop="onNeedsInputDetailClick"
         >
           {{ needsInputDetailLine }}
           <span class="diagnostic-details-affordance">Details</span>

@@ -5853,8 +5853,6 @@ watch(
                   data-test-id="drawer-needs-input-detail"
                   :aria-label="`${activeNeedsInputDetailLine}. Open Status details.`"
                   @click="openStatusDetails"
-                  @keydown.enter.prevent="openStatusDetails"
-                  @keydown.space.prevent="openStatusDetails"
                 >
                   {{ activeNeedsInputDetailLine }}
                   <span class="diagnostic-details-affordance">Details</span>
