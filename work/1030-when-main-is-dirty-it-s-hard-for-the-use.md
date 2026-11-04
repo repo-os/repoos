@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T14:26:20Z"
+updated_at: "2026-11-04T14:27:04Z"
 dev_error_count: 5
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:22:51.475Z\",\"kind\":\"dev-error\"}]"
@@ -115,31 +115,16 @@ states, panel open/close with shared width, commit success/error paths with the 
 ```json
 [
 {
-  "label": "Full-width dirty-main button under the sidebar git row",
+  "label": "Sidebar dirty-main button and uncommitted-changes panel",
   "target": "default",
   "route": "/",
-  "highlight": "[data-test-id=\"side-git-dirty\"]",
+  "highlight": ".side-git-dirty",
   "steps": [
     {
-      "waitMs": 300
-    }
-  ],
-  "state": "repo:dirtyMain"
-},
-{
-  "label": "Uncommitted-changes panel with file list, inline diff and commit box",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-testid=\"repo-dirty-panel\"]",
-  "steps": [
-    {
-      "click": "[data-test-id=\"side-git-dirty\"]"
+      "waitFor": ".side-git-dirty"
     },
     {
-      "waitFor": "[data-testid=\"repo-dirty-panel\"]"
-    },
-    {
-      "waitMs": 400
+      "waitMs": 200
     }
   ],
   "state": "repo:dirtyMain"
@@ -217,3 +202,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T14:26:10Z · body
 - 2026-11-04T14:26:16Z · body
 - 2026-11-04T14:26:20Z · body
+- 2026-11-04T14:27:04Z · body
