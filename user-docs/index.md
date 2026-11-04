@@ -4,7 +4,7 @@ layout: home
 hero:
   name: 'RepoOS'
   text: The repo is the operating system.
-  tagline: Tasks are markdown files in your repo, worked by agents in isolated git worktrees — you review and merge, not them.
+  tagline: Your AI dev team, living in your repo, for CTOs and builders.
   actions:
     - theme: brand
       text: Get started
