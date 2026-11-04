@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: cursor
-model_override: composer-2.5
+model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:40Z"
-updated_at: "2026-11-04T21:48:44Z"
+updated_at: "2026-11-04T21:48:50Z"
 ---
 ## Problem
 v0.5.75 QA on clean Debian 13 found install-method issues:
@@ -41,3 +41,4 @@ Source: external QA report on v0.5.75 (items 1, 5, 8, 9, 10, 11, 20). Changing t
 - 2026-11-04T06:45:40Z · created · njachowski@gmail.com
 - 2026-11-04T21:48:42Z · cli_override
 - 2026-11-04T21:48:44Z · model_override
+- 2026-11-04T21:48:50Z · model_override
