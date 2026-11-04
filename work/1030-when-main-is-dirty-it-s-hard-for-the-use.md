@@ -169,3 +169,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T13:27:46Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T13:27:46Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T13:27:53Z · needs_input
+- 2026-11-04T13:27:53Z · message_delivered: 1 message(s)
