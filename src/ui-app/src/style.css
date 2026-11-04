@@ -8597,16 +8597,15 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-button.agent-waiting-detail {
+.agent-waiting-detail--action {
   width: 100%;
   padding: 0;
   border: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  font: inherit;
 }
-button.agent-waiting-detail:focus-visible {
+.agent-waiting-detail--action:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 4px;
