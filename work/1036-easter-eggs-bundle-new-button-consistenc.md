@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:53:42Z"
+updated_at: "2026-11-04T19:08:13Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -67,13 +67,6 @@ The popover closes itself after 15 seconds, fading out smoothly rather than disa
 ### Notes for AI
 
 Find the popover from the robot icon in the board card component under src/ui-app/src/components. Reuse the existing styled popover, no native tooltip. Source: Nick, 2026-11-04. Moved here from #1026 (was E7 there).
-
-## Screenshots
-
-![4](/api/tasks/1036/attachments/att_ff8d8ab7-9f80-4d8d-9282-691190506b8b.png)
-![5](/api/tasks/1036/attachments/att_0f3fe446-3b8b-4f80-b171-a4b8982c0288.png)
-![6](/api/tasks/1036/attachments/att_e2f6d405-3c84-4ac6-ba15-4653d9b1cc13.png)
-![7](/api/tasks/1036/attachments/att_c1ed2892-fe58-41a6-987d-d8211aa48a65.png)
 
 ## E3 · Driver brief and CTO digest: no "stalled" while a check has a live heartbeat
 ### Problem
@@ -138,6 +131,13 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 ]
 ```
 
+## Screenshots
+
+![4](/api/tasks/1036/attachments/att_ff8d8ab7-9f80-4d8d-9282-691190506b8b.png)
+![5](/api/tasks/1036/attachments/att_0f3fe446-3b8b-4f80-b171-a4b8982c0288.png)
+![6](/api/tasks/1036/attachments/att_e2f6d405-3c84-4ac6-ba15-4653d9b1cc13.png)
+![7](/api/tasks/1036/attachments/att_c1ed2892-fe58-41a6-987d-d8211aa48a65.png)
+
 ## Activity
 
 - 2026-11-04T17:57:32Z · created · njachowski@gmail.com
@@ -159,3 +159,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T18:48:47Z · note: adopted orphaned engineer pid 50901
 - 2026-11-04T18:50:42Z · body
 - 2026-11-04T18:53:42Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T19:08:13Z · body
