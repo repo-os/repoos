@@ -2,16 +2,16 @@
 id: 1033
 title: "Hold dialog: styled fields, optional reason, and held-card padding"
 type: bug
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/hold-dialog-styled-fields-optional-reaso
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T13:14:03Z"
-updated_at: "2026-11-04T23:49:17Z"
+updated_at: "2026-11-04T23:49:19Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 - 2026-11-04T23:49:03Z · status inbox→ready
 - 2026-11-04T23:49:16Z · cli_override
 - 2026-11-04T23:49:17Z · model_override
+- 2026-11-04T23:49:19Z · status ready→active, branch
