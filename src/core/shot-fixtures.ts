@@ -15,6 +15,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "checks:reuse",
   // Populated Work and Stories pages for full-height layout captures (#0951).
   "pages:scroll",
+  // #1030 — a dirty repo-root checkout, for the sidebar's full-width amber
+  // button and the uncommitted-changes panel it opens.
+  "repo:dirtyMain",
   // #0778 — like closeOut:active, but the attempt has been idle past the stall
   // threshold, so the task card renders the stalled Cancel/Retry actions.
   "closeOut:stalled",

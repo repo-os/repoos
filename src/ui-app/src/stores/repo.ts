@@ -20,6 +20,7 @@ import {
   isShotPreviewCaptureActive,
   readShotPreviewFixtureFromLocation,
   seedShotPreviewDebugLogs,
+  shotFixturePinnedGitStatus,
   shotFixturePinnedIntegration,
   shotFixturePinnedSystemStats,
   shotFixturePinnedTaskRemoteActivity,
@@ -2298,6 +2299,14 @@ export const useRepoStore = defineStore("repo", () => {
    * and so does the very first payload — there is nothing to debounce against.
    */
   function applyGitStatus(next: RepoStatus): void {
+    // A `repo:dirtyMain` capture pins the status so the async initial fetch
+    // (and any SSE push) cannot flip the seeded dirty checkout to clean
+    // mid-capture (#1030). Only preview fixtures write this.
+    const pinned = shotFixturePinnedGitStatus();
+    if (pinned) {
+      gitStatus.value = pinned;
+      return;
+    }
     const previous = gitStatus.value;
     if (gitStatusDirtyTimer) {
       clearTimeout(gitStatusDirtyTimer);
