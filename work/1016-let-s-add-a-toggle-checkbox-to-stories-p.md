@@ -11,7 +11,7 @@ branch: feat/add-hide-completed-stories-toggle-to-sto
 cli_override: pi
 model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-11-03T09:13:40Z"
-updated_at: "2026-11-04T04:32:51Z"
+updated_at: "2026-11-04T04:37:43Z"
 ---
 ## Problem
 
@@ -101,3 +101,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 - 2026-11-04T04:32:43Z · message_queued at 2026-11-04T04:32:43.428Z
 - 2026-11-04T04:32:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T04:32:51Z · body
+- 2026-11-04T04:37:43Z · CTO nudge: held — an undelivered message is already queued
