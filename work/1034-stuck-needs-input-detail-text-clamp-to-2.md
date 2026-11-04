@@ -2,7 +2,7 @@
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -163,3 +163,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T18:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T18:05:51Z · message_queued at 2026-11-04T18:05:51.071Z
 - 2026-11-04T18:05:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: All fixes are in and verified on the final tree. Requesting handoff. · stderr: (empty)
+- 2026-11-04T18:05:51Z · status active→review
