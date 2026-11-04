@@ -14,7 +14,6 @@ created_at: "2026-11-04T10:30:51Z"
 updated_at: "2026-11-04T15:32:23Z"
 dev_error_count: 8
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:22:51.475Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:31:00.002Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:31:46.150Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:45:47.862Z\",\"kind\":\"dev-error\"}]"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -130,10 +129,10 @@ states, panel open/close with shared width, commit success/error paths with the 
 "highlight": "[data-testid=\"repo-dirty-panel\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"side-git-dirty\"]"
+"click": "[data-test-id=\"side-git-dirty\"]"
 },
 {
-  "waitMs": 600
+"waitMs": 600
 }
 ],
 "state": "repo:dirtyMain"
