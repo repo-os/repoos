@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 662473
-last_close_out_gate_at: "2026-11-04T18:10:32.569Z"
 id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: d4d170aae7937632f5ad15bac56f8ab2d5656d58
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T10:30:51Z"
 updated_at: "2026-11-04T18:10:32Z"
+last_close_out_gate_ms: 662473
+last_close_out_gate_at: "2026-11-04T18:10:32.569Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 9
