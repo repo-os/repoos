@@ -356,6 +356,14 @@ onMounted(() => {
           <div>
             <strong>{{ row.title }}</strong>
             <span class="schedule-id">#{{ row.id }}</span>
+            <span
+              v-if="row.templateUnderspecified"
+              class="schedule-template-warn"
+              data-testid="schedule-template-warn"
+              :title="row.templateUnderspecifiedDetail"
+            >
+              Template incomplete
+            </span>
           </div>
           <Switch
             :data-testid="`schedule-enabled-${row.id}`"
@@ -603,6 +611,16 @@ onMounted(() => {
   margin-left: 8px;
   color: var(--txt-dim);
   font-size: 12px;
+}
+.schedule-template-warn {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warn, var(--status-warn, #b8860b));
+  border: 1px solid color-mix(in srgb, var(--warn, #b8860b) 45%, transparent);
+  border-radius: 999px;
+  padding: 1px 8px;
+  vertical-align: middle;
 }
 .schedule-kv {
   --kv-label-w: 7.5rem;

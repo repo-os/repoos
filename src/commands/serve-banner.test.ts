@@ -13,6 +13,25 @@ describe("renderServeBanner", () => {
     expect(out).toContain("Local          http://127.0.0.1:7515");
   });
 
+  it("names the bind address on localhost and tailnet rows", () => {
+    const localOnly = renderServeBanner("1.0.0", [
+      { label: "Bind", value: "127.0.0.1 (localhost only)" },
+      { label: "Local", value: "http://127.0.0.1:7515" },
+    ]);
+    expect(localOnly).toMatch(/Bind\s+127\.0\.0\.1/);
+
+    const tailscale = renderServeBanner("1.0.0", [
+      {
+        label: "Bind",
+        value: "0.0.0.0 (all interfaces — Tailscale detected; pass --host 127.0.0.1 for localhost only)",
+      },
+      { label: "Local", value: "http://127.0.0.1:7515" },
+      { label: "Tailnet", value: "http://100.64.0.1:7515" },
+    ]);
+    expect(tailscale).toMatch(/Bind\s+0\.0\.0\.0/);
+    expect(tailscale).toContain("--host 127.0.0.1");
+  });
+
   it("splits an HTTPS warning into problem, fix and link", () => {
     const out = renderServeBanner(
       "1.2.3",

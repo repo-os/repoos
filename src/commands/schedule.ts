@@ -18,6 +18,7 @@ import {
   createSchedule,
   getSchedule,
   listSchedules,
+  scheduleTemplateWarning,
   updateSchedule,
   validateScheduleInput,
   type ScheduleCreateInput,
@@ -183,6 +184,19 @@ function flagsToCreateInput(
   };
 }
 
+function printScheduleTemplateWarning(input: ScheduleCreateInput): void {
+  const detail = scheduleTemplateWarning({
+    body: input.body ?? "",
+    taskArea: input.taskArea,
+    taskAssignedTo: input.taskAssignedTo,
+  });
+  if (detail) {
+    console.log(
+      c.yellow("  warning: ") + c.dim("schedule template is underspecified — ") + detail,
+    );
+  }
+}
+
 export function cmdScheduleList(args: string[]): void {
   const { flags, error } = parseScheduleFlags(args);
   if (error) {
@@ -260,6 +274,7 @@ export function cmdScheduleNew(args: string[]): void {
     const created = createSchedule(config, input);
     const committed = commitSchedule(config.root, created.path, created.id, "create");
     console.log(c.green(`  created schedule #${created.id}  ${created.title}`));
+    printScheduleTemplateWarning(input);
     if (!committed) console.log(c.yellow("  warning: ") + c.dim("file left uncommitted"));
   } catch (err) {
     console.error(c.red(`  ${(err as Error).message}`));
@@ -307,6 +322,8 @@ export function cmdScheduleUpdate(args: string[]): void {
     const updated = updateSchedule(config, existing.id, patch);
     const committed = commitSchedule(config.root, updated.path, updated.id, "update");
     console.log(c.green(`  updated schedule #${updated.id}`));
+    const merged = flagsToCreateInput(flags, existing);
+    if (merged) printScheduleTemplateWarning(merged);
     if (!committed) console.log(c.yellow("  warning: ") + c.dim("file left uncommitted"));
   } catch (err) {
     console.error(c.red(`  ${(err as Error).message}`));

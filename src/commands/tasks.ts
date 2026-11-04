@@ -144,7 +144,7 @@ async function listTasksViaApi(
     return { rootName: root.split("/").pop() ?? "repo", tasks };
   } catch (error) {
     console.warn(
-      `[repoos] task API unavailable; falling back to the local index: ${error instanceof Error ? error.message : String(error)}`,
+      `[repoos] Server unavailable — using local index. Start with \`repoos serve\`.`,
     );
     return null;
   }

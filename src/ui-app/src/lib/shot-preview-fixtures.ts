@@ -618,6 +618,8 @@ export function shotFixtureSchedules(fixture: ShotPreviewFixtureId | null): Task
       createdAt: now,
       updatedAt: now,
       path: "schedules/0001-weekly-doc-audit.md",
+      templateUnderspecified: true,
+      templateUnderspecifiedDetail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI",
     },
     {
       id: "0002",
@@ -646,6 +648,8 @@ export function shotFixtureSchedules(fixture: ShotPreviewFixtureId | null): Task
       createdAt: now,
       updatedAt: now,
       path: "schedules/0002-daily-health-check.md",
+      templateUnderspecified: false,
+      templateUnderspecifiedDetail: "",
     },
   ];
 }
