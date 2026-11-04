@@ -273,7 +273,8 @@ const WORK_VIEW_STORAGE_KEY = "repoos.work.view-mode";
 const viewMode = ref<WorkViewMode>("board");
 function loadWorkViewMode(): void {
   try {
-    viewMode.value = localStorage.getItem(WORK_VIEW_STORAGE_KEY) === "pipeline" ? "pipeline" : "board";
+    viewMode.value =
+      localStorage.getItem(WORK_VIEW_STORAGE_KEY) === "pipeline" ? "pipeline" : "board";
   } catch {
     viewMode.value = "board";
   }

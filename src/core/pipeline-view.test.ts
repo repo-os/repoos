@@ -41,12 +41,20 @@ const NOW = Date.parse("2026-11-04T12:00:00.000Z");
 
 describe("resolvePipelineCard", () => {
   it("maps a running engineer to Coding", () => {
-    expect(resolvePipelineCard(base(), NOW)).toMatchObject({ stage: "coding", stepLabel: "Coding" });
+    expect(resolvePipelineCard(base(), NOW)).toMatchObject({
+      stage: "coding",
+      stepLabel: "Coding",
+    });
   });
 
   it("maps an idle active task to Coding / Paused with dimming", () => {
     const m = resolvePipelineCard(base({ running: false }), NOW);
-    expect(m).toMatchObject({ stage: "coding", state: "paused", stepLabel: "Paused", dimmed: true });
+    expect(m).toMatchObject({
+      stage: "coding",
+      state: "paused",
+      stepLabel: "Paused",
+      dimmed: true,
+    });
   });
 
   it("maps a queued agent start to Coding / Queued without pausing", () => {
@@ -100,11 +108,14 @@ describe("resolvePipelineCard", () => {
   });
 
   it("maps a queued close-out and a stalled one distinctly", () => {
-    expect(resolvePipelineCard(base({ status: "review", closeoutQueued: true }), NOW)).toMatchObject(
-      { stage: "closeout", stepLabel: "Queued for close-out" },
-    );
     expect(
-      resolvePipelineCard(base({ status: "review", closeoutActive: true, closeoutStalled: true }), NOW),
+      resolvePipelineCard(base({ status: "review", closeoutQueued: true }), NOW),
+    ).toMatchObject({ stage: "closeout", stepLabel: "Queued for close-out" });
+    expect(
+      resolvePipelineCard(
+        base({ status: "review", closeoutActive: true, closeoutStalled: true }),
+        NOW,
+      ),
     ).toMatchObject({ stage: "closeout", stepLabel: "Close-out stalled" });
   });
 
@@ -164,7 +175,10 @@ describe("isPipelineVisible", () => {
 
   it("falls back to updated_at when releasedAt is missing", () => {
     expect(
-      isPipelineVisible(base({ status: "done", updatedAt: new Date(NOW - 1000).toISOString() }), NOW),
+      isPipelineVisible(
+        base({ status: "done", updatedAt: new Date(NOW - 1000).toISOString() }),
+        NOW,
+      ),
     ).toBe(true);
     expect(isPipelineVisible(base({ status: "done", updatedAt: null }), NOW)).toBe(false);
   });
