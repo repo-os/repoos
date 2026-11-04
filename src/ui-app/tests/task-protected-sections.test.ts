@@ -507,9 +507,13 @@ describe("section helpers", () => {
   });
 
   it("replaceSection on a body with only Activity inserts before it (#1031)", () => {
-    const activityOnly = ["Some text.", "", "## Activity", "", "- 2026-01-01T00:00:00Z · created"].join(
-      "\n",
-    );
+    const activityOnly = [
+      "Some text.",
+      "",
+      "## Activity",
+      "",
+      "- 2026-01-01T00:00:00Z · created",
+    ].join("\n");
     const out = replaceSection(activityOnly, "## Problem", "Problem text.");
     expect(out.indexOf("## Problem")).toBeLessThan(out.indexOf("## Activity"));
     expect(out.split("## Activity").length - 1).toBe(1);
