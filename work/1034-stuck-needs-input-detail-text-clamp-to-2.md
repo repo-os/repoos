@@ -157,3 +157,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T17:42:23Z · message_queued at 2026-11-04T17:42:23.979Z
 - 2026-11-04T17:42:24Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/task-card-review-rounds-detail.test.ts > review-rounds-exhausted card detail (#0832) > clamps long detail and does not repeat the verdict under the status chip, tests/task-check-wait-detail-clamp.test.ts > check-wait diagnostic clamp (#1034) > clamps the card detail line and keeps the full text in Status details, tests/task-drawer-status-summary.test.ts > task drawer status summary (#0952) > keeps the landable checklist off the card and opens Status details on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-04T17:43:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T17:56:54Z · note: handoff requested (cli)
