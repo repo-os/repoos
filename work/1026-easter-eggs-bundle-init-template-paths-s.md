@@ -2,14 +2,14 @@
 id: 1026
 title: "Easter eggs bundle: init template paths, serve banner, CLI docs and empty-repo edge cases"
 type: chore
-status: inbox
+status: ready
 priority: p2
 area: [core, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T17:58:02Z"
+updated_at: "2026-11-04T18:35:52Z"
 ---
 ## Items
 - E1 · Generated AGENTS.md template references nonexistent paths
@@ -173,3 +173,4 @@ Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the 
 - 2026-11-04T17:57:42Z · body: E7 · Task-card agent popover auto-closes after a configurable delay (removed 11)
 - 2026-11-04T17:57:49Z · body: Items (added 1, removed 1)
 - 2026-11-04T17:58:02Z · body: E7 · Flag underspecified schedule templates on save (added); E7 · Task-card agent popover auto-closes after a configurable delay (removed)
+- 2026-11-04T18:35:52Z · status inbox→ready
