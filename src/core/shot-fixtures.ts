@@ -27,6 +27,12 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0799 — an active close-out in the remote test run, so a capture can show
   // a non-upload stage heartbeat ("remote tests" + elapsed) on the card.
   "closeOut:remoteTests",
+  // #1037 — task drawer during close-out, so the step and elapsed time sit on
+  // the status line under the preview row at normal and narrow panel widths.
+  "drawer:closeOutBuilding",
+  "drawer:closeOutBuildingNarrow",
+  "drawer:closeOutRemoteTests",
+  "drawer:closeOutRemoteTestsNarrow",
   // #0897 — one host mid close-out with a handoff check queued behind it, so a
   // capture shows job kind, per-phase timings, queue position and the blocker.
   "runners:queued",

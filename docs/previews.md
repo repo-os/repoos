@@ -466,6 +466,12 @@ fixture the preview applies before capture (preview builds only, via
 - `closeOut:remoteTests` — active close-out in the remote test run; card shows
   the "remote tests" step heartbeat and elapsed time, not stalled (`#9999`
   fixture task, #0799)
+- `drawer:closeOutBuilding` / `drawer:closeOutBuildingNarrow` — review drawer
+  for `#9999` while close-out is on **building candidate**; the step and elapsed
+  time are the status line under the preview row. The narrow variant sets the
+  panel to 360px (#1037)
+- `drawer:closeOutRemoteTests` / `drawer:closeOutRemoteTestsNarrow` — same
+  drawer during **remote tests** (#1037)
 - `runners:queued` — Remote runners panel with a close-out running on `bee` and
   a handoff check queued behind it, showing each job's kind, per-phase timings,
   queue position and blocker; also seeds `#9999` with a live remote close-out

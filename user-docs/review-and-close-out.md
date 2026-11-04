@@ -321,7 +321,10 @@ full set of checks.
 The task drawer keeps its header chip brief and places the selected status card
 below the preview row. When several conditions apply, it shows one status by
 priority: waiting for you, incomplete review, merge blockers, handoff error,
-exhausted checks, then active handoff/check/reviewer/work progress. Open **Debug
+exhausted checks, then close-out progress, then active handoff/check/reviewer/work
+progress. Close-out progress (`integrating · <step> · <elapsed>`) is that status
+line, full width under the preview row. If a higher-priority card is already
+there, the step folds into that card. Open **Debug
 → Status details** for the full checklist, failure text, timing, and guidance;
 the Review and Logs views retain their reports and output. The header keeps one
 short issue chip when needed, and the task path is clamped to two lines. Select
@@ -329,8 +332,10 @@ the info icon on a status card for its action guidance; the same full text is
 available in **Debug → Status details**.
 
 A close-out can get stuck — a flaky check, a test timeout, a runner that never
-returns. While a task is in the pipeline, its task drawer shows **Stop MTD**
-next to the disabled **Move to done**. Stopping cancels the in-flight job, tears
+returns. While a task is in the pipeline, **Move to done** leaves the action
+row and the drawer shows **Stop MTD** beside **Stop work**. The step and elapsed
+time stay on the status line, so the action row does not reflow as the timer
+changes. Stopping cancels the in-flight job, tears
 down the throwaway candidate, and leaves the task in `review` with its branch
 untouched, so you can inspect what happened and click **Move to done** again.
 Once the candidate has merged into your primary branch (the cleanup phase) it is

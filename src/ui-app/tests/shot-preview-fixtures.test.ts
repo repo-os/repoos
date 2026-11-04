@@ -559,6 +559,24 @@ describe("shot preview board fixtures (#0743)", () => {
     });
   });
 
+  it("seeds close-out drawer shots with a live step and a review task (#1037)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:closeOutBuilding");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+    expect(task?.status).toBe("review");
+    expect(repo.integration?.active?.stage).toBe("building candidate");
+    expect(repo.integration?.active?.detail ?? null).toBeNull();
+    applyShotPreviewFixture(repo, "drawer:closeOutRemoteTests");
+    expect(repo.integration?.active?.detail).toBe("remote tests");
+    applyShotPreviewFixture(repo, "drawer:closeOutBuildingNarrow");
+    expect(document.documentElement.getAttribute("data-repoos-shot-state")).toBe(
+      "drawer:closeOutBuildingNarrow",
+    );
+    expect(useUiStore().drawerWidth).toBe(360);
+  });
+
   it("seeds landing pre-checks for the Move to done checklist shot (#0867)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

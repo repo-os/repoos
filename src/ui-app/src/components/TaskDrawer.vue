@@ -656,9 +656,13 @@ const drawerHeaderChip = computed(() => {
   if (
     !status ||
     (status.key === "waitingForYou" && showAgentQuestionsBanner.value) ||
-    (["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(
-      status.key,
-    ) &&
+    ([
+      "integrating",
+      "checksRunning",
+      "confirmingHandoff",
+      "reviewerRunning",
+      "workRunning",
+    ].includes(status.key) &&
       !(slowRun && status.key === "checksRunning"))
   )
     return null;
@@ -828,6 +832,7 @@ const drawerStatusSummary = computed(() => {
     notLandable: task.status === "review" && Boolean(landable.value && !landable.value.landable),
     handoffFailed: Boolean(handoffError.value || repo.doneErrorFor(task.id)),
     checksRunning: Boolean(activeCheckRun.value || localCheckWait.value),
+    integrating: inPipeline.value && Boolean(integrationCardLabel.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
       checkChip.value?.state === "fail" && retryCountFrom(task, "check"),
@@ -842,6 +847,7 @@ const drawerStatusSummary = computed(() => {
     notLandable: "Not ready to merge",
     handoffFailed: "Handoff failed",
     checksRunning: "Checks running",
+    integrating: "Integrating",
     confirmingHandoff: "Confirming handoff",
     checksFailedAfterRetries: "Checks failed",
     reviewerRunning: "Reviewer running",
@@ -863,6 +869,7 @@ const drawerStatusSummary = computed(() => {
       activeCheckRun.value?.scope && activeCheckRun.value.scope !== "full"
         ? `Changed-path (${activeCheckRun.value.scope})`
         : "",
+    integrating: integrationCardLabel.value ?? "",
     confirmingHandoff: "",
     reviewerRunning: "",
     workRunning: "",
@@ -886,6 +893,7 @@ const drawerStatusSummary = computed(() => {
     checksRunning: localCheckWait.value
       ? `${localCheckWait.value.title}. Queued checks are normal; keep waiting.`
       : "The check gate is running — open the Debug tab for live output.",
+    integrating: "Move to done is running. Open Status details for the live step.",
     confirmingHandoff:
       "RepoOS is finalizing the handoff. The task stays active until the checks pass.",
     reviewerRunning: "The reviewer is inspecting this task.",
@@ -901,7 +909,13 @@ const drawerStatusSummary = computed(() => {
   const where = scopeWhere(checkRun?.scope, checkMachine.value ?? checkRun?.machine);
   const tone = isError
     ? "fail"
-    : ["checksRunning", "confirmingHandoff", "reviewerRunning", "workRunning"].includes(key)
+    : [
+          "integrating",
+          "checksRunning",
+          "confirmingHandoff",
+          "reviewerRunning",
+          "workRunning",
+        ].includes(key)
       ? "running"
       : "neutral";
   /** Activity motion for the panel indicator; mirrors the card's own variant. */
@@ -914,6 +928,9 @@ const drawerStatusSummary = computed(() => {
       localCheckWait.value.title,
       "Queued checks are normal — keep waiting.",
     );
+  } else if (key === "integrating") {
+    motion = "reviewing";
+    lines = compactStatusLines(integrationCardLabel.value ?? "integrating");
   } else if (key === "checksRunning") {
     motion = "reviewing";
     const heading = cardChecksHeading.value;
@@ -979,6 +996,17 @@ const drawerStatusSummary = computed(() => {
     lines = compactStatusLines("Handoff failed", shortDetails.handoffFailed);
   } else {
     lines = compactStatusLines(labels[key], shortDetails[key] || "Status", "Open Status details");
+  }
+  // A higher-priority card keeps the single slot. Close-out progress folds
+  // into that card instead of rendering a second status element (#1037).
+  const closeOutLine = integrationCardLabel.value;
+  if (
+    key !== "integrating" &&
+    inPipeline.value &&
+    closeOutLine &&
+    !lines.some((line) => line.toLowerCase() === closeOutLine.toLowerCase())
+  ) {
+    lines = [...lines, closeOutLine];
   }
   return {
     key,
@@ -5381,38 +5409,29 @@ watch(
                 </span>
               </div>
               <Button
-                v-if="!isHumanTask && ui.active.status === 'review'"
+                v-if="!isHumanTask && ui.active.status === 'review' && !inPipeline"
                 variant="status"
                 :style="{ '--tone': statusColor('done') }"
                 :disabled="
                   ui.saving ||
                   review?.running ||
                   awaitingFreshReview ||
-                  repo.isRunning(ui.active.id) ||
-                  inPipeline
+                  repo.isRunning(ui.active.id)
                 "
                 :title="
-                  inPipeline
-                    ? 'Already in the integration pipeline — merging, building, and checking. See the pipeline bar for live progress.'
-                    : review?.running
-                      ? 'Waiting for automatic review to finish.'
-                      : awaitingFreshReview
-                        ? 'Waiting for a fresh review of the latest engineering handoff.'
-                        : repo.isRunning(ui.active.id)
-                          ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
-                          : landableFailureTitle
+                  review?.running
+                    ? 'Waiting for automatic review to finish.'
+                    : awaitingFreshReview
+                      ? 'Waiting for a fresh review of the latest engineering handoff.'
+                      : repo.isRunning(ui.active.id)
+                        ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
+                        : landableFailureTitle
                 "
                 @click="moveToDone"
               >
-                <CheckCheck v-if="!doingDone && !inPipeline" class="size-3.5" />
+                <CheckCheck v-if="!doingDone" class="size-3.5" />
                 <ActivityIndicator v-else />
-                {{
-                  inPipeline
-                    ? (integrationCardLabel ?? "Integrating…")
-                    : doingDone
-                      ? doneProgress
-                      : "Move to done"
-                }}
+                {{ doingDone ? doneProgress : "Move to done" }}
               </Button>
               <Button
                 v-if="ui.active.status === 'review' && inPipeline"
