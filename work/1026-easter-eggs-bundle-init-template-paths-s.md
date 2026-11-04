@@ -3,16 +3,13 @@ id: 1026
 title: "Easter eggs bundle: init template paths, serve banner, CLI docs and empty-repo edge cases"
 type: chore
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "E1: missing Problem, Desired UX, Acceptance criteria, Notes for AI; E2: missing Problem, Desired UX, Acceptance criteria, Notes for AI; E3: missing Problem, Desired UX, Acceptance criteria, Notes for AI; E4: missing Problem, Desired UX, Acceptance criteria, Notes for AI; E5: missing Problem, Desired UX, Acceptance criteria, Notes for AI; E6: missing Problem, Desired UX, Acceptance criteria, Notes for AI"
 priority: p2
 area: [core, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T06:45:56Z"
+updated_at: "2026-11-04T06:46:01Z"
 ---
 ## Items
 
@@ -138,3 +135,4 @@ Source: external QA report on v0.5.75, items 3, 4, 13-18.
 - 2026-11-04T06:45:41Z · created · njachowski@gmail.com
 - 2026-11-04T06:45:42Z · needs_input
 - 2026-11-04T06:45:56Z · body: Items (added 3, removed 2); E1 · Generated AGENTS.md template references nonexistent paths (added 8, removed 3); E2 · `serve` banner and docs: say which interfaces are bound (added); E3 · cli.md missing commands (added 8, removed 3); E4 · Empty-repo git edge cases (added 8, removed 3); E5 · Quieter `repoos list` with no server (added 8, removed 3); E6 · Doc and message accuracy nits (added); E2 · `serve` banner/docs (removed); E6 · Doc/message accuracy nits (removed); Notes for AI (removed)
+- 2026-11-04T06:46:01Z · needs_input
