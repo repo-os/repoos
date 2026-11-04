@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:48:37Z"
+updated_at: "2026-11-04T18:48:47Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -132,3 +132,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T18:47:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T18:48:35Z · body: Items (removed 1)
 - 2026-11-04T18:48:37Z · message_queued at 2026-11-04T18:48:37.676Z
+- 2026-11-04T18:48:47Z · note: adopted orphaned engineer pid 50901
