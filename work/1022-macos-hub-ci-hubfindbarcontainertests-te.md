@@ -2,18 +2,18 @@
 id: 1022
 title: "macOS Hub CI: HubFindBarContainerTests.testHidingFindBarReturnsFocusToThePage fails on every run; the Build and test native Hub job has been red since at least 2026-10-19"
 type: bug
-status: ready
+status: active
 priority: p1
 area: macos
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/macos-hub-ci-hubfindbarcontainertests-te
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-04T03:59:44Z"
-updated_at: "2026-11-04T19:54:39Z"
+updated_at: "2026-11-04T19:54:46Z"
 ---
 ## Problem
 The "macOS Hub" GitHub Actions workflow (job "Build and test native Hub", step "Run unit tests without signing") ends in failure on every run I can see, from 2026-10-19 through the v0.5.75 release on 2026-11-04 (run https://github.com/repo-os/repoos/actions/runs/41769376401; also the v0.5.74 release run on 2026-10-30). The log shows one failing test, `HubFindBarContainerTests.testHidingFindBarReturnsFocusToThePage()`, failing in 0.000 s on the CI runner; the other tests in that suite pass. It looks like a keyboard-focus / first-responder test that cannot hold focus on a headless CI runner, but the assertion text has not been read. The result: the release page warns "The release workflow failed at 'Run unit tests without signing', so some channels below may not update on their own", even though the Release workflow and the "Release macOS Hub DMG" job succeed and the release is published. A permanently red job hides real regressions.
@@ -39,3 +39,4 @@ This needs a macOS runner to confirm: the fix cannot be fully verified locally i
 - 2026-11-04T19:54:21Z · model_override
 - 2026-11-04T19:54:35Z · review_cli_override
 - 2026-11-04T19:54:39Z · review_model_override
+- 2026-11-04T19:54:46Z · status ready→active, branch
