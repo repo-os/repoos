@@ -35,3 +35,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T12:58:45Z · status inbox→ready
 - 2026-11-04T12:58:51Z · status ready→active, branch
 - 2026-11-04T13:21:11Z · message_queued at 2026-11-04T13:21:11.783Z
+- 2026-11-04T13:21:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
