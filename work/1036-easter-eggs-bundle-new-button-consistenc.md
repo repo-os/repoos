@@ -108,3 +108,4 @@ Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-doc
 - 2026-11-04T18:40:01Z · status inbox→ready
 - 2026-11-04T18:40:05Z · status ready→active, branch
 - 2026-11-04T18:46:42Z · body: Items (added 1)
+- 2026-11-04T18:46:42Z · message_queued at 2026-11-04T18:46:42.738Z
