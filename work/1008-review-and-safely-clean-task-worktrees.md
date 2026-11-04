@@ -2,16 +2,16 @@
 id: 1008
 title: Review and safely clean task worktrees
 type: chore
-status: ready
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: schedule
-branch: ""
+branch: feat/review-and-safely-clean-task-worktrees
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-01T22:00:49Z"
-updated_at: "2026-11-04T22:59:01Z"
+updated_at: "2026-11-04T22:59:05Z"
 ---
 ## Problem
 
@@ -50,3 +50,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-04T17:43:30Z · needs_input
 - 2026-11-04T22:59:00Z · cli_override
 - 2026-11-04T22:59:01Z · model_override
+- 2026-11-04T22:59:05Z · status ready→active, branch
