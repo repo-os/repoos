@@ -695,4 +695,85 @@ Queued.
       delete process.env.REPOOS_STALL_LOG;
     }
   }, 30_000);
+
+  it("does not defer a handoff for an automatic CTO nudge queued during the turn (#0715)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-0715-auto-queue-"));
+    roots.push(root);
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(bin, "opencode"), FAKE_OPENCODE, { mode: 0o755 });
+    const log = join(root, "spawns.log");
+    const taskPath = join(root, "work", `${TASK_ID}-auto.md`);
+    writeFileSync(
+      taskPath,
+      `---
+id: "${TASK_ID}"
+title: Automatic nudge
+type: bug
+status: active
+priority: p1
+area: server
+assigned_to: ai
+branch: feat/0715-auto
+---
+## Problem
+Nudge while running.
+
+## Activity
+
+- 2026-10-21T11:00:00Z · status ready→active
+`,
+    );
+    const config: RepoOSConfig = {
+      root,
+      workDir: "work",
+      docsDir: "docs",
+      skillsDir: "skills",
+      taskExtensions: [".md"],
+      defaultStatus: "inbox",
+      defaultAssignee: "unassigned",
+      cacheDir: ".repoos",
+      pressureGuard: { enabled: false },
+      maxConcurrentAgents: 2,
+    };
+    const getTask = (): Task =>
+      parseTask({
+        content: readFileSync(taskPath, "utf8"),
+        absPath: taskPath,
+        root,
+        defaultStatus: config.defaultStatus,
+        defaultAssignee: config.defaultAssignee,
+      });
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    process.env.REPOOS_STALL_LOG = log;
+    const runner = new AgentRunner(config, () => {}, {
+      getTask,
+      onHandoff: () => {},
+    });
+    const agent = { name: "engineer", cli: "opencode", model: "default", enabled: true };
+    try {
+      const task = getTask();
+      expect(runner.start(task, "feat/0715-auto", agent, { cwd: bin }).ok).toBe(true);
+      expect(
+        runner.send(TASK_ID, "CTO check-in: please hand off", agent, { automatic: true }).queued,
+      ).toBe(true);
+      const entry = runner["entries"].get(TASK_ID) as { handoffRequested?: boolean } | undefined;
+      expect(entry).toBeDefined();
+      entry!.handoffRequested = true;
+
+      await waitFor(() => !runner.isRunning(TASK_ID), "handoff turn exits", 8000);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const body = readFileSync(taskPath, "utf8");
+      expect(body).not.toContain("handoff_deferred");
+      expect(body).not.toContain("engineer turn ended without a handoff");
+      // The stale automatic nudge was dropped instead of starting a resumed turn.
+      expect(existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").length : 0).toBe(1);
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_STALL_LOG;
+    }
+  }, 30_000);
 });

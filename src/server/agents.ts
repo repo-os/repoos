@@ -684,6 +684,8 @@ interface QueuedMessageRecord {
     skipBoardDivergence?: boolean;
     cwd?: string;
     emitHumanTurn?: boolean;
+    /** Automatic advisory message (CTO nudge) — never blocks a handoff. */
+    automatic?: boolean;
   };
   queuedAt: string;
 }
@@ -5271,20 +5273,7 @@ export class AgentRunner {
   /** FIFO of deferred spawns, drained as running agents exit (see cleanup()). */
   private readonly startQueue: (() => void)[] = [];
   /** Queued messages for tasks whose agent is currently busy. Mapped by taskId to list of messages. */
-  private readonly queuedMessages = new Map<
-    string,
-    Array<{
-      text: string;
-      agent: Agent;
-      opts: {
-        resumePreamble?: string;
-        skipBoardDivergence?: boolean;
-        cwd?: string;
-        emitHumanTurn?: boolean;
-      };
-      queuedAt: string;
-    }>
-  >();
+  private readonly queuedMessages = new Map<string, QueuedMessageRecord[]>();
   /** Tracks when messages were queued for timeout purposes (ISO timestamps). */
   private readonly messageQueuedAt = new Map<string, string>();
   /** Message timeout for the overdue flag: 1 hour. Messages are never dropped. */
@@ -6556,6 +6545,12 @@ export class AgentRunner {
       skipBoardDivergence?: boolean;
       cwd?: string;
       emitHumanTurn?: boolean;
+      /**
+       * An automatic/advisory message (the CTO completion nudge). It is still
+       * delivered when the turn ends, but it must never defer a handoff the
+       * engineer already requested (#0715/#1016). A human message still does.
+       */
+      automatic?: boolean;
       /** Internal: an automatic resume keeps the crash guard (#0869). */
       fromCrashRecovery?: boolean;
     } = {},
@@ -6599,6 +6594,7 @@ export class AgentRunner {
       skipBoardDivergence?: boolean;
       cwd?: string;
       emitHumanTurn?: boolean;
+      automatic?: boolean;
     },
   ): StartResult {
     const messages = this.queuedMessages.get(id) ?? [];
@@ -7074,6 +7070,37 @@ export class AgentRunner {
   hasQueuedMessages(taskId: string): boolean {
     const msgs = this.queuedMessages.get(taskId);
     return !!msgs && msgs.length > 0;
+  }
+
+  /**
+   * Queued messages that must be read before a handoff may finalize (#0865).
+   * Automatic advisory messages (a CTO completion nudge) are excluded: they are
+   * delivered on the next turn, but a nudge that happened to queue while the
+   * engineer was working must not defer the very handoff it was nudging toward
+   * (#0715 — the #1016 Activity showed every turn deferred by one stale nudge).
+   */
+  private blockingQueuedMessages(taskId: string): QueuedMessageRecord[] {
+    return (this.queuedMessages.get(taskId) ?? []).filter((m) => m.opts?.automatic !== true);
+  }
+
+  private hasBlockingQueuedMessages(taskId: string): boolean {
+    return this.blockingQueuedMessages(taskId).length > 0;
+  }
+
+  /** Drop automatic advisory messages once a handoff owns the turn. */
+  private dropAutomaticQueuedMessages(taskId: string): number {
+    const msgs = this.queuedMessages.get(taskId);
+    if (!msgs?.length) return 0;
+    const kept = msgs.filter((m) => m.opts?.automatic !== true);
+    const dropped = msgs.length - kept.length;
+    if (!dropped) return 0;
+    if (kept.length) this.queuedMessages.set(taskId, kept);
+    else {
+      this.queuedMessages.delete(taskId);
+      this.messageQueuedAt.delete(taskId);
+    }
+    this.persistQueuedMessages();
+    return dropped;
   }
 
   /** Age in ms of the OLDEST queued message for this id, or null when none. */
@@ -8728,8 +8755,9 @@ export class AgentRunner {
    */
   private adoptHandoffRequestFile(taskId: string, entry: Entry): void {
     if (entry.handoffRequested || !entry.runId) return;
-    // A queued human message must be delivered before any handoff finalizes (#0865).
-    if (this.hasQueuedMessages(taskId)) return;
+    // A queued HUMAN message must be delivered before any handoff finalizes
+    // (#0865). An automatic CTO nudge does not block it (#0715).
+    if (this.hasBlockingQueuedMessages(taskId)) return;
     const root = this.config.root;
     const cacheDir = this.config.cacheDir;
     const request = readHandoffRequest(root, cacheDir, taskId);
@@ -9154,8 +9182,13 @@ export class AgentRunner {
     // #0865: a handoff requested while messages are still queued must not run
     // review before the engineer reads them. Defer it (and the queue stays
     // persisted) so the next turn delivers the messages first.
-    const queuedCount = this.queuedMessages.get(taskId)?.length ?? 0;
-    const handoffBlockedByQueue = queuedCount > 0;
+    // #0865/#0715: only a HUMAN message must be read before review. An
+    // automatic CTO nudge that queued while the engineer worked is advisory; it
+    // must not defer the handoff. #1016 showed the loop clearly: every turn
+    // ended `handoff_deferred: 1 queued message`, and the resumed turn read the
+    // stale nudge only for the next nudge to queue behind it.
+    const blockingQueuedCount = this.blockingQueuedMessages(taskId).length;
+    const handoffBlockedByQueue = blockingQueuedCount > 0;
     if (handoffBlockedByQueue) {
       const root = this.config.root;
       const cacheDir = this.config.cacheDir ?? ".repoos";
@@ -9167,7 +9200,7 @@ export class AgentRunner {
         clearHandoffRequest(root, cacheDir, taskId);
         this.recordTaskActivity(
           taskId,
-          `handoff_deferred: ${queuedCount} queued message(s) must be read before review`,
+          `handoff_deferred: ${blockingQueuedCount} queued message(s) must be read before review`,
         );
         this.appendLine(
           taskId,
@@ -9360,7 +9393,11 @@ export class AgentRunner {
       this.crashedNoHandoff.delete(taskId);
       if (this.onEngineerProgress) queueMicrotask(() => this.onEngineerProgress?.(taskId));
     }
-    if (entry.handoffRequested && !this.hasQueuedMessages(taskId)) {
+    if (entry.handoffRequested && !this.hasBlockingQueuedMessages(taskId)) {
+      // Any automatic nudge that queued during this turn is now stale: the
+      // engineer is handing off, so drop it instead of delivering it and
+      // starting a pointless resumed turn after review.
+      this.dropAutomaticQueuedMessages(taskId);
       if (taskForHandoff && entry.branch && entry.workdir) {
         // Server is alive — finalize now for both clean and unclean exits (#0505).
         // Persist-at-signal time still covers a server crash mid-turn (#0235).

@@ -163,7 +163,9 @@ repeated `2/3`. After the third, the task is flagged `needs_input` with reason
 `watchdog-stuck` instead of waiting forever. The CTO monitor uses RepoOS's own
 idle evidence (run state, agent-log mtime, the turn-end event) rather than
 `ps`, and a clean exit after a completion nudge is treated as a resume
-candidate.
+candidate. Only a **human** message defers a handoff; an automatic CTO nudge
+that queued during the turn is dropped when the handoff finalizes, so it cannot
+keep pushing the handoff back turn after turn.
 
 If the conversation itself is poisoned (the same failure repeats, or the model
 loops even after a resume), reset it with:
