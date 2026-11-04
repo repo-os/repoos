@@ -2,7 +2,7 @@
 id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
