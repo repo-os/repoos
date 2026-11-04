@@ -3,13 +3,16 @@ id: "0715"
 title: pi engineer ends turns cleanly without requesting handoff; stderr not surfaced; recovery is slow and the CTO cannot see why
 type: bug
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s"
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T15:12:41Z"
+updated_at: "2026-11-04T15:20:02Z"
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-04T12:30:27.556Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -103,3 +106,5 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:04:49Z · note: handoff requested (cli)
 - 2026-11-04T15:06:19Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T15:12:41Z · body
+- 2026-11-04T15:15:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T15:20:02Z · engineer stopped by request
