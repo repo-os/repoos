@@ -3,16 +3,13 @@ id: 1030
 title: Full-width dirty-main button in sidebar that opens a commit panel
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T13:34:30Z"
+updated_at: "2026-11-04T13:34:51Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:27:46.133Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:34:30.563Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -136,10 +133,10 @@ states, panel open/close with shared width, commit success/error paths with the 
 "highlight": "[data-testid=\"repo-dirty-panel\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"side-git-dirty\"]"
+"click": "[data-test-id=\"side-git-dirty\"]"
 },
 {
-  "waitFor": "[data-testid=\"repo-dirty-panel\"]"
+"waitFor": "[data-testid=\"repo-dirty-panel\"]"
 }
 ],
 "state": "repo:dirtyMain"
@@ -176,3 +173,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T13:29:07Z · body
 - 2026-11-04T13:34:30Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T13:34:30Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-04T13:34:51Z · needs_input
