@@ -19,6 +19,7 @@ import { relTime } from "../lib/time";
 import NewStoryPanel from "../components/NewStoryPanel.vue";
 import StoryPanel from "../components/StoryPanel.vue";
 import Button from "../components/ui/button.vue";
+import Checkbox from "../components/ui/checkbox.vue";
 import Select from "../components/ui/select/root.vue";
 import SelectContent from "../components/ui/select/content.vue";
 import SelectItem from "../components/ui/select/item.vue";
@@ -60,6 +61,25 @@ const mergedStories = computed(() => mergeStoriesForDisplay(repo.tasks, definiti
 const stories = computed(() =>
   sortStoryGroupsForPage(mergedStories.value, repo.storiesPageSortOrder, (g) => g.number),
 );
+
+/**
+ * "Hide Completed Stories" (#1016): a view-level filter over the sorted
+ * roll-up. It is applied after `sortStoryGroupsForPage`, so ordering and the
+ * other controls are untouched. Defaults to off (`repo.storiesPageHideCompleted`
+ * starts `false`) — a first load shows every story exactly as before — and the
+ * human's choice persists like the sort order does.
+ */
+const hideCompleted = computed<boolean>({
+  get: () => repo.storiesPageHideCompleted,
+  set: (value) => repo.setStoriesPageHideCompleted(value),
+});
+
+const visibleStories = computed(() =>
+  hideCompleted.value ? stories.value.filter((s) => !s.complete) : stories.value,
+);
+
+/** How many completed stories the filter is currently hiding, for the empty state. */
+const hiddenCompleteCount = computed(() => stories.value.length - visibleStories.value.length);
 
 /** Stories the PM agent is still fleshing out after a New story submit. */
 const pmWorkingKeys = computed(
@@ -232,6 +252,10 @@ function lastActivity(story: { lastActivity: string | null }): string {
         </div>
       </div>
       <div v-if="enabled" style="display: flex; align-items: center; gap: 10px; flex-shrink: 0">
+        <label class="stories-filter-toggle">
+          <Checkbox v-model:checked="hideCompleted" />
+          <span>Hide Completed Stories</span>
+        </label>
         <Select
           :model-value="repo.storiesPageSortOrder"
           @update:model-value="(v) => repo.setStoriesPageSortOrder(v as StoryListSortOrder)"
@@ -274,9 +298,18 @@ function lastActivity(story: { lastActivity: string | null }): string {
         >
       </div>
 
+      <div v-else-if="visibleStories.length === 0" class="empty-state">
+        <div class="big">All stories are complete</div>
+        <div>
+          {{ hiddenCompleteCount }}
+          {{ hiddenCompleteCount === 1 ? "completed story is" : "completed stories are" }} hidden.
+          Uncheck <strong>Hide Completed Stories</strong> to see them.
+        </div>
+      </div>
+
       <div v-else class="stories-grid">
         <article
-          v-for="story in stories"
+          v-for="story in visibleStories"
           :key="story.key"
           class="glass story-card"
           :class="{ complete: story.complete }"
@@ -405,6 +438,24 @@ function lastActivity(story: { lastActivity: string | null }): string {
 }
 .stories-notice a:hover {
   text-decoration: underline;
+}
+
+/* Header filter toggle (#1016), styled like the Inputs page's status filter
+   chips so list filters read the same across the app. The label wraps the
+   shared Checkbox (a <button>), which the browser treats as its labeled
+   control, so clicking the text toggles it too. */
+.stories-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--txt-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.stories-filter-toggle:hover {
+  color: var(--txt);
 }
 
 .stories-grid {
