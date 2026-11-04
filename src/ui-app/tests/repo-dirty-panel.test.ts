@@ -47,6 +47,8 @@ let commitReply: Reply;
 let diffReply: Reply;
 let commits: Array<{ message: string }>;
 let fetches: string[];
+/** When set, `/api/repo/commit` waits for it before answering (in-flight tests). */
+let commitGate: Promise<void> | null;
 
 const response = (reply: Reply) => {
   const code = reply.status ?? 200;
