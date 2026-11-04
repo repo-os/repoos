@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 151585
-last_close_out_gate_at: "2026-11-04T16:05:49.165Z"
 id: "0715"
 title: pi engineer ends turns cleanly without requesting handoff; stderr not surfaced; recovery is slow and the CTO cannot see why
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: 7eabe4c032cf6754418ca28a845e90a0f9e89ee5
 assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
 updated_at: "2026-11-04T16:05:49Z"
+last_close_out_gate_ms: 151585
+last_close_out_gate_at: "2026-11-04T16:05:49.165Z"
 review_passes: 2
 close_out_repair_count: 1
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"

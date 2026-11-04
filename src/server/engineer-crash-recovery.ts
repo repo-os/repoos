@@ -251,7 +251,9 @@ export async function recoverEngineerAfterCrash(
             : plan.detail;
       const detail =
         `engineer keeps crashing (${plan.crashes} in ${minutes(plan.windowMs)}m): ${why}. ` +
-        `Review the crash detail and either fix the environment, change the override, or resume manually.`;
+        `Review the crash detail and either fix the environment, change the override, or resume manually. ` +
+        `If the conversation itself is poisoned (it repeats the same failure), reset it with ` +
+        `\`repoos start ${task.id} --fresh\`.`;
       task.needsInput = true;
       task.needsInputReason = task.needsInputReason ?? "dev-error";
       task.needsInputDetail = detail;
@@ -457,6 +459,7 @@ export async function recoverEngineerAfterStalledCleanExit(
       handoffDeferred: context.handoffDeferred,
       queuedMessages: context.queuedMessages,
       handoffSinceLastCommit: context.handoffSinceLastCommit,
+      episodeStart: signal.episodeStart,
       resumes,
       now,
       limit: DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
@@ -466,16 +469,17 @@ export async function recoverEngineerAfterStalledCleanExit(
 
     if (plan.action === "surface") {
       const detail =
-        `${plan.resumes} automatic resume(s) in the last ${minutes(plan.windowMs)} did not ` +
+        `${plan.resumes} automatic resume(s) in this active episode did not ` +
         `produce a handoff — the engineer keeps ending its turn without one. ` +
-        `Review the transcript and resume it manually, or fix why it stops before handing off.`;
+        `Review the transcript and resume it manually; if the conversation is poisoned, ` +
+        `reset it with \`repoos start ${task.id} --fresh\`.`;
       task.needsInput = true;
       task.needsInputReason = "watchdog-stuck";
       task.needsInputDetail = detail;
       writeTask(
         config,
         task,
-        `watchdog: escalated to needs_input · ${plan.resumes} automatic resume(s) in ${minutes(plan.windowMs)}m produced no handoff`,
+        `watchdog: escalated to needs_input · ${plan.resumes} automatic resume(s) in this active episode produced no handoff`,
         `docs(${task.id}): surface stalled engineer`,
       );
       index.applyFileChange(task.absPath, { guarded: true });
@@ -495,13 +499,15 @@ export async function recoverEngineerAfterStalledCleanExit(
     const attempt = plan.resumes + 1;
     task.extra = {
       ...task.extra,
+      // Keep the whole episode's history: the counter is episode-scoped, so
+      // pruning by a rolling window would let an attempt number repeat (#1016).
       [ENGINEER_STALL_RESUME_LOG_KEY]: serializeEngineerStallResumeLog(
-        recordEngineerStallResume(resumes, nowIso, plan.reason, plan.windowMs),
+        recordEngineerStallResume(resumes, nowIso, plan.reason, Number.POSITIVE_INFINITY),
       ),
     };
     const note = context.handoffDeferred
-      ? `watchdog: auto-resumed engineer to read a deferred handoff message · resume ${attempt}/${plan.limit} in ${minutes(plan.windowMs)}m`
-      : `watchdog: auto-resumed engineer after a clean exit without a handoff · resume ${attempt}/${plan.limit} in ${minutes(plan.windowMs)}m`;
+      ? `watchdog: auto-resumed engineer to read a deferred handoff message · resume ${attempt}/${plan.limit}`
+      : `watchdog: auto-resumed engineer after a clean exit without a handoff · resume ${attempt}/${plan.limit}`;
     writeTask(config, task, note, `docs(${task.id}): resume stalled engineer`);
     index.applyFileChange(task.absPath, { guarded: true });
 

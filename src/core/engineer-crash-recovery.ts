@@ -434,8 +434,12 @@ export function recordEngineerStallResume(
   windowMs: number,
 ): EngineerStallResumeRecord[] {
   const at = parseIso(atIso) ?? Date.now();
-  const window = Number.isFinite(windowMs) ? Math.max(0, windowMs) : 0;
-  const cutoff = at - window;
+  // A non-finite window means "keep the whole history" (bounded by the cap).
+  // The watchdog uses this inside one `→active` episode: pruning by a rolling
+  // window made the attempt number repeat (1/3, 2/3, 2/3 after 30 minutes) and
+  // is exactly the #1016 bug. Episode-scoped counting below decides what counts.
+  const window = Number.isFinite(windowMs) ? Math.max(0, windowMs) : null;
+  const cutoff = window === null ? Number.NEGATIVE_INFINITY : at - window;
   const kept = records.filter((record) => (parseIso(record.at) ?? 0) >= cutoff);
   kept.push({ at: new Date(at).toISOString(), reason });
   return kept.slice(-MAX_STALL_RESUME_RECORDS);
@@ -451,6 +455,24 @@ export function countEngineerStallResumes(
   const window = Number.isFinite(windowMs) ? Math.max(0, windowMs) : 0;
   const cutoff = now - window;
   return records.filter((record) => (parseIso(record.at) ?? 0) >= cutoff).length;
+}
+
+/**
+ * Resumes recorded at or after the start of the current `→active` episode.
+ *
+ * Episode-scoped counting is what keeps the watchdog's attempt number monotonic
+ * across a long task (the #1016 sequence resumed at 05:56, 06:18 and 06:47; a
+ * rolling 30-minute window counted the 06:47 resume as `2/3` again because the
+ * 05:56 record had aged out). A fresh status transition resets the budget,
+ * which is the only point at which starting over is correct.
+ */
+export function countEngineerStallResumesSince(
+  records: readonly EngineerStallResumeRecord[],
+  episodeStartIso: string | null | undefined,
+): number {
+  const start = parseIso(episodeStartIso ?? "");
+  if (start === null) return 0;
+  return records.filter((record) => (parseIso(record.at) ?? 0) >= start).length;
 }
 
 /**
@@ -482,6 +504,33 @@ export interface EngineerCleanExitSignal {
   deferred: number;
   /** True when the last turn in this episode was deliberately stopped by a person. */
   stoppedByPerson: boolean;
+  /**
+   * ISO timestamp of the `→active` transition that bounds this episode, or null
+   * when the Activity log has no such transition. Used to scope the resume
+   * counter so it advances monotonically within one active stretch.
+   */
+  episodeStart: string | null;
+}
+
+const EMPTY_CLEAN_EXIT_SIGNAL: EngineerCleanExitSignal = {
+  clean: false,
+  deferred: 0,
+  stoppedByPerson: false,
+  episodeStart: null,
+};
+
+/**
+ * Find the most recent `status …→active` transition in an Activity log.
+ */
+export function engineerActiveEpisodeStart(body: string): string | null {
+  const lines = body.split("\n");
+  const activityIndex = lines.findIndex((line) => line.trim() === "## Activity");
+  if (activityIndex === -1) return null;
+  for (let i = lines.length - 1; i > activityIndex; i--) {
+    const match = lines[i].match(ACTIVE_TRANSITION_RE);
+    if (match) return match[1];
+  }
+  return null;
 }
 
 /**
@@ -499,16 +548,17 @@ export interface EngineerCleanExitSignal {
 export function readEngineerCleanExitSignal(body: string): EngineerCleanExitSignal {
   const lines = body.split("\n");
   const activityIndex = lines.findIndex((line) => line.trim() === "## Activity");
-  if (activityIndex === -1) return { clean: false, deferred: 0, stoppedByPerson: false };
+  const episodeStart = engineerActiveEpisodeStart(body);
+  if (activityIndex === -1) return { ...EMPTY_CLEAN_EXIT_SIGNAL };
 
   for (let i = lines.length - 1; i > activityIndex; i--) {
     const line = lines[i];
     if (ACTIVE_TRANSITION_RE.test(line)) break;
     if (line.includes(ENGINEER_STOPPED_ACTIVITY)) {
-      return { clean: false, deferred: 0, stoppedByPerson: true };
+      return { ...EMPTY_CLEAN_EXIT_SIGNAL, stoppedByPerson: true, episodeStart };
     }
     if (CRASHED_ACTIVITY_RE.test(line)) {
-      return { clean: false, deferred: 0, stoppedByPerson: false };
+      return { ...EMPTY_CLEAN_EXIT_SIGNAL, episodeStart };
     }
     const deferredMatch = line.match(HANDOFF_DEFERRED_ACTIVITY_RE);
     if (deferredMatch) {
@@ -518,13 +568,36 @@ export function readEngineerCleanExitSignal(body: string): EngineerCleanExitSign
         clean: true,
         deferred: Number(deferredMatch[1]) || 1,
         stoppedByPerson: false,
+        episodeStart,
       };
     }
     if (line.includes(ENGINEER_CLEAN_EXIT_ACTIVITY)) {
-      return { clean: true, deferred: 0, stoppedByPerson: false };
+      return { clean: true, deferred: 0, stoppedByPerson: false, episodeStart };
     }
   }
-  return { clean: false, deferred: 0, stoppedByPerson: false };
+  return { ...EMPTY_CLEAN_EXIT_SIGNAL, episodeStart };
+}
+
+/**
+ * ISO time of the most recent clean-exit-without-handoff event in the current
+ * `→active` episode, or null when there is none. The CTO monitor compares this
+ * with its own last-nudge timestamp to tell "the engineer never saw the nudge"
+ * from "it saw it and still ended without handing off".
+ */
+export function lastEngineerCleanExitAt(body: string): string | null {
+  const lines = body.split("\n");
+  const activityIndex = lines.findIndex((line) => line.trim() === "## Activity");
+  if (activityIndex === -1) return null;
+  for (let i = lines.length - 1; i > activityIndex; i--) {
+    const line = lines[i];
+    if (ACTIVE_TRANSITION_RE.test(line)) break;
+    if (line.includes(ENGINEER_CLEAN_EXIT_ACTIVITY) || HANDOFF_DEFERRED_ACTIVITY_RE.test(line)) {
+      const match = line.match(/^- (\d{4}-\d{2}-\d{2}T\S+) · /);
+      return match ? match[1] : null;
+    }
+    if (line.includes(ENGINEER_STOPPED_ACTIVITY) || CRASHED_ACTIVITY_RE.test(line)) return null;
+  }
+  return null;
 }
 
 export type EngineerTurnExitKind = "clean" | "crash" | "unknown";
@@ -573,6 +646,11 @@ export interface EngineerStallPlanInput {
   queuedMessages?: number;
   /** A handoff completed since the branch's last commit — the work is done. */
   handoffSinceLastCommit?: boolean;
+  /**
+   * ISO start of the current `→active` episode. When present, resumes are
+   * counted from it (monotonic), not from a rolling window.
+   */
+  episodeStart?: string | null;
   resumes: readonly EngineerStallResumeRecord[];
   now: number;
   limit?: number;
@@ -623,7 +701,9 @@ export function planEngineerStallResume(input: EngineerStallPlanInput): Engineer
   }
 
   const nowIso = new Date(input.now).toISOString();
-  const resumes = countEngineerStallResumes(input.resumes, nowIso, windowMs);
+  const resumes = input.episodeStart
+    ? countEngineerStallResumesSince(input.resumes, input.episodeStart)
+    : countEngineerStallResumes(input.resumes, nowIso, windowMs);
   if (resumes >= limit) {
     return { action: "surface", reason: "resume-limit", resumes, limit, windowMs };
   }

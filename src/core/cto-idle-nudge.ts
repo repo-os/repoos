@@ -67,6 +67,19 @@ export interface IdleNudgeSignals {
   messageQueued: boolean;
   /** The worktree has been written to inside the idle window. */
   recentWorktreeActivity: boolean;
+  /**
+   * The last engineer turn in the current `→active` episode ended cleanly
+   * without a handoff, and it did so AFTER the last completion nudge was sent.
+   * That means the engineer saw the nudge and still stopped — the signal is to
+   * resume it, never to report "not running" and do nothing.
+   */
+  cleanExitSinceNudge: boolean;
+  /**
+   * The newest agent log for this task was written inside the idle window.
+   * RepoOS-owned evidence that the turn is slow (still producing output) rather
+   * than stalled — no `ps` or other process inspection needed.
+   */
+  agentLogRecent: boolean;
   /** Time since the task's last recorded activity. */
   idleForMs: number;
   /** Configured idle threshold. */
@@ -91,11 +104,18 @@ export function decideIdleNudge(signals: IdleNudgeSignals): IdleNudgeDecision {
   });
 
   if (signals.paused) return skip("paused");
-  if (!signals.runnerRunning) return skip("not-running");
   if (signals.handoffInFlight || signals.pendingHandoff) {
     return skip("handoff-in-flight");
   }
   if (signals.reviewRunning) return skip("review-running");
+  // #0715: a clean exit after a nudge is the one "not running" shape that must
+  // be acted on. The completion nudge arrived during the turn, the turn then
+  // ended without a handoff, and no process is left. Sending the nudge again is
+  // what resumes the session (and records the attempt); reporting "not-running"
+  // here is the #1016 bug where the CTO saw an idle task and did nothing.
+  if (signals.messageQueued) return skip("message-queued");
+  if (signals.cleanExitSinceNudge) return { nudge: true, reason: null, detail: null };
+  if (!signals.runnerRunning) return skip("not-running");
   // RepoOS thinks a turn is running but no process (or child) exists: the
   // phantom-runner recovery (#0863) owns this, not a nudge.
   if (!signals.processGroupAlive) return skip("phantom-runner");
@@ -103,8 +123,9 @@ export function decideIdleNudge(signals: IdleNudgeSignals): IdleNudgeDecision {
     return skip("process-busy", signals.busyChild);
   }
   if (signals.remoteValidationRunning) return skip("remote-validation-running");
-  if (signals.messageQueued) return skip("message-queued");
-  if (signals.recentWorktreeActivity) return skip("recent-activity");
+  if (signals.recentWorktreeActivity || signals.agentLogRecent) {
+    return skip("recent-activity");
+  }
   if (signals.idleForMs < signals.idleThresholdMs) {
     return skip("below-threshold", `idle for ${formatDuration(signals.idleForMs)}`);
   }

@@ -14,14 +14,19 @@ import {
   extractOneShotReportText,
   extractUsage,
   freshSessionId,
+  HANDOFF_READY_SIGNAL,
+  missionFor,
   parseOneShotLine,
   parsePiEvent,
+  piHandoffInstruction,
   pmCommand,
   promptCommand,
   reviewCommand,
   supportsChosenSessionId,
+  withPiHandoffInstruction,
 } from "../../server/agents";
-import type { Agent } from "../../core/types";
+import { DEFAULT_CONFIG } from "../../core/config";
+import type { Agent, RepoOSConfig, Task } from "../../core/types";
 
 const agent = (model = "default"): Agent => ({
   name: "engineer",
@@ -280,6 +285,52 @@ describe("pi one-shot transcript", () => {
     expect(parseOneShotLine("pi", block)).toBeNull();
     expect(parseOneShotLine("pi", end)).toEqual({ type: "text", text: "hello world" });
     expect(extractOneShotReportText("pi", `${block}\n${end}`)).toBe("hello world");
+  });
+});
+
+describe("pi driver prompt", () => {
+  const task = {
+    id: "0715",
+    title: "pi ends turns without handing off",
+    type: "bug",
+    status: "active",
+    priority: "p2",
+    area: "server",
+    assignee: "ai",
+    assignedTo: "",
+    branch: "feat/0715",
+    tags: [],
+    body: "## Problem\n\nstalls.",
+    path: "work/0715-pi.md",
+    absPath: "/tmp/repoos-pi-test/work/0715-pi.md",
+  } as unknown as Task;
+  const config = {
+    ...DEFAULT_CONFIG,
+    root: "/tmp/repoos-pi-test",
+    cacheDir: ".repoos",
+  } as RepoOSConfig;
+  const workdir = "/tmp/repoos-pi-test-worktree";
+
+  it("ends the launch prompt with an explicit handoff instruction", () => {
+    const mission = missionFor(task, task.branch, workdir, agent(), config);
+    // The last block is the trigger, not the generic checklist buried earlier.
+    expect(mission.trimEnd().endsWith(piHandoffInstruction(task.id))).toBe(true);
+    expect(mission).toContain(HANDOFF_READY_SIGNAL);
+    expect(mission).toContain(`repoos mv ${task.id} review`);
+  });
+
+  it("ends a resume prompt with the same explicit handoff instruction", () => {
+    const resume = withPiHandoffInstruction("continue", task.id);
+    expect(resume.trimEnd().endsWith(piHandoffInstruction(task.id))).toBe(true);
+    expect(resume).toContain(HANDOFF_READY_SIGNAL);
+    // A prompt that already carries the trigger is not duplicated.
+    expect(withPiHandoffInstruction(resume, task.id)).toBe(resume);
+  });
+
+  it("leaves a non-pi launch prompt without the pi-only reminder", () => {
+    const claude = { ...agent(), cli: "claude code" };
+    const mission = missionFor(task, task.branch, workdir, claude, config);
+    expect(mission.trimEnd().endsWith(piHandoffInstruction(task.id))).toBe(false);
   });
 });
 
