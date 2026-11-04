@@ -236,3 +236,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T15:45:05Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 11s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-04T15:47:50Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T15:47:59Z · message_queued at 2026-11-04T15:47:59.450Z
+- 2026-11-04T15:47:59Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
