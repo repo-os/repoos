@@ -1099,6 +1099,138 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "board:withReviewTask":
       ensureFixtureTask(repo, "review");
       break;
+    case "board:pipeline": {
+      // #1035 — one lane per stage plus the special states, so the Pipeline
+      // capture shows the whole track. Empty branches keep every card clear
+      // of diff-stats fetches that would 404 on fixture ids (#0768).
+      const agoMin = (m: number): string => new Date(Date.now() - m * 60_000).toISOString();
+      const runCheck = (
+        taskId: string,
+        kind: "handoff-finalize" | "merge-gate",
+        startedMinAgo: number,
+        stepsDone: number,
+        stepsTotal: number,
+      ): void => {
+        repo.taskChecks[taskId] = [
+          {
+            id: `shot-pipe-check-${taskId}`,
+            taskId,
+            kind,
+            startedAt: agoMin(startedMinAgo),
+            finishedAt: null,
+            durationMs: null,
+            running: true,
+            passed: null,
+            code: null,
+            output: "",
+            scope: "changed:main",
+            machine: "air",
+            stepsDone,
+            stepsTotal,
+            currentStep: stepsDone + 1,
+            lastProgressAt: new Date().toISOString(),
+          },
+        ];
+      };
+      const runAgent = (taskId: string, activeMinAgo: number): void => {
+        if (!repo.runningIds.includes(taskId)) repo.runningIds.push(taskId);
+        repo.agentActivityAt = { ...repo.agentActivityAt, [taskId]: agoMin(activeMinAgo) };
+      };
+      ensureFixtureTask(repo, "active", { title: "Coding lane: engineer writing code", priority: "p1" }, "pipe-coding");
+      runAgent("pipe-coding", 0);
+      ensureFixtureTask(repo, "active", { title: "Checks lane: self-check running", priority: "p2" }, "pipe-checks");
+      runAgent("pipe-checks", 9);
+      runCheck("pipe-checks", "merge-gate", 6, 3, 8);
+      ensureFixtureTask(repo, "active", { title: "Handoff lane: confirming handoff", priority: "p0" }, "pipe-handoff");
+      runAgent("pipe-handoff", 12);
+      runCheck("pipe-handoff", "handoff-finalize", 4, 2, 8);
+      pinnedTaskRemoteActivity["pipe-handoff"] = {
+        run: {
+          taskId: "pipe-handoff",
+          host: "bee",
+          kind: "handoff",
+          startedAt: agoMin(4),
+          elapsedMs: 4 * 60_000,
+          lastProgressAt: new Date().toISOString(),
+          stage: "run",
+          phases: [],
+        },
+        queue: null,
+      };
+      repo.taskRemoteActivity["pipe-handoff"] = pinnedTaskRemoteActivity["pipe-handoff"]!;
+      ensureFixtureTask(repo, "review", { title: "Review lane: reviewer inspecting", priority: "p1" }, "pipe-review");
+      repo.reviews = {
+        ...repo.reviews,
+        ["pipe-review"]: { running: true, enabled: true, lines: [], report: null },
+      };
+      ensureFixtureTask(repo, "review", { title: "Close-out lane: merging to main", priority: "p1" }, "pipe-closeout");
+      repo.integration = activePipeline("pipe-closeout");
+      pinnedIntegration = repo.integration;
+      ensureFixtureTask(
+        repo,
+        "done",
+        { title: "Merged lane: just landed", priority: "p2", releasedAt: new Date().toISOString() },
+        "pipe-done",
+      );
+      ensureFixtureTask(
+        repo,
+        "active",
+        {
+          title: "Stuck lane: agent went silent",
+          priority: "p2",
+          needsInput: true,
+          needsInputReason: "dev-error",
+          needsInputDetail: "The agent exited with an error.",
+        },
+        "pipe-stuck",
+      );
+      runAgent("pipe-stuck", 30);
+      ensureFixtureTask(
+        repo,
+        "active",
+        {
+          title: "Held lane: parked out of automation",
+          priority: "p3",
+          isHeld: true,
+          holdReason: "Waiting for machine capacity before resuming automation",
+          holdBy: "driver",
+          holdAt: agoMin(60),
+          holdUntil: new Date(Date.now() + 86_400_000).toISOString(),
+        },
+        "pipe-held",
+      );
+      ensureFixtureTask(
+        repo,
+        "active",
+        {
+          title: "Sent-back lane: review asked for changes",
+          priority: "p1",
+          extra: { review_passes: 1, review_rounds: 1 },
+        },
+        "pipe-sentback",
+      );
+      runAgent("pipe-sentback", 1);
+      repo.reviews = {
+        ...repo.reviews,
+        ["pipe-sentback"]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: "pipe-sentback",
+            at: agoMin(20),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "",
+            state: "ok",
+            markdown: "## Verdict\nback to the drawing board\n\nTwo findings to fix.\n",
+          },
+        },
+      };
+      ensureFixtureTask(repo, "ready", { title: "Queued behind the track" }, "pipe-queued");
+      break;
+    }
     case "card:held":
     case "drawer:held":
       ensureFixtureTask(repo, "active", {
