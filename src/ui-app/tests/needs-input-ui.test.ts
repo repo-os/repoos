@@ -175,8 +175,8 @@ describe("needsInputPrimaryAction (#0511)", () => {
     expect(formatNeedsInputDetailForDisplay("review-rounds-exhausted", long)).toContain(
       "Regression in the drawer",
     );
-    expect(needsInputDetailUsesLineClamp("review-rounds-exhausted")).toBe(true);
-    expect(needsInputDetailUsesLineClamp("review-failed")).toBe(false);
+    expect(needsInputDetailUsesLineClamp("review-rounds-exhausted", long)).toBe(true);
+    expect(needsInputDetailUsesLineClamp("review-failed", undefined)).toBe(false);
   });
 
   it("names review-rounds-exhausted and offers Send to engineer (not Review again) on a review task", () => {
@@ -204,6 +204,7 @@ describe("dev-error failure reason", () => {
     expect(needsInputDetailVisible("dev-error", detail)).toBe(true);
     expect(formatNeedsInputDetailForDisplay("dev-error", detail)).toBe(detail);
     expect(needsInputDetailVisible("dev-error", undefined)).toBe(false);
-    expect(needsInputDetailUsesLineClamp("dev-error")).toBe(true);
+    expect(needsInputDetailUsesLineClamp("dev-error", detail)).toBe(true);
+    expect(needsInputDetailUsesLineClamp("dev-error", undefined)).toBe(false);
   });
 });
