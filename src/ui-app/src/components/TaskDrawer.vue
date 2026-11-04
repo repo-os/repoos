@@ -6218,7 +6218,7 @@ watch(
                 :aria-selected="devPane === 'report'"
                 @click="devPane = 'report'"
               >
-                Report <span v-if="engineeringReports.length">{{ engineeringReports.length }}</span>
+                Report
               </button>
               <button
                 type="button"
