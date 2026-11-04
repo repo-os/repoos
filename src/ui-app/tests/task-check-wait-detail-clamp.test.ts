@@ -124,7 +124,9 @@ describe("check-wait diagnostic clamp (#1034)", () => {
     const wrapper = mount(TaskCard, { props: { task, dragEnabled: false } });
 
     const detail = wrapper.get('[data-test-id="task-card-needs-input-detail"]');
-    expect(detail.classes()).toContain("tc-needs-detail--clamp");
+    expect(detail.classes()).not.toContain("tc-needs-detail--clamp");
+    const clampedText = detail.get(".tc-needs-detail-text");
+    expect(clampedText.classes()).toContain("tc-needs-detail-text--clamp");
     expect(detail.text()).toContain("waiting for a local check slot");
     expect(detail.text()).toContain("Details");
 
@@ -137,11 +139,46 @@ describe("check-wait diagnostic clamp (#1034)", () => {
     await flush();
 
     const panelDetail = drawer.get('[data-test-id="drawer-needs-input-detail"]');
-    expect(panelDetail.classes()).toContain("agent-waiting-detail--clamp");
+    expect(panelDetail.classes()).not.toContain("agent-waiting-detail--clamp");
+    expect(panelDetail.get(".agent-waiting-detail-text").classes()).toContain(
+      "agent-waiting-detail-text--clamp",
+    );
 
     const statusBlock = drawer.find('[aria-label="Task status details"]');
     expect(statusBlock.exists()).toBe(true);
     expect(statusBlock.text()).toContain(LONG_WAIT);
+  });
+
+  it("opens Status details when a queued check hint is clicked", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.reviews = {};
+    const task = makeTask({
+      needsInput: false,
+      needsInputReason: undefined,
+      needsInputDetail: undefined,
+    });
+    repo.resourceQueueMarkers = [
+      {
+        taskId: task.id,
+        kind: "local-check",
+        position: 2,
+        ahead: 1,
+        message: "waiting for a local check slot (1 ahead, position 2)",
+        since: new Date().toISOString(),
+      },
+    ];
+    const ui = useUiStore();
+    const opened = vi.spyOn(ui, "openTask").mockResolvedValue();
+    const wrapper = mount(TaskCard, { props: { task, dragEnabled: false } });
+
+    const hint = wrapper.get('[data-test-id="task-card-agent-hint"]');
+    expect(hint.classes()).toContain("tc-queued");
+    await hint.trigger("click");
+    expect(opened).toHaveBeenCalledWith(task);
+    expect(ui.activeTab).toBe("debug");
+    expect(ui.debugView).toBe("status");
   });
 
   it("opens the Debug tab when the clamped card detail is clicked", async () => {

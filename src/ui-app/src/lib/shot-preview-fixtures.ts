@@ -1181,7 +1181,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "card:checkWaitDetail":
     case "drawer:checkWaitDetail": {
       const longWait =
-        "waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1030 check (pid 50649, alive), #1024 check (pid 70210, alive), #1024 check (pid 57029, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 11s";
+        "waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1030 check (pid 50649, alive), #1024 check (pid 70210, alive), #1024 check (pid 57029, alive), #1025 check (pid 55123, alive), #1026 check (pid 60042, alive), #1027 check (pid 61001, alive), #1028 check (pid 62002, alive), #1029 check (pid 63003, alive), #1031 check (pid 64004, alive), #1032 check (pid 65005, alive), #1033 check (pid 66006, alive); slot holder has made no progress for 30 minutes (no heartbeat); pool local-check is at max concurrency; the run will start automatically once a slot frees up; no action is needed while the queue drains, and the watchdog will escalate again if this wait keeps growing for 11s";
       ensureFixtureTask(repo, "active", {
         title: "Check wait escalation fixture",
         needsInput: true,
