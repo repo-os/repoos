@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T14:23:47Z"
+updated_at: "2026-11-04T14:26:10Z"
 dev_error_count: 5
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:21:54.126Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T14:22:51.475Z\",\"kind\":\"dev-error\"}]"
@@ -115,26 +115,40 @@ states, panel open/close with shared width, commit success/error paths with the 
 ```json
 [
 {
-"label": "Full-width amber dirty-main button under the sidebar git row",
-"target": "default",
-"route": "/",
-"highlight": ".side-git-dirty",
-"state": "repo:dirtyMain"
+  "label": "Sidebar full-width dirty-main button",
+  "target": "default",
+  "route": "/",
+  "highlight": ".side-git-dirty",
+  "steps": [
+    {
+      "waitFor": ".side-git-dirty"
+    },
+    {
+      "waitMs": 200
+    }
+  ],
+  "state": "repo:dirtyMain"
 },
 {
-"label": "Uncommitted-changes right panel with file list, working-tree diff and commit footer",
-"target": "default",
-"route": "/",
-"highlight": "[data-testid=\"repo-dirty-panel\"]",
-"steps": [
-  {
-    "click": ".side-git-dirty"
-  },
-  {
-    "waitMs": 500
-  }
-],
-"state": "repo:dirtyMain"
+  "label": "Uncommitted changes panel with file list, diff and commit box",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-testid=\"repo-dirty-panel\"]",
+  "steps": [
+    {
+      "waitFor": "[data-test-id=\"side-git-dirty\"]"
+    },
+    {
+      "click": "[data-test-id=\"side-git-dirty\"]"
+    },
+    {
+      "waitFor": "[data-testid=\"repo-dirty-panel\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "repo:dirtyMain"
 }
 ]
 ```
@@ -204,3 +218,6 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T14:23:07Z · needs_input
 - 2026-11-04T14:23:22Z · body
 - 2026-11-04T14:23:47Z · body
+- 2026-11-04T14:24:08Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 4s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T14:26:08Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T14:26:10Z · body
