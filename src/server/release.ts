@@ -888,7 +888,16 @@ export async function cutNewRelease(
     // Retry path: the version is already committed, so the bump commit above
     // is skipped. Refresh the release surfaces on their own when a previous
     // attempt (or a hand edit) left them stale, without touching the version.
-    const surfaces = writeReleaseSurfaces(config.root, releaseEntry);
+    let surfaces: ReturnType<typeof writeReleaseSurfaces>;
+    try {
+      surfaces = writeReleaseSurfaces(config.root, releaseEntry);
+    } catch (error) {
+      return {
+        ok: false,
+        status: await getReleaseStatus(config, exec),
+        output: `Could not write the release changelog: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
     if (surfaces.changed) {
       const staged = await exec("git", ["add", "--", ...surfaces.paths], config.root);
       const committed =
