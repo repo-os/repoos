@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-panel-status-card-should-mirror-the
 created_at: "2026-11-04T05:34:26Z"
-updated_at: "2026-11-04T12:31:06Z"
+updated_at: "2026-11-04T12:33:48Z"
 last_close_out_gate_ms: 663910
 last_close_out_gate_at: "2026-11-04T12:31:06.432Z"
 review_passes: 1
@@ -98,4 +98,4 @@ Acceptance addition: for integrating, queued and validating states, the panel pi
 - 2026-11-04T11:50:12Z · watchdog: check wait escalated · waiting: waiting for a local check slot (1 ahead, position 2); waiting behind #0715 check (pid 68910, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-04T12:05:12Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T12:31:06Z · close-out gate completed in 664s
-
+- 2026-11-04T12:33:48Z · status done→done, release:success
