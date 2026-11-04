@@ -5849,7 +5849,7 @@ watch(
                 <button
                   v-if="activeNeedsInputDetailLine"
                   type="button"
-                  class="agent-waiting-detail agent-waiting-detail--clamp"
+                  class="agent-waiting-detail agent-waiting-detail--clamp agent-waiting-detail--action"
                   data-test-id="drawer-needs-input-detail"
                   :aria-label="`${activeNeedsInputDetailLine}. Open Status details.`"
                   @click="openStatusDetails"
