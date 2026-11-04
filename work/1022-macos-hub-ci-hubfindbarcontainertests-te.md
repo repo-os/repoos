@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-04T03:59:44Z"
-updated_at: "2026-11-04T20:45:42Z"
+updated_at: "2026-11-04T20:45:55Z"
 last_close_out_gate_ms: 709858
 last_close_out_gate_at: "2026-11-04T20:45:42.252Z"
 review_passes: 2
@@ -64,4 +64,4 @@ This needs a macOS runner to confirm: the fix cannot be fully verified locally i
 - 2026-11-04T20:26:23Z · message_queued at 2026-11-04T20:26:23.336Z
 - 2026-11-04T20:29:35Z · note: review pass 2: good to go
 - 2026-11-04T20:45:42Z · close-out gate completed in 710s
-
+- 2026-11-04T20:45:55Z · status done→done, release:success
