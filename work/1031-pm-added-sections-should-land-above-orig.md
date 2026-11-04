@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/pm-added-sections-should-land-above-orig
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
-updated_at: "2026-11-04T18:18:32Z"
+updated_at: "2026-11-04T18:29:16Z"
 ---
 ## Problem
 
@@ -35,3 +35,4 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 - 2026-11-04T17:44:20Z · model_override
 - 2026-11-04T17:44:27Z · status inbox→ready
 - 2026-11-04T18:18:32Z · status ready→active, branch
+- 2026-11-04T18:29:16Z · message_queued at 2026-11-04T18:29:16.827Z
