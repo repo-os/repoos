@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T14:11:24Z"
+updated_at: "2026-11-04T14:11:25Z"
 ---
 ## Problem
 
@@ -44,3 +45,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:10:23Z · created · njachowski@gmail.com
 - 2026-11-04T14:10:23Z · screenshots
 - 2026-11-04T14:11:24Z · cli_override
+- 2026-11-04T14:11:25Z · model_override
