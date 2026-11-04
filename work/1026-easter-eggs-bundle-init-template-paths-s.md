@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T17:57:42Z"
+updated_at: "2026-11-04T17:57:49Z"
 ---
 ## Items
 - E1 · Generated AGENTS.md template references nonexistent paths
@@ -18,9 +18,10 @@ updated_at: "2026-11-04T17:57:42Z"
 - E4 · Empty-repo git edge cases
 - E5 · Quieter `repoos list` with no server
 - E6 · Doc and message accuracy nits
-- E7 · Task-card agent popover auto-closes after a configurable delay
+- E7 · Flag underspecified schedule templates on save
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body.
+
 
 ## E1 · Generated AGENTS.md template references nonexistent paths
 
@@ -152,3 +153,4 @@ Source: external QA report on v0.5.75, items 3, 4, 13-18.
 - 2026-11-04T15:51:19Z · body: Items (added 1)
 - 2026-11-04T15:51:20Z · body: E7 · Task-card agent popover auto-closes after a configurable delay (added)
 - 2026-11-04T17:57:42Z · body: E7 · Task-card agent popover auto-closes after a configurable delay (removed 11)
+- 2026-11-04T17:57:49Z · body: Items (added 1, removed 1)
