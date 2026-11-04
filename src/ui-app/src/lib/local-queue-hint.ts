@@ -27,8 +27,14 @@ export function localQueueHintForTask(
   const pos = m.position > 1 ? ` #${m.position}` : "";
   const message = m.message || "for a free slot";
   const reason = /^waiting\b/i.test(message) ? message : `waiting: ${message}`;
+  const kindLabel =
+    m.kind === "pressure"
+      ? "waiting · pressure"
+      : m.kind === "playwright"
+        ? "waiting for a browser slot"
+        : "waiting for a check slot";
   return {
-    label: `${m.kind === "pressure" ? `waiting: ${message}` : m.kind === "playwright" ? "waiting for a browser slot" : "waiting for a check slot"}${pos} · ${duration}`,
+    label: `${kindLabel}${pos} · ${duration}`,
     title: `${reason} for ${duration}`,
   };
 }

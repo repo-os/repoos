@@ -162,7 +162,7 @@ describe("review-rounds-exhausted card detail (#0832)", () => {
     const wrapper = mount(TaskCard, { props: { task, dragEnabled: false } });
 
     const detail = wrapper.get(".tc-needs-detail");
-    expect(detail.classes()).toContain("tc-needs-detail--clamp");
+    expect(detail.get(".tc-needs-detail-text").classes()).toContain("tc-needs-detail-text--clamp");
     expect(detail.text()).toContain("contrast audit");
     expect(detail.text().toLowerCase()).not.toContain("needs some work");
     const hint = wrapper.get(".tc-hint");

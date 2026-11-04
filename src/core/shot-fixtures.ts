@@ -81,6 +81,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:held",
   // #0832 — review task with review-rounds-exhausted and a long verdict summary.
   "card:reviewRoundsExhausted",
+  // #1034 — check-wait escalation with a long queue diagnostic on card and drawer.
+  "card:checkWaitDetail",
+  "drawer:checkWaitDetail",
   // #0810 — a card whose task has a pending worktree-handoff conflict, so a
   // capture can show the "Worktree changed after handoff" modal listing the
   // changed files. Board-only: no drawer, so no fake-id task fetch.

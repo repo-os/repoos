@@ -194,7 +194,9 @@ describe("task drawer status summary (#0952)", () => {
     expect(summary.find(".drawer-info-popover").exists()).toBe(false);
     expect(summary.findAll(".drawer-status-row")).toHaveLength(2);
 
-    await summary.trigger("keydown", { key: "Enter" });
+    // Native buttons activate on Enter/Space themselves; jsdom does not
+    // synthesise that click, so exercise the same click path the browser uses.
+    await summary.trigger("click");
     await flush();
     expect(useUiStore().activeTab).toBe("debug");
     expect(useUiStore().debugView).toBe("status");
@@ -384,7 +386,7 @@ describe("task drawer status summary (#0952)", () => {
     expect(summary.find(".drawer-status-l2").text()).toContain("Changed-path vs 9f3f0ca");
     expect(summary.find(".drawer-status-l2").text()).toContain("on thinkpad");
     expect(summary.find(".drawer-status-l3").text()).toContain("tests failed after retries");
-    await summary.trigger("keydown", { key: " " });
+    await summary.trigger("click");
     await flush();
     expect(useUiStore().activeTab).toBe("debug");
     expect(useUiStore().debugView).toBe("status");

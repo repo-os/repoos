@@ -46,7 +46,7 @@ describe("local check queue wording", () => {
         now,
       ),
     ).toEqual({
-      label: "waiting: machine is under memory pressure · 26m 00s",
+      label: "waiting · pressure · 26m 00s",
       title: "waiting: machine is under memory pressure for 26m 00s",
     });
   });
