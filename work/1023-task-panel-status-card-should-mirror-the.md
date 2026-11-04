@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 663910
-last_close_out_gate_at: "2026-11-04T12:31:06.432Z"
 id: 1023
 title: "Task panel status card should mirror the board card: same lines, same activity animation, no blank rows"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 7128a2cb4159f51d3aa6c36853f7c323ef94c3c6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-panel-status-card-should-mirror-the
 created_at: "2026-11-04T05:34:26Z"
 updated_at: "2026-11-04T12:31:06Z"
+last_close_out_gate_ms: 663910
+last_close_out_gate_at: "2026-11-04T12:31:06.432Z"
 review_passes: 1
 ---
 ## Problem
