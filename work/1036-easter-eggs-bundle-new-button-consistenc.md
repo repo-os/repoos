@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T19:33:44Z"
+updated_at: "2026-11-04T19:41:59Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -168,3 +168,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T19:28:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T19:30:36Z · body
 - 2026-11-04T19:33:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T19:41:59Z · CTO nudge: held — handoff gate is running
