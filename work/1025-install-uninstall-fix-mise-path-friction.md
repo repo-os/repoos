@@ -11,7 +11,7 @@ branch: feat/install-uninstall-fix-mise-path-friction
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:40Z"
-updated_at: "2026-11-04T22:59:48Z"
+updated_at: "2026-11-04T23:00:38Z"
 ---
 ## Problem
 v0.5.75 QA on clean Debian 13 found install-method issues:
@@ -48,3 +48,4 @@ Source: external QA report on v0.5.75 (items 1, 5, 8, 9, 10, 11, 20). Changing t
 - 2026-11-04T22:50:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T22:59:48Z · status active→review
 - 2026-11-04T22:59:48Z · message_queued at 2026-11-04T22:59:48.895Z
+- 2026-11-04T23:00:38Z · note: review pass 1: good to go
