@@ -21,7 +21,7 @@ export const NO_CHECK_PLAN_NOTICE = "No check plan configured — nothing to ver
 export const NO_CHECK_PLAN_CLI_HINT =
   "run `repoos check --print-plan` for a starting [[check.steps]] TOML " +
   "(works once a package.json, go.mod, Cargo.toml or gradlew exists), " +
-  "then commit the steps to repoos.toml — user-docs/check.md explains the gate";
+  "then commit the steps to repoos.toml — https://docs.repoos.org/check explains the gate";
 
 /** The reminder lines `repoos check` prints under the notice — short, actionable. */
 export function noCheckPlanReminderLines(): string[] {

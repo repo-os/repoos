@@ -77,6 +77,8 @@ function makeSchedule(over: Partial<TaskSchedule> = {}): TaskSchedule {
     createdAt: "2026-10-01T00:00:00Z",
     updatedAt: "2026-10-01T00:00:00Z",
     path: "schedules/0001-doc-audit.md",
+    templateUnderspecified: false,
+    templateUnderspecifiedDetail: "",
     ...over,
   };
 }
@@ -390,6 +392,26 @@ describe("schedule dialog layering and capture fixture (#1005)", () => {
       document.documentElement.removeAttribute(SHOT_PREVIEW_APPLIED_ATTR);
       window.history.replaceState({}, "", "/");
     }
+  });
+
+  it("shows a template warning badge only when the template is incomplete (#1026)", async () => {
+    const repo = useRepoStore();
+    repo.schedules = [
+      makeSchedule({
+        id: "0001",
+        templateUnderspecified: true,
+        templateUnderspecifiedDetail: "missing sections: Problem",
+      }),
+      makeSchedule({ id: "0002", templateUnderspecified: false, templateUnderspecifiedDetail: "" }),
+    ];
+    const wrapper = mountPanel();
+    await flushPromises();
+    expect(
+      wrapper.find('[data-testid="schedule-card-0001"] [data-testid="schedule-template-warn"]').exists(),
+    ).toBe(true);
+    expect(
+      wrapper.find('[data-testid="schedule-card-0002"] [data-testid="schedule-template-warn"]').exists(),
+    ).toBe(false);
   });
 
   it("re-applies agents:scheduledSeeded rows after a live refresh (#1005)", async () => {
