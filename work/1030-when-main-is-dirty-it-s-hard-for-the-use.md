@@ -3,13 +3,16 @@ id: 1030
 title: when main is dirty it's hard for the user to notice now (…
 type: feature
 status: draft
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI"
 priority: p2
 area: general
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T10:35:47Z"
+updated_at: "2026-11-04T10:35:48Z"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -30,3 +33,4 @@ when main is dirty it's hard for the user to notice now (because it's just a sma
 - 2026-11-04T10:30:58Z · screenshots
 - 2026-11-04T10:30:59Z · screenshots
 - 2026-11-04T10:35:47Z · note: Freeform PM run failed: the opencode agent timed out after 180s
+- 2026-11-04T10:35:48Z · needs_input
