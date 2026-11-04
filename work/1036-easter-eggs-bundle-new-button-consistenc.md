@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:46:43Z"
+updated_at: "2026-11-04T18:47:06Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -130,3 +130,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T18:46:42Z · message_queued at 2026-11-04T18:46:42.738Z
 - 2026-11-04T18:46:43Z · body: E4 · Commit message textarea too tall in Uncommitted changes panel (added)
 - 2026-11-04T18:46:43Z · message_queued at 2026-11-04T18:46:43.942Z
+- 2026-11-04T18:47:06Z · CTO nudge: held — an undelivered message is already queued
