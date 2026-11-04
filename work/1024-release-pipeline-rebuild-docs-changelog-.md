@@ -8,10 +8,9 @@ area: [core, docs]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-pipeline-rebuild-docs-changelog-
-cli_override: opencode
-model_override: opencode-go/glm-5.3-flash
+model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T06:45:38Z"
-updated_at: "2026-11-04T14:09:15Z"
+updated_at: "2026-11-04T14:09:37Z"
 dev_error_count: 6
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:48:39.951Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T13:49:23.286Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\",\"at\":\"2026-11-04T14:08:02.770Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
@@ -38,22 +37,22 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 ```json
 [
 {
-  "label": "repoos.org shows current version and release date",
-  "target": "Landing page",
-  "route": "/",
-  "highlight": "dl.grid"
+"label": "repoos.org shows current version and release date",
+"target": "Landing page",
+"route": "/",
+"highlight": "dl.grid"
 },
 {
-  "label": "Docs homepage shows current release stamp",
-  "target": "Docs site",
-  "route": "/",
-  "highlight": ".release-line"
+"label": "Docs homepage shows current release stamp",
+"target": "Docs site",
+"route": "/",
+"highlight": ".release-line"
 },
 {
-  "label": "Docs changelog includes the current release",
-  "target": "Docs site",
-  "route": "/changelog",
-  "highlight": ".release-current"
+"label": "Docs changelog includes the current release",
+"target": "Docs site",
+"route": "/changelog",
+"highlight": ".release-current"
 }
 ]
 ```
@@ -98,3 +97,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T14:08:02Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (3/3 crashes in 30m)
 - 2026-11-04T14:09:01Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-04T14:09:15Z · body
+- 2026-11-04T14:09:37Z · cli_override, model_override
