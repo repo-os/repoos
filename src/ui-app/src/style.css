@@ -1308,7 +1308,7 @@
   border-top: 1px solid var(--border);
   background: var(--panel);
 }
-.repo-dirty-input {
+.ff-textarea.repo-dirty-input {
   min-height: 68px;
   resize: vertical;
 }
