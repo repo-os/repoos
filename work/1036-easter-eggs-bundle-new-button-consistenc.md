@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-04T19:57:32.347Z: repoos check failed: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:62758/api/project-environments (http://127.0.0.1:62758/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:62758/api/project-environments); [missing-target] New environment accent button (target \"default\"): highlight [data-testid=\"new-environment\"] matched nothing on /secrets (http://127.0.0.1:62758/secrets)"
 id: 1036
 title: "Easter eggs bundle: New-button consistency and card popover"
 type: chore
@@ -172,3 +174,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T19:57:28Z · note: ui verification failed (3 issue(s)): [request] HTTP 401 for http://127.0.0.1:62758/api/project-environments (http://127.0.0.1:62758/api/project-environments); [request] Failed to load resource: the server responded with a status of 401 (Unauthorized) (http://127.0.0.1:62758/api/project-environments); [missing-target] New environment accent button (target "default"): highlight [data-testid="new-environment"] matched nothing on /secrets (http://127.0.0.1:62758/secrets)
 - 2026-11-04T19:57:28Z · message_queued at 2026-11-04T19:57:28.994Z
 - 2026-11-04T19:57:32Z · message_delivered: 1 message(s)
+
