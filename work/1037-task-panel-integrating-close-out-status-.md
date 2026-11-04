@@ -2,7 +2,7 @@
 id: 1037
 title: "Task panel: integrating/close-out status belongs in the info card above the tabs, not as a variable-width button in the action row"
 type: bug
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/task-panel-integrating-close-out-status-
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T18:25:01Z"
-updated_at: "2026-11-04T21:10:05Z"
+updated_at: "2026-11-04T21:32:39Z"
 ---
 ## Problem
 
@@ -92,3 +92,4 @@ Look at where the drawer header renders the integration pill/status (grep TaskDr
 - 2026-11-04T21:00:07Z · note: adopted orphaned engineer pid 13630
 - 2026-11-04T21:02:31Z · body
 - 2026-11-04T21:10:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-04T21:32:39Z · status active→review
