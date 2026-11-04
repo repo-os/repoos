@@ -146,8 +146,8 @@ describe("task drawer status summary (#0952)", () => {
     const summary = wrapper.find(".drawer-status-summary");
     expect(summary.exists()).toBe(true);
     expect(summary.find(".drawer-status-l1").text()).toContain("Review failed");
-    expect(summary.find(".drawer-status-l3").text()).toContain("No complete report");
-    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
+    expect(summary.find(".drawer-status-l2").text()).toContain("No complete report");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(2);
 
     await wrapper
       .findAll("button.tab-btn")
@@ -230,7 +230,9 @@ describe("task drawer status summary (#0952)", () => {
     expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
     expect(summary.find(".drawer-status-l2").exists()).toBe(false);
     expect(summary.find(".drawer-status-l3").exists()).toBe(false);
-    expect(summary.find(".drawer-status-mark").attributes("aria-hidden")).toBe("true");
+    expect(summary.find(".drawer-status-l1 .ai").attributes("aria-label")).toContain(
+      "remote shot · run · 4m",
+    );
     expect(summary.attributes("aria-label")).toContain("remote shot · run · 4m");
   });
 
@@ -245,7 +247,7 @@ describe("task drawer status summary (#0952)", () => {
 
     const summary = wrapper.find(".drawer-status-summary");
     expect(summary.classes()).toContain("is-compact");
-    expect(summary.find(".drawer-status-l1").text()).toBe("Engineer working");
+    expect(summary.find(".drawer-status-l1").text()).toBe("coding");
     expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
   });
 
@@ -258,9 +260,11 @@ describe("task drawer status summary (#0952)", () => {
       makeTask({ status: "active", branch: "feat/status-summary" }),
     );
 
-    expect(wrapper.find(".drawer-status-summary").text()).toContain("Confirming handoff");
+    expect(wrapper.find(".drawer-status-summary").text()).toContain("running checks");
     expect(wrapper.text()).toContain("Running repoos check…");
     expect(wrapper.text()).not.toContain("Running checks…");
+    // Two lines at most: the shared card label plus the current handoff step.
+    expect(wrapper.find(".drawer-status-summary").findAll(".drawer-status-row")).toHaveLength(2);
     expect(wrapper.find('[data-test-id="task-drawer-request-review"]').exists()).toBe(false);
   });
 
@@ -305,7 +309,7 @@ describe("task drawer status summary (#0952)", () => {
     const wrapper = await mountDrawer(pinia, task);
 
     const summary = wrapper.find(".drawer-status-summary");
-    expect(summary.find(".drawer-status-l1").text()).toContain("Checks running");
+    expect(summary.find(".drawer-status-l1").text()).toContain("running checks");
     expect(summary.find(".drawer-status-l2").text()).toContain("Changed-path vs main");
     expect(summary.find(".drawer-status-l2").text()).toContain("on macbook");
     expect(summary.find(".drawer-status-l3").text()).toContain("Step 4 of 8 · tests 24/72 files");

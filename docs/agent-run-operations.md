@@ -25,7 +25,8 @@ server reload.
 | Start or resume an engineer | `repoos start <id> [--fresh]` | `--fresh` after a poisoned or degenerate session; do not resume blindly. |
 | Pause a task | `repoos pause <id>` | Work stays in the worktree. |
 | Spawn a turn when start did nothing | `repoos message <id> "…"` | On 2026-10-06, `/start` and `repoos review` sometimes left **no running agent**; an explicit message started a turn with clear instructions. |
-| Request handoff (synchronous) | `repoos review <id> [--wait]` | Waits for validation; preferred when you need the failure reason in the shell. |
+| Request handoff (synchronous) | `repoos review <id> [--wait]` | Waits for validation; preferred for a **human** who needs the failure reason in the shell. A runner engineer must not call this — request with `repoos mv <id> review` or the signal and end the turn. |
+| Check a handoff without waiting | `repoos handoff-status <id> [--json]` | Non-blocking: prints `not requested`, `running`, `passed`, `failed` or `deferred` with the current step and reason. It never starts or waits for a handoff. |
 | Close-out (merge pipeline) | `repoos done <id> [--commit-dirty] [--wait]` | **Not** `repoos mv <id> done` — that only flips metadata. |
 | Per-task CLI/model | `repoos override <id> --cli X --model Y` | **Verify** in the task file (`grep ^cli_override work/<id>-*.md`); a lost override once reran the wrong harness. |
 | Running agents | `repoos agents` | Sanity-check between wake-ups. |

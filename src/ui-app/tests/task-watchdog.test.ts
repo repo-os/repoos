@@ -1542,6 +1542,41 @@ describe("watchdog check-wait escalation (#0974)", () => {
     },
   );
 
+  it("keeps a progressing holder non-blocking even when its monotonic heartbeat is small", async () => {
+    // A heartbeat from a younger Bun process carries a small process-relative
+    // monotonic value. The watchdog used to subtract it from its own uptime and
+    // escalate a healthy, progressing holder as "no heartbeat" (#1032).
+    const fx = makeFx(500);
+    vi.stubEnv("REPOOS_LOCAL_CHECK_SLOT_HOME", fx.root);
+    marker(fx, "local-check", 15 * 60_000);
+    const slot = join(localCheckLockRoot(fx.root, ".repoos"), "0");
+    mkdirSync(slot, { recursive: true });
+    writeFileSync(join(slot, ".holder"), String(process.pid));
+    writeFileSync(join(slot, ".meta.json"), "{}");
+    const hrtime = vi.spyOn(process.hrtime, "bigint").mockReturnValue(6_000_000_000_000n);
+    try {
+      writeFileSync(
+        join(slot, ".heartbeat.json"),
+        JSON.stringify({ pid: process.pid + 1, wallMs: Date.now(), monotonicMs: 1 }),
+      );
+      const index = new LiveIndex(fx.config);
+      index.refreshAll();
+      const runner = new AgentRunner(fx.config, () => {});
+      try {
+        await new TaskWatchdog(fx.config, index, runner, 1000).checkNow();
+        expect(parseTaskAt(fx).needsInput).toBe(false);
+        expect(parseTaskAt(fx).needsInputReason).toBeUndefined();
+        expect(readQueueMarkers(fx.root, ".repoos")).toHaveLength(1);
+      } finally {
+        runner.dispose();
+      }
+    } finally {
+      hrtime.mockRestore();
+      fx.clean();
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("clears a legacy check-wait flag while keeping a normal queue wait visible", async () => {
     const fx = makeFx(500);
     writeFileSync(

@@ -2,14 +2,19 @@
 id: "0715"
 title: pi engineer ends turns cleanly without requesting handoff; stderr not surfaced; recovery is slow and the CTO cannot see why
 type: bug
-status: review
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T15:20:02Z"
+updated_at: "2026-11-04T15:22:50Z"
+close_out_repair_count: 1
+review_passes: 1
+last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
+handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-11-04T12:30:27.556Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 31 (3 attempts, no stderr surfaced) and row 33 (a poisoned engineer session keeps failing across harness changes until /start {"mode":"fresh"}, undocumented in the handoff).
 
@@ -33,7 +38,6 @@ When a `pi` engineer ends a turn without requesting handoff, RepoOS tells the hu
 ## Notes for AI
 Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/engineer-crash-recovery.ts`, `src/server/engineer-crash-recovery.ts`, `src/server/task-watchdog.ts`, `src/ui-app/tests/pi-driver.test.ts`, `engineer-stall-resume.test.ts` and `cto-idle-nudge.test.ts`. Do not change CTO routing or the budget allowlist. Do not assign `pi` to this task; use the default engineer.
 
-
 ## Activity
 
 - 2026-10-06T09:14:59Z · created · unknown
@@ -44,4 +48,70 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T06:56:02Z · needs_input
 - 2026-11-04T06:56:06Z · status inbox→ready
 - 2026-11-04T06:56:09Z · status ready→active, branch
+- 2026-11-04T07:17:46Z · message_queued at 2026-11-04T07:17:46.111Z
+- 2026-11-04T07:17:46Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T07:22:46Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T07:45:25Z · body
+- 2026-11-04T08:01:49Z · body
+- 2026-11-04T08:04:26Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T08:04:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T08:04:27Z · message_delivered: 1 message(s)
+- 2026-11-04T08:56:45Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-11-04T09:00:44Z · note: adopted orphaned engineer pid 66537
+- 2026-11-04T09:10:43Z · message_queued at 2026-11-04T09:10:43.243Z
+- 2026-11-04T09:10:43Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T09:10:59Z · body
+- 2026-11-04T09:12:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T09:41:18Z · body
+- 2026-11-04T10:00:34Z · body
+- 2026-11-04T10:04:38Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T10:04:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T10:04:39Z · message_delivered: 1 message(s)
+- 2026-11-04T10:15:10Z · message_queued at 2026-11-04T10:15:10.809Z
+- 2026-11-04T10:15:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T10:20:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T10:22:03Z · body
+- 2026-11-04T10:40:49Z · watchdog: check wait escalated · waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1023 check (pid 53784, alive), #1028 check (pid 80432, alive), #0715 check (pid 85674, alive); slot holder has made no progress for 30 minutes (no heartbeat) for 5s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-04T10:41:19Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T11:00:51Z · body
+- 2026-11-04T11:03:19Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T11:03:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T11:03:20Z · message_delivered: 1 message(s)
+- 2026-11-04T11:22:36Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-11-04T11:40:01Z · message_queued at 2026-11-04T11:40:01.702Z
+- 2026-11-04T11:40:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T11:49:28Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T12:05:35Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T12:05:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T12:05:36Z · message_delivered: 1 message(s)
+- 2026-11-04T12:20:52Z · body
+- 2026-11-04T12:30:27Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
+- 2026-11-04T12:44:28Z · message_queued at 2026-11-04T12:44:28.118Z
+- 2026-11-04T12:44:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-04T12:44:52Z · engineer stopped by request
+- 2026-11-04T12:48:40Z · body
+- 2026-11-04T12:55:46Z · held, held-reason, held-by, held-at
+- 2026-11-04T13:04:07Z · body
+- 2026-11-04T13:20:46Z · body
+- 2026-11-04T13:36:40Z · body
+- 2026-11-04T13:48:42Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-04T14:37:55Z · released
+- 2026-11-04T14:38:03Z · note: handoff requested (cli)
+- 2026-11-04T14:54:59Z · message_queued at 2026-11-04T14:54:59.206Z
+- 2026-11-04T14:54:59Z · handoff failed · task-file handoff failed at review · Engineering report narrative is 1218 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.
+- 2026-11-04T14:54:59Z · message_delivered: 2 message(s)
+- 2026-11-04T14:55:12Z · message_queued at 2026-11-04T14:55:12.805Z
+- 2026-11-04T14:56:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-04T15:04:49Z · note: handoff requested (cli)
+- 2026-11-04T15:06:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-04T15:12:41Z · body
+- 2026-11-04T15:15:34Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 9s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-04T15:20:02Z · status active→review
+- 2026-11-04T15:20:03Z · message_queued at 2026-11-04T15:20:03.240Z
+- 2026-11-04T15:20:03Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-04T15:20:04Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-04T15:21:47Z · note: review pass 1: good to go
+- 2026-11-04T15:22:39Z · status review→active
+- 2026-11-04T15:22:39Z · note: close-out repair: gate-failure
+- 2026-11-04T15:22:39Z · message_delivered: 2 message(s)
+- 2026-11-04T15:22:50Z · message_queued at 2026-11-04T15:22:50.471Z
