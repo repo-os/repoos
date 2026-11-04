@@ -19,6 +19,7 @@ import {
 } from "./types.js";
 import { parseTask } from "./task.js";
 import { parseDocument } from "./frontmatter.js";
+import { reportsRootRelPath } from "./report-paths.js";
 import {
   isGitRepo,
   localBranches,
@@ -36,19 +37,34 @@ import {
 
 const INDEX_VERSION = 1;
 
-function walkFiles(dir: string, exts: string[], acc: string[] = []): string[] {
+function walkFiles(
+  dir: string,
+  exts: string[],
+  acc: string[] = [],
+  skipDirs: ReadonlySet<string> = new Set(),
+): string[] {
   if (!existsSync(dir)) return acc;
   for (const entry of readdirSync(dir)) {
     if (entry.startsWith(".")) continue;
     const full = join(dir, entry);
     const st = statSync(full);
     if (st.isDirectory()) {
-      walkFiles(full, exts, acc);
+      if (skipDirs.has(full)) continue;
+      walkFiles(full, exts, acc, skipDirs);
     } else if (exts.includes(extname(entry))) {
       acc.push(full);
     }
   }
   return acc;
+}
+
+/**
+ * Directories under `workDir` that hold bookkeeping, not tasks. Reports are
+ * written under `<workDir>/reports/<task-id>/review-<n>.md` and carry no task
+ * frontmatter, so indexing them would trip the "no `id`" warning on every run.
+ */
+function nonTaskDirs(config: RepoOSConfig): ReadonlySet<string> {
+  return new Set([join(config.root, reportsRootRelPath(config))]);
 }
 
 function priorityRank(p: string): number {
@@ -62,7 +78,7 @@ function statusRank(s: Status): number {
 /** `skipGit` is for metadata consumers; returned Git fields stay empty. */
 export function buildIndex(config: RepoOSConfig, opts: { skipGit?: boolean } = {}): RepoIndex {
   const workPath = join(config.root, config.workDir);
-  const files = walkFiles(workPath, config.taskExtensions);
+  const files = walkFiles(workPath, config.taskExtensions, [], nonTaskDirs(config));
 
   const useGit = !opts.skipGit && isGitRepo(config.root);
   const branches = useGit ? localBranches(config.root) : new Set<string>();
@@ -174,7 +190,7 @@ export async function buildIndexDetailedAsync(
   opts: { fastWorktreeStatus?: boolean; overview?: RepoGitOverview } = {},
 ): Promise<AsyncIndexBuild> {
   const workPath = join(config.root, config.workDir);
-  const files = walkFiles(workPath, config.taskExtensions);
+  const files = walkFiles(workPath, config.taskExtensions, [], nonTaskDirs(config));
 
   const overview = opts.overview ?? (await repoGitOverviewAsync(config.root));
   const { useGit, branches, worktrees, baseBranch } = overview;

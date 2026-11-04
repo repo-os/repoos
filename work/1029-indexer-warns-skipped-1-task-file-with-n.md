@@ -9,8 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/indexer-warns-skipped-1-task-file-with-n
 created_at: "2026-11-04T07:06:29Z"
-updated_at: "2026-11-04T07:43:33Z"
-handoff_signal_retry_count: 2
+updated_at: "2026-11-04T07:43:04Z"
 ---
 ## Problem
 Every `repoos` command prints "[repoos] skipped 1 task file(s) with no `id` in frontmatter — use the API…". The cause is `work/reports/1014/review-1.md`, the first committed review report (d2f5c0020). `walkFiles` in `src/core/indexer.ts` (around line 39) walks `work/` recursively for `.md` files, so the report is read as a task file, has no `id`, and trips the warning at lines 122 and 207. Every future review pass under `work/reports/<id>/` adds to the count.
@@ -32,13 +31,4 @@ Small, independent fix in `src/core/indexer.ts` plus a test. Do not change the r
 - 2026-11-04T07:06:29Z · created · njachowski@gmail.com
 - 2026-11-04T07:06:32Z · status inbox→ready
 - 2026-11-04T07:06:35Z · status ready→active, branch
-- 2026-11-04T07:11:46Z · message_queued at 2026-11-04T07:11:46.522Z
-- 2026-11-04T07:17:01Z · message_queued at 2026-11-04T07:17:01.567Z
-- 2026-11-04T07:22:46Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T07:38:30Z · body
-- 2026-11-04T07:40:52Z · handoff_deferred: 2 queued message(s) must be read before review
-- 2026-11-04T07:40:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
-- 2026-11-04T07:40:52Z · message_delivered: 2 message(s)
 - 2026-11-04T07:43:04Z · status active→review
-- 2026-11-04T07:43:04Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-04T07:43:33Z · note: review pass 1: good to go
