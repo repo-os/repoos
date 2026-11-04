@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T08:04:26Z"
+updated_at: "2026-11-04T08:04:27Z"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 31 (3 attempts, no stderr surfaced) and row 33 (a poisoned engineer session keeps failing across harness changes until /start {"mode":"fresh"}, undocumented in the handoff).
 
@@ -50,3 +50,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T08:01:49Z · body
 - 2026-11-04T08:04:26Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T08:04:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T08:04:27Z · message_delivered: 1 message(s)
