@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 1748f9633e4b7794615370cd63260f3c737e76b4
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
@@ -15,8 +17,6 @@ review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
 updated_at: "2026-11-04T18:09:36Z"
 review_passes: 3
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/task-card-review-rounds-detail.test.ts > review-rounds-exhausted card detail (#0832) > clamps long detail and does not repeat the verdict under the status chip, tests/task-check-wait-detail-clamp.test.ts > check-wait diagnostic clamp (#1034) > clamps the card detail line and keeps the full text in Status details, tests/task-drawer-status-summary.test.ts > task drawer status summary (#0952) > keeps the landable checklist off the card and opens Status details on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 67af7b1c6e38ccc66c4431bd32a61b4582e8b945
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-04T16:59:01.799Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Board card clamps long check-wait detail (target \"default\"): state \"card:checkWaitDetail\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail); [missing-target] Board card clamps long check-wait detail (target \"default\"): highlight [data-test-id=task-card-needs-input-detail] matched nothing on / (http://127.0.0.1:60707/?shotState=card%3AcheckWaitDetail)"
 dev_error_count: 5
@@ -167,3 +167,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T18:05:52Z · note: shots: skipped — 9 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-04T18:06:27Z · note: review pass 3: good to go
 - 2026-11-04T18:09:36Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 1748f963 to 6f65bf85) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
