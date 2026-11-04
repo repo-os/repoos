@@ -85,3 +85,4 @@ Done and archived worktrees that `repoos gc` still retains stay for the safety r
 - 2026-11-04T23:10:08Z · message_delivered: 1 message(s)
 - 2026-11-04T23:10:10Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-11-04T23:12:45Z · body: Cleanup report (added)
+- 2026-11-04T23:12:45Z · message_queued at 2026-11-04T23:12:45.945Z
