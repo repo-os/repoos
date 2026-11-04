@@ -40,6 +40,13 @@ import {
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { activeEngineerCardHint, activeEngineerCardBlocksInterrupt } from "../lib/active-task-card";
+import {
+  AWAITING_FRESH_REVIEW_LABEL,
+  PM_WORKING_LABEL,
+  REVIEWER_RUNNING_LABEL,
+  STARTING_LABEL,
+  runningChecksLabel,
+} from "../lib/task-status-copy";
 import { useNow } from "../composables/useNow";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { Clock3 } from "lucide-vue-next";
@@ -672,7 +679,7 @@ function agentQueuedHint(taskId: string): CardHint {
  *  or a PM chat turn. The same server-side registry backs both, so one hint
  *  serves them; only the title differs for drafts. */
 const PM_WORKING_HINT: CardHint = {
-  label: "PM is working",
+  label: PM_WORKING_LABEL,
   title: "the PM agent is working on this task — open it to see the PM tab",
   cls: "tc-pm-working",
 };
@@ -806,11 +813,15 @@ const hint = computed<CardHint | null>(() => {
       };
     }
     if (repo.reviewFor(t.id)?.running) {
-      return { label: "Reviewing…", title: "automatic review in progress", cls: "tc-reviewing" };
+      return {
+        label: REVIEWER_RUNNING_LABEL,
+        title: "automatic review in progress",
+        cls: "tc-reviewing",
+      };
     }
     if (awaitingFreshReview.value) {
       return {
-        label: "awaiting fresh review",
+        label: AWAITING_FRESH_REVIEW_LABEL,
         title:
           "The visible report is from before the latest engineering handoff. Open the task to follow the new review or start it again if needed.",
         cls: "tc-reviewing",
@@ -895,7 +906,7 @@ const hint = computed<CardHint | null>(() => {
       }
       const slow = slowCheck.value;
       return {
-        label: slow ? "running checks · slow" : "running checks",
+        label: runningChecksLabel(!!slow),
         title: slow
           ? "Handoff checks are running slower than usual — focus the slow badge for timing details"
           : "RepoOS is committing and running the checks before moving this to review",
@@ -934,7 +945,7 @@ const hint = computed<CardHint | null>(() => {
   // the explanation the model produced is invisible.
   if (t.status === "ready" && repo.isStartWorkPending(t.id)) {
     return {
-      label: "Starting…",
+      label: STARTING_LABEL,
       title: "moving this task to active and launching the engineer",
       cls: "tc-starting",
     };
@@ -1552,7 +1563,7 @@ async function openDebuggerFromError(): Promise<void> {
             aria-hidden="true"
             >!</span
           >
-          <ActivityIndicator v-else-if="hint.cls === 'tc-starting'" label="Starting…" />
+          <ActivityIndicator v-else-if="hint.cls === 'tc-starting'" :label="STARTING_LABEL" />
           <ActivityIndicator v-else-if="hint.cls === 'tc-moving'" label="Integrating…" />
           {{ hint.label }}
           <span
