@@ -41,6 +41,8 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   re("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/landable$/.source),
+  // Non-blocking handoff outcome for `repoos handoff-status` (#1028).
+  re("GET", /^\/api\/tasks\/([^/]+)\/handoff-status$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview\/stop$/.source),
   // `repoos shot` single-entry capture through the browser-capture policy (#0874).

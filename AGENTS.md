@@ -107,6 +107,10 @@ RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
    both record a request without changing status. RepoOS commits the branch,
    runs validation, verifies that the tested tree stayed unchanged, and only
    then moves the task to `review`. Failure leaves it `active` with the reason.
+   Do not call the blocking `repoos review <id>` from a runner turn — it waits
+   for the same server-owned handoff and races it. RepoOS queues the outcome
+   (pass, fail with the failing step and reason, or deferral) for your next
+   turn; `repoos handoff-status <id>` answers immediately without waiting.
 5. Leave the worktree open and stop. Do not merge the branch or mark it done.
    Resume fixes on this same worktree if review sends it back.
 
