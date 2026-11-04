@@ -2,14 +2,14 @@
 id: 1037
 title: "Task panel: integrating/close-out status belongs in the info card above the tabs, not as a variable-width button in the action row"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T18:25:01Z"
-updated_at: "2026-11-04T18:25:01Z"
+updated_at: "2026-11-04T20:34:53Z"
 ---
 ## Problem
 
@@ -47,3 +47,4 @@ Look at where the drawer header renders the integration pill/status (grep TaskDr
 
 - 2026-11-04T18:25:01Z · created · njachowski@gmail.com
 - 2026-11-04T18:25:01Z · screenshots
+- 2026-11-04T20:34:53Z · status inbox→ready
