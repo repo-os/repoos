@@ -24,15 +24,18 @@ function env(status: number): LandingEnv {
 }
 
 describe("landing llms.txt caching", () => {
-  it.each(["/llms.txt", "/llms-full.txt"])(
-    "serves %s with a short revalidated cache",
-    async (path) => {
-      const res = await worker.fetch(new Request(`https://repoos.org${path}`), env(200));
-      expect(res.status).toBe(200);
-      expect(res.headers.get("Cache-Control")).toBe(AGENT_TEXT_CACHE_CONTROL);
-      expect(await res.text()).toBe("# RepoOS");
-    },
-  );
+  it.each(["/llms.txt"])("serves %s with a short revalidated cache", async (path) => {
+    const res = await worker.fetch(new Request(`https://repoos.org${path}`), env(200));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe(AGENT_TEXT_CACHE_CONTROL);
+    expect(await res.text()).toBe("# RepoOS");
+  });
+
+  it("redirects llms-full.txt to the docs site instead of caching a landing miss", async () => {
+    const res = await worker.fetch(new Request("https://repoos.org/llms-full.txt"), env(404));
+    expect(res.status).toBe(308);
+    expect(res.headers.get("Location")).toBe("https://docs.repoos.org/llms-full.txt");
+  });
 
   it("never lets a 404 for llms.txt be cached", async () => {
     const res = await worker.fetch(new Request("https://repoos.org/llms.txt"), env(404));
@@ -74,7 +77,9 @@ describe("landing llms.txt caching", () => {
       new URL("../../../landing/wrangler.jsonc", import.meta.url),
       "utf8",
     );
-    expect(wrangler).toMatch(/"run_worker_first": \[[^\]]*"\/llms\.txt", "\/llms-full\.txt"\]/);
+    expect(wrangler).toMatch(/"run_worker_first": \[[^\]]*"\/llms\.txt"/);
+    expect(wrangler).toMatch(/"run_worker_first": \[[^\]]*"\/llms-full\.txt"/);
+    expect(wrangler).toMatch(/"run_worker_first": \[[^\]]*"\/AGENTS\.md"/);
     const headers = readFileSync(
       new URL("../../../user-docs/public/_headers", import.meta.url),
       "utf8",
