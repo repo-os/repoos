@@ -134,3 +134,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T12:37:46Z · status inbox→ready
 - 2026-11-04T12:58:34Z · status ready→active, branch
 - 2026-11-04T13:11:11Z · message_queued at 2026-11-04T13:11:11.788Z
+- 2026-11-04T13:11:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
