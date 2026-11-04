@@ -243,3 +243,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T15:51:28Z · body
 - 2026-11-04T16:21:31Z · body
 - 2026-11-04T16:23:23Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-04T16:23:23Z · message_queued at 2026-11-04T16:23:23.280Z
