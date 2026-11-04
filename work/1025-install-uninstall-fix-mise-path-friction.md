@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p1
 area: [core, docs]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
 created_at: "2026-11-04T06:45:40Z"
-updated_at: "2026-11-04T06:45:40Z"
+updated_at: "2026-11-04T21:48:42Z"
 ---
 ## Problem
 v0.5.75 QA on clean Debian 13 found install-method issues:
@@ -37,3 +38,4 @@ Source: external QA report on v0.5.75 (items 1, 5, 8, 9, 10, 11, 20). Changing t
 ## Activity
 
 - 2026-11-04T06:45:40Z · created · njachowski@gmail.com
+- 2026-11-04T21:48:42Z · cli_override
