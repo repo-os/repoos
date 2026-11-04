@@ -117,10 +117,7 @@ describe("engineering report history", () => {
     expect(paneTabs.findAll("button")[0]!.attributes("data-test-id")).toBe(
       "engineering-report-tab",
     );
-    expect(paneTabs.findAll("button").map((tab) => tab.text().trim())).toEqual([
-      "Report 2",
-      "Chat",
-    ]);
+    expect(paneTabs.findAll("button").map((tab) => tab.text().trim())).toEqual(["Report", "Chat"]);
     expect(
       overrideBar.element.compareDocumentPosition(paneTabs.element) &
         Node.DOCUMENT_POSITION_FOLLOWING,
