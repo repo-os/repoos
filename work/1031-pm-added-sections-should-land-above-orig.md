@@ -5,11 +5,12 @@ type: bug
 status: inbox
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T12:03:10Z"
-updated_at: "2026-11-04T12:03:10Z"
+updated_at: "2026-11-04T17:44:20Z"
 ---
 ## Problem
 
@@ -31,3 +32,4 @@ Change is in `replaceSection` (insertAt computation). Also check the PM prompt i
 ## Activity
 
 - 2026-11-04T12:03:10Z · created · njachowski@gmail.com
+- 2026-11-04T17:44:20Z · model_override
