@@ -131,3 +131,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:49:41Z · message_queued at 2026-11-04T15:49:41.426Z
 - 2026-11-04T15:49:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T15:49:45Z · message_delivered: 2 message(s)
+- 2026-11-04T15:51:06Z · note: handoff requested (cli)
