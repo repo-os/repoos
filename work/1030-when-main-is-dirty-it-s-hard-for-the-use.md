@@ -14,7 +14,7 @@ branch: feat/full-width-dirty-main-button-in-sidebar-
 cli_override: opencode
 model_override: opencode-go/glm-5.3-flash
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T16:59:52Z"
+updated_at: "2026-11-04T17:13:08Z"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: 6ce5d3f347e3d6357dff404c28b0188df3e1f8d5
 handoff_signal_retry_count: 2
@@ -267,3 +267,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T16:54:46Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1230 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
 - 2026-11-04T16:54:46Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/glm-5.3-flash); it will not chain another automatic switch (1/3 crashes in 30m)
 - 2026-11-04T16:59:52Z · body
+- 2026-11-04T17:13:08Z · body
