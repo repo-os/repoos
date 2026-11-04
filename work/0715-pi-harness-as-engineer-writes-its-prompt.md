@@ -112,3 +112,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:21:47Z · note: review pass 1: good to go
 - 2026-11-04T15:22:39Z · status review→active
 - 2026-11-04T15:22:39Z · note: close-out repair: gate-failure
+- 2026-11-04T15:22:39Z · message_delivered: 2 message(s)
