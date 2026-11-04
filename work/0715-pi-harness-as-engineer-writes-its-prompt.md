@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "0715"
 title: pi engineer ends turns cleanly without requesting handoff; stderr not surfaced; recovery is slow and the CTO cannot see why
 type: bug
@@ -113,3 +114,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T15:22:39Z · status review→active
 - 2026-11-04T15:22:39Z · note: close-out repair: gate-failure
 - 2026-11-04T15:22:39Z · message_delivered: 2 message(s)
+
