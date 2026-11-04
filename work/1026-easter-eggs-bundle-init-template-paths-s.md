@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-04T15:51:19Z"
+updated_at: "2026-11-04T15:51:20Z"
 ---
 ## Items
 - E1 · Generated AGENTS.md template references nonexistent paths
@@ -136,6 +136,26 @@ Source: external QA report on v0.5.75, items 3, 4, 13-18.
 ![4](/api/tasks/1026/attachments/att_a4a037d3-36a5-4f1e-ae9e-5c4c86ada329.png)
 ![5](/api/tasks/1026/attachments/att_a3aec7c8-61bc-4ef5-9f11-ace9ee36014d.png)
 
+## E7 · Task-card agent popover auto-closes after a configurable delay
+### Problem
+
+Clicking the robot icon on a task card opens the task's AI agents popover (PM / EN / RV agent and model). It stays open until the user clicks away, so it covers the neighbouring cards.
+
+### Desired UX
+
+The popover closes itself after 15 seconds, fading out smoothly rather than disappearing. The delay is a Settings control (seconds; 0 disables auto-close) so the user can change it. Any interaction with the popover (hover, focus or click inside) restarts the timer.
+
+### Acceptance criteria
+
+- [ai] Test: the popover closes after the configured delay, and stays open when the delay is 0.
+- [ai] Test: interacting with the popover restarts the timer.
+- [ai] The new key is in `getConfigSchema()` and on the appropriate Settings tab with clear copy, plus a test, per the repo rule on feature settings.
+- [ai] Fade-out respects `prefers-reduced-motion`.
+
+### Notes for AI
+
+Find the popover from the robot icon in the board card component under src/ui-app/src/components. Reuse the existing styled popover, no native tooltip. Source: Nick, 2026-11-04.
+
 ## Activity
 
 - 2026-11-04T06:45:41Z · created · njachowski@gmail.com
@@ -147,3 +167,4 @@ Source: external QA report on v0.5.75, items 3, 4, 13-18.
 - 2026-11-04T12:58:43Z · screenshots
 - 2026-11-04T13:13:56Z · body: Items (removed 1); E7 · Hold dialog styling, optional reason, and held-card padding (removed)
 - 2026-11-04T15:51:19Z · body: Items (added 1)
+- 2026-11-04T15:51:20Z · body: E7 · Task-card agent popover auto-closes after a configurable delay (added)
