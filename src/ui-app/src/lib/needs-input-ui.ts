@@ -242,7 +242,7 @@ export function needsInputDetailUsesLineClamp(
   detail: string | null | undefined,
   hasQuestions = false,
 ): boolean {
-  return formatNeedsInputDetailForDisplay(reason, detail, hasQuestions) !== null;
+  return formatNeedsInputDetailForDisplay(reason, detail ?? undefined, hasQuestions) !== null;
 }
 
 export function needsInputSuggestionText(
