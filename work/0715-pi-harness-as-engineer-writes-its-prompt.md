@@ -80,3 +80,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T11:40:02Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-04T11:49:28Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T12:05:35Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-04T12:05:35Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
