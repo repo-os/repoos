@@ -2,11 +2,11 @@
 id: "0012"
 title: Daily safe worktree cleanup
 enabled: true
-cadence: daily
+cadence: weekly
 timezone: Asia/Singapore
 time_of_day: "06:00"
 run_at: ""
-day_of_week: ""
+day_of_week: 0
 task_title: Review and safely clean task worktrees
 task_type: chore
 task_area: "core,server"
@@ -20,7 +20,7 @@ last_task_id: 1021
 last_error: ""
 last_occurrence_key: "daily:2026-11-04"
 created_at: "2026-11-01T15:58:12.727Z"
-updated_at: "2026-11-03T22:00:37.290Z"
+updated_at: "2026-11-04T17:40:39.743Z"
 ---
 ## Purpose
 
