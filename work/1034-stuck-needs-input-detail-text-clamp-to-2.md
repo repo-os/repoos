@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-04T16:24:15.644Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1034
 title: "Stuck/needs-input detail text: clamp to 2-3 lines on card and task panel, click opens Debug tab"
 type: bug
@@ -15,7 +13,9 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T16:24:15Z"
+updated_at: "2026-11-04T16:26:19Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-04T16:24:15.644Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 5
 ---
 ## Problem
@@ -114,4 +114,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T15:53:54Z · message_delivered: 2 message(s)
 - 2026-11-04T16:24:12Z · message_queued at 2026-11-04T16:24:12.417Z
 - 2026-11-04T16:24:15Z · message_delivered: 1 message(s)
-
+- 2026-11-04T16:26:19Z · CTO nudge: held — remote validation is running
