@@ -33,8 +33,12 @@ Reuse whatever the card uses to pick its label and progress line (`cardProgressL
 
 ![Board card: Running checks with animated indicator](/api/tasks/1023/attachments/att_4d98e6c3-ffea-40fc-ba5b-5ed65244ec16.png)
 ![Task panel for the same task: Confirming handoff, Handoff, Running checks…, no animation](/api/tasks/1023/attachments/att_e56947d0-dd1a-41a1-9e10-a6970e377175.png)
+![#1016 panel: Integrating pill reads 'queued #1 · 7m 29s — ahead: #1027 validating', a different wording from the card](/api/tasks/1023/attachments/att_776ae0f3-5692-4152-9944-d59cf66ca522.png)
+![#1027 board card: 'integrating · remote tests · 7m 26s'](/api/tasks/1023/attachments/att_1743f691-e833-44da-8759-834b7a4a5c4e.png)
+![#1027 panel: pill reads 'Integrating... (check · 7m 17s)' and the status dropdown is blank](/api/tasks/1023/attachments/att_bc803b78-7cff-4365-831d-ad6b102d2c5b.png)
 
 ## Activity
 
 - 2026-11-04T05:34:26Z · created · njachowski@gmail.com
 - 2026-11-04T05:34:27Z · screenshots
+- 2026-11-04T09:12:03Z · screenshots
