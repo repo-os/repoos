@@ -742,6 +742,11 @@ describe("pi driver", () => {
       expect(resume.args[resume.args.indexOf("--session") + 1]).toBe(id);
       expect(resume.args).not.toContain("--session-id");
       expect(resume.args).not.toContain("--continue");
+      // #0715: every pi engineer resume prompt ends with the handoff trigger,
+      // not just the launch mission.
+      const resumePrompt = resume.args[resume.args.length - 1]!;
+      expect(resumePrompt).toContain(HANDOFF_READY_SIGNAL);
+      expect(resumePrompt).toContain("repoos mv 0001 review");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;
