@@ -34,3 +34,4 @@ See `MAX_WORDS`, `words()`, and both checks in `src/server/engineering-reports.t
 - 2026-11-03T16:47:24Z · status inbox→ready
 - 2026-11-04T02:29:51Z · status ready→active, branch
 - 2026-11-04T02:42:37Z · message_queued at 2026-11-04T02:42:37.575Z
+- 2026-11-04T02:42:37Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
