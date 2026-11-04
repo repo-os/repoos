@@ -104,14 +104,40 @@ function formatCardDuration(ms: number): string {
   return rem ? `${hours}h ${rem}m` : `${hours}h`;
 }
 
-function checkHeartbeating(
-  check: ActiveTaskCheckSnapshot,
+export function checkHeartbeating(
+  check: Pick<ActiveTaskCheckSnapshot, "running" | "lastProgressAt">,
   nowMs: number,
   stallMs: number,
 ): boolean {
   if (!check.running) return false;
   const idle = msSince(check.lastProgressAt, nowMs);
   return idle !== null && idle < stallMs;
+}
+
+/**
+ * Agent output silence is not a stall while a check for that task is running
+ * and its progress heartbeat is inside the check stall window. `rawStalled`
+ * is the runner's silence timer. A missing check, a finished check, or a
+ * heartbeat past the window leaves the silence flag unchanged.
+ */
+export function agentSilenceCountsAsStalled(
+  rawStalled: boolean,
+  check: { running: boolean; lastProgressAt: string | null | undefined } | null | undefined,
+  nowMs: number,
+  stallMs = DEFAULT_CHECK_STALL_MS,
+): boolean {
+  if (!rawStalled) return false;
+  if (
+    check &&
+    checkHeartbeating(
+      { running: check.running, lastProgressAt: check.lastProgressAt ?? null },
+      nowMs,
+      stallMs,
+    )
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function checkStalled(check: ActiveTaskCheckSnapshot, nowMs: number, stallMs: number): boolean {

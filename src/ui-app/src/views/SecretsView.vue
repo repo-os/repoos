@@ -453,39 +453,51 @@ onBeforeUnmount(() => {
         <h1 class="page-title">Secrets</h1>
         <p class="page-desc">Manage the keys this project expects. Saved values stay hidden.</p>
       </div>
-      <div class="secrets-env-control">
-        <div class="secrets-picker-wrap">
-          <span class="secrets-label">Environment</span>
-          <Select
-            :model-value="selected"
-            :disabled="!environments.length"
-            @update:model-value="
-              (value) => {
-                selected = String(value);
-                void loadSnapshot();
-              }
-            "
-          >
-            <SelectTrigger class="secrets-picker" aria-label="Viewing environment">
-              <SelectValue placeholder="Choose environment" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                <SelectItem v-for="env in environments" :key="env.id" :value="env.id">{{
-                  env.id
-                }}</SelectItem>
-              </SelectViewport>
-            </SelectContent>
-          </Select>
-          <Button
-            v-if="canManage"
-            variant="outline"
-            class="secrets-create-inline"
-            @click="createOpen = true"
-            >New environment</Button
-          >
+      <div class="page-header-actions">
+        <div class="secrets-env-control">
+          <div class="secrets-picker-wrap">
+            <span class="secrets-label">Environment</span>
+            <Select
+              :model-value="selected"
+              :disabled="!environments.length"
+              @update:model-value="
+                (value) => {
+                  selected = String(value);
+                  void loadSnapshot();
+                }
+              "
+            >
+              <SelectTrigger class="secrets-picker" aria-label="Viewing environment">
+                <SelectValue placeholder="Choose environment" />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                  <SelectItem v-for="env in environments" :key="env.id" :value="env.id">{{
+                    env.id
+                  }}</SelectItem>
+                </SelectViewport>
+              </SelectContent>
+            </Select>
+          </div>
+          <span class="secrets-view-note">Changes here do not switch running processes.</span>
         </div>
-        <span class="secrets-view-note">Changes here do not switch running processes.</span>
+        <Button
+          v-if="canManage"
+          variant="accent"
+          class="new-btn"
+          data-testid="new-environment"
+          @click="createOpen = true"
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M12 5v14M5 12h14"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+          New environment
+        </Button>
       </div>
     </header>
     <div class="page-scroll-body">

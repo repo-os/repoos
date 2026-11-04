@@ -486,7 +486,9 @@ A waiting check says so, in three places:
 - While a **local check** is running for an active engineer, the card shows
   `checking · …` with step/test progress and keeps **Pause work** disabled until
   the gate finishes — agent output can go quiet without tripping `stuck · silent`
-  (#1000).
+  (#1000). The driver brief and the CTO decision digest use that same heartbeat:
+  a live check is not reported as a stalled engineer, and the CTO does not
+  restart that engineer while the heartbeat is fresh.
 - A check with no valid progress heartbeat for three minutes is shown as
   `check stalled`. The card offers **Cancel stalled check** after an explicit
   confirmation; RepoOS signals the registered process group, escalates to

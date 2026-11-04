@@ -97,7 +97,11 @@ describe("schedule editor drawer (#0841)", () => {
   it("renders the shared drawer shell and closes on X, overlay, and Escape", async () => {
     const wrapper = mountPanel();
     await flushPromises();
-    await wrapper.get('[data-testid="new-schedule"]').trigger("click");
+    const create = wrapper.get('[data-testid="new-schedule"]');
+    expect(create.classes()).toContain("new-btn");
+    expect(create.attributes("class")).toContain("--btn-new-bg");
+    expect(create.html()).toContain("M12 5v14");
+    await create.trigger("click");
     await flushPromises();
 
     const el = drawer();
