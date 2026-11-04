@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T14:38:03Z"
+updated_at: "2026-11-04T14:54:59Z"
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-04T12:30:27.556Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -95,3 +95,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T13:48:42Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-04T14:37:55Z · released
 - 2026-11-04T14:38:03Z · note: handoff requested (cli)
+- 2026-11-04T14:54:59Z · message_queued at 2026-11-04T14:54:59.206Z
