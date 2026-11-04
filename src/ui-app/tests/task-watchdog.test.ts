@@ -1179,7 +1179,9 @@ Stuck twice.
   });
 
   it("surfaces needs_input after the clean-exit resume cap instead of looping (#0888)", async () => {
-    const fx = makeFx(10_000);
+    // The resume log is episode-scoped: seed records INSIDE the current
+    // `→active` episode (a 10-minute episode) so all three count toward the cap.
+    const fx = makeFx(600_000);
     const now = Date.now();
     const seeded = serializeEngineerStallResumeLog([
       { at: new Date(now - 60_000).toISOString(), reason: "clean-exit-without-handoff" },
@@ -1588,6 +1590,9 @@ describe("watchdog check-wait escalation (#0974)", () => {
 
   it("does not escalate a wait under ten minutes", async () => {
     const fx = makeFx(500);
+    // Hermetic slot root: without this the test reads ~/.repoos and can pick up
+    // another process's holder, which is not what it is measuring.
+    vi.stubEnv("REPOOS_LOCAL_CHECK_SLOT_HOME", fx.root);
     marker(fx, "local-check", 4 * 60_000);
     const index = new LiveIndex(fx.config);
     index.refreshAll();
@@ -1600,6 +1605,7 @@ describe("watchdog check-wait escalation (#0974)", () => {
     expect(task.needsInput).toBe(false);
     runner.dispose();
     fx.clean();
+    vi.unstubAllEnvs();
   });
 
   it("clears the flag once the wait has ended and the check is running", async () => {
