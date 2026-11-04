@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
 created_at: "2026-11-04T18:25:01Z"
-updated_at: "2026-11-04T20:34:53Z"
+updated_at: "2026-11-04T20:35:03Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ Look at where the drawer header renders the integration pill/status (grep TaskDr
 - 2026-11-04T18:25:01Z · created · njachowski@gmail.com
 - 2026-11-04T18:25:01Z · screenshots
 - 2026-11-04T20:34:53Z · status inbox→ready
+- 2026-11-04T20:35:03Z · cli_override
