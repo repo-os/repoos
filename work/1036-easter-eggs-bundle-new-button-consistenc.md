@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:39:56Z"
+updated_at: "2026-11-04T18:39:58Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -102,3 +103,4 @@ Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-doc
 - 2026-11-04T18:35:33Z · body: E3 · Driver brief and CTO digest: no "stalled" while a check has a live heartbeat (added)
 - 2026-11-04T18:35:34Z · area
 - 2026-11-04T18:39:56Z · cli_override
+- 2026-11-04T18:39:58Z · model_override
