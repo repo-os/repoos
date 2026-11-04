@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T14:10:23Z"
-updated_at: "2026-11-04T14:11:38Z"
+updated_at: "2026-11-04T14:14:41Z"
 ---
 ## Problem
 
@@ -42,6 +42,26 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 ![6](/api/tasks/1034/attachments/att_2364700c-13b6-4d61-bae3-26951e1331f9.png)
 ![7](/api/tasks/1034/attachments/att_2b28ec2f-cbb2-4e29-bb45-ba83d5e3099c.png)
 
+## Shots
+```json
+[
+{
+  "label": "Board card clamps long check-wait detail",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-needs-input-detail\"]",
+  "state": "card:checkWaitDetail"
+},
+{
+  "label": "Drawer waiting block clamps check-wait detail",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": "[data-test-id=\"drawer-needs-input-detail\"]",
+  "state": "drawer:checkWaitDetail"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-04T14:10:23Z · created · njachowski@gmail.com
@@ -52,3 +72,4 @@ Source of the strings is the check-wait/queue-marker message and the stuck-card 
 - 2026-11-04T14:11:33Z · review_model_override
 - 2026-11-04T14:11:34Z · status inbox→ready
 - 2026-11-04T14:11:38Z · status ready→active, branch
+- 2026-11-04T14:14:41Z · body
