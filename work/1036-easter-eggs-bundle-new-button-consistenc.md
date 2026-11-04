@@ -200,3 +200,4 @@ Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` c
 - 2026-11-04T20:56:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T21:05:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T21:27:12Z · status active→review
+- 2026-11-04T21:27:12Z · message_queued at 2026-11-04T21:27:12.460Z
