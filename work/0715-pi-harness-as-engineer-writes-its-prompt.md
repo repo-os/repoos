@@ -9,10 +9,10 @@ assigned_to: ai
 created_by: ""
 branch: feat/pi-engineer-ends-turns-cleanly-without-r
 created_at: "2026-10-06T09:14:59Z"
-updated_at: "2026-11-04T11:03:20Z"
+updated_at: "2026-11-04T11:22:36Z"
 last_check_failure: "repoos check at 2026-11-04T10:06:31.522Z: repoos check failed: ◆ Check plan"
 handoff_signal_retry_count: 2
-engineer_stall_resume_log: "[{\"at\":\"2026-11-04T08:56:45.937Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-04T11:22:36.810Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 Field report from tuk-private (RepoOS v0.5.66). Source rows in tuk-private/repoos/docs/repoos-feedback.md. Row 31 (3 attempts, no stderr surfaced) and row 33 (a poisoned engineer session keeps failing across harness changes until /start {"mode":"fresh"}, undocumented in the handoff).
 
@@ -75,4 +75,4 @@ Start from `.repoos/agent-logs/1016.out.log` (a real pi transcript), `src/core/e
 - 2026-11-04T11:03:19Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T11:03:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
 - 2026-11-04T11:03:20Z · message_delivered: 1 message(s)
-
+- 2026-11-04T11:22:36Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3 in 30m
