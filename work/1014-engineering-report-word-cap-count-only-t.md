@@ -39,3 +39,4 @@ See `MAX_WORDS`, `words()`, and both checks in `src/server/engineering-reports.t
 - 2026-11-04T02:47:37Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-04T02:48:53Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-04T02:48:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review
+- 2026-11-04T02:48:54Z · message_delivered: 1 message(s)
