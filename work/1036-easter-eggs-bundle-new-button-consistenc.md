@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-new-button-consistenc
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T17:57:32Z"
-updated_at: "2026-11-04T18:46:42Z"
+updated_at: "2026-11-04T18:46:43Z"
 ---
 ## Items
 - E1 · "New <x>" buttons: match "New task" in style and position (New schedule, New reminder, New environment)
@@ -96,6 +96,25 @@ An engineer whose check is running with a valid heartbeat is not listed as stall
 
 Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-docs/check.md` "When a check is waiting".
 
+## E4 · Commit message textarea too tall in Uncommitted changes panel
+### Problem
+
+In the Uncommitted changes panel (`src/ui-app/src/components/RepoDirtyPanel.vue`) the optional commit message textarea renders roughly 230px tall (8-9 lines) even though it has `rows="3"` and commit messages are short. Cause: `.repo-dirty-input { min-height: 68px }` (`style.css`, ~line 1311) has the same specificity as the shared `.ff-textarea { min-height: 230px }` (~line 8282), which comes later in the file and wins, so the 68px override never applies.
+
+### Desired UX
+
+The textarea is about 3 lines tall (roughly 68px) and still resizable vertically. The panel gives the freed space to the diff above it.
+
+### Acceptance criteria
+
+- [ai] The override actually wins: raise specificity (for example `.ff-textarea.repo-dirty-input`) or move the rule after `.ff-textarea`, with no `!important`.
+- [ai] Test: the rendered textarea's computed min-height is below 100px.
+- [ai] Declared `## Shots`: the Uncommitted changes panel with a dirty-main state fixture if one exists.
+
+### Notes for AI
+
+Source: Nick, 2026-11-05 (screenshot of the panel). Check other `.ff-textarea` call sites that set a smaller min-height the same way and list them in the handoff report; fix only this panel.
+
 ## Activity
 
 - 2026-11-04T17:57:32Z · created · njachowski@gmail.com
@@ -109,3 +128,4 @@ Source: Nick and the 2026-11-05 session. Docs to keep true if touched: `user-doc
 - 2026-11-04T18:40:05Z · status ready→active, branch
 - 2026-11-04T18:46:42Z · body: Items (added 1)
 - 2026-11-04T18:46:42Z · message_queued at 2026-11-04T18:46:42.738Z
+- 2026-11-04T18:46:43Z · body: E4 · Commit message textarea too tall in Uncommitted changes panel (added)
