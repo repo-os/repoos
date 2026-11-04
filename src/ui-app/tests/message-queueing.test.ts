@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { AgentRunner } from "../../server/agents";
 import { writeHandoffRequest } from "../../server/handoff-request.js";
+import { readHandoffStatus } from "../../server/handoff-status.js";
 import { parseTask } from "../../core/task";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 
@@ -627,6 +628,11 @@ describe("handoff deferral while messages are queued (#0865)", () => {
         // The deferral clears the persisted handoff so no review is triggered.
         expect(runner.hasPendingHandoff(id)).toBe(false);
         expect(onHandoff).not.toHaveBeenCalled();
+        // #1028: the deferral is recorded for `handoff-status`, and its one
+        // outcome message is queued for the next turn.
+        const status = readHandoffStatus(config(fx.root), id);
+        expect(status.state).toBe("deferred");
+        expect(status.outcomeQueued).toBe(true);
       } else {
         expect(activity).not.toContain("handoff_deferred");
         expect(onHandoff).toHaveBeenCalledOnce();
