@@ -1308,8 +1308,7 @@
   border-top: 1px solid var(--border);
   background: var(--panel);
 }
-.ff-textarea.repo-dirty-input {
-  min-height: 68px;
+.repo-dirty-input {
   resize: vertical;
 }
 .repo-dirty-optional {
@@ -2657,11 +2656,15 @@
 .app-tooltip.show {
   display: block;
 }
-.tc-agent-panel-enter-active,
-.tc-agent-panel-leave-active {
+.tc-agent-panel-enter-active {
   transition:
     opacity 0.12s ease,
     transform 0.12s ease;
+}
+.tc-agent-panel-leave-active {
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
 }
 .tc-agent-panel-enter-from,
 .tc-agent-panel-leave-to {
@@ -8297,6 +8300,10 @@
   outline: none;
   border-color: var(--border-bright);
 }
+/* After .ff-textarea so this min-height wins (same element, higher specificity). */
+.ff-textarea.repo-dirty-input {
+  min-height: 68px;
+}
 .ff-textarea-autogrow {
   max-height: min(420px, 45vh);
   overflow-y: auto;
@@ -9153,6 +9160,13 @@
 .new-btn svg {
   width: 14px;
   height: 14px;
+}
+/* Create action on a tab that has no page-level header slot (schedules). */
+.panel-create-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 /* mobile bottom nav */

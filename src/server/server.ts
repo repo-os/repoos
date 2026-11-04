@@ -2610,6 +2610,10 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // The CTO agent (0174): always-on board monitor that detects stuck tasks,
   // stale reviews, and broken builds, then nudges agents or escalates to the human.
+  runner.setCheckProgressProbe((taskId) => {
+    const live = taskChecks.getRuns(taskId).find((run) => run.running);
+    return live ? { running: true, lastProgressAt: live.lastProgressAt } : null;
+  });
   const cto = new CTOManager(config, emitEvent, runner);
   const ctoHeartbeat = new CtoHeartbeatTracker();
   const ctoMonitor = new CTOMonitor(config, index, cto, runner, {
@@ -2640,6 +2644,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       reportedStages,
       reportedStageAt,
       remoteValidator,
+      checkRuns: (taskId) => taskChecks.getRuns(taskId),
     }),
   );
   // Run the monitor cadence unconditionally: `checkNow` no-ops while the CTO
