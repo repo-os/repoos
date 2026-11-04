@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/full-width-dirty-main-button-in-sidebar-
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T13:27:53Z"
+updated_at: "2026-11-04T13:29:07Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-04T13:27:46.133Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -120,26 +120,26 @@ states, panel open/close with shared width, commit success/error paths with the 
 ```json
 [
 {
-"label": "Full-width amber dirty-main button under the sidebar git row",
-"target": "default",
-"route": "/",
-"highlight": "[data-test-id=\"side-git-dirty\"]",
-"state": "repo:dirtyMain"
+  "label": "Full-width amber dirty-main button under the sidebar git row",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"side-git-dirty\"]",
+  "state": "repo:dirtyMain"
 },
 {
-"label": "Uncommitted changes panel: file list, inline diff, commit message and button",
-"target": "default",
-"route": "/",
-"highlight": "[data-testid=\"repo-dirty-panel\"]",
-"steps": [
-{
-"click": "[data-test-id=\"side-git-dirty\"]"
-},
-{
-"waitMs": 600
-}
-],
-"state": "repo:dirtyMain"
+  "label": "Uncommitted-changes panel: file list, inline diff, and commit box",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-testid=\"repo-dirty-panel\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"side-git-dirty\"]"
+    },
+    {
+      "waitFor": "[data-testid=\"repo-dirty-panel\"]"
+    }
+  ],
+  "state": "repo:dirtyMain"
 }
 ]
 ```
@@ -170,3 +170,4 @@ states, panel open/close with shared width, commit success/error paths with the 
 - 2026-11-04T13:27:46Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-04T13:27:53Z · needs_input
 - 2026-11-04T13:27:53Z · message_delivered: 1 message(s)
+- 2026-11-04T13:29:07Z · body
