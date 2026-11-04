@@ -14,6 +14,7 @@ const allFalse: Candidates = {
   notLandable: false,
   handoffFailed: false,
   checksRunning: false,
+  integrating: false,
   confirmingHandoff: false,
   checksFailedAfterRetries: false,
   reviewerRunning: false,
@@ -96,6 +97,19 @@ describe("selectDrawerStatus priority", () => {
         "checksFailedAfterRetries",
       );
     }
+  });
+
+  it("shows close-out progress above routine checks and below a blocking card", () => {
+    expect(selectDrawerStatus(only("integrating"))).toBe("integrating");
+    expect(selectDrawerStatus({ ...only("checksRunning"), integrating: true })).toBe("integrating");
+    expect(selectDrawerStatus({ ...only("workRunning"), integrating: true })).toBe("integrating");
+    expect(selectDrawerStatus({ ...only("integrating"), checksFailedAfterRetries: true })).toBe(
+      "checksFailedAfterRetries",
+    );
+    expect(selectDrawerStatus({ ...only("integrating"), reviewFailed: true })).toBe("reviewFailed");
+    expect(selectDrawerStatus({ ...only("integrating"), waitingForYou: true })).toBe(
+      "waitingForYou",
+    );
   });
 
   it("prioritises checks running over confirming handoff, reviewer and work", () => {
