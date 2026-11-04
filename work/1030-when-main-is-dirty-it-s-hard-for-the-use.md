@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 created_at: "2026-11-04T10:30:51Z"
-updated_at: "2026-11-04T10:42:29Z"
+updated_at: "2026-11-04T10:42:33Z"
 ---
 when main is dirty it's hard for the user to notice now (because it's just a small yellow text), if it's dirty let's add a yellow button on the line below taht fills the full widdth, which when clicked opens a change right sidebar, similar to the task changes tab, so the user can easily see the changes with a single click, from that new dirty change side panel (keep styling,width the same as all the other right side panels btw) there should be a commit button and text area at the bottom for the user to easily commit with a single click there)
 
@@ -44,6 +44,17 @@ inside the same popover. Nothing about that invites "let me deal with it now".
 Screenshots show the current chip (`Screenshot-2026-11-04-at-17.43.22`), the buried popover access
 (`...17.45.29`), and where the affordance should sit (`...18.07.51`).
 
+## Desired UX
+
+When the repo status says main is dirty, a full-width amber button appears in the left sidebar
+directly below the existing branch/status row ("N uncommitted change(s) — branch-name"). With a
+clean main the button is not rendered. Clicking it opens a right-side panel — same width and
+styling as every other right panel (the shared `drawerWidth` drawer, default 680px, resizable;
+`drawer-resize` / `drawer-head` / `drawer-body` scaffolding) — listing the dirty files and showing
+the working-tree diff inline, like the task drawer's Changes tab. At the bottom of the panel there
+is a commit-message textarea and a single Commit button; one click commits all uncommitted changes
+on main and the panel and sidebar chip both update immediately.
+
 
 ## Activity
 
@@ -56,3 +67,4 @@ Screenshots show the current chip (`Screenshot-2026-11-04-at-17.43.22`), the bur
 - 2026-11-04T10:36:57Z · needs_input
 - 2026-11-04T10:42:24Z · area
 - 2026-11-04T10:42:29Z · body: Problem (added)
+- 2026-11-04T10:42:33Z · body: Desired UX (added)
