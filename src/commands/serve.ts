@@ -92,6 +92,25 @@ export function resolveServeHost(explicitHost?: string): {
 }
 
 /**
+ * Bind row text for the serve startup banner. Uses {@link tailscaleDetected},
+ * not `host === "0.0.0.0"`, so an explicit `--host 0.0.0.0` is not mislabeled.
+ */
+export function formatServeBindBannerValue(host: string, tailscaleDetected: boolean): string {
+  if (tailscaleDetected) {
+    return (
+      c.cyan("0.0.0.0") +
+      c.dim(" (all interfaces — Tailscale detected; pass ") +
+      c.cyan("--host 127.0.0.1") +
+      c.dim(" for localhost only)")
+    );
+  }
+  if (host === "127.0.0.1") {
+    return c.cyan("127.0.0.1") + c.dim(" (localhost only)");
+  }
+  return c.cyan(host) + c.dim(" (explicit --host)");
+}
+
+/**
  * Whether this `repoos serve` should apply the repo's preview-only
  * `[preview.*]` config overlay (#0464).
  *
@@ -263,13 +282,7 @@ export async function cmdServe(
   const rows: BannerRow[] = [
     {
       label: "Bind",
-      value:
-        host === "0.0.0.0"
-          ? c.cyan("0.0.0.0") +
-            c.dim(" (all interfaces — Tailscale detected; pass ") +
-            c.cyan("--host 127.0.0.1") +
-            c.dim(" for localhost only)")
-          : c.cyan("127.0.0.1") + c.dim(" (localhost only)"),
+      value: formatServeBindBannerValue(host, tailscaleDetected),
     },
     { label: "Local", value: c.cyan(c.bold(handle.url)) },
     { label: "Events", value: c.cyan(handle.url + "/api/events") + c.dim("  (SSE)") },
