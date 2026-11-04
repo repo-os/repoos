@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: 1024
 title: "Release pipeline: rebuild docs, changelog, llms files and release notes on every release"
 type: bug
@@ -11,7 +10,8 @@ created_by: njachowski@gmail.com
 branch: feat/release-pipeline-rebuild-docs-changelog-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T06:45:38Z"
-updated_at: "2026-11-04T15:29:49Z"
+updated_at: "2026-11-04T15:36:20Z"
+handoff_signal_retry_count: 1
 dev_error_count: 10
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/glm-5.3-flash\"}"
 ---
@@ -131,4 +131,4 @@ Source: external QA report on v0.5.75 (items 2, 6, 19). Left out: SEO polish (si
 - 2026-11-04T15:26:32Z · body
 - 2026-11-04T15:28:19Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder has made no progress for 30 minutes (no heartbeat) for 1s · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-04T15:29:49Z · watchdog: check wait ended or recovered — cleared needs_input
-
+- 2026-11-04T15:36:20Z · message_queued at 2026-11-04T15:36:20.056Z
