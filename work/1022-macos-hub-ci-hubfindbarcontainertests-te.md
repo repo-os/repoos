@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-04T20:29:35Z"
-review_passes: 2
 id: 1022
 title: "macOS Hub CI: HubFindBarContainerTests.testHidingFindBarReturnsFocusToThePage fails on every run; the Build and test native Hub job has been red since at least 2026-10-19"
 type: bug
@@ -15,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: opencode
 review_model_override: opencode-go/deepseek-v4.1-flash
 created_at: "2026-11-04T03:59:44Z"
-review_rounds: 1
+updated_at: "2026-11-04T20:03:47Z"
 ---
 ## Problem
 The "macOS Hub" GitHub Actions workflow (job "Build and test native Hub", step "Run unit tests without signing") ends in failure on every run I can see, from 2026-10-19 through the v0.5.75 release on 2026-11-04 (run https://github.com/repo-os/repoos/actions/runs/41769376401; also the v0.5.74 release run on 2026-10-30). The log shows one failing test, `HubFindBarContainerTests.testHidingFindBarReturnsFocusToThePage()`, failing in 0.000 s on the CI runner; the other tests in that suite pass. It looks like a keyboard-focus / first-responder test that cannot hold focus on a headless CI runner, but the assertion text has not been read. The result: the release page warns "The release workflow failed at 'Run unit tests without signing', so some channels below may not update on their own", even though the Release workflow and the "Release macOS Hub DMG" job succeed and the release is published. A permanently red job hides real regressions.
@@ -42,22 +40,4 @@ This needs a macOS runner to confirm: the fix cannot be fully verified locally i
 - 2026-11-04T19:54:35Z · review_cli_override
 - 2026-11-04T19:54:39Z · review_model_override
 - 2026-11-04T19:54:46Z · status ready→active, branch
-- 2026-11-04T20:01:58Z · body
-- 2026-11-04T20:03:44Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T20:03:48Z · status active→review
-- 2026-11-04T20:03:48Z · message_queued at 2026-11-04T20:03:48.628Z
-- 2026-11-04T20:03:49Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-04T20:09:14Z · note: review pass 1: needs some work
-- 2026-11-04T20:09:15Z · message_delivered: 1 message(s)
-- 2026-11-04T20:09:16Z · status review→active
-- 2026-11-04T20:11:04Z · body
-- 2026-11-04T20:11:56Z · message_queued at 2026-11-04T20:11:56.308Z
-- 2026-11-04T20:17:06Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T20:22:09Z · message_delivered: 1 message(s)
-- 2026-11-04T20:22:10Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-- 2026-11-04T20:25:12Z · body
-- 2026-11-04T20:25:44Z · status active→review
-- 2026-11-04T20:25:45Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-04T20:26:23Z · message_queued at 2026-11-04T20:26:23.336Z
-- 2026-11-04T20:29:35Z · note: review pass 2: good to go
-
+- 2026-11-04T20:03:47Z · status active→review
