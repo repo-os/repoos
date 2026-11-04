@@ -2,7 +2,7 @@
 id: 1025
 title: "Install/uninstall: fix mise, PATH friction, Node check, ~/.repoos state split and uninstall accuracy"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: [core, docs]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:40Z"
-updated_at: "2026-11-04T21:48:50Z"
+updated_at: "2026-11-04T21:48:53Z"
 ---
 ## Problem
 v0.5.75 QA on clean Debian 13 found install-method issues:
@@ -42,3 +42,4 @@ Source: external QA report on v0.5.75 (items 1, 5, 8, 9, 10, 11, 20). Changing t
 - 2026-11-04T21:48:42Z · cli_override
 - 2026-11-04T21:48:44Z · model_override
 - 2026-11-04T21:48:50Z · model_override
+- 2026-11-04T21:48:53Z · status inbox→ready
