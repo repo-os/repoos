@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-04T19:42:56Z"
-review_passes: 1
 id: 1035
 title: "Work page: Pipeline view (horizontal race track for active and review tasks)"
 type: feature
@@ -12,8 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/work-page-pipeline-view-horizontal-race-
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-04T17:20:01Z"
-handoff_signal_retry_count: 1
-last_check_failure: "repoos check at 2026-11-04T18:48:31.070Z: repoos check failed: reused check inputs changed during handoff — run the check again"
+updated_at: "2026-11-04T19:41:57Z"
 ---
 ## Problem
 
@@ -65,27 +62,14 @@ Area chips and the file-count chip are left off to hold four lines. Build the ca
 - Keep Board code untouched where possible. This is a new view over the same data.
 - Not in scope: dragging cards, a hover popover with extra detail, the three-line variant, showing `ready` tasks as lanes.
 
-## Visual reference
-Approved mockup (light and dark, solid hairline guides, cards centered in their lanes) is attached above under Screenshots (third image). Colours: card is one step above the page surface in both themes, chips use the page's chip surface, success tint for Merged, amber for sent-back, red for stuck. Use existing theme tokens only.
-
-## Shots
-```json
-[
-{
-"label": "Pipeline view with lanes across every stage",
-"target": "default",
-"route": "/work",
-"highlight": "[data-test-id=\"pipeline-view\"]",
-"state": "board:pipeline"
-}
-]
-```
-
 ## Screenshots
 
 ![1](/api/tasks/1035/attachments/att_de823a65-bd9c-48c2-845b-fbd197b59ece.png)
 ![2](/api/tasks/1035/attachments/att_4ea308fd-fe8e-43f3-9f15-fee13a945e69.webp)
 ![Approved Pipeline view mockup, light and dark](/api/tasks/1035/attachments/att_11dd76d3-db5c-4cb5-a3de-9376193d9be7.png)
+
+## Visual reference
+Approved mockup (light and dark, solid hairline guides, cards centered in their lanes) is attached above under Screenshots (third image). Colours: card is one step above the page surface in both themes, chips use the page's chip surface, success tint for Merged, amber for sent-back, red for stuck. Use existing theme tokens only.
 
 ## Activity
 
@@ -98,29 +82,4 @@ Approved mockup (light and dark, solid hairline guides, cards centered in their 
 - 2026-11-04T17:44:39Z · model_override
 - 2026-11-04T17:44:42Z · status inbox→ready
 - 2026-11-04T18:02:21Z · status ready→active, branch
-- 2026-11-04T18:07:56Z · body
-- 2026-11-04T18:14:29Z · message_queued at 2026-11-04T18:14:29.799Z
-- 2026-11-04T18:14:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-04T18:16:30Z · body
-- 2026-11-04T18:18:36Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T18:32:07Z · note: adopted orphaned engineer pid 96321
-- 2026-11-04T18:35:55Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T18:42:21Z · body
-- 2026-11-04T18:47:06Z · CTO nudge: held — handoff gate is running
-- 2026-11-04T18:48:28Z · message_queued at 2026-11-04T18:48:28.004Z
-- 2026-11-04T18:53:42Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-04T18:58:45Z · message_delivered: 1 message(s)
-- 2026-11-04T18:58:47Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
-- 2026-11-04T18:58:49Z · message_queued at 2026-11-04T18:58:49.444Z
-- 2026-11-04T18:59:15Z · body
-- 2026-11-04T18:59:40Z · body
-- 2026-11-04T19:19:30Z · body
-- 2026-11-04T19:24:07Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-04T19:24:07Z · message_queued at 2026-11-04T19:24:07.931Z
-- 2026-11-04T19:24:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Check passed. Confirming the summary and handing off. · stderr: (empty)
-- 2026-11-04T19:24:08Z · message_delivered: 2 message(s)
-- 2026-11-04T19:28:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-04T19:41:57Z · status active→review
-- 2026-11-04T19:41:57Z · message_queued at 2026-11-04T19:41:57.647Z
-- 2026-11-04T19:42:56Z · note: review pass 1: good to go
-

@@ -35,6 +35,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "integration:median15",
   "card:doneError",
   "board:withReviewTask",
+  // #1035 — several tasks spread across every pipeline stage (plus stuck,
+  // held, sent-back and recently-merged lanes) for the Pipeline view capture.
+  "board:pipeline",
   // #0778 — review-status task with a non-empty branch, so the task drawer
   // shows UI-changes pane and actions like Add shot and Refresh evidence.
   "drawer:reviewWithBranch",
