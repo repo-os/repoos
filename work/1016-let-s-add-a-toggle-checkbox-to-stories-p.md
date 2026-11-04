@@ -9,8 +9,9 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
 cli_override: pi
+model_override: openrouter/deepseek/deepseek-v4.1-flash
 created_at: "2026-11-03T09:13:40Z"
-updated_at: "2026-11-04T04:22:46Z"
+updated_at: "2026-11-04T04:23:01Z"
 ---
 ## Problem
 
@@ -68,3 +69,4 @@ Let's add a toggle/checkbox to Stories page to "Hide Completed Stories"
 - 2026-11-03T09:14:09Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-11-04T04:22:41Z · status inbox→ready
 - 2026-11-04T04:22:46Z · cli_override
+- 2026-11-04T04:23:01Z · model_override
