@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-05T14:01:06Z"
+review_passes: 1
 id: 1038
 title: Add Muse Code (Meta) coding-harness driver
 type: feature
@@ -13,7 +15,6 @@ branch: feat/add-muse-code-meta-coding-harness-driver
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-05T11:24:33Z"
-updated_at: "2026-11-05T14:01:06Z"
 last_check_failure: "repoos check at 2026-11-05T13:22:53.738Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 1
 ---
@@ -120,3 +121,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T13:57:18Z · status active→review
 - 2026-11-05T13:57:18Z · message_queued at 2026-11-05T13:57:18.544Z
 - 2026-11-05T14:01:06Z · note: review pass 1: good to go
+
