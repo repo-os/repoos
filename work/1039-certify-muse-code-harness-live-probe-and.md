@@ -2,15 +2,14 @@
 id: 1039
 title: "Certify Muse Code harness: live probe and budget allowlist"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: core
-depends_on: [1038]
 assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-05T11:24:57Z"
-updated_at: "2026-11-05T11:24:57Z"
+updated_at: "2026-11-05T13:15:33Z"
 ---
 ## Problem
 
@@ -37,3 +36,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 ## Activity
 
 - 2026-11-05T11:24:57Z · created · njachowski@gmail.com
+- 2026-11-05T13:15:33Z · status inbox→ready
