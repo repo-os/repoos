@@ -12,7 +12,7 @@ branch: feat/install-uninstall-fix-mise-path-friction
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:40Z"
-updated_at: "2026-11-05T00:15:14Z"
+updated_at: "2026-11-05T00:16:59Z"
 last_close_out_gate_ms: 664477
 last_close_out_gate_at: "2026-11-05T00:15:14.015Z"
 review_passes: 1
@@ -55,4 +55,4 @@ Source: external QA report on v0.5.75 (items 1, 5, 8, 9, 10, 11, 20). Changing t
 - 2026-11-04T23:00:38Z · note: review pass 1: good to go
 - 2026-11-04T23:12:06Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c3053db28) during finalization (#0734)
 - 2026-11-05T00:15:14Z · close-out gate completed in 664s
-
+- 2026-11-05T00:16:59Z · status done→done, release:success
