@@ -79,6 +79,15 @@ if (path.basename(process.argv[1]) === "pi") {
     process.exit(0);
   }
 }
+if (path.basename(process.argv[1]) === "muse") {
+  const sidIndex = args.indexOf("--session-id");
+  const streamId = sidIndex !== -1 && args[sidIndex + 1] ? args[sidIndex + 1] : "sess-muse-stream";
+  const rec = (payload_type, payload) => JSON.stringify({ schema_version: 1, stream: { kind: "session", id: streamId }, sequence: 1, payload_type, payload }) + "\\n";
+  process.stdout.write(rec("run.output.delta", { kind: "run_output_delta", text: "Muse response" }));
+  process.stdout.write(rec("run.usage", { kind: "run_usage", models: [{ model: "muse-spark-1.3", input_tokens: 100, output_tokens: 5, calls: 1 }] }));
+  process.stdout.write(rec("run.terminal.completed", { kind: "run_terminal", terminal: "completed", text: "Muse response" }));
+  process.exit(0);
+}
 if (path.basename(process.argv[1]) === "copilot") {
   process.stdout.write(JSON.stringify({ type: "assistant.message", data: { content: "Copilot response" } }) + "\\n");
   process.stdout.write(JSON.stringify({ type: "tool.execution_start", data: { toolCallId: "call-1", toolName: "shell", arguments: { command: "git status" } } }) + "\\n");
@@ -131,7 +140,7 @@ function makeFixture(): Fixture {
   const root = mkdtempSync(join(tmpdir(), "repoos-drivers-"));
   const bin = join(root, "bin");
   mkdirSync(bin, { recursive: true });
-  for (const name of ["qwen", "codex", "claude", "opencode", "copilot", "pi"]) {
+  for (const name of ["qwen", "codex", "claude", "opencode", "copilot", "pi", "muse"]) {
     writeFileSync(join(bin, name), FAKEBIN, { mode: 0o755 });
   }
   return {
@@ -905,6 +914,80 @@ It stops.
       delete process.env.REPOOS_FAKEBIN_LOG;
       delete process.env.REPOOS_FAKEBIN_STDERR;
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("muse driver", () => {
+  it("mints a UUID before spawn, streams one text entry, and folds usage", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("muse"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "muse turn exit");
+
+      const out = runner.output("0001")!;
+      // The UUID was minted client-side before spawn and parsed back from the
+      // envelope stream — never the deterministic task-role shape.
+      expect(out.sessionId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+      );
+      // One text entry: the delta streamed live, the terminal record was
+      // swallowed as its duplicate.
+      const texts = out.lines
+        .filter((line) => (line as { type?: string }).type === "text")
+        .map((line) => (line as { text: string }).text);
+      expect(texts).toEqual(["Muse response"]);
+      // run.usage folded as the turn's authoritative totals.
+      expect(out.inputTokens).toBe(100);
+      expect(out.outputTokens).toBe(5);
+
+      const [run] = spawns(fx);
+      expect(run.args).toEqual(
+        expect.arrayContaining([
+          "exec",
+          "--json",
+          "--trust-workspace",
+          "--approval-mode",
+          "never",
+          "--max-model-steps",
+          "50",
+          "--session-id",
+          out.sessionId,
+        ]),
+      );
+      expect(run.args).not.toContain("--yolo");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("resumes the same UUID on a follow-up turn", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    try {
+      const runner = new AgentRunner(config(fx.bin), () => {});
+      runner.start(TASK, "feat/x", agent("muse"), { cwd: fx.bin });
+      await waitFor(() => !runner.isRunning("0001"), "muse turn exit");
+
+      const id = runner.output("0001")!.sessionId;
+      const sent = runner.send("0001", "keep going", agent("muse"));
+      expect(sent.ok).toBe(true);
+      await waitFor(() => !runner.isRunning("0001"), "muse resume exit");
+
+      const resume = spawns(fx)[1]!;
+      expect(resume.args).toContain("--session-id");
+      expect(resume.args[resume.args.indexOf("--session-id") + 1]).toBe(id);
+      expect(resume.args).not.toContain("--continue");
+    } finally {
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
     }
   });
 });

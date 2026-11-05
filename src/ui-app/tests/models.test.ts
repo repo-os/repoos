@@ -156,6 +156,7 @@ describe("MODEL_SOURCES registry", () => {
         "codex",
         "github copilot",
         "crush",
+        "muse",
       ]),
     );
   });

@@ -34,6 +34,7 @@ import {
   parseCopilotEvent,
   parseCursorEvent,
   parseJsonEvent,
+  parseMuseEvent,
   parsePiEvent,
   parseQwenEvent,
 } from "../../server/agents";
@@ -716,6 +717,82 @@ const AGENT_STREAMS: Record<string, EventLine[]> = {
       isError: true,
     },
   ],
+  // Muse: MSP envelopes. A delta, two tool intent/result pairs, and the
+  // terminal record (which the runner swallows as a duplicate of the delta).
+  muse: [
+    {
+      schema_version: 1,
+      stream: { kind: "session", id: "sess-chat" },
+      sequence: 1,
+      payload_type: "run.output.delta",
+      payload: { kind: "run_output_delta", text: "Checking the repository." },
+    },
+    {
+      schema_version: 1,
+      stream: { kind: "session", id: "sess-chat" },
+      sequence: 2,
+      payload_type: "task.lifecycle.side_effect_intent",
+      payload: {
+        kind: "task_lifecycle",
+        event: {
+          kind: "side_effect_intent",
+          operation: "tool:bash",
+          idempotency_key: "tool:m1",
+          policy_decision: "allow:policy",
+        },
+      },
+    },
+    {
+      schema_version: 1,
+      stream: { kind: "session", id: "sess-chat" },
+      sequence: 3,
+      payload_type: "tool.result",
+      payload: {
+        kind: "tool_result",
+        call_id: "m1",
+        text: "ok",
+        correlation_facts: { tool_name: "bash", outcome: "success" },
+      },
+    },
+    {
+      schema_version: 1,
+      stream: { kind: "session", id: "sess-chat" },
+      sequence: 4,
+      payload_type: "task.lifecycle.side_effect_intent",
+      payload: {
+        kind: "task_lifecycle",
+        event: {
+          kind: "side_effect_intent",
+          operation: "tool:read",
+          idempotency_key: "tool:m2",
+          policy_decision: "allow:policy",
+        },
+      },
+    },
+    {
+      schema_version: 1,
+      stream: { kind: "session", id: "sess-chat" },
+      sequence: 5,
+      payload_type: "tool.result",
+      payload: {
+        kind: "tool_result",
+        call_id: "m2",
+        text: "ENOENT",
+        correlation_facts: { tool_name: "read", outcome: "error" },
+      },
+    },
+    {
+      schema_version: 1,
+      stream: { kind: "session", id: "sess-chat" },
+      sequence: 6,
+      payload_type: "run.terminal.completed",
+      payload: {
+        kind: "run_terminal",
+        terminal: "completed",
+        text: "Checking the repository.",
+      },
+    },
+  ],
 };
 
 interface PendingTool {
@@ -736,6 +813,9 @@ function normalizedEntries(cli: string, lines: EventLine[]): AgentOutputEntry[] 
   let pending: PendingTool | undefined;
   const raw = (line: EventLine) => JSON.stringify(line);
 
+  // Muse terminal dedup: a completed terminal record duplicates streamed
+  // delta text, so only the first text entry counts (mirrors appendMuseLine).
+  let museText = false;
   for (const line of lines) {
     let entry: AgentOutputEntry | undefined;
     let started: PendingTool | undefined;
@@ -797,6 +877,21 @@ function normalizedEntries(cli: string, lines: EventLine[]): AgentOutputEntry[] 
     } else if (cli === "pi") {
       const parsed = parsePiEvent(raw(line));
       entry = parsed?.entry;
+      const event = parsed?.toolEvent;
+      if (event?.phase === "start") {
+        started = { id: event.id, tool: event.tool ?? "tool", input: event.input };
+      } else if (event?.phase === "complete") {
+        finished = { id: event.id, output: event.output, error: event.error === true };
+      }
+    } else if (cli === "muse") {
+      // Same shape as pi: an intent buffers, the matching tool result emits
+      // one finished card. Deltas and terminal records surface as text — but
+      // the runner swallows a terminal record that duplicates streamed delta
+      // text, so the normalization does the same to keep the row count honest.
+      const parsed = parseMuseEvent(raw(line));
+      entry = parsed?.entry;
+      if (parsed?.textDelta && entry) museText = true;
+      if (parsed?.terminal === "completed" && museText) entry = undefined;
       const event = parsed?.toolEvent;
       if (event?.phase === "start") {
         started = { id: event.id, tool: event.tool ?? "tool", input: event.input };

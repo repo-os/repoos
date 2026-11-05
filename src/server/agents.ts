@@ -72,6 +72,7 @@ import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { effectiveAgentCapacity, registeredEngineerCount } from "../core/global-engineers.js";
 import { clearQueueMarker, writeQueueMarker } from "../core/local-queue-marker.js";
 import { isProviderFailureReason } from "../core/attention.js";
+import { MUSE_MAX_MODEL_STEPS } from "../core/agent-contract.js";
 import {
   creditIdleMs,
   DegenerateOutputTracker,
@@ -501,6 +502,7 @@ interface Session {
     | "antigravity"
     | "crush"
     | "pi"
+    | "muse"
     | "plain";
   /** Cumulative ms across completed turns — excludes any turn in flight (0080). */
   accumulatedMs: number;
@@ -564,7 +566,26 @@ interface Session {
     string,
     { tool: string; input?: string; output?: string; state?: "running" | "completed" | "error" }
   >;
-  /** pi tool calls whose start/update records are awaiting completion. */
+  /** Muse tool calls whose intent record is awaiting the matching tool result. */
+  museTools?: Record<
+    string,
+    { tool: string; input?: string; output?: string; state?: "running" | "completed" | "error" }
+  >;
+  /**
+   * Muse stream only: whether assistant text already streamed via
+   * `run.output.delta` fragments this turn, so the authoritative terminal
+   * record's text is not recorded a second time. Reset at each terminal.
+   */
+  museStreamedText?: boolean;
+  /**
+   * Muse stream only: completed delta fragments held back because they might
+   * contain or complete a handoff/preview signal. A signal split across two
+   * fragments is only whole once the later fragment arrives, so holding them
+   * until the terminal record keeps the raw fragments out of the transcript
+   * (same model as pi's piPendingText, #0619). Flushed at the terminal record,
+   * or at process cleanup on a crash.
+   */
+  musePendingText?: AgentOutputEntry[] /** pi tool calls whose start/update records are awaiting completion. */;
   piTools?: Record<
     string,
     { tool: string; input?: string; output?: string; state?: "running" | "completed" | "error" }
@@ -862,6 +883,43 @@ export function extractUsage(raw: string): ExtractedUsage {
       // pi's per-message `usage` is that response's own total, not a running
       // session total — sum message_end records across a tool loop.
       if (obj.type === "message_end") out.deltas = true;
+      // muse's terminal `run.usage` record reports this process's turn totals
+      // under `payload.models[]` (one entry per model used). Each `exec` is
+      // one turn, so these figures are authoritative for the turn: overwrite
+      // via the usage baseline, like claude's `result`. No cost field exists
+      // (only a subscription-allowance window), so cost stays unreported.
+      if (obj.payload_type === "run.usage" && obj.payload && typeof obj.payload === "object") {
+        const models = (obj.payload as Record<string, unknown>).models;
+        if (Array.isArray(models)) {
+          let input = 0;
+          let output = 0;
+          let cached = 0;
+          let calls = 0;
+          let seen = false;
+          for (const m of models) {
+            if (!m || typeof m !== "object") continue;
+            const r = m as Record<string, unknown>;
+            if (typeof r.input_tokens === "number") {
+              input += r.input_tokens;
+              seen = true;
+            }
+            if (typeof r.output_tokens === "number") {
+              output += r.output_tokens;
+              seen = true;
+            }
+            if (typeof r.cached_tokens === "number") cached += r.cached_tokens;
+            if (typeof r.calls === "number" && r.calls > 0) calls += r.calls;
+          }
+          if (seen) {
+            out.inputTokens = input;
+            out.outputTokens = output;
+            out.totalTokens = input + output;
+            out.authoritative = true;
+            if (cached > 0) out.cacheReadTokens = cached;
+          }
+          if (calls > 0) out.turns = calls;
+        }
+      }
       // opencode emits one `step_finish` per model round-trip; its token/cost
       // figures are that step's delta, never a running total — fold by SUM.
       if (obj.type === "step_finish" || obj.type === "step-finish") out.deltas = true;
@@ -1334,6 +1392,7 @@ function engineForCli(cli: string): Session["engine"] {
   if (cli === "antigravity") return "antigravity";
   if (cli === "crush") return "crush";
   if (cli === "pi") return "pi";
+  if (cli === "muse") return "muse";
   return "opencode";
 }
 
@@ -2789,6 +2848,171 @@ export function parseAntigravityEvent(
 }
 
 /**
+ * Could this accumulated muse delta text contain, or still complete, a runner
+ * signal? Same model as pi's piTextHoldsSignal (#0619): a line that is a
+ * prefix of a signal may be completed by a later fragment, and a line that
+ * starts with a signal already is one — either way the fragments are held
+ * until the terminal record, so a signal split across fragments is recognized
+ * whole instead of reaching the transcript as raw fragments.
+ */
+function museTextHoldsSignal(text: string): boolean {
+  for (const line of text.split("\n")) {
+    const trimmed = line.trimStart();
+    if (!trimmed) continue;
+    for (const signal of [HANDOFF_READY_SIGNAL, PREVIEW_REQUEST_SIGNAL]) {
+      if (signal.startsWith(trimmed) || trimmed.startsWith(signal)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The assistant's prose in held muse delta fragments, with any signal-bearing
+ * line removed (the signal renders as the trusted confirmation line, but prose
+ * around it must survive).
+ */
+function museTextWithoutSignals(text: string): string {
+  const kept = text.split("\n").filter((line) => {
+    const trimmed = line.trimStart();
+    return !(
+      trimmed.startsWith(HANDOFF_READY_SIGNAL) || trimmed.startsWith(PREVIEW_REQUEST_SIGNAL)
+    );
+  });
+  return kept.join("\n").trim();
+}
+
+export interface MuseParseResult {
+  entry?: AgentOutputEntry;
+  sessionID?: string;
+  model?: string;
+  /**
+   * An incremental `run.output.delta` fragment. `appendMuseLine` streams each
+   * fragment unless it might contain or complete a runner signal, and the
+   * authoritative terminal text is used as a backfill only when no fragment
+   * streamed.
+   */
+  textDelta?: boolean;
+  /** True when this line is the terminal `run.terminal` record. */
+  terminal?: "completed" | "failure";
+  toolEvent?: {
+    phase: "start" | "complete";
+    id: string;
+    tool?: string;
+    /** Tool input args — absent from the muse stream today; kept for parity. */
+    input?: string;
+    output?: string;
+    error?: boolean;
+  };
+}
+
+/**
+ * Parse one line of muse's `exec --json` stream. Every line is an MSP envelope
+ * (`{ stream: { kind, id }, payload_type, payload }`); the shapes below are
+ * the ones a 2026-11-05 live run against muse 1.4.14 produced (see
+ * docs/agent-compatibility.md):
+ * - the session id rides on `stream.id` (`kind: "session"`) of every record,
+ *   equal to `--session-id` when one was passed;
+ * - `run.model.configured` carries the resolved `model_id`;
+ * - `run.output.delta` carries incremental assistant `text`;
+ * - `task.lifecycle.side_effect_intent` with `operation: "tool:<name>"` opens
+ *   a tool call (`idempotency_key: "tool:<call_id>"`); the matching
+ *   `tool.result` (`call_id`, `text`, `correlation_facts.tool_name/outcome`)
+ *   closes it (tool input args are not in the stream, so cards carry name +
+ *   output only);
+ * - the terminal `run.terminal` record carries the whole answer (`terminal:
+ *   "completed"`) or the failure;
+ * - `run.usage` carries per-turn `payload.models[]` token counts (consumed by
+ *   `extractUsage` on the raw line, not as a transcript entry).
+ * Returns `null` for non-JSON or a line without an envelope, so callers fall
+ * back to the plain-line path rather than dropping output silently.
+ */
+export function parseMuseEvent(raw: string): MuseParseResult | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const ev = parsed as Record<string, unknown>;
+  const stream =
+    ev.stream && typeof ev.stream === "object" ? (ev.stream as Record<string, unknown>) : {};
+  const payload =
+    ev.payload && typeof ev.payload === "object" ? (ev.payload as Record<string, unknown>) : {};
+  const sessionID =
+    stream.kind === "session" && typeof stream.id === "string" && stream.id ? stream.id : undefined;
+  const meta = sessionID ? { sessionID } : {};
+  const payloadType = typeof ev.payload_type === "string" ? ev.payload_type : "";
+
+  if (payload.kind === "run_model_configured" && typeof payload.model_id === "string") {
+    return { ...meta, model: payload.model_id };
+  }
+  if (payloadType === "run.output.delta") {
+    if (typeof payload.text !== "string" || !payload.text) return meta;
+    return { ...meta, entry: { type: "text", text: payload.text }, textDelta: true };
+  }
+  if (payloadType === "run.terminal.completed" || payload.kind === "run_terminal") {
+    const terminal = typeof payload.terminal === "string" ? payload.terminal : "";
+    if (terminal === "completed") {
+      if (typeof payload.text === "string" && payload.text) {
+        return { ...meta, entry: { type: "text", text: payload.text }, terminal: "completed" };
+      }
+      return { ...meta, terminal: "completed" };
+    }
+    const reason =
+      typeof payload.reason === "string" && payload.reason
+        ? payload.reason
+        : typeof payload.text === "string" && payload.text
+          ? payload.text
+          : `terminal "${terminal || "unknown"}"`;
+    return {
+      ...meta,
+      entry: { type: "sys", d: `Muse run ${reason}.` },
+      terminal: "failure",
+    };
+  }
+  if (payloadType === "task.lifecycle.side_effect_intent") {
+    const event =
+      payload.event && typeof payload.event === "object"
+        ? (payload.event as Record<string, unknown>)
+        : {};
+    const operation = typeof event.operation === "string" ? event.operation : "";
+    const key = typeof event.idempotency_key === "string" ? event.idempotency_key : "";
+    if (operation.startsWith("tool:") && key.startsWith("tool:") && key.length > 5) {
+      return {
+        ...meta,
+        toolEvent: { phase: "start", id: key.slice(5), tool: operation.slice(5) || "tool" },
+      };
+    }
+    return meta;
+  }
+  if (payloadType === "tool.result" || payload.kind === "tool_result") {
+    if (typeof payload.call_id !== "string" || !payload.call_id) return meta;
+    const facts =
+      payload.correlation_facts && typeof payload.correlation_facts === "object"
+        ? (payload.correlation_facts as Record<string, unknown>)
+        : {};
+    const outcome = typeof facts.outcome === "string" ? facts.outcome : "";
+    return {
+      ...meta,
+      toolEvent: {
+        phase: "complete",
+        id: payload.call_id,
+        ...(typeof facts.tool_name === "string" && facts.tool_name
+          ? { tool: facts.tool_name }
+          : {}),
+        ...(typeof payload.text === "string" && payload.text ? { output: payload.text } : {}),
+        error: /error|fail|denied|cancel/i.test(outcome),
+      },
+    };
+  }
+  // run.usage and every other envelope record are voiceless: usage folds from
+  // the raw line in lineTouched, so there is no transcript entry — but the
+  // session id above is still captured by the caller.
+  return meta;
+}
+
+/**
  * Actionable recovery advice for recognizable Cursor failures. Cursor surfaces
  * auth/permission/version failures as stderr text or `error` events; this maps
  * the common ones to the next thing the user should do. Matching is narrow so
@@ -3294,6 +3518,43 @@ function cursorArgs(options: { write: boolean; cwd?: string }): string[] {
 }
 
 /**
+ * Shared `muse exec` flag set for every RepoOS-managed turn (fresh, resume,
+ * and one-shot roles that also stream JSON). muse forgets options between
+ * processes, so all of these are resent on every invocation:
+ * - `--json`: the MSP-envelope JSONL stream the driver parses;
+ * - `--trust-workspace`: REQUIRED — without it the worktree loads as
+ *   untrusted (AGENTS.md/rules/skills ignored, delegation disabled) and the
+ *   turn runs degraded (confirmed live, 2026-11-05);
+ * - `--approval-mode never`: unattended turns with the sandbox LEFT ON
+ *   (deliberately never `--yolo`, which also disables the sandbox);
+ * - `--max-model-steps`: per-turn step cap (MUSE_MAX_MODEL_STEPS);
+ * - `--session-id <UUID>`: mints-or-resumes one conversation; muse rejects
+ *   non-UUID ids with exit 2, so only a valid UUID is ever passed.
+ */
+function museExecArgs(
+  agent: Agent,
+  prompt: string,
+  sessionId?: string,
+): { cmd: string; args: string[] } {
+  const { cli, model } = agent;
+  return {
+    cmd: "muse",
+    args: [
+      "exec",
+      "--json",
+      "--trust-workspace",
+      "--approval-mode",
+      "never",
+      "--max-model-steps",
+      String(MUSE_MAX_MODEL_STEPS),
+      ...(isValidMuseSessionId(sessionId) ? ["--session-id", sessionId as string] : []),
+      ...modelArgs(cli, model),
+      prompt,
+    ],
+  };
+}
+
+/**
  * Shell commands an engineer turn must be able to run unattended: the gate
  * (`repoos check`), builds and tests (`bun`, `bunx`), and commits (`git`).
  */
@@ -3317,6 +3578,8 @@ export const ENGINEER_REQUIRED_COMMANDS = ["repoos", "bun", "bunx", "git"] as co
  *   permission request by design (`InitCoderAgentNonInteractive` calls
  *   `Permissions.AutoApproveSession`); `--yolo` is a TTY-only root flag that
  *   `crush run` rejects. So the launch carries no bypass flag and needs none.
+ * - muse: `--approval-mode never` (explicit per-turn approval mode, sandbox
+ *   stays on — deliberately NOT `--yolo`, which also disables the sandbox).
  */
 export function engineerPermissionGaps(cli: string, args: readonly string[]): string[] {
   const needFlag = (flag: string): string[] =>
@@ -3332,6 +3595,8 @@ export function engineerPermissionGaps(cli: string, args: readonly string[]): st
     case "crush":
       // Approval is a property of the mode, not a flag — see the comment above.
       return [];
+    case "muse":
+      return needFlag("--approval-mode");
     case "pi":
       // pi does not ask for approval before tool calls in a non-interactive
       // run (`docs/security.md`), so no bypass flag exists or is needed. This
@@ -3366,12 +3631,38 @@ export function engineerPermissionGaps(cli: string, args: readonly string[]): st
 /**
  * CLIs that let RepoOS choose the id of a brand-new session. pi 1.0.0 accepts
  * `--session-id <id>` ("Use exact project session ID, creating it if missing").
+ * muse accepts `--session-id <UUID>` with the same create-or-resume semantics,
+ * but ONLY UUIDs — anything else exits 2 — so its ids are minted, not derived.
  * opencode v2's `run` cannot: it only continues an existing `--session` or
  * mints its own, so it keeps the parse-then-resume behavior. Confirmed against
  * the installed binaries; see `docs/prompt-caching-audit.md`.
  */
 export function supportsChosenSessionId(cli: string): boolean {
-  return cli === "pi";
+  return cli === "pi" || cli === "muse";
+}
+
+/**
+ * True when a session id is shaped the way muse's `--session-id` requires: a
+ * UUID. RepoOS mints muse ids with `randomUUID`, but an id from another
+ * source (a stored pi-style `repoos-<task>-<role>` id after a CLI switch is
+ * cleared on engine change, so this is a backstop) must never reach the flag.
+ */
+export function isValidMuseSessionId(value: string | undefined): boolean {
+  return Boolean(
+    value &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
+  );
+}
+
+/**
+ * A client-chosen id for a brand-new conversation on a CLI that accepts one.
+ * pi takes RepoOS's deterministic `repoos-<task>-<role>` shape; muse only
+ * takes UUIDs, so its id is minted fresh (recorded before spawn, so crash
+ * recovery and reloads still resume the same conversation instead of going
+ * cold).
+ */
+export function newConversationSessionId(cli: string, taskId: string, role = "engineer"): string {
+  return cli === "muse" ? randomUUID() : deterministicSessionId(taskId, role);
 }
 
 /**
@@ -3580,6 +3871,11 @@ function cliCommand(
       ],
     };
   }
+  if (cli === "muse") {
+    // Headless `exec --json`; the shared flag set carries trust, approval
+    // mode, step cap, model, and the client-chosen UUID session id.
+    return museExecArgs(agent, mission, opts.sessionId);
+  }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
   // the runner parses into structured transcript entries. The process is spawned
@@ -3744,6 +4040,13 @@ function resumeCommand(
         text,
       ],
     };
+  }
+  if (cli === "muse") {
+    // muse's `--session-id` both mints and resumes: the same flag set as the
+    // launch, with the recorded UUID conversation id. No `--continue`
+    // equivalent is used (it could attach another task's session); without a
+    // valid id the turn starts a fresh conversation instead of guessing.
+    return museExecArgs(agent, text, sessionId);
   }
   return {
     cmd: "opencode",
@@ -4186,6 +4489,12 @@ export function promptCommand(agent: Agent, prompt: string): { cmd: string; args
     // prompt for tool approval in a non-interactive run.
     return { cmd: "pi", args: ["--mode", "json", ...extra, prompt] };
   }
+  if (agent.cli === "muse") {
+    // Headless JSONL one-shot with the shared engineer flag set (trust,
+    // approval mode, step cap, model). No session id: one-shots are fire-and-
+    // forget, and usage still lands in the ledger via extractUsage.
+    return museExecArgs(agent, prompt);
+  }
   return { cmd: "opencode", args: ["run", ...extra, prompt] };
 }
 
@@ -4293,6 +4602,31 @@ export function pmCommand(
     return {
       cmd: "pi",
       args: ["--mode", "json", "--tools", "read", ...extra, prompt],
+    };
+  }
+  if (agent.cli === "muse") {
+    // Advisory turns are read-only: `--disable-write` blocks workspace file
+    // writes and `--disable-shell` blocks shell execution (confirmed live:
+    // a write attempt is refused with a read-only notice and nothing is
+    // created). Tradeoff, recorded in docs/agent-compatibility.md: the muse PM
+    // cannot execute `repoos` CLI commands itself, and the muse reviewer
+    // cannot run `git diff` or tests — file reads still work, and the output
+    // is applied through RepoOS's own patch path like every other driver.
+    return {
+      cmd: "muse",
+      args: [
+        "exec",
+        "--json",
+        "--trust-workspace",
+        "--approval-mode",
+        "never",
+        "--max-model-steps",
+        String(MUSE_MAX_MODEL_STEPS),
+        "--disable-write",
+        "--disable-shell",
+        ...extra,
+        prompt,
+      ],
     };
   }
   // opencode: `--format json` separates the final answer from step-by-step
@@ -4435,6 +4769,31 @@ export function reviewCommand(
       ],
     };
   }
+  if (agent.cli === "muse") {
+    // Read-only like the PM pass (`--disable-write` + `--disable-shell`; see
+    // pmCommand for the tradeoff). muse's `--session-id` both mints and
+    // resumes, so fresh and follow-up use the same flag; a non-UUID caller id
+    // (e.g. pi's `repoos-<task>-reviewer-<n>` shape) is never passed — the run
+    // starts unpinned and the follow-up resumes the UUID captured from the
+    // stream instead.
+    return {
+      cmd: "muse",
+      args: [
+        "exec",
+        "--json",
+        "--trust-workspace",
+        "--approval-mode",
+        "never",
+        "--max-model-steps",
+        String(MUSE_MAX_MODEL_STEPS),
+        "--disable-write",
+        "--disable-shell",
+        ...(isValidMuseSessionId(opts.sessionId) ? ["--session-id", opts.sessionId as string] : []),
+        ...extra,
+        prompt,
+      ],
+    };
+  }
   return {
     cmd: "opencode",
     args: ["run", "--format", "json", ...extra, "--auto", prompt],
@@ -4525,6 +4884,27 @@ export function readOnlyCommand(
             ? ["--session", opts.sessionId]
             : ["--session-id", opts.sessionId]
           : []),
+        ...extra,
+        prompt,
+      ],
+    };
+  }
+  if (agent.cli === "muse") {
+    // Read-only like the reviewer: workspace writes and shell execution are
+    // refused by the CLI itself. Same UUID guard on the session id.
+    return {
+      cmd: "muse",
+      args: [
+        "exec",
+        "--json",
+        "--trust-workspace",
+        "--approval-mode",
+        "never",
+        "--max-model-steps",
+        String(MUSE_MAX_MODEL_STEPS),
+        "--disable-write",
+        "--disable-shell",
+        ...(isValidMuseSessionId(opts.sessionId) ? ["--session-id", opts.sessionId as string] : []),
         ...extra,
         prompt,
       ],
@@ -4624,6 +5004,16 @@ export function parseOneShotLine(cli: string, raw: string): AgentOutputEntry | n
     // (#0619). The message_end text is the whole answer, so ignore the
     // streaming blocks here.
     return parsed?.textBlock ? null : (parsed?.entry ?? null);
+  }
+  if (cli === "muse") {
+    const parsed = parseMuseEvent(raw);
+    // Same model as pi: one-shot consumers take the LAST text event as the
+    // report, so the incremental `run.output.delta` fragments are swallowed
+    // here and the authoritative terminal record's text is the whole answer.
+    // (Live, `runPrompt` still forwards each raw line to `onLine` callers.)
+    if (!parsed) return null;
+    if (parsed.terminal) return parsed.entry ?? null;
+    return null;
   }
   return { s: "out", d: raw };
 }
@@ -6320,8 +6710,10 @@ export class AgentRunner {
     let launchSessionId: string | undefined;
     if (supportsChosenSessionId(agent.cli)) {
       launchSessionId = opts.freshSession
-        ? freshSessionId(task.id, "engineer")
-        : (session.sessionId ?? deterministicSessionId(task.id, "engineer"));
+        ? agent.cli === "muse"
+          ? randomUUID()
+          : freshSessionId(task.id, "engineer")
+        : (session.sessionId ?? newConversationSessionId(agent.cli, task.id, "engineer"));
       session.sessionId = launchSessionId;
     }
     session.task = task;
@@ -6780,7 +7172,7 @@ export class AgentRunner {
       supportsChosenSessionId(agent.cli) &&
       classifySessionType(agent.name, id) === "engineer"
     ) {
-      sessionId = deterministicSessionId(id, "engineer");
+      sessionId = newConversationSessionId(agent.cli, id, "engineer");
       session.sessionId = sessionId;
     }
     if (agent.cli === "antigravity" && !sessionId) {
@@ -7724,6 +8116,10 @@ export class AgentRunner {
       this.appendPiLine(taskId, session, raw);
       return;
     }
+    if (stream === "out" && session.engine === "muse") {
+      this.appendMuseLine(taskId, session, raw);
+      return;
+    }
     // Cursor surfaces auth/permission/version failures on stderr; map the
     // recognizable ones to an actionable recovery hint.
     if (stream === "err" && session.engine === "cursor") {
@@ -8341,6 +8737,162 @@ export class AgentRunner {
     if (seen.has(hint)) return;
     seen.add(hint);
     this.recordEntry(taskId, session, "sys", { type: "sys", d: hint });
+  }
+
+  /**
+   * Muse's `exec --json` branch. Incremental `run.output.delta` fragments
+   * stream live unless they might contain or complete a runner signal (held
+   * until the terminal record, same model as pi's pending text, #0619); tool
+   * intent/result pairs buffer into one card; the terminal record either
+   * backfills the answer (nothing streamed) or is swallowed as a duplicate of
+   * the streamed fragments. Usage folds from the raw line in `lineTouched`.
+   */
+  private appendMuseLine(taskId: string, session: Session, raw: string): void {
+    const parsed = parseMuseEvent(raw);
+    if (!parsed) {
+      const entry: AgentOutputEntry = { s: "out", d: raw };
+      this.tryExtractSessionId(raw, session);
+      this.recordEntry(taskId, session, "out", this.applySignals(taskId, raw, entry, session));
+      this.lineTouched(taskId, session, raw);
+      return;
+    }
+    if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
+    if (parsed.model) session.model = parsed.model;
+    if (parsed.toolEvent) {
+      const event = parsed.toolEvent;
+      const tools = (session.museTools ??= {});
+      const current = tools[event.id];
+      if (event.phase === "start") {
+        tools[event.id] = {
+          tool: event.tool ?? "tool",
+          ...(event.input ? { input: event.input } : {}),
+          state: "running",
+        };
+      } else {
+        const merged = {
+          ...(current ?? { tool: event.tool ?? "tool" }),
+          ...(event.tool ? { tool: event.tool } : {}),
+          ...(event.input ? { input: event.input } : {}),
+          ...(event.output !== undefined ? { output: event.output } : {}),
+          state: event.error ? ("error" as const) : ("completed" as const),
+        };
+        delete tools[event.id];
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: merged.tool,
+          ...(merged.input ? { input: merged.input } : {}),
+          ...(merged.output !== undefined ? { output: merged.output } : {}),
+          state: merged.state,
+        });
+      }
+    } else if (parsed.textDelta) {
+      // Live streaming: each fragment renders as it arrives, so a reply
+      // arrives progressively rather than all at once at the end. A fragment
+      // whose accumulation could contain or complete a signal is held instead
+      // — a split signal is only whole once the later fragment arrives, and
+      // its raw pieces must never reach the transcript (#0619).
+      if (parsed.entry) {
+        session.museStreamedText = true;
+        const pending = (session.musePendingText ??= []);
+        pending.push(parsed.entry);
+        const combined = pending
+          .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+          .join("");
+        if (!museTextHoldsSignal(combined)) {
+          for (const entry of pending) {
+            this.recordEntry(
+              taskId,
+              session,
+              "out",
+              this.applySignals(taskId, raw, entry, session),
+            );
+          }
+          session.musePendingText = undefined;
+        }
+      }
+    } else if (parsed.terminal) {
+      const pending = session.musePendingText ?? [];
+      session.musePendingText = undefined;
+      const authoritativeText =
+        parsed.entry && "type" in parsed.entry && parsed.entry.type === "text"
+          ? parsed.entry.text
+          : "";
+      const heldText = pending
+        .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+        .join("");
+      const entryIsText = !!parsed.entry && "type" in parsed.entry && parsed.entry.type === "text";
+      if (parsed.terminal === "failure") {
+        // A failed turn surfaces its reason as a system line, even when text
+        // already streamed — otherwise a partial reply is left with no
+        // explanation of why it stopped.
+        if (parsed.entry) {
+          this.recordEntry(
+            taskId,
+            session,
+            "out",
+            this.applySignals(taskId, raw, parsed.entry, session),
+          );
+        } else if (pending.length) {
+          for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+        }
+      } else if (pending.length || !session.museStreamedText) {
+        // A signal split across streamed fragments may be broken in the
+        // terminal text but whole in the held fragments' concatenation, or
+        // vice versa — check both, and record the confirmation line in place
+        // of the signal itself.
+        const { surfaced, matched } = this.surfaceMuseText(taskId, raw, session, [
+          authoritativeText,
+          heldText,
+        ]);
+        if (matched && surfaced) {
+          // Keep the prose around the signal; only its own line is replaced by
+          // the confirmation.
+          const prose = museTextWithoutSignals(pending.length ? heldText : authoritativeText);
+          if (prose) this.recordEntry(taskId, session, "out", { type: "text", text: prose });
+          this.recordEntry(taskId, session, "out", surfaced);
+        } else if (pending.length) {
+          for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+        } else if (entryIsText) {
+          // Backfill the authoritative text when no fragment streamed.
+          this.recordEntry(
+            taskId,
+            session,
+            "out",
+            this.applySignals(taskId, raw, parsed.entry as AgentOutputEntry, session),
+          );
+        }
+      }
+      // Otherwise the terminal text duplicates already-streamed fragments: the
+      // signal check already ran on every fragment, so there is nothing to do.
+      session.museStreamedText = false;
+    } else if (parsed.entry) {
+      this.recordEntry(
+        taskId,
+        session,
+        "out",
+        this.applySignals(taskId, raw, parsed.entry, session),
+      );
+    }
+    this.lineTouched(taskId, session, raw);
+  }
+
+  /**
+   * Surface a runner signal from muse text parts (held fragments and the
+   * terminal text). Returns the surfaced entry (the confirmation line when a
+   * signal matched, otherwise the joined text entry) and whether a signal
+   * matched. `undefined` means there was no text at all. Mirrors
+   * `surfacePiText` (#0619).
+   */
+  private surfaceMuseText(
+    taskId: string,
+    raw: string,
+    session: Session,
+    parts: readonly string[],
+  ): { surfaced?: AgentOutputEntry; matched: boolean } {
+    const text = parts.filter((part) => part).join("\n");
+    if (!text) return { matched: false };
+    const surfaced = this.applySignals(taskId, raw, { type: "text", text }, session);
+    return { surfaced, matched: "s" in surfaced && surfaced.s === "sys" };
   }
 
   /** Emit an actionable recovery hint for a Cursor error line, once per session. */
@@ -9114,6 +9666,25 @@ export class AgentRunner {
         for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
       }
     }
+    // Muse holds delta fragments the same way when they might contain or
+    // complete a signal (#0619). A process that dies mid-turn never sent the
+    // terminal record, so surface any signal the held fragments contain (and
+    // fire its request) before flushing the rest.
+    if (session?.engine === "muse" && session.musePendingText?.length) {
+      const pending = session.musePendingText;
+      session.musePendingText = undefined;
+      const heldText = pending
+        .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+        .join("");
+      const { surfaced, matched } = this.surfaceMuseText(taskId, "", session, [heldText]);
+      if (matched && surfaced) {
+        const prose = museTextWithoutSignals(heldText);
+        if (prose) this.recordEntry(taskId, session, "out", { type: "text", text: prose });
+        this.recordEntry(taskId, session, "out", surfaced);
+      } else {
+        for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+      }
+    }
     // A zero exit is not success for Antigravity unless the stream ended with
     // a SUCCESS `result` record. A malformed or changed protocol (only unknown
     // or unreadable events) or a failed result must fail the turn visibly
@@ -9184,6 +9755,20 @@ export class AgentRunner {
         });
       }
       session.piTools = undefined;
+    }
+    // Same flush for muse: a tool intent whose `tool.result` never arrived
+    // (cancel/crash) still gets its card.
+    if (session?.engine === "muse" && session.museTools) {
+      for (const pending of Object.values(session.museTools)) {
+        this.recordEntry(taskId, session, "out", {
+          type: "tool",
+          tool: pending.tool,
+          ...(pending.input ? { input: pending.input } : {}),
+          ...(pending.output !== undefined ? { output: pending.output } : {}),
+          ...(pending.state && pending.state !== "running" ? { state: pending.state } : {}),
+        });
+      }
+      session.museTools = undefined;
     }
     // Fold the finished turn's wall time into the running total (0080) — the
     // time-spent counter accumulates across turns rather than resetting each
@@ -9763,6 +10348,7 @@ export class AgentRunner {
           "antigravity",
           "crush",
           "pi",
+          "muse",
           "plain",
         ].includes(value.engine as string) ||
         typeof value.updatedAt !== "string" ||
