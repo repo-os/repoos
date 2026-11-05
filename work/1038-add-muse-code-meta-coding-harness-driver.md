@@ -14,7 +14,6 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-05T11:24:33Z"
 updated_at: "2026-11-05T13:34:20Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-05T13:22:53.738Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 1
 ---
@@ -101,3 +100,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T13:31:23Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-05T13:31:24Z · note: handoff requested (cli)
 - 2026-11-05T13:34:20Z · CTO nudge: held — handoff gate is running
+
