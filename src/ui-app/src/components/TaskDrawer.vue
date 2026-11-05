@@ -1989,7 +1989,7 @@ const holdBusy = ref(false);
 const holdActive = computed(
   () => !!ui.active && taskIsHeld(ui.active) && isHoldActive(ui.active, holdNow.value),
 );
-async function placeHold(value: { reason: string; until?: string }): Promise<void> {
+async function placeHold(value: { reason?: string; until?: string }): Promise<void> {
   const task = ui.active;
   if (!task) return;
   holdBusy.value = true;
@@ -5224,14 +5224,15 @@ watch(
           <section v-if="holdActive" class="held-panel" role="status" aria-label="Task hold">
             <div class="held-panel-copy">
               <strong><Clock3 aria-hidden="true" />Held — automation won't start this task</strong>
-              <p v-if="ui.active.holdReason">{{ ui.active.holdReason }}</p>
-              <small>
+              <p v-if="ui.active.holdReason?.trim()">{{ ui.active.holdReason.trim() }}</p>
+              <small v-if="ui.active.holdBy || ui.active.holdAt || ui.active.holdUntil">
                 <span v-if="ui.active.holdBy">By {{ ui.active.holdBy }}</span>
                 <span v-if="ui.active.holdAt"
                   >{{ ui.active.holdBy ? " · " : "" }}{{ fmtTime(ui.active.holdAt) }}</span
                 >
                 <span v-if="ui.active.holdUntil">
-                  · Auto-releases {{ new Date(ui.active.holdUntil).toLocaleString() }}</span
+                  {{ ui.active.holdBy || ui.active.holdAt ? " · " : "" }}Auto-releases
+                  {{ new Date(ui.active.holdUntil).toLocaleString() }}</span
                 >
               </small>
             </div>
