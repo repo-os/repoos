@@ -27,9 +27,9 @@ describe("landing llms.txt", () => {
     expect(llms).toContain(CURRENT_RELEASE_URL);
   });
 
-  it("publishes the six install commands, including mise's long form", () => {
+  it("publishes the install commands and does not recommend mise", () => {
     for (const command of INSTALL_COMMANDS) expect(llms).toContain(command);
-    expect(llms).not.toContain("mise use -g");
+    expect(llms).not.toContain("mise use");
   });
 
   it("links the public docs and repository, but not this repo's docs/ or agents.txt", () => {
@@ -60,11 +60,10 @@ describe("landing llms.txt", () => {
 
   it("matches the commands already published in InstallBox and getting-started", () => {
     const installBox = readFileSync(`${repoRoot}/landing/src/components/InstallBox.vue`, "utf8");
-    for (const command of INSTALL_COMMANDS.slice(0, 5)) {
+    for (const command of INSTALL_COMMANDS) {
       expect(installBox).toContain(`cmd: "${command}"`);
     }
-    // `-g` and `--global` are the same mise flag; publish getting-started's long form.
-    expect(installBox).toContain('cmd: "mise use -g npm:@repo-os/repoos"');
+    expect(installBox).not.toContain("mise use");
     const gettingStarted = readFileSync(`${repoRoot}/user-docs/getting-started.md`, "utf8");
     for (const command of INSTALL_COMMANDS) expect(gettingStarted).toContain(command);
   });
