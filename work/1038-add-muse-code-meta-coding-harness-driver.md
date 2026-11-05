@@ -10,9 +10,10 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-muse-code-meta-coding-harness-driver
-model_override: opencode-go/muse-spark-1.3-contributor
+cli_override: cursor
+model_override: grok-4.7-low
 created_at: "2026-11-05T11:24:33Z"
-updated_at: "2026-11-05T12:52:28Z"
+updated_at: "2026-11-05T13:02:14Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/muse-spark-1.3-contributor\",\"at\":\"2026-11-05T12:52:24.363Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -85,3 +86,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T12:52:24Z · engineer crash recovery: resuming opencode + opencode-go/muse-spark-1.3-contributor (1/3 crashes in 30m) · error: Transport
 - 2026-11-05T12:52:28Z · needs_input
 - 2026-11-05T12:52:28Z · message_delivered: 1 message(s)
+- 2026-11-05T13:02:14Z · cli_override, model_override
