@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { runAdapterContract } from "../../core/agent-contract";
+import { runAdapterContract, withProbeModelArgs } from "../../core/agent-contract";
 
 const FAKE_OPENCODE = `#!/usr/bin/env node
 // Fixture opencode binary for the adapter contract suite. Proves the shapes
@@ -326,6 +326,33 @@ describe("adapter contract suite", () => {
     expect(argv.some((args) => args.includes("--list-models"))).toBe(true);
     expect(argv.some((args) => args.includes("--version"))).toBe(true);
     expect(argv.some((args) => args.includes("--help"))).toBe(true);
+  });
+
+  it("places muse model flags after `exec`, never before it", async () => {
+    // `muse --model m exec ...` makes muse read "exec" as a prompt and reject
+    // --json (live probe, 2026-11-05). The fixture only accepts args[0] === "exec".
+    const fx = makeMuseFixture();
+    const result = await runAdapterContract({
+      cli: "muse",
+      bin: fx.bin,
+      mode: "fixture",
+      model: "muse-spark-1.3",
+    });
+    expect(result.passed, result.evidence).toBe(true);
+
+    const withModel = withProbeModelArgs(
+      { modelAfterSubcommand: true },
+      ["--model", "m"],
+      ["exec", "--json", "hi"],
+    );
+    expect(withModel).toEqual(["exec", "--model", "m", "--json", "hi"]);
+    expect(withProbeModelArgs({}, ["--model", "m"], ["run", "hi"])).toEqual([
+      "--model",
+      "m",
+      "run",
+      "hi",
+    ]);
+    expect(withProbeModelArgs({ modelAfterSubcommand: true }, [], ["exec"])).toEqual(["exec"]);
   });
 
   it("passes every seam against a deterministic fixture muse binary", async () => {
