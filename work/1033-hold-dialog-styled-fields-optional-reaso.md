@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-05T01:03:36Z"
-review_passes: 1
 id: 1033
 title: "Hold dialog: styled fields, optional reason, and held-card padding"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/hold-dialog-styled-fields-optional-reaso
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T13:14:03Z"
+updated_at: "2026-11-05T01:16:35Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-05T00:37:03.953Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Hold dialog with outlined reason and date fields (target \"default\"): click [data-test-id=\"hold-task\"]: click: Timeout 5000ms exceeded. on /work?task=9999 (http://127.0.0.1:56676/work?shotState=drawer:reviewWithBranch); [missing-target] Hold dialog with outlined reason and date fields (target \"default\"): waitFor .cc-modal textarea.ff-textarea: waitFor: Timeout 5000ms exceeded. on /work?task=9999 (http://127.0.0.1:56676/wor… (truncated)"
 ---
 ## Problem
@@ -92,4 +92,4 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 - 2026-11-05T01:02:57Z · status active→review
 - 2026-11-05T01:02:57Z · message_queued at 2026-11-05T01:02:57.478Z
 - 2026-11-05T01:03:36Z · note: review pass 1: good to go
-
+- 2026-11-05T01:16:35Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (56609e834) during finalization (#0734)
