@@ -54,6 +54,13 @@ bun add -g @repo-os/repoos
 
 </div>
 
+Bun's installer puts `bun` in `~/.bun/bin`. A new shell does not see it until
+that directory is on `PATH`:
+
+```bash
+export PATH="$HOME/.bun/bin:$PATH"
+```
+
 ### pnpm
 
 <div class="install-command">
@@ -64,21 +71,29 @@ pnpm add -g @repo-os/repoos
 
 </div>
 
-### mise
-
-<div class="install-command">
+On a clean Linux account pnpm has no global bin directory yet
+(`ERR_PNPM_NO_GLOBAL_BIN_DIR`). `pnpm setup` also fails with
+`ERR_PNPM_UNKNOWN_SHELL` when `SHELL` is unset (common in non-interactive
+scripts). Set a shell, run setup, then open a new terminal so `PNPM_HOME` is
+on `PATH`:
 
 ```bash
-mise use --global npm:@repo-os/repoos
+export SHELL="${SHELL:-$(command -v bash)}"
+pnpm setup
 ```
 
-</div>
+mise is not a recommended install method. Its npm backend refuses packages
+under a weekly-downloads threshold unless low-download installs are allowed,
+and that path still waits out mise's minimum release age, so you get the
+previous version. `mise unuse --global` leaves a broken shim until
+`mise prune`.
 
-This uses mise's npm backend and saves RepoOS to your global mise
-configuration. Enable mise shell activation so its `repoos` shim is on PATH.
-
-The curl installer puts a self-contained release build in `~/.repoos` and a
-`repoos` launcher in `~/.local/bin`. Remove it later with `repoos uninstall`.
+The curl installer puts the release in `~/.local/share/repoos` and a `repoos`
+launcher in `~/.local/bin`. Machine state (running servers, service registry,
+check slots) stays in `~/.repoos`. `repoos uninstall` removes the install, the
+launcher it created, and those state entries, and it prints anything else it
+left in `~/.repoos`. It does not delete per-repo files. Pipe the installer to
+`bash` (`curl … | bash`).
 
 ## Updating RepoOS
 
@@ -93,13 +108,12 @@ matching command when it can identify the source.
 | npm | `npm update -g @repo-os/repoos` |
 | Bun | `bun update -g @repo-os/repoos` |
 | pnpm | `pnpm update -g @repo-os/repoos` |
-| mise | `mise upgrade npm:@repo-os/repoos` |
 
 `repoos upgrade --channel beta`, `--channel canary`, and `--channel rc` are
 available only for the curl install. Package-manager installs follow their
 package manager's stable release channel.
 
-RepoOS runs on **Bun** when it's available and falls back to **Node ≥ 20**
+RepoOS runs on **Bun** when it's available and falls back to **Node.js 20.6.0 or newer**
 otherwise — see
 [Configuration → Worktrees and runtime](/configuration#worktrees-and-runtime)
 if you want to pin one.

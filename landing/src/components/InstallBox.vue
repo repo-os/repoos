@@ -7,15 +7,13 @@ interface InstallOption {
   cmd: string;
 }
 
-// curl is the default tab: it's the one true zero-dependency path (no
-// package manager required), so it's what a first-time visitor should see.
+// curl is the default tab: no package manager, Bash plus Bun or Node.
 const INSTALL_OPTIONS: InstallOption[] = [
   { id: "curl", label: "curl", cmd: "curl -fsSL https://repoos.org/install | bash" },
   { id: "brew", label: "brew", cmd: "brew install repo-os/tap/repoos" },
   { id: "npm", label: "npm", cmd: "npm install -g @repo-os/repoos" },
   { id: "bun", label: "bun", cmd: "bun add -g @repo-os/repoos" },
   { id: "pnpm", label: "pnpm", cmd: "pnpm add -g @repo-os/repoos" },
-  { id: "mise", label: "mise", cmd: "mise use -g npm:@repo-os/repoos" },
 ];
 
 withDefaults(defineProps<{ showNote?: boolean }>(), { showNote: false });
@@ -110,7 +108,7 @@ function selectOption(option: InstallOption): void {
     </div>
 
     <p v-if="showNote" class="mt-3 text-[13px] text-[var(--txt-faint)]">
-      Runs on Bun or Node 20+. No account, no telemetry.
+      Runs on Bun, or Node.js 20.6.0+. No account, no telemetry.
     </p>
   </div>
 </template>

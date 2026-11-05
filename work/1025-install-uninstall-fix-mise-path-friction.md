@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 664477
-last_close_out_gate_at: "2026-11-05T00:15:14.015Z"
 id: 1025
 title: "Install/uninstall: fix mise, PATH friction, Node check, ~/.repoos state split and uninstall accuracy"
 type: bug
-status: review
+status: done
 priority: p1
 area: [core, docs]
+merged_commit: c3053db28fc3525c2c9bd2e0e0ed239493979da7
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/install-uninstall-fix-mise-path-friction
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:40Z"
 updated_at: "2026-11-05T00:15:14Z"
+last_close_out_gate_ms: 664477
+last_close_out_gate_at: "2026-11-05T00:15:14.015Z"
 review_passes: 1
 ---
 ## Problem
