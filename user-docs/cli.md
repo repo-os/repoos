@@ -78,7 +78,10 @@ See [Updating RepoOS](/getting-started#updating-repoos) for every install method
 
 ### `repoos new "<title>"`
 
-Creates a task.
+Creates a task. When the repo is a git checkout, RepoOS writes the task file and
+attempts an initial commit of that file only (`docs(<id>): add task …`). A failed
+commit leaves the file on disk uncommitted and prints a warning — set git
+identity in config or via `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars.
 
 ```bash
 repoos new "Fix the login redirect loop" --type bug --area web --priority p1
@@ -514,11 +517,35 @@ and exposure limits.
 
 ## Running it
 
-### `repoos serve [--port N]`
+### `repoos serve [--port N] [--host <address>]`
 
 Starts the local server — web UI, API, and live event stream. Without `--port`
 it uses `servePort` from `repoos.toml`, or a stable port derived from the repo's
 path so separate repos never collide.
+
+By default the listener binds to **127.0.0.1** (localhost only). When RepoOS
+detects Tailscale on this machine, it widens the bind to **0.0.0.0** so other
+tailnet devices can reach the server while localhost still works. The startup
+banner names the bound interface. Pass **`--host 127.0.0.1`** to force
+localhost-only even when Tailscale is running.
+
+### `repoos service` / `repoos service <subcommand>`
+
+Manages a background service for this repo (install, start, stop, restart,
+enable/disable login auto-start, list all services). With no subcommand, shows
+this repo's service status — the usual way to run an unattended control plane
+instead of keeping `repoos serve` in a terminal.
+
+### `repoos uninstall`
+
+Removes a **standalone** install created by the curl installer (`install.sh`).
+Does not remove source checkouts or package-manager installs; those are
+uninstalled through npm, Homebrew, or your package manager. Project data and
+user configuration are left in place.
+
+### `repoos --version` / `repoos version`
+
+Prints the installed RepoOS version and build metadata.
 
 ### `repoos stop [--port N]`
 

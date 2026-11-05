@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 864754
-last_close_out_gate_at: "2026-11-05T00:02:10.636Z"
 id: 1026
 title: "Easter eggs bundle: init template paths, serve banner, CLI docs and empty-repo edge cases"
 type: chore
-status: review
+status: done
 priority: p2
 area: [core, docs]
+merged_commit: c555f07c9669590ab3e01a35529a1f7bcf3b776b
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-init-template-paths-s
@@ -15,6 +14,8 @@ model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:41Z"
 updated_at: "2026-11-05T00:02:10Z"
+last_close_out_gate_ms: 864754
+last_close_out_gate_at: "2026-11-05T00:02:10.636Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-04T23:30:06.243Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2

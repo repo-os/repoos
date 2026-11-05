@@ -40,7 +40,7 @@ describe("NoCheckPlanReminder (#0592)", () => {
     expect(text).toContain("No checks configured");
     expect(text).toContain("Nothing was verified");
     expect(text).toContain("repoos check --print-plan");
-    expect(text).toContain("user-docs/check.md");
+    expect(text).toContain("docs.repoos.org/check");
     // Never green: no pass wording anywhere on the card.
     expect(text.toLowerCase()).not.toContain("checks passed");
     expect(wrapper.attributes("aria-label")).toBe("No checks configured");
@@ -79,7 +79,7 @@ describe("NoCheckPlanReminder (#0592)", () => {
     expect(body.body).toContain("repoos check --print-plan");
     expect(body.body).toContain("[[check.steps]]");
     expect(body.body).toContain("repoos.toml");
-    expect(body.body).toContain("user-docs/check.md");
+    expect(body.body).toContain("docs.repoos.org/check");
   });
 });
 

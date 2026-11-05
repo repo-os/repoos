@@ -16,6 +16,7 @@ import {
   parseTimeOfDay,
   type ScheduleCadence,
 } from "./schedule-time.js";
+import { assessTaskUnderspecified } from "./task-underspecified.js";
 
 export type ScheduleLastResult = "success" | "failure" | "missed" | "";
 
@@ -47,6 +48,9 @@ export interface TaskSchedule {
   /** Derived — not stored in frontmatter. */
   nextRunAt: string | null;
   nextRunPreview: string;
+  /** Derived — template body fails the same underspecified check as new tasks. */
+  templateUnderspecified: boolean;
+  templateUnderspecifiedDetail: string;
 }
 
 export type ScheduleCreateInput = {
@@ -150,6 +154,13 @@ function enrichSchedule(
           : undefined,
   };
   const next = computeNextRun(timing, new Date(), false);
+  const taskArea = String(raw.task_area ?? "general");
+  const taskAssignedTo = String(raw.task_assigned_to ?? "");
+  const trimmedBody = body.trim();
+  const templateAssessment = assessTaskUnderspecified(trimmedBody, {
+    area: taskArea,
+    assignee: (taskAssignedTo || "ai") as string,
+  });
   const schedule: TaskSchedule = {
     id: raw.id,
     title: String(raw.title ?? "Untitled schedule"),
@@ -183,9 +194,11 @@ function enrichSchedule(
     createdAt: String(raw.created_at ?? ""),
     updatedAt: String(raw.updated_at ?? ""),
     path,
-    body: body.trim(),
+    body: trimmedBody,
     nextRunAt: next ? next.toISOString() : null,
     nextRunPreview: formatNextRunPreview(next, timezone),
+    templateUnderspecified: templateAssessment.underspecified,
+    templateUnderspecifiedDetail: templateAssessment.detail,
   };
   return schedule;
 }
@@ -224,6 +237,20 @@ export function validateScheduleInput(input: ScheduleCreateInput): string | null
     return "run_at must be a valid ISO timestamp";
   }
   return null;
+}
+
+/** Advisory warning when a schedule's task template would create underspecified tasks. */
+export function scheduleTemplateWarning(input: {
+  body: string;
+  taskArea?: string;
+  taskAssignedTo?: string;
+}): string | null {
+  const body = (input.body ?? "").trim();
+  const { underspecified, detail } = assessTaskUnderspecified(body, {
+    area: input.taskArea ?? "general",
+    assignee: input.taskAssignedTo?.trim() || "ai",
+  });
+  return underspecified ? detail || "template is underspecified" : null;
 }
 
 function toFrontmatter(

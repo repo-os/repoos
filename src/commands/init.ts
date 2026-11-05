@@ -31,7 +31,13 @@ import { deriveServePort, findRepoRoot, loadConfig } from "../core/config.js";
 import { CHECK_PLAN_PROPOSAL_FILE, proposeCheckPlan } from "../core/check-plan-proposal.js";
 import { formatPlanToml } from "../core/check-plan.js";
 import { importDocsInto, scaffoldDocsInto } from "./docs-io.js";
-import { gitAvailable, gitCommitAll, gitConfig, gitInit, isGitRepo } from "../core/git.js";
+import {
+  gitAvailable,
+  gitCommitAll,
+  gitIdentityConfigured,
+  gitInit,
+  isGitRepo,
+} from "../core/git.js";
 import { c } from "../cli/colors.js";
 import { cmdServe } from "./serve.js";
 import { detectAgents, type DetectedAgent } from "../core/detect.js";
@@ -204,11 +210,11 @@ repo itself is the source of truth. This file tells AI agents how to operate.
 
 New to this repo? The board is \`${workDir}/\` — one markdown file per task.
 Create work with \`repoos new "<title>"\`, move it with \`repoos mv <id> <status>\`,
-and **never** edit \`${workDir}/*.md\` by hand (use the CLI or the HTTP API).
+and **never** edit task files under \`${workDir}/\` by hand (use the CLI or the HTTP API).
 Project context lives under \`${docsDir}/\`; start there. Run \`repoos serve\` in a
 terminal you keep open, or install \`repoos service\` for an unattended server —
 a detached \`repoos serve\` started from an agent shell is reaped as a stray orphan
-(see \`docs/agent-process-safety.md\`). RepoOS runs each managed agent turn in its
+(see https://docs.repoos.org/running-with-agents). RepoOS runs each managed agent turn in its
 own process group and tears that group down when the turn ends; never use \`pkill\`
 or \`killall\` to clean up helpers. When a task is done, run \`repoos check\` and
 hand off with \`repoos mv <id> review\`; see the operating loop below.
@@ -218,8 +224,8 @@ hand off with \`repoos mv <id> review\`; see the operating loop below.
 For a RepoOS-managed task runner:
 
 1. Read this file, your assigned task under \`${workDir}/\`, and relevant
-   project docs under \`${docsDir}/\` — start from the index at
-   \`${docsDir}/README.md\`, which lists the reading order. Before reading a
+   project docs under \`${docsDir}/\`. Maintain ${docsDir}/README.md as the
+   reading-order index as the doc set grows. Before reading a
    large file, run \`repoos outline <path>\` to get its symbols with line
    numbers, then read only the range you need instead of the whole file.
 2. Work in the task branch and dedicated worktree RepoOS assigned. The server
@@ -251,7 +257,7 @@ unless the human explicitly requests that separate workflow.
 
 The reviewer agent, when enabled, writes an advisory report in the task drawer.
 It does not edit code or replace human approval. After the human approves,
-use **Move to done** in RepoOS or \`POST /api/tasks/:id/done\`. The server
+use **Move to done** in RepoOS or POST /api/tasks/:id/done. The server
 merges the task into a separate candidate worktree, validates the combined
 result, rechecks the primary branch under a publication lock, publishes,
 cleans up, and records completion. \`repoos mv <id> done\` only changes metadata;
@@ -259,7 +265,7 @@ it does not run close-out or merge code.
 
 A direct commit on the primary branch is an exception requiring explicit
 human authorization. If that already-landed work has a branchless task record,
-the \`/done\` endpoint can check the primary checkout and record release without
+the /done endpoint can check the primary checkout and record release without
 a candidate merge. Do not erase a task's branch metadata to force this path.
 
 ## Rules
@@ -274,7 +280,7 @@ a candidate merge. Do not erase a task's branch metadata to force this path.
   invent ownership rules for RepoOS directories; the config is the only source
   of truth for layout.
 - **Never** move task files between folders. Status lives in frontmatter.
-- **Never write directly to \`${workDir}/*.md\` files.** All task creation and
+- **Never write directly to task files under \`${workDir}/\`.** All task creation and
   manipulation goes through \`repoos\` commands or HTTP API endpoints
   (\`POST /api/tasks\`, \`PATCH /api/tasks/:id\`, etc.). If the RepoOS server
   is unreachable, stop and report the issue — do not hand-write task files.
@@ -332,7 +338,7 @@ active/review.
 ## Declaring evidence shots (## Shots)
 
 A task body may carry a \`## Shots\` section with a fenced JSON list of capture
-entries (see \`src/core/shot-plan.ts\`). Each entry has \`target\`, \`route\`, an
+entries (see https://docs.repoos.org/cli#the-tasks-shots-list). Each entry has \`target\`, \`route\`, an
 optional \`selector\` (element crop — the exception), an optional \`highlight\`
 CSS selector (outlines changed elements), a \`label\`, and optional ordered
 \`steps\` (click/fill/wait, plain CSS selectors). Use \`repoos update <id>
@@ -341,9 +347,9 @@ fenced section) without touching the rest of the body — a full \`--body\` repl
 Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
 \`--force\` is passed.
 
-For tabbed views (e.g. Agents), prefer \`?tab=<id>\` routes
-(\`/agents?tab=detected\`) over click steps to reach the right tab; a task drawer
-is reached the same way (\`/work?task=<id>&tab=changes\`), and always
+For tabbed views (e.g. Agents), prefer ?tab=<id> routes
+(/agents?tab=detected) over click steps to reach the right tab; a task drawer
+is reached the same way (/work?task=<id>&tab=changes), and always
 set \`highlight\` to the changed elements. Reach a populated state with a
 \`route\` or a named \`state\` fixture, never with \`steps\` that click a
 placeholder selector (\`data-task-id "9999"\` and the like) — such a step times
@@ -1959,7 +1965,7 @@ async function guidedNewRepo(opts: NewProjectOptions): Promise<void> {
     console.log(
       c.yellow("\n  Warning: git doesn't appear to be installed — scaffolding without git."),
     );
-  } else if (!gitConfig(target, "user.name") && !gitConfig(target, "user.email")) {
+  } else if (!gitIdentityConfigured(target)) {
     console.log(c.yellow("\n  Warning: no git identity is configured."));
     console.log(c.dim("    git may auto-detect it, or the initial commit may fail. Set it with:"));
     console.log(

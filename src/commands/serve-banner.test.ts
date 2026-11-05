@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderServeBanner } from "./serve.js";
+import { formatServeBindBannerValue, renderServeBanner } from "./serve.js";
 
 describe("renderServeBanner", () => {
   const rows = [
@@ -11,6 +11,32 @@ describe("renderServeBanner", () => {
     const out = renderServeBanner("1.2.3", rows);
     expect(out).toContain("RepoOS v1.2.3");
     expect(out).toContain("Local          http://127.0.0.1:7515");
+  });
+
+  it("names the bind address on localhost and tailnet rows", () => {
+    const localOnly = renderServeBanner("1.0.0", [
+      { label: "Bind", value: formatServeBindBannerValue("127.0.0.1", false) },
+      { label: "Local", value: "http://127.0.0.1:7515" },
+    ]);
+    expect(localOnly).toMatch(/Bind\s+127\.0\.0\.1/);
+
+    const tailscale = renderServeBanner("1.0.0", [
+      {
+        label: "Bind",
+        value: formatServeBindBannerValue("0.0.0.0", true),
+      },
+      { label: "Local", value: "http://127.0.0.1:7515" },
+      { label: "Tailnet", value: "http://100.64.0.1:7515" },
+    ]);
+    expect(tailscale).toMatch(/Bind\s+0\.0\.0\.0/);
+    expect(tailscale).toContain("--host 127.0.0.1");
+  });
+
+  it("formatServeBindBannerValue uses tailscaleDetected, not host alone", () => {
+    expect(formatServeBindBannerValue("0.0.0.0", false)).toContain("explicit --host");
+    expect(formatServeBindBannerValue("0.0.0.0", false)).not.toContain("Tailscale detected");
+    expect(formatServeBindBannerValue("0.0.0.0", true)).toContain("Tailscale detected");
+    expect(formatServeBindBannerValue("192.168.1.5", false)).toContain("192.168.1.5");
   });
 
   it("splits an HTTPS warning into problem, fix and link", () => {
