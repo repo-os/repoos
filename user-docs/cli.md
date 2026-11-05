@@ -274,7 +274,9 @@ repoos unhold 0960            # release it
 repoos unhold 0960 --start     # release it and re-launch the engineer
 ```
 
-`--reason` is free text recorded on the task; `--until` is an optional ISO-8601
+`--reason` is optional free text on the Hold dialog and on
+`POST /api/tasks/:id/hold` (a hold with no reason omits the reason row). The
+`repoos hold` command still requires `--reason`. `--until` is an optional ISO-8601
 UTC auto-release time — past that moment the hold is inert and the task behaves
 as if never held (so a calendar date works as a "resume after…"). The hold is
 written into the task's frontmatter (`hold`, `hold_reason`, `hold_until`,

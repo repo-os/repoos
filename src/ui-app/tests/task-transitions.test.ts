@@ -489,15 +489,16 @@ describe("POST /api/tasks/:id — hold / unhold / start gate (#0960)", () => {
     }
   });
 
-  it("requires a reason to hold (rejects an empty reason)", async () => {
+  it("holds with an empty reason and writes no reason row", async () => {
     const fx = makeFixture("active");
     try {
       const { res, fake } = makeRes();
       await taskAction(makeCtx(fx), makeReq({}), res, { param1: "0296", param2: "hold" });
-      expect(fake.status).toBe(400);
-      expect((fake.payload as { ok: boolean }).ok).toBe(false);
-      // Nothing was written.
-      expect(readTaskFile(fx).isHeld).toBe(false);
+      expect(fake.status).toBe(200);
+      expect((fake.payload as { ok: boolean }).ok).toBe(true);
+      const held = readTaskFile(fx);
+      expect(held.isHeld).toBe(true);
+      expect(held.holdReason).toBeUndefined();
     } finally {
       fx.clean();
     }

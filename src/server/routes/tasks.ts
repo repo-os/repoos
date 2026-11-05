@@ -3604,17 +3604,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
     const untilRaw = typeof body?.until === "string" ? body.until.trim() || undefined : undefined;
     const by = typeof body?.by === "string" ? body.by.trim() || undefined : undefined;
     const at = new Date().toISOString();
-    // #0960 input validation: the reason documents why the task was parked, and
-    // `--until` is an optional auto-release. An empty reason is refused (a hold
-    // with no reason is invisible on the board); an unparseable `--until` is
-    // refused because it would never expire and silently create a PERMANENT
-    // hold — a typo must not be able to do that.
-    if (!reason) {
-      return json(res, 400, {
-        ok: false,
-        error: `hold requires a reason — pass --reason "…" (or a "reason" body field)`,
-      });
-    }
+    // #0960 / #1033: `--reason` documents why the task was parked. The CLI still
+    // requires it (`cmdHold`); the HTTP route and Hold dialog treat it as
+    // optional so a task can be parked with no reason row on the held card.
+    // An unparseable `--until` is refused because it would never expire and
+    // silently create a PERMANENT hold — a typo must not be able to do that.
     let until: string | null = null;
     if (untilRaw !== undefined) {
       const parsed = Date.parse(untilRaw);

@@ -3092,17 +3092,20 @@
 }
 .held-panel {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin: 10px 0;
-  padding: 11px 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin: 12px 22px 0;
+  padding: 16px;
   border: 1px solid var(--amber-border-tint);
   border-radius: 10px;
   background: var(--amber-tint);
   color: var(--foreground);
 }
 .held-panel-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
 }
 .held-panel-copy strong {
@@ -3115,28 +3118,24 @@
 .held-panel-copy strong svg {
   width: 14px;
   height: 14px;
+  flex: none;
 }
 .held-panel-copy p {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 12px;
+  line-height: 1.45;
 }
 .held-panel-copy small {
   display: block;
-  margin-top: 4px;
+  margin: 0;
   color: var(--txt-dim);
   font-size: 10px;
+  line-height: 1.4;
 }
 .held-panel-actions {
   display: flex;
-  flex: none;
   flex-wrap: wrap;
-  gap: 6px;
-}
-@media (max-width: 560px) {
-  .held-panel {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+  gap: 8px;
 }
 .tc-held-until {
   opacity: 0.75;
@@ -6140,6 +6139,14 @@
   font-family: "JetBrains Mono", monospace;
   display: block;
   margin-bottom: 6px;
+}
+.field .field-optional {
+  color: var(--txt-muted);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .field input,
 .field select {
@@ -13875,6 +13882,21 @@
 .archive-confirm-field .ff-textarea {
   width: 100%;
   resize: vertical;
+}
+
+/* Hold dialog (#1033): shared field chrome, shorter than a body textarea. */
+.hold-dialog-field {
+  margin-bottom: 0;
+}
+.hold-dialog-field .ff-textarea.hold-dialog-reason {
+  min-height: 96px;
+  margin-bottom: 0;
+}
+.hold-dialog-field .ff-textarea:focus,
+.hold-dialog-field input:focus {
+  outline: none;
+  border-color: var(--border-bright);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 /* Archived task panel (#0657): the prominent reason card mirrors the
