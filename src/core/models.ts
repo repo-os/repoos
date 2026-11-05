@@ -399,6 +399,23 @@ const codexAdapter: ModelSourceAdapter = {
 };
 
 /**
+ * Muse Code has no model-listing command (`muse models` is unknown); its
+ * interactive picker offers exactly these ids (2026-11-05, Muse Code 1.4.14).
+ * `muse-spark-1.3` is first after `default`: it is the certified model. Update
+ * this list when Muse adds or retires models.
+ */
+export const MUSE_MODELS = ["default", "muse-spark-1.3", "muse-spark-1.2", "muse-wonder-1.0"];
+
+const museAdapter: ModelSourceAdapter = {
+  id: "muse",
+  cli: "muse",
+  supported: true,
+  async list(): Promise<ModelSourceResult> {
+    return { supported: true, models: [...MUSE_MODELS], refreshable: false };
+  },
+};
+
+/**
  * Copilot's interactive picker has no stable machine-readable catalog, but
  * Auto tiers are stable CLI flags. The underlying model remains account- and
  * policy-dependent, so expose tiers rather than guessing which named models a
@@ -607,6 +624,7 @@ export const MODEL_SOURCES: Record<string, ModelSourceAdapter> = {
   cursor: cursorAdapter,
   antigravity: antigravityAdapter,
   crush: crushAdapter,
+  muse: museAdapter,
   pi: piAdapter,
 };
 for (const known of KNOWN_AGENTS) {
@@ -618,6 +636,7 @@ for (const known of KNOWN_AGENTS) {
     known.id === "cursor" ||
     known.id === "antigravity" ||
     known.id === "crush" ||
+    known.id === "muse" ||
     known.id === "pi"
   )
     continue;

@@ -405,6 +405,22 @@ describe("last-good fallback", () => {
   });
 });
 
+describe("muse adapter", () => {
+  it("returns a fixed list because muse has no model-listing command", async () => {
+    const old = withPath(join(tmpDir(), "empty"));
+    try {
+      const res = await listModelSources({ cwd: tmpDir(), clis: ["muse"] });
+      expect(res.muse).toEqual({
+        supported: true,
+        models: ["default", "muse-spark-1.3", "muse-spark-1.2", "muse-wonder-1.0"],
+        refreshable: false,
+      });
+    } finally {
+      process.env.PATH = old;
+    }
+  });
+});
+
 describe("crush adapter", () => {
   it("spawns `crush models` and returns 'default' + parsed provider/model lines", async () => {
     const root = tmpDir();
