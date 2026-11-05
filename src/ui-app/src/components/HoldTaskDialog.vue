@@ -46,9 +46,7 @@ function submit(): void {
       >
       <div class="cc-modal-body">
         <div class="field hold-dialog-field">
-          <label for="hold-reason"
-            >Reason <span class="field-optional">(optional)</span></label
-          >
+          <label for="hold-reason">Reason <span class="field-optional">(optional)</span></label>
           <textarea
             id="hold-reason"
             v-model="reason"
