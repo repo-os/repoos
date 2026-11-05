@@ -11,7 +11,7 @@ import Button from "./ui/button.vue";
 const props = defineProps<{ open: boolean; busy?: boolean }>();
 const emit = defineEmits<{
   "update:open": [value: boolean];
-  hold: [value: { reason: string; until?: string }];
+  hold: [value: { reason?: string; until?: string }];
 }>();
 const reason = ref("");
 const until = ref("");
@@ -26,9 +26,8 @@ watch(
 );
 function submit(): void {
   const clean = reason.value.trim();
-  if (!clean) return;
   emit("hold", {
-    reason: clean,
+    ...(clean ? { reason: clean } : {}),
     ...(until.value ? { until: new Date(`${until.value}T23:59:59`).toISOString() } : {}),
   });
 }
@@ -46,26 +45,29 @@ function submit(): void {
         >Automation will not start this task while the hold is active.</DialogDescription
       >
       <div class="cc-modal-body">
-        <label class="grid gap-1.5 text-sm font-medium"
-          >Reason <span class="sr-only">(required)</span>
+        <div class="field hold-dialog-field">
+          <label for="hold-reason">Reason <span class="field-optional">(optional)</span></label>
           <textarea
+            id="hold-reason"
             v-model="reason"
-            class="input min-h-20 resize-y"
-            required
+            class="ff-textarea hold-dialog-reason"
             maxlength="1000"
             placeholder="Why should this task stay parked?"
+            :disabled="busy"
           />
-        </label>
-        <label class="grid gap-1.5 text-sm font-medium"
-          >Auto-release date <span class="text-xs font-normal text-muted-foreground">Optional</span>
-          <input v-model="until" class="input" type="date" />
-        </label>
+        </div>
+        <div class="field hold-dialog-field">
+          <label for="hold-until"
+            >Auto-release date <span class="field-optional">(optional)</span></label
+          >
+          <input id="hold-until" v-model="until" type="date" :disabled="busy" />
+        </div>
       </div>
       <div class="cc-modal-actions">
         <DialogClose as-child
           ><Button variant="outline" :disabled="busy">Cancel</Button></DialogClose
         >
-        <Button variant="default" :disabled="busy || !reason.trim()" @click="submit">{{
+        <Button variant="default" :disabled="busy" @click="submit">{{
           busy ? "Holding…" : "Hold task"
         }}</Button>
       </div>
