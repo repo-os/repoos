@@ -338,7 +338,7 @@ describe("adapter contract suite", () => {
       mode: "fixture",
       model: "muse-spark-1.3",
     });
-    expect(result.passed, result.evidence).toBe(true);
+    expect(result.passed, result.evidence ?? undefined).toBe(true);
 
     const withModel = withProbeModelArgs(
       { modelAfterSubcommand: true },
