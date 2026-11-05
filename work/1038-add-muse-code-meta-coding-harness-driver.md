@@ -2,7 +2,7 @@
 id: 1038
 title: Add Muse Code (Meta) coding-harness driver
 type: feature
-status: ready
+status: active
 needs_input: true
 needs_input_reason: needs-human-step
 needs_input_detail: "Acceptance criteria mention a real device, physical hardware, accounts, credentials, or third-party registration — split that verification into a separate human-only task. (tagged [human]: \"Run `repoos doctor --probe muse --yes` (uses Meta credentials: `META_API_KEY` or `muse login`) and record the evidence; add Muse pairs to `[[budget.allowlist]]` in `repoos.toml`. Split this into a human task at close-out.\")"
@@ -10,10 +10,10 @@ priority: p3
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/add-muse-code-meta-coding-harness-driver
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-05T11:24:33Z"
-updated_at: "2026-11-05T11:36:31Z"
+updated_at: "2026-11-05T11:37:39Z"
 ---
 ## Problem
 
@@ -59,3 +59,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T11:26:54Z · model_override
 - 2026-11-05T11:35:52Z · body: Problem (added 1, removed 1); Desired UX (added 1, removed 1); Live runs are allowed (human-authorized 2026-11-05) (added); Acceptance criteria (added 7, removed 7)
 - 2026-11-05T11:36:31Z · status inbox→ready
+- 2026-11-05T11:37:39Z · status ready→active, branch
