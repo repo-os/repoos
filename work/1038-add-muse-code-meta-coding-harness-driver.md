@@ -99,3 +99,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T13:24:20Z · CTO nudge: held — remote validation is running
 - 2026-11-05T13:25:54Z · note: handoff requested (cli)
 - 2026-11-05T13:31:23Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-05T13:31:24Z · note: handoff requested (cli)
