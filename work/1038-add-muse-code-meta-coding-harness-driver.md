@@ -61,3 +61,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T11:37:39Z · status ready→active, branch
 - 2026-11-05T11:37:42Z · needs_input
 - 2026-11-05T12:19:20Z · message_queued at 2026-11-05T12:19:20.580Z
+- 2026-11-05T12:19:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
