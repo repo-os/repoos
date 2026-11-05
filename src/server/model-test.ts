@@ -36,6 +36,7 @@ export const MODEL_TEST_TIMEOUTS: Record<string, number> = {
   antigravity: 20_000,
   crush: 15_000,
   pi: 30_000,
+  muse: 20_000,
   opencode: 15_000,
 };
 

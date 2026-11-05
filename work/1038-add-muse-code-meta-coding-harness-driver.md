@@ -1,14 +1,13 @@
 ---
-last_close_out_gate_ms: 156879
-last_close_out_gate_at: "2026-11-05T14:05:44.588Z"
 id: 1038
 title: Add Muse Code (Meta) coding-harness driver
 type: feature
-status: review
+status: done
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: "0537f231"
 priority: p3
 area: [core, server]
+merged_commit: 208aca3b3a05048e74928272c6de2e058a33e710
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-muse-code-meta-coding-harness-driver
@@ -16,6 +15,8 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-05T11:24:33Z"
 updated_at: "2026-11-05T14:05:44Z"
+last_close_out_gate_ms: 156879
+last_close_out_gate_at: "2026-11-05T14:05:44.588Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-05T13:22:53.738Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 1
