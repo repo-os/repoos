@@ -2,7 +2,7 @@
 id: 1038
 title: Add Muse Code (Meta) coding-harness driver
 type: feature
-status: active
+status: review
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: "0537f231"
 priority: p3
@@ -117,4 +117,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T13:49:25Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-05T13:50:49Z · body
 - 2026-11-05T13:54:20Z · CTO nudge: held — remote validation is running
-- 2026-11-05T13:57:18Z · engineer stopped by request
+- 2026-11-05T13:57:18Z · status active→review
