@@ -97,6 +97,13 @@ interface ContractCommandTemplates {
   run: (dir: string, prompt: string) => string[];
   /** Args that select a model, inserted at the front of run/resume argv. */
   modelArgs?: (model: string) => string[];
+  /**
+   * Insert `modelArgs` after the first argv token (the subcommand) instead of
+   * at the front. Needed where a root-level option makes the CLI read the
+   * subcommand as a prompt: `muse --model m exec …` runs the TUI with prompt
+   * "exec"; `muse exec --model m …` is correct.
+   */
+  modelAfterSubcommand?: boolean;
   resume: (dir: string, sessionId: string, prompt: string) => string[];
   /** Parse run stdout to extract session id and confirm the harness answered. Defaults to opencode parser. */
   parseRun?: (stdout: string) => RunParseResult;
@@ -832,6 +839,8 @@ const MUSE_CONTRACT: ContractCommandTemplates = {
   // the claude-style note and the driver pins a fixed default list.
   models: () => null,
   modelArgs: (model) => ["--model", model],
+  // `muse --model m exec` treats "exec" as a prompt (live probe, 2026-11-05).
+  modelAfterSubcommand: true,
   run: (_dir, prompt) => [
     "exec",
     "--json",
@@ -887,6 +896,19 @@ export const DEFAULT_PROBE_MODELS: Record<string, string> = {
   pi: "openrouter/z-ai/glm-5.3-flash",
   muse: "muse-spark-1.3",
 };
+
+/** Probe argv with model flags placed where the harness accepts them (see `modelAfterSubcommand`). */
+export function withProbeModelArgs(
+  templates: Pick<ContractCommandTemplates, "modelAfterSubcommand">,
+  modelArgs: string[],
+  argv: string[],
+): string[] {
+  if (modelArgs.length === 0) return argv;
+  if (templates.modelAfterSubcommand && argv.length > 0) {
+    return [argv[0], ...modelArgs, ...argv.slice(1)];
+  }
+  return [...modelArgs, ...argv];
+}
 
 /** The model a live probe of `cli` runs on: explicit, else the cheap pin, else harness default. */
 export function resolveProbeModel(
@@ -1255,7 +1277,7 @@ export async function runAdapterContract(
     // ── headless one-shot (shared with structured-events + auto) ───────
     const probeModel = resolveProbeModel(cli, mode, opts.model);
     const modelArgs = probeModel && templates.modelArgs ? templates.modelArgs(probeModel) : [];
-    const runArgs = [...modelArgs, ...templates.run(workDir, PROBE_PROMPT)];
+    const runArgs = withProbeModelArgs(templates, modelArgs, templates.run(workDir, PROBE_PROMPT));
     const oneShot = await spawnCapture(binary, runArgs, { timeoutMs, cwd: workDir });
 
     // Use per-harness parser if provided, else fall back to opencode parser.
@@ -1355,7 +1377,11 @@ export async function runAdapterContract(
         "no session id found in the one-shot output, so a follow-up could not be started",
       );
     } else {
-      const resumeArgs = [...modelArgs, ...templates.resume(workDir, sessionId, PROBE_PROMPT)];
+      const resumeArgs = withProbeModelArgs(
+        templates,
+        modelArgs,
+        templates.resume(workDir, sessionId, PROBE_PROMPT),
+      );
       const resume = await spawnCapture(binary, resumeArgs, { timeoutMs, cwd: workDir });
       const resumeParsed = templates.parseRun
         ? templates.parseRun(resume.stdout)
