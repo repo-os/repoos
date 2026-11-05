@@ -1,6 +1,6 @@
 {
   "name": "@repo-os/repoos",
-  "version": "0.5.75",
+  "version": "0.5.76",
   "description": "The repo is the operating system. Your AI dev team, living in your repo, for CTOs and builders.",
   "type": "module",
   "bin": {

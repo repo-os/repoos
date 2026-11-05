@@ -5,6 +5,45 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.76] - 2026-11-05
+
+### A Pipeline view for work in flight
+
+The Work page has a new **Pipeline** view alongside the board. Each active or review task gets its own lane and moves through **Coding → Checks → Handoff → Review → Close-out → Merged**, so you can see at a glance where everything stands, including rounds, models, and whether a task ran locally or on a remote runner. Recently merged tasks stay in the Merged column for a short window, tasks sent back from review carry an amber “sent back” note, and stuck, held, or paused tasks keep their stage with a clear state chip. Stages update live, clicking a card opens the usual task panel, and the view remembers your choice. The board remains the default.
+
+### Installs and uninstalls now match reality
+
+- The curl installer puts the program in `~/.local/share/repoos` and keeps machine state in `~/.repoos`, so reinstalling no longer wipes running-server and check-slot state.
+- `repoos uninstall` removes what it owns and tells you exactly what it left behind; per-repo configuration and caches are untouched.
+- The installer now enforces Node **20.6.0+**, not just “Node 20”, and the docs explain the Bun/pnpm `PATH` setup steps.
+- mise is no longer presented as a recommended install method; its download threshold and minimum release age made it install the previous version.
+- The Homebrew formula’s Node dependency is now documented rather than left as a surprise, and install examples consistently use `curl … | bash`.
+
+### Clearer task and agent state
+
+- Close-out progress in the task panel now appears as a full-width status line between the preview row and the tabs. It no longer looks like a button or pushes **Stop MTD** onto its own row.
+- `repoos driver brief` and the CTO no longer call an engineer “stalled” while its check is running with a live heartbeat, so a healthy check cannot be interrupted by a restart.
+- PM-added sections such as Problem, Desired UX, and Acceptance criteria now land above the original freeform prompt and screenshots instead of being buried below them.
+- The macOS Hub CI job no longer fails on every run because of a keyboard-focus test that could not hold focus on a headless runner.
+
+### Interface polish
+
+- The **Hold task** dialog uses the same outlined fields as the rest of the app, allows holding without a reason, and the held card handles a missing reason without a blank row or cramped padding.
+- **New schedule**, **New reminder**, and **New environment** now match **New task**: accent style, plus icon, and top-right placement.
+- The task-card agent popover fades out after 15 seconds by default; the delay is configurable in Settings, `0` disables it, and interacting with the popover resets the timer.
+- The optional commit-message field in the Uncommitted changes panel is about three lines tall instead of filling most of the panel.
+
+### Smoother setup and CLI
+
+- `repoos init` templates no longer reference paths that do not exist in a new project, so `repoos doctor` starts clean.
+- The `serve` banner states which interfaces are bound, and the docs explain Tailscale detection and how to force localhost with `--host 127.0.0.1`.
+- Zero-commit repositories and Git identity supplied through environment variables are handled correctly by `repoos status`, `repoos new`, and `repoos init --new`; auto-committing on `new` is now documented.
+- `repoos list` prints one short notice instead of a long warning when no server is running.
+- Saving a schedule warns when its task template is missing Problem, Acceptance criteria, or Notes for AI — advisory, with a badge on the schedule card and the same warning from `repoos schedule new` and `update`.
+- CLI docs now cover `repoos uninstall`, `repoos service`, and `--version`, and several messages point to the right docs and describe the runtime accurately.
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.76)
+
 ## [v0.5.75] - 2026-11-04
 
 The web app no longer eats your CPU while idle, and engineer agents survive server restarts
