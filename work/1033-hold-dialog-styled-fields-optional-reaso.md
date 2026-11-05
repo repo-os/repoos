@@ -12,7 +12,7 @@ branch: feat/hold-dialog-styled-fields-optional-reaso
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T13:14:03Z"
-updated_at: "2026-11-05T02:19:47Z"
+updated_at: "2026-11-05T02:20:55Z"
 last_close_out_gate_ms: 635283
 last_close_out_gate_at: "2026-11-05T02:19:47.743Z"
 review_passes: 1
@@ -97,4 +97,4 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 - 2026-11-05T01:03:36Z · note: review pass 1: good to go
 - 2026-11-05T01:16:35Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (56609e834) during finalization (#0734)
 - 2026-11-05T02:19:47Z · close-out gate completed in 635s
-
+- 2026-11-05T02:20:55Z · status done→done, release:success
