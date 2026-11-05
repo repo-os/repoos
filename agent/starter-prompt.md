@@ -11,7 +11,7 @@ Before you change anything:
 Then:
 
 - Tell the owner what you found, including whether RepoOS is already installed or initialized.
-- If RepoOS is not installed, choose the install method that fits this machine: curl is the zero-dependency default, and Homebrew, npm, Bun, pnpm, and mise are also supported. Ask before running a global install.
+- If RepoOS is not installed, choose the install method that fits this machine: curl is the default (it needs Bun or Node.js 20.6.0+), and Homebrew, npm, Bun, and pnpm are also supported. Do not use mise. Ask before running a global install.
 - Before editing, preserve existing files and uncommitted Git changes. Do not reset, clean, or commit someone else's work.
 - Run `repoos init` only after the owner agrees.
   - Existing repo, from the repository root: `repoos init`

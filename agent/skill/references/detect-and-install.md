@@ -28,8 +28,10 @@ If both the binary and `repoos.toml` exist, the repository is ready — read
 
 ## Install
 
-Choose one. curl is the zero-dependency default; the package managers install
-the same CLI.
+Choose one. curl is the default and needs Bun or Node.js 20.6.0 or newer.
+The package managers install the same CLI. Do not use mise: it will not
+install the current release reliably, and uninstall leaves a broken shim
+until `mise prune`.
 
 ```bash
 curl -fsSL https://repoos.org/install | bash
@@ -37,7 +39,6 @@ brew install repo-os/tap/repoos
 npm install -g @repo-os/repoos
 bun add -g @repo-os/repoos
 pnpm add -g @repo-os/repoos
-mise use --global npm:@repo-os/repoos
 ```
 
 Ask the user before running a global install, and tell them which method you
@@ -49,8 +50,10 @@ repoos --help
 ```
 
 Update with the same tool that installed it. `repoos upgrade` is only for the
-curl install; for Homebrew, npm, Bun, pnpm, or mise it prints the matching
-update command rather than modifying that install.
+curl install; for Homebrew, npm, Bun, or pnpm it prints the matching
+update command rather than modifying that install. A Bun install needs
+`~/.bun/bin` on `PATH`. pnpm needs `SHELL` set before `pnpm setup` when the
+global bin directory is missing.
 
 Read more:
 [Getting started → Install](https://docs.repoos.org/getting-started#install).

@@ -6,8 +6,7 @@
 # installs a `repoos` launcher on PATH. Runs on Bun when it's installed
 # (recommended); otherwise requires Node.js >= 20.6.0.
 #
-# POSIX-safe body: runs under `bash`, `sh`, or `dash`, so
-# `curl -fsSL ... | sh` works on Linux and macOS alike.
+# Pipe to bash, matching the docs: `curl -fsSL https://repoos.org/install | bash`.
 set -eu
 # `pipefail` is a bash/zsh extension; enable it only when the shell supports it
 # so the script also runs under POSIX-only shells such as dash (/bin/sh).
@@ -17,7 +16,14 @@ case "${BASH_VERSION:-}${ZSH_VERSION:-}" in
 esac
 
 REPO="repo-os/repoos"
-INSTALL_DIR="${REPOOS_INSTALL_DIR:-$HOME/.repoos}"
+# Install payload and machine state are different directories. State stays in
+# ~/.repoos (servers, services.json, local-check-slots, agent-run-tmp). The
+# tarball unpacks to ~/.local/share/repoos unless REPOOS_INSTALL_DIR is set.
+INSTALL_DIR="${REPOOS_INSTALL_DIR:-$HOME/.local/share/repoos}"
+STATE_DIR="$HOME/.repoos"
+# Names shipped in repoos-dist.tar.gz. A legacy install unpacked these into
+# STATE_DIR; reinstall deletes only these names there so runtime state survives.
+PAYLOAD_NAMES="cli commands core server ui .build-info.json"
 BIN_DIR="${REPOOS_BIN_DIR:-$HOME/.local/bin}"
 RELEASE_URL="https://github.com/${REPO}/releases/latest/download/repoos-dist.tar.gz"
 
@@ -62,8 +68,8 @@ ${MAGENTA}   ╚═╝  ╚═╝╚══════╝╚═╝      ╚═�
 if command -v bun >/dev/null 2>&1; then
   runtime_note="Bun $(bun --version 2>/dev/null || echo '?')"
 elif command -v node >/dev/null 2>&1; then
-  node_major=$(node -p 'process.versions.node.split(".")[0]')
-  if [ "$node_major" -lt 20 ]; then
+  # 20.6.0 matches package.json "engines". Major-only checks accepted 20.0–20.5.
+  if ! node -e 'const p=process.versions.node.split(".").map(function(n){return parseInt(n,10)||0}); if(!(p[0]>20||(p[0]===20&&(p[1]>6||(p[1]===6))))) process.exit(1)'; then
     err "Node.js >= 20.6.0 is required when Bun isn't installed (found $(node -v)). Install Bun (https://bun.sh) or a newer Node."
   fi
   runtime_note="Node $(node -v)"
@@ -114,8 +120,23 @@ curl -fsSL "$RELEASE_URL" -o "$tmpfile" \
 
 # --- Install ------------------------------------------------------------------
 step "installing to ${BOLD}${INSTALL_DIR}${RESET}..."
-rm -rf "$INSTALL_DIR"
-mkdir -p "$INSTALL_DIR" "$BIN_DIR"
+# Never delete STATE_DIR itself: that directory holds runtime state. When the
+# install dir is somewhere else, drop only a legacy payload left in STATE_DIR.
+if [ "$INSTALL_DIR" != "$STATE_DIR" ] && [ -f "$STATE_DIR/cli/index.js" ]; then
+  step "moving a legacy install out of ${BOLD}${STATE_DIR}${RESET} (keeping runtime state)..."
+  for name in $PAYLOAD_NAMES; do
+    rm -rf "$STATE_DIR/$name"
+  done
+fi
+if [ "$INSTALL_DIR" = "$STATE_DIR" ]; then
+  for name in $PAYLOAD_NAMES; do
+    rm -rf "$INSTALL_DIR/$name"
+  done
+  mkdir -p "$INSTALL_DIR" "$BIN_DIR"
+else
+  rm -rf "$INSTALL_DIR"
+  mkdir -p "$INSTALL_DIR" "$BIN_DIR"
+fi
 tar -xzf "$tmpfile" -C "$INSTALL_DIR"
 chmod +x "$INSTALL_DIR/cli/index.js"
 
