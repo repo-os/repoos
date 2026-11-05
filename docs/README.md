@@ -97,4 +97,7 @@ can't assume any.
   layout, check-plan inference and worktree behavior on Go, Rust, Gradle/Kotlin,
   mixed and existing-AGENTS.md repositories (#0452). Read before changing check
   inference or init scaffolding assumptions.
+- `agents-md-size.md` — why `AGENTS.md` must stay under 30 KB (agents truncate
+  it) and where long-form rules go: `agent-workflow-rules.md`,
+  `agent-ui-and-preview-conventions.md`, `agent-debugging-and-incidents.md`.
 - `audits/`, `agents/` — point-in-time audits and raw agent reports.
