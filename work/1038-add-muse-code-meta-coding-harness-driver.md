@@ -3,9 +3,6 @@ id: 1038
 title: Add Muse Code (Meta) coding-harness driver
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Transport"
 human_step_override: Cleared needs-human-step flag (sticky until acceptance criteria change)
 human_step_override_key: "0537f231"
 priority: p3
@@ -15,7 +12,7 @@ created_by: njachowski@gmail.com
 branch: feat/add-muse-code-meta-coding-harness-driver
 model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-05T11:24:33Z"
-updated_at: "2026-11-05T12:52:24Z"
+updated_at: "2026-11-05T12:52:28Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/muse-spark-1.3-contributor\",\"at\":\"2026-11-05T12:52:24.363Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -86,3 +83,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T12:49:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-05T12:52:24Z · agent exited with an error (opencode) · error: Transport
 - 2026-11-05T12:52:24Z · engineer crash recovery: resuming opencode + opencode-go/muse-spark-1.3-contributor (1/3 crashes in 30m) · error: Transport
+- 2026-11-05T12:52:28Z · needs_input
