@@ -89,3 +89,4 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 - 2026-11-05T00:42:24Z · body
 - 2026-11-05T00:50:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-05T01:02:57Z · status active→review
+- 2026-11-05T01:02:57Z · message_queued at 2026-11-05T01:02:57.478Z
