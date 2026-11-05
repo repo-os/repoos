@@ -11,7 +11,7 @@ branch: feat/hold-dialog-styled-fields-optional-reaso
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T13:14:03Z"
-updated_at: "2026-11-05T00:05:44Z"
+updated_at: "2026-11-05T00:10:05Z"
 ---
 ## Problem
 
@@ -42,10 +42,10 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 "highlight": ".cc-modal",
 "steps": [
 {
-  "click": "[data-test-id=\"hold-task\"]"
+"click": "[data-test-id=\"hold-task\"]"
 },
 {
-  "waitFor": ".cc-modal textarea.ff-textarea"
+"waitFor": ".cc-modal textarea.ff-textarea"
 }
 ],
 "state": "drawer:reviewWithBranch"
@@ -77,3 +77,4 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 - 2026-11-04T23:54:13Z · body
 - 2026-11-05T00:00:55Z · body
 - 2026-11-05T00:05:44Z · body
+- 2026-11-05T00:10:05Z · CTO nudge: held — handoff gate is running
