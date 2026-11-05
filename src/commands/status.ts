@@ -27,7 +27,7 @@ import {
   syncFromRepo,
   unionApps,
 } from "../core/tunnel-registry.js";
-import { currentBranch, runGit } from "../core/git.js";
+import { currentBranch, isGitRepo, runGit } from "../core/git.js";
 import { countWorktrees, formatGcEntryDetails, sweepStaleWorktrees } from "../core/worktree-gc.js";
 import { isOrphanServeCommand, isPortListening } from "../server/serve-reaper.js";
 import { STATUSES, type RepoOSConfig, type Status } from "../core/types.js";
@@ -947,7 +947,7 @@ export function renderStatus(s: StatusSnapshot, now: Date = new Date()): void {
 
   // git
   if (!s.git.branch) {
-    row("git", c.dim("not a git repository"));
+    row("git", c.dim(isGitRepo(s.root) ? "unknown branch" : "not a git repository"));
   } else {
     const bits = [c.cyan(s.git.branch)];
     bits.push(
