@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-05T13:22:53.738Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: 1038
 title: Add Muse Code (Meta) coding-harness driver
 type: feature
@@ -94,3 +96,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T13:16:11Z · body
 - 2026-11-05T13:22:50Z · message_queued at 2026-11-05T13:22:50.468Z
 - 2026-11-05T13:22:53Z · message_delivered: 1 message(s)
+
