@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-05T00:37:03.953Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Hold dialog with outlined reason and date fields (target \"default\"): click [data-test-id=\"hold-task\"]: click: Timeout 5000ms exceeded. on /work?task=9999 (http://127.0.0.1:56676/work?shotState=drawer:reviewWithBranch); [missing-target] Hold dialog with outlined reason and date fields (target \"default\"): waitFor .cc-modal textarea.ff-textarea: waitFor: Timeout 5000ms exceeded. on /work?task=9999 (http://127.0.0.1:56676/wor… (truncated)"
 id: 1033
 title: "Hold dialog: styled fields, optional reason, and held-card padding"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/hold-dialog-styled-fields-optional-reaso
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-04T13:14:03Z"
-updated_at: "2026-11-05T00:37:03Z"
+updated_at: "2026-11-05T00:38:12Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-05T00:37:03.953Z: repoos check failed: ui verification failed (3 issue(s)): [missing-target] Hold dialog with outlined reason and date fields (target \"default\"): click [data-test-id=\"hold-task\"]: click: Timeout 5000ms exceeded. on /work?task=9999 (http://127.0.0.1:56676/work?shotState=drawer:reviewWithBranch); [missing-target] Hold dialog with outlined reason and date fields (target \"default\"): waitFor .cc-modal textarea.ff-textarea: waitFor: Timeout 5000ms exceeded. on /work?task=9999 (http://127.0.0.1:56676/wor… (truncated)"
 ---
 ## Problem
 
@@ -38,26 +38,29 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 ```json
 [
 {
-"label": "Hold dialog with outlined reason and date fields",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".cc-modal",
-"steps": [
-{
-"click": "[data-test-id=\"hold-task\"]"
+  "label": "Hold dialog with outlined reason and date fields",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".cc-modal",
+  "steps": [
+    {
+      "click": ".drawer-tabs button.tab-btn:nth-child(1)"
+    },
+    {
+      "click": "[data-test-id=\"hold-task\"]"
+    },
+    {
+      "waitFor": ".cc-modal textarea.ff-textarea"
+    }
+  ],
+  "state": "drawer:reviewWithBranch"
 },
 {
-"waitFor": ".cc-modal textarea.ff-textarea"
-}
-],
-"state": "drawer:reviewWithBranch"
-},
-{
-"label": "Held card with even padding on the task panel",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".held-panel",
-"state": "drawer:held"
+  "label": "Held card with even padding on the task panel",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": ".held-panel",
+  "state": "drawer:held"
 }
 ]
 ```
@@ -83,4 +86,4 @@ Check the server hold route (`POST /api/tasks/:id/hold`) accepts an empty reason
 - 2026-11-05T00:37:00Z · note: ui verification failed (3 issue(s)): [missing-target] Hold dialog with outlined reason and date fields (target "default"): click [data-test-id="hold-task"]: click: Timeout 5000ms exceeded. on /work?task=9999 (http://127.0.0.1:56676/work?shotState=drawer:reviewWithBranch); [missing-target] Hold dialog with outlined reason and date fields (target "default"): waitFor .cc-modal textarea.ff-textarea: waitFor: Timeout 5000ms exceeded. on /work?task=9999 (http://127.0.0.1:56676/work?shotState=drawer:re
 - 2026-11-05T00:37:01Z · message_queued at 2026-11-05T00:37:01.153Z
 - 2026-11-05T00:37:03Z · message_delivered: 1 message(s)
-
+- 2026-11-05T00:38:12Z · body
