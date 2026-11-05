@@ -183,6 +183,7 @@ const CLI_LABELS: Record<string, string> = {
   codex: "codex",
   antigravity: "Antigravity CLI (agy)",
   crush: "Crush",
+  muse: "Muse Code",
 };
 
 const defaultInstrRefs = new Map<string, HTMLTextAreaElement | null>();

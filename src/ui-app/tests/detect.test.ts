@@ -138,6 +138,19 @@ describe("detectAgents", () => {
     expect(crush?.authCheckArgs).toBeUndefined();
   });
 
+  it("registers Muse Code as a drivable agent on the muse binary", () => {
+    const muse = KNOWN_AGENTS.find((agent) => agent.id === "muse");
+    expect(muse).toMatchObject({
+      name: "muse",
+      cli: "muse",
+      binary: "muse",
+      drivable: true,
+    });
+    expect(muse?.installHint).toContain("dev.meta.ai");
+    // No machine-readable auth-status probe exists (`muse login` is interactive).
+    expect(muse?.authCheckArgs).toBeUndefined();
+  });
+
   it("reports installed, version-carrying headless binaries", async () => {
     const root = tmpDir();
     makeBin(join(root, "bin"), "opencode", "#!/bin/sh\necho 'opencode v0.3.0'\n");

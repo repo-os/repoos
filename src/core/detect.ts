@@ -210,6 +210,22 @@ export const KNOWN_AGENTS: KnownAgent[] = [
     capability:
       "Plain-text headless runs, unconditional auto-approval in run mode, and `crush models`",
   },
+  {
+    id: "muse",
+    name: "muse",
+    cli: "muse",
+    binary: "muse",
+    drivable: true,
+    // Meta's terminal coding agent. Like crush, authentication is interactive
+    // (`muse login` / `muse auth`); there is no verified machine-readable
+    // auth-status probe, so authentication is a plain hint rather than an
+    // `authCheckArgs` probe.
+    installHint: "curl -fsSL https://dev.meta.ai/install.sh | sh",
+    authHint:
+      "Run `muse login` once to sign in; headless `muse exec` runs use the stored credentials.",
+    capability:
+      "Headless JSONL stream (`muse exec --json`), UUID session resume, and read-only advisory turns",
+  },
 ];
 
 const WIN32_SCRIPT_RE = /\.(cmd|bat)$/i;

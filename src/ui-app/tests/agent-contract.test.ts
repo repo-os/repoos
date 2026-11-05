@@ -92,6 +92,36 @@ process.stdout.write("unknown subcommand: " + args[0] + "\\n");
 process.exit(1);
 `;
 
+const FAKE_MUSE = `#!/usr/bin/env node
+// Fixture muse binary for the adapter contract suite. muse exec --json streams
+// one MSP-envelope JSON object per line (stream.id carries the session id,
+// run.output.delta the answer, run.terminal.completed the terminal record,
+// run.usage the per-turn tokens). --session-id mints-or-resumes one session.
+// Cancellation probes SIGTERM, which node handles by terminating immediately.
+const fs = require("fs");
+const log = process.env.REPOOS_CONTRACT_LOG;
+const args = process.argv.slice(2);
+if (log) {
+  try { fs.appendFileSync(log, JSON.stringify(args) + "\\n"); } catch {}
+}
+if (args.includes("--version")) { process.stdout.write("Muse Code 1.4.14 (1.4.14-R7309.1)\\n"); process.exit(0); }
+if (args.includes("--help")) { process.stdout.write("muse - interactive terminal coding agent\\n\\nUsage: muse [OPTIONS] <COMMAND>\\n\\nCommands: resume exec config model-profile\\n"); process.exit(0); }
+if (args[0] === "exec") {
+  const sidIndex = args.indexOf("--session-id");
+  const streamId = sidIndex !== -1 && args[sidIndex + 1] ? args[sidIndex + 1] : "sess-muse";
+  const rec = (payload_type, payload) => JSON.stringify({ schema_version: 1, stream: { kind: "session", id: streamId }, sequence: 1, payload_type, payload }) + "\\n";
+  process.stdout.write(rec("run.model.configured", { kind: "run_model_configured", model_id: "muse-spark-1.3" }));
+  process.stdout.write(rec("run.output.delta", { kind: "run_output_delta", text: "OK" }));
+  process.stdout.write(rec("run.usage", { kind: "run_usage", models: [{ model: "muse-spark-1.3", input_tokens: 28767, cached_tokens: 0, output_tokens: 19, calls: 1 }] }));
+  process.stdout.write(rec("run.terminal.completed", { kind: "run_terminal", terminal: "completed", text: "OK" }));
+  // Stay alive briefly so the cancellation probe can SIGTERM us mid-run.
+  setTimeout(() => process.exit(0), 1000);
+  return;
+}
+process.stdout.write("unknown subcommand: " + args[0] + "\\n");
+process.exit(1);
+`;
+
 interface Fixture {
   bin: string;
   dir: string;
@@ -133,6 +163,20 @@ function makePiFixture(): Fixture {
   const dir = mkdtempSync(join(tmpdir(), "repoos-contract-pi-"));
   const bin = join(dir, "pi");
   writeFileSync(bin, FAKE_PI, { mode: 0o755 });
+  const fx: Fixture = {
+    bin,
+    dir,
+    log: join(dir, "argv.log"),
+    clean: () => rmSync(dir, { recursive: true, force: true }),
+  };
+  fixtures.push(fx);
+  return fx;
+}
+
+function makeMuseFixture(): Fixture {
+  const dir = mkdtempSync(join(tmpdir(), "repoos-contract-muse-"));
+  const bin = join(dir, "muse");
+  writeFileSync(bin, FAKE_MUSE, { mode: 0o755 });
   const fx: Fixture = {
     bin,
     dir,
@@ -280,6 +324,54 @@ describe("adapter contract suite", () => {
     expect(resume).toBeDefined();
     expect(resume).toContain("sess-123");
     expect(argv.some((args) => args.includes("--list-models"))).toBe(true);
+    expect(argv.some((args) => args.includes("--version"))).toBe(true);
+    expect(argv.some((args) => args.includes("--help"))).toBe(true);
+  });
+
+  it("passes every seam against a deterministic fixture muse binary", async () => {
+    const fx = makeMuseFixture();
+    process.env.REPOOS_CONTRACT_LOG = fx.log;
+    const result = await runAdapterContract({ cli: "muse", bin: fx.bin, mode: "fixture" });
+    delete process.env.REPOOS_CONTRACT_LOG;
+
+    expect(result.passed).toBe(true);
+    expect(result.evidence).toContain("adapter contract suite passed 8/8");
+    expect(result.detectedVersion).toEqual([1, 4, 14]);
+    const byId = new Map(result.capabilities.map((c) => [c.id, c]));
+    for (const cap of result.capabilities) {
+      expect(cap.ok, `${cap.id} should pass: ${cap.detail}`).toBe(true);
+    }
+    // No skips: the MSP-envelope stream carries structured events and the
+    // envelope's stream id doubles as the resumable session id.
+    expect(byId.get("structured-events")?.ok).toBe(true);
+    expect(byId.get("session-continuation")?.ok).toBe(true);
+    // The approval flag is explicit per-turn mode, not a blanket bypass.
+    expect(byId.get("auto-permissions")?.detail).toMatch(/--approval-mode/);
+    // Cancellation keeps the default SIGTERM (confirmed live: it stops a run
+    // promptly with no orphaned children).
+    expect(byId.get("cancellation")?.detail).toMatch(/SIGTERM stopped the run/);
+  });
+
+  it("drives muse's documented invocation shapes (exec --json, --session-id resume)", async () => {
+    const fx = makeMuseFixture();
+    process.env.REPOOS_CONTRACT_LOG = fx.log;
+    await runAdapterContract({ cli: "muse", bin: fx.bin, mode: "fixture" });
+    delete process.env.REPOOS_CONTRACT_LOG;
+
+    const argv = readSpawnLog(fx);
+    const firstRun = argv.find((args) => args[0] === "exec" && !args.includes("--session-id"));
+    expect(firstRun).toBeDefined();
+    expect(firstRun).toContain("--json");
+    expect(firstRun).toContain("--trust-workspace");
+    expect(firstRun).toContain("--approval-mode");
+    expect(firstRun?.[firstRun.indexOf("--approval-mode") + 1]).toBe("never");
+    expect(firstRun).not.toContain("--yolo");
+    // muse has no model-listing subcommand, so the probe never asks for one.
+    expect(argv.some((args) => args[0] === "models")).toBe(false);
+    const resume = argv.find((args) => args.includes("--session-id"));
+    expect(resume).toBeDefined();
+    // The resume carries the session id the fixture's one-shot emitted.
+    expect(resume).toContain("sess-muse");
     expect(argv.some((args) => args.includes("--version"))).toBe(true);
     expect(argv.some((args) => args.includes("--help"))).toBe(true);
   });
