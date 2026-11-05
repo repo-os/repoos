@@ -212,12 +212,14 @@ describe("agent compatibility contracts", () => {
     expect(at("crush version v1.0.0").status).toBe("newer_than_verified");
   });
 
-  it("walks Muse's 1.x ladder: in-range is unprobed until certified", () => {
+  it("walks Muse's 1.x ladder: certified at 1.4.14 (2026-11-05)", () => {
     const at = (version: string) => compatibilityForAgent({ cli: "muse", version, drivable: true });
     // The installed release parses out of muse's two-part --version line.
     expect(parseAgentVersion("Muse Code 1.4.14 (1.4.14-R7309.1)")).toEqual([1, 4, 14]);
-    // v1.4.x is inside `>=1.0.0 <2.0.0`, but nothing is certified yet.
-    expect(at("Muse Code 1.4.14 (1.4.14-R7309.1)").status).toBe("not_probed");
+    // 1.4.14 is the certified release (live probe 8/8, 2026-11-05).
+    expect(at("Muse Code 1.4.14 (1.4.14-R7309.1)").status).toBe("verified");
+    // A newer 1.x is uncertainty, not a block.
+    expect(at("Muse Code 1.5.0 (1.5.0-R1.1)").status).toBe("newer_than_verified");
     // Below the supported line is an upgrade nudge; a newer major is uncertainty.
     expect(at("Muse Code 0.9.0 (0.9.0-R1.1)").status).toBe("upgrade_recommended");
     expect(at("Muse Code 2.0.0 (2.0.0-R1.1)").status).toBe("newer_than_verified");
