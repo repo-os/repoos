@@ -11,8 +11,9 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-05T11:24:33Z"
-updated_at: "2026-11-05T11:24:52Z"
+updated_at: "2026-11-05T11:26:54Z"
 ---
 ## Problem
 
@@ -45,3 +46,4 @@ Muse Code (Meta's terminal coding agent, `muse` 1.4.14) is installed locally but
 - 2026-11-05T11:24:33Z · created · njachowski@gmail.com
 - 2026-11-05T11:24:33Z · needs_input
 - 2026-11-05T11:24:52Z · body: Desired UX (added 1, removed 1); Acceptance criteria (added 3, removed 4); Notes for AI (added 1, removed 1)
+- 2026-11-05T11:26:54Z · model_override
