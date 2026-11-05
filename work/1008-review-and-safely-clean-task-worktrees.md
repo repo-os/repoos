@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 663142
-last_close_out_gate_at: "2026-11-05T02:44:35.544Z"
 id: 1008
 title: Review and safely clean task worktrees
 type: chore
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 3aafe932d693f312a3480f7f86906b730fa93e9a
 assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-01T22:00:49Z"
 updated_at: "2026-11-05T02:44:35Z"
+last_close_out_gate_ms: 663142
+last_close_out_gate_at: "2026-11-05T02:44:35.544Z"
 review_passes: 1
 ---
 ## Problem
