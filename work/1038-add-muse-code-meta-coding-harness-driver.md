@@ -13,7 +13,7 @@ branch: feat/add-muse-code-meta-coding-harness-driver
 cli_override: cursor
 model_override: grok-4.7-low
 created_at: "2026-11-05T11:24:33Z"
-updated_at: "2026-11-05T13:38:21Z"
+updated_at: "2026-11-05T13:41:11Z"
 last_check_failure: "repoos check at 2026-11-05T13:22:53.738Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 1
 ---
@@ -101,3 +101,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T13:31:24Z · note: handoff requested (cli)
 - 2026-11-05T13:34:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-05T13:38:21Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-05T13:41:11Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (50efb7bf0) during finalization (#0734)
