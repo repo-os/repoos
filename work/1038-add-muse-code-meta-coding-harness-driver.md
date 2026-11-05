@@ -15,7 +15,6 @@ model_override: grok-4.7-low
 created_at: "2026-11-05T11:24:33Z"
 updated_at: "2026-11-05T13:16:11Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/muse-spark-1.3-contributor\",\"at\":\"2026-11-05T12:52:24.363Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
