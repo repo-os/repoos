@@ -237,12 +237,14 @@ test suite, a headless WebKit UI smoke test and a rendered contrast audit
   of `main` unless `--force-not-merged`, but that's a backstop. Use Move to done.
 - **Resource pressure: use RepoOS's `pressureGuard`, not your own thresholds
   (#0940).** Read its verdict from `repoos stats`, the dashboard banner,
-  `repoos driver brief` or a task's queue marker (`reason: pressure`). Never
-  block or defer starts with self-chosen numbers (free swap, memory %), and
-  never start anyway under a different threshold. On macOS, swap used/free alone
-  isn't a pressure signal. When the guard holds a start, report its reason and
-  wait; if its limits look wrong, ask the human to change Settings. See
-  `docs/memory-pressure-guard.md`.
+  `repoos driver brief` or a task's queue marker (`reason: pressure`).
+  **Never** block or defer starts with self-chosen numeric limits (a minimum free
+  swap, a memory-pressure free %), and never start anyway under a different
+  threshold. On macOS `vm.swapusage` "free" is unused swap capacity, and swap
+  used/free alone isn't a pressure signal; `memory_pressure -Q` is one of the
+  guard's inputs, not yours. When the guard holds a start, report its reason and
+  wait; if its limits look wrong, ask the human to change Settings, and
+  do not invent another gate. See `docs/memory-pressure-guard.md`.
 - **Agent drivers pick from the budget allowlist.** `repoos override` /
   `cliOverride`/`modelOverride` refuse pairs outside `[[budget.allowlist]]` and
   paused pairs. `repoos override --help` lists allowed pairs;
