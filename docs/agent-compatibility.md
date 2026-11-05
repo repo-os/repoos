@@ -200,3 +200,61 @@ turn names the new session by diff (`pickNewCrushSessionId`), and
 attaches the most recent session in the cwd. Note the token profile: even a
 trivial prompt reports ~13k prompt tokens because Crush sends its own system
 prompt and tool definitions — expected for this class of harness, not a bug.
+## Worked example: Muse Code (1.4.x)
+
+Muse Code (Meta's terminal coding agent, `muse`) streams one MSP-envelope JSON
+object per line under `muse exec --json`
+(`{ stream: { kind, id }, payload_type, payload }`). Three adapter properties
+are worth recording because they differ from the neighboring drivers:
+
+- **Session id is the envelope's stream id — and only UUIDs are accepted.**
+  Every record carries `stream: { kind: "session", id }`; when `--session-id
+  <UUID>` was passed, that id comes back as the stream id, so a second `exec`
+  with the same id provably resumes the same conversation (confirmed live: two
+  runs with one id reported the identical stream id). Anything else exits 2
+  (`invalid --session-id: repoos-test-engineer (expected a UUID, ...)`), so
+  RepoOS mints a random UUID per conversation instead of the deterministic
+  `repoos-<task>-<role>` shape pi uses. `--session-id` both mints and resumes;
+  there is no `--continue` equivalent in the driver.
+- **Trust and approval are per-turn flags, never remembered.** Every RepoOS
+  invocation carries `--trust-workspace` (without it the worktree loads as
+  untrusted — no AGENTS.md/rules/skills, delegation disabled — confirmed live),
+  `--approval-mode never` with the sandbox LEFT ON (never `--yolo`), and
+  `--max-model-steps 50`. Advisory (PM/reviewer/CTO) turns add
+  `--disable-write` + `--disable-shell`: a write attempt is refused with a
+  read-only notice and nothing is created (confirmed live). The tradeoff is
+  recorded, not faked: a muse PM cannot execute `repoos` CLI commands itself
+  and a muse reviewer cannot run `git diff` or tests — file reads still work,
+  and output is applied through RepoOS's own patch path.
+- **Cancellation is plain SIGTERM; tokens are reported, cost is not.**
+  SIGTERM stopped a long run promptly with no orphaned children (confirmed
+  live), so the driver keeps the default signal (no crush-style SIGINT). The
+  terminal `run.usage` record carries per-turn `payload.models[]`
+  (`input_tokens`, `output_tokens`, `cached_tokens`, `calls`) — even a trivial
+  prompt reports ~26–29k input tokens because Muse sends its own system prompt
+  and tool definitions — but no cost field, so the Tokens tab shows tokens
+  with cost unknown. Tool calls surface as
+  `task.lifecycle.side_effect_intent` (`operation: "tool:<name>"`,
+  `idempotency_key: "tool:<call_id>"`) closed by `tool.result`
+  (`call_id`, `text`, `correlation_facts.tool_name/outcome`); tool input args
+  are not in the stream, so cards carry name + output only.
+
+Live evidence (2026-11-05, muse 1.4.14, `--model muse-spark-1.3`,
+`--max-model-steps 3`, throwaway git-initialized temp dirs, sandbox on): basic
+`exec --json` shape + usage (40 lines, terminal `run.terminal.completed`
+`text: "OK"`); resume with one UUID across two runs (same stream id);
+read-only write refusal (no file created); `git status` under read-only flags;
+`ls` under read-only flags (model used the `search` tool instead);
+SIGTERM cancel of a long run (process dead, no orphans); UUID rejection
+(exit 2); no-`--trust-workspace` degraded mode (exit 0, "workspace is
+untrusted"). These runs answer the driver's open questions; they are NOT
+certification, so the manifest entry stays `verifiedAt: null` until the human
+records a real probe (#1039).
+
+Model discovery: there is no `muse models` (unknown subcommand). Per-model
+validation is `muse model-profile show <model>` (offline, exact for the
+binary), so the contract's model-discovery seam passes with the claude-style
+note and the driver pins a fixed list (default `muse-spark-1.3`;
+`muse-spark-1.3-contributor` is worth listing for contributor-mode runs).
+`--reasoning-effort` tiers exist in the CLI but RepoOS has no per-task
+reasoning path to forward, so runs use the CLI default (`high`).

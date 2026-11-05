@@ -736,6 +736,127 @@ const ANTIGRAVITY_CONTRACT: ContractCommandTemplates = {
   parseRun: parseAgyRun,
 };
 
+/**
+ * Muse Code (Meta) — `muse exec --json` streams one MSP-envelope JSON object
+ * per line (`{ stream: { kind, id }, payload_type, payload }`). The session id
+ * is the `stream.id` of `kind: "session"` records (the `--session-id` value
+ * when one was passed); the answer arrives incrementally as
+ * `run.output.delta` text and whole in the terminal `run.terminal.completed`
+ * record; per-turn tokens arrive in `run.usage` (`payload.models[]`).
+ * `--session-id` accepts only UUIDs (anything else exits 2), so RepoOS mints
+ * the id client-side. Verified live against muse 1.4.14 on 2026-11-05 — see
+ * docs/agent-compatibility.md.
+ */
+function parseMuseRun(stdout: string): RunParseResult {
+  const KNOWN = new Set([
+    "runtime.command.accepted",
+    "session.run.linked",
+    "run.model.configured",
+    "session.workspace_branch.observed",
+    "turn.input.user",
+    "run.lifecycle.started",
+    "task.stream.linked",
+    "task.lifecycle.proposed",
+    "task.lifecycle.accepted",
+    "task.lifecycle.scheduled",
+    "task.lifecycle.side_effect_intent",
+    "task.lifecycle.started",
+    "task.lifecycle.status",
+    "task.lifecycle.output",
+    "task.lifecycle.completed",
+    "task.lifecycle.cancelled",
+    "run.output.delta",
+    "tool.result",
+    "run.usage",
+    "run.terminal.completed",
+  ]);
+  let sessionId: string | null = null;
+  let hasAnswer = false;
+  let recognized = 0;
+  let total = 0;
+  for (const line of stdout.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    try {
+      const ev = JSON.parse(t) as Record<string, unknown>;
+      total++;
+      const payloadType = typeof ev.payload_type === "string" ? ev.payload_type : "";
+      if (KNOWN.has(payloadType)) recognized++;
+      const stream = ev.stream as Record<string, unknown> | undefined;
+      if (stream && stream.kind === "session" && typeof stream.id === "string" && stream.id) {
+        sessionId = stream.id;
+      }
+      const payload = ev.payload as Record<string, unknown> | undefined;
+      if (payloadType === "run.output.delta") {
+        if (typeof payload?.text === "string" && /OK/i.test(payload.text)) hasAnswer = true;
+      }
+      if (payloadType === "run.terminal.completed") {
+        if (
+          payload &&
+          typeof payload.text === "string" &&
+          (payload.terminal === "completed" || !payload.terminal) &&
+          /OK/i.test(payload.text)
+        ) {
+          hasAnswer = true;
+        }
+      }
+    } catch {
+      /* skip malformed lines */
+    }
+  }
+  return {
+    sessionId,
+    hasAnswer,
+    recognized,
+    total,
+    detail:
+      total === 0
+        ? "no JSON lines in output"
+        : `${recognized}/${total} recognized events; answer found: ${hasAnswer}`,
+  };
+}
+
+/**
+ * Cap on muse model steps per RepoOS turn. muse forgets options between
+ * processes, so the driver resends this on every invocation (fresh and
+ * resume). Generous enough for a real engineer turn; revisit at certification.
+ */
+export const MUSE_MAX_MODEL_STEPS = 50;
+
+/** Muse Code (Meta) — headless `exec --json`, UUID session resume. */
+const MUSE_CONTRACT: ContractCommandTemplates = {
+  version: () => ["--version"],
+  help: () => ["--help"],
+  // No model-listing subcommand exists (`muse models` is unknown); per-model
+  // validation is `muse model-profile show <model>`, so discovery passes with
+  // the claude-style note and the driver pins a fixed default list.
+  models: () => null,
+  modelArgs: (model) => ["--model", model],
+  run: (_dir, prompt) => [
+    "exec",
+    "--json",
+    "--trust-workspace",
+    "--approval-mode",
+    "never",
+    "--max-model-steps",
+    String(MUSE_MAX_MODEL_STEPS),
+    prompt,
+  ],
+  resume: (_dir, sessionId, prompt) => [
+    "exec",
+    "--json",
+    "--trust-workspace",
+    "--approval-mode",
+    "never",
+    "--max-model-steps",
+    String(MUSE_MAX_MODEL_STEPS),
+    "--session-id",
+    sessionId,
+    prompt,
+  ],
+  parseRun: parseMuseRun,
+};
+
 /** Templates keyed by canonical cli id; `--format json` parsers live here too. */
 const CONTRACT_TEMPLATES: Record<string, (binary: string) => ContractCommandTemplates> = {
   opencode: opencodeContract,
@@ -748,6 +869,7 @@ const CONTRACT_TEMPLATES: Record<string, (binary: string) => ContractCommandTemp
   "github copilot": () => COPILOT_CONTRACT,
   crush: () => CRUSH_CONTRACT,
   pi: () => PI_CONTRACT,
+  muse: () => MUSE_CONTRACT,
 };
 
 /**
@@ -763,6 +885,7 @@ export const DEFAULT_PROBE_MODELS: Record<string, string> = {
   antigravity: "gemini-3.8-flash-low",
   "github copilot": "copilot-auto-efficiency",
   pi: "openrouter/z-ai/glm-5.3-flash",
+  muse: "muse-spark-1.3",
 };
 
 /** The model a live probe of `cli` runs on: explicit, else the cheap pin, else harness default. */
@@ -1179,6 +1302,9 @@ export async function runAdapterContract(
       "--dangerously-skip-permissions",
       "--dangerously-bypass-approvals-and-sandbox",
       "--trust-all-tools",
+      // muse sets its approval mode explicitly (`--approval-mode never`, with
+      // the sandbox left on) instead of a blanket bypass flag.
+      "--approval-mode",
       "--yolo",
       "-f",
       "--force",
