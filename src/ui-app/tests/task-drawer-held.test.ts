@@ -113,7 +113,26 @@ describe("task drawer Held reason (#0960)", () => {
     );
   });
 
-  it("opens the shared Hold dialog and submits its required reason to the hold API", async () => {
+  it("renders a held card with no reason as a single line and no pause copy", async () => {
+    const pinia = setup();
+    useRepoStore();
+    const wrapper = await mountDrawer(
+      pinia,
+      heldTask({
+        holdReason: "   ",
+        holdBy: undefined,
+        holdAt: undefined,
+        holdUntil: undefined,
+      }),
+    );
+    const panel = wrapper.find(".held-panel");
+    expect(panel.find("p").exists()).toBe(false);
+    expect(panel.find("small").exists()).toBe(false);
+    expect(panel.text().toLowerCase()).not.toContain("pause");
+    expect(panel.text()).toContain("Held — automation won't start this task");
+  });
+
+  it("opens the shared Hold dialog and submits an empty reason to the hold API", async () => {
     const pinia = setup();
     useRepoStore();
     const task = heldTask({ isHeld: false, holdReason: undefined, holdUntil: undefined });
@@ -133,11 +152,10 @@ describe("task drawer Held reason (#0960)", () => {
     await flush();
 
     const dialog = wrapper.find(".cc-modal");
-    const reason = dialog.find("textarea");
+    const reason = dialog.find("textarea.ff-textarea");
     expect(reason.exists()).toBe(true);
+    expect(dialog.find(".field input[type='date']").exists()).toBe(true);
     const submit = dialog.findAll("button").find((button) => button.text().includes("Hold task"))!;
-    expect(submit.attributes("disabled")).toBeDefined();
-    await reason.setValue("Waiting for the release window");
     expect(submit.attributes("disabled")).toBeUndefined();
     await submit.trigger("click");
     await flush();
@@ -146,7 +164,7 @@ describe("task drawer Held reason (#0960)", () => {
       "/api/tasks/0001/hold",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ reason: "Waiting for the release window" }),
+        body: JSON.stringify({}),
       }),
     );
   });
