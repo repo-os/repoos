@@ -3,1014 +3,417 @@
 This repo uses **RepoOS**: tasks are markdown files under `work/`, and the
 repo itself is the source of truth. This file tells AI agents how to operate.
 
-`AGENTS.md` is the cross-tool standard and the single source of truth here.
-Codex, Cursor, Aider, Zed and friends read it directly; `CLAUDE.md` is a
-one-line shim (`@AGENTS.md`) so Claude Code picks it up too. Don't add a
-per-tool file (`CODEX.md`, `GEMINI.md`, …) — add a shim only if a tool you
-actually use ignores both.
+`AGENTS.md` is the cross-tool standard and the single source of truth here;
+`CLAUDE.md` is a one-line shim (`@AGENTS.md`). Don't add per-tool files
+(`CODEX.md`, `GEMINI.md`, …).
+
+**Keep this file under 30 KB** — Codex truncates project docs at 32 KiB, Muse
+Code at 64 KiB, and Claude Code warns near 40k characters, so anything past the
+cut is invisible to those agents. A test enforces it
+(`src/core/agents-md-size.test.ts`). Put history, incidents and long procedures
+in `docs/` and leave a one-line rule plus a link here. See `docs/agents-md-size.md`.
+
+Long-form versions of the rules below, with incident history:
+[`docs/agent-workflow-rules.md`](docs/agent-workflow-rules.md),
+[`docs/agent-ui-and-preview-conventions.md`](docs/agent-ui-and-preview-conventions.md),
+[`docs/agent-debugging-and-incidents.md`](docs/agent-debugging-and-incidents.md).
 
 ## Who this file is for
 
-Two kinds of agent read this file, and some rules apply to only one:
-
-- **RepoOS task-runner agents** — spawned by the RepoOS server to work a
-  specific task. You have a task id, a dedicated worktree, and a task
-  transcript. The managed operating loop below, the handoff request, the
-  `::repoos-preview-request::` signal, and "never run `repoos serve` yourself"
-  are all yours — the server enforces them and rejects
-  direct serve attempts from your process. **You never move your own task out of
+- **RepoOS task-runner agents** — spawned by the RepoOS server for one task.
+  You have a task id, a dedicated worktree and a transcript. The operating loop,
+  the handoff request, the `::repoos-preview-request::` signal and "never run
+  `repoos serve` yourself" are yours. **You never move your own task out of
   `active`.** Run the scoped check, then hand off with
-  `repoos mv <your task id> review` (or by finishing your reply with the
-  `::repoos-handoff-ready::` signal) and end your turn: both record a *request*,
-  and RepoOS commits the branch, runs the checks and moves the status itself.
-  Do not write `status: review` directly: the watcher can intercept that write
-  and finalize it before your turn ends, cutting the turn short. Task metadata
-  must go through RepoOS commands or APIs.
-- **Interactive / external agent sessions** — a human is driving you directly
-  (Claude Code, Codex CLI, Cursor, …) in an ordinary checkout. You have no
-  runner task id and no managed preview. Runner-only signals and transcripts
-  do not apply. If you work on a RepoOS task, its branch/worktree, review and
-  close-out rules still apply; see the interactive-session section below.
-  To run or verify the app, use your own harness's tooling (e.g. Claude
-  Code's preview/browser tools, which may launch the dev server defined in
-  `.claude/launch.json`) and get past the login screen with the **Dev login**
-  below.
+  `repoos mv <your task id> review` (or end your reply with
+  `::repoos-handoff-ready::`) and stop: both record a *request*, and RepoOS
+  commits, validates and moves the status. Never write `status: review`
+  yourself. Task metadata goes through RepoOS commands or APIs.
+- **Interactive / external sessions** — a human drives you directly (Claude
+  Code, Codex CLI, Cursor, Muse, …). No runner task id, no managed preview. If
+  you work on a RepoOS task, its branch/worktree, review and close-out rules
+  still apply (see below). To run the app use your harness's own tooling and the
+  **Dev login** or auth-less dev server below.
 
 ## Where project knowledge goes: the repo, not your harness
 
-**If you learn something durable about this project, write it into the repo.**
-Not into a harness-local memory store, a per-tool scratchpad, or a private
-notes file that only your agent framework can read.
-
-That is the entire premise of RepoOS: a project's decisions, context and hard-
-won lessons live in `docs/`, `work/` and `AGENTS.md`, versioned alongside the
-code, legible to **every** agent, harness and human who touches the repo —
-including the next model, the next tool, and you six months from now with no
-session history.
-
-Knowledge kept in a harness-only memory is invisible to everyone else, and the
-same mistake gets made again by the next agent. This has already happened here:
-several real incidents (dropped merges, check-gate misdiagnosis, task-file
-drift) sat in one assistant's private memory for weeks while other agents
-rediscovered them the hard way. Those are now in `docs/` where they belong.
-
-Where to put what:
+If you learn something durable about this project, **write it into the repo**
+— not into a harness-local memory store or private notes. Decisions and hard-won
+lessons live in `docs/`, `work/` and `AGENTS.md`, legible to every agent and
+human. Treat any harness memory as a cache of what the repo says.
 
 | What you learned | Where it goes |
 | --- | --- |
-| A rule agents must follow, or the mistake repeats | This file (`AGENTS.md`) |
+| A rule agents must follow, or the mistake repeats | This file — one or two lines |
 | Why a design went the way it did; what an incident turned out to be | `docs/` |
-| A decision that shaped the architecture and rules things out | `docs/adr/` |
-| Work that still needs doing | A task, via `repoos new` — never a note-to-self |
-| How a *user* of RepoOS does something | `user-docs/` (this repo only) |
+| A decision that shaped the architecture | `docs/adr/` |
+| Work that still needs doing | A task via `repoos new` — never a note-to-self |
+| How a *user* of RepoOS does something | `user-docs/` |
 
-Driving the board? Start with `repoos driver brief` for live state and
-`docs/driver-notes.md` for the judgement calls and sharp edges it cannot carry.
+Driving the board? Start with `repoos driver brief` and `docs/driver-notes.md`.
 Re-read a task's live state (`repoos list`, `repoos landable <id>`) before every
-action on it; never act on memory, summaries or loop prompts (2026-10-21, #0879).
-
-This applies in any repo running RepoOS, not just this one. If your harness has
-its own memory feature, treat it as a cache of what's already in the repo, not
-as the system of record — and prefer writing to the repo first.
-
-`docs/` holds build context for the project it lives in. In this repo that is
-RepoOS's own; in a managed repo it is that project's. See `docs/README.md`.
+action on it; never act on memory, summaries or loop prompts (#0879).
 
 ## Operating loop (managed task-runner agents)
 
 1. Read this file, the assigned task in your worktree, and relevant `docs/`.
-   Run `repoos list` for board context; do not claim another task. Before
-   reading a large file, run `repoos outline <path>` — it prints the file's
-   symbols with start-end line numbers, so you can read just the range you
-   need (`offset`/`limit`) instead of the whole file.
-2. Work in the dedicated worktree and branch RepoOS assigned. The server has
-   already activated the task and created or reused its worktree. Do not edit
-   task frontmatter or create a second worktree for it.
-3. Implement the task and update docs directly affected by the change. Before
-   handoff, run `repoos check` once (typically `repoos check --changed main` or
-   `REPOOS_CHECK_CHANGED=main repoos check`) and confirm it passes — not after
-   every edit; repeated runs create WIP checkpoint commits on the task branch.
-   When `remoteValidation` is enabled, that scoped check runs install + build +
-   changed-path tests on the runner and fast guards locally. Handoff reuses a
-   recent passing self-check only for the same clean commit and unchanged main
-   source/base; otherwise it runs the full suite. Default close-out runs
-   changed-path tests plus always-run safety suites (release runs every test). Add `--fix` (or just `bun run fmt`)
-   to run the `format` step's fixer before the check; handoff also does this and
-   commits the result itself. Rebuild after UI changes.
-   A queued check is normal, including a long wait behind a live slot holder
-   or the pressure guard. Keep waiting for the check to finish; do not end
-   your turn or treat the non-blocking waiting badge as a request for input.
-   RepoOS asks for input only for an abnormal wait (dead/stalled holder or
-   an expired handoff deadline).
-4. Request handoff with `repoos mv <id> review` or finish your reply with
-   `::repoos-handoff-ready::`, then end your turn. In your own runner session,
-   both record a request without changing status. RepoOS commits the branch,
-   runs validation, verifies that the tested tree stayed unchanged, and only
-   then moves the task to `review`. Failure leaves it `active` with the reason.
-   Do not call the blocking `repoos review <id>` from a runner turn — it waits
-   for the same server-owned handoff and races it. RepoOS queues the outcome
-   (pass, fail with the failing step and reason, or deferral) for your next
-   turn; `repoos handoff-status <id>` answers immediately without waiting.
-5. Leave the worktree open and stop. Do not merge the branch or mark it done.
-   Resume fixes on this same worktree if review sends it back.
+   Run `repoos list` for context; don't claim another task. Before reading a
+   large file run `repoos outline <path>` (symbols with line ranges), then read
+   just the range you need.
+2. Work in the worktree and branch RepoOS assigned. Don't edit task frontmatter
+   or create a second worktree.
+3. Implement, and update docs directly affected by the change. Before handoff
+   run `repoos check` once (typically `repoos check --changed main`) and confirm
+   it passes — not after every edit (repeat runs create WIP checkpoint commits).
+   `--fix` / `bun run fmt` runs the formatter first. Rebuild after UI changes.
+   A queued check is normal: keep waiting; don't end your turn or treat the
+   waiting badge as a request for input. RepoOS asks only for abnormal waits.
+4. Request handoff with `repoos mv <id> review` or `::repoos-handoff-ready::`,
+   then end your turn. Failure leaves the task `active` with the reason, queued
+   for your next turn; `repoos handoff-status <id>` answers immediately. Don't
+   call the blocking `repoos review <id>` from a runner turn.
+5. Leave the worktree open and stop. Don't merge or mark done. Resume fixes on
+   the same worktree if review sends it back.
 
 ## Review and sign-off (review → done)
 
-**RepoOS owns this workflow whether or not the repo has a Git remote.** A
-GitHub remote does not authorize opening a PR, pushing a task branch, or using
-GitHub approval/merge instead of RepoOS. Only do those if the human explicitly
-requests that separate workflow.
+**RepoOS owns this workflow, with or without a Git remote.** A GitHub remote
+does not authorize opening a PR, pushing a task branch, or using GitHub
+approval/merge instead of RepoOS, unless the human explicitly asks for that.
 
-A task in `review` awaits human sign-off; its branch has not landed. When
-configured, the reviewer agent reads the diff in the task worktree and writes
-an advisory report shown beside **Move to done**. It does not edit code,
-approve its own work, or move the task to `done`. Findings can send the task
-back to the engineer for fixes and another handoff.
-
-When the human approves, use **Move to done** in RepoOS or
-`POST /api/tasks/:id/done`. An explicit instruction to complete a normal task
-means invoke that pipeline, not merge it by hand. RepoOS creates a candidate
-worktree from current main, merges the feature branch there, validates the
-combined result, rechecks main under a publication lock, publishes, cleans up,
-and records completion. Dirty work is preserved, and failures remain visible
-for repair/retry. See `docs/close-out-pipeline.md` and
-`user-docs/review-and-close-out.md`.
-
-`repoos mv <id> done` is **not** this pipeline: it only changes task metadata.
-Never use it as a substitute for landing a branch through Move to done.
-
-**Check landability before approving or closing out.** Run
-`repoos landable <id>` (the same checklist is in the task drawer next to
-**Move to done**; `--json` gives a stable object). It is read-only and exits
-non-zero unless every landing pre-check passes: the latest review verdict is
-`good to go` on the current pass, the review lock sha equals the worktree HEAD
-(a missing lock is only a warning), the worktree is clean, the branch merges
-with main (only the task's own `work/<id>-*.md` may conflict), the diff touches
-no `repoos.toml` and no other task's `work/inputs/stories` files, and main has
-no blocking dirty files. A reviewer must not report "good to go" while it
-fails; fix the named check first. See `docs/close-out-pipeline.md`.
-
-**Never close out human-gated work as if the human part were done.** A task
-carrying `needs_input_reason: needs-human-step` has acceptance criteria that
-need a real device, account, credentials or third-party sign-up. Before
-`repoos done <id>` (or Move to done): confirm the scope being landed needs no
-human (the tests use fakes and nothing depends on that human step); if a
-criterion does, file that part first —
-`repoos new "<title>" --depends-on <id>`, then
-`repoos update <new> --assigned-to human` (`repoos new` defaults to
-`assigned_to: ai`, so the reassignment is required), or use `repoos split <id>`
-when the task already tags mixed `[human]` / `[ai]` criteria — narrow the original task
-to the agent-doable scope, and only then close out. If the human part cannot be
-separated from the code, do not close out; report it to the human. Applies to
-interactive sessions and the CTO/driver path alike. Incident: #0660 was closed
-out while it carried the flag (2026-10-14) and the human-only verification was
-split out afterwards, as #0784 — the wrong order.
-
-Human-assigned tasks (`assigned_to: human`) are inert board work and may move
-through inbox, ready, active, review and done as plain status changes. They do
-not start agents, checks, review, worktree creation or close-out. Do not require
-`hold` to keep them out of AI dispatch. AI agents may move their status only
-when the human explicitly asked them to update that task's board status.
-
-**A `hold` makes a task inert for ALL automation** — `repoos hold <id> --reason
-"…" [--until <date>]` stops any running engineer and parks the task out of
-auto-dispatch, the CTO monitor (idle nudges and stalled-agent restarts), the
-watchdog's auto-resume, crash recovery, and queued-message delivery. It is
-broader than `pause`, which only stops the current run. A held task keeps its
-`status` and is never started by anything but an explicit human/driver command:
-`repoos start <id> --force` (the escape hatch) or `repoos unhold <id> [--start]`
-(which clears the hold and may re-launch). The hold is written into the task's
-frontmatter (`hold`, `hold_reason`, `hold_until`, `hold_by`, `hold_at`) and is
-visible on the board and in `repoos driver brief`'s **Held** section; held tasks
-do not count toward `maxActiveTasks`. A `hold` tag is equivalent to the `hold`
-flag. Every automation that might start an engineer consults `isHoldActive`
-(`src/core/task-selection.ts`) before doing so, and that predicate is the single
-chokepoint (`relaunchEngineerOnActiveTask`).
-
-### Integration conflicts: narrow resolution vs full cycle
-
-When another task lands first and a task that already passed review now
-conflicts with `main`, the close-out tries a **narrow resolution** before
-restarting anything (#0692, `src/server/conflict-resolution.ts`): if the
-conflict is *provably safe* — both sides purely add distinct lines at distinct
-places, generated output, a lockfile, or the task's own bookkeeping file — and
-the task has a prior successful review, RepoOS resolves it in an isolated
-candidate against current main, reviews only the resolution delta, runs the
-combined gate once on the resolved tree, and resumes the authorized Move to
-done. The original review stays tied to the commit it approved. A conflict whose
-**only** path is the task's own `work/<id>-*.md` is the one exception to the
-prior-review rule (#0754): it is pure bookkeeping, resolved by taking main's
-copy, and needs no feature review.
-
-Eligibility is **semantic, never path-based, and fails closed**: an edit rather
-than an append, overlapping hunks, an unclassifiable path, or no prior review
-takes the full engineering/review handback — staying inside a conflict hunk is
-not proof of semantic safety. Never widen the allowlist in
-`conflict-resolution.ts` without a test proving the new class is
-behavior-preserving, and never auto-resolve a conflict on a task with no prior
-review (the task-file-only case aside). A resolution candidate whose tree is not
-the one its combined gate validated must not publish.
+- A task in `review` awaits human sign-off; its branch has not landed. The
+  reviewer agent is advisory: it never edits code, approves its own work or moves
+  a task to `done`.
+- On human approval use **Move to done**, `repoos done <id>` or
+  `POST /api/tasks/:id/done`. It builds a candidate from current main, merges the
+  branch, validates, publishes under a lock and records completion. See
+  `docs/close-out-pipeline.md`, `user-docs/review-and-close-out.md`.
+- **`repoos mv <id> done` is NOT this pipeline** — it only flips metadata and
+  never merges. Never use it to land a branch or as an approval mechanism.
+- **Check landability first:** `repoos landable <id>` (read-only; same list as
+  the task drawer). It fails unless the review verdict is `good to go` on the
+  current pass, the review lock sha equals worktree HEAD, the worktree is clean,
+  the branch merges with main, the diff touches no `repoos.toml` or other tasks'
+  `work/`/`inputs/stories` files, and main has no blocking dirty files.
+- **Never close out human-gated work as if the human part were done.** A task
+  with `needs_input_reason: needs-human-step` needs a real device, account,
+  credentials or sign-up. Before closing out, make sure what's landing needs no
+  human; file the human part first (`repoos new "<title>" --depends-on <id>` then
+  `repoos update <new> --assigned-to human`, or `repoos split <id>`), narrow the
+  original, then close out. If it can't be separated, don't close out — tell the
+  human (#0660/#0784).
+- `assigned_to: human` tasks are inert board work: plain status changes, no
+  agents, checks, worktrees or close-out. Move their status only when the human
+  asked.
+- **`hold`** (`repoos hold <id> --reason "…" [--until <date>]`) makes a task inert
+  to ALL automation (dispatch, CTO monitor, watchdog, crash recovery, queued
+  messages). Only `repoos start <id> --force` or `repoos unhold <id> [--start]`
+  starts it. It's broader than `pause`.
+- **Integration conflicts:** if main moved and a reviewed task now conflicts,
+  close-out tries a *narrow resolution* only for provably safe, purely additive
+  conflicts, generated output, lockfiles or the task's own `work/<id>-*.md`, and
+  only with a prior successful review. It fails closed. Never widen the allowlist
+  in `src/server/conflict-resolution.ts` without a test proving the new class is
+  behavior-preserving. Details: `docs/agent-workflow-rules.md`.
 
 ## Interactive / external sessions working on RepoOS tasks
 
-Being outside a managed runner changes how you coordinate with RepoOS, not
-who owns approval and merging:
+Being outside a runner changes how you coordinate, not who owns approval and
+merging.
 
-- Use RepoOS commands or HTTP APIs for task creation and metadata changes.
-  For an existing task, use its recorded branch and existing worktree. Check
-  for a live engineer or reviewer before editing; avoid concurrent writers.
-- **Do not edit a task's worktree while the task is in `review` or closing out
-  (Move to done running), even when no agent is live.** The branch tip is what
-  was reviewed and what close-out merges; anything written to the worktree
-  after handoff is not merged, and close-out then keeps the dirty worktree and
-  stops for input. To change a task in review, send it back to `active`
-  through RepoOS first (then hand off again), or file a follow-up task. If you
-  find you must fix something you spotted, commit it on the branch only as a
-  proposal and file a task for it; never leave it uncommitted. RepoOS also
-  writes `.repoos/locks/<taskId>.json` while a task is in `review` or
-  close-out (advisory — runners refuse to start there; external sessions
-  should check it too). Move to done compares the worktree to the handoff
-  snapshot and refuses when HEAD moved or the tree is dirty after handoff,
-  except commits that change only `work/*.md` task files (RepoOS bookkeeping or
-  a main sync bringing in other tasks' task files — #0600), a conflict-free
-  merge of main into the branch that is exactly what git computes on its
-  own (the committed tree equals a `merge-tree` replay of the merge's parents; hand
-  resolutions or edits slipped into the merge still fail — #0624), or **only**
-  engineer self-check WIP checkpoint commit(s) on that task while the tree stays
-  clean (#0834 — Move to done re-runs the handoff gate and a delta review, then
-  resumes close-out; a failed delta review bounces to `active` like any other
-  review finding). Real source edits still block close-out. Incident: 2026-09-30, #0594 — four files edited
-  mid-close-out never landed.
-- If explicitly taking over a newly created task, claim it through RepoOS
-  directly as `active`, without leaving it in `ready` for auto-dispatch to grab.
-  Managed starts should use RepoOS's Start action, which owns worktree setup.
-- Drive the running server from the CLI, not ad-hoc `curl`: `repoos start`,
-  `pause`, `message`, `review` (synchronous handoff), `done` (close-out),
-  `override`, `preview`, `config`, `runners`, `agents`, and `stats` wrap the
-  HTTP API with one-shot auth (loopback token or stored session; dev-login
-  re-auth on 401). See `user-docs/cli.md` (Control plane).
-- Keep CLI/API parity: every mutating registered API route must have a named
-  CLI command or a specific, reasoned exemption in `src/cli/api-route-parity.ts`.
-  Use `repoos api <METHOD> /api/<path>` as the authenticated escape hatch until
-  a dedicated command exists; do not use ad-hoc `curl`.
-- Request review through the UI, `repoos review <id>`, or `repoos mv <id> review`.
-  `repoos mv review` writes task metadata that the server intercepts
-  asynchronously; prefer `repoos review` when you need to wait for handoff
-  completion. A successful `repoos mv` return is not proof that checks finished.
-- A status write is not a synchronous cancellation of a background process.
-  Use the supported pause/stop action and verify the run has ended before
-  taking over. Wait for an active reviewer before requesting close-out.
-- After explicit human approval, invoke `repoos done <id>`, Move to done in the
-  UI, or `POST /api/tasks/:id/done` — not `repoos mv <id> done`.
-  Do not bypass review with `active` → `done` or repair a stuck task by merely
-  reissuing `repoos mv <id> done`. Inspect the review/check/integration state.
-  If the control-plane server is unavailable, report it rather than emulate
-  its lifecycle with task-file edits or manual merges.
+- Use RepoOS commands or HTTP APIs for task creation and metadata. For an
+  existing task use its recorded branch and worktree. Check for a live engineer
+  or reviewer before editing; avoid concurrent writers.
+- **Don't edit a task's worktree while it is in `review` or closing out**, even
+  with no agent live: the branch tip is what was reviewed and what close-out
+  merges; later edits aren't merged and block close-out. To change it, send it
+  back to `active` through RepoOS first, or file a follow-up task. Check
+  `.repoos/locks/<taskId>.json` (advisory). Only `work/*.md` bookkeeping commits,
+  a conflict-free merge of main that equals git's own `merge-tree` result, or
+  clean self-check WIP checkpoint commits are tolerated. (#0594, #0600, #0624,
+  #0834.)
+- If taking over a newly created task, claim it through RepoOS directly as
+  `active`; don't leave it `ready` for auto-dispatch. Managed starts use the
+  Start action, which owns worktree setup.
+- Drive the server with the CLI, not ad-hoc `curl`: `repoos start|pause|message|
+  review|done|override|preview|config|runners|agents|stats` (`user-docs/cli.md`).
+  `repoos api <METHOD> /api/<path>` is the authenticated escape hatch. Every
+  mutating API route needs a CLI command or a reasoned exemption in
+  `src/cli/api-route-parity.ts`.
+- Request review via the UI, `repoos review <id>` (waits for handoff) or
+  `repoos mv <id> review` (asynchronous; a successful return is not proof checks
+  finished).
+- A status write doesn't synchronously cancel a background process. Use pause/
+  stop and verify the run ended; wait for an active reviewer before close-out.
+- After explicit human approval invoke `repoos done <id>`, Move to done or the
+  API — not `mv done`. Don't bypass review with `active` → `done`, and don't
+  repair a stuck task by reissuing `mv done`; inspect review/check/integration
+  state. If the control-plane server is down, report it; don't emulate its
+  lifecycle with task-file edits or manual merges.
 
-**Explicit direct-to-main hotfixes are a separate exception.** If the human
-specifically asks for a direct commit on main (as opposed to completing a
-branched task), follow that scope and the main-commit checks below. This does
-not authorize hand-landing other task branches. If such already-landed work
-has a branchless task record, `/done` has a separate checked release path for
-it: it checks main and records release without a candidate merge. Do not erase
-a task's branch metadata to force that path.
+### Commits to `main`
 
-**Caveat: agents never commit to `main` on their own initiative.** Direct commits
-to `main` are allowed only as a hotfix the human explicitly asked for in that
-conversation (e.g. "commit this to main"). Permission for one hotfix does not
-carry over to later changes, and an ambiguous request is a reason to ask, not to
-commit. Without that explicit ask, leave work uncommitted or put it on a task
-branch.
-
-**Don't mention a modified `repoos.toml`.** The human edits it for many reasons,
-so an uncommitted `repoos.toml` in `git status` is normal, not news. Never
-mention, ask about, stage or commit it unless you changed it yourself and need
-to tell the human. If you did, say so plainly. Otherwise leave it alone and say
-nothing.
-
-**Exception: Move to done blocked by `repoos.toml` (human-authorized
-2026-10-18).** Automatic quota and usage pauses are not this case: they live in
-the gitignored `.repoos/budget-runtime.json` (#0998) and do not dirty
-`repoos.toml`. A leftover `repoos.toml` diff that is only those automatic
-pause fields is ignored by the dirty-main check and is not checkpoint-committed.
-`repoos done <id>` refuses with "main has N uncommitted file(s)
-blocking close-out" when the human's settings edit is the only dirty file on
-main (the human picks a setting in the UI; it stays uncommitted). In that case,
-and only then, a driver may commit `repoos.toml` on main itself, with its
-current contents and the message `chore: checkpoint before close-out (#<id>)`,
-then retry `repoos done <id>`. Preconditions: the only dirty path is
-`repoos.toml` (never commit other files, other tasks' work, or an owner's WIP),
-and you stage that one path explicitly (`git add repoos.toml`). Do not edit,
-revert or stash its contents, and do not use `--no-verify`. Say in your report
-that you committed it. RepoOS's own close-out already does this checkpoint
-commit in some paths (#0820), so first check `git status --short`: if it is
-already clean, just retry. Background: #0831 sat blocked for a nap-length
-window on 2026-10-18 because drivers were told never to touch this file.
-
-**Historical caution (2026-09-16):** external CLI status writes raced a live
-reviewer, which later reverted a task from `done` to `review`. The old advice
-to avoid that race by skipping review or reissuing `mv done` is not the current
-workflow. The lesson is to coordinate through server actions, wait for actual
-completion, and keep merging and status changes in the close-out pipeline.
+- **Agents never commit to `main` on their own initiative.** A direct commit is
+  allowed only as a hotfix the human explicitly asked for in that conversation
+  ("commit this to main"). One hotfix's permission doesn't carry over; if
+  ambiguous, ask. Without that ask, leave work uncommitted or on a task branch.
+  A hotfix authorizes that scope only — not hand-landing other task branches.
+- Hotfixes must pass format and lint: run `bun run fmt` and `repoos check`
+  before committing. `.githooks/pre-commit` (installed by `bun install`) enforces
+  oxfmt/oxlint on `main`. **Never bypass it with `--no-verify`.** If
+  `git config core.hooksPath` is empty, run `bun install`. The hook skips task
+  branches, so run `bun run fmt` before committing there too.
+- **Don't mention a modified `repoos.toml`.** The human edits it often; an
+  uncommitted one is normal. Don't mention, stage or commit it unless you changed
+  it yourself.
+- Exception: if `repoos done <id>` refuses with "main has N uncommitted file(s)
+  blocking close-out" and `repoos.toml` is the **only** dirty path, a driver may
+  `git add repoos.toml` and commit it as `chore: checkpoint before close-out
+  (#<id>)`, then retry; say so in your report. First check `git status --short` —
+  RepoOS may already have done it. Never touch other dirty files or use
+  `--no-verify`. (Automatic quota pauses live in gitignored
+  `.repoos/budget-runtime.json` and don't dirty `repoos.toml`.)
+- **Small fixes: bundle them as one `Easter eggs bundle: <themes>` task** rather
+  than hotfixing or filing one task each. One open bundle at a time; 3–6 small
+  independent items; never fold them into a release-critical task; file p2/p3.
+  Workflow and body shape: `docs/easter-eggs-bundles.md` (#0822 is an example).
 
 ## Definition of done
 
-Before a task moves to review, `repoos check` must pass. It runs the check plan
-this repo declares in `repoos.toml` (`[[check.steps]]`, #0446) — for RepoOS
-that is:
-- Build staleness check (`src/` vs `dist/`); a stale build is rebuilt automatically (`bun run build`) and fails only if that build fails
-- Lockfile sync (`bun.lock` vs `package.json`) and the zero-runtime-dependency guard
-- Formatting & lint (`oxfmt --check` + `oxlint`) — **if this fails, run `repoos check --fix` (or `bun run fmt`), re-stage, and re-run `repoos check`**; build, tests and smoke are skipped until formatting is clean (they `dependsOn` it). The close-out gate never auto-formats, so an unformatted committed tree still fails there
-- Full build (`tsc` + asset copy), CSS layering and theme-contrast guards, hard-coded-color source guard (`hardcoded-colors`), bare-`require()` guard, task-asset guard
-- Test suite
-- Headless browser UI smoke test (WebKit) — verifies the app mounts, no unrendered mustache in the DOM, and zero console errors
-- Rendered contrast audit (`bun run contrast:audit`, also headless WebKit) — every theme scope × light/dark across board, drawer tabs, Agents, Settings, Context and toasts; fails any visible text under the WCAG floor, with `[[check.contrastExempts]]` as the central allowlist (#0596, `docs/contrast-audit.md`)
-- The smoke test and the contrast audit **skip with a clear message** if Playwright or the browser binary isn't installed
+Before a task moves to review `repoos check` must pass. It runs the plan in
+`repoos.toml` (`[[check.steps]]`): build staleness, lockfile sync and the
+zero-runtime-dependency guard, format + lint, full build, CSS layering /
+theme-contrast / hard-coded-color / bare-`require()` / task-asset guards, the
+test suite, a headless WebKit UI smoke test and a rendered contrast audit
+(both skip cleanly if Playwright isn't installed).
 
-Change the gate by editing that plan in `repoos.toml`, not by editing
-`src/commands/check.ts`: a step is `name` + `command` (or a built-in `kind`),
-plus optional `fix`, `cwd`, `timeoutMs`, `required`, `profiles`, `whenChanged`,
-`requires`, `dependsOn`. A required step whose tool is missing FAILS with
-install advice — only an explicitly optional or excluded step may skip.
-Close-out runs the full profile with changed-path tests plus always-run safety
-suites by default; release runs every test. A scoped `repoos check --changed main` (or
-`REPOOS_CHECK_CHANGED`) is a fast engineer self-check — remote validation runs
-changed-path tests on the runner when enabled — not the merge gate. See
-`user-docs/check.md`.
+- **If format/lint fails, run `repoos check --fix` (or `bun run fmt`), re-stage,
+  re-run.** Build, tests and smoke are skipped until formatting is clean, and
+  the close-out gate never auto-formats.
+- Change the gate by editing the plan in `repoos.toml`, not
+  `src/commands/check.ts`. A required step whose tool is missing FAILS.
+- A scoped `repoos check --changed main` is a fast self-check, not the merge
+  gate. Close-out runs changed-path tests plus always-run safety suites; release
+  runs every test. See `user-docs/check.md`.
+- `repoos check` doesn't catch docs gone wrong. Before review, check whether your
+  diff contradicts a line in `AGENTS.md`, `docs/` or `user-docs/` (a moved path,
+  changed behavior) and fix it — scoped to what the diff touches. Broad staleness
+  sweeps are a separate periodic job; file findings as tasks.
 
-`repoos check` only catches code breakage — it says nothing about whether this
-task's diff just made a doc wrong. Before moving to review, also check: does
-this change contradict a line in `AGENTS.md`, `docs/`, or `user-docs/` — a
-path that moved, a behavior that changed, a constraint that no longer holds?
-If so, fix that line as part of this task. Scope it to what the diff actually
-touches; do not go looking for unrelated staleness elsewhere in the docs —
-that is a separate, periodic audit concern, not this task's job, and turning
-a scoped fix into a drive-by audit is scope creep the same as any other.
+## This repo is self-hosted — read before running anything
 
-## Docs and context can go stale — inline scope vs. periodic audit
-
-Two different mechanisms keep `AGENTS.md`/`docs/`/`user-docs/` honest, and
-they are not substitutes for each other:
-
-- **Inline, scoped, every task** — the Definition of done bullet above. An
-  implementing agent has the diff in hand and near-zero marginal cost to
-  check it against the docs it directly touches. This catches drift the
-  moment it's introduced.
-- **Periodic, broad, separate** — nothing in a single task's context is
-  positioned to notice a doc describing a feature nobody's touched in
-  months, or an `AGENTS.md` rule that quietly stopped being true. That needs
-  a sweep with the whole repo in view, on its own schedule. Compare docs and
-  agent instructions with each other and with the current implementation;
-  distinguish historical incident accounts and explicit exceptions from
-  current operating rules. File findings as tasks unless the human explicitly
-  authorizes fixes in that sweep. Use the same task-creation path as everything
-  else — see "Never write directly to `work/*.md` files" under Rules. This is intentionally a separate, narrowly-scoped agent concern
-  from general tech-debt/code-quality review — conflating the two produces a
-  vague mandate and noisy, low-signal findings.
-
-## This repo is self-hosted — read this before running anything
-
-RepoOS manages its own roadmap. This means a few things are true that you
-cannot tell from the code alone:
-
-- The `repoos` command is very likely a `bun link` dev build pointing at THIS
-  repo's `dist/`. It runs compiled JS, not the TypeScript source. On startup,
-  it compares a hash of `src/` with `dist/.build-info.json`. When a marked
-  build is stale, it runs `bun run build` and re-execs the same command so the
-  command uses fresh compiled code. This applies to `repoos check` and `serve`
-  too. Concurrent CLIs share that build through `dist/.repoos-build.lock`:
-  later callers wait for the one already running instead of starting another
-  `tsc` + Vite. The re-exec is attempted once; a failed build or still-stale marker
-  falls through to the existing warning or `check` staleness failure. A
-  manual `bun run build` is still useful before using the compiled CLI after
-  changing build scripts or package metadata, which the `src/` hash does not
-  cover. `bun run build:ui` is available for UI-only changes.
-- **`dist/` is gitignored (as of 2026-08-15) — never `git add` it, and never
-  `commit` it.** It used to be tracked, and that alone was the #1 source of
-  merge conflicts and dirty-`main` failures in this repo — see
-  `docs/dogfooding-vs-general.md` for the full history. If a task, a script, or
-  your own instinct tells you to commit regenerated `dist/`, that instruction
-  is stale; do not follow it. `dist/.build-info.json` (`{ hash, version }`) is
-  deterministic and gitignored along with everything else in `dist/`; a
-  rebuild of unchanged source produces zero `git status` output, not "an
-  unchanged tracked file" — there is nothing there for git to see at all.
-- **A fresh task worktree has no `dist/` until something builds it, and that
-  is correct, not a bug.** `repoos check` always builds fresh regardless; the
-  preview path builds on demand when one is missing. Do not add a step to
-  copy or commit `dist/` into a new worktree "to fix" this.
-- Editing the task file format, frontmatter schema, or the parser is a
-  SELF-MODIFYING act: it affects this repo's own `work/*.md` files, including
-  the task you are working on. If you change the format, write a migration in
-  the same change and verify the parser still reads every existing file in
+- `repoos` is likely a `bun link` dev build of THIS repo's `dist/`; it rebuilds
+  and re-execs itself when `src/` is newer. After changing build scripts or
+  package metadata run `bun run build` manually. `bun run build:ui` is for
+  UI-only changes. After merging main into a task branch run `bun run build`
+  before `repoos check` — a staleness failure means "not compiled yet", never a
+  code problem.
+- **`dist/` is gitignored — never `git add` or commit it.** A fresh task worktree
+  has no `dist/` until something builds it; that's correct. Don't add steps to
+  copy it.
+- Changing the task file format, frontmatter schema or parser is SELF-MODIFYING:
+  write a migration in the same change and verify the parser reads every file in
   `work/`.
-- **Never run `bun add repoos` in this repo.** It is RepoOS — depending on
-  itself is circular and will break installs. Its `package.json` lists only
-  dev dependencies.
+- **Never run `bun add repoos` here** — circular; `package.json` lists only dev
+  dependencies. Zero runtime dependencies is a hard constraint; add none without
+  a task authorizing it.
 
 ## Rules
 
-- **Never** move task files between folders. Status lives in frontmatter.
-- **Never write directly to `work/*.md` files.** All task creation and
-  manipulation goes through `repoos` commands or HTTP API endpoints
-  (`POST /api/tasks`, `PATCH /api/tasks/:id`, etc.). If the RepoOS server
-  is unreachable, stop and report the issue — do not hand-write task files.
-- **Merging main into a task branch: take main's copy of work/<id>-*.md.** When manually merging main into an active task branch, git may stop on a conflict in `work/<id>-*.md` (the task file is pure bookkeeping, always superseded by main's version). Take main's copy: `git checkout --theirs work/<id>-*.md`, then stage and commit. Do not pause the merge to report this. RepoOS auto-resolves these inside close-out (#0754); manual merges need the same rule.
-- **A task's reports are its own bookkeeping.** Engineering rounds and review passes live together under `work/reports/<id>/` (`round-<n>.json`, `review-<n>.md`; see `user-docs/engineering-reports.md`). They are committed with the task, and handoff/landable/close-out treat this task's report files as bookkeeping rather than implementation drift — another task's reports still fail the task-scope check. Never hand-edit or delete a stored round or pass.
-- **After merging main into a task branch, run `bun run build` before `repoos check`.** If the check fails on staleness (`dist/` older than `src/`), rebuild and rerun — a staleness failure always means the merged-in source changes have not been compiled yet, never a code problem. `bun run build` fixes it.
-- **The Product Manager agent is authorized to create and update tasks.** It
-  must use those same RepoOS CLI commands or HTTP API endpoints for task body,
-  metadata, and status changes; it must never edit task Markdown directly.
-- **`repoos mv <id> done` never merges code — it only flips the status
-  frontmatter.** Confirmed live twice in one session (2026-09-17): #0389 and
-  #0185 were both marked `done` this way while their actual branches sat
-  unmerged on `main`. The server's own HTTP `PATCH /api/tasks/:id` route
-  already refuses a bare `status: "done"` for exactly this reason and forces
-  callers through `POST /api/tasks/:id/done` (the real close-out pipeline,
-  see `docs/close-out-pipeline.md`) — but the CLI command bypasses the server
-  entirely, so nothing stopped it from silently doing the wrong thing. `cmdMv`
-  (`src/commands/tasks.ts`) now refuses to move to `done` when the task's
-  recorded `branch` still exists locally and is not an ancestor of `main`,
-  unless `--force-not-merged` is passed — but that guard is a backstop, not a
-  substitute for doing this correctly. For normal branched tasks, use the
-  server-owned Move-to-done pipeline even from an interactive session. A bare
-  `mv done` is at most a metadata repair after separately verified landing and
-  explicit human authorization; it is never a merge or approval mechanism.
+- **Never** move task files between folders; status lives in frontmatter.
+- **Never write directly to `work/*.md`.** Use `repoos` commands or the HTTP API
+  (`POST /api/tasks`, `PATCH /api/tasks/:id`). If the server is unreachable, stop
+  and report — don't hand-write task files. The Product Manager agent may create
+  and update tasks the same way. Keep frontmatter tidy (`repoos` normalizes key
+  order). One task = one focused worktree.
+- **Merging main into a task branch:** on a conflict in `work/<id>-*.md` take
+  main's copy (`git checkout --theirs work/<id>-*.md`), stage, commit; don't
+  pause to report it.
+- A task's reports live in `work/reports/<id>/` (`round-<n>.json`,
+  `review-<n>.md`); they are bookkeeping. Never hand-edit or delete a stored
+  round or pass.
+- **`repoos mv <id> done` never merges** (#0389/#0185 were marked done with
+  unmerged branches). `cmdMv` refuses when the recorded branch isn't an ancestor
+  of `main` unless `--force-not-merged`, but that's a backstop. Use Move to done.
 - **Resource pressure: use RepoOS's `pressureGuard`, not your own thresholds
-  (#0940).** RepoOS's configured `pressureGuard` is the only decision point for
-  whether resource pressure should block engineer starts, local checks, browser
-  steps, or remote runner dispatch. It uses the limits in Settings (load per
-  CPU, reclaimable memory, paging activity, macOS `memory_pressure -Q` free
-  percentage and warn/critical level, Linux PSI, and the related rates in
-  `user-docs/configuration.md`) — see `docs/memory-pressure-guard.md`. Read
-  RepoOS's verdict from `repoos stats`, the dashboard pressure banner,
-  `repoos driver brief`, or a task's queue marker (`reason: pressure` and the
-  hold message). **Never** block or defer starts with self-chosen numeric
-  limits (for example a minimum "free swap" in GB or a memory-pressure free %
-  you picked), and never work around a guard hold by starting anyway under a
-  different threshold. On macOS, `vm.swapusage` "free" is unused swap-file
-  capacity, not a pressure signal; the OS may retain swap during normal
-  operation, so swap used or free swap alone does not prove thrashing. Swap-used
-  ratio stays advisory. Blocking signals are paging activity, reclaimable
-  memory, macOS `memory_pressure` critical, compressor bytes above
-  `pressureGuard.maxCompressorBytes` (default 8 GiB; only where no macOS
-  pressure level is available — on macOS a big compressor pool is normal and
-  advisory), load above `pressureGuard.maxLoadPerCpu` (default 3× per CPU), idle
-  CPU below `pressureGuard.minIdleCpuPercent` (default 5%), and the other
-  configured limits above. Heavy builds and tests across every checkout on the
-  host share `heavySlots` (default 2, `~/.repoos/local-check-slots`) and
-  engineer-launched Vitest/Playwright runs use the worker caps in Settings.
-  When the guard
-  holds a start, report RepoOS's reason to the human and wait (or help clear
-  pressure). When `pressureGuard.enabled` is off or the limits look wrong for
-  this machine, ask the human to change Settings — do not invent another gate.
-- **Agent drivers pick from the budget allowlist.** When you (an AI session, not
-  a human in the UI) set an engineer/reviewer override — `repoos override`, or a
-  `PATCH` on `cliOverride`/`modelOverride` — the server refuses a pair outside
-  the human-approved allowlist in `repoos.toml` (`[[budget.allowlist]]`) and
-  refuses a **paused** pair the same way. Run `repoos override --help` to print
-  the allowed agent + model pairs (paused ones are marked), or read them on the
-  Agents page's **Budget Controls** tab. A paused entry stays configured:
-  `repoos agents pause <agent> [--model <model>] [--until <date>] [--reason "…"]`
-  stops starts/dispatch/failover/drivers from selecting it, and
-  `repoos agents resume <agent> [--model <model>]` brings it back. A human in
-  the UI keeps the full list, and an empty allowlist restricts nothing. Don't
-  work around a refusal; ask a human to change the allowlist or resume the pair
-  if you need another one.
-- Keep frontmatter tidy; `repoos` normalizes key order on write.
-- One task = one focused worktree.
-- **Never `git add` binaries under `work/` or `inputs/`.** Task and input
-  screenshot uploads land in `work/.attachments/` / `inputs/.attachments/`,
-  which are gitignored and served by the running server from disk — the
-  committed record is the `.md`, never the pixels. `repoos check`'s task-asset
-  guard fails the gate on any tracked image/PDF under those two trees. Product
-  image assets (UI, icons, logos, `docs/`) live elsewhere and stay tracked.
-- **When you create or update a task from a request that came with images,
-  attach every one of them** with `repoos new "<title>" --screenshot path.png`
-  (repeat `--screenshot` per image) or `repoos update <id> --screenshot path.png`
-  (`--caption "..."` labels a single image's alt text). The command stores each
-  file under the gitignored `work/.attachments/<id>/` and writes the task's
-  `## Screenshots` section itself — never `git add` the pixels, never hand-copy
-  into `.attachments/`, never edit the section by hand. Say in your reply which
-  images you attached (the command prints their URLs). Dropping the human's
-  screenshots makes the engineer and reviewer guess at the visual problem, so
-  an image attached to the request is an image that lands on the task (#0763).
-- **Features that take an API key** must follow `docs/api-keys.md`: register the
-  provider in `MODEL_PROVIDERS` with a fixed `envVar`, save only through
-  `setDotEnvSecret` / `POST /api/model-providers/:id/key`, never write keys or
-  env-var names into `repoos.toml`, show masked save-on-Save UI with Saved /
-  Not set status only, use fake values in tests, and never paste live keys into
-  tasks, chat, or config fields (incident: #0803).
-- **Keep project secrets separate from RepoOS credentials.** Project environment
-  files are plaintext dotenv text, not an encrypted vault; the API and UI are
-  write-only for values. Only explicitly bound local consumers receive granted
-  keys, missing values never fall back to another environment, and deployment
-  bindings never upload or publish values. Prefixes `VITE_`, `NEXT_PUBLIC_`,
-  and `PUBLIC_` mean values may be embedded in client assets; visibility labels
-  do not sandbox unrestricted local processes. Preserve this boundary in tests
-  and explain it in `user-docs/environment-and-secrets.md`.
-- Zero runtime dependencies is a hard design constraint. Do not add a runtime
-  dependency without an explicit task authorizing it. Dev dependencies (test
-  runners, types) are fine.
-- **Every LLM call site must record its usage.** All AI spend belongs in the
-  `sessions` table, including work not tied to a task (board-level doc
-  authoring, the auto-engineering dispatch pass, CTO) — those record with
-  `taskId: null` and still roll into the board summary. The `AgentRunner` path
-  self-records; any **one-shot** call (anything using `runPrompt`) must call
-  `recordOneShotSession(repoRoot, agent, result, { sessionType, taskId })`
-  from `src/server/agents.ts` immediately after the await. Several callers
-  silently discarded their `PromptResult` before this rule existed, making the
-  Tokens tab under-report — a task would show its Engineer and Reviewer but not
-  the PM that authored it. Pick a `sessionType` that keeps the by-role
-  breakdown legible (`dispatch` for auto-engineering, not `pm`).
-- **Don't widen the formatter's scope.** `.oxfmtrc.json`'s `ignorePatterns` are
-  deliberate, not an oversight: `**/*.md` keeps the formatter away from
-  `work/*.md` task files (which must never be rewritten outside the RepoOS
-  API), and `**/*.json` stops it reordering `package.json` keys and rewriting
-  Xcode asset catalogs. `bun run fmt` is otherwise safe to run on a change.
-- **Every user-facing `repoos.toml` feature setting needs a Settings UI control.** When adding a
-  configuration key that enables, disables, or materially changes a user-visible feature, add it
-  to `getConfigSchema()` and the appropriate Settings tab in the same change, with clear copy and
-  a test. Reserve raw-TOML-only settings for advanced/internal configuration where a dedicated UI
-  would be misleading or unsafe; document that deliberate exception.
-- **Direct commits to `main` must pass format and lint, and a hook enforces it.**
-  Close-out runs the full gate before anything merges, but a hand commit
-  straight to `main` skips it. On 2026-09-18 one such commit left a stray blank
-  line in `style.css`, and every close-out after it failed `oxfmt --check` and
-  was misreported as "machine load" (#0423, #0425). `.githooks/pre-commit`
-  (installed by `bun install` via the `prepare` script, which sets
-  `core.hooksPath`) now checks staged source files with oxfmt/oxlint on `main`.
-  It skips task branches, merge commits and `*.md` bookkeeping, so it never
-  blocks RepoOS's own commits. **Never bypass it with `--no-verify`**. If it
-  fires, run `bun run fmt`, re-stage and commit again. If `git config
-  core.hooksPath` is empty in your checkout, run `bun install`. For anything
-  beyond formatting, still run `repoos check` before committing to `main`.
-  **The hook skipping task branches means formatting is not enforced at commit
-  time there — the close-out gate is the first check.** Always run `bun run fmt`
-  (or `repoos check --fix`) before committing on a task branch, just as you
-  would on `main`; handoff also auto-formats and commits the result (#0651), but
-  commit it yourself so the branch is clean before the gate runs.
-  Incident: 2026-09-19, task #0435 — a hand-edit shortened two footnote strings;
-  the formatter collapsed the now-short elements to one line, the hook didn't
-  fire, and MTD failed twice on `oxfmt --check` before the formatting commit was
-  added.
-- **Small fixes: bundle them as easter eggs, don't hotfix.** Never commit to
-  `main` on your own initiative (the direct-to-`main` caveat above). When a run
-  turns up several small, independent, low-risk fixes — cosmetic, copy,
-  test-race hardening, tiny UI or data-source corrections, docs follow-ups —
-  collect them into ONE task titled `Easter eggs bundle: <themes>` instead of
-  filing one task each or committing each straight to `main`. There is only
-  ONE open easter-eggs bundle at a time: a new small fix is added to the open
-  bundle (update its body and items), not filed as a new task, and you start
-  another bundle only after the open one has landed. A bundle pays the
-  per-task overhead — one worktree, one `repoos check` run, one review, one
-  close-out and its server reload — once instead of once per item. The bundle
-  body lists every item with its source task id, a one-line fix and one test per
-  item; commit per item so a reviewer can read them separately; and mark each
-  source task superseded when the bundle lands — an explicit note in the task
-  body, leaving its `status:` as it is, never `repoos mv <id> done`. Never fold
-  easter eggs INTO a release-critical or machinery task — a failing small item
-  would hold up the big one. Keep a bundle to about 3–6 items, and they may mix
-  areas (web, server, docs) as long as every item is small and independent; an
-  open bundle already at that size is split, not grown. File it p2/p3, and run
-  it while big tasks soak or wait. A bundle is an ordinary task: it still
-  runs the gate and goes to review — it just pays that overhead once for several
-  fixes. When the human explicitly asks for a hotfix on `main`, the direct-commit
-  exception above still applies. See `docs/easter-eggs-bundles.md` for the full
-  workflow and the fixed bundle body shape (`## Items` with stable E-ids,
-  then one `## E<n> · Title` section per item with the usual four sub-headings);
-  #0822 is the worked example.
+  (#0940).** Read its verdict from `repoos stats`, the dashboard banner,
+  `repoos driver brief` or a task's queue marker (`reason: pressure`). Never
+  block or defer starts with self-chosen numbers (free swap, memory %), and
+  never start anyway under a different threshold. On macOS, swap used/free alone
+  isn't a pressure signal. When the guard holds a start, report its reason and
+  wait; if its limits look wrong, ask the human to change Settings. See
+  `docs/memory-pressure-guard.md`.
+- **Agent drivers pick from the budget allowlist.** `repoos override` /
+  `cliOverride`/`modelOverride` refuse pairs outside `[[budget.allowlist]]` and
+  paused pairs. `repoos override --help` lists allowed pairs;
+  `repoos agents pause|resume <agent> [--model <m>]` manage pauses. Don't work
+  around a refusal; ask the human.
+- **Never `git add` binaries under `work/` or `inputs/`** (uploads land in
+  gitignored `.attachments/`; the task-asset guard fails the gate).
+- **Attach every image that came with a request** to the task:
+  `repoos new "<title>" --screenshot path.png` (repeat per image) or
+  `repoos update <id> --screenshot path.png` (`--caption` labels one). Never
+  hand-copy into `.attachments/` or edit `## Screenshots` by hand. Say which you
+  attached (#0763).
+- **API-key features** follow `docs/api-keys.md`: register in `MODEL_PROVIDERS`
+  with a fixed `envVar`, save only via `setDotEnvSecret` /
+  `POST /api/model-providers/:id/key`, never write keys or env-var names into
+  `repoos.toml`, masked UI with Saved / Not set only, fake values in tests, never
+  paste live keys into tasks, chat or config (#0803).
+- **Project secrets ≠ RepoOS credentials.** Project env files are plaintext
+  dotenv, write-only via API/UI; only explicitly bound consumers receive values;
+  no fallback to another environment; deployment bindings never upload values;
+  `VITE_`/`NEXT_PUBLIC_`/`PUBLIC_` values may land in client assets. Preserve
+  this in tests and `user-docs/environment-and-secrets.md`.
+- **Every LLM call site must record usage** in the `sessions` table, including
+  work with `taskId: null`. `AgentRunner` self-records; any one-shot
+  (`runPrompt`) must call `recordOneShotSession(repoRoot, agent, result,
+  { sessionType, taskId })` from `src/server/agents.ts` right after the await.
+  Pick a legible `sessionType` (`dispatch`, not `pm`, for auto-engineering).
+- **Don't widen the formatter's scope.** `.oxfmtrc.json` ignores `**/*.md` (keeps
+  it off `work/*.md`) and `**/*.json` on purpose.
+- **Every user-facing `repoos.toml` feature setting needs a Settings UI
+  control** — add it to `getConfigSchema()` and the right Settings tab in the
+  same change, with a test. Raw-TOML-only is for advanced/internal config, with
+  the exception documented.
 - **Explicitly authorized manual recovery only:** if the human directs you to
-  hand-land a stale branch outside the normal pipeline, check other tasks' files —
-  `git diff main...HEAD --name-only | grep -E '^(work|inputs|stories)/'` — and
-  `git checkout main -- <them>` before merging. Anything but the task's own
-  file is drift that will pollute another task's record. Background:
-  `docs/close-out-pipeline.md`.
+  hand-land a stale branch, check `git diff main...HEAD --name-only | grep -E
+  '^(work|inputs|stories)/'` and `git checkout main -- <them>` before merging so
+  other tasks' files aren't polluted (`docs/close-out-pipeline.md`).
+- The AGENTS.md *template* that `repoos init` scaffolds lives in
+  `src/commands/init.ts`. It is NOT this file; editing it ships to every new repo.
 
 ## Conventions
 
-- **Dropdowns:** Use the custom styled dropdown component for every new
-  dropdown in the UI. Never use default, unstyled `<select>` elements.
-- **Confirmations and tooltips:** Never use native browser `alert()`,
-  `confirm()`, or `prompt()` for app actions. Use the shared, designed dialog
-  components in `src/ui-app/src/components/ui/dialog/` and the existing modal
-  styles. Never add a native `title` tooltip for new UI explanations; use a
-  styled tooltip or popover that matches the app, supports keyboard focus, and
-  remains usable on touch screens.
-- **Areas are comma-separated, never `+`.** A task's `area` is a per-repo
-  vocabulary (`[[areas]]` in repoos.toml merged with every
-  `[[preview.targets]]` area), and one task may carry several: write
-  `area: web` or `area: [web, core]`, i.e. `repoos new/update --area web,core`.
-  The legacy `server + ui-app` spelling parses only so old files read until
-  the one-time migration in the server rewrites them (#0583); nothing new may
-  produce it. Agents picking an area for a task should pick from the
-  vocabulary when one exists and say so when none fits.
-- **Drawer / panel forms:** New creation drawers (New task, New story, New
-  input, and future panels) must use the shared dialog components
-  (`ui/dialog/*`, body-teleported) and the global form classes in
-  `src/ui-app/src/style.css` — `field`, `btn-row`, `ff-textarea`,
-  `ff-done`, `shot-dropzone`, `ff-notice`, `ff-error`, and related `ff-*`
-  helpers — instead of bespoke colors, borders, or spacing in a component's
-  `<style scoped>` block. Extend `style.css` when a variant is missing.
-- **Pages use the full main width.** Standard nav views (board, tasks,
-  checks, settings, …) span the whole `.main` pane — no page-level
-  `max-width` or centering margin on a view's root. Narrow/centered layouts
-  are for deliberate exceptions (login/auth, modals); keeping a readable
-  line length on inner prose (`max-width: NNch` on one paragraph) is fine.
-  Standard page roots also fill the available `.main` height. Keep bottom
-  clearance on the actual scrollport with `--page-bottom-inset`, rather than
-  padding the pane and shortening its visible area. Narrow layouts that switch
-  to normal flow must keep their routed root scrollable and retain the shared
-  bottom inset at the component’s own flow breakpoint.
-  See the `.main` comment in `src/ui-app/src/style.css` (#0602, #0951).
-- **Table-like label/value rows use aligned columns.** Any UI that renders
-  repeated rows of labeled fields (a `dl` of `dt`/`dd`, or label+value pairs
-  — no literal `<table>` required) must use an aligned two-column layout:
-  labels share one fixed-width column, values align in the second, row
-  spacing is consistent row to row, and multi-value content wraps inside the
-  value cell — never under the label. Use the shared `.kv-rows` utility in
-  `src/ui-app/src/style.css` (plus `.kv-wrap` on multi-value cells) when the
-  same layout appears more than once, tuning `--kv-label-w` per surface;
-  keep component specifics in scoped styles on top (#0623).
-- **Runtime: Bun. Node is only the fallback for machines without Bun.**
-  Every `repoos` command re-execs under Bun when it's installed, `bunfig.toml`
-  (`[run] bun = true`) runs `package.json` scripts and the Node-shebang tools
-  they call on Bun, and the install launcher execs Bun directly. When you add
-  or change anything that runs code:
-  - `bun <file>`, `bun run <script>`, `bunx <tool>`, `bun -e` / `bun -p`.
-    Not `node <file>`, `npm run`, `npx`, `node -e`.
-  - New scripts get `#!/usr/bin/env bun`.
-  - Spawning a subprocess: `process.execPath` (inherits the current runtime)
-    or `bun`. Fall back to `npm`/`node` only when Bun can't be launched
-    (ENOENT/EACCES), never merely because a Bun run failed; a failed build
-    is the real result.
-  - Keep Node only where Bun genuinely may be absent, and say why in a
-    comment: the CLI entry shebang (npm installs), the launcher's fallback
-    branch, `scripts/run-tests.mjs` (runs under `npm test`, then re-execs onto
-    Bun), `REPOOS_RUNTIME=node` / `just test-node`, and test fakebins that
-    imitate third-party CLIs.
-  - If Bun ever produces different output from Node for a tool, measure it
-    and write the finding into `docs/architecture.md` before choosing Node.
-    Vite's UI bundle, for example, differs cosmetically and was verified
-    equivalent.
-  Background: `docs/architecture.md` (Runtime).
-- Tests: `bun run test` (vitest), never bare `bun test`. Bun's own test runner
-  will pick up the same `*.test.ts` files and mostly work, but its `vi` shim is
-  missing pieces like `vi.stubGlobal`/`vi.unstubAllGlobals` — those tests then
-  fail with `TypeError: vi.stubGlobal is not a function`, which looks like a
-  real regression but is just the wrong runner.
-  `bun run test` is `scripts/run-tests.mjs`: a two-pass wrapper that runs the
-  bulk suite at the configured pool size, then the latency-sensitive suites
-  (`boot-timing.test.ts`) alone at one worker — with `REPOOS_STRICT_TIMING=1` —
-  so their absolute wall-clock ceilings aren't blown by pool contention.
-  In `boot-timing.test.ts` only the **wall-clock** test skips without
-  `REPOOS_STRICT_TIMING=1`, so a raw `bun run test:vitest` (single-pass) or an
-  ad-hoc `vitest boot-timing` can't produce a spurious timing failure. Its
-  sibling — the #0330 boot-ordering test — deliberately does *not* skip: it
-  makes no wall-clock claim, so it runs everywhere. Run the file directly with
-  `REPOOS_STRICT_TIMING=1 bunx vitest boot-timing` (`bunx`, not `npx` — this
-  repo defaults to Bun everywhere; a bare `npx` on this machine resolves to a
-  Node-based npx binary, which is fine for most single-file runs but defeats
-  the point for a *latency*-sensitive suite like this one). Extra args
-  (`--changed <ref>`) forward to both passes.
-  Coverage is deliberately opt-in so routine checks do not pay its extra cost.
-  Run `bun run test:coverage` weekly, before releases, or on demand; it runs the
-  full wrapped suite with V8 coverage and enforces the baseline thresholds in
-  `src/ui-app/vite.config.ts`. Changed-path runs skip coverage because a partial
-  report would be misleading. Text summary and HTML/JSON reports go under the
-  ignored `coverage/` directory. The initial global floors are a measured
-  baseline, not a quality target; ratchet them upward as critical paths gain
-  behavior-focused tests.
-- Language: TypeScript, NodeNext modules — imports use `.js` extensions even
-  for `.ts` source (this is correct, not a bug).
-- Build: `bun run build` (runs `tsc` then copies UI assets into `dist/ui/`).
-  Staleness-aware by default (#0377): it skips when `src/` is unchanged since the
-  last build (~0.1s vs ~5s), so a no-op build is cheap. Force a rebuild with
-  `--force` or `REPOOS_FORCE_BUILD=1`; the raw pipeline is `bun run build:raw`.
-- Source layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
-  `src/commands` (CLI), `src/ui-app` (the Vite + Vue 3 SFC web UI).
-- UI sitemap: routes are declared in `src/ui-app/src/router.ts` (path → view),
-  each view is one `src/ui-app/src/views/*View.vue`, and the left-nav order +
-  which links show is in `src/ui-app/src/nav.ts` (some entries are conditional,
-  e.g. Releases only appears when a release provider is configured). Context
-  (`/repo`, `ContextView.vue`) has Docs, Skills, Discover, and History tabs;
-  commit diffs reuse `DiffView.vue` at `/repo/commits/:sha`. To find the
-  code behind a screen, grep `router.ts` for the path or `views/` for the name.
-  Dialog/modal content is body-teleported, so its CSS lives in
-  `src/ui-app/src/style.css`, not the view's `<style scoped>` block.
-- **Any `position: fixed` or fullscreen overlay added to a component MUST be wrapped in `<Teleport to="body">` (or use a Radix `DialogPortal`, which does the same).** Without it, the overlay is trapped inside the drawer's stacking context and becomes unscrollable, unclickable, and unselectable. This applies even when the CSS looks correct — `position: fixed` does not escape `transform`/`will-change`/`overflow: hidden` ancestors.
-- **A body-teleported floating layer MUST carry `data-overlay-layer` (#0575).** While any modal dialog is open, Radix puts `pointer-events: none` on `<body>`, so an unmarked layer is click-transparent: the click falls through to the side panel, its inline title editor, or a board card behind it — and the panel behind reads that click as "outside" and dismisses itself. The shared dialog content and scrim set the attribute for you (`components/ui/dialog/layer.ts` gives one id to both, so scrim-click-to-dismiss still works); a hand-rolled `<Teleport>` overlay (banner, confirm, search, toast, …) must set `data-overlay-layer="floating"` on its root. `style.css` turns the attribute into `pointer-events: auto`. Add it to the root *and* the scrim, never to a click-through decoration (a tooltip, a highlight outline).
-- After ANY UI change, rebuild (`bun run build:ui` for speed, or `bun run build`)
-  so the worktree build is fresh. Do NOT automatically request a preview to
-  verify it — previews are on request from the human, not something you spin up
-  as a routine part of finishing a task (#0268).
-- **`repoos shot` is the one sanctioned use of the managed preview by the
-  engineer**, and only for a UI-visible change. But the engineer no longer has
-  to remember to run it (#0594): at handoff the server captures declared
-  `## Shots` itself (targets resolve like the CLI: changed paths, then area,
-  then the default command), and without declarations it still captures one
-  captioned `/` shot per target the diff's paths touch (test files are not
-  UI evidence, #0603) — a tests-only or task-note diff records a visible
-  `shots: skipped` instead, and a missing Playwright shows up as a visible
-  `shots: skipped` note, never a failed handoff. The engineer's job
-  is to DECLARE what a review should see — use
-  `repoos update <id> --shots '<JSON list>'` to write a validated, fenced
-  `## Shots` section (entries take `target`, `route`, optional
-  `selector`, optional `state` fixture (`closeOut:active`, `card:doneError`,
-  `board:withReviewTask`) for conditional UI, optional ordered `steps`
-  (`click`/`fill`+`text`/`waitFor`/`waitMs`, plain CSS selectors), an
-  optional `highlight` CSS selector outlining what changed, and a human
-  `label` naming the change), usually 1–3 entries showing the changed
-  screens. Prefer routes and `state` fixtures over brittle `waitFor` steps on
-  an empty preview board. Every shot is captioned with why it exists
-  (`declared: <label>` / `auto: matched <glob>`); a docs-wording-only diff
-  captures nothing without a declared route (#0603). **Shot hygiene (#0613,
-  #0830):** on a **declared** shot, a missing `highlight`/`selector`/step
-  target (`click`, `fill`, `waitFor`, `hover`) **fails handoff** with a
-  per-shot message; auto-matched captures still record a miss as a warning only
-  (#0743). Tooltip/hover shots need a `hover` or `click` step plus a `state`
-  fixture. Duplicates with
-  the same target/route/steps/selector collapse to one capture. **Target
-  support (#0866):** a declared `state` fixture (or an app route such as
-  `/settings` or `/work?task=…`) only renders on the app target — `default`
-  for the main RepoOS app. Naming the Docs site or another content target for
-  such a shot is rejected when you declare it (`repoos update --shots`), and a
-  shot that still resolves there fails handoff with the target named instead of
-  banking a wrong-screen capture. An omitted `target` on an app route/state
-  defaults to the app target, not whichever target the diff matched first. A
-  target that serves its HTML shell for an app module (the VitePress MIME
-  error) is reported as **route not served by this target**, and a `state`
-  fixture that never rendered (a board where a drawer was declared) is a
-  failed shot, never a pass. **Loading and
-  stale captures (#0755):** reach a populated view with a `route` or `state`
-  fixture, not a `steps` click on a placeholder selector (`data-task-id "9999"`
-  and the like) — such a step times out, the capture lands on a loading state
-  ("Loading changes…"), and it is reported as a failed step (`check`), never
-  `matches`. Each handoff capture also stores the tree it ran on; when that tree
-  differs from the branch HEAD the review will use, the Changes tab flags the
-  capture **Stale capture** and no shot is shown as `matches` — re-run the
-  handoff capture on the final tree before requesting review. **Whole-window
-  default (#0613):** declared shots capture the whole visible viewport
-  (`fullPage: false`) with changed elements outlined via `highlight`;
-  `selector` (element crop) is the exception, `fullPage` stays off. For tabbed
-  views prefer `?tab=<id>` routes (e.g. `/agents?tab=detected`) over click
-  steps; a task drawer is reached the same way — `/work?task=<id>&tab=changes`
-  opens that task's drawer on the Changes tab (#0755). `--shots` accepts JSON without Markdown fences, validates every entry,
-  and edits only that section. The older `--section Shots --section-body` form
-  requires a fenced JSON list and rejects malformed content. A full `--body` replace that drops
-  Problem / Desired UX / Acceptance criteria / Notes for AI is refused unless
-  `--force` is passed. Manual `repoos shot` remains the tool for checking
-  your own work; an engineer-made capture pre-empts the automatic one.
-- **Previews are server-owned — never run `repoos serve` yourself.** RepoOS owns
-  the control-plane port and every preview port. Preview requests are the
-  human's to make: the human requests a preview manually from the UI when they
-  want to see a change. The engineer agent does NOT auto-request one before
-  handoff. If the human explicitly asks you to verify something the way a
-  browser would see it, request this task's managed preview by emitting the
-  exact signal line (idempotent — repeat requests return the same task preview,
-  and no localhost/curl is needed):
-  `::repoos-preview-request::`. RepoOS validates the request against your live
-  run, starts the preview from your worktree, probes it server-side, and records
-  the preview URL and probe result in your task transcript. Direct `repoos
-  serve` attempts from agent processes are rejected; the preview is reaped when
-  the task leaves active/review.
-  **Previews are on-demand only, capped at ONE running at a time (#0271).**
-  Nothing auto-launches a preview anymore — not on a task entering `review`,
-  not at server boot for tasks already in review. Requesting yours may evict
-  whatever preview was running for a different task (FIFO); that's expected,
-  not a bug — if you need to re-verify something you checked earlier and the
-  slot has since moved on, just emit the signal again.
-  **This server-side probe is a plain HTTP request to the target's configured
-  readiness path (`/` unless the target overrides it) — it does not open a
-  browser and does not require login.** Auth
-  being enabled is not a reason to skip verification or fall back to a
-  component-level unit test instead: emitting the signal and reading the probe
-  result from your transcript confirms the change serves, with no OTP involved.
-  If a task genuinely needs deeper interactive verification — actually clicking
-  through the logged-in UI, not just confirming it serves — log into the
-  preview with the dev backdoor instead of a real email OTP you have no inbox
-  for. See **Dev login** below for the exact email and code.
-- The AGENTS.md *template* that `repoos init` scaffolds into other repos lives in
-  `src/commands/init.ts` as a string literal. It is NOT this file. Editing it
-  ships to every future `repoos init`, so change it deliberately and don't confuse
-  it with this repo's own AGENTS.md.
+Full text: `docs/agent-ui-and-preview-conventions.md`.
+
+- **Dropdowns:** use the custom styled dropdown; never a default `<select>`.
+- **No native `alert()`/`confirm()`/`prompt()`** and no native `title` tooltips in
+  new UI. Use the shared dialogs in `src/ui-app/src/components/ui/dialog/` and a
+  styled, keyboard- and touch-usable tooltip/popover.
+- **Areas are comma-separated, never `+`:** `--area web,core` /
+  `area: [web, core]`, picked from the `[[areas]]` vocabulary in `repoos.toml`.
+- **Creation drawers/panels** use the shared dialog components and the global
+  `ff-*`/`field`/`btn-row` classes in `src/ui-app/src/style.css`, not bespoke
+  scoped styles.
+- **Pages use the full `.main` width** — no page-level `max-width` or centering;
+  keep bottom clearance with `--page-bottom-inset` on the scrollport (#0602, #0951).
+- **Label/value rows use aligned columns** via `.kv-rows` / `.kv-wrap` (#0623).
+- **Any `position: fixed` or fullscreen overlay MUST be in `<Teleport to="body">`**
+  (or a Radix `DialogPortal`), or it's trapped in the drawer's stacking context.
+- **A body-teleported floating layer MUST carry `data-overlay-layer`** (#0575);
+  hand-rolled overlays set `data-overlay-layer="floating"` on root and scrim,
+  never on click-through decoration. Otherwise Radix's `pointer-events: none` on
+  `<body>` makes it click-transparent.
+- **Runtime: Bun.** Use `bun <file>`, `bun run`, `bunx`, `bun -e`; never `node
+  <file>`, `npm run`, `npx`. New scripts get `#!/usr/bin/env bun`. Spawn with
+  `process.execPath` or `bun`; fall back to `npm`/`node` only when Bun can't be
+  launched, never because a Bun run failed. Node stays only where Bun may be
+  absent (CLI entry shebang, launcher fallback, `scripts/run-tests.mjs`,
+  `REPOOS_RUNTIME=node`, test fakebins), with a comment saying why. If Bun and
+  Node differ for a tool, measure and record it in `docs/architecture.md`.
+- **Tests:** `bun run test` (vitest), never bare `bun test` (its `vi` shim lacks
+  `vi.stubGlobal` etc.). It's a two-pass wrapper; wall-clock timing tests run
+  alone with `REPOOS_STRICT_TIMING=1` (`REPOOS_STRICT_TIMING=1 bunx vitest
+  boot-timing`; `bunx`, not `npx`). Coverage is opt-in: `bun run test:coverage`.
+- TypeScript, NodeNext: imports use `.js` extensions even for `.ts` source (this
+  is correct). Build: `bun run build` is staleness-aware; `--force` or
+  `REPOOS_FORCE_BUILD=1` forces; raw pipeline is `bun run build:raw`.
+- Layout: `src/core` (engine), `src/server` (HTTP + SSE), `src/cli` +
+  `src/commands` (CLI), `src/ui-app` (Vite + Vue 3 SFC UI). Routes are in
+  `src/ui-app/src/router.ts`, views in `views/*View.vue`, nav in `nav.ts`.
+  Dialog CSS lives in `style.css`, not the view's scoped block.
+- After ANY UI change rebuild (`bun run build:ui` or `bun run build`). Don't
+  request a preview to verify it routinely; previews are on the human's request
+  (#0268).
+- **`repoos shot`:** at handoff the server captures declared `## Shots` itself
+  (and one auto shot per touched UI target). Your job is to DECLARE what a review
+  should see: `repoos update <id> --shots '<JSON list>'` (1–3 entries with
+  `target`, `route`, optional `selector`/`state`/`steps`/`highlight`, and a
+  `label`). Prefer routes and `state` fixtures over brittle click steps;
+  `?tab=<id>` for tabs, `/work?task=<id>&tab=changes` for drawers. On declared
+  shots a missing `highlight`/`selector`/step target fails handoff; app routes
+  and `state` fixtures only render on the `default` app target; a stale capture
+  (tree ≠ branch HEAD) isn't shown as matching, so re-run on the final tree.
+  Details: `docs/agent-ui-and-preview-conventions.md`.
+- **Previews are server-owned — never run `repoos serve` yourself.** Only the
+  human requests a preview. If asked to verify like a browser, emit
+  `::repoos-preview-request::` (idempotent; server-side HTTP probe, no login;
+  one preview at a time, may evict another task's). For logged-in clicking use
+  Dev login.
 
 ## Dev login (skip the email OTP)
 
-Local `repoos serve` and task previews run with auth **on** by default, but you
-never need a real inbox to get past the login screen:
+Auth is on by default locally. Log in as `hello@repoos.org` (the
+`bootstrapAdmin`; arbitrary addresses don't work) with the code from
+`grep REPOOS_AUTH_DEV_BACKDOOR_CODE .env` (gitignored `.env`; env-var only, never
+in `repoos.toml`, ignored when `NODE_ENV=production`). Wiring and background:
+`docs/native-auth.md`. Task-runner agents: for "does it serve?" prefer the
+server-side probe; use this only when the human wants the logged-in UI clicked.
 
-- **Email:** any allowlisted user. Use `hello@repoos.org` — the `bootstrapAdmin`
-  in `repoos.toml`. The backdoor does **not** let you log in as an arbitrary
-  address; the email must already be allowlisted.
-- **Code:** the value of `REPOOS_AUTH_DEV_BACKDOOR_CODE`, set in the gitignored
-  `.env` at the repo root — run `grep REPOOS_AUTH_DEV_BACKDOOR_CODE .env` to read
-  it. If login fails, that file is the source of truth: the value may have
-  changed, or `.env` may be missing entirely (`.env.example` shows the key with
-  an empty placeholder). It is env-var only, never a `repoos.toml` key, and
-  never honored when `NODE_ENV=production`.
-
-This replaces only the OTP step; the resulting session is otherwise normal, and
-the same code works against any locally-served instance (a task preview, or a
-`repoos serve` a human is already running). Wiring: `src/core/config.ts` reads
-the env var into `config.auth.devBackdoorCode`, and `src/server/routes/auth.ts`
-accepts it in place of the OTP. Background: `docs/native-auth.md`.
-
-Task-runner agents: for "does it serve?", still prefer the server-side probe
-(`::repoos-preview-request::`, no login at all); reach for this dev login only
-when the human explicitly wants the logged-in UI clicked through.
-
-### Auth-less dev server (interactive sessions: skip login entirely)
-
-Logging in on every session is annoying, and the backdoor puts a real session on
-the human's server. `repoos.toml` already has a preview-only override
-(`[preview.auth] enabled = false`, #0464); to get the same thing on demand:
-
-```bash
-just serve-noauth [port]      # default 7272; http://127.0.0.1:<port>, no login
-```
-
-It runs `REPOOS_PREVIEW_CHILD=1 bun dist/cli/index.js serve --preview-overrides
---port <port>` after a staleness-aware build. It binds 127.0.0.1 only, never
-reaps the real server, and the real one on :7171 keeps requiring login. Stop it
-with `pkill -f "serve --preview-overrides --port <port>"` when done. Use it for
-browser-tool verification instead of the OTP backdoor.
-
-**Run it from a task worktree or a scratch worktree — never from the checkout the
-real `repoos serve` is serving.** Two servers on one root both watch the same
-`work/` files, so a task entering `review` spawns *two* reviewers, and the second
-server's watchdog (`runner.isRunning` is per-process) sees every active task as
-dead and flags it. The recipe refuses when a non-preview server is already
-serving the current directory. Check the directory first: a failed `cd` silently
-leaves you in the main checkout, and the server then runs against it (this
-happened on 2026-09-27, briefly, with no lasting effect). Confirm with the
-server's startup log line (`root` and `mode: "preview"`).
+**Auth-less dev server (interactive sessions):** `just serve-noauth [port]`
+(default 7272, 127.0.0.1 only, no login; stop with
+`pkill -f "serve --preview-overrides --port <port>"`). **Run it from a task
+worktree or scratch worktree — never from the checkout the real `repoos serve`
+is serving:** two servers on one root both watch `work/` and spawn duplicate
+reviewers. Check the directory first (a failed `cd` leaves you in main) and
+confirm the startup log shows `mode: "preview"`.
 
 ## Debugging: search the error, then check the versions
 
-When an error is *weird* — it makes no sense given the code, or the same code
-behaves differently in two places — stop reasoning from first principles and do
-two cheap things first:
+When an error is *weird* (makes no sense given the code, or the same code behaves
+differently in two places), stop theorising and: (1) **search the exact error
+text on the web**; (2) **check versions of the runtime** — `node --version`,
+`bun --version`, and *which binary actually runs* (`process.execPath`,
+`which node`). "Works here, fails there" is a version difference until proven
+otherwise; reproduce under the exact runtime the failing system uses (e.g. the
+gate runs under the server's Node, not your shell's). Be suspicious of any
+"flaky" diagnosis for a failure that reproduces identically twice. When a test's
+verdict flips with runtime speed, remove the race rather than reconcile the
+environments. Worked examples (#0205, #0271, #0330):
+`docs/agent-debugging-and-incidents.md`.
 
-1. **Search the exact error text on the web.** Someone has almost certainly hit
-   it. This costs 30 seconds and routinely saves an hour of theorising.
-2. **If anything smells like a dependency or environment problem, check the
-   versions** — of the runtime, not just the packages. `node --version`,
-   `bun --version`, and *which binary is actually running* (`process.execPath`,
-   `which node`). "Works here, fails there" is a version difference until
-   proven otherwise.
-
-**Worked example (2026-08-15).** Task #0205's close-out failed the gate twice
-with `TypeError: Cannot read properties of undefined (reading 'removeItem')` at
-`src/ui-app/tests/repo-store.test.ts:805` — `localStorage` was undefined. The same suite
-passed every time when run by hand. It was initially misdiagnosed as load-
-induced flakiness (see `docs/dogfooding-vs-general.md`) and nearly written off
-as contention noise from #0216, which would have been wrong.
-
-A web search surfaced a known Vitest issue about Node's Web Storage API. Checking
-versions closed it immediately:
-
-- `bun run test` by hand → Node 24 → `localStorage` absent from `globalThis` →
-  jsdom installs its own Storage → **passes**
-- The close-out gate → `process.execPath` → the serving process's runtime,
-  Homebrew Node 26 under launchd → Node defines `localStorage` as an accessor
-  returning `undefined` (no `--localstorage-file`) → vitest's jsdom environment
-  sees the key already present and skips installing jsdom's Storage → **fails**
-
-100% deterministic, 668ms, on a completely idle machine. Not flaky at all. Fixed
-with a setup shim (`src/ui-app/tests/setup/web-storage.ts`).
-
-**Second worked example (2026-09-05).** `boot-timing.test.ts` (#0271) asserted
-that `server.listen()` fires before the async index build finishes. A fix for
-that test's HTTP-timing flake (comparing a network-polled timestamp against an
-in-process one) checked out fine locally, then failed deterministically the
-moment it ran through `bun run test` for real — not intermittently, every
-single time. The cause wasn't the fix: `package.json`'s `"test"` script is
-literally `node scripts/run-tests.mjs`, so a bare `bun run test` ran the whole
-suite under **Node** unless the caller remembered `bun run --bun test` (what
-`repoos check` uses internally, but nothing else did). Same command text, two
-different runtimes. Under Bun — ~10x faster at spawning the git subprocesses
-this fixture is full of — the async index build reliably finished before
-`listen()` was even reached, flipping the exact invariant the test existed to
-prove. Confirmed with a direct A/B on identical code: `bunx vitest run` 5/5
-pass, `bun run --bun vitest run` 2/2 fail. Fixed by making
-`scripts/run-tests.mjs` self-re-exec onto Bun whenever it's resolvable
-(mirroring `reexecUnderBunIfRequested()` in `src/core/runtime.ts`), so
-every invocation path now converges on one runtime — see `docs/architecture.md`.
-
-**The sequel (#0330), and the general lesson underneath it.** Converging the
-runtimes stopped the *symptom* but left the actual defect: the assertion was a
-race, and which side won depended on how fast the box and the runtime were, so
-the test measured the machine rather than RepoOS. The fix was to stop racing
-rather than to keep the two runtimes honest — `startServer` now takes a
-test-only `indexBuildGate`, awaited inside `LiveIndex.refreshAllAsync` after
-the build finishes and immediately before its result is swapped in. A test can
-hold the build at that point indefinitely, which makes "the listener bound
-before the index was populated" a hard fact: the build provably got all the
-way to the swap, the index provably has not been published, so if `listen()`
-fired at all, it did not wait. **When a test's verdict flips with runtime
-speed, the fix is usually to remove the race, not to reconcile the
-environments** — a passing-under-Node suite that is meant to hold under Bun is
-one machine-fingerprint away from shipping the bug it was written to catch.
-
-**The general lesson:** "it passes for me but fails in the pipeline" is a
-version/environment difference far more often than it is flakiness. Reproduce
-under the *exact* runtime the failing system uses before concluding anything —
-here that meant `/opt/homebrew/bin/node`, not whatever `node` resolves to in
-your shell. And be suspicious of any diagnosis that requires the failure to be
-random when it reproduces identically twice.
-
-### Is a `repoos check` failure a flake or a real bug?
-
-**If it reproduces in isolation on an idle machine, it is a real bug.** Genuine
-resource-pressure flakes do not reproduce on a quiet box. Two corollaries, each
-of which has cost days here:
-
-- **Run the whole suite, not just the first failing file** — one root cause
-  routinely breaks several suites, and the first failure is rarely the most
-  informative.
-- **Distrust exact-count assertions against streamed agent output**
-  (`lines.length === 3`, `toEqual([...])`). A change to what a driver emits per
-  turn breaks these, and it presents as a *timeout*, not an assertion error —
-  which is exactly why one such regression was misdiagnosed as a flake for days
-  while it broke every check.
-
-There IS a real memory-pressure flake (subprocess-heavy tests timing out when
-the machine is swapping), so this is a judgement call, not a dismissal. The
-full triage order, the incidents behind it, and the remote-validation fix are
-in `docs/debugging-check-failures.md` — read that before spending an afternoon
-on a check failure you can't explain.
+**Is a `repoos check` failure a flake or a real bug?** If it reproduces in
+isolation on an idle machine, it's real. Run the whole suite, not just the first
+failing file. Distrust exact-count assertions on streamed agent output — they
+fail as *timeouts*. There is a real memory-pressure flake, so it's a judgement
+call; read `docs/debugging-check-failures.md` before spending an afternoon on
+a failure you can't explain.
 
 ## Git setup: don't let a failed command skip branch creation
 
-A past agent ran `git pull --ff-only && git checkout -b <branch>`. The pull
-failed (no remote tracking branch), and `&&` short-circuited, so the branch was
-never created and all work landed on `main`. Lessons:
-
-- Do NOT chain git SETUP commands with `&&` such that one failure silently skips
-  branch creation. Create the branch as its own step and confirm it succeeded.
-- Do NOT `git pull` when branching from local `main` — there may be no tracking
-  branch, and you don't need it. Branch from local: `git checkout main` then
+- Don't chain git SETUP commands with `&&` so one failure silently skips branch
+  creation (a past agent's failed `git pull` meant work landed on `main`). Create
+  the branch as its own step and confirm it.
+- Don't `git pull` when branching from local `main`: `git checkout main`, then
   `git checkout -b <branch>`.
-- Before your FIRST commit, verify you are on the intended branch
-  (`git branch --show-current`). For normal task work, do not commit on `main`.
-  An explicitly requested direct-to-main hotfix is the exception; confirm that
-  authorization and stage only its intended files.
-- Managed task worktree creation is RepoOS's job — use the Start action and
-  do not hand-roll a second worktree for a task.
+- Before your FIRST commit verify `git branch --show-current`. Don't commit on
+  `main` for normal task work (an explicitly requested hotfix is the exception).
+- Managed task worktree creation is RepoOS's job (Start action); don't hand-roll
+  a second worktree.
 
 ### Edit the task worktree, not the checkout your tools start in
 
-A harness's file/edit tools and shell resolve relative paths against the
-session's working directory — and for a task session that is usually still the
-**main checkout**, even after RepoOS has demonstrably created and handed back
-the task's worktree. Relative-path edits then land on `main` while the task
-branch sits untouched, with no error. Two separate harnesses made this exact
-mistake on 2026-10-01.
+Your tools' working directory is usually still the **main checkout** even after
+RepoOS created the task's worktree, so relative-path edits land on `main` while
+the task branch sits untouched, with no error (two harnesses did this on
+2026-10-01). Before your FIRST edit run `pwd` and use the worktree's **absolute
+path** for every file/edit tool; a `cd` isn't enough when the tool's root is
+fixed at session start.
 
-- Before your FIRST edit — not just your first commit — confirm where it will
-  land: run `pwd` for shell work, and prefer the worktree's **absolute path**
-  for every file/edit tool whose own working directory you don't control. A
-  `cd` is not enough when the tool's root is fixed at the session's start.
-
-When a task's engineer session runs on a remote runner (ADR
-[0009](docs/adr/0009-remote-engineer-sessions.md)), the same rule has a remote
-form: the real worktree is on that host under the path the task context names,
-and the laptop's copy is a *fetched mirror*, not the working tree. Do not edit
-the laptop copy to "fix" something the agent saw remotely — those edits are not
-where the agent is working, are not committed by the remote turn, and are
-discarded or flagged when the branch tip is fetched back. Run shell work through
-the runner (the task context gives the host and worktree), and remember that
-`repoos check`/handoff read the fetched local branch: a remote commit only
-counts once RepoOS has fetched it back. If the fetch-back reports a diverged
-local tree, stop and surface it — never reset or force-push around it.
+For a remote-runner engineer session (ADR `docs/adr/0009-remote-engineer-sessions.md`)
+the real worktree is on that host and the laptop copy is a fetched mirror: don't
+edit the mirror, run shell work through the runner, and remember `repoos
+check`/handoff read the fetched local branch. If fetch-back reports a diverged
+tree, stop and surface it — never reset or force-push around it.
 
 ## Stuck-active incident (#0151): worktree missing its own task file
 
-A task can get permanently stuck `active`, failing finalization with
-`task file is missing from the registered worktree`, retry included. Root
-cause (confirmed via git history, not guessed): task creation writes the file
-to disk and commits it to `main` (`docs(<id>): add task`), but that commit can
-silently fail (`commitTaskFile` is fail-soft) while the file is still visible
-everywhere else — API, UI, `repoos list`. If `/start` runs before a retried
-commit lands, `ensureWorktree` cuts the branch from a `main` HEAD that doesn't
-have the file yet. Once that worktree/branch exists, plain reuse never
-re-checks freshness, so every future start/resume hands back the same
-file-less worktree forever — a stuck task cannot self-recover.
-
-Fixed in `ensureWorktree` (`src/core/git.ts`): whichever worktree it resolves
-(new or reused) is now healed if the task's own file is missing from it — copy
-main's current version in and commit it on the worktree's branch, narrowly
-scoped to that one file so in-progress work is never touched. This should mean
-you never see this failure mode again; if you do, that's a bug in the heal
-itself, not something to work around by hand. **Do not "fix" a stuck task by
-manually copying the file into the worktree** — that papers over the same
-symptom without checking whether the healing logic ran or why it didn't; file
-it as a bug against `ensureWorktree` instead, and use `git ls-tree
-<worktree-branch> -- work/<file>.md` to confirm the file is genuinely absent
-from history (not just stale) before concluding it's the same issue.
-
-Related, softer version of the same gap: because `patchTaskFile` (status
-transitions, e.g. `ready`→`active`) commits only to `main`, a worktree's own
-copy of its task file can legitimately lag main's frontmatter (stale
-`status`/`branch`/`updated_at`) even when the file itself is present — this is
-expected, not a bug, and does not block review/done.
+If finalization fails with `task file is missing from the registered worktree`,
+`ensureWorktree` (`src/core/git.ts`) should have healed it by copying main's
+task file into the worktree. If you still see it, that's a bug in the heal: file
+it against `ensureWorktree`, confirm with `git ls-tree <worktree-branch> --
+work/<file>.md`, and **don't copy the file in by hand.** A worktree's own task
+file lagging main's frontmatter (`status`, `branch`, `updated_at`) is expected and
+doesn't block review/done. Root cause and history:
+`docs/agent-debugging-and-incidents.md`.
