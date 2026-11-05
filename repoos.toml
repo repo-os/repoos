@@ -760,3 +760,6 @@ models = ["gpt-6-luna"]
 [[budget.allowlist]]
 cli = "pi"
 models = ["openrouter/deepseek/deepseek-v4.1-flash"]
+[[budget.allowlist]]
+cli = "muse"
+models = ["muse-spark-1.3", "muse-spark-1.3-contributor"]
