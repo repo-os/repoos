@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-05T11:41:21Z"
+updated_at: "2026-11-05T14:38:37Z"
 ---
 ## Items
 - E1 · Task card: drop the redundant "Details" link under the needs-input blurb
@@ -70,3 +71,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 
 - 2026-11-05T11:41:20Z · created · njachowski@gmail.com
 - 2026-11-05T11:41:21Z · screenshots
+- 2026-11-05T14:38:37Z · cli_override
