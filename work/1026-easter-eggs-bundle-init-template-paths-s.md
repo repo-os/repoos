@@ -13,7 +13,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_model_override: grok-4.7-low
 created_at: "2026-11-04T06:45:41Z"
-updated_at: "2026-11-05T00:03:34Z"
+updated_at: "2026-11-05T00:37:01Z"
 last_close_out_gate_ms: 864754
 last_close_out_gate_at: "2026-11-05T00:02:10.636Z"
 check_retry_count: 1
@@ -232,3 +232,4 @@ Reuse `assessTaskUnderspecified` in `src/core/task-underspecified.ts`; pass the 
 - 2026-11-04T23:41:57Z · message_queued at 2026-11-04T23:41:57.005Z
 - 2026-11-05T00:02:10Z · close-out gate completed in 865s
 - 2026-11-05T00:03:34Z · status done→done, release:success
+- 2026-11-05T00:37:01Z · message_dropped: 1 queued message(s) discarded — task is done
