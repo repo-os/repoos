@@ -97,3 +97,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T13:22:50Z · message_queued at 2026-11-05T13:22:50.468Z
 - 2026-11-05T13:22:53Z · message_delivered: 1 message(s)
 - 2026-11-05T13:24:20Z · CTO nudge: held — remote validation is running
+- 2026-11-05T13:25:54Z · note: handoff requested (cli)
