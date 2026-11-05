@@ -40,6 +40,22 @@ describe("engineer launch permissions", () => {
     );
   });
 
+  it("launches Muse with explicit approval mode and the sandbox left on", () => {
+    // Muse sets its approval mode explicitly per turn (`--approval-mode never`
+    // with the sandbox on) instead of a blanket bypass like `--yolo`.
+    const launches = engineerLaunches(
+      { name: "engineer", cli: "muse", model: "default", enabled: true },
+      "/tmp/worktree",
+    );
+    for (const { cmd, args } of launches) {
+      expect(cmd).toBe("muse");
+      expect(engineerPermissionGaps("muse", args)).toEqual([]);
+      expect(args).toContain("--approval-mode");
+      expect(args[args.indexOf("--approval-mode") + 1]).toBe("never");
+      expect(args).not.toContain("--yolo");
+    }
+  });
+
   it("launches Crush with no gap and no fabricated bypass flag", () => {
     // Crush auto-approves every permission request in a non-interactive `run`
     // session and rejects `--yolo`/`--auto`; the launch must not pretend a flag

@@ -39,6 +39,10 @@ export const HARNESS_CAPABILITIES: Record<string, HarnessCapability> = {
   antigravity: { reasoning: ["low", "high"], maxContextTokens: 1_000_000 },
   crush: { reasoning: [], maxContextTokens: 200_000 },
   pi: { reasoning: [], maxContextTokens: 200_000 },
+  // Muse supports `--reasoning-effort` tiers in the CLI, but RepoOS has no
+  // per-task reasoning path to forward (same as opencode/claude/cursor/pi), so
+  // no levels are declared and runs use the CLI default (`high`).
+  muse: { reasoning: [], maxContextTokens: 200_000 },
 };
 
 /** Used for a drivable CLI with no explicit entry: no reasoning, modest window. */

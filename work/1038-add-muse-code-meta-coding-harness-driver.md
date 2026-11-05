@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-05T14:01:06Z"
-review_passes: 1
 id: 1038
 title: Add Muse Code (Meta) coding-harness driver
 type: feature
@@ -12,11 +10,9 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/add-muse-code-meta-coding-harness-driver
-cli_override: cursor
-model_override: grok-4.7-low
+model_override: opencode-go/muse-spark-1.3-contributor
 created_at: "2026-11-05T11:24:33Z"
-last_check_failure: "repoos check at 2026-11-05T13:22:53.738Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-dev_error_count: 1
+updated_at: "2026-11-05T13:25:54Z"
 ---
 ## Problem
 
@@ -54,18 +50,6 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - `muse serve` (MSP session host over stdio) is a possible later transport; out of scope here.
 - Worked examples to copy: Crush and OpenCode sections of `docs/agent-compatibility.md`.
 
-## Shots
-```json
-[
-{
-"label": "Agents page lists Muse Code as a harness label",
-"target": "default",
-"route": "/agents?tab=default",
-"highlight": ".agents-page-title"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-05T11:24:33Z · created · njachowski@gmail.com
@@ -93,32 +77,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T12:44:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-05T12:44:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: State unchanged: #1038 done and committed; handoff blocked by the pre-existing main gate failure tracked in #1041 (READY, unassigned). No handoff signal; task stays `active`. · stderr: (empty)
 - 2026-11-05T12:46:08Z · needs_input
-- 2026-11-05T12:49:20Z · message_queued at 2026-11-05T12:49:20.630Z
-- 2026-11-05T12:49:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-05T12:52:24Z · agent exited with an error (opencode) · error: Transport
-- 2026-11-05T12:52:24Z · engineer crash recovery: resuming opencode + opencode-go/muse-spark-1.3-contributor (1/3 crashes in 30m) · error: Transport
-- 2026-11-05T12:52:28Z · needs_input
-- 2026-11-05T12:52:28Z · message_delivered: 1 message(s)
-- 2026-11-05T13:02:14Z · cli_override, model_override
-- 2026-11-05T13:02:16Z · message_queued at 2026-11-05T13:02:16.331Z
-- 2026-11-05T13:02:19Z · engineer stopped by request
-- 2026-11-05T13:02:30Z · message_delivered: 1 message(s)
-- 2026-11-05T13:09:13Z · note: handoff requested (cli)
-- 2026-11-05T13:09:21Z · CTO nudge: held — handoff gate is running
-- 2026-11-05T13:16:11Z · body
-- 2026-11-05T13:22:50Z · message_queued at 2026-11-05T13:22:50.468Z
-- 2026-11-05T13:22:53Z · message_delivered: 1 message(s)
-- 2026-11-05T13:24:20Z · CTO nudge: held — remote validation is running
-- 2026-11-05T13:25:54Z · note: handoff requested (cli)
-- 2026-11-05T13:31:23Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-11-05T13:31:24Z · note: handoff requested (cli)
-- 2026-11-05T13:34:20Z · CTO nudge: held — handoff gate is running
-- 2026-11-05T13:38:21Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
-- 2026-11-05T13:41:11Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (50efb7bf0) during finalization (#0734)
-- 2026-11-05T13:49:25Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
-- 2026-11-05T13:50:49Z · body
-- 2026-11-05T13:54:20Z · CTO nudge: held — remote validation is running
-- 2026-11-05T13:57:18Z · status active→review
-- 2026-11-05T13:57:18Z · message_queued at 2026-11-05T13:57:18.544Z
-- 2026-11-05T14:01:06Z · note: review pass 1: good to go
-
+- 2026-11-05T13:25:54Z · status active→review

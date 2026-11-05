@@ -206,6 +206,7 @@ export const HARNESS_BILLING: Record<string, BillingKind> = {
   "qwen code": "payg",
   crush: "payg",
   pi: "payg",
+  muse: "subscription",
 };
 
 export function billingForCli(cli: string): BillingKind | null {

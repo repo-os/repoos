@@ -212,6 +212,17 @@ describe("agent compatibility contracts", () => {
     expect(at("crush version v1.0.0").status).toBe("newer_than_verified");
   });
 
+  it("walks Muse's 1.x ladder: in-range is unprobed until certified", () => {
+    const at = (version: string) => compatibilityForAgent({ cli: "muse", version, drivable: true });
+    // The installed release parses out of muse's two-part --version line.
+    expect(parseAgentVersion("Muse Code 1.4.14 (1.4.14-R7309.1)")).toEqual([1, 4, 14]);
+    // v1.4.x is inside `>=1.0.0 <2.0.0`, but nothing is certified yet.
+    expect(at("Muse Code 1.4.14 (1.4.14-R7309.1)").status).toBe("not_probed");
+    // Below the supported line is an upgrade nudge; a newer major is uncertainty.
+    expect(at("Muse Code 0.9.0 (0.9.0-R1.1)").status).toBe("upgrade_recommended");
+    expect(at("Muse Code 2.0.0 (2.0.0-R1.1)").status).toBe("newer_than_verified");
+  });
+
   describe("built dist artifact", () => {
     // Vitest's import.meta.url is not a file: URL, so resolve the worktree's
     // dist/ from cwd (tests always run from the repo root).
