@@ -90,3 +90,4 @@ The human is logged in to Muse on this machine with a coding plan, so you MAY ru
 - 2026-11-05T13:02:16Z · message_queued at 2026-11-05T13:02:16.331Z
 - 2026-11-05T13:02:19Z · engineer stopped by request
 - 2026-11-05T13:02:30Z · message_delivered: 1 message(s)
+- 2026-11-05T13:09:13Z · note: handoff requested (cli)
