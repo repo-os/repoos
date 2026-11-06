@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-06T07:09:57Z"
+review_timeout_retries: 0
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -10,8 +12,6 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T07:09:57Z"
-review_timeout_retries: 1
 handoff_signal_retry_count: 2
 dev_error_count: 2
 ---
@@ -82,3 +82,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T07:06:51Z · review_cli_override
 - 2026-11-06T07:06:59Z · needs_input (review-failed) cleared for review again by hello@repoos.org
 - 2026-11-06T07:09:57Z · note: review pass 3: needs some work
+
