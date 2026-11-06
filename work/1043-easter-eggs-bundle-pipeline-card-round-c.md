@@ -3,16 +3,13 @@ id: 1043
 title: "Easter eggs bundle: pipeline card round chip and sent-back note"
 type: chore
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T12:18:05Z"
+updated_at: "2026-11-06T12:18:12Z"
 ---
 ## Problem
 
@@ -30,7 +27,11 @@ On the Work Queue pipeline card the bottom row shows separate chips `E14` and `R
 - Card shows `D<n> · R<m>` in the drawer badge style; `reviewerChip` tests updated.
 - Review-running state still shows the upcoming round (`R<m+1> …`) without overflowing.
 
+## Notes for AI
+Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, engineerRound/reviewerChipText), `src/ui-app/src/lib/pipeline-card.ts` (taskRoundCounts, reviewerChip), the card component that renders the chips, and the drawer's `.rounds-badge` in `TaskDrawer.vue`. Reuse the existing `.rounds-badge` styling rather than adding bespoke scoped CSS. Update the pipeline-card unit tests. Declare one shot of the Work Queue pipeline view showing a card with an amber round pill.
+
 ## Activity
 
 - 2026-11-06T12:18:04Z · created · njachowski@gmail.com
 - 2026-11-06T12:18:05Z · needs_input
+- 2026-11-06T12:18:12Z · needs_input, body: Notes for AI (added)
