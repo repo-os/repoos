@@ -10,8 +10,9 @@ created_by: njachowski@gmail.com
 branch: ""
 cli_override: codex
 model_override: gpt-6-luna
+review_cli_override: cursor
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T15:52:49Z"
+updated_at: "2026-11-06T15:53:15Z"
 ---
 ## Problem
 
@@ -40,3 +41,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T15:30:21Z · status inbox→ready
 - 2026-11-06T15:52:29Z · cli_override
 - 2026-11-06T15:52:49Z · model_override
+- 2026-11-06T15:53:15Z · review_cli_override
