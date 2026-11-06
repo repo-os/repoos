@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T20:22:25Z"
+updated_at: "2026-11-06T20:22:26Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-06T20:22:24.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b0f58a2a to ef82ca9a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 9
@@ -271,3 +271,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T20:22:24Z · message_delivered: 1 message(s)
 - 2026-11-06T20:22:24Z · needs_input
 - 2026-11-06T20:22:25Z · message_queued at 2026-11-06T20:22:25.256Z
+- 2026-11-06T20:22:26Z · CTO nudge: held — an undelivered message is already queued
