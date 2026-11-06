@@ -170,3 +170,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T15:49:18Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T16:20:46Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T16:45:48Z · message_queued at 2026-11-06T16:45:48.458Z
+- 2026-11-06T16:45:48Z · handoff failed · handoff recovery attempted · finalization failed
