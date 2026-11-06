@@ -323,4 +323,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T22:32:12Z · status active→review, needs_input
 - 2026-11-06T22:32:12Z · note: handoff requested (cli)
 - 2026-11-06T22:35:49Z · status active→review
-
+- 2026-11-06T22:35:49Z · message_queued at 2026-11-06T22:35:49.777Z
