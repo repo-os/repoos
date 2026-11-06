@@ -15,7 +15,6 @@ check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T03:47:52.916Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T03:48:02.311Z\",\"kind\":\"dev-error\"},{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T03:48:40.495Z\",\"kind\":\"dev-error\"},{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T03:49:52.966Z\",\"kind\":\"dev-error\"},{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T03:51:37.160Z\",\"kind\":\"dev-error\"},{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T03:53:49.090Z\",\"kind\":\"dev-error\"},{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T03:57:29.747Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 - E1 · Task card: drop the redundant "Details" link under the needs-input blurb
@@ -82,12 +81,12 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 "route": "/work",
 "highlight": "[data-test-id=\"task-agent-preview\"] tbody tr",
 "steps": [
-  {
-    "hover": "button.tc-agent-btn"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "hover": "button.tc-agent-btn"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "card:humanStep"
 }
