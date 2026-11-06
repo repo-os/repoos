@@ -3,12 +3,13 @@
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, basename, dirname } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import { getAuthStore, resetAuthStoreInstance } from "../../core/auth-store";
 import { clearCliSession } from "../../cli/cli-session";
+import { SUMMARY_PENDING_STALE_MS } from "../../core/task-summary";
 import {
   cmdAgentsRunning,
   cmdConfig,
@@ -25,10 +26,14 @@ import {
   cmdSendBack,
   cmdStart,
   cmdStats,
+  cmdSummary,
   cmdSync,
   cmdVerify,
   controlApiServerDownMessage,
+  isSummaryPollTerminal,
+  pollSummaryState,
   waitForReviewHandoff,
+  type TaskSummaryState,
 } from "../../commands/control-api";
 import { RepoOsApi } from "../../cli/repoos-api";
 import { beginHandoffStatus, finishHandoffStatus } from "../../server/handoff-status";
@@ -747,5 +752,143 @@ describe("control API CLI", () => {
     log.mockRestore();
     health.mockRestore();
     requestOk.mockRestore();
+  });
+});
+
+describe("repoos summary polling", () => {
+  it.each([
+    ["done reports terminal", "done", false, "", true],
+    ["failed reports terminal", "failed", false, "", true],
+    ["a committed report keeps polling while status is still pending", "pending", true, "", false],
+    ["stale pending with report is terminal (lost done write)", "pending", true, "stale", true],
+    ["a committed report is terminal when idle (lost status write)", "idle", true, "", true],
+    ["pending without a report keeps polling", "pending", false, "", false],
+    ["idle without a report keeps polling", "idle", false, "", false],
+  ])("%s", (_name, status, exists, statusAtKind, expected) => {
+    const statusAt =
+      statusAtKind === "stale"
+        ? new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString()
+        : "";
+    expect(
+      isSummaryPollTerminal({
+        status: status as TaskSummaryState["status"],
+        exists: exists as boolean,
+        statusAt,
+        pendingSince: null,
+        reportMtimeMs: null,
+      }),
+    ).toBe(expected as boolean);
+  });
+
+  it("stale pending with an older report than this run is terminal (failed)", () => {
+    const staleAt = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
+    const anchor = Date.parse(staleAt);
+    expect(
+      isSummaryPollTerminal({
+        status: "failed",
+        exists: true,
+        statusAt: staleAt,
+        pendingSince: staleAt,
+        reportMtimeMs: anchor - 60_000,
+      }),
+    ).toBe(true);
+  });
+
+  it("resolves once the report commits, without waiting for the status file", async () => {
+    const staleAt = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
+    const staleMs = Date.parse(staleAt);
+    const states: TaskSummaryState[] = [
+      {
+        ok: true,
+        exists: false,
+        markdown: null,
+        status: "pending",
+        statusAt: "",
+        pendingSince: null,
+        reportMtimeMs: null,
+        error: null,
+      },
+      {
+        ok: true,
+        exists: true,
+        markdown: "## TL;DR",
+        status: "pending",
+        statusAt: staleAt,
+        pendingSince: staleAt,
+        reportMtimeMs: staleMs + 1,
+        error: null,
+      },
+    ];
+    const seen = await pollSummaryState(async () => states.shift()!, {
+      intervalMs: 1,
+      timeoutMs: 5_000,
+    });
+    expect(seen.exists).toBe(true);
+  });
+
+  it("fails fast after persistent fetch errors instead of hanging", async () => {
+    let calls = 0;
+    await expect(
+      pollSummaryState(
+        async () => {
+          calls += 1;
+          throw new Error("connection reset");
+        },
+        { intervalMs: 1, timeoutMs: 5_000, maxConsecutiveErrors: 3 },
+      ),
+    ).rejects.toThrow(/summary status unreachable/);
+    expect(calls).toBe(3);
+  });
+
+  it("refuses an unreleased task without polling", async () => {
+    const root = tmpDir();
+    await withServer(root, async (s) => {
+      const port = Number(new URL(s.url).port);
+      const id = await createReadyTask(s);
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      const started = Date.now();
+      const code = await cmdSummary([id, "--port", String(port)]);
+      expect(code).toBe(1);
+      expect(Date.now() - started).toBeLessThan(20_000);
+      expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(/not released/);
+      log.mockRestore();
+      err.mockRestore();
+    });
+  });
+
+  it("reports a failed generation with its error", async () => {
+    const root = tmpDir();
+    await withServer(root, async (s) => {
+      const port = Number(new URL(s.url).port);
+      const id = await createReadyTask(s);
+      // Release the task on disk so the retry gate lets the poll through;
+      // the seeded failed state is what the CLI must report.
+      const [file] = readdirSync(join(root, "work")).filter((f) => f.startsWith(`${id}-`));
+      const body = readFileSync(join(root, "work", file), "utf8")
+        .split("---\n")
+        .slice(2)
+        .join("---\n");
+      writeFileSync(
+        join(root, "work", file),
+        `---\nid: '${id}'\ntitle: CLI control API\nstatus: done\n---\n${body}`,
+      );
+      mkdirSync(join(root, ".repoos", "task-summary"), { recursive: true });
+      writeFileSync(
+        join(root, ".repoos", "task-summary", `${id}.json`),
+        JSON.stringify({
+          taskId: id,
+          status: "failed",
+          at: new Date().toISOString(),
+          error: "seeded failure",
+        }),
+      );
+      const log = vi.spyOn(console, "log").mockImplementation(() => {});
+      const err = vi.spyOn(console, "error").mockImplementation(() => {});
+      const code = await cmdSummary([id, "--port", String(port)]);
+      expect(code).toBe(1);
+      log.mockRestore();
+      err.mockRestore();
+    });
   });
 });

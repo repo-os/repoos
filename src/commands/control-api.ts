@@ -22,6 +22,7 @@ import {
 import type { RepoOSConfig } from "../core/types.js";
 import type { LandableCheck, LandableResult } from "../core/landable.js";
 import type { HandoffStatus } from "../server/handoff-status.js";
+import { effectiveSummaryJobStatus } from "../core/task-summary.js";
 
 interface CommonOpts {
   json: boolean;
@@ -1768,6 +1769,144 @@ export async function cmdLandable(args: string[]): Promise<number> {
       console.log(c.dim(`  ${parts.join(" · ")}`));
     }
     return result.landable ? 0 : 1;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
+/** Shape of `GET /api/tasks/:id/summary` used by `repoos summary`. */
+export interface TaskSummaryState {
+  ok: boolean;
+  exists: boolean;
+  markdown: string | null;
+  status: "idle" | "pending" | "done" | "failed";
+  statusAt: string | null;
+  /** Anchor for this `pending` run (ISO); mirrors server payload. */
+  pendingSince: string | null;
+  reportMtimeMs: number | null;
+  error: string | null;
+}
+
+/**
+ * Terminal poll states: `done`/`failed`, a committed report while status is
+ * `idle` (lost write), or `pending` long enough that the server coerces to `done`
+ * (API returns `done` when stale; this mirrors that for older servers).
+ */
+export function isSummaryPollTerminal(
+  state: Pick<
+    TaskSummaryState,
+    "status" | "exists" | "statusAt" | "pendingSince" | "reportMtimeMs"
+  >,
+): boolean {
+  if (state.status === "done" || state.status === "failed") return true;
+  const eff = effectiveSummaryJobStatus(
+    state.status,
+    state.statusAt ?? "",
+    state.exists,
+    Date.now(),
+    state.reportMtimeMs ?? null,
+    state.pendingSince,
+  );
+  if (eff === "done") return true;
+  if (state.exists && state.status !== "pending") return true;
+  return false;
+}
+
+const SUMMARY_MAX_GET_ERRORS = 10;
+
+/**
+ * Poll a summary status fetcher until terminal. A committed report (`exists`)
+ * with non-`pending` status is terminal (including `idle` when the done-status
+ * write was lost). While `pending`, keep polling even when the file exists —
+ * a retry may still be running. Persistent fetch failures fail fast.
+ */
+export async function pollSummaryState(
+  getState: () => Promise<TaskSummaryState>,
+  opts: {
+    label?: string;
+    timeoutMs?: number;
+    intervalMs?: number;
+    maxConsecutiveErrors?: number;
+  } = {},
+): Promise<TaskSummaryState> {
+  const maxConsecutiveErrors = opts.maxConsecutiveErrors ?? SUMMARY_MAX_GET_ERRORS;
+  let consecutiveGetErrors = 0;
+  const label = opts.label ?? "summary";
+  return pollUntil(
+    async () => {
+      let state: TaskSummaryState;
+      try {
+        state = await getState();
+      } catch (err) {
+        consecutiveGetErrors += 1;
+        if (consecutiveGetErrors >= maxConsecutiveErrors)
+          throw new RepoOsApiError(
+            `summary status unreachable (${label}): ${(err as Error).message}`,
+            503,
+          );
+        return null;
+      }
+      consecutiveGetErrors = 0;
+      return isSummaryPollTerminal(state) ? state : null;
+    },
+    { label, timeoutMs: opts.timeoutMs ?? 900_000, intervalMs: opts.intervalMs ?? 2_000 },
+  );
+}
+
+/**
+ * `repoos summary <id>` (#1041): queue the post-merge PM summary report and
+ * wait for its terminal state. Requires a released (`done`) task — the normal
+ * path runs it automatically after Move to done; this is the visible retry.
+ * Never touches the task status.
+ */
+export async function cmdSummary(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr("Usage: repoos summary <id> [--json] [--port N]");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const queued = await api.request("POST", `/api/tasks/${id}/summary`, {});
+    if (queued.status === 404) throw new RepoOsApiError(`Task #${id} not found`, 404, queued.body);
+    if (queued.status !== 202 || !queued.body.ok)
+      throw new RepoOsApiError(
+        queued.body.error ?? `summary refused (${queued.status})`,
+        queued.status,
+        queued.body,
+      );
+    if (!opts.json) console.log(c.dim(`  … generating post-merge summary for #${id}`));
+    const final = await pollSummaryState(
+      async () =>
+        (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState,
+      { label: `summary for #${id}` },
+    );
+    const eff = effectiveSummaryJobStatus(
+      final.status,
+      final.statusAt ?? "",
+      final.exists,
+      Date.now(),
+      final.reportMtimeMs ?? null,
+      final.pendingSince,
+    );
+    const success = eff === "done" || (final.exists && eff !== "failed" && eff !== "pending");
+    if (opts.json) {
+      printJson(final);
+      return success ? 0 : 1;
+    }
+    if (success) {
+      console.log(c.green(`  ✓ #${id} summary ready: work/reports/${id}/summary.md`));
+      return 0;
+    }
+    printErr(final.error ?? `summary generation failed for #${id}`);
+    return 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;

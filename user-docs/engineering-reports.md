@@ -57,3 +57,25 @@ ask reviewers to consider the rationale, experiments, and stated limitations.
 The Dev tab's Report view lists rounds and opens the selected report. If a stored
 round cannot be read, the Report view and the reviewer prompt show the error
 instead of quietly hiding that round or presenting an older one as current.
+
+## Post-merge summary report (`summary.md`)
+
+After a task merges to `done`, the PM agent writes one `summary.md` into the
+same `work/reports/<task-id>/` directory, in the background. It never blocks
+or fails the landing: a slow or failed summary only records a visible failed
+state, retryable with `repoos summary <id>`. Generation requires a released
+(`done`) task — retrying earlier refuses with a 409, and the automatic queue
+only fires after the release stamp succeeds. The bookkeeping commit takes the
+publication lock, so it never contends with a landing. Polling treats a
+committed `summary.md` as terminal even if its status write was lost, and a
+lost status is logged server-side instead of failing silently.
+
+The report starts with `## TL;DR`, then covers `## Outcome`,
+`## Process stats`, `## What went wrong`, `## Learnings` and `## Follow-ups`.
+The narrative is capped at about 2,000 words (the deterministic
+`## Changed files` listing at the end never counts). Every number comes from
+the stored rounds, review passes and sessions — the PM narrates and must not
+invent figures. Re-running overwrites the same file, never duplicates it.
+
+The Dev tab's Report view shows the summary above the engineering rounds when
+one exists (or the generating/failed state with the retry command).

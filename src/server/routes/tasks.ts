@@ -118,6 +118,12 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { generateServerContext, serverResumePreamble } from "../context-pack.js";
 import { listReviewPasses } from "../../core/review-passes.js";
 import { loadEngineeringReports } from "../engineering-reports.js";
+import {
+  getTaskSummaryJobPayload,
+  queueTaskSummary,
+  readTaskFromDisk,
+  summaryReleaseGate,
+} from "../task-summary.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
 import {
@@ -3043,6 +3049,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         return json(res, 400, { error: result.reason });
       }
       index.applyFileChange(result.task!.absPath);
+      // Post-merge summary (#1041): the branch-less path releases without a
+      // close-out job, so queue here — same fire-and-forget guarantee as the
+      // orchestrator hook (never touches the released status).
+      try {
+        const released = index.getTask(id) ?? result.task!;
+        queueTaskSummary(config, released, index.getTasks());
+      } catch (err) {
+        console.error(`Could not queue post-merge summary for #${id}:`, err);
+      }
       return json(res, 200, index.getTask(id));
     }
 
@@ -4053,6 +4068,44 @@ export const getTaskEngineeringReport: RouteHandler = async (ctx, _req, res, par
       error: `Engineering report history is unreadable: ${loaded.errors.join("; ")}`,
     });
   return json(res, 404, { error: `Engineering report round ${round} not found` });
+};
+
+/**
+ * Post-merge summary report (#1041). The summary is committed on main at
+ * close-out, so unlike engineering rounds it is always read from the main
+ * checkout — never from a worktree copy.
+ */
+export const getTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  const payload = getTaskSummaryJobPayload(ctx.config, task.id);
+  return json(res, 200, {
+    ok: true,
+    exists: payload.markdown !== null,
+    markdown: payload.markdown,
+    status: payload.status,
+    statusAt: payload.statusAt,
+    pendingSince: payload.pendingSince,
+    reportMtimeMs: payload.reportMtimeMs,
+    error: payload.error,
+  });
+};
+
+/**
+ * Retry a missing or failed summary (`repoos summary <id>`). Queues the
+ * background PM job and returns immediately — poll `getTaskSummary` for the
+ * terminal state. Never touches the task status.
+ */
+export const postTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  // Manual runs require a released task: the disk file governs, since the
+  // live index can predate the release stamp. The generator re-checks this
+  // same gate before writing anything.
+  const gateError = summaryReleaseGate(readTaskFromDisk(ctx.config, task.id) ?? task);
+  if (gateError) return json(res, 409, { error: gateError });
+  queueTaskSummary(ctx.config, task, ctx.index.getTasks());
+  return json(res, 202, { ok: true, queued: true });
 };
 
 export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => {
