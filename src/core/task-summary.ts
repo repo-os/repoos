@@ -67,8 +67,7 @@ export function countSummaryNarrativeWords(markdown: string): number {
  * Hard acceptance checks for a summary report: it starts with `## TL;DR`,
  * includes all required sections, and the narrative stays within the word
  * budget. Returns one message per failure, empty when the report passes.
- */
-/**
+ *
  * Visible markdown lines for heading checks: fenced blocks (``` … ```) are
  * skipped so headings inside code samples do not satisfy validation; indented
  * code blocks are left in (they are not markdown headings).
@@ -98,10 +97,13 @@ const HEADING_LINE = /^##\s+(.+?)\s*$/;
 export function validateTaskSummary(markdown: string): string[] {
   const errors: string[] = [];
   if (!markdown.trim()) return ["Task summary is empty."];
+  const firstNonBlankRaw = markdown.split("\n").find((l) => l.trim().length > 0);
   const visible = visibleSummaryLines(markdown);
-  const firstBodyLine = visible.find((l) => l.trim().length > 0);
-  if (firstBodyLine?.trim() !== "## TL;DR")
-    errors.push("Task summary must begin with ## TL;DR; remove any text before it.");
+  const firstNonBlankVisible = visible.find((l) => l.trim().length > 0);
+  if (firstNonBlankRaw?.trim() !== "## TL;DR" || firstNonBlankVisible?.trim() !== "## TL;DR")
+    errors.push(
+      "Task summary must begin with ## TL;DR as the first non-blank line in the document (no preamble or fenced block before it), and after skipping fenced code blocks the first visible line must still be ## TL;DR.",
+    );
 
   const requiredSections = [
     "Outcome",
@@ -338,9 +340,17 @@ export interface TaskSummaryFileChange {
  * Deterministic trailing `## Changed files` section, computed from Git —
  * never authored by the model, and excluded from the narrative word count.
  */
-export function formatTaskSummaryFileChanges(files: TaskSummaryFileChange[]): string {
-  const rows = files.length
-    ? files.map((file) => `- ${file.status} ${file.path}: +${file.additions} / −${file.deletions}`)
-    : ["- No changed files."];
+export function formatTaskSummaryFileChanges(
+  files: TaskSummaryFileChange[],
+  opts?: { unavailableReason?: string },
+): string {
+  const rows =
+    opts?.unavailableReason != null
+      ? [`- Changed files unavailable: ${opts.unavailableReason}`]
+      : files.length
+        ? files.map(
+            (file) => `- ${file.status} ${file.path}: +${file.additions} / −${file.deletions}`,
+          )
+        : ["- No changed files."];
   return [GENERATED_CHANGES_MARKER, "## Changed files", "", ...rows].join("\n");
 }

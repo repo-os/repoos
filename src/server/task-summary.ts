@@ -23,7 +23,7 @@ import type { SessionRecord } from "../core/db.js";
 import { getRepoOSDb } from "../core/db.js";
 import { parseDocument } from "../core/frontmatter.js";
 import { parseTask } from "../core/task.js";
-import { commitFiles, runGit } from "../core/git.js";
+import { commitFiles, runGit, type GitRun } from "../core/git.js";
 import { isOwnReportPath, reportsTaskDir } from "../core/report-paths.js";
 import { findReviewPassFile, listReviewPasses } from "../core/review-passes.js";
 import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
@@ -45,25 +45,31 @@ import {
   type TaskSummaryReviewFacts,
 } from "../core/task-summary.js";
 
-/** Restore `summary.md` after a failed write/commit, or delete a new file. */
-function restoreSummaryPathAfterFailure(
-  absPath: string,
-  originalContent: string | null,
-): Error | null {
-  if (originalContent !== null) {
+type SummaryPriorState =
+  | { kind: "absent" }
+  | { kind: "backup"; content: string }
+  | { kind: "unreadable"; message: string };
+
+/** Restore `summary.md` after a failed write/commit, or delete only when there was no prior file. */
+function restoreSummaryPathAfterFailure(absPath: string, prior: SummaryPriorState): Error | null {
+  if (prior.kind === "backup") {
     try {
-      writeFileSync(absPath, originalContent);
+      writeFileSync(absPath, prior.content);
       return null;
     } catch (err) {
       return err as Error;
     }
   }
-  try {
-    unlinkSync(absPath);
-    return null;
-  } catch (err) {
-    return err as Error;
+  if (prior.kind === "absent") {
+    try {
+      unlinkSync(absPath);
+      return null;
+    } catch (err) {
+      return err as Error;
+    }
   }
+  // Pre-existing file we could not read — never unlink it (#1041 review).
+  return new Error(`Existing summary.md is unreadable; left in place: ${prior.message}`);
 }
 
 /** Visible lifecycle of a task's summary job. `idle` means never attempted. */
@@ -93,6 +99,8 @@ export interface TaskSummaryDeps {
    * landing's shared index/ref.
    */
   commitSlot?: (root: string, taskId: string) => Promise<(() => void) | null>;
+  /** Test seam for merge diff listing — never set in production. */
+  runGit?: (root: string, args: string[], timeout: number) => Promise<GitRun>;
 }
 
 /**
@@ -216,24 +224,32 @@ export function loadCandidateTasksFromDisk(config: RepoOSConfig): {
     };
   }
   const out: Task[] = [];
+  const loadErrors: string[] = [];
   for (const entry of entries) {
     if (!/^\d+-.*\.md$/.test(entry)) continue;
     const absPath = join(dir, entry);
+    let content: string;
+    try {
+      content = readFileSync(absPath, "utf8");
+    } catch (err) {
+      loadErrors.push(`Could not read task file ${entry}: ${(err as Error).message}`);
+      continue;
+    }
     try {
       out.push(
         parseTask({
-          content: readFileSync(absPath, "utf8"),
+          content,
           absPath,
           root: config.root,
           defaultStatus: config.defaultStatus ?? "inbox",
           defaultAssignee: config.defaultAssignee ?? "unassigned",
         }),
       );
-    } catch {
-      /* skip files that do not parse — facts only */
+    } catch (err) {
+      loadErrors.push(`Could not parse task file ${entry}: ${(err as Error).message}`);
     }
   }
-  return { tasks: out, loadErrors: [] };
+  return { tasks: out, loadErrors };
 }
 
 /**
@@ -447,19 +463,48 @@ async function computeChangedFiles(
   config: RepoOSConfig,
   task: Task,
   mergedCommit: string | null,
-): Promise<TaskSummaryFileChange[]> {
-  if (!mergedCommit) return [];
-  const num = await runGit(
+  deps: Pick<TaskSummaryDeps, "runGit"> = {},
+): Promise<{ files: TaskSummaryFileChange[]; unavailableReason?: string }> {
+  const rg = deps.runGit ?? runGit;
+  if (!mergedCommit)
+    return { files: [], unavailableReason: "merged commit not recorded on the task" };
+  const range = `${mergedCommit}^`;
+  const num = await rg(
     config.root,
-    ["diff", "--no-ext-diff", "--find-renames", "--numstat", `${mergedCommit}^`, mergedCommit],
+    ["diff", "--no-ext-diff", "--find-renames", "--numstat", range, mergedCommit],
     10_000,
   );
-  const names = await runGit(
+  const names = await rg(
     config.root,
-    ["diff", "--no-ext-diff", "--find-renames", "--name-status", `${mergedCommit}^`, mergedCommit],
+    ["diff", "--no-ext-diff", "--find-renames", "--name-status", range, mergedCommit],
     10_000,
   );
-  if (num.status !== 0 || names.status !== 0) return [];
+  if (num.timedOut || names.timedOut) {
+    return {
+      files: [],
+      unavailableReason: "git diff timed out while resolving merge file list",
+    };
+  }
+  if (num.status === null || names.status === null) {
+    return {
+      files: [],
+      unavailableReason: "git diff failed to run (git unavailable)",
+    };
+  }
+  if (num.status !== 0) {
+    const hint = (num.stderr || num.stdout || "").trim();
+    return {
+      files: [],
+      unavailableReason: hint ? `numstat: ${hint}` : `numstat exited ${num.status}`,
+    };
+  }
+  if (names.status !== 0) {
+    const hint = (names.stderr || names.stdout || "").trim();
+    return {
+      files: [],
+      unavailableReason: hint ? `name-status: ${hint}` : `name-status exited ${names.status}`,
+    };
+  }
   const nameRows = names.stdout
     .trim()
     .split("\n")
@@ -470,9 +515,15 @@ async function computeChangedFiles(
     .split("\n")
     .filter(Boolean)
     .map((line) => line.split("\t"));
+  if (nameRows.length !== numRows.length) {
+    return {
+      files: [],
+      unavailableReason: "git diff outputs could not be paired (mismatched line counts)",
+    };
+  }
   const isBookkeeping = (path: string): boolean =>
     isOwnReportPath(path, config, task.id) || path === task.path;
-  return nameRows.flatMap(([status, ...paths], index) => {
+  const files = nameRows.flatMap(([status, ...paths], index) => {
     if (paths.some(isBookkeeping)) return [];
     const row = numRows[index];
     return [
@@ -484,6 +535,7 @@ async function computeChangedFiles(
       },
     ];
   });
+  return { files };
 }
 
 function fail(config: RepoOSConfig, taskId: string, error: string): TaskSummaryResult {
@@ -542,8 +594,8 @@ export async function runTaskSummaryNow(
     const narrative = stripTaskSummaryMarkerLines(result.output.trim()).trim();
     const errors = validateTaskSummary(narrative);
     if (errors.length) return fail(config, taskId, errors.join(" "));
-    const files = await computeChangedFiles(config, current, facts.mergedCommit);
-    const markdown = `${narrative}\n\n${formatTaskSummaryFileChanges(files)}`;
+    const changed = await computeChangedFiles(config, current, facts.mergedCommit, deps);
+    const markdown = `${narrative}\n\n${formatTaskSummaryFileChanges(changed.files, { unavailableReason: changed.unavailableReason })}`;
 
     // Serialize the bookkeeping commit with publication: a landing holds the
     // same locks while merging, so committing blind could contend with its
@@ -562,17 +614,18 @@ export async function runTaskSummaryNow(
 
     let committed = false;
     let absPath: string | null = null;
-    let originalContent: string | null = null;
+    let prior: SummaryPriorState = { kind: "absent" };
     try {
       const dir = reportsTaskDir(config, taskId);
       mkdirSync(dir, { recursive: true });
       absPath = join(dir, "summary.md");
-      // Preserve any existing file so it can be restored on failure
+      // Preserve any existing file so it can be restored on failure; if the file
+      // exists but is unreadable, never unlink it on rollback (#1041 review).
       if (existsSync(absPath)) {
         try {
-          originalContent = readFileSync(absPath, "utf8");
-        } catch {
-          // If we can't read it, treat as no prior version
+          prior = { kind: "backup", content: readFileSync(absPath, "utf8") };
+        } catch (err) {
+          prior = { kind: "unreadable", message: (err as Error).message };
         }
       }
       try {
@@ -583,7 +636,7 @@ export async function runTaskSummaryNow(
           `docs(${taskId}): post-merge summary report`,
         );
       } catch (err) {
-        const restoreErr = restoreSummaryPathAfterFailure(absPath, originalContent);
+        const restoreErr = restoreSummaryPathAfterFailure(absPath, prior);
         if (restoreErr)
           throw new Error(
             `${(err as Error).message}; additionally could not restore checkout: ${restoreErr.message}`,
@@ -591,7 +644,7 @@ export async function runTaskSummaryNow(
         throw err;
       }
       if (!committed) {
-        const restoreErr = restoreSummaryPathAfterFailure(absPath, originalContent);
+        const restoreErr = restoreSummaryPathAfterFailure(absPath, prior);
         return fail(
           config,
           taskId,
