@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T17:15:47Z"
+updated_at: "2026-11-06T17:16:44Z"
 last_check_failure: "repoos check at 2026-11-06T17:09:26.078Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pipeline-view.test.ts > pipeline-card lib > renders reviewer chips per verdict tone on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 889dd843459ef5d9a81dc2810c95d43f0718867c
@@ -85,3 +85,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T17:09:25Z · message_delivered: 1 message(s)
 - 2026-11-06T17:12:30Z · note: handoff requested (cli)
 - 2026-11-06T17:15:47Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T17:16:44Z · message_queued at 2026-11-06T17:16:44.708Z
