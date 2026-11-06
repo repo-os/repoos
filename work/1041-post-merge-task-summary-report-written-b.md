@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T20:05:37Z"
+updated_at: "2026-11-06T20:11:14Z"
 review_passes: 8
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 63a04ffa3ef54b19f5cbbd5d623b6aca0bd26606
@@ -263,3 +263,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:56:51Z · body
 - 2026-11-06T20:00:47Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T20:05:37Z · body
+- 2026-11-06T20:11:14Z · status active→review
