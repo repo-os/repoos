@@ -3,6 +3,9 @@ id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the cursor agent exited without output: RetriableError: [resource_exhausted] Error ⚠ After this turn ended, 6 process(es) escaped its process group (PIDs: 69101, 69157, 69503, 69530, 69531, 69583). They may need manual cleanup."
 priority: p3
 area: web
 assigned_to: ai
@@ -164,3 +167,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T05:08:39Z · message_queued at 2026-11-06T05:08:39.454Z
 - 2026-11-06T05:08:39Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-06T05:09:57Z · note: review pass 1: failed — no usable report
+- 2026-11-06T05:09:57Z · needs_input
