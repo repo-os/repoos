@@ -23,8 +23,10 @@ import {
   recordOneShotSession,
   resolvePmAgent,
   runPrompt,
-  type Agent,
 } from "./agents.js";
+
+/** The PM agent shape, derived from the resolver so no private type import is needed. */
+type PmAgent = NonNullable<ReturnType<typeof resolvePmAgent>>;
 import { loadEngineeringReports } from "./engineering-reports.js";
 import {
   buildTaskSummaryPrompt,
@@ -52,7 +54,7 @@ export interface TaskSummaryResult {
 
 /** Injectable seams so tests never spawn a real agent or commit. */
 export interface TaskSummaryDeps {
-  resolvePm?: (config: RepoOSConfig) => Agent | null;
+  resolvePm?: (config: RepoOSConfig) => PmAgent | null;
   runPrompt?: typeof runPrompt;
   commit?: (root: string, absPaths: string[], message: string) => boolean;
 }
