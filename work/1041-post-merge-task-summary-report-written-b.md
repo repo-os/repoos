@@ -1,15 +1,11 @@
 ---
-last_close_out_gate_ms: 582589
-last_close_out_gate_at: "2026-11-06T23:43:25.671Z"
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — status-write failures can leave a retry unstarted while presenting stale or misleading status.
+status: done
 priority: p2
 area: [core, web]
+merged_commit: 706c7bbcbbf4df9f74cf7e6f403db42273e580d4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
@@ -18,6 +14,8 @@ model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
 updated_at: "2026-11-06T23:43:25Z"
+last_close_out_gate_ms: 582589
+last_close_out_gate_at: "2026-11-06T23:43:25.671Z"
 review_passes: 13
 last_check_failure: "repoos check at 2026-11-06T21:28:11.977Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
