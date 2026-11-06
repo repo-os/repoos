@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T04:58:15Z"
+updated_at: "2026-11-06T05:00:16Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-06T04:42:19.073Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agent hover popover rows open the editor (target \"default\"): hover button.tc-agent-btn: hover: Timeout 5000ms exceeded. on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep); [missing-target] Agent hover popover rows open the editor (target \"default\"): highlight [data-test-id=\"task-agent-preview\"] tbody tr matched nothing on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep)"
 handoff_signal_retry_count: 1
@@ -82,10 +82,10 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 "highlight": "[data-test-id=\"task-agent-preview\"] tbody tr",
 "steps": [
 {
-  "hover": "[data-task-id=\"9999\"] .tc-agent-btn"
+"hover": "[data-task-id=\"9999\"] .tc-agent-btn"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "state": "card:humanStep"
@@ -154,3 +154,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T04:57:20Z · body
 - 2026-11-06T04:57:20Z · message_queued at 2026-11-06T04:57:20.630Z
 - 2026-11-06T04:58:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T05:00:16Z · body
