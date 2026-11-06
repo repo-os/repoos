@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T02:40:06Z"
+updated_at: "2026-11-06T02:40:07Z"
 handoff_signal_retry_count: 1
 ---
 ## Items
@@ -112,3 +112,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T02:33:05Z · message_queued at 2026-11-06T02:33:05.484Z
 - 2026-11-06T02:35:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T02:40:06Z · message_delivered: 2 message(s)
+- 2026-11-06T02:40:07Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
