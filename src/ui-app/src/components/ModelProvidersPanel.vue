@@ -254,10 +254,9 @@ onMounted(() => {
     </div>
     <div class="agent-desc">
       Spend and usage per model provider, without leaving RepoOS. OpenRouter, opencode Go and
-      DeepInfra report live numbers behind an API key, and Muse through your `muse login`
-      session — keys come from RepoOS's `.env`, or from a coding agent's own login (pi, opencode)
-      when one is already connected; the other rows link to dashboards until live data is
-      connected here.
+      DeepInfra report live numbers behind an API key, and Muse through your `muse login` session —
+      keys come from RepoOS's `.env`, or from a coding agent's own login (pi, opencode) when one is
+      already connected; the other rows link to dashboards until live data is connected here.
     </div>
 
     <nav v-if="rows.length > 1" class="mp-provider-nav" aria-label="Model providers">
@@ -300,8 +299,8 @@ onMounted(() => {
       <!-- Live rows: inline key form when no key is saved (or when replacing) -->
       <template v-if="isLive(row)">
         <div v-if="row.usesCliLogin" class="mp-cli-hint">
-          Reads the allowance from your <code>muse login</code> session on this machine — no API
-          key to paste.
+          Reads the allowance from your <code>muse login</code> session on this machine — no API key
+          to paste.
         </div>
         <div v-if="!row.usesCliLogin && (!row.hasKey || formOpen[row.id])" class="mp-key-form">
           <input
@@ -398,10 +397,7 @@ onMounted(() => {
 
           <!-- Rolling allowance windows (opencode Go, Muse) -->
           <div v-else-if="windowedUsage(rowState(row.id).usage)" class="mp-data">
-            <div
-              v-if="windowedUsage(rowState(row.id).usage)!.tier"
-              class="mp-stat mp-stat-hero"
-            >
+            <div v-if="windowedUsage(rowState(row.id).usage)!.tier" class="mp-stat mp-stat-hero">
               <span class="mp-stat-label">Plan</span>
               <span class="mp-stat-value mp-tier-value">{{
                 windowedUsage(rowState(row.id).usage)!.tier
@@ -441,7 +437,10 @@ onMounted(() => {
                 </div>
               </div>
             </template>
-            <div v-else-if="windowedUsage(rowState(row.id).usage)!.unrecognized" class="mp-part-error">
+            <div
+              v-else-if="windowedUsage(rowState(row.id).usage)!.unrecognized"
+              class="mp-part-error"
+            >
               Live usage responded, but in a format this build doesn't recognize — check the
               <a :href="row.dashboardUrl" target="_blank" rel="noopener noreferrer">console</a>.
             </div>
