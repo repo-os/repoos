@@ -3,16 +3,13 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: received SIGTERM; flushed session logs
 priority: p2
 area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T05:36:45Z"
+updated_at: "2026-11-06T05:44:27Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T05:36:45.463Z\",\"kind\":\"dev-error\"}]"
@@ -68,3 +65,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T05:36:44Z · note: stopped orphaned engineer pid 30533
 - 2026-11-06T05:36:45Z · agent exited with an error (muse) · received SIGTERM; flushed session logs
 - 2026-11-06T05:36:45Z · engineer crash recovery: resuming muse + muse-spark-1.3 (1/3 crashes in 30m) · received SIGTERM; flushed session logs
+- 2026-11-06T05:44:27Z · needs_input
