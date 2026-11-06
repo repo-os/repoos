@@ -106,6 +106,7 @@ describe("muse invocation shapes", () => {
     expect(followUp.args).toEqual([
       "exec",
       "--json",
+      "--yolo",
       "--trust-workspace",
       "--approval-mode",
       "never",

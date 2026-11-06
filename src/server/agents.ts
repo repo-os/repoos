@@ -2855,6 +2855,12 @@ export function parseAntigravityEvent(
  * until the terminal record, so a signal split across fragments is recognized
  * whole instead of reaching the transcript as raw fragments.
  */
+function museJoinText(entries: readonly AgentOutputEntry[]): string {
+  return entries
+    .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
+    .join("");
+}
+
 function museTextHoldsSignal(text: string): boolean {
   for (const line of text.split("\n")) {
     const trimmed = line.trimStart();
@@ -3525,8 +3531,10 @@ function cursorArgs(options: { write: boolean; cwd?: string }): string[] {
  * - `--trust-workspace`: REQUIRED — without it the worktree loads as
  *   untrusted (AGENTS.md/rules/skills ignored, delegation disabled) and the
  *   turn runs degraded (confirmed live, 2026-11-05);
- * - `--approval-mode never`: unattended turns with the sandbox LEFT ON
- *   (deliberately never `--yolo`, which also disables the sandbox);
+ * - `--approval-mode never`: unattended turns. One-shots keep the sandbox ON;
+ *   engineer turns (`unsandboxed`) also pass `--yolo` (sandbox off, the muse
+ *   analogue of codex's --dangerously-bypass-approvals-and-sandbox) because
+ *   the sandbox blocks `repoos update --shots` writing the main board (#1040);
  * - `--max-model-steps`: per-turn step cap (MUSE_MAX_MODEL_STEPS);
  * - `--reasoning-effort`: pinned to MUSE_REASONING_EFFORT so a turn never
  *   depends on the user's saved per-model effort (often `low`) or muse's
@@ -3540,6 +3548,7 @@ function museExecArgs(
   agent: Agent,
   prompt: string,
   sessionId?: string,
+  unsandboxed = false,
 ): { cmd: string; args: string[] } {
   const { cli, model } = agent;
   return {
@@ -3547,6 +3556,7 @@ function museExecArgs(
     args: [
       "exec",
       "--json",
+      ...(unsandboxed ? ["--yolo"] : []),
       "--trust-workspace",
       "--approval-mode",
       "never",
@@ -3585,8 +3595,8 @@ export const ENGINEER_REQUIRED_COMMANDS = ["repoos", "bun", "bunx", "git"] as co
  *   permission request by design (`InitCoderAgentNonInteractive` calls
  *   `Permissions.AutoApproveSession`); `--yolo` is a TTY-only root flag that
  *   `crush run` rejects. So the launch carries no bypass flag and needs none.
- * - muse: `--approval-mode never` (explicit per-turn approval mode, sandbox
- *   stays on — deliberately NOT `--yolo`, which also disables the sandbox).
+ * - muse: `--yolo` (sandbox off, like codex's bypass; #1040) plus an explicit
+ *   `--approval-mode never` per turn. One-shots keep the sandbox on.
  */
 export function engineerPermissionGaps(cli: string, args: readonly string[]): string[] {
   const needFlag = (flag: string): string[] =>
@@ -3881,7 +3891,7 @@ function cliCommand(
   if (cli === "muse") {
     // Headless `exec --json`; the shared flag set carries trust, approval
     // mode, step cap, model, and the client-chosen UUID session id.
-    return museExecArgs(agent, mission, opts.sessionId);
+    return museExecArgs(agent, mission, opts.sessionId, true);
   }
   // default: opencode's headless `run` mode. `--format json` streams one JSON
   // event per line (step_start / text / tool_use / step_finish / error) that
@@ -4053,7 +4063,7 @@ function resumeCommand(
     // launch, with the recorded UUID conversation id. No `--continue`
     // equivalent is used (it could attach another task's session); without a
     // valid id the turn starts a fresh conversation instead of guessing.
-    return museExecArgs(agent, text, sessionId);
+    return museExecArgs(agent, text, sessionId, true);
   }
   return {
     cmd: "opencode",
@@ -8754,6 +8764,21 @@ export class AgentRunner {
    * backfills the answer (nothing streamed) or is swallowed as a duplicate of
    * the streamed fragments. Usage folds from the raw line in `lineTouched`.
    */
+  /** Record coalesced pending muse text (signals still resolved) before a non-text event. */
+  private flushMusePendingText(taskId: string, session: Session, raw: string): void {
+    const pending = session.musePendingText;
+    if (!pending?.length) return;
+    session.musePendingText = undefined;
+    const text = museJoinText(pending).trim();
+    if (!text) return;
+    this.recordEntry(
+      taskId,
+      session,
+      "out",
+      this.applySignals(taskId, raw, { type: "text", text }, session),
+    );
+  }
+
   private appendMuseLine(taskId: string, session: Session, raw: string): void {
     const parsed = parseMuseEvent(raw);
     if (!parsed) {
@@ -8766,6 +8791,7 @@ export class AgentRunner {
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.model) session.model = parsed.model;
     if (parsed.toolEvent) {
+      this.flushMusePendingText(taskId, session, raw);
       const event = parsed.toolEvent;
       const tools = (session.museTools ??= {});
       const current = tools[event.id];
@@ -8802,19 +8828,26 @@ export class AgentRunner {
         session.museStreamedText = true;
         const pending = (session.musePendingText ??= []);
         pending.push(parsed.entry);
-        const combined = pending
-          .map((entry) => ("type" in entry && entry.type === "text" ? entry.text : ""))
-          .join("");
+        const combined = museJoinText(pending);
+        // Fragments are word-sized: recording each as its own entry rendered
+        // one paragraph per fragment (#1040 chat). Coalesce and flush only up
+        // to the last paragraph break; the tail stays pending until more text,
+        // a tool call or the terminal record arrives.
         if (!museTextHoldsSignal(combined)) {
-          for (const entry of pending) {
-            this.recordEntry(
-              taskId,
-              session,
-              "out",
-              this.applySignals(taskId, raw, entry, session),
-            );
+          const cut = combined.lastIndexOf("\n\n");
+          if (cut >= 0) {
+            const head = combined.slice(0, cut).trim();
+            const rest = combined.slice(cut + 2);
+            if (head) {
+              this.recordEntry(
+                taskId,
+                session,
+                "out",
+                this.applySignals(taskId, raw, { type: "text", text: head }, session),
+              );
+            }
+            session.musePendingText = rest ? [{ type: "text", text: rest }] : undefined;
           }
-          session.musePendingText = undefined;
         }
       }
     } else if (parsed.terminal) {
@@ -8840,7 +8873,7 @@ export class AgentRunner {
             this.applySignals(taskId, raw, parsed.entry, session),
           );
         } else if (pending.length) {
-          for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+          this.recordEntry(taskId, session, "out", { type: "text", text: museJoinText(pending) });
         }
       } else if (pending.length || !session.museStreamedText) {
         // A signal split across streamed fragments may be broken in the
@@ -8858,7 +8891,8 @@ export class AgentRunner {
           if (prose) this.recordEntry(taskId, session, "out", { type: "text", text: prose });
           this.recordEntry(taskId, session, "out", surfaced);
         } else if (pending.length) {
-          for (const entry of pending) this.recordEntry(taskId, session, "out", entry);
+          const tail = museJoinText(pending).trim();
+          if (tail) this.recordEntry(taskId, session, "out", { type: "text", text: tail });
         } else if (entryIsText) {
           // Backfill the authoritative text when no fragment streamed.
           this.recordEntry(
@@ -8873,6 +8907,7 @@ export class AgentRunner {
       // signal check already ran on every fragment, so there is nothing to do.
       session.museStreamedText = false;
     } else if (parsed.entry) {
+      this.flushMusePendingText(taskId, session, raw);
       this.recordEntry(
         taskId,
         session,
