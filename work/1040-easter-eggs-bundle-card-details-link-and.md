@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 697214
-last_close_out_gate_at: "2026-11-06T16:08:57.427Z"
 id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 302bb212fc3d9e1135060024714b8dbb5d2946a1
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
@@ -15,6 +14,8 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-05T11:41:20Z"
 updated_at: "2026-11-06T16:08:57Z"
+last_close_out_gate_ms: 697214
+last_close_out_gate_at: "2026-11-06T16:08:57.427Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-06T04:42:19.073Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agent hover popover rows open the editor (target \"default\"): hover button.tc-agent-btn: hover: Timeout 5000ms exceeded. on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep); [missing-target] Agent hover popover rows open the editor (target \"default\"): highlight [data-test-id=\"task-agent-preview\"] tbody tr matched nothing on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep)"

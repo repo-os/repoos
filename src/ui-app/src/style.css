@@ -2590,6 +2590,18 @@
 .tc-agent-preview tbody tr:last-child td {
   border-bottom: 0;
 }
+/* Preview rows open the agent editor on click (#1040 E2): pointer cursor plus
+   hover/focus states so they read as clickable. */
+.tc-agent-preview tbody tr.tc-agent-preview-row {
+  cursor: pointer;
+}
+.tc-agent-preview tbody tr.tc-agent-preview-row:hover {
+  background: var(--violet-dim);
+}
+.tc-agent-preview tbody tr.tc-agent-preview-row:focus-visible {
+  outline: 2px solid var(--violet-border-tint);
+  outline-offset: -2px;
+}
 .tc-agent-btn {
   display: inline-flex;
   align-items: center;
@@ -2943,6 +2955,13 @@
   outline: 2px solid var(--ring);
   outline-offset: 2px;
   border-radius: 4px;
+}
+/* The blurb alone is the affordance (#1040 E1): it reads as clickable with a
+   pointer cursor (above), a hover underline, and the existing focus ring. */
+.tc-needs-detail:hover .tc-needs-detail-text {
+  color: var(--txt);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .tc-needs-detail-text {
   display: block;
