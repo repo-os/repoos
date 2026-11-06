@@ -344,6 +344,22 @@ describe("GET /api/model-providers/:id/usage", () => {
     expect(capture.body.error).toContain("No OpenRouter API key saved yet");
   });
 
+  it("serves Muse usage with no saved key — never the missing-key 400", async () => {
+    const ctx = makeCtx(tmpRoot());
+    const { capture, res } = makeRes();
+    await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "muse" });
+    // A logged-in machine gets live figures; anywhere else gets the 502 with
+    // the login hint. Either way the pasted-key refusal must not fire — it
+    // sits after the Muse branch, which was the #1042 ordering bug.
+    if (capture.statusCode === 200) {
+      expect(capture.body.kind).toBe("muse");
+      expect(Array.isArray(capture.body.windows)).toBe(true);
+    } else {
+      expect(capture.statusCode).toBe(502);
+      expect(capture.body.error).not.toContain("API key saved yet");
+    }
+  });
+
   it("renders GitHub Copilot as a link row with no scope in the payload (#0629)", async () => {
     const root = tmpRoot();
     process.env.REPOOS_GITHUB_COPILOT_TOKEN = "ghp-secret-value";
