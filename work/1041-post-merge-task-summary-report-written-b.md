@@ -12,7 +12,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T17:12:26Z"
+updated_at: "2026-11-06T17:12:27Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-06T16:45:53.531Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
