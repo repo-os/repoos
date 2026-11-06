@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — manual runs can create pre-merge reports, and background commits can race close-out."
@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T09:59:39Z"
+updated_at: "2026-11-06T10:51:39Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-06T09:20:05.482Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -134,3 +134,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T09:50:48Z · note: review pass 5: needs some work
 - 2026-11-06T09:50:49Z · needs_input
 - 2026-11-06T09:59:39Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a40eef487) during finalization (#0734)
+- 2026-11-06T10:51:39Z · status review→active
