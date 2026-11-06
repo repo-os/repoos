@@ -117,7 +117,9 @@ describe("post-merge task summary", () => {
   it("coerces stale pending + existing report to done when report is at least as new as this run", () => {
     const old = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
     const anchor = Date.parse(old);
-    expect(effectiveSummaryJobStatus("pending", old, true, Date.now(), anchor + 1, old)).toBe("done");
+    expect(effectiveSummaryJobStatus("pending", old, true, Date.now(), anchor + 1, old)).toBe(
+      "done",
+    );
     expect(effectiveSummaryJobStatus("pending", old, false)).toBe("pending");
   });
 
@@ -125,9 +127,9 @@ describe("post-merge task summary", () => {
     const statusAt = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
     const anchor = Date.parse(statusAt);
     const reportMtimeMs = anchor - 60_000;
-    expect(effectiveSummaryJobStatus("pending", statusAt, true, Date.now(), reportMtimeMs, statusAt)).toBe(
-      "failed",
-    );
+    expect(
+      effectiveSummaryJobStatus("pending", statusAt, true, Date.now(), reportMtimeMs, statusAt),
+    ).toBe("failed");
   });
 
   it("does not treat headings inside fenced code as real sections", () => {
