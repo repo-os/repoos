@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-06T19:31:39Z"
+review_passes: 8
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -15,12 +17,10 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T19:31:38Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 63a04ffa3ef54b19f5cbbd5d623b6aca0bd26606
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T19:02:17.576Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5f1d413c to 63f4e720) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 7
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -251,3 +251,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:28:12Z · status active→review
 - 2026-11-06T19:31:38Z · note: review pass 10: needs some work
 - 2026-11-06T19:31:38Z · needs_input
+
