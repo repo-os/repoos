@@ -2,7 +2,9 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -12,7 +14,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T22:32:11Z"
+updated_at: "2026-11-06T22:32:12Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T21:28:11.977Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 11
@@ -321,3 +323,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T22:16:58Z · body
 - 2026-11-06T22:17:47Z · message_queued at 2026-11-06T22:17:47.147Z
 - 2026-11-06T22:32:11Z · engineer stopped by request
+- 2026-11-06T22:32:12Z · status active→review, needs_input
