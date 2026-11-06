@@ -137,3 +137,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T10:51:39Z · status review→active
 - 2026-11-06T10:51:42Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T10:51:47Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-06T10:51:47Z · message_delivered: 1 message(s)
