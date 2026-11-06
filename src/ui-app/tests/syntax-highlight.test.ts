@@ -6,15 +6,33 @@
  * degrades to escaped plain text rather than throwing, and tokenized output
  * escapes untrusted repository text so `DiffView`'s `v-html` can never turn a
  * file's contents into markup.
+ *
+ * #1046 adds per–theme-family Shiki passes, cache, and metrics — also covered here.
  */
-import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   MAX_HIGHLIGHT_TOTAL_LINES,
   detectLanguage,
+  diffHighlightFamilyForUiTheme,
   escapeHtml,
   highlightPair,
+  highlightPairMetrics,
   renderTokenLines,
+  resetHighlightPairCacheForTests,
+  resetHighlightPairMetricsForTests,
 } from "../src/lib/syntax-highlight";
+
+beforeEach(() => {
+  resetHighlightPairCacheForTests();
+  resetHighlightPairMetricsForTests();
+});
+
+afterEach(() => {
+  resetHighlightPairCacheForTests();
+  resetHighlightPairMetricsForTests();
+});
 
 /** Decode the token HTML back to its text and assert nothing was added/lost. */
 function textOf(html: string): string {
@@ -89,6 +107,17 @@ describe("escapeHtml", () => {
   });
 });
 
+describe("diffHighlightFamilyForUiTheme", () => {
+  it("maps catppuccin UI theme to the Catppuccin Shiki pair", () => {
+    expect(diffHighlightFamilyForUiTheme("catppuccin")).toBe("catppuccin");
+  });
+
+  it("maps every other design theme to the GitHub Shiki pair", () => {
+    expect(diffHighlightFamilyForUiTheme("classic")).toBe("github");
+    expect(diffHighlightFamilyForUiTheme("clear")).toBe("github");
+  });
+});
+
 describe("renderTokenLines", () => {
   const tokens = [
     [
@@ -116,7 +145,7 @@ describe("renderTokenLines", () => {
     expect(line).toContain("font-style:italic");
   });
 
-  it("also carries the Catppuccin pair, so that theme needs no re-tokenize (#0516)", () => {
+  it("also carries the Catppuccin pair when those variants are present (#0516)", () => {
     const catppuccin = [
       [
         { content: "k", variants: { light: { color: "#1" }, dark: { color: "#2" } } },
@@ -164,6 +193,7 @@ describe("highlightPair", () => {
       filename: "notes.txt",
       before: ["<b>before</b>"],
       after: ["<b>after</b>"],
+      themeFamily: "github",
     });
     expect(result.language).toBeNull();
     expect(result.highlighted).toBe(false);
@@ -175,7 +205,12 @@ describe("highlightPair", () => {
   it("keeps line alignment and highlights both panes", async () => {
     const before = ["const a = 1;", "const b = 2;"];
     const after = ["const a = 1;", "const b = 3;", "const c = 4;"];
-    const result = await highlightPair({ filename: "src/app.ts", before, after });
+    const result = await highlightPair({
+      filename: "src/app.ts",
+      before,
+      after,
+      themeFamily: "github",
+    });
 
     expect(result.language).toBe("typescript");
     expect(result.highlighted).toBe(true);
@@ -194,6 +229,7 @@ describe("highlightPair", () => {
       filename: "src/app.ts",
       before: [`const x = "${payload}";`],
       after: [`const x = "${payload}";`],
+      themeFamily: "github",
     });
     expect(result.highlighted).toBe(true);
     const html = result.after[0]!;
@@ -209,7 +245,12 @@ describe("highlightPair", () => {
       { length: MAX_HIGHLIGHT_TOTAL_LINES + 1 },
       (_, i) => `const x${i} = 1;`,
     );
-    const result = await highlightPair({ filename: "src/huge.ts", before, after });
+    const result = await highlightPair({
+      filename: "src/huge.ts",
+      before,
+      after,
+      themeFamily: "github",
+    });
 
     expect(result.highlighted).toBe(false);
     expect(result.language).toBe("typescript");
@@ -224,6 +265,7 @@ describe("highlightPair", () => {
       filename: "src/new.ts",
       before: [],
       after: ["export {};"],
+      themeFamily: "github",
     });
     expect(added.before).toEqual([]);
     expect(added.after).toHaveLength(1);
@@ -233,8 +275,69 @@ describe("highlightPair", () => {
       filename: "src/gone.ts",
       before: ["export {};"],
       after: [],
+      themeFamily: "github",
     });
     expect(deleted.before).toHaveLength(1);
     expect(deleted.after).toEqual([]);
+  });
+
+  it("tokenizes the Catppuccin Shiki pair with catppuccin-* CSS variables, not GitHub", async () => {
+    const line = 'const x: string = "y";';
+    const result = await highlightPair({
+      filename: "src/x.ts",
+      before: [line],
+      after: [line],
+      themeFamily: "catppuccin",
+    });
+    expect(result.highlighted).toBe(true);
+    const html = result.after[0]!;
+    expect(html).toContain("--shiki-catppuccin-light:");
+    expect(html).toContain("--shiki-catppuccin-dark:");
+    expect(html).not.toContain("--shiki-light:");
+  });
+
+  it("re-highlights when the theme family changes and reuses the cache when switching back", async () => {
+    const inputBase = {
+      filename: "src/cache.ts",
+      before: ["export const k = 1;"],
+      after: ["export const k = 2;"],
+    };
+    await highlightPair({ ...inputBase, themeFamily: "github" });
+    expect(highlightPairMetrics.shikiTokenizeRuns).toBe(2);
+    expect(highlightPairMetrics.cacheHits).toBe(0);
+
+    await highlightPair({ ...inputBase, themeFamily: "catppuccin" });
+    expect(highlightPairMetrics.shikiTokenizeRuns).toBe(4);
+    expect(highlightPairMetrics.cacheHits).toBe(0);
+
+    await highlightPair({ ...inputBase, themeFamily: "github" });
+    expect(highlightPairMetrics.shikiTokenizeRuns).toBe(4);
+    expect(highlightPairMetrics.cacheHits).toBe(1);
+  });
+
+  /**
+   * Timing sample for PR notes (#1046): `src/core/db.ts`, both panes, GitHub pair,
+   * warm grammar. Re-run after Shiki upgrades; values vary by machine.
+   */
+  it("benchmark: highlightPair on a large TypeScript file (db.ts)", async () => {
+    const path = resolve(__dirname, "../../../src/core/db.ts");
+    const raw = readFileSync(path, "utf8");
+    const lines = raw.split(/\r?\n/);
+    if (lines.at(-1) === "") lines.pop();
+    expect(lines.length).toBeGreaterThan(500);
+    const input = {
+      filename: "db.ts",
+      before: lines,
+      after: lines,
+      themeFamily: "github" as const,
+    };
+    const t0 = performance.now();
+    await highlightPair(input);
+    const ms = Math.round(performance.now() - t0);
+    console.info(
+      `[syntax-highlight bench] db.ts ×2 panes, GitHub pair: ${ms}ms (${lines.length} lines/side, ${highlightPairMetrics.shikiTokenizeRuns} Shiki tokenize runs)`,
+    );
+    expect(highlightPairMetrics.shikiTokenizeRuns).toBe(2);
+    expect(ms).toBeLessThan(300_000);
   });
 });

@@ -2,13 +2,18 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useRepoStore } from "../stores/repo";
+import { useConfigStore } from "../stores/config";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-vue-next";
 import { api } from "../api";
-import { escapeHtml, highlightPair } from "../lib/syntax-highlight";
+import { diffHighlightFamilyForUiTheme, escapeHtml, highlightPair } from "../lib/syntax-highlight";
 
 const route = useRoute();
 const router = useRouter();
 const repo = useRepoStore();
+const config = useConfigStore();
+
+/** Shiki pair for diff tokens — GitHub palette for most design themes, Catppuccin when that UI theme is active (#1046). */
+const diffHighlightFamily = computed(() => diffHighlightFamilyForUiTheme(config.uiTheme));
 
 const taskId = computed(() => (route.params.taskId as string) || "");
 const commitSha = computed(() => (route.params.sha as string) || "");
@@ -420,8 +425,8 @@ const highlightNotice = ref<string | null>(null);
 let highlightSeq = 0;
 
 watch(
-  () => [currentFile.value?.filename, fileContents.value] as const,
-  async ([filename, contents]) => {
+  () => [currentFile.value?.filename, fileContents.value, diffHighlightFamily.value] as const,
+  async ([filename, contents, themeFamily]) => {
     const seq = ++highlightSeq;
     highlightBefore.value = null;
     highlightAfter.value = null;
@@ -432,6 +437,7 @@ watch(
         filename,
         before: linesOf(contents.before),
         after: linesOf(contents.after),
+        themeFamily,
       });
       if (seq !== highlightSeq) return;
       highlightBefore.value = result.before;

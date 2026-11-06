@@ -15748,14 +15748,14 @@
 /* Syntax highlighting in the full-file before/after diff view (#0449). Shiki's
  * dual-theme output carries both appearances as custom properties on each token
  * span (which is rendered via v-html, so it carries no scoped attribute); these
- * rules resolve the active one, so switching theme never retokenizes.
+ * rules resolve the active one, so light/dark never re-tokenizes.
  *
- * Catppuccin (#0516) carries a second pair — shiki's own catppuccin-latte /
- * catppuccin-mocha — so code blocks come from the same palette as the chrome
- * around them instead of the GitHub defaults. The highlighter emits all four in
- * the same single pass, so this is still just a custom-property swap; a token
- * that a Catppuccin theme leaves uncoloured falls back to --txt rather than
- * inheriting the GitHub colour for that appearance. */
+ * Catppuccin (#0516) uses shiki's catppuccin-latte / catppuccin-mocha when that
+ * design theme is active (#1046); other `data-ui-theme` values use GitHub
+ * light/dark. Only the active pair is tokenized—switching design family
+ * re-highlights—while `[data-theme]` and `[data-ui-theme="catppuccin"]` still
+ * pick colours via custom properties only. A token the Catppuccin themes leave
+ * uncoloured falls back to --txt rather than inheriting GitHub colours. */
 .diff-tok {
   color: var(--shiki-dark);
 }
