@@ -13,7 +13,7 @@ cli_override: muse
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T16:10:13Z"
+updated_at: "2026-11-06T16:45:48Z"
 last_close_out_gate_ms: 697214
 last_close_out_gate_at: "2026-11-06T16:08:57.427Z"
 review_passes: 3
@@ -197,3 +197,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T15:55:42Z · note: review pass 4: good to go
 - 2026-11-06T16:08:57Z · close-out gate completed in 697s
 - 2026-11-06T16:10:13Z · status done→done, release:success
+- 2026-11-06T16:45:48Z · message_dropped: 1 queued message(s) discarded — task is done
