@@ -12,7 +12,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T19:07:40Z"
+updated_at: "2026-11-06T19:07:44Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T19:02:17.576Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5f1d413c to 63f4e720) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 7
@@ -238,3 +238,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:02:34Z · message_queued at 2026-11-06T19:02:34.007Z
 - 2026-11-06T19:02:34Z · message_queued at 2026-11-06T19:02:34.374Z
 - 2026-11-06T19:07:40Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-06T19:07:44Z · message_delivered: 2 message(s)
