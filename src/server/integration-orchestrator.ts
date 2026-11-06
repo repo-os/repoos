@@ -108,6 +108,7 @@ import {
   recordCloseOutGateTimingStats,
 } from "../core/close-out-timing.js";
 import { recordTaskCloseOutGateDuration } from "./close-out-repair.js";
+import { queueTaskSummary, readTaskFromDisk } from "./task-summary.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
@@ -4333,6 +4334,11 @@ export class CloseOutOrchestrator {
     // task sat published-but-not-released until a manual retry). Falling back
     // to a direct on-disk lookup by id makes this step independent of index
     // freshness — the file is exactly what markTaskReleased writes to anyway.
+    // Only queue the post-merge summary after the release stamp succeeds: an
+    // unreleased task has incomplete facts, and the generator refuses it
+    // anyway. A failed stamp here never fails cleanup (the merge already
+    // succeeded) — it just skips the queue with a retry pointer.
+    let releasedOk = false;
     try {
       const absPath =
         this.getTask?.(job.taskId)?.absPath ??
@@ -4343,18 +4349,24 @@ export class CloseOutOrchestrator {
         // (#0512). The close-out itself succeeded, so this is not a failure to
         // retry — it is a decision for a human, and the flag is how the board
         // surfaces it. Written after `markTaskReleased` so the status write
-        // cannot clear it.
+        // cannot clear it. Best-effort: do not fail the release marking if
+        // patchTaskFile throws.
         if (keptDirtyFiles.length > 0) {
-          const shown = keptDirtyFiles.slice(0, 8);
-          patchTaskFile(this.config, absPath, {
-            needsInput: true,
-            needsInputReason: "closeout-worktree-dirty",
-            needsInputDetail:
-              `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
-              `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
-            note: "close-out kept a worktree with uncommitted changes",
-          });
+          try {
+            const shown = keptDirtyFiles.slice(0, 8);
+            patchTaskFile(this.config, absPath, {
+              needsInput: true,
+              needsInputReason: "closeout-worktree-dirty",
+              needsInputDetail:
+                `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
+                `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
+              note: "close-out kept a worktree with uncommitted changes",
+            });
+          } catch (err) {
+            console.error(`Could not patch task ${job.taskId} with dirty-worktree flag:`, err);
+          }
         }
+        releasedOk = true;
       } else {
         console.error(
           `Could not locate task ${job.taskId} on disk to mark it released — publish succeeded but release marking was skipped`,
@@ -4363,6 +4375,29 @@ export class CloseOutOrchestrator {
     } catch (err) {
       console.error(`Failed to mark task ${job.taskId} as done:`, err);
       // Don't fail cleanup - the important part (merge) already succeeded
+    }
+
+    // Post-merge summary (#1041): queue the PM-written summary report. It
+    // runs in the background and can only record a visible failed state —
+    // the landing above already succeeded and must never be disturbed. Falls
+    // back to the task file on disk when the live index misses the task
+    // (same fallback as the release stamp above); linked tasks come from a
+    // best-effort work-dir scan inside queueTaskSummary.
+    try {
+      if (!releasedOk) {
+        console.error(
+          `Post-merge summary skipped for ${job.taskId} — release marking did not succeed; retry with \`repoos summary ${job.taskId}\` after release`,
+        );
+      } else {
+        const summaryTask = this.getTask?.(job.taskId) ?? readTaskFromDisk(this.config, job.taskId);
+        if (summaryTask) queueTaskSummary(this.config, summaryTask, []);
+        else console.error(`Could not locate task ${job.taskId} for post-merge summary — skipping`);
+      }
+    } catch (err) {
+      console.error(`Could not queue post-merge summary for ${job.taskId}:`, err);
+      this.logger?.integration(job.taskId, "warn", "post-merge summary not queued", {
+        reason: (err as Error).message,
+      });
     }
 
     // Opportunistic GC: every close-out is a natural moment to reclaim

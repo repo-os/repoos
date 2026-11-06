@@ -430,6 +430,8 @@ import {
   getTaskReviewPass,
   getTaskEngineeringReports,
   getTaskEngineeringReport,
+  getTaskSummary,
+  postTaskSummary,
   dismissNeedsInput,
   clearKeptWorktree,
   reviewAgain,
@@ -4010,6 +4012,8 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     getTaskEngineeringReport,
   );
   router.register("GET", /^\/api\/tasks\/([^/]+)\/review\/passes\/([^/]+)$/, getTaskReviewPass);
+  router.register("GET", /^\/api\/tasks\/([^/]+)\/summary$/, getTaskSummary);
+  router.register("POST", /^\/api\/tasks\/([^/]+)\/summary$/, postTaskSummary);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/, dismissNeedsInput);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/clear-worktree$/, clearKeptWorktree);
   router.register("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/, reviewAgain);
