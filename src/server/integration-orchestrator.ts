@@ -4373,13 +4373,9 @@ export class CloseOutOrchestrator {
     // (same fallback as the release stamp above); linked tasks come from a
     // best-effort work-dir scan inside queueTaskSummary.
     try {
-      const summaryTask =
-        this.getTask?.(job.taskId) ?? readTaskFromDisk(this.config, job.taskId);
+      const summaryTask = this.getTask?.(job.taskId) ?? readTaskFromDisk(this.config, job.taskId);
       if (summaryTask) queueTaskSummary(this.config, summaryTask, []);
-      else
-        console.error(
-          `Could not locate task ${job.taskId} for post-merge summary — skipping`,
-        );
+      else console.error(`Could not locate task ${job.taskId} for post-merge summary — skipping`);
     } catch (err) {
       console.error(`Could not queue post-merge summary for ${job.taskId}:`, err);
       this.logger?.integration(job.taskId, "warn", "post-merge summary not queued", {
