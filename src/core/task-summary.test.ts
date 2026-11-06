@@ -4,9 +4,11 @@
 import { describe, expect, it } from "vitest";
 import {
   GENERATED_CHANGES_MARKER,
+  SUMMARY_PENDING_STALE_MS,
   TASK_SUMMARY_MAX_WORDS,
   buildTaskSummaryPrompt,
   countSummaryNarrativeWords,
+  effectiveSummaryJobStatus,
   formatTaskSummaryFileChanges,
   stripTaskSummaryMarkerLines,
   summaryReportRelPath,
@@ -77,6 +79,45 @@ describe("post-merge task summary", () => {
       "x",
     ].join("\n");
     expect(validateTaskSummary(md).length).toBeGreaterThan(0);
+  });
+
+  it("ignores HTML comments for structure (including multiline)", () => {
+    const md = [
+      "<!--",
+      "## Outcome",
+      "fake",
+      "-->",
+      "## TL;DR",
+      "",
+      "x",
+      "",
+      "## Outcome",
+      "",
+      "x",
+      "",
+      "## Process stats",
+      "",
+      "x",
+      "",
+      "## What went wrong",
+      "",
+      "x",
+      "",
+      "## Learnings",
+      "",
+      "x",
+      "",
+      "## Follow-ups",
+      "",
+      "x",
+    ].join("\n");
+    expect(validateTaskSummary(md)).toEqual([]);
+  });
+
+  it("coerces stale pending + existing report to done for API consumers", () => {
+    const old = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
+    expect(effectiveSummaryJobStatus("pending", old, true)).toBe("done");
+    expect(effectiveSummaryJobStatus("pending", old, false)).toBe("pending");
   });
 
   it("does not treat headings inside fenced code as real sections", () => {

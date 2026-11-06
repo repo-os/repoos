@@ -24,7 +24,44 @@ export function summaryReportRelPath(config: { workDir?: string }, taskId: strin
   return `${reportsTaskDirRelPath(config, taskId)}/${TASK_SUMMARY_FILENAME}`;
 }
 
+/**
+ * If `pending` persists past this age while `summary.md` already exists, treat the
+ * job as finished for API/CLI (lost `done` status write). Slightly above the
+ * drawer's poll window (~10 min) so the UI stops "writing" without handoff races.
+ */
+/** Align with TaskDrawer `TASK_SUMMARY_POLL_MS × TASK_SUMMARY_POLL_MAX` (~10 min). */
+export const SUMMARY_PENDING_STALE_MS = 10 * 60 * 1000;
+
 const WORD_RE = /\b[\p{L}\p{N}][\p{L}\p{N}'’-]*\b/gu;
+
+/** Remove `<!-- … -->` blocks (multiline OK) before structure checks (#1041). */
+export function stripHtmlBlockComments(markdown: string): string {
+  return markdown.replace(/<!--[\s\S]*?-->/g, "");
+}
+
+export function isStaleSummaryPending(
+  statusAt: string | null,
+  nowMs: number = Date.now(),
+): boolean {
+  if (!statusAt?.trim()) return false;
+  const t = Date.parse(statusAt);
+  if (Number.isNaN(t)) return false;
+  return nowMs - t >= SUMMARY_PENDING_STALE_MS;
+}
+
+/**
+ * Visible job status for API/CLI/drawer: a committed report plus stale `pending`
+ * resolves as `done` so polling does not hang forever.
+ */
+export function effectiveSummaryJobStatus(
+  stored: "idle" | "pending" | "done" | "failed",
+  statusAt: string,
+  reportExists: boolean,
+  nowMs: number = Date.now(),
+): "idle" | "pending" | "done" | "failed" {
+  if (stored === "pending" && reportExists && isStaleSummaryPending(statusAt, nowMs)) return "done";
+  return stored;
+}
 
 /**
  * Marker the server appends with the deterministic file-changes listing.
@@ -73,7 +110,7 @@ export function countSummaryNarrativeWords(markdown: string): number {
  * code blocks are left in (they are not markdown headings).
  */
 function visibleSummaryLines(markdown: string): string[] {
-  const lines = markdown.split("\n");
+  const lines = stripHtmlBlockComments(markdown).split("\n");
   const out: string[] = [];
   let fence: string | null = null;
   for (const line of lines) {
@@ -96,8 +133,9 @@ const HEADING_LINE = /^##\s+(.+?)\s*$/;
 
 export function validateTaskSummary(markdown: string): string[] {
   const errors: string[] = [];
-  if (!markdown.trim()) return ["Task summary is empty."];
-  const firstNonBlankRaw = markdown.split("\n").find((l) => l.trim().length > 0);
+  const forStructure = stripHtmlBlockComments(markdown);
+  if (!forStructure.trim()) return ["Task summary is empty."];
+  const firstNonBlankRaw = forStructure.split("\n").find((l) => l.trim().length > 0);
   const visible = visibleSummaryLines(markdown);
   const firstNonBlankVisible = visible.find((l) => l.trim().length > 0);
   if (firstNonBlankRaw?.trim() !== "## TL;DR" || firstNonBlankVisible?.trim() !== "## TL;DR")
@@ -185,6 +223,9 @@ export interface TaskSummaryLinkedTask {
   title: string;
   status: string;
   relation: "depends-on" | "dependent";
+  createdAt: string | null;
+  /** Task body excerpt (no Activity block) for follow-up context. */
+  bodyExcerpt: string;
 }
 
 /** Everything the PM may draw on. Counts and dates come from here. */
@@ -283,9 +324,11 @@ export function renderTaskSummaryFacts(facts: TaskSummaryFacts): string {
   lines.push("## Linked tasks", "");
   lines.push(
     ...(facts.linked.length
-      ? facts.linked.map(
-          (task) => `- #${task.id} (${task.relation}, ${task.status}): ${task.title}`,
-        )
+      ? facts.linked.map((t) => {
+          const when = fmt(t.createdAt);
+          const excerpt = t.bodyExcerpt.trim() ? t.bodyExcerpt.trim() : "—";
+          return `- #${t.id} (${t.relation}, ${t.status}, created ${when}): ${t.title}\n  Excerpt: ${excerpt}`;
+        })
       : ["None recorded."]),
   );
   return lines.join("\n");

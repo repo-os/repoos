@@ -18,9 +18,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { GENERATED_CHANGES_MARKER } from "../../core/task-summary.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import * as dbModule from "../../core/db.js";
+import { SUMMARY_PENDING_STALE_MS } from "../../core/task-summary.js";
 import {
   acquireSummaryCommitSlot,
   collectTaskSummaryFacts,
+  getTaskSummaryJobPayload,
   loadCandidateTasksFromDisk,
   loadTaskSummaryMarkdown,
   queueTaskSummary,
@@ -418,6 +420,22 @@ describe("post-merge summary commit slot", () => {
   });
 });
 
+describe("getTaskSummaryJobPayload (stale pending recovery)", () => {
+  it("returns done when the report exists but status stayed pending past the window", () => {
+    const { config, task } = setup();
+    writeFileSync(join(root(config), "work", "reports", "0099", "summary.md"), "## TL;DR\n");
+    mkdirSync(join(root(config), ".repoos", "task-summary"), { recursive: true });
+    const staleAt = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
+    writeFileSync(
+      join(root(config), ".repoos", "task-summary", "0099.json"),
+      JSON.stringify({ taskId: "0099", status: "pending", at: staleAt }),
+    );
+    const payload = getTaskSummaryJobPayload(config, task.id);
+    expect(payload.markdown).toContain("## TL;DR");
+    expect(payload.status).toBe("done");
+  });
+});
+
 describe("post-merge summary status persistence", () => {
   it("still succeeds when the done-status write fails — the report is ground truth", async () => {
     const { config, task } = setup();
@@ -523,9 +541,32 @@ describe("post-merge summary disk fallbacks", () => {
     const facts = collectTaskSummaryFacts(config, parent, loadCandidateTasksFromDisk(config).tasks);
     const linked = [...facts.linked].sort((a, b) => a.id.localeCompare(b.id));
     expect(linked).toEqual([
-      { id: "0098", title: "Other", status: "inbox", relation: "depends-on" },
-      { id: "0100", title: "Follow-up", status: "inbox", relation: "dependent" },
+      {
+        id: "0098",
+        title: "Other",
+        status: "inbox",
+        relation: "depends-on",
+        createdAt: null,
+        bodyExcerpt: "Other body.",
+      },
+      {
+        id: "0100",
+        title: "Follow-up",
+        status: "inbox",
+        relation: "dependent",
+        createdAt: null,
+        bodyExcerpt: "Follow-up body.",
+      },
     ]);
+  });
+
+  it("merges queue-time disk load errors with empty index (no second scan)", () => {
+    const { config, task } = setup();
+    const facts = collectTaskSummaryFacts(config, task, [], {
+      tasks: [],
+      loadErrors: ["disk scan note"],
+    });
+    expect(facts.loadErrors).toContain("disk scan note");
   });
 
   it("records session DB unavailability in loadErrors", () => {
