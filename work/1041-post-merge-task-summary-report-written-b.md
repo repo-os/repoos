@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — retry polling exits early; fact, section-validation, and rollback failure paths remain incomplete."
@@ -15,7 +15,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T19:32:21Z"
+updated_at: "2026-11-06T19:32:24Z"
 review_passes: 8
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 63a04ffa3ef54b19f5cbbd5d623b6aca0bd26606
@@ -252,3 +252,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:31:38Z · note: review pass 10: needs some work
 - 2026-11-06T19:31:38Z · needs_input
 - 2026-11-06T19:32:21Z · cli_override, model_override
+- 2026-11-06T19:32:24Z · status review→active
