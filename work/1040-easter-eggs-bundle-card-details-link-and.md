@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T02:33:05Z"
+updated_at: "2026-11-06T02:35:03Z"
 handoff_signal_retry_count: 1
 ---
 ## Items
@@ -79,10 +79,10 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 "highlight": "[data-test-id=\"task-agent-preview\"]",
 "steps": [
 {
-  "hover": ".tc-agent-btn"
+"hover": ".tc-agent-btn"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "card:humanStep"
@@ -110,3 +110,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T02:15:31Z · body
 - 2026-11-06T02:15:33Z · message_queued at 2026-11-06T02:15:33.941Z
 - 2026-11-06T02:33:05Z · message_queued at 2026-11-06T02:33:05.484Z
+- 2026-11-06T02:35:03Z · CTO nudge: held — an undelivered message is already queued
