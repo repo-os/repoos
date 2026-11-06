@@ -3528,9 +3528,14 @@ function cursorArgs(options: { write: boolean; cwd?: string }): string[] {
  * - `--approval-mode never`: unattended turns with the sandbox LEFT ON
  *   (deliberately never `--yolo`, which also disables the sandbox);
  * - `--max-model-steps`: per-turn step cap (MUSE_MAX_MODEL_STEPS);
+ * - `--reasoning-effort`: pinned to MUSE_REASONING_EFFORT so a turn never
+ *   depends on the user's saved per-model effort (often `low`) or muse's
+ *   `high` default;
  * - `--session-id <UUID>`: mints-or-resumes one conversation; muse rejects
  *   non-UUID ids with exit 2, so only a valid UUID is ever passed.
  */
+const MUSE_REASONING_EFFORT = "medium";
+
 function museExecArgs(
   agent: Agent,
   prompt: string,
@@ -3547,6 +3552,8 @@ function museExecArgs(
       "never",
       "--max-model-steps",
       String(MUSE_MAX_MODEL_STEPS),
+      "--reasoning-effort",
+      MUSE_REASONING_EFFORT,
       ...(isValidMuseSessionId(sessionId) ? ["--session-id", sessionId as string] : []),
       ...modelArgs(cli, model),
       prompt,
