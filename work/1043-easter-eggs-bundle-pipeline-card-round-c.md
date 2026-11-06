@@ -2,7 +2,7 @@
 id: 1043
 title: "Easter eggs bundle: pipeline card round chip and sent-back note"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T16:49:08Z"
+updated_at: "2026-11-06T16:49:09Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T16:45:53.983Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-06T16:45:49.390Z\",\"reason\":\"handoff-deferred\"}]"
@@ -73,4 +73,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T16:45:52Z · message_delivered: 1 message(s)
 - 2026-11-06T16:45:53Z · message_queued at 2026-11-06T16:45:53.722Z
 - 2026-11-06T16:47:29Z · body
-- 2026-11-06T16:49:08Z · engineer stopped by request
+- 2026-11-06T16:49:09Z · status active→review
