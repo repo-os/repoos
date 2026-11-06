@@ -4349,17 +4349,22 @@ export class CloseOutOrchestrator {
         // (#0512). The close-out itself succeeded, so this is not a failure to
         // retry — it is a decision for a human, and the flag is how the board
         // surfaces it. Written after `markTaskReleased` so the status write
-        // cannot clear it.
+        // cannot clear it. Best-effort: do not fail the release marking if
+        // patchTaskFile throws.
         if (keptDirtyFiles.length > 0) {
-          const shown = keptDirtyFiles.slice(0, 8);
-          patchTaskFile(this.config, absPath, {
-            needsInput: true,
-            needsInputReason: "closeout-worktree-dirty",
-            needsInputDetail:
-              `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
-              `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
-            note: "close-out kept a worktree with uncommitted changes",
-          });
+          try {
+            const shown = keptDirtyFiles.slice(0, 8);
+            patchTaskFile(this.config, absPath, {
+              needsInput: true,
+              needsInputReason: "closeout-worktree-dirty",
+              needsInputDetail:
+                `the worktree for ${featureBranch} was kept because it had uncommitted changes the ` +
+                `merge did not carry: ${shown.join(", ")}${keptDirtyFiles.length > shown.length ? ", …" : ""}`,
+              note: "close-out kept a worktree with uncommitted changes",
+            });
+          } catch (err) {
+            console.error(`Could not patch task ${job.taskId} with dirty-worktree flag:`, err);
+          }
         }
         releasedOk = true;
       } else {

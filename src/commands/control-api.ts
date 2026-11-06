@@ -1865,7 +1865,7 @@ export async function cmdSummary(args: string[]): Promise<number> {
       { label: `summary for #${id}` },
     );
     if (opts.json) printJson(final);
-    else if (final.status === "done" || final.exists)
+    else if (final.status === "done")
       console.log(c.green(`  ✓ #${id} summary ready: work/reports/${id}/summary.md`));
     else {
       printErr(final.error ?? `summary generation failed for #${id}`);
