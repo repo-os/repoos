@@ -12,7 +12,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T18:21:52Z"
+updated_at: "2026-11-06T18:22:24Z"
 last_check_failure: "repoos check at 2026-11-06T17:47:51.582Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 6
 review_rounds: 2
@@ -64,11 +64,19 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 ```json
 [
 {
-"label": "Task drawer Dev > Report pane",
-"target": "default",
-"route": "/work?task=1041&tab=dev",
-"selector": "[data-task-id=\"1041\"]",
-"highlight": "[data-test-id=\"report-tab-content\"]"
+  "label": "Task drawer Dev > Report pane",
+  "target": "default",
+  "route": "/work?task=1041&tab=dev",
+  "selector": "[data-test-id=\"engineering-report-tab\"]",
+  "highlight": ".engineering-report-view",
+  "steps": [
+    {
+      "click": "[data-test-id=\"engineering-report-tab\"]"
+    },
+    {
+      "waitFor": ".engineering-report-view"
+    }
+  ]
 }
 ]
 ```
@@ -207,3 +215,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T18:18:37Z · message_queued at 2026-11-06T18:18:37.722Z
 - 2026-11-06T18:20:47Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T18:21:52Z · note: ui verification failed (1 issue(s)): [missing-target] Task drawer Dev > Report pane (target "default"): highlight [data-test-id="report-tab-content"] matched nothing on /work?task=1041&tab=dev (http://127.0.0.1:54460/work)
+- 2026-11-06T18:22:24Z · body
