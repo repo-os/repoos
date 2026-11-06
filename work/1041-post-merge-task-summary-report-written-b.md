@@ -1,10 +1,11 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-06T07:33:19.730Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)"
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -12,13 +13,16 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T07:33:19Z"
+updated_at: "2026-11-06T07:34:02Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T07:33:19.730Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
 review_timeout_retries: 0
 handoff_signal_retry_count: 2
-dev_error_count: 2
+dev_error_count: 3
+engineer_crash_log: "[{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T07:33:32.666Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
@@ -94,4 +98,5 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T07:31:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T07:33:16Z · message_queued at 2026-11-06T07:33:16.487Z
 - 2026-11-06T07:33:19Z · message_delivered: 1 message(s)
-
+- 2026-11-06T07:33:32Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T07:34:02Z · engineer crash recovery: resuming muse + muse-spark-1.3 (1/12 crashes in 30m) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
