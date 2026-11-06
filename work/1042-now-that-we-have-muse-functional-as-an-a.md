@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-muse-usage-details-and-provider-navi
 created_at: "2026-11-06T10:56:43Z"
-updated_at: "2026-11-06T12:35:46Z"
+updated_at: "2026-11-06T12:38:47Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
