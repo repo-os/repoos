@@ -3044,6 +3044,15 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
         return json(res, 400, { error: result.reason });
       }
       index.applyFileChange(result.task!.absPath);
+      // Post-merge summary (#1041): the branch-less path releases without a
+      // close-out job, so queue here — same fire-and-forget guarantee as the
+      // orchestrator hook (never touches the released status).
+      try {
+        const released = index.getTask(id) ?? result.task!;
+        queueTaskSummary(config, released, index.getTasks());
+      } catch (err) {
+        console.error(`Could not queue post-merge summary for #${id}:`, err);
+      }
       return json(res, 200, index.getTask(id));
     }
 

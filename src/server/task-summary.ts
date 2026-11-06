@@ -9,12 +9,13 @@
  * `repoos summary <id>` (or `POST /api/tasks/:id/summary`) retries it.
  * Re-running overwrites the same file — idempotent, never duplicated.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { SessionRecord } from "../core/db.js";
 import { getRepoOSDb } from "../core/db.js";
 import { parseDocument } from "../core/frontmatter.js";
+import { parseTask } from "../core/task.js";
 import { commitFiles, runGit } from "../core/git.js";
 import { isOwnReportPath, reportsTaskDir } from "../core/report-paths.js";
 import { findReviewPassFile, listReviewPasses } from "../core/review-passes.js";
@@ -95,6 +96,70 @@ function writeSummaryStatus(
     writeFileSync(statusFile(config, taskId), `${JSON.stringify(state, null, 2)}\n`);
   } catch {
     /* status is advisory — the report file is the ground truth */
+  }
+}
+
+/**
+ * Best-effort task list read straight from the work directory, for
+ * fire-and-forget callers (close-out) that hold no live index. Used only for
+ * linked-task facts — never for status decisions. Unparseable files are
+ * skipped, and a missing directory yields an empty list.
+ */
+export function loadCandidateTasksFromDisk(config: RepoOSConfig): Task[] {
+  const dir = join(config.root, config.workDir ?? "work");
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return [];
+  }
+  const out: Task[] = [];
+  for (const entry of entries) {
+    if (!/^\d+-.*\.md$/.test(entry)) continue;
+    const absPath = join(dir, entry);
+    try {
+      out.push(
+        parseTask({
+          content: readFileSync(absPath, "utf8"),
+          absPath,
+          root: config.root,
+          defaultStatus: config.defaultStatus ?? "inbox",
+          defaultAssignee: config.defaultAssignee ?? "unassigned",
+        }),
+      );
+    } catch {
+      /* skip files that do not parse — facts only */
+    }
+  }
+  return out;
+}
+
+/**
+ * One task read straight from its file on disk, mirroring the release stamp's
+ * own fallback when the live index misses it. Null when the file cannot be
+ * located or parsed.
+ */
+export function readTaskFromDisk(config: RepoOSConfig, taskId: string): Task | null {
+  const dir = join(config.root, config.workDir ?? "work");
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return null;
+  }
+  const match = entries.find((f) => f.startsWith(`${taskId}-`) && f.endsWith(".md"));
+  if (!match) return null;
+  const absPath = join(dir, match);
+  try {
+    return parseTask({
+      content: readFileSync(absPath, "utf8"),
+      absPath,
+      root: config.root,
+      defaultStatus: config.defaultStatus ?? "inbox",
+      defaultAssignee: config.defaultAssignee ?? "unassigned",
+    });
+  } catch {
+    return null;
   }
 }
 
@@ -370,7 +435,11 @@ export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Tas
   }
   void (async () => {
     try {
-      await runTaskSummaryNow(config, task, allTasks);
+      // Fire-and-forget callers (close-out) hold no live index, so an empty
+      // list falls back to a best-effort work-dir scan — automatic reports
+      // must carry the same linked-task facts as a manual retry.
+      const candidates = allTasks.length > 0 ? allTasks : loadCandidateTasksFromDisk(config);
+      await runTaskSummaryNow(config, task, candidates);
     } catch (err) {
       try {
         writeSummaryStatus(config, task.id, "failed", (err as Error).message.slice(0, 500));

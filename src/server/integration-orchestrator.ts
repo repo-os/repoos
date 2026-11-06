@@ -108,7 +108,7 @@ import {
   recordCloseOutGateTimingStats,
 } from "../core/close-out-timing.js";
 import { recordTaskCloseOutGateDuration } from "./close-out-repair.js";
-import { queueTaskSummary } from "./task-summary.js";
+import { queueTaskSummary, readTaskFromDisk } from "./task-summary.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
@@ -4368,12 +4368,18 @@ export class CloseOutOrchestrator {
 
     // Post-merge summary (#1041): queue the PM-written summary report. It
     // runs in the background and can only record a visible failed state —
-    // the landing above already succeeded and must never be disturbed. The
-    // orchestrator holds no task list, so linked tasks are empty here; they
-    // are enriched when the summary is retried via `repoos summary <id>`.
+    // the landing above already succeeded and must never be disturbed. Falls
+    // back to the task file on disk when the live index misses the task
+    // (same fallback as the release stamp above); linked tasks come from a
+    // best-effort work-dir scan inside queueTaskSummary.
     try {
-      const summaryTask = this.getTask?.(job.taskId);
+      const summaryTask =
+        this.getTask?.(job.taskId) ?? readTaskFromDisk(this.config, job.taskId);
       if (summaryTask) queueTaskSummary(this.config, summaryTask, []);
+      else
+        console.error(
+          `Could not locate task ${job.taskId} for post-merge summary — skipping`,
+        );
     } catch (err) {
       console.error(`Could not queue post-merge summary for ${job.taskId}:`, err);
       this.logger?.integration(job.taskId, "warn", "post-merge summary not queued", {

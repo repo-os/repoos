@@ -26,19 +26,25 @@ export function summaryReportRelPath(config: { workDir?: string }, taskId: strin
 
 const WORD_RE = /\b[\p{L}\p{N}][\p{L}\p{N}'’-]*\b/gu;
 
-/** First-line match for the deterministic trailing file-changes listing. */
-function isFileChangesHeading(line: string): boolean {
-  return /^##\s+(changed files|generated change summary|file changes)\s*$/i.test(line.trim());
-}
+/**
+ * Marker the server appends with the deterministic file-changes listing.
+ * Only this exact marker line is excluded from the word count — a
+ * same-named heading written by the PM counts fully, so narrative words can
+ * never evade the budget check behind a lookalike heading.
+ */
+export const GENERATED_CHANGES_MARKER = "<!-- repoos:generated-changes -->";
 
 /**
- * Words in the report narrative: everything before the trailing
- * file-changes listing (the same convention the engineering report uses —
- * the generated listing never counts).
+ * Words in the report narrative: the whole document except the
+ * server-generated file-changes listing (the same convention the engineering
+ * report uses — the generated listing never counts).
  */
 export function countSummaryNarrativeWords(markdown: string): number {
   const lines = markdown.split("\n");
-  const cut = lines.findIndex(isFileChangesHeading);
+  let cut = -1;
+  lines.forEach((line, index) => {
+    if (line.trim() === GENERATED_CHANGES_MARKER) cut = index;
+  });
   const narrative = (cut === -1 ? lines : lines.slice(0, cut)).join("\n");
   return narrative.match(WORD_RE)?.length ?? 0;
 }
@@ -251,5 +257,5 @@ export function formatTaskSummaryFileChanges(files: TaskSummaryFileChange[]): st
   const rows = files.length
     ? files.map((file) => `- ${file.status} ${file.path}: +${file.additions} / −${file.deletions}`)
     : ["- No changed files."];
-  return ["## Changed files", "", ...rows].join("\n");
+  return [GENERATED_CHANGES_MARKER, "## Changed files", "", ...rows].join("\n");
 }
