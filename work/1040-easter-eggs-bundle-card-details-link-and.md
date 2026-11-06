@@ -181,3 +181,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T05:31:46Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
 - 2026-11-06T05:34:14Z · body
 - 2026-11-06T05:36:30Z · status active→review
+- 2026-11-06T05:36:30Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
