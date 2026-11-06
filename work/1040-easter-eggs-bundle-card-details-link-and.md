@@ -3,12 +3,6 @@ id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the cursor agent exited without output: RetriableError: [resource_exhausted] Error ⚠ After this turn ended, 6 process(es) escaped its process group (PIDs: 69101, 69157, 69503, 69530, 69531, 69583). They may need manual cleanup."
-debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
-debug_tldr_at: "2026-11-06T05:10:29Z"
-debug_tldr_key: "review-failed|the cursor agent exited without output: RetriableError: [resource_exhausted] Error ⚠ After this turn ended, 6 process(es) escaped its process group (PIDs: 69101, 69157, 69503, 69530, 69531, 69583). They may need manual cleanup."
 priority: p3
 area: web
 assigned_to: ai
@@ -18,7 +12,7 @@ cli_override: muse
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T05:12:02Z"
+updated_at: "2026-11-06T05:12:05Z"
 last_check_failure: "repoos check at 2026-11-06T04:42:19.073Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agent hover popover rows open the editor (target \"default\"): hover button.tc-agent-btn: hover: Timeout 5000ms exceeded. on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep); [missing-target] Agent hover popover rows open the editor (target \"default\"): highlight [data-test-id=\"task-agent-preview\"] tbody tr matched nothing on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep)"
 handoff_signal_retry_count: 1
 dev_error_count: 6
@@ -174,3 +168,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T05:09:57Z · note: review pass 1: failed — no usable report
 - 2026-11-06T05:09:57Z · needs_input
 - 2026-11-06T05:12:02Z · review_cli_override, review_model_override
+- 2026-11-06T05:12:05Z · needs_input (review-failed) cleared for review again by hello@repoos.org
