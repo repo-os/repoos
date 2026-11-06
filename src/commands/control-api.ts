@@ -1775,7 +1775,7 @@ export async function cmdLandable(args: string[]): Promise<number> {
 }
 
 /** Shape of `GET /api/tasks/:id/summary` used by `repoos summary`. */
-interface TaskSummaryState {
+export interface TaskSummaryState {
   ok: boolean;
   exists: boolean;
   markdown: string | null;

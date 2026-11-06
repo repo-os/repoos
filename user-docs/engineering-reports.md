@@ -66,7 +66,9 @@ or fails the landing: a slow or failed summary only records a visible failed
 state, retryable with `repoos summary <id>`. Generation requires a released
 (`done`) task — retrying earlier refuses with a 409, and the automatic queue
 only fires after the release stamp succeeds. The bookkeeping commit takes the
-publication lock, so it never contends with a landing.
+publication lock, so it never contends with a landing. Polling treats a
+committed `summary.md` as terminal even if its status write was lost, and a
+lost status is logged server-side instead of failing silently.
 
 The report starts with `## TL;DR`, then covers `## Outcome`,
 `## Process stats`, `## What went wrong`, `## Learnings` and `## Follow-ups`.
