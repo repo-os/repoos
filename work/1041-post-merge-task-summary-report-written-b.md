@@ -12,7 +12,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T19:16:10Z"
+updated_at: "2026-11-06T19:20:47Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T19:02:17.576Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 5f1d413c to 63f4e720) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 7
@@ -241,3 +241,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:07:44Z · message_delivered: 2 message(s)
 - 2026-11-06T19:16:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Fixed all 4 bugs identified in the review: 1. **Publication rollback** – Now preserves and restores any previously committed `summary.md` on write/commit failures, preventing dirty checkouts 2. **Retry-state handling** – Updated `isSummary… · stderr: (empty)
 - 2026-11-06T19:16:10Z · note: handoff requested (cli)
+- 2026-11-06T19:20:47Z · CTO nudge: held — handoff gate is running
