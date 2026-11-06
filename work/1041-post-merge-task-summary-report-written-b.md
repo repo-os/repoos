@@ -2,14 +2,14 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T06:01:43Z"
+updated_at: "2026-11-06T06:26:44Z"
 handoff_signal_retry_count: 2
 dev_error_count: 2
 ---
@@ -71,3 +71,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T05:53:26Z · body
 - 2026-11-06T05:58:17Z · body
 - 2026-11-06T06:01:43Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T06:26:44Z · status active→review
