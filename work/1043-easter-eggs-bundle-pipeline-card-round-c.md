@@ -89,3 +89,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T17:16:45Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-06T17:20:47Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T17:20:50Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-06T17:20:50Z · message_queued at 2026-11-06T17:20:50.733Z
