@@ -50,15 +50,14 @@ like any other. The only thing it saves is paying that overhead once for several
 fixes instead of once each — it is never a shortcut past the branch, the check
 or the review.
 
-## One open bundle at a time
+## Several bundles may be open at once
 
-There is **only one open easter-eggs bundle at a time**. When another small fix
-turns up while a bundle is open, it is added to that bundle — update the bundle
-task's body and item list — not filed as a new task. Start a new bundle only
-after the open one has landed. Filing bundles in parallel is how small tweaks
-end up spread across several half-empty tasks instead of grouped, and it is the
-mistake this rule exists to stop (2026-10-16: #0805 and #0806 were both open at
-once).
+More than one easter-eggs bundle can be open at the same time (changed
+2026-11-06; the earlier "one open bundle" rule is gone). Once a bundle is
+**active** — an engineer is working on it — it is not grown: a new small fix
+goes into an open bundle that has not started yet (`inbox`/`ready`), or starts a
+new bundle. Don't file the fix as its own one-item task. The aim is still to
+group small tweaks, not scatter them across half-empty tasks.
 
 ## Adding an item to the open bundle
 
@@ -70,9 +69,8 @@ once).
    item by item.
 3. When the bundle lands, mark the source task superseded (next section).
 
-An open bundle already at 3–6 items is **split, not grown**: the new fix waits
-for the open one to land or goes into its own task. The guide is one small
-bundle in flight, not an ever-growing catch-all.
+An open bundle already at 3–6 items is **split, not grown**: the new fix goes into
+another bundle. Keep each bundle small, not an ever-growing catch-all.
 
 ## Marking a source task superseded
 
