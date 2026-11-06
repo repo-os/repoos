@@ -2,7 +2,10 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)"
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -10,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T07:55:00Z"
+updated_at: "2026-11-06T07:58:07Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T07:33:19.730Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
@@ -18,7 +21,7 @@ routing_switches: 1
 review_passes: 1
 review_timeout_retries: 0
 handoff_signal_retry_count: 2
-dev_error_count: 4
+dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T07:33:32.666Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
@@ -102,3 +105,5 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T07:44:31Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-06T07:49:35Z · body
 - 2026-11-06T07:55:00Z · body
+- 2026-11-06T07:58:07Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T07:58:07Z · status active→review
