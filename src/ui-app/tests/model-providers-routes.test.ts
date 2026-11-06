@@ -147,6 +147,7 @@ describe("GET /api/model-providers", () => {
       "claude-code",
       "qwen-code",
       "codex",
+      "muse",
       "github-copilot",
       "antigravity",
       "kiro",
@@ -160,6 +161,12 @@ describe("GET /api/model-providers", () => {
     const deepinfra = capture.body.providers.find((p: { id: string }) => p.id === "deepinfra");
     expect(deepinfra.hasKey).toBe(false);
     expect(deepinfra.kind).toBe("live");
+    expect(deepinfra.usesCliLogin).toBe(false);
+    // Muse is the only live row with no key variable — it reads `muse login`.
+    const muse = capture.body.providers.find((p: { id: string }) => p.id === "muse");
+    expect(muse.kind).toBe("live");
+    expect(muse.hasKey).toBe(false);
+    expect(muse.usesCliLogin).toBe(true);
     expect(JSON.stringify(capture.body)).not.toContain("sk-or-v1-secret-value");
   });
 });
@@ -277,6 +284,23 @@ describe("POST /api/model-providers/:id/key", () => {
       });
       expect(capture.statusCode, `${id} ${JSON.stringify(body)}`).toBe(expected);
     }
+    expect(existsSync(join(root, ".env"))).toBe(false);
+  });
+
+  it("refuses a key save for Muse — the row reads `muse login`, not a pasted key", async () => {
+    const root = tmpRoot();
+    const ctx = makeCtx(root);
+    const { capture, res } = makeRes();
+    await setModelProviderKey(
+      ctx as never,
+      reqWithBody({ key: "x" }) as IncomingMessage,
+      res as never,
+      {
+        param1: "muse",
+      },
+    );
+    expect(capture.statusCode).toBe(400);
+    expect(capture.body.error).toContain("muse login");
     expect(existsSync(join(root, ".env"))).toBe(false);
   });
 

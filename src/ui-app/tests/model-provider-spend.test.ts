@@ -6,17 +6,20 @@
  * opencode Go `GET /zen/go/v1/usage` endpoint, which has NO published schema,
  * so the parser is pinned against the plausible window shapes it accepts and
  * — critically — against shapes it must NOT mistake for windows (a bare
- * `{ cost }` object must not become a row).
+ * `{ cost }` object must not become a row). Muse's `usage --json` shape is
+ * pinned against a live 2026-11-06 capture the same way.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MODEL_PROVIDERS,
   fetchDeepInfraSpend,
+  fetchMuseUsage,
   fetchOpenCodeGoUsage,
   fetchOpenRouterSpend,
   modelProviderById,
   parseDeepInfraChecklist,
   parseDeepInfraUsage,
+  parseMuseUsage,
   parseOpenCodeGoUsage,
   parseOpenRouterCredits,
   parseOpenRouterKey,
@@ -39,6 +42,7 @@ describe("MODEL_PROVIDERS registry", () => {
       "claude-code",
       "qwen-code",
       "codex",
+      "muse",
       "github-copilot",
       "antigravity",
       "kiro",
@@ -84,6 +88,15 @@ describe("MODEL_PROVIDERS registry", () => {
     expect(copilot.envVar).toBeNull();
     expect(copilot.configKey).toBeNull();
     expect(copilot.note).toMatch(/no public api/i);
+  });
+
+  it("lists Muse as a live CLI-login row with no key to save", () => {
+    const muse = modelProviderById("muse")!;
+    expect(muse.kind).toBe("live");
+    expect(muse.envVar).toBeNull();
+    expect(muse.configKey).toBeNull();
+    expect(muse.dashboardUrl).toBe("https://dev.meta.ai/docs/muse-code");
+    expect(muse.note).toMatch(/muse login/i);
   });
 });
 
@@ -482,5 +495,68 @@ describe("fetchOpenCodeGoUsage", () => {
     await expect(fetchOpenCodeGoUsage("k")).rejects.toThrow(
       "Could not reach the opencode Go usage API.",
     );
+  });
+});
+
+describe("parseMuseUsage", () => {
+  // Live capture: `muse usage --json` on 2026-11-06 against muse 1.x.
+  const live = {
+    schemaVersion: 1,
+    allowance: {
+      tier: "Muse Code Everyday Usage",
+      window: { usedPercent: 18, resetsAtMs: 1793967008000 },
+      weekly: { usedPercent: 18, resetsAtMs: 1794182400000 },
+      asOfMs: 1793962857860,
+      source: "mint",
+    },
+    reason: null,
+    hint: null,
+  };
+
+  it("parses the live allowance into tier plus rolling windows", () => {
+    const usage = parseMuseUsage(live);
+    expect(usage.unrecognized).toBe(false);
+    expect(usage.tier).toBe("Muse Code Everyday Usage");
+    expect(usage.windows.map((w) => w.id)).toEqual(["window", "weekly"]);
+    expect(usage.windows[0].label).toBe("Current window");
+    expect(usage.windows[0].usedPct).toBe(18);
+    expect(usage.windows[0].resetsAt).toBe(new Date(1793967008000).toISOString());
+    expect(usage.windows[1].label).toBe("Weekly");
+    // Muse never reports dollars — the Go window shape stays null there.
+    expect(usage.windows[0].usedUsd).toBeNull();
+    expect(usage.windows[0].limitUsd).toBeNull();
+  });
+
+  it("treats a missing allowance as unrecognized rather than a window", () => {
+    expect(parseMuseUsage(null)).toEqual({ tier: null, windows: [], unrecognized: true });
+    expect(parseMuseUsage({ allowance: null })).toEqual({
+      tier: null,
+      windows: [],
+      unrecognized: true,
+    });
+    // A bare cost object must not become a row — same rule as the Go parser.
+    expect(parseMuseUsage({ allowance: { tier: "x", cost: 0.05 } }).unrecognized).toBe(true);
+  });
+
+  it("accepts a future window key shaped like a window", () => {
+    const usage = parseMuseUsage({
+      allowance: { tier: "t", monthly: { usedPercent: 55, resetsAtMs: 1794182400000 } },
+    });
+    expect(usage.unrecognized).toBe(false);
+    expect(usage.windows).toHaveLength(1);
+    expect(usage.windows[0].id).toBe("monthly");
+  });
+});
+
+describe("fetchMuseUsage", () => {
+  it("maps a missing CLI to the install-then-login message", async () => {
+    const savedPath = process.env.PATH;
+    // An empty PATH makes the `muse` spawn fail with ENOENT on POSIX.
+    process.env.PATH = "";
+    try {
+      await expect(fetchMuseUsage()).rejects.toThrow("Muse CLI is not on PATH");
+    } finally {
+      process.env.PATH = savedPath;
+    }
   });
 });
