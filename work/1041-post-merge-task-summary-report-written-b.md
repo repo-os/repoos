@@ -312,3 +312,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T21:32:23Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T21:38:44Z · body
 - 2026-11-06T21:42:32Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-06T21:42:32Z · message_queued at 2026-11-06T21:42:32.371Z
