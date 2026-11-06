@@ -3,8 +3,6 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -326,3 +324,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T22:35:49Z · message_queued at 2026-11-06T22:35:49.777Z
 - 2026-11-06T22:35:51Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (2ca40b172) during finalization (#0734)
 - 2026-11-06T22:38:30Z · note: review pass 14: needs some work
+- 2026-11-06T22:38:30Z · needs_input
