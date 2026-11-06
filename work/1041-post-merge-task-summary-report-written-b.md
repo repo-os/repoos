@@ -3,9 +3,6 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — publication failures, retry state, silent session loss, and weak section checks still violate requirements."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -70,19 +67,19 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 ```json
 [
 {
-  "label": "Task drawer Agent > Report pane",
-  "target": "default",
-  "route": "/work?task=1041&tab=agent",
-  "selector": "[data-test-id=\"engineering-report-tab\"]",
-  "highlight": ".engineering-report-view",
-  "steps": [
-    {
-      "click": "[data-test-id=\"engineering-report-tab\"]"
-    },
-    {
-      "waitFor": ".engineering-report-view"
-    }
-  ]
+"label": "Task drawer Agent > Report pane",
+"target": "default",
+"route": "/work?task=1041&tab=agent",
+"selector": "[data-test-id=\"engineering-report-tab\"]",
+"highlight": ".engineering-report-view",
+"steps": [
+  {
+    "click": "[data-test-id=\"engineering-report-tab\"]"
+  },
+  {
+    "waitFor": ".engineering-report-view"
+  }
+]
 }
 ]
 ```
@@ -234,3 +231,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:02:14Z · message_queued at 2026-11-06T19:02:14.286Z
 - 2026-11-06T19:02:17Z · message_delivered: 1 message(s)
 - 2026-11-06T19:02:33Z · body
+- 2026-11-06T19:02:33Z · needs_input
