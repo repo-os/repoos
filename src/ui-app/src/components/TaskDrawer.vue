@@ -4380,11 +4380,11 @@ async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
         if (stillCurrent()) void loadTaskSummary(taskId, attempt + 1);
       }, TASK_SUMMARY_POLL_MS);
     }
-  } catch {
+  } catch (err) {
     if (!stillCurrent()) return;
-    taskSummary.value = null;
-    taskSummaryStatus.value = "idle";
-    taskSummaryError.value = "";
+    // On fetch error, preserve existing state rather than resetting to idle,
+    // so network transients don't hide an in-progress generation
+    taskSummaryError.value = `Failed to fetch summary status: ${(err as Error).message}`;
   }
 }
 // Every load bumps the generation. A response is applied only when it belongs

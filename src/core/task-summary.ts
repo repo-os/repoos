@@ -75,15 +75,17 @@ export function validateTaskSummary(markdown: string): string[] {
     errors.push("Task summary must begin with ## TL;DR; remove any text before it.");
 
   const requiredSections = [
-    "## Outcome",
-    "## Process stats",
-    "## What went wrong",
-    "## Learnings",
-    "## Follow-ups",
+    "Outcome",
+    "Process stats",
+    "What went wrong",
+    "Learnings",
+    "Follow-ups",
   ];
   for (const section of requiredSections) {
-    if (!markdown.includes(section)) {
-      errors.push(`Task summary must include "${section}" section.`);
+    // Match real markdown heading at line start, not substring inside prose or code
+    const regex = new RegExp(`^## ${section}`, "m");
+    if (!regex.test(markdown)) {
+      errors.push(`Task summary must include "## ${section}" section.`);
     }
   }
 

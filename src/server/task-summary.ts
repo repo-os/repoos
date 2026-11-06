@@ -522,10 +522,19 @@ export async function runTaskSummaryNow(
 
     let committed = false;
     let absPath: string | null = null;
+    let originalContent: string | null = null;
     try {
       const dir = reportsTaskDir(config, taskId);
       mkdirSync(dir, { recursive: true });
       absPath = join(dir, "summary.md");
+      // Preserve any existing file so it can be restored on failure
+      if (existsSync(absPath)) {
+        try {
+          originalContent = readFileSync(absPath, "utf8");
+        } catch {
+          // If we can't read it, treat as no prior version
+        }
+      }
       try {
         writeFileSync(absPath, `${markdown.trim()}\n`);
         committed = (deps.commit ?? commitFiles)(
@@ -534,20 +543,45 @@ export async function runTaskSummaryNow(
           `docs(${taskId}): post-merge summary report`,
         );
       } catch (err) {
-        // Clean up on write/commit errors so uncommitted file doesn't block close-out
-        try {
-          unlinkSync(absPath);
-        } catch {
-          /* ignore cleanup failure */
+        // Restore the previous file on error so the checkout stays clean
+        if (originalContent !== null) {
+          try {
+            writeFileSync(absPath, originalContent);
+          } catch {
+            /* ignore restore failure */
+          }
+        } else {
+          // No prior version, so delete the new file to avoid leaving it uncommitted
+          try {
+            unlinkSync(absPath);
+          } catch {
+            /* ignore cleanup failure */
+          }
         }
         throw err;
       }
-      if (!committed)
+      if (!committed) {
+        // Restore the previous file on commit failure
+        if (originalContent !== null) {
+          try {
+            writeFileSync(absPath, originalContent);
+          } catch {
+            /* ignore restore failure */
+          }
+        } else {
+          // No prior version, so delete the new file
+          try {
+            unlinkSync(absPath);
+          } catch {
+            /* ignore cleanup failure */
+          }
+        }
         return fail(
           config,
           taskId,
           "Wrote summary.md but the bookkeeping commit failed — retry to commit it.",
         );
+      }
     } finally {
       slot();
     }
