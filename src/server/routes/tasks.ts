@@ -118,6 +118,11 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { generateServerContext, serverResumePreamble } from "../context-pack.js";
 import { listReviewPasses } from "../../core/review-passes.js";
 import { loadEngineeringReports } from "../engineering-reports.js";
+import {
+  loadTaskSummaryMarkdown,
+  queueTaskSummary,
+  readSummaryStatus,
+} from "../task-summary.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
 import {
@@ -4053,6 +4058,38 @@ export const getTaskEngineeringReport: RouteHandler = async (ctx, _req, res, par
       error: `Engineering report history is unreadable: ${loaded.errors.join("; ")}`,
     });
   return json(res, 404, { error: `Engineering report round ${round} not found` });
+};
+
+/**
+ * Post-merge summary report (#1041). The summary is committed on main at
+ * close-out, so unlike engineering rounds it is always read from the main
+ * checkout — never from a worktree copy.
+ */
+export const getTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  const markdown = loadTaskSummaryMarkdown(ctx.config, task.id);
+  const status = readSummaryStatus(ctx.config, task.id);
+  return json(res, 200, {
+    ok: true,
+    exists: markdown !== null,
+    markdown,
+    status: status.status,
+    statusAt: status.at || null,
+    error: status.error ?? null,
+  });
+};
+
+/**
+ * Retry a missing or failed summary (`repoos summary <id>`). Queues the
+ * background PM job and returns immediately — poll `getTaskSummary` for the
+ * terminal state. Never touches the task status.
+ */
+export const postTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
+  const task = ctx.index.getTask(params.param1);
+  if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  queueTaskSummary(ctx.config, task, ctx.index.getTasks());
+  return json(res, 202, { ok: true, queued: true });
 };
 
 export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => {

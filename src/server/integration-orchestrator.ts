@@ -108,6 +108,7 @@ import {
   recordCloseOutGateTimingStats,
 } from "../core/close-out-timing.js";
 import { recordTaskCloseOutGateDuration } from "./close-out-repair.js";
+import { queueTaskSummary } from "./task-summary.js";
 import { summarizeCheckFailure } from "../core/check-failure-summary.js";
 import { checkFailureSignature, summarizeCheckOutput } from "../core/check-results.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
@@ -4363,6 +4364,21 @@ export class CloseOutOrchestrator {
     } catch (err) {
       console.error(`Failed to mark task ${job.taskId} as done:`, err);
       // Don't fail cleanup - the important part (merge) already succeeded
+    }
+
+    // Post-merge summary (#1041): queue the PM-written summary report. It
+    // runs in the background and can only record a visible failed state —
+    // the landing above already succeeded and must never be disturbed. The
+    // orchestrator holds no task list, so linked tasks are empty here; they
+    // are enriched when the summary is retried via `repoos summary <id>`.
+    try {
+      const summaryTask = this.getTask?.(job.taskId);
+      if (summaryTask) queueTaskSummary(this.config, summaryTask, []);
+    } catch (err) {
+      console.error(`Could not queue post-merge summary for ${job.taskId}:`, err);
+      this.logger?.integration(job.taskId, "warn", "post-merge summary not queued", {
+        reason: (err as Error).message,
+      });
     }
 
     // Opportunistic GC: every close-out is a natural moment to reclaim

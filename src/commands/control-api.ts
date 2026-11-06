@@ -1774,6 +1774,67 @@ export async function cmdLandable(args: string[]): Promise<number> {
   }
 }
 
+/** Shape of `GET /api/tasks/:id/summary` used by `repoos summary`. */
+interface TaskSummaryState {
+  ok: boolean;
+  exists: boolean;
+  markdown: string | null;
+  status: "idle" | "pending" | "done" | "failed";
+  statusAt: string | null;
+  error: string | null;
+}
+
+/**
+ * `repoos summary <id>` (#1041): queue the post-merge PM summary report and
+ * wait for its terminal state. Works on any task — the normal path runs it
+ * automatically after Move to done; this is the visible retry. Never touches
+ * the task status.
+ */
+export async function cmdSummary(args: string[]): Promise<number> {
+  const { rest, opts, error } = parseCommonFlags(args);
+  if (error) {
+    printErr(error);
+    return 1;
+  }
+  const id = rest[0];
+  if (!id) {
+    printErr("Usage: repoos summary <id> [--json] [--port N]");
+    return 1;
+  }
+  const api = new RepoOsApi({ port: opts.port });
+  try {
+    await ensureServer(api);
+    const queued = await api.request("POST", `/api/tasks/${id}/summary`, {});
+    if (queued.status === 404) throw new RepoOsApiError(`Task #${id} not found`, 404, queued.body);
+    if (queued.status !== 202 || !queued.body.ok)
+      throw new RepoOsApiError(queued.body.error ?? `summary refused (${queued.status})`, queued.status, queued.body);
+    if (!opts.json) console.log(c.dim(`  … generating post-merge summary for #${id}`));
+    const final = await pollUntil(
+      async () => {
+        let state: TaskSummaryState;
+        try {
+          state = (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState;
+        } catch {
+          return null;
+        }
+        return state.status === "done" || state.status === "failed" ? state : null;
+      },
+      { label: `summary for #${id}`, timeoutMs: 900_000, intervalMs: 2_000 },
+    );
+    if (opts.json) printJson(final);
+    else if (final.status === "done")
+      console.log(c.green(`  ✓ #${id} summary ready: work/reports/${id}/summary.md`));
+    else {
+      printErr(final.error ?? `summary generation failed for #${id}`);
+      return 1;
+    }
+    return 0;
+  } catch (e) {
+    printErr((e as RepoOsApiError).message);
+    return 1;
+  }
+}
+
 /** Shared server-down check for tests. */
 export async function controlApiServerDownMessage(port: number): Promise<string> {
   const { baseUrl } = resolveControlPlaneBase({ port });

@@ -41,6 +41,8 @@ const CONTROL_API_MATCHERS: Matcher[] = [
   re("POST", /^\/api\/tasks\/([^/]+)\/needs-input\/dismiss$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/review\/again$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/landable$/.source),
+  // `repoos summary <id>` generates or retries the post-merge summary (#1041).
+  re("POST", /^\/api\/tasks\/([^/]+)\/summary$/.source),
   // Non-blocking handoff outcome for `repoos handoff-status` (#1028).
   re("GET", /^\/api\/tasks\/([^/]+)\/handoff-status$/.source),
   re("POST", /^\/api\/tasks\/([^/]+)\/preview$/.source),
@@ -103,6 +105,7 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   // Task-card-only explicit cancellation of a stalled, registered local check.
   re("POST", /^\/api\/tasks\/([^/]+)\/cancel-check$/.source),
   // Read-only task engineering-report history used by the Dev tab.
+  re("GET", /^\/api\/tasks\/([^/]+)\/summary$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/engineering-reports$/.source),
   re("GET", /^\/api\/tasks\/([^/]+)\/engineering-reports\/([^/]+)$/.source),
   under("/api/auth/"),

@@ -181,6 +181,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--json · --port",
       },
       {
+        name: "summary",
+        usage: "summary <id> [--json] [--port N]",
+        desc: "Generate or retry the post-merge PM summary report (POST /api/tasks/:id/summary)",
+        flags: "--json · --port",
+      },
+      {
         name: "handoff-status",
         usage: "handoff-status <id> [--json] [--port N]",
         desc: "Non-blocking state of the latest handoff attempt: not requested, running, passed, failed or deferred (GET /api/tasks/:id/handoff-status)",
