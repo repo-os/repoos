@@ -40,12 +40,43 @@ describe("post-merge task summary", () => {
     expect(summaryReportRelPath({ workDir: "work" }, "1041")).toBe("work/reports/1041/summary.md");
   });
 
-  it("requires a leading ## TL;DR", () => {
-    expect(validateTaskSummary("## Outcome\n\nShipped.")).toContain(
-      "Task summary must begin with ## TL;DR; remove any text before it.",
-    );
+  it("requires ## TL;DR as the first non-blank line (raw and outside fences)", () => {
+    expect(validateTaskSummary("## Outcome\n\nShipped.").length).toBeGreaterThan(0);
     const validMinimal = `## TL;DR\n\nShipped.\n\n## Outcome\n\nx\n\n## Process stats\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nNone`;
     expect(validateTaskSummary(validMinimal)).toEqual([]);
+  });
+
+  it("rejects a fenced preamble before ## TL;DR", () => {
+    const md = [
+      "```",
+      "note",
+      "```",
+      "",
+      "## TL;DR",
+      "",
+      "x",
+      "",
+      "## Outcome",
+      "",
+      "x",
+      "",
+      "## Process stats",
+      "",
+      "x",
+      "",
+      "## What went wrong",
+      "",
+      "x",
+      "",
+      "## Learnings",
+      "",
+      "x",
+      "",
+      "## Follow-ups",
+      "",
+      "x",
+    ].join("\n");
+    expect(validateTaskSummary(md).length).toBeGreaterThan(0);
   });
 
   it("does not treat headings inside fenced code as real sections", () => {
@@ -161,6 +192,11 @@ describe("post-merge task summary", () => {
     expect(errors.filter((e) => !e.includes("Task summary narrative is")).length).toBe(0);
     const sanitized = stripTaskSummaryMarkerLines(injected);
     expect(validateTaskSummary(sanitized).length).toBe(1);
+  });
+
+  it("formats an unavailable changed-files reason for the listing", () => {
+    const out = formatTaskSummaryFileChanges([], { unavailableReason: "numstat: bogus" });
+    expect(out).toContain("Changed files unavailable: numstat: bogus");
   });
 
   it("builds a prompt with the required sections and a no-invented-numbers rule", () => {

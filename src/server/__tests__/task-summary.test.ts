@@ -3,7 +3,15 @@
  * The PM runner and the bookkeeping commit are injected — no real agent runs.
  */
 import * as fs from "node:fs";
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -100,6 +108,28 @@ function setup(): { config: RepoOSConfig; task: Task } {
 }
 
 describe("post-merge summary generation", () => {
+  it("lists Changed files unavailable when git diff fails", async () => {
+    const { config, task } = setup();
+    writeFileSync(
+      task.absPath,
+      "---\nid: '0099'\ntitle: T\nstatus: done\nmerged_commit: abcdef1\n---\n\nBody.\n",
+    );
+    const runGitMock = vi.fn(async (_root: string, args: string[]) => {
+      if (args.includes("--numstat"))
+        return { status: 1, stdout: "", stderr: "bad object abcdef1^", timedOut: false };
+      return { status: 0, stdout: "", stderr: "", timedOut: false };
+    });
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+      commit: () => true,
+      runGit: runGitMock as never,
+    });
+    expect(res).toEqual({ ok: true });
+    const stored = loadTaskSummaryMarkdown(config, "0099") ?? "";
+    expect(stored).toContain("Changed files unavailable: numstat: bad object abcdef1^");
+  });
+
   it("writes, validates and commits summary.md and records done", async () => {
     const { config, task } = setup();
     const commit = vi.fn(() => true);
@@ -298,6 +328,33 @@ describe("post-merge summary commit slot", () => {
     expect(order).toEqual(["acquire", "commit", "release"]);
   });
 
+  it("does not unlink a pre-existing summary when the prior file was unreadable", async () => {
+    const { config, task } = setup();
+    const summaryPath = join(root(config), "work", "reports", "0099", "summary.md");
+    writeFileSync(summaryPath, "KEEP_ME\n");
+    const rf = vi.spyOn(fs, "readFileSync");
+    let reads = 0;
+    rf.mockImplementation(((p: string, enc: BufferEncoding) => {
+      if (p === summaryPath) {
+        reads += 1;
+        if (reads === 1) throw new Error("EPERM");
+      }
+      return (readFileSync as (path: string, enc: BufferEncoding) => string)(p, enc);
+    }) as typeof readFileSync);
+    try {
+      const res = await runTaskSummaryNow(config, task, [], {
+        resolvePm: () => ({ name: "pm" }) as never,
+        runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+        commit: () => false,
+      });
+      expect(res.ok).toBe(false);
+      expect(res.error ?? "").toMatch(/Existing summary\.md is unreadable/);
+      expect(readFileSync(summaryPath, "utf8")).toBe("KEEP_ME\n");
+    } finally {
+      rf.mockRestore();
+    }
+  });
+
   it("surfaces restore failures when commit returns false", async () => {
     const { config, task } = setup();
     const summaryPath = join(root(config), "work", "reports", "0099", "summary.md");
@@ -319,7 +376,7 @@ describe("post-merge summary commit slot", () => {
       });
       expect(res.ok).toBe(false);
       expect(res.error ?? "").toMatch(/restore error: restore failed/);
-      expect(readFileSync(summaryPath, "utf8")).not.toContain("ORIGINAL_MARK");
+      expect(readFileSync(summaryPath, "utf8")).toContain("ORIGINAL_MARK");
     } finally {
       wf.mockRestore();
     }
@@ -422,6 +479,30 @@ describe("post-merge summary disk fallbacks", () => {
     const { tasks, loadErrors } = loadCandidateTasksFromDisk(bad);
     expect(tasks).toEqual([]);
     expect(loadErrors.some((e) => /scan work directory/i.test(e))).toBe(true);
+  });
+
+  it("records per-file read and parse failures when listing candidates from disk", () => {
+    const { config } = setup();
+    writeFileSync(join(root(config), "work", "0102-bad-read.md"), "x");
+    chmodSync(join(root(config), "work", "0102-bad-read.md"), 0);
+    writeFileSync(
+      join(root(config), "work", "0103-bad-parse.md"),
+      "not valid frontmatter at all\n",
+    );
+    try {
+      const { tasks, loadErrors } = loadCandidateTasksFromDisk(config);
+      expect(tasks.map((t) => t.id).sort()).toEqual(["0099"]);
+      expect(
+        loadErrors.some((e) => /0102-bad-read\.md/.test(e) && /read|Could not read/i.test(e)),
+      ).toBe(true);
+      expect(
+        loadErrors.some((e) => /0103-bad-parse\.md/.test(e) && /parse|Could not parse/i.test(e)),
+      ).toBe(true);
+    } finally {
+      chmodSync(join(root(config), "work", "0102-bad-read.md"), 0o644);
+      rmSync(join(root(config), "work", "0102-bad-read.md"));
+      rmSync(join(root(config), "work", "0103-bad-parse.md"));
+    }
   });
 
   it("collects depends-on and dependent links for the prompt", () => {

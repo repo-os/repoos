@@ -22,7 +22,8 @@ export function setGitMaintenanceLockSink(sink: GitLockMaintenanceOptions["onLoc
   lockEventSink = sink;
 }
 
-function processHasLockOpen(path: string): boolean {
+/** Exported for unit tests — whether any process holds an open fd to this path (lsof). */
+export function probeLsofIndexLockHolder(path: string): boolean {
   try {
     return (
       execFileSync("lsof", ["-t", path], {
@@ -30,12 +31,15 @@ function processHasLockOpen(path: string): boolean {
         stdio: ["ignore", "pipe", "ignore"],
       }).trim().length > 0
     );
-  } catch {
-    // lsof exits 1 when no process has the file open; we catch above when `lsof`
-    // succeeds. Any other throw (missing binary, permission) means we cannot
-    // prove a holder — treat as not live so stale index.lock recovery still
-    // runs in minimal CI images (#1041).
-    return false;
+  } catch (error) {
+    // lsof exits 1 when no process has the file open — safe to treat as no holder.
+    // Any other failure (missing binary, permission, etc.) cannot prove the lock
+    // is stale; keep it and log once per probe (#1041 review).
+    if ((error as { status?: number }).status === 1) return false;
+    console.warn(
+      `repoos: index.lock holder probe failed for ${path} — leaving lock: ${(error as Error).message}`,
+    );
+    return true;
   }
 }
 
@@ -150,7 +154,7 @@ export class CommitGraphMaintenance {
       if (ageMs <= STALE_INDEX_LOCK_MS) continue;
       let live = true;
       try {
-        live = await (this.lockOptions.processHasLockOpen ?? processHasLockOpen)(path);
+        live = await (this.lockOptions.processHasLockOpen ?? probeLsofIndexLockHolder)(path);
       } catch {
         live = true;
       }
