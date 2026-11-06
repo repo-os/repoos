@@ -3,10 +3,12 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  GENERATED_CHANGES_MARKER,
   TASK_SUMMARY_MAX_WORDS,
   buildTaskSummaryPrompt,
   countSummaryNarrativeWords,
   formatTaskSummaryFileChanges,
+  stripTaskSummaryMarkerLines,
   summaryReportRelPath,
   validateTaskSummary,
   type TaskSummaryFacts,
@@ -77,6 +79,41 @@ describe("post-merge task summary", () => {
   it("rejects a padded narrative hidden after a mid-text listing heading", () => {
     const padded = `## TL;DR\n\nok\n\n## Changed files\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS)}`;
     expect(validateTaskSummary(padded).length).toBe(1);
+  });
+
+  it.each([
+    ["text without a marker is unchanged", "## TL;DR\n\none two", "## TL;DR\n\none two"],
+    [
+      "a lone marker line is removed",
+      `## TL;DR\n\n${GENERATED_CHANGES_MARKER}\none`,
+      "## TL;DR\n\none",
+    ],
+    [
+      "a padded marker line is removed",
+      `## TL;DR\n\n  ${GENERATED_CHANGES_MARKER}  \none`,
+      "## TL;DR\n\none",
+    ],
+    [
+      "multiple markers are all removed, surrounding text kept",
+      `## TL;DR\n\none\n${GENERATED_CHANGES_MARKER}\ntwo\n${GENERATED_CHANGES_MARKER}\nthree`,
+      "## TL;DR\n\none\ntwo\nthree",
+    ],
+    [
+      "a lookalike heading is kept — only the exact marker is a protocol token",
+      "## TL;DR\n\none\n\n## Changed files\n\ntwo",
+      "## TL;DR\n\none\n\n## Changed files\n\ntwo",
+    ],
+    ["empty stays empty", "", ""],
+  ])("strips server marker lines: %s", (_name, markdown, expected) => {
+    expect(stripTaskSummaryMarkerLines(markdown)).toBe(expected);
+  });
+
+  it("rejects padding hidden after an injected server marker", () => {
+    const injected = `## TL;DR\n\nok\n${GENERATED_CHANGES_MARKER}\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS)}`;
+    // Without stripping, the tail after the marker would evade validation.
+    expect(validateTaskSummary(injected)).toEqual([]);
+    const sanitized = stripTaskSummaryMarkerLines(injected);
+    expect(validateTaskSummary(sanitized).length).toBe(1);
   });
 
   it("builds a prompt with the required sections and a no-invented-numbers rule", () => {

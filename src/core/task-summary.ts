@@ -35,6 +35,20 @@ const WORD_RE = /\b[\p{L}\p{N}][\p{L}\p{N}'’-]*\b/gu;
 export const GENERATED_CHANGES_MARKER = "<!-- repoos:generated-changes -->";
 
 /**
+ * Remove every server-marker line from PM-authored text. The marker is a
+ * server-protocol token: only the server may emit it, exactly once, ahead of
+ * the file-changes listing. Stripping (never cutting) means text the PM puts
+ * after an injected marker still counts toward the word budget instead of
+ * evading validation behind it.
+ */
+export function stripTaskSummaryMarkerLines(markdown: string): string {
+  return markdown
+    .split("\n")
+    .filter((line) => line.trim() !== GENERATED_CHANGES_MARKER)
+    .join("\n");
+}
+
+/**
  * Words in the report narrative: the whole document except the
  * server-generated file-changes listing (the same convention the engineering
  * report uses — the generated listing never counts).
