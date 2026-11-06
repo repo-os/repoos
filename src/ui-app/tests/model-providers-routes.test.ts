@@ -31,6 +31,16 @@ vi.mock("../../core/providers/harness-auth.js", () => ({
   readProviderKeyFromHarness: () => "",
 }));
 
+// The Muse usage branch spawns the real `muse` CLI. Stub the fetcher so no
+// route test ever executes the machine's login session (review round 1) —
+// the spawn itself is covered by `parseMuseUsage`/`fetchMuseUsage` unit tests
+// in model-provider-spend.test.ts.
+const { mockFetchMuseUsage } = vi.hoisted(() => ({ mockFetchMuseUsage: vi.fn() }));
+vi.mock("../../core/providers/spend", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/providers/spend")>();
+  return { ...actual, fetchMuseUsage: mockFetchMuseUsage };
+});
+
 const ENV_KEYS = [
   "REPOOS_OPENROUTER_API_KEY",
   "REPOOS_OPENCODE_GO_API_KEY",
@@ -54,6 +64,7 @@ const tmpRoots: string[] = [];
 // shipped with only the `afterEach` half of the isolation.
 beforeEach(() => {
   for (const k of ENV_KEYS) delete process.env[k];
+  mockFetchMuseUsage.mockReset();
 });
 
 afterEach(() => {
@@ -345,19 +356,41 @@ describe("GET /api/model-providers/:id/usage", () => {
   });
 
   it("serves Muse usage with no saved key — never the missing-key 400", async () => {
+    mockFetchMuseUsage.mockResolvedValue({
+      tier: "Muse Code Everyday Usage",
+      windows: [
+        {
+          id: "window",
+          label: "Current window",
+          usedPct: 18,
+          usedUsd: null,
+          limitUsd: null,
+          resetsAt: "2026-12-06T04:30:08.000Z",
+        },
+      ],
+      unrecognized: false,
+    });
     const ctx = makeCtx(tmpRoot());
     const { capture, res } = makeRes();
     await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "muse" });
-    // A logged-in machine gets live figures; anywhere else gets the 502 with
-    // the login hint. Either way the pasted-key refusal must not fire — it
-    // sits after the Muse branch, which was the #1042 ordering bug.
-    if (capture.statusCode === 200) {
-      expect(capture.body.kind).toBe("muse");
-      expect(Array.isArray(capture.body.windows)).toBe(true);
-    } else {
-      expect(capture.statusCode).toBe(502);
-      expect(capture.body.error).not.toContain("API key saved yet");
-    }
+    // The pasted-key refusal must not fire — the Muse branch runs before the
+    // key lookup, which was the #1042 ordering bug.
+    expect(mockFetchMuseUsage).toHaveBeenCalledTimes(1);
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body.kind).toBe("muse");
+    expect(capture.body.tier).toBe("Muse Code Everyday Usage");
+    expect(capture.body.windows).toHaveLength(1);
+  });
+
+  it("maps a Muse allowance failure to a 502 with the login hint", async () => {
+    mockFetchMuseUsage.mockRejectedValue(
+      new Error("muse usage: not logged in: run `muse login` first"),
+    );
+    const ctx = makeCtx(tmpRoot());
+    const { capture, res } = makeRes();
+    await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "muse" });
+    expect(capture.statusCode).toBe(502);
+    expect(capture.body.error).toContain("not logged in");
   });
 
   it("renders GitHub Copilot as a link row with no scope in the payload (#0629)", async () => {
