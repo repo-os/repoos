@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T03:47:52.916Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
@@ -118,3 +120,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T03:08:27Z · message_queued at 2026-11-06T03:08:27.469Z
 - 2026-11-06T03:14:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T03:39:46Z · handoff failed · handoff recovery attempted · finalization failed
+
