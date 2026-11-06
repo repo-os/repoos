@@ -153,3 +153,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T13:13:59Z · body
 - 2026-11-06T13:21:45Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T13:36:24Z · status active→review
+- 2026-11-06T13:36:24Z · message_queued at 2026-11-06T13:36:24.506Z
