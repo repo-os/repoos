@@ -3,9 +3,6 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — manual runs can create pre-merge reports, and background commits can race close-out."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -143,3 +140,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T11:24:21Z · status active→review
 - 2026-11-06T11:24:22Z · message_queued at 2026-11-06T11:24:22.098Z
 - 2026-11-06T11:27:10Z · note: review pass 6: needs some work
+- 2026-11-06T11:27:10Z · needs_input
