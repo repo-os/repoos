@@ -1784,9 +1784,9 @@ export interface TaskSummaryState {
   error: string | null;
 }
 
-/** Terminal poll states: only "done" or "failed" status is terminal, not file existence. */
+/** Terminal poll states: "done", "failed" status, or file existence (committed report). */
 export function isSummaryPollTerminal(state: Pick<TaskSummaryState, "status" | "exists">): boolean {
-  return state.status === "done" || state.status === "failed";
+  return state.status === "done" || state.status === "failed" || state.exists;
 }
 
 const SUMMARY_MAX_GET_ERRORS = 10;
