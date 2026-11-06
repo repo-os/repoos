@@ -83,7 +83,10 @@ if (path.basename(process.argv[1]) === "muse") {
   const sidIndex = args.indexOf("--session-id");
   const streamId = sidIndex !== -1 && args[sidIndex + 1] ? args[sidIndex + 1] : "sess-muse-stream";
   const rec = (payload_type, payload) => JSON.stringify({ schema_version: 1, stream: { kind: "session", id: streamId }, sequence: 1, payload_type, payload }) + "\\n";
-  process.stdout.write(rec("run.output.delta", { kind: "run_output_delta", text: "Muse response" }));
+  // Word-sized fragments: they must coalesce into one entry, not one each.
+  for (const text of ["Muse", " ", "response"]) {
+    process.stdout.write(rec("run.output.delta", { kind: "run_output_delta", text }));
+  }
   process.stdout.write(rec("run.usage", { kind: "run_usage", models: [{ model: "muse-spark-1.3", input_tokens: 100, output_tokens: 5, calls: 1 }] }));
   process.stdout.write(rec("run.terminal.completed", { kind: "run_terminal", terminal: "completed", text: "Muse response" }));
   process.exit(0);
@@ -958,7 +961,7 @@ describe("muse driver", () => {
           out.sessionId,
         ]),
       );
-      expect(run.args).not.toContain("--yolo");
+      expect(run.args).toContain("--yolo");
     } finally {
       process.env.PATH = oldPath;
       delete process.env.REPOOS_FAKEBIN_LOG;

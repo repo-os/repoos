@@ -219,7 +219,7 @@ are worth recording because they differ from the neighboring drivers:
 - **Trust and approval are per-turn flags, never remembered.** Every RepoOS
   invocation carries `--trust-workspace` (without it the worktree loads as
   untrusted — no AGENTS.md/rules/skills, delegation disabled — confirmed live),
-  `--approval-mode never` with the sandbox LEFT ON (never `--yolo`), and
+  `--approval-mode never`; engineer turns also pass `--yolo` (sandbox off, the codex-bypass analogue — the sandbox blocks `repoos update --shots` writing the main board, #1040) while one-shots keep the sandbox on, and
   `--max-model-steps 50`. Advisory (PM/reviewer/CTO) turns add
   `--disable-write` + `--disable-shell`: a write attempt is refused with a
   read-only notice and nothing is created (confirmed live). The tradeoff is

@@ -40,9 +40,9 @@ describe("engineer launch permissions", () => {
     );
   });
 
-  it("launches Muse with explicit approval mode and the sandbox left on", () => {
-    // Muse sets its approval mode explicitly per turn (`--approval-mode never`
-    // with the sandbox on) instead of a blanket bypass like `--yolo`.
+  it("launches Muse engineers with --yolo (sandbox off) plus explicit approval mode", () => {
+    // The muse analogue of codex's sandbox bypass: the sandbox blocks
+    // `repoos update --shots` writing the main checkout's board (#1040).
     const launches = engineerLaunches(
       { name: "engineer", cli: "muse", model: "default", enabled: true },
       "/tmp/worktree",
@@ -52,7 +52,7 @@ describe("engineer launch permissions", () => {
       expect(engineerPermissionGaps("muse", args)).toEqual([]);
       expect(args).toContain("--approval-mode");
       expect(args[args.indexOf("--approval-mode") + 1]).toBe("never");
-      expect(args).not.toContain("--yolo");
+      expect(args).toContain("--yolo");
     }
   });
 
