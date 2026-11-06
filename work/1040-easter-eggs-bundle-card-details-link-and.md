@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T02:10:03Z"
+updated_at: "2026-11-06T02:15:31Z"
 handoff_signal_retry_count: 1
 ---
 ## Items
@@ -62,6 +62,34 @@ Each popover row (PM, Engineer, Reviewer) is clickable and opens the same agent 
 
 Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/src/components/` (task card). Reuse the handler the icon's click already calls.
 
+## Shots
+```json
+[
+{
+  "label": "Needs-human-step card blurb without Details link",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"task-card-needs-input-detail\"]",
+  "state": "card:humanStep"
+},
+{
+  "label": "Agent hover popover with clickable rows",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"task-agent-preview\"]",
+  "steps": [
+    {
+      "hover": ".tc-agent-btn"
+    },
+    {
+      "waitMs": 300
+    }
+  ],
+  "state": "card:humanStep"
+}
+]
+```
+
 ## Screenshots
 
 ![Task card: needs-human-step blurb with redundant Details link](/api/tasks/1040/attachments/att_05cfe9bc-bf21-47d7-81e2-e6441010ab59.png)
@@ -79,3 +107,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T01:51:15Z · status ready→active, branch
 - 2026-11-06T01:58:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: off. · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-details-link-and (cwd default) muse: workspace trust: trusted source=run-flag muse: warning: rules file at /Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-details-link-and/CLAUDE.md is ignored this session bec…
 - 2026-11-06T02:10:03Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T02:15:31Z · body
