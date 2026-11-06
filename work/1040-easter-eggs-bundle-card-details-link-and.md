@@ -11,7 +11,6 @@ branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
 updated_at: "2026-11-06T05:04:26Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-06T04:42:19.073Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agent hover popover rows open the editor (target \"default\"): hover button.tc-agent-btn: hover: Timeout 5000ms exceeded. on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep); [missing-target] Agent hover popover rows open the editor (target \"default\"): highlight [data-test-id=\"task-agent-preview\"] tbody tr matched nothing on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep)"
 handoff_signal_retry_count: 1
 dev_error_count: 6
@@ -160,3 +159,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T05:02:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Scoped check green ("All checks passed"). Requesting handoff so server finalization re-runs UI verification on the corrected shots. · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-details-link-and (cwd default) muse: workspace trust: trusted source=run-flag
 - 2026-11-06T05:02:32Z · message_delivered: 2 message(s)
 - 2026-11-06T05:04:26Z · body
+
