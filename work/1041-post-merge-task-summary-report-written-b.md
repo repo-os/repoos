@@ -19,7 +19,6 @@ review_passes: 1
 review_timeout_retries: 0
 handoff_signal_retry_count: 2
 dev_error_count: 11
-engineer_crash_log: "[{\"cli\":\"muse\",\"model\":\"muse-spark-1.3\",\"at\":\"2026-11-06T07:33:32.666Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 
