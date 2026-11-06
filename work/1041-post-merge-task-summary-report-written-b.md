@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — failed commits can leave main dirty and expose an uncommitted report as ready.
@@ -173,4 +173,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T16:45:48Z · message_queued at 2026-11-06T16:45:48.458Z
 - 2026-11-06T16:45:48Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-06T16:45:53Z · message_delivered: 1 message(s)
-- 2026-11-06T16:47:42Z · engineer stopped by request
+- 2026-11-06T16:47:42Z · status active→review
