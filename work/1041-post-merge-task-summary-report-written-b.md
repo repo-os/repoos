@@ -5,6 +5,7 @@ type: feature
 status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — a failed pending-status write can make a retry return the old report as success.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -14,7 +15,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T22:44:43Z"
+updated_at: "2026-11-06T22:44:47Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-11-06T21:28:11.977Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
