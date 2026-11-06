@@ -8,8 +8,10 @@ area: ui
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: cursor
+model_override: default
 created_at: "2026-11-06T23:18:09Z"
-updated_at: "2026-11-06T23:19:42Z"
+updated_at: "2026-11-06T23:19:49Z"
 ---
 ## Problem
 
@@ -68,3 +70,4 @@ This task covers theme-family selection, lazy loading, cache behavior, and verif
 - 2026-11-06T23:18:09Z · created · hello@repoos.org
 - 2026-11-06T23:18:43Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added)
 - 2026-11-06T23:19:42Z · status inbox→ready
+- 2026-11-06T23:19:49Z · cli_override, model_override
