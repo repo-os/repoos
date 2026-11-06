@@ -77,7 +77,7 @@ describe("pipeline-card lib", () => {
     );
     expect(
       pipelineRoundLabel({ dev: 14, review: 3 }, { tone: "amber", reviewRunning: false }),
-    ).toHaveLength(9);
+    ).toHaveLength(8);
   });
 
   it("labels models and host without inventing data", () => {
