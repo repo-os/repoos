@@ -85,6 +85,12 @@ describe("commit-graph maintenance", () => {
     expect(existsSync(lock)).toBe(false);
     expect(onLock).toHaveBeenCalledWith(expect.objectContaining({ state: "removed" }));
 
+    // Stop the stale maintainer before recreating the lock: a second instance on the same
+    // root would still run index-lock recovery on the interval and remove the new file.
+    stale.close();
+    const staleIdx = jobs.indexOf(stale);
+    if (staleIdx >= 0) jobs.splice(staleIdx, 1);
+
     writeFileSync(lock, "");
     utimesSync(lock, old, old);
     const live = new CommitGraphMaintenance(root, git, vi.fn(), {
