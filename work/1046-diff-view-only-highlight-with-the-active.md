@@ -10,8 +10,9 @@ created_by: hello@repoos.org
 branch: ""
 cli_override: cursor
 model_override: composer-2.5
+review_cli_override: muse
 created_at: "2026-11-06T23:18:09Z"
-updated_at: "2026-11-06T23:19:51Z"
+updated_at: "2026-11-06T23:19:56Z"
 ---
 ## Problem
 
@@ -72,3 +73,4 @@ This task covers theme-family selection, lazy loading, cache behavior, and verif
 - 2026-11-06T23:19:42Z · status inbox→ready
 - 2026-11-06T23:19:49Z · cli_override, model_override
 - 2026-11-06T23:19:51Z · model_override
+- 2026-11-06T23:19:56Z · review_cli_override
