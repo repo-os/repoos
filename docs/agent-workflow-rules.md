@@ -369,10 +369,10 @@ cannot tell from the code alone:
   turns up several small, independent, low-risk fixes — cosmetic, copy,
   test-race hardening, tiny UI or data-source corrections, docs follow-ups —
   collect them into ONE task titled `Easter eggs bundle: <themes>` instead of
-  filing one task each or committing each straight to `main`. There is only
-  ONE open easter-eggs bundle at a time: a new small fix is added to the open
-  bundle (update its body and items), not filed as a new task, and you start
-  another bundle only after the open one has landed. A bundle pays the
+  filing one task each or committing each straight to `main`. Several
+  bundles may be open at once (Nick, 2026-11-06). A new small fix goes into an
+  open bundle that has not started yet (update its body and items); once a
+  bundle is active (an engineer is on it) don't grow it — start another bundle. A bundle pays the
   per-task overhead — one worktree, one `repoos check` run, one review, one
   close-out and its server reload — once instead of once per item. The bundle
   body lists every item with its source task id, a one-line fix and one test per

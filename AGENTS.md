@@ -174,8 +174,8 @@ merging.
   `--no-verify`. (Automatic quota pauses live in gitignored
   `.repoos/budget-runtime.json` and don't dirty `repoos.toml`.)
 - **Small fixes: bundle them as one `Easter eggs bundle: <themes>` task** rather
-  than hotfixing or filing one task each. One open bundle at a time; 3–6 small
-  independent items; never fold them into a release-critical task; file p2/p3.
+  than hotfixing or filing one task each. Several bundles may be open at once (don't grow an
+  active one — start another); 3–6 small independent items; never fold them into a release-critical task; file p2/p3.
   Workflow and body shape: `docs/easter-eggs-bundles.md` (#0822 is an example).
 
 ## Definition of done
