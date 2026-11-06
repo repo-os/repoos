@@ -18,6 +18,7 @@ last_check_failure: "repoos check at 2026-11-06T17:09:26.078Z: repoos check fail
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pipeline-view.test.ts > pipeline-card lib > renders reviewer chips per verdict tone on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 889dd843459ef5d9a81dc2810c95d43f0718867c
 engineer_stall_resume_log: "[{\"at\":\"2026-11-06T16:45:49.390Z\",\"reason\":\"handoff-deferred\"}]"
+incomplete_review_retries: 1
 ---
 ## Problem
 
@@ -96,3 +97,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T17:26:17Z · body
 - 2026-11-06T17:28:30Z · status active→review
 - 2026-11-06T17:31:04Z · note: review pass 1: incomplete — no verdict in report
+
