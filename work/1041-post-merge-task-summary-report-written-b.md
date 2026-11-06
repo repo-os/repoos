@@ -333,3 +333,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T22:42:17Z · needs_input
 - 2026-11-06T22:42:18Z · message_delivered: 3 message(s)
 - 2026-11-06T22:44:43Z · status active→review, needs_input
+- 2026-11-06T22:44:47Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a0efe772a) during finalization (#0734)
