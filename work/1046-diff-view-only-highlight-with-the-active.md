@@ -2,18 +2,18 @@
 id: 1046
 title: Use the active theme pair for diff highlighting
 type: feature
-status: ready
+status: active
 priority: p2
 area: ui
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/use-the-active-theme-pair-for-diff-highl
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-06T23:18:09Z"
-updated_at: "2026-11-06T23:19:58Z"
+updated_at: "2026-11-06T23:19:59Z"
 ---
 ## Problem
 
@@ -76,3 +76,4 @@ This task covers theme-family selection, lazy loading, cache behavior, and verif
 - 2026-11-06T23:19:51Z · model_override
 - 2026-11-06T23:19:56Z · review_cli_override
 - 2026-11-06T23:19:58Z · review_model_override
+- 2026-11-06T23:19:59Z · status ready→active, branch
