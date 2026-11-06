@@ -4,8 +4,8 @@ title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — fact-source loss, retry reporting, publication rollback, and a post-release queue gap remain."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -15,7 +15,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T17:07:27Z"
+updated_at: "2026-11-06T17:07:28Z"
 last_check_failure: "repoos check at 2026-11-06T16:45:53.531Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 5
 review_rounds: 2
