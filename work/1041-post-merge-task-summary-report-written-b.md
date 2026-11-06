@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T17:14:51.567Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from d8d95854 to 77b00337) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -14,7 +16,6 @@ review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
 updated_at: "2026-11-06T17:14:51Z"
 review_passes: 6
-last_check_failure: "repoos check at 2026-11-06T16:45:53.531Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -185,3 +186,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T17:12:26Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T17:14:48Z · message_queued at 2026-11-06T17:14:48.203Z
 - 2026-11-06T17:14:51Z · message_delivered: 2 message(s)
+
