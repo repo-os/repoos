@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T16:45:53.983Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1043
 title: "Easter eggs bundle: pipeline card round chip and sent-back note"
 type: chore
@@ -70,3 +72,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T16:45:49Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-06T16:45:52Z · message_delivered: 1 message(s)
 - 2026-11-06T16:45:53Z · message_queued at 2026-11-06T16:45:53.722Z
+
