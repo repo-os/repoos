@@ -235,3 +235,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:02:33Z · status review→active
 - 2026-11-06T19:02:33Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-11-06T19:02:34Z · message_queued at 2026-11-06T19:02:34.007Z
+- 2026-11-06T19:02:34Z · message_queued at 2026-11-06T19:02:34.374Z
