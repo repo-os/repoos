@@ -3,9 +3,6 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — summary-state persistence failures are hidden, and the required drawer view was not captured."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -155,3 +152,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T13:36:24Z · status active→review
 - 2026-11-06T13:36:24Z · message_queued at 2026-11-06T13:36:24.506Z
 - 2026-11-06T13:41:28Z · note: review pass 7: needs some work
+- 2026-11-06T13:41:28Z · needs_input
