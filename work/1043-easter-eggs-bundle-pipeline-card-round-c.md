@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T15:53:24Z"
+updated_at: "2026-11-06T15:56:21Z"
 ---
 ## Problem
 
@@ -34,6 +34,19 @@ On the Work Queue pipeline card the bottom row shows separate chips `E14` and `R
 ## Notes for AI
 Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, engineerRound/reviewerChipText), `src/ui-app/src/lib/pipeline-card.ts` (taskRoundCounts, reviewerChip), the card component that renders the chips, and the drawer's `.rounds-badge` in `TaskDrawer.vue`. Reuse the existing `.rounds-badge` styling rather than adding bespoke scoped CSS. Update the pipeline-card unit tests. Declare one shot of the Work Queue pipeline view showing a card with an amber round pill.
 
+## Shots
+```json
+[
+{
+  "label": "Pipeline card with amber D/R round badge",
+  "target": "default",
+  "route": "/work?shotState=board:pipeline",
+  "highlight": ".rounds-badge",
+  "state": "board:pipeline"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-06T12:18:04Z · created · njachowski@gmail.com
@@ -46,3 +59,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T15:53:20Z · review_cli_override
 - 2026-11-06T15:53:22Z · review_model_override
 - 2026-11-06T15:53:24Z · status ready→active, branch
+- 2026-11-06T15:56:21Z · body
