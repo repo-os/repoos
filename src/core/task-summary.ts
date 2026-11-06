@@ -50,7 +50,10 @@ export function isStaleSummaryPending(
 }
 
 /** Anchor for “this run” when status is `pending`: prefer `pendingSince`, else `at` (legacy files). */
-function pendingRunAnchorMs(pendingSince: string | null | undefined, statusAt: string): number | null {
+function pendingRunAnchorMs(
+  pendingSince: string | null | undefined,
+  statusAt: string,
+): number | null {
   const raw = (pendingSince?.trim() || statusAt?.trim()) ?? "";
   if (!raw) return null;
   const t = Date.parse(raw);
@@ -71,11 +74,7 @@ export function effectiveSummaryJobStatus(
   reportMtimeMs: number | null = null,
   pendingSince: string | null = null,
 ): "idle" | "pending" | "done" | "failed" {
-  if (
-    stored === "pending" &&
-    reportExists &&
-    isStaleSummaryPending(statusAt, nowMs)
-  ) {
+  if (stored === "pending" && reportExists && isStaleSummaryPending(statusAt, nowMs)) {
     const anchor = pendingRunAnchorMs(pendingSince, statusAt);
     if (anchor !== null && reportMtimeMs !== null) {
       return reportMtimeMs >= anchor ? "done" : "failed";

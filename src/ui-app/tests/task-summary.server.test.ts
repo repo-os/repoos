@@ -569,7 +569,10 @@ describe("post-merge summary disk fallbacks", () => {
     const { config } = setup();
     writeFileSync(join(root(config), "work", "0102-bad-read.md"), "x");
     chmodSync(join(root(config), "work", "0102-bad-read.md"), 0);
-    writeFileSync(join(root(config), "work", "0103-bad-parse.md"), "not valid frontmatter at all\n");
+    writeFileSync(
+      join(root(config), "work", "0103-bad-parse.md"),
+      "not valid frontmatter at all\n",
+    );
     try {
       const { tasks, loadErrors } = loadCandidateTasksFromDisk(config);
       expect(tasks.map((t: Task) => t.id).sort()).toEqual(["0099"]);
@@ -580,8 +583,7 @@ describe("post-merge summary disk fallbacks", () => {
       ).toBe(true);
       expect(
         loadErrors.some(
-          (e: string) =>
-            /0103-bad-parse\.md/.test(e) && /frontmatter|YAML|parse/i.test(e),
+          (e: string) => /0103-bad-parse\.md/.test(e) && /frontmatter|YAML|parse/i.test(e),
         ),
       ).toBe(true);
     } finally {

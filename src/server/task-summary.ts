@@ -335,8 +335,7 @@ function writeSummaryStatus(
       );
     }
   }
-  const detail =
-    lastErr?.message ?? "unknown error";
+  const detail = lastErr?.message ?? "unknown error";
   console.error(`Task summary status not persisted for ${taskId} (${status}): ${detail}`);
   try {
     mkdirSync(statusDir(config), { recursive: true });
