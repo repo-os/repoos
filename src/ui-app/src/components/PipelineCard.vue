@@ -20,8 +20,7 @@ const props = defineProps<{
   /** ISO timestamp the current state began (updated_at; releasedAt once merged). */
   stateSince: string | null;
   nowMs: number;
-  engineerRound: number;
-  reviewerChip: string | null;
+  roundsLabel: string;
   reviewerTone: "green" | "amber" | "red" | null;
   modelsLabel: string;
   hostLabel: string;
@@ -109,13 +108,9 @@ function onKey(e: KeyboardEvent): void {
     </div>
     <!-- Row 4: rounds, models, host -->
     <div class="pl-row pl-row-4">
-      <span class="pl-chip pl-round">E{{ engineerRound }}</span>
-      <span
-        v-if="reviewerChip"
-        class="pl-chip pl-round"
-        :class="reviewerTone ? `tone-${reviewerTone}` : ''"
-        >{{ reviewerChip }}</span
-      >
+      <span class="rounds-badge pl-round" :class="reviewerTone ? `tone-${reviewerTone}` : ''">
+        {{ roundsLabel }}
+      </span>
       <span class="pl-models">{{ modelsLabel }}</span>
       <span class="pl-spacer"></span>
       <span class="pl-host">{{ hostLabel }}</span>
@@ -244,24 +239,6 @@ function onKey(e: KeyboardEvent): void {
   border-color: var(--green-border-tint);
   background: var(--green-tint);
   color: var(--green);
-}
-.pl-round {
-  font-weight: 600;
-}
-.pl-round.tone-green {
-  border-color: var(--green-border-tint);
-  background: var(--green-tint);
-  color: var(--green);
-}
-.pl-round.tone-amber {
-  border-color: var(--amber-border-tint);
-  background: var(--amber-tint);
-  color: var(--amber);
-}
-.pl-round.tone-red {
-  border-color: var(--red-border-tint);
-  background: var(--red-tint);
-  color: var(--red);
 }
 .pl-models {
   color: var(--txt-faint);
