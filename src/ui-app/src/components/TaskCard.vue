@@ -177,7 +177,26 @@ function clearAgentPreviewDismiss(): void {
   if (agentPreviewDismissTimer) clearTimeout(agentPreviewDismissTimer);
   agentPreviewDismissTimer = null;
 }
+/**
+ * Set while returning focus to the trigger, so the trigger's own focus-open
+ * doesn't undo that return (focusing the trigger reopens the preview).
+ * Consumed synchronously by the focus event `focus()` dispatches; a nextTick
+ * backstop clears it in case focus never dispatches, so it can't swallow the
+ * next genuine keyboard open.
+ */
+let returningFocusToTrigger = false;
+function returnFocusToTrigger(): void {
+  returningFocusToTrigger = true;
+  agentTrigger.value?.focus();
+  void nextTick().then(() => {
+    returningFocusToTrigger = false;
+  });
+}
 async function showAgentPreview(event: FocusEvent | MouseEvent): Promise<void> {
+  if (event.type === "focus" && returningFocusToTrigger) {
+    returningFocusToTrigger = false;
+    return;
+  }
   clearAgentPreviewDismiss();
   const button = event.currentTarget;
   if (!(button instanceof HTMLElement)) return;
@@ -214,6 +233,60 @@ function openAgentAssignments(): void {
   agentPreviewOpen.value = false;
   toggleAgentPanel();
 }
+/**
+ * A hover-preview row opens the same editor the robot button opens, focused
+ * on that row's role: the click-opened assignment panel, plus the agent/model
+ * picker for the role (the editor supports per-role focus via the modal).
+ */
+function openPreviewAssignment(assignment: AgentAssignment): void {
+  clearAgentPreviewDismiss();
+  agentPreviewOpen.value = false;
+  if (!agentPanelOpen.value) {
+    agentPanelOpen.value = true;
+  }
+  armAgentPanelTimer();
+  openAssignmentModal(assignment);
+}
+/**
+ * Keyboard focus management for the hover preview. The preview is teleported
+ * to `body`, so it sits last in tab order: without intervention, Tab from the
+ * trigger walks the card while the 120 ms dismiss timer closes the preview
+ * before a keyboard user can reach a row. Tab from the trigger (and only then)
+ * moves focus into the first row instead; Shift+Tab on the first row returns
+ * to the trigger; Escape closes and returns to the trigger. Leaving via Tab
+ * from any other row keeps default order — the focusout timer dismisses the
+ * preview once focus is outside it.
+ */
+const agentTrigger = ref<HTMLButtonElement | null>(null);
+function previewRows(): HTMLElement[] {
+  const preview = document.getElementById(agentPreviewId);
+  if (!preview) return [];
+  return [...preview.querySelectorAll<HTMLElement>("[data-test-id^='task-agent-preview-row-']")];
+}
+function focusPreviewRow(index: number): void {
+  previewRows()[index]?.focus();
+}
+function onAgentTriggerTab(event: KeyboardEvent): void {
+  if (!agentPreviewOpen.value || event.shiftKey) return;
+  event.preventDefault();
+  focusPreviewRow(0);
+}
+function onPreviewRowTab(event: KeyboardEvent, index: number): void {
+  if (!event.shiftKey || index !== 0) return;
+  event.preventDefault();
+  returnFocusToTrigger();
+}
+function closeAgentPreviewToTrigger(): void {
+  clearAgentPreviewDismiss();
+  agentPreviewOpen.value = false;
+  returnFocusToTrigger();
+}
+/** The trigger discloses the panel; while the preview is open it also names it. */
+const agentTriggerControls = computed(() =>
+  agentPreviewOpen.value
+    ? `${agentPreviewId} task-agent-panel-${props.task.id}`
+    : `task-agent-panel-${props.task.id}`,
+);
 onBeforeUnmount(() => {
   clearAgentPreviewDismiss();
   clearAgentPanelTimer();
@@ -1511,18 +1584,20 @@ async function openDebuggerFromError(): Promise<void> {
           </svg>
         </span>
         <button
+          ref="agentTrigger"
           type="button"
           class="tc-agent-btn"
           :class="{ open: agentPanelOpen, 'ml-auto': !worktreeFrozen, 'ml-1': worktreeFrozen }"
           :aria-expanded="agentPanelOpen"
-          :aria-controls="`task-agent-panel-${task.id}`"
-          :aria-describedby="agentPreviewOpen ? agentPreviewId : undefined"
+          :aria-controls="agentTriggerControls"
+          aria-haspopup="dialog"
           aria-label="Show or hide agent assignments for this task"
-          title="Show agent assignments"
           @mouseenter="showAgentPreview"
           @mouseleave="scheduleAgentPreviewDismiss"
           @focus="showAgentPreview"
           @blur="scheduleAgentPreviewDismiss"
+          @keydown.tab="onAgentTriggerTab"
+          @keydown.escape="closeAgentPreviewToTrigger"
           @click.stop="openAgentAssignments"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
@@ -1553,11 +1628,14 @@ async function openDebuggerFromError(): Promise<void> {
             :id="agentPreviewId"
             class="tc-agent-preview"
             :style="agentPreviewStyle"
-            role="tooltip"
+            role="dialog"
             aria-label="Task agent assignments preview"
             data-test-id="task-agent-preview"
+            data-overlay-layer="floating"
             @mouseenter="clearAgentPreviewDismiss"
             @mouseleave="scheduleAgentPreviewDismiss"
+            @focusin="clearAgentPreviewDismiss"
+            @focusout="scheduleAgentPreviewDismiss"
           >
             <table>
               <thead>
@@ -1568,7 +1646,20 @@ async function openDebuggerFromError(): Promise<void> {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="a in agentAssignments" :key="a.key">
+                <tr
+                  v-for="(a, i) in agentAssignments"
+                  :key="a.key"
+                  class="tc-agent-preview-row"
+                  tabindex="0"
+                  role="button"
+                  :aria-label="`${a.key === 'engineer' ? 'Engineer' : a.key === 'reviewer' ? 'Reviewer' : 'PM'}: ${a.cli}, ${a.model}. Open agent editor.`"
+                  :data-test-id="`task-agent-preview-row-${a.key}`"
+                  @click="openPreviewAssignment(a)"
+                  @keydown.enter.prevent="openPreviewAssignment(a)"
+                  @keydown.space.prevent="openPreviewAssignment(a)"
+                  @keydown.tab="onPreviewRowTab($event, i)"
+                  @keydown.escape="closeAgentPreviewToTrigger"
+                >
                   <th scope="row">
                     {{
                       a.key === "engineer" ? "Engineer" : a.key === "reviewer" ? "Reviewer" : "PM"
@@ -1652,13 +1743,14 @@ async function openDebuggerFromError(): Promise<void> {
           data-test-id="task-card-needs-input-detail"
           :aria-label="`${needsInputDetailLine}. Open Status details.`"
           @click.stop="onNeedsInputDetailClick"
+          @keydown.enter.stop.prevent="onNeedsInputDetailClick"
+          @keydown.space.prevent.stop="onNeedsInputDetailClick"
         >
           <span
             class="tc-needs-detail-text"
             :class="{ 'tc-needs-detail-text--clamp': needsInputDetailClamp }"
             >{{ needsInputDetailLine }}</span
           >
-          <span class="diagnostic-details-affordance">Details</span>
         </button>
       </div>
     </div>
