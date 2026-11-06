@@ -76,6 +76,7 @@ import {
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import { shotPreviewSkipsEngineeringReportsFetch } from "../lib/shot-preview-fixtures";
+import { effectiveSummaryJobStatus } from "../../../core/task-summary.js";
 import { Clock3 } from "lucide-vue-next";
 import {
   needsInputBannerText,
@@ -188,6 +189,7 @@ import {
 } from "../../../core/task-body-diff.js";
 
 const holdNow = useNow();
+const summaryNow = useNow();
 const repo = useRepoStore();
 const ui = useUiStore();
 const notices = useNoticesStore();
@@ -4355,7 +4357,16 @@ interface TaskSummaryPayload {
 }
 const taskSummary = ref<{ markdown: string } | null>(null);
 const taskSummaryStatus = ref("idle");
+const taskSummaryStatusAt = ref<string | null>(null);
 const taskSummaryError = ref("");
+const effectiveTaskSummaryStatus = computed(() =>
+  effectiveSummaryJobStatus(
+    taskSummaryStatus.value as "idle" | "pending" | "done" | "failed",
+    taskSummaryStatusAt.value ?? "",
+    Boolean(taskSummary.value?.markdown),
+    summaryNow.value,
+  ),
+);
 const taskSummaryHtml = computed(() =>
   taskSummary.value ? renderMarkdown(taskSummary.value.markdown) : "",
 );
@@ -4371,11 +4382,18 @@ async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
     if (!stillCurrent()) return;
     taskSummary.value = response.markdown ? { markdown: response.markdown } : null;
     taskSummaryStatus.value = response.status ?? "idle";
+    taskSummaryStatusAt.value = response.statusAt ?? null;
     taskSummaryError.value = response.error ?? "";
     // Generation finishes in the background after close-out; keep refreshing
     // while it is pending so the open drawer settles without a reopen. The
     // generation guard stops stale chains when the task changes.
-    if (response.status === "pending" && attempt < TASK_SUMMARY_POLL_MAX) {
+    const eff = effectiveSummaryJobStatus(
+      response.status as "idle" | "pending" | "done" | "failed",
+      response.statusAt ?? "",
+      Boolean(response.markdown),
+      summaryNow.value,
+    );
+    if (eff === "pending" && attempt < TASK_SUMMARY_POLL_MAX) {
       setTimeout(() => {
         if (stillCurrent()) void loadTaskSummary(taskId, attempt + 1);
       }, TASK_SUMMARY_POLL_MS);
@@ -4428,6 +4446,7 @@ watch(
     selectedEngineeringRound.value = null;
     taskSummary.value = null;
     taskSummaryStatus.value = "idle";
+    taskSummaryStatusAt.value = null;
     taskSummaryError.value = "";
     if (id) {
       void loadEngineeringReports(id);
@@ -6407,16 +6426,16 @@ watch(
             <div
               v-if="
                 taskSummary?.markdown ||
-                taskSummaryStatus === 'pending' ||
-                taskSummaryStatus === 'failed'
+                effectiveTaskSummaryStatus === 'pending' ||
+                effectiveTaskSummaryStatus === 'failed'
               "
               data-test-id="task-summary"
             >
               <div class="task-section-title">Post-merge summary</div>
-              <p v-if="taskSummaryStatus === 'pending'" class="review-hint">
+              <p v-if="effectiveTaskSummaryStatus === 'pending'" class="review-hint">
                 The PM agent is writing the post-merge summary…
               </p>
-              <p v-else-if="taskSummaryStatus === 'failed'" class="ff-error" role="alert">
+              <p v-else-if="effectiveTaskSummaryStatus === 'failed'" class="ff-error" role="alert">
                 The post-merge summary failed{{ taskSummaryError ? `: ${taskSummaryError}` : "" }} —
                 retry with <code>repoos summary {{ ui.active?.id }}</code
                 >.

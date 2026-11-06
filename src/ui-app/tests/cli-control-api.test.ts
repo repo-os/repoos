@@ -9,6 +9,7 @@ import { join, basename, dirname } from "node:path";
 import { startServer, type ServerHandle } from "../../server/server";
 import { getAuthStore, resetAuthStoreInstance } from "../../core/auth-store";
 import { clearCliSession } from "../../cli/cli-session";
+import { SUMMARY_PENDING_STALE_MS } from "../../core/task-summary";
 import {
   cmdAgentsRunning,
   cmdConfig,
@@ -756,17 +757,23 @@ describe("control API CLI", () => {
 
 describe("repoos summary polling", () => {
   it.each([
-    ["done reports terminal", "done", false, true],
-    ["failed reports terminal", "failed", false, true],
-    ["a committed report keeps polling while status is still pending", "pending", true, false],
-    ["a committed report is terminal when idle (lost status write)", "idle", true, true],
-    ["pending without a report keeps polling", "pending", false, false],
-    ["idle without a report keeps polling", "idle", false, false],
-  ])("%s", (_name, status, exists, expected) => {
+    ["done reports terminal", "done", false, "", true],
+    ["failed reports terminal", "failed", false, "", true],
+    ["a committed report keeps polling while status is still pending", "pending", true, "", false],
+    ["stale pending with report is terminal (lost done write)", "pending", true, "stale", true],
+    ["a committed report is terminal when idle (lost status write)", "idle", true, "", true],
+    ["pending without a report keeps polling", "pending", false, "", false],
+    ["idle without a report keeps polling", "idle", false, "", false],
+  ])("%s", (_name, status, exists, statusAtKind, expected) => {
+    const statusAt =
+      statusAtKind === "stale"
+        ? new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString()
+        : "";
     expect(
       isSummaryPollTerminal({
         status: status as TaskSummaryState["status"],
         exists: exists as boolean,
+        statusAt,
       }),
     ).toBe(expected as boolean);
   });
@@ -779,15 +786,7 @@ describe("repoos summary polling", () => {
         exists: true,
         markdown: "## TL;DR",
         status: "pending",
-        statusAt: "",
-        error: null,
-      },
-      {
-        ok: true,
-        exists: true,
-        markdown: "## TL;DR",
-        status: "idle",
-        statusAt: "",
+        statusAt: new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString(),
         error: null,
       },
     ];

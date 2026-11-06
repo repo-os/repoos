@@ -22,6 +22,7 @@ import {
 import type { RepoOSConfig } from "../core/types.js";
 import type { LandableCheck, LandableResult } from "../core/landable.js";
 import type { HandoffStatus } from "../server/handoff-status.js";
+import { effectiveSummaryJobStatus } from "../core/task-summary.js";
 
 interface CommonOpts {
   json: boolean;
@@ -1785,13 +1786,16 @@ export interface TaskSummaryState {
 }
 
 /**
- * Terminal poll states: only `done` and `failed`, or a committed report while
- * status is still `idle` (lost status write after success). While `pending`, we
- * keep polling even if `summary.md` exists — a prior run may have committed
- * before a new retry; the file must not end the poll early.
+ * Terminal poll states: `done`/`failed`, a committed report while status is
+ * `idle` (lost write), or `pending` long enough that the server coerces to `done`
+ * (API returns `done` when stale; this mirrors that for older servers).
  */
-export function isSummaryPollTerminal(state: Pick<TaskSummaryState, "status" | "exists">): boolean {
+export function isSummaryPollTerminal(
+  state: Pick<TaskSummaryState, "status" | "exists" | "statusAt">,
+): boolean {
   if (state.status === "done" || state.status === "failed") return true;
+  const eff = effectiveSummaryJobStatus(state.status, state.statusAt ?? "", state.exists);
+  if (eff === "done") return true;
   if (state.exists && state.status !== "pending") return true;
   return false;
 }
@@ -1871,9 +1875,8 @@ export async function cmdSummary(args: string[]): Promise<number> {
         (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState,
       { label: `summary for #${id}` },
     );
-    const success =
-      final.status === "done" ||
-      (final.exists && final.status !== "failed" && final.status !== "pending");
+    const eff = effectiveSummaryJobStatus(final.status, final.statusAt ?? "", final.exists);
+    const success = eff === "done" || (final.exists && eff !== "failed" && eff !== "pending");
     if (opts.json) {
       printJson(final);
       return success ? 0 : 1;

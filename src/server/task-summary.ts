@@ -35,6 +35,7 @@ type PmAgent = NonNullable<ReturnType<typeof resolvePmAgent>>;
 import { loadEngineeringReports } from "./engineering-reports.js";
 import {
   buildTaskSummaryPrompt,
+  effectiveSummaryJobStatus,
   formatTaskSummaryFileChanges,
   stripTaskSummaryMarkerLines,
   validateTaskSummary,
@@ -92,6 +93,9 @@ export interface TaskSummaryDeps {
   resolvePm?: (config: RepoOSConfig) => PmAgent | null;
   runPrompt?: typeof runPrompt;
   commit?: (root: string, absPaths: string[], message: string) => boolean;
+  /** From queue: disk task list + errors when live index is empty (one scan; #1041). */
+  diskCandidates?: Task[];
+  diskLoadErrors?: string[];
   /**
    * Acquire the publication-commit slot; resolves to a release function, or
    * null when a landing holds publication past the wait budget. Defaults to
@@ -170,6 +174,32 @@ export function readSummaryStatus(config: RepoOSConfig, taskId: string): TaskSum
     /* never attempted — idle */
   }
   return { taskId, status: "idle", at: "" };
+}
+
+/**
+ * API/CLI payload: applies stale-`pending` recovery when the report file exists
+ * but the `done` status write was lost (#1041).
+ */
+export function getTaskSummaryJobPayload(
+  config: RepoOSConfig,
+  taskId: string,
+  opts: { nowMs?: number } = {},
+): {
+  markdown: string | null;
+  status: TaskSummaryStatus;
+  statusAt: string | null;
+  error: string | null;
+} {
+  const markdown = loadTaskSummaryMarkdown(config, taskId);
+  const disk = readSummaryStatus(config, taskId);
+  const exists = markdown !== null;
+  const status = effectiveSummaryJobStatus(disk.status, disk.at, exists, opts.nowMs);
+  return {
+    markdown,
+    status,
+    statusAt: disk.at || null,
+    error: disk.error ?? null,
+  };
 }
 
 /**
@@ -343,8 +373,9 @@ export function collectTaskSummaryFacts(
   config: RepoOSConfig,
   task: Task,
   allTasks: Task[],
+  diskFallback?: { tasks: Task[]; loadErrors: string[] },
 ): TaskSummaryFacts {
-  const loadErrors: string[] = [];
+  const loadErrors: string[] = [...(diskFallback?.loadErrors ?? [])];
 
   let body = task.body ?? "";
   try {
@@ -406,14 +437,28 @@ export function collectTaskSummaryFacts(
 
   let candidateTasks = allTasks;
   if (allTasks.length === 0) {
-    const disk = loadCandidateTasksFromDisk(config);
-    loadErrors.push(...disk.loadErrors);
-    candidateTasks = disk.tasks;
+    if (diskFallback) {
+      candidateTasks = diskFallback.tasks;
+    } else {
+      const disk = loadCandidateTasksFromDisk(config);
+      loadErrors.push(...disk.loadErrors);
+      candidateTasks = disk.tasks;
+    }
   }
+
+  const linkedTaskSnapshot = (
+    candidate: Task,
+  ): { createdAt: string | null; bodyExcerpt: string } => {
+    const rawBody = candidate.body ?? "";
+    const { body: noActivity } = splitBodyAndActivity(rawBody);
+    const excerpt = noActivity.replace(/\s+/g, " ").trim().slice(0, 400);
+    return { createdAt: candidate.created_at ?? null, bodyExcerpt: excerpt };
+  };
 
   const linked = candidateTasks
     .filter((candidate) => candidate.id !== task.id)
     .flatMap((candidate) => {
+      const snap = linkedTaskSnapshot(candidate);
       const out: TaskSummaryFacts["linked"] = [];
       if (task.dependsOn?.includes(candidate.id))
         out.push({
@@ -421,6 +466,8 @@ export function collectTaskSummaryFacts(
           title: candidate.title,
           status: candidate.status,
           relation: "depends-on",
+          createdAt: snap.createdAt,
+          bodyExcerpt: snap.bodyExcerpt,
         });
       if (candidate.dependsOn?.includes(task.id))
         out.push({
@@ -428,6 +475,8 @@ export function collectTaskSummaryFacts(
           title: candidate.title,
           status: candidate.status,
           relation: "dependent",
+          createdAt: snap.createdAt,
+          bodyExcerpt: snap.bodyExcerpt,
         });
       return out;
     });
@@ -563,7 +612,12 @@ export async function runTaskSummaryNow(
   const gateError = summaryReleaseGate(current);
   if (gateError) return fail(config, taskId, gateError);
   try {
-    const facts = collectTaskSummaryFacts(config, current, allTasks);
+    const diskFb =
+      allTasks.length === 0 &&
+      (deps.diskCandidates !== undefined || deps.diskLoadErrors !== undefined)
+        ? { tasks: deps.diskCandidates ?? [], loadErrors: deps.diskLoadErrors ?? [] }
+        : undefined;
+    const facts = collectTaskSummaryFacts(config, current, allTasks, diskFb);
     const pm = (deps.resolvePm ?? resolvePmAgent)(config);
     if (!pm)
       return fail(
@@ -676,6 +730,7 @@ const inFlight = new Set<string>();
 export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Task[]): void {
   if (inFlight.has(task.id)) return;
   inFlight.add(task.id);
+  const diskFallback = allTasks.length === 0 ? loadCandidateTasksFromDisk(config) : null;
   // A lost pending state is logged inside writeSummaryStatus; the job itself
   // still runs and the committed report stays ground truth for polling.
   writeSummaryStatus(config, task.id, "pending");
@@ -684,8 +739,11 @@ export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Tas
       // Fire-and-forget callers (close-out) hold no live index, so an empty
       // list falls back to a best-effort work-dir scan — automatic reports
       // must carry the same linked-task facts as a manual retry.
-      const candidates = allTasks.length > 0 ? allTasks : loadCandidateTasksFromDisk(config).tasks;
-      await runTaskSummaryNow(config, task, candidates);
+      const candidates = allTasks.length > 0 ? allTasks : (diskFallback?.tasks ?? []);
+      await runTaskSummaryNow(config, task, candidates, {
+        diskCandidates: diskFallback?.tasks,
+        diskLoadErrors: diskFallback?.loadErrors,
+      });
     } catch (err) {
       try {
         writeSummaryStatus(config, task.id, "failed", (err as Error).message.slice(0, 500));

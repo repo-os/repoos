@@ -119,9 +119,8 @@ import { generateServerContext, serverResumePreamble } from "../context-pack.js"
 import { listReviewPasses } from "../../core/review-passes.js";
 import { loadEngineeringReports } from "../engineering-reports.js";
 import {
-  loadTaskSummaryMarkdown,
+  getTaskSummaryJobPayload,
   queueTaskSummary,
-  readSummaryStatus,
   readTaskFromDisk,
   summaryReleaseGate,
 } from "../task-summary.js";
@@ -4079,15 +4078,14 @@ export const getTaskEngineeringReport: RouteHandler = async (ctx, _req, res, par
 export const getTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
   const task = ctx.index.getTask(params.param1);
   if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
-  const markdown = loadTaskSummaryMarkdown(ctx.config, task.id);
-  const status = readSummaryStatus(ctx.config, task.id);
+  const payload = getTaskSummaryJobPayload(ctx.config, task.id);
   return json(res, 200, {
     ok: true,
-    exists: markdown !== null,
-    markdown,
-    status: status.status,
-    statusAt: status.at || null,
-    error: status.error ?? null,
+    exists: payload.markdown !== null,
+    markdown: payload.markdown,
+    status: payload.status,
+    statusAt: payload.statusAt,
+    error: payload.error,
   });
 };
 
