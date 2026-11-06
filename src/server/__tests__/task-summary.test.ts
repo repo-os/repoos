@@ -3,14 +3,7 @@
  * The PM runner and the bookkeeping commit are injected — no real agent runs.
  */
 import * as fs from "node:fs";
-import {
-  existsSync,
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -417,8 +410,8 @@ describe("post-merge summary disk fallbacks", () => {
       join(root(config), "work", "0100-follow-up.md"),
       "---\nid: '0100'\ntitle: Follow-up\ndepends_on: ['0099']\n---\n\nFollow-up body.\n",
     );
-    const ids = loadCandidateTasksFromDisk(config).tasks
-      .map((task) => task.id)
+    const ids = loadCandidateTasksFromDisk(config)
+      .tasks.map((task) => task.id)
       .sort();
     expect(ids).toEqual(["0099", "0100"]);
   });

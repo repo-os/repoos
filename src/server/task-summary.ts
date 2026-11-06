@@ -46,7 +46,10 @@ import {
 } from "../core/task-summary.js";
 
 /** Restore `summary.md` after a failed write/commit, or delete a new file. */
-function restoreSummaryPathAfterFailure(absPath: string, originalContent: string | null): Error | null {
+function restoreSummaryPathAfterFailure(
+  absPath: string,
+  originalContent: string | null,
+): Error | null {
   if (originalContent !== null) {
     try {
       writeFileSync(absPath, originalContent);
@@ -628,8 +631,7 @@ export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Tas
       // Fire-and-forget callers (close-out) hold no live index, so an empty
       // list falls back to a best-effort work-dir scan — automatic reports
       // must carry the same linked-task facts as a manual retry.
-      const candidates =
-        allTasks.length > 0 ? allTasks : loadCandidateTasksFromDisk(config).tasks;
+      const candidates = allTasks.length > 0 ? allTasks : loadCandidateTasksFromDisk(config).tasks;
       await runTaskSummaryNow(config, task, candidates);
     } catch (err) {
       try {
