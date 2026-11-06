@@ -157,34 +157,34 @@ describe("needs-input blurb without Details link (#1040 E1)", () => {
       },
     ];
 
-  it.each(cases)("renders no Details link for $reason, click opens Status details", async ({
-    reason,
-    detail,
-  }) => {
-    const pinia = createPinia();
-    setActivePinia(pinia);
-    FakeEventSource.instances = [];
-    vi.stubGlobal("EventSource", FakeEventSource);
-    const task = makeTask({ needsInputReason: reason, needsInputDetail: detail });
-    stubFetch(task);
-    await useRepoStore().init();
-    const ui = useUiStore();
-    const opened = vi.spyOn(ui, "openTask").mockResolvedValue();
-    const wrapper = await mountCard(pinia, task);
+  it.each(cases)(
+    "renders no Details link for $reason, click opens Status details",
+    async ({ reason, detail }) => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      FakeEventSource.instances = [];
+      vi.stubGlobal("EventSource", FakeEventSource);
+      const task = makeTask({ needsInputReason: reason, needsInputDetail: detail });
+      stubFetch(task);
+      await useRepoStore().init();
+      const ui = useUiStore();
+      const opened = vi.spyOn(ui, "openTask").mockResolvedValue();
+      const wrapper = await mountCard(pinia, task);
 
-    const blurb = wrapper.get('[data-test-id="task-card-needs-input-detail"]');
-    expect(blurb.text()).toContain(detail.slice(0, 20));
-    expect(blurb.text()).not.toContain("Details");
-    expect(wrapper.find(".diagnostic-details-affordance").exists()).toBe(false);
-    // Accessible name survives the link removal.
-    expect(blurb.attributes("aria-label")).toContain("Open Status details");
+      const blurb = wrapper.get('[data-test-id="task-card-needs-input-detail"]');
+      expect(blurb.text()).toContain(detail.slice(0, 20));
+      expect(blurb.text()).not.toContain("Details");
+      expect(wrapper.find(".diagnostic-details-affordance").exists()).toBe(false);
+      // Accessible name survives the link removal.
+      expect(blurb.attributes("aria-label")).toContain("Open Status details");
 
-    await blurb.trigger("click");
-    expect(opened).toHaveBeenCalledWith(task);
-    expect(ui.activeTab).toBe("debug");
-    expect(ui.debugView).toBe("status");
-    wrapper.unmount();
-  });
+      await blurb.trigger("click");
+      expect(opened).toHaveBeenCalledWith(task);
+      expect(ui.activeTab).toBe("debug");
+      expect(ui.debugView).toBe("status");
+      wrapper.unmount();
+    },
+  );
 
   it("is keyboard-operable: Enter and Space open Status details", async () => {
     const pinia = createPinia();
@@ -215,44 +215,42 @@ describe("agent preview rows open the editor (#1040 E2)", () => {
     { key: "pm", label: "PM", model: "openrouter/xiaomi/mimo-v2.5" },
     { key: "engineer", label: "Engineer", model: "opencode-go/nimo-v2.5" },
     { key: "reviewer", label: "Reviewer", model: "opencode-go/deepseek-v4.1-flash" },
-  ])("clicking the $label row opens the editor focused on that role", async ({
-    key,
-    label,
-    model,
-  }) => {
-    const pinia = createPinia();
-    setActivePinia(pinia);
-    FakeEventSource.instances = [];
-    vi.stubGlobal("EventSource", FakeEventSource);
-    const task = makeTask({ needsInput: false });
-    stubFetch(task);
-    await useRepoStore().init();
-    seedAgents();
-    const { wrapper, preview } = await openPreview(pinia, task);
+  ])(
+    "clicking the $label row opens the editor focused on that role",
+    async ({ key, label, model }) => {
+      const pinia = createPinia();
+      setActivePinia(pinia);
+      FakeEventSource.instances = [];
+      vi.stubGlobal("EventSource", FakeEventSource);
+      const task = makeTask({ needsInput: false });
+      stubFetch(task);
+      await useRepoStore().init();
+      seedAgents();
+      const { wrapper, preview } = await openPreview(pinia, task);
 
-    const row = new DOMWrapper(preview.querySelector(`[data-test-id='task-agent-preview-row-${key}']`)!);
-    expect(row.attributes("role")).toBe("button");
-    expect(row.attributes("tabindex")).toBe("0");
-    // Accessible name carries role, agent and model.
-    expect(row.attributes("aria-label")).toContain(label);
-    expect(row.attributes("aria-label")).toContain("opencode");
-    expect(row.attributes("aria-label")).toContain(model);
+      const row = new DOMWrapper(
+        preview.querySelector(`[data-test-id='task-agent-preview-row-${key}']`)!,
+      );
+      expect(row.attributes("role")).toBe("button");
+      expect(row.attributes("tabindex")).toBe("0");
+      // Accessible name carries role, agent and model.
+      expect(row.attributes("aria-label")).toContain(label);
+      expect(row.attributes("aria-label")).toContain("opencode");
+      expect(row.attributes("aria-label")).toContain(model);
 
-    await row.trigger("click");
-    await flush();
-    // Same editor the icon click opens (the assignment panel)…
-    expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
-    // …focused on the row's role (the agent/model picker for that role).
-    const modalProps = wrapper.findComponent(AgentModelModal).props() as Record<
-      string,
-      unknown
-    >;
-    expect(modalProps.open).toBe(true);
-    expect(modalProps.memoryKey).toContain(`:${key}`);
-    // The preview closes once its row is used.
-    expect(document.body.querySelector("[data-test-id='task-agent-preview']")).toBeNull();
-    wrapper.unmount();
-  });
+      await row.trigger("click");
+      await flush();
+      // Same editor the icon click opens (the assignment panel)…
+      expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
+      // …focused on the row's role (the agent/model picker for that role).
+      const modalProps = wrapper.findComponent(AgentModelModal).props() as Record<string, unknown>;
+      expect(modalProps.open).toBe(true);
+      expect(modalProps.memoryKey).toContain(`:${key}`);
+      // The preview closes once its row is used.
+      expect(document.body.querySelector("[data-test-id='task-agent-preview']")).toBeNull();
+      wrapper.unmount();
+    },
+  );
 
   it("rows are keyboard-operable: Enter and Space open the role editor", async () => {
     const pinia = createPinia();
@@ -271,7 +269,9 @@ describe("agent preview rows open the editor (#1040 E2)", () => {
     await pmRow.trigger("keydown.enter");
     await flush();
     expect(wrapper.find(".tc-agent-panel").exists()).toBe(true);
-    expect((wrapper.findComponent(AgentModelModal).props() as Record<string, unknown>).memoryKey).toContain(":pm");
+    expect(
+      (wrapper.findComponent(AgentModelModal).props() as Record<string, unknown>).memoryKey,
+    ).toContain(":pm");
     wrapper.unmount();
     document.body.querySelector("[data-test-id='task-agent-preview']")?.remove();
 
@@ -282,9 +282,9 @@ describe("agent preview rows open the editor (#1040 E2)", () => {
     await engRow.trigger("keydown.space");
     await flush();
     expect(second.wrapper.find(".tc-agent-panel").exists()).toBe(true);
-    expect((second.wrapper.findComponent(AgentModelModal).props() as Record<string, unknown>).memoryKey).toContain(
-      ":engineer",
-    );
+    expect(
+      (second.wrapper.findComponent(AgentModelModal).props() as Record<string, unknown>).memoryKey,
+    ).toContain(":engineer");
     second.wrapper.unmount();
   });
 
