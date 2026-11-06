@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-06T16:45:53.983Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1043
 title: "Easter eggs bundle: pipeline card round chip and sent-back note"
 type: chore
@@ -15,7 +13,9 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T16:45:53Z"
+updated_at: "2026-11-06T16:47:29Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T16:45:53.983Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-06T16:45:49.390Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
@@ -41,11 +41,11 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 ```json
 [
 {
-"label": "Pipeline card with amber D/R round badge",
-"target": "default",
-"route": "/work?shotState=board:pipeline",
-"highlight": ".rounds-badge",
-"state": "board:pipeline"
+  "label": "Pipeline card with amber D/R round badge",
+  "target": "default",
+  "route": "/work?shotState=board:pipeline",
+  "highlight": ".rounds-badge",
+  "state": "board:pipeline"
 }
 ]
 ```
@@ -72,4 +72,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T16:45:49Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-06T16:45:52Z · message_delivered: 1 message(s)
 - 2026-11-06T16:45:53Z · message_queued at 2026-11-06T16:45:53.722Z
-
+- 2026-11-06T16:47:29Z · body
