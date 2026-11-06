@@ -83,6 +83,15 @@ function providersFixture(
       hasKey: false,
     },
     {
+      id: "muse",
+      label: "Muse",
+      kind: "live",
+      dashboardUrl: "https://dev.meta.ai/docs/muse-code",
+      note: "Allowance from your `muse login` session — no key to paste.",
+      hasKey: false,
+      usesCliLogin: true,
+    },
+    {
       id: "github-copilot",
       label: "GitHub Copilot",
       kind: "link",
@@ -180,7 +189,7 @@ describe("ModelProvidersPanel — row rendering", () => {
     await nextTick();
 
     const rows = wrapper.findAll(".mp-row");
-    expect(rows).toHaveLength(11);
+    expect(rows).toHaveLength(12);
     expect(rows[0].find(".agent-name").text()).toBe("OpenRouter");
     expect(rows[0].find(".pill-live").exists()).toBe(true);
     for (const i of [1, 4]) {
@@ -188,7 +197,7 @@ describe("ModelProvidersPanel — row rendering", () => {
       expect(rows[i].find(".mp-key-form").exists()).toBe(true);
     }
 
-    for (const i of [2, 3, 5, 6, 7, 8, 9, 10]) {
+    for (const i of [2, 3, 5, 6, 7, 9, 10, 11]) {
       const link = rows[i].find(".mp-dash-link");
       expect(link.exists()).toBe(true);
       expect(link.attributes("href")).toMatch(/^https:\/\//);
@@ -197,6 +206,15 @@ describe("ModelProvidersPanel — row rendering", () => {
       expect(rows[i].find(".mp-key-form").exists()).toBe(false);
       expect(rows[i].find(".pill-link").text()).toBe("no live data");
     }
+
+    // Muse is live via the local `muse login` session: no key form, just the
+    // login hint, and it still renders the live pill.
+    const muse = rows[8];
+    expect(muse.find(".agent-name").text()).toBe("Muse");
+    expect(muse.find(".pill-live").exists()).toBe(true);
+    expect(muse.find(".mp-key-form").exists()).toBe(false);
+    expect(muse.find(".mp-cli-hint").exists()).toBe(true);
+    expect(muse.text()).toContain("no API key to paste");
   });
 
   it("live rows without a key show the inline paste form with a password input", async () => {
@@ -419,6 +437,108 @@ describe("ModelProvidersPanel — live data rendering", () => {
     const row = wrapper.findAll(".mp-row")[0];
     expect(row.text()).toContain("OpenRouter rejected the API key (401)");
     expect(row.find(".mp-retry").exists()).toBe(true);
+  });
+});
+
+const museUsageRoute = (body: unknown, status = 200): StubRoute => ({
+  match: (url) => url.includes("/api/model-providers/muse/usage"),
+  status,
+  body,
+  calls: [],
+});
+
+describe("ModelProvidersPanel — provider navigation", () => {
+  it("lists every provider as a chip that jumps to its row", async () => {
+    stubFetch([providersRoute(providersFixture())]);
+    const scrollIntoView = vi.fn();
+    window.HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    // Attached so goToProvider's getElementById finds the row.
+    const wrapper = mount(ModelProvidersPanel, { attachTo: document.body });
+    await flushPromises();
+    await nextTick();
+
+    const nav = wrapper.find("nav.mp-provider-nav");
+    expect(nav.exists()).toBe(true);
+    expect(nav.attributes("aria-label")).toBe("Model providers");
+    const chips = nav.findAll(".mp-provider-chip");
+    expect(chips).toHaveLength(12);
+    expect(chips.map((c) => c.text())).toContain("Muse");
+
+    await chips[8].trigger("click");
+    await nextTick();
+    expect(chips[8].classes()).toContain("active");
+    expect(chips[8].attributes("aria-current")).toBe("true");
+    expect(scrollIntoView).toHaveBeenCalled();
+    const museRow = wrapper.findAll(".mp-row")[8];
+    expect(museRow.attributes("id")).toBe("mp-provider-muse");
+    expect(museRow.classes()).toContain("flash");
+    wrapper.unmount();
+  });
+});
+
+describe("ModelProvidersPanel — Muse live data", () => {
+  it("fetches the allowance with no saved key and renders tier plus windows", async () => {
+    const usage = museUsageRoute({
+      kind: "muse",
+      tier: "Muse Code Everyday Usage",
+      windows: [
+        {
+          id: "window",
+          label: "Current window",
+          usedPct: 18,
+          usedUsd: null,
+          limitUsd: null,
+          resetsAt: "2026-12-06T04:30:08.000Z",
+        },
+        {
+          id: "weekly",
+          label: "Weekly",
+          usedPct: 55,
+          usedUsd: null,
+          limitUsd: null,
+          resetsAt: null,
+        },
+      ],
+      unrecognized: false,
+    });
+    stubFetch([providersRoute(providersFixture()), usage]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    expect(usage.calls).toHaveLength(1);
+    const row = wrapper.findAll(".mp-row")[8];
+    expect(row.text()).toContain("Muse Code Everyday Usage");
+    expect(row.findAll(".mp-bar")).toHaveLength(2);
+    expect(row.text()).toContain("18% used");
+    expect(row.text()).toContain("55% used");
+    // No dollar figures for Muse, and no key management affordances.
+    expect(row.text()).not.toContain("$");
+    expect(row.find(".mp-key-form").exists()).toBe(false);
+    expect(row.text()).not.toContain("Replace key");
+    expect(row.text()).not.toContain("Clear");
+    expect(
+      row
+        .findAll("button")
+        .find((b) => b.text() === "Refresh")!
+        .exists(),
+    ).toBe(true);
+  });
+
+  it("shows a retryable error when the session is not logged in", async () => {
+    stubFetch([
+      providersRoute(providersFixture()),
+      museUsageRoute({ error: "muse usage: not logged in: run `muse login` first" }, 502),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[8];
+    expect(row.text()).toContain("not logged in");
+    expect(row.find(".mp-retry").exists()).toBe(true);
+    // The dashboard link-out is still one click away.
+    expect(row.find(".mp-dash-link").attributes("href")).toBe("https://dev.meta.ai/docs/muse-code");
   });
 });
 
@@ -754,7 +874,7 @@ describe("ModelProvidersPanel — GitHub Copilot reverted to a link row (#0629)"
     await flushPromises();
     await nextTick();
 
-    const row = wrapper.findAll(".mp-row")[8];
+    const row = wrapper.findAll(".mp-row")[9];
     expect(row.text()).toContain("GitHub Copilot");
     // Link-out affordances: pill, external link to the Copilot settings page,
     // and copy explaining GitHub's lack of a public personal billing API.
