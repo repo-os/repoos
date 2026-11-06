@@ -12,13 +12,13 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T04:37:35Z"
+updated_at: "2026-11-06T04:37:39Z"
 ---
 ## Problem
 
 When a task lands (Move to done), its story is scattered: the task file, one engineering report per round (`work/reports/<id>/round-<n>.json`), review passes (`review-<n>.md`), activity notes, and any follow-up tasks it spawned. Nobody gets a single account of what happened: how many dev/review rounds it took, which agents and models did the work, what went wrong, what was learned, and what new tasks came out of it. That knowledge lives in transcripts and is lost.
 
-## Desired outcome
+## Desired UX
 
 Every task that merges to `done` successfully gets one **summary report** written after the merge, in the same area as the engineering and review reports (`work/reports/<id>/`, e.g. `summary.md`). It is written by the PM agent, in the background, after close-out, and never blocks or fails the landing.
 
@@ -56,3 +56,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 
 - 2026-11-06T04:37:35Z · created · njachowski@gmail.com
 - 2026-11-06T04:37:35Z · needs_input
+- 2026-11-06T04:37:39Z · body: Desired UX (added); Desired outcome (removed)
