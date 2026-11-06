@@ -1312,7 +1312,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         repo,
         "active",
         {
-          title: "Sent-back lane: review asked for changes",
+          title: "Review changes: engineer updating code",
           priority: "p1",
           extra: { review_passes: 1, review_rounds: 1 },
         },
