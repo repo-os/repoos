@@ -6,6 +6,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GENERATED_CHANGES_MARKER } from "../../core/task-summary.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import {
   collectTaskSummaryFacts,
@@ -150,6 +151,58 @@ describe("post-merge summary generation", () => {
 function root(config: RepoOSConfig): string {
   return (config as unknown as { root: string }).root;
 }
+
+describe("post-merge summary freshness and marker hygiene", () => {
+  it("prefers the task file on disk over a stale live-index object", async () => {
+    const { config, task } = setup();
+    writeFileSync(
+      task.absPath,
+      "---\nid: '0099'\ntitle: T\nstatus: done\nmerged_commit: abc123def\n---\n\nBody.\n",
+    );
+    const stale = { ...task, status: "review", mergedCommit: null } as Task;
+    let seen = "";
+    const res = await runTaskSummaryNow(config, stale, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async (_pm: unknown, prompt: unknown) => {
+        seen = prompt as string;
+        return { ok: true, output: VALID };
+      }) as never,
+      commit: () => true,
+    });
+    expect(res.ok).toBe(true);
+    expect(seen).toContain("Status: done");
+    expect(seen).toContain("Merged commit: abc123def");
+    expect(seen).not.toContain("Status: review");
+  });
+
+  it("rejects PM output that hides padding after an injected marker", async () => {
+    const { config, task } = setup();
+    const injected = `## TL;DR\n\nok\n${GENERATED_CHANGES_MARKER}\n${"word ".repeat(2001)}`;
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: injected })) as never,
+      commit: () => true,
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error ?? "").toMatch(/words/);
+    expect(loadTaskSummaryMarkdown(config, "0099")).toBeNull();
+    expect(readSummaryStatus(config, "0099").status).toBe("failed");
+  });
+
+  it("strips an injected marker from passing output so the file carries exactly one", async () => {
+    const { config, task } = setup();
+    const injected = `## TL;DR\n\nShort.\n${GENERATED_CHANGES_MARKER}\nTail.`;
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: injected })) as never,
+      commit: () => true,
+    });
+    expect(res.ok).toBe(true);
+    const stored = loadTaskSummaryMarkdown(config, "0099") ?? "";
+    expect(stored).toContain("Tail.");
+    expect(stored.split(GENERATED_CHANGES_MARKER).length - 1).toBe(1);
+  });
+});
 
 describe("post-merge summary disk fallbacks", () => {
   it("reads a task from disk when the live index misses it", () => {

@@ -28,6 +28,7 @@ import { loadEngineeringReports } from "./engineering-reports.js";
 import {
   buildTaskSummaryPrompt,
   formatTaskSummaryFileChanges,
+  stripTaskSummaryMarkerLines,
   validateTaskSummary,
   type TaskSummaryFacts,
   type TaskSummaryFileChange,
@@ -364,9 +365,14 @@ export async function runTaskSummaryNow(
   allTasks: Task[],
   deps: TaskSummaryDeps = {},
 ): Promise<TaskSummaryResult> {
-  const taskId = task.id;
+  // Prefer the task file on disk: close-out queues with the live-index object,
+  // which predates the release stamp (status, timestamps, merged commit are
+  // flushed to the file first). The file is the source of truth; the passed
+  // object is only a fallback when nothing is on disk (e.g. tests).
+  const current = readTaskFromDisk(config, task.id) ?? task;
+  const taskId = current.id;
   try {
-    const facts = collectTaskSummaryFacts(config, task, allTasks);
+    const facts = collectTaskSummaryFacts(config, current, allTasks);
     const pm = (deps.resolvePm ?? resolvePmAgent)(config);
     if (!pm)
       return fail(
@@ -391,10 +397,13 @@ export async function runTaskSummaryNow(
         taskId,
         `PM summary run produced no output (${result.error || "unknown error"})`,
       );
-    const narrative = result.output.trim();
+    // The marker is a server-protocol token — strip any PM-emitted copies
+    // before validating and storing, so injected text after a fake marker
+    // counts toward the budget and the stored file carries exactly one marker.
+    const narrative = stripTaskSummaryMarkerLines(result.output.trim()).trim();
     const errors = validateTaskSummary(narrative);
     if (errors.length) return fail(config, taskId, errors.join(" "));
-    const files = await computeChangedFiles(config, task, facts.mergedCommit);
+    const files = await computeChangedFiles(config, current, facts.mergedCommit);
     const markdown = `${narrative}\n\n${formatTaskSummaryFileChanges(files)}`;
     const dir = reportsTaskDir(config, taskId);
     mkdirSync(dir, { recursive: true });
