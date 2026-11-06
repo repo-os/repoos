@@ -134,12 +134,18 @@ export function readSummaryStatus(config: RepoOSConfig, taskId: string): TaskSum
   return { taskId, status: "idle", at: "" };
 }
 
+/**
+ * Persist the summary job state. Returns false (and logs) when persistence
+ * fails instead of throwing: callers treat the report file as ground truth,
+ * but a lost status must stay visible in the server log — silently mapping to
+ * `idle` is what used to hide failures from polling and the drawer.
+ */
 function writeSummaryStatus(
   config: RepoOSConfig,
   taskId: string,
   status: Exclude<TaskSummaryStatus, "idle">,
   error?: string,
-): void {
+): boolean {
   try {
     mkdirSync(statusDir(config), { recursive: true });
     const state: TaskSummaryState = {
@@ -149,8 +155,12 @@ function writeSummaryStatus(
       ...(error ? { error } : {}),
     };
     writeFileSync(statusFile(config, taskId), `${JSON.stringify(state, null, 2)}\n`);
-  } catch {
-    /* status is advisory — the report file is the ground truth */
+    return true;
+  } catch (err) {
+    console.error(
+      `Task summary status not persisted for ${taskId} (${status}): ${(err as Error).message}`,
+    );
+    return false;
   }
 }
 
@@ -494,6 +504,8 @@ export async function runTaskSummaryNow(
         taskId,
         "Wrote summary.md but the bookkeeping commit failed — retry to commit it.",
       );
+    // A lost done-status is logged, not fatal: the committed report is ground
+    // truth and polling/CLI recognize it via `exists`.
     writeSummaryStatus(config, taskId, "done");
     return { ok: true };
   } catch (err) {
@@ -511,11 +523,9 @@ const inFlight = new Set<string>();
 export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Task[]): void {
   if (inFlight.has(task.id)) return;
   inFlight.add(task.id);
-  try {
-    writeSummaryStatus(config, task.id, "pending");
-  } catch {
-    /* advisory only */
-  }
+  // A lost pending state is logged inside writeSummaryStatus; the job itself
+  // still runs and the committed report stays ground truth for polling.
+  writeSummaryStatus(config, task.id, "pending");
   void (async () => {
     try {
       // Fire-and-forget callers (close-out) hold no live index, so an empty
