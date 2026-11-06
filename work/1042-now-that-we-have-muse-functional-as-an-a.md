@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-muse-usage-details-and-provider-navi
 created_at: "2026-11-06T10:56:43Z"
-updated_at: "2026-11-06T13:11:49Z"
+updated_at: "2026-11-06T13:11:51Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -119,3 +119,4 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 - 2026-11-06T13:06:29Z · message_queued at 2026-11-06T13:06:29.743Z
 - 2026-11-06T13:06:45Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T13:11:49Z · message_delivered: 1 message(s)
+- 2026-11-06T13:11:51Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
