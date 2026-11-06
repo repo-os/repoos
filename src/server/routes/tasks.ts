@@ -118,11 +118,7 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { generateServerContext, serverResumePreamble } from "../context-pack.js";
 import { listReviewPasses } from "../../core/review-passes.js";
 import { loadEngineeringReports } from "../engineering-reports.js";
-import {
-  loadTaskSummaryMarkdown,
-  queueTaskSummary,
-  readSummaryStatus,
-} from "../task-summary.js";
+import { loadTaskSummaryMarkdown, queueTaskSummary, readSummaryStatus } from "../task-summary.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
 import {

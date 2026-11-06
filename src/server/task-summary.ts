@@ -19,11 +19,7 @@ import { commitFiles, runGit } from "../core/git.js";
 import { isOwnReportPath, reportsTaskDir } from "../core/report-paths.js";
 import { findReviewPassFile, listReviewPasses } from "../core/review-passes.js";
 import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
-import {
-  recordOneShotSession,
-  resolvePmAgent,
-  runPrompt,
-} from "./agents.js";
+import { recordOneShotSession, resolvePmAgent, runPrompt } from "./agents.js";
 
 /** The PM agent shape, derived from the resolver so no private type import is needed. */
 type PmAgent = NonNullable<ReturnType<typeof resolvePmAgent>>;
@@ -103,10 +99,7 @@ function writeSummaryStatus(
 }
 
 /** The stored `summary.md` narrative, or null when none was ever written. */
-export function loadTaskSummaryMarkdown(
-  config: RepoOSConfig,
-  taskId: string,
-): string | null {
+export function loadTaskSummaryMarkdown(config: RepoOSConfig, taskId: string): string | null {
   try {
     const file = join(reportsTaskDir(config, taskId), "summary.md");
     if (!existsSync(file)) return null;
@@ -206,9 +199,19 @@ export function collectTaskSummaryFacts(
     .flatMap((candidate) => {
       const out: TaskSummaryFacts["linked"] = [];
       if (task.dependsOn?.includes(candidate.id))
-        out.push({ id: candidate.id, title: candidate.title, status: candidate.status, relation: "depends-on" });
+        out.push({
+          id: candidate.id,
+          title: candidate.title,
+          status: candidate.status,
+          relation: "depends-on",
+        });
       if (candidate.dependsOn?.includes(task.id))
-        out.push({ id: candidate.id, title: candidate.title, status: candidate.status, relation: "dependent" });
+        out.push({
+          id: candidate.id,
+          title: candidate.title,
+          status: candidate.status,
+          relation: "dependent",
+        });
       return out;
     });
   return {
@@ -338,7 +341,11 @@ export async function runTaskSummaryNow(
       `docs(${taskId}): post-merge summary report`,
     );
     if (!committed)
-      return fail(config, taskId, "Wrote summary.md but the bookkeeping commit failed — retry to commit it.");
+      return fail(
+        config,
+        taskId,
+        "Wrote summary.md but the bookkeeping commit failed — retry to commit it.",
+      );
     writeSummaryStatus(config, taskId, "done");
     return { ok: true };
   } catch (err) {

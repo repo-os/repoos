@@ -7,11 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RepoOSConfig, Task } from "../../core/types.js";
-import {
-  loadTaskSummaryMarkdown,
-  readSummaryStatus,
-  runTaskSummaryNow,
-} from "../task-summary.js";
+import { loadTaskSummaryMarkdown, readSummaryStatus, runTaskSummaryNow } from "../task-summary.js";
 
 const VALID = [
   "## TL;DR",
@@ -117,7 +113,10 @@ describe("post-merge summary generation", () => {
     expect((await runTaskSummaryNow(config, task, [], deps)).ok).toBe(true);
     const first = readFileSync(join(root(config), "work", "reports", "0099", "summary.md"), "utf8");
     expect((await runTaskSummaryNow(config, task, [], deps)).ok).toBe(true);
-    const second = readFileSync(join(root(config), "work", "reports", "0099", "summary.md"), "utf8");
+    const second = readFileSync(
+      join(root(config), "work", "reports", "0099", "summary.md"),
+      "utf8",
+    );
     expect(second).toBe(first);
     expect(readSummaryStatus(config, "0099").status).toBe("done");
   });

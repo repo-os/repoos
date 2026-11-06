@@ -34,9 +34,7 @@ const facts = (over: Partial<TaskSummaryFacts> = {}): TaskSummaryFacts => ({
 
 describe("post-merge task summary", () => {
   it("lives beside the engineering and review reports", () => {
-    expect(summaryReportRelPath({ workDir: "work" }, "1041")).toBe(
-      "work/reports/1041/summary.md",
-    );
+    expect(summaryReportRelPath({ workDir: "work" }, "1041")).toBe("work/reports/1041/summary.md");
   });
 
   it("requires a leading ## TL;DR", () => {
@@ -58,11 +56,26 @@ describe("post-merge task summary", () => {
     const prompt = buildTaskSummaryPrompt(
       facts({
         rounds: [
-          { round: 1, at: "t", agent: "e", model: "m", branch: "b", wordCount: 10, markdown: "## TL;DR\n\nr1" },
+          {
+            round: 1,
+            at: "t",
+            agent: "e",
+            model: "m",
+            branch: "b",
+            wordCount: 10,
+            markdown: "## TL;DR\n\nr1",
+          },
         ],
       }),
     );
-    for (const section of ["## TL;DR", "## Outcome", "## Process stats", "## What went wrong", "## Learnings", "## Follow-ups"])
+    for (const section of [
+      "## TL;DR",
+      "## Outcome",
+      "## Process stats",
+      "## What went wrong",
+      "## Learnings",
+      "## Follow-ups",
+    ])
       expect(prompt).toContain(section);
     expect(prompt).toMatch(/MUST come from the recorded facts/);
     expect(prompt).toContain("Round 1");

@@ -20,10 +20,7 @@ export const TASK_SUMMARY_MAX_WORDS = 2000;
 export const TASK_SUMMARY_FILENAME = "summary.md";
 
 /** `<workDir>/reports/<taskId>/summary.md`, repo-relative. */
-export function summaryReportRelPath(
-  config: { workDir?: string },
-  taskId: string,
-): string {
+export function summaryReportRelPath(config: { workDir?: string }, taskId: string): string {
   return `${reportsTaskDirRelPath(config, taskId)}/${TASK_SUMMARY_FILENAME}`;
 }
 
@@ -193,7 +190,9 @@ export function renderTaskSummaryFacts(facts: TaskSummaryFacts): string {
   lines.push("## Linked tasks", "");
   lines.push(
     ...(facts.linked.length
-      ? facts.linked.map((task) => `- #${task.id} (${task.relation}, ${task.status}): ${task.title}`)
+      ? facts.linked.map(
+          (task) => `- #${task.id} (${task.relation}, ${task.status}): ${task.title}`,
+        )
       : ["None recorded."]),
   );
   return lines.join("\n");

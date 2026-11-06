@@ -6394,7 +6394,11 @@ watch(
               {{ engineeringReportsError }}
             </p>
             <div
-              v-if="taskSummary?.markdown || taskSummaryStatus === 'pending' || taskSummaryStatus === 'failed'"
+              v-if="
+                taskSummary?.markdown ||
+                taskSummaryStatus === 'pending' ||
+                taskSummaryStatus === 'failed'
+              "
               data-test-id="task-summary"
             >
               <div class="task-section-title">Post-merge summary</div>
@@ -6403,7 +6407,8 @@ watch(
               </p>
               <p v-else-if="taskSummaryStatus === 'failed'" class="ff-error" role="alert">
                 The post-merge summary failed{{ taskSummaryError ? `: ${taskSummaryError}` : "" }} —
-                retry with <code>repoos summary {{ ui.active?.id }}</code>.
+                retry with <code>repoos summary {{ ui.active?.id }}</code
+                >.
               </p>
               <div
                 v-if="taskSummary?.markdown"

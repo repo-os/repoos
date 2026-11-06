@@ -1807,13 +1807,20 @@ export async function cmdSummary(args: string[]): Promise<number> {
     const queued = await api.request("POST", `/api/tasks/${id}/summary`, {});
     if (queued.status === 404) throw new RepoOsApiError(`Task #${id} not found`, 404, queued.body);
     if (queued.status !== 202 || !queued.body.ok)
-      throw new RepoOsApiError(queued.body.error ?? `summary refused (${queued.status})`, queued.status, queued.body);
+      throw new RepoOsApiError(
+        queued.body.error ?? `summary refused (${queued.status})`,
+        queued.status,
+        queued.body,
+      );
     if (!opts.json) console.log(c.dim(`  … generating post-merge summary for #${id}`));
     const final = await pollUntil(
       async () => {
         let state: TaskSummaryState;
         try {
-          state = (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState;
+          state = (await api.requestOk(
+            "GET",
+            `/api/tasks/${id}/summary`,
+          )) as unknown as TaskSummaryState;
         } catch {
           return null;
         }
