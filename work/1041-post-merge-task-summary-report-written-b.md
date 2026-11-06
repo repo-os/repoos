@@ -3,9 +3,6 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — failed commits can leave main dirty and expose an uncommitted report as ready.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -178,3 +175,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T17:02:09Z · message_delivered: 1 message(s)
 - 2026-11-06T17:04:30Z · status active→review
 - 2026-11-06T17:07:27Z · note: review pass 8: needs some work
+- 2026-11-06T17:07:27Z · needs_input
