@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -240,3 +240,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:07:40Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-06T19:07:44Z · message_delivered: 2 message(s)
 - 2026-11-06T19:16:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Fixed all 4 bugs identified in the review: 1. **Publication rollback** – Now preserves and restores any previously committed `summary.md` on write/commit failures, preventing dirty checkouts 2. **Retry-state handling** – Updated `isSummary… · stderr: (empty)
+- 2026-11-06T19:16:10Z · status active→review
