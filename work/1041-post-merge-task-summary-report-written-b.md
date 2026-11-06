@@ -73,20 +73,20 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 "highlight": ".engineering-report-view",
 "steps": [
 {
-  "click": "[data-test-id=\"engineering-report-tab\"]"
+"click": "[data-test-id=\"engineering-report-tab\"]"
 },
 {
-  "waitFor": ".engineering-report-view"
+"waitFor": ".engineering-report-view"
 }
 ],
 "assert": [
 {
-  "selector": "[data-test-id=\"engineering-report-tab\"]",
-  "label": "Report sub-tab"
+"selector": "[data-test-id=\"engineering-report-tab\"]",
+"label": "Report sub-tab"
 },
 {
-  "selector": ".engineering-report-view",
-  "label": "Report pane"
+"selector": ".engineering-report-view",
+"label": "Report pane"
 }
 ]
 }
@@ -308,3 +308,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T21:29:39Z · body
 - 2026-11-06T21:32:20Z · status review→active
 - 2026-11-06T21:32:21Z · needs_input
+- 2026-11-06T21:32:21Z · message_queued at 2026-11-06T21:32:21.785Z
