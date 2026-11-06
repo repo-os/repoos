@@ -297,9 +297,7 @@ describe("agent preview rows open the editor (#1040 E2)", () => {
     // The actual keyboard sequence: Tab enters the first row (the body-teleported
     // preview sits last in tab order, so default Tab would walk the card instead).
     await trigger.trigger("keydown", { key: "Tab" });
-    const firstRow = document.body.querySelector(
-      "[data-test-id='task-agent-preview-row-pm']",
-    )!;
+    const firstRow = document.body.querySelector("[data-test-id='task-agent-preview-row-pm']")!;
     expect(document.activeElement).toBe(firstRow);
     // Shift+Tab on the first row returns to the trigger.
     await new DOMWrapper(firstRow).trigger("keydown", { key: "Tab", shiftKey: true });
