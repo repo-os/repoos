@@ -14,7 +14,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T17:40:08Z"
+updated_at: "2026-11-06T17:41:22Z"
 last_close_out_gate_ms: 188810
 last_close_out_gate_at: "2026-11-06T17:40:08.689Z"
 review_passes: 1
@@ -105,4 +105,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T17:32:57Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1043 (pid 63366)
 - 2026-11-06T17:33:22Z · note: review pass 2: good to go
 - 2026-11-06T17:40:08Z · close-out gate completed in 189s
-
+- 2026-11-06T17:41:22Z · status done→done, release:success
