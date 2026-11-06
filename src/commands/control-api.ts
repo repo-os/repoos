@@ -1799,10 +1799,10 @@ export function isSummaryPollTerminal(state: Pick<TaskSummaryState, "status" | "
 const SUMMARY_MAX_GET_ERRORS = 10;
 
 /**
- * Poll a summary status fetcher until terminal. A committed report
- * (`exists`) is terminal even when the status file was lost, so polling can
- * never wait out the timeout after the report landed. Persistent fetch
- * failures fail fast instead of hanging silently until the timeout.
+ * Poll a summary status fetcher until terminal. A committed report (`exists`)
+ * with non-`pending` status is terminal (including `idle` when the done-status
+ * write was lost). While `pending`, keep polling even when the file exists —
+ * a retry may still be running. Persistent fetch failures fail fast.
  */
 export async function pollSummaryState(
   getState: () => Promise<TaskSummaryState>,
