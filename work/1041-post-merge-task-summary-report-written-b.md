@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -179,3 +179,5 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T17:07:27Z · needs_input
 - 2026-11-06T17:07:58Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (77b00337a) during finalization (#0734)
 - 2026-11-06T17:12:24Z · needs_input
+- 2026-11-06T17:12:24Z · status review→active
+- 2026-11-06T17:12:24Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
