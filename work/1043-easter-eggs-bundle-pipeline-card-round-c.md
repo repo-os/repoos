@@ -90,3 +90,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T17:20:47Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T17:20:50Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-06T17:20:50Z · message_queued at 2026-11-06T17:20:50.733Z
+- 2026-11-06T17:20:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The task logs confirm the declared amber pipeline shot was captured for the current branch head. The UI gate was waiting on an overlapping capture; stopping that task’s preview ended the lingering SSH capture process and cleared the overla… · stderr: (empty)
