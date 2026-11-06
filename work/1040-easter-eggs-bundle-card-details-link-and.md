@@ -157,3 +157,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T05:00:16Z · body
 - 2026-11-06T05:02:31Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-06T05:02:31Z · message_queued at 2026-11-06T05:02:31.742Z
+- 2026-11-06T05:02:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Scoped check green ("All checks passed"). Requesting handoff so server finalization re-runs UI verification on the corrected shots. · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-details-link-and (cwd default) muse: workspace trust: trusted source=run-flag
