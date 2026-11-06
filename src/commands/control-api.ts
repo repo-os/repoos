@@ -1872,7 +1872,8 @@ export async function cmdSummary(args: string[]): Promise<number> {
       { label: `summary for #${id}` },
     );
     const success =
-      final.status === "done" || (final.exists && final.status !== "failed" && final.status !== "pending");
+      final.status === "done" ||
+      (final.exists && final.status !== "failed" && final.status !== "pending");
     if (opts.json) {
       printJson(final);
       return success ? 0 : 1;
