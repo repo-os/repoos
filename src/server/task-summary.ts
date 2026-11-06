@@ -306,38 +306,44 @@ export function collectTaskSummaryFacts(
   try {
     if (task.absPath && existsSync(task.absPath))
       body = parseDocument(readFileSync(task.absPath, "utf8")).body;
-  } catch {
-    /* fall back to the passed task body */
+  } catch (err) {
+    loadErrors.push(`Could not read task body from disk: ${(err as Error).message}`);
   }
   const { body: bodyWithoutActivity, activity } = splitBodyAndActivity(body);
 
-  let rounds: TaskSummaryRoundFacts[] = [];
-  try {
-    rounds = loadEngineeringReports(config, task.id).reports.map((report) => ({
-      round: report.round,
-      at: report.at,
-      agent: report.agent,
-      model: report.model,
-      branch: report.branch,
-      wordCount: report.wordCount,
-      markdown: report.markdown,
-    }));
-  } catch (err) {
-    loadErrors.push(`Could not load engineering reports: ${(err as Error).message}`);
-  }
+  const { reports: loadedReports, errors: engineeringErrors } = loadEngineeringReports(
+    config,
+    task.id,
+  );
+  loadErrors.push(...engineeringErrors);
+  const rounds: TaskSummaryRoundFacts[] = loadedReports.map((report) => ({
+    round: report.round,
+    at: report.at,
+    agent: report.agent,
+    model: report.model,
+    branch: report.branch,
+    wordCount: report.wordCount,
+    markdown: report.markdown,
+  }));
 
   let reviews: TaskSummaryReviewFacts[] = [];
   try {
-    reviews = listReviewPasses(config, task.id).map((pass) => ({
-      pass: pass.pass,
-      at: pass.at,
-      state: pass.state,
-      verdict: pass.verdict,
-      agent: pass.agent,
-      cli: pass.cli,
-      model: pass.model,
-      markdown: readReviewBody(config, task.id, pass.pass),
-    }));
+    reviews = listReviewPasses(config, task.id).map((pass) => {
+      const markdown = readReviewBody(config, task.id, pass.pass);
+      if (!markdown) {
+        loadErrors.push(`Review pass ${pass.pass}: could not read body`);
+      }
+      return {
+        pass: pass.pass,
+        at: pass.at,
+        state: pass.state,
+        verdict: pass.verdict,
+        agent: pass.agent,
+        cli: pass.cli,
+        model: pass.model,
+        markdown,
+      };
+    });
   } catch (err) {
     loadErrors.push(`Could not load review passes: ${(err as Error).message}`);
   }
@@ -520,25 +526,28 @@ export async function runTaskSummaryNow(
       const dir = reportsTaskDir(config, taskId);
       mkdirSync(dir, { recursive: true });
       absPath = join(dir, "summary.md");
-      writeFileSync(absPath, `${markdown.trim()}\n`);
-      committed = (deps.commit ?? commitFiles)(
-        config.root,
-        [absPath],
-        `docs(${taskId}): post-merge summary report`,
-      );
-      if (!committed) {
-        // Clean up the uncommitted file so it doesn't block close-out
+      try {
+        writeFileSync(absPath, `${markdown.trim()}\n`);
+        committed = (deps.commit ?? commitFiles)(
+          config.root,
+          [absPath],
+          `docs(${taskId}): post-merge summary report`,
+        );
+      } catch (err) {
+        // Clean up on write/commit errors so uncommitted file doesn't block close-out
         try {
           unlinkSync(absPath);
         } catch {
           /* ignore cleanup failure */
         }
+        throw err;
+      }
+      if (!committed)
         return fail(
           config,
           taskId,
           "Wrote summary.md but the bookkeeping commit failed — retry to commit it.",
         );
-      }
     } finally {
       slot();
     }
