@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T15:30:21Z"
+updated_at: "2026-11-06T15:52:29Z"
 ---
 ## Problem
 
@@ -36,3 +37,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T12:18:05Z · needs_input
 - 2026-11-06T12:18:12Z · needs_input, body: Notes for AI (added)
 - 2026-11-06T15:30:21Z · status inbox→ready
+- 2026-11-06T15:52:29Z · cli_override
