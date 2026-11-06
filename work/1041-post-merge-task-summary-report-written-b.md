@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T07:33:19.730Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -92,3 +94,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T07:31:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T07:33:16Z · message_queued at 2026-11-06T07:33:16.487Z
 - 2026-11-06T07:33:19Z · message_delivered: 1 message(s)
+
