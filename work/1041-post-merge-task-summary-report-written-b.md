@@ -278,3 +278,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T20:33:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Checking git state and running `repoos check` with a stable worktree before re-requesting handoff. · stderr: (empty)
 - 2026-11-06T20:33:36Z · message_delivered: 2 message(s)
 - 2026-11-06T20:35:47Z · message_queued at 2026-11-06T20:35:47.463Z
+- 2026-11-06T20:35:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
