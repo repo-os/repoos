@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-muse-usage-details-and-provider-navi
 created_at: "2026-11-06T10:56:43Z"
-updated_at: "2026-11-06T11:13:18Z"
+updated_at: "2026-11-06T11:17:32Z"
 ---
 ## Problem
 
@@ -41,16 +41,16 @@ This task covers adding Muse to the Model Providers tab, displaying its usage an
 ```json
 [
 {
-  "label": "Provider quick-nav chips at top of Model providers",
-  "target": "default",
-  "route": "/agents?tab=providers",
-  "highlight": ".mp-provider-nav"
+"label": "Provider quick-nav chips at top of Model providers",
+"target": "default",
+"route": "/agents?tab=providers",
+"highlight": ".mp-provider-nav"
 },
 {
-  "label": "Muse subscription allowance row with login hint",
-  "target": "default",
-  "route": "/agents?tab=providers",
-  "highlight": "[data-provider-id=\"muse\"]"
+"label": "Muse subscription allowance row with login hint",
+"target": "default",
+"route": "/agents?tab=providers",
+"highlight": "[data-provider-id=\"muse\"]"
 }
 ]
 ```
@@ -73,3 +73,4 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 - 2026-11-06T10:57:48Z · status inbox→ready
 - 2026-11-06T10:57:59Z · status ready→active, branch
 - 2026-11-06T11:13:18Z · body
+- 2026-11-06T11:17:32Z · body
