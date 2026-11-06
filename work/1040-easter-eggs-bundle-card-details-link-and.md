@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-06T15:55:42Z"
+review_passes: 3
 id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
@@ -12,9 +14,7 @@ cli_override: muse
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T15:55:42Z"
 review_rounds: 2
-review_passes: 2
 last_check_failure: "repoos check at 2026-11-06T04:42:19.073Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agent hover popover rows open the editor (target \"default\"): hover button.tc-agent-btn: hover: Timeout 5000ms exceeded. on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep); [missing-target] Agent hover popover rows open the editor (target \"default\"): highlight [data-test-id=\"task-agent-preview\"] tbody tr matched nothing on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep)"
 handoff_signal_retry_count: 1
 dev_error_count: 6
@@ -192,3 +192,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T15:53:08Z · message_queued at 2026-11-06T15:53:08.678Z
 - 2026-11-06T15:53:08Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-06T15:55:42Z · note: review pass 4: good to go
+
