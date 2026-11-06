@@ -259,3 +259,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:45:49Z · message_delivered: 2 message(s)
 - 2026-11-06T19:45:51Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
 - 2026-11-06T19:55:47Z · message_queued at 2026-11-06T19:55:47.220Z
+- 2026-11-06T19:55:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
