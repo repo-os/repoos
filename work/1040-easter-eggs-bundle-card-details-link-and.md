@@ -156,3 +156,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T04:58:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T05:00:16Z · body
 - 2026-11-06T05:02:31Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-06T05:02:31Z · message_queued at 2026-11-06T05:02:31.742Z
