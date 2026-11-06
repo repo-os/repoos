@@ -23,7 +23,7 @@ import {
   reviewCommand,
   supportsChosenSessionId,
 } from "../../server/agents";
-import { MUSE_MAX_MODEL_STEPS } from "../../core/agent-contract";
+import { MUSE_ENGINEER_MAX_MODEL_STEPS, MUSE_MAX_MODEL_STEPS } from "../../core/agent-contract";
 import type { Agent } from "../../core/types";
 
 const agent = (model = "default"): Agent => ({
@@ -111,7 +111,7 @@ describe("muse invocation shapes", () => {
       "--approval-mode",
       "never",
       "--max-model-steps",
-      String(MUSE_MAX_MODEL_STEPS),
+      String(MUSE_ENGINEER_MAX_MODEL_STEPS),
       "--reasoning-effort",
       "medium",
       "--session-id",
@@ -166,6 +166,16 @@ describe("muse event parsing", () => {
         env("run.model.configured", { kind: "run_model_configured", model_id: "muse-spark-1.3" }),
       ),
     ).toEqual({ sessionID: UUID, model: "muse-spark-1.3" });
+  });
+
+  it("reports the per-turn model call count from run.usage (step-cap detection)", () => {
+    expect(parseMuseEvent(env("run.usage", { kind: "run_usage", calls: 200, models: [] }))).toEqual(
+      { sessionID: UUID, usageCalls: 200 },
+    );
+  });
+
+  it("gives engineer turns a larger step cap than probes and advisory turns", () => {
+    expect(MUSE_ENGINEER_MAX_MODEL_STEPS).toBeGreaterThan(MUSE_MAX_MODEL_STEPS);
   });
 
   it("surfaces incremental delta text", () => {
