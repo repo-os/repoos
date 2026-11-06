@@ -118,7 +118,13 @@ import { bootstrap } from "../../core/bootstrap.js";
 import { generateServerContext, serverResumePreamble } from "../context-pack.js";
 import { listReviewPasses } from "../../core/review-passes.js";
 import { loadEngineeringReports } from "../engineering-reports.js";
-import { loadTaskSummaryMarkdown, queueTaskSummary, readSummaryStatus } from "../task-summary.js";
+import {
+  loadTaskSummaryMarkdown,
+  queueTaskSummary,
+  readSummaryStatus,
+  readTaskFromDisk,
+  summaryReleaseGate,
+} from "../task-summary.js";
 import { mimeForExtension, readAttachment, saveScreenshot } from "../attachments.js";
 import { taskAttachmentCloudStates } from "../../core/attachment-resilience.js";
 import {
@@ -4093,6 +4099,11 @@ export const getTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
 export const postTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
   const task = ctx.index.getTask(params.param1);
   if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
+  // Manual runs require a released task: the disk file governs, since the
+  // live index can predate the release stamp. The generator re-checks this
+  // same gate before writing anything.
+  const gateError = summaryReleaseGate(readTaskFromDisk(ctx.config, task.id) ?? task);
+  if (gateError) return json(res, 409, { error: gateError });
   queueTaskSummary(ctx.config, task, ctx.index.getTasks());
   return json(res, 202, { ok: true, queued: true });
 };

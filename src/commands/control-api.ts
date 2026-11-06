@@ -1786,9 +1786,9 @@ interface TaskSummaryState {
 
 /**
  * `repoos summary <id>` (#1041): queue the post-merge PM summary report and
- * wait for its terminal state. Works on any task — the normal path runs it
- * automatically after Move to done; this is the visible retry. Never touches
- * the task status.
+ * wait for its terminal state. Requires a released (`done`) task — the normal
+ * path runs it automatically after Move to done; this is the visible retry.
+ * Never touches the task status.
  */
 export async function cmdSummary(args: string[]): Promise<number> {
   const { rest, opts, error } = parseCommonFlags(args);

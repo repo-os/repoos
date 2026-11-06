@@ -21,6 +21,7 @@ import { isOwnReportPath, reportsTaskDir } from "../core/report-paths.js";
 import { findReviewPassFile, listReviewPasses } from "../core/review-passes.js";
 import { repoAgentRunTmpOpts } from "../core/agent-run-tmpdir.js";
 import { recordOneShotSession, resolvePmAgent, runPrompt } from "./agents.js";
+import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 
 /** The PM agent shape, derived from the resolver so no private type import is needed. */
 type PmAgent = NonNullable<ReturnType<typeof resolvePmAgent>>;
@@ -55,6 +56,59 @@ export interface TaskSummaryDeps {
   resolvePm?: (config: RepoOSConfig) => PmAgent | null;
   runPrompt?: typeof runPrompt;
   commit?: (root: string, absPaths: string[], message: string) => boolean;
+  /**
+   * Acquire the publication-commit slot; resolves to a release function, or
+   * null when a landing holds publication past the wait budget. Defaults to
+   * the real repo/root locks so the bookkeeping commit never contends with a
+   * landing's shared index/ref.
+   */
+  commitSlot?: (root: string, taskId: string) => Promise<(() => void) | null>;
+}
+
+/**
+ * Lifecycle gate for the post-merge summary. Only a released (`done`) task
+ * has complete facts — generating earlier would bake in a pre-merge story.
+ * Returns the refusal message, or null when generation may proceed. The disk
+ * file governs: callers pass the file-preferred task.
+ */
+export function summaryReleaseGate(task: Pick<Task, "id" | "status">): string | null {
+  if (task.status === "done") return null;
+  return (
+    `Task #${task.id} is not released (status: ${task.status ?? "unknown"}) — ` +
+    "the post-merge summary is generated after Move to done. Retry once the task has landed."
+  );
+}
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Serialize the summary bookkeeping commit with publication: hold the
+ * close-out (publication) lock and the root lock — in that order, matching
+ * the orchestrator — only around the commit itself, never during the slow PM
+ * generation. Returns a release function, or null after the wait budget when
+ * a landing is publishing (the summary fails visibly and stays retryable).
+ */
+export async function acquireSummaryCommitSlot(
+  root: string,
+  taskId: string,
+  opts: { tries?: number; delayMs?: number } = {},
+): Promise<(() => void) | null> {
+  const { tries = 30, delayMs = 2000 } = opts;
+  const repoLock = createRepositoryLock(root);
+  const rootLock = createRootLock(root);
+  for (let attempt = 0; attempt < tries; attempt++) {
+    if (repoLock.acquire(taskId)) {
+      if (rootLock.acquire(taskId, "close-out")) {
+        return () => {
+          rootLock.release(taskId);
+          repoLock.release(taskId);
+        };
+      }
+      repoLock.release(taskId);
+    }
+    await sleep(delayMs);
+  }
+  return null;
 }
 
 const statusDir = (config: RepoOSConfig): string =>
@@ -371,6 +425,8 @@ export async function runTaskSummaryNow(
   // object is only a fallback when nothing is on disk (e.g. tests).
   const current = readTaskFromDisk(config, task.id) ?? task;
   const taskId = current.id;
+  const gateError = summaryReleaseGate(current);
+  if (gateError) return fail(config, taskId, gateError);
   try {
     const facts = collectTaskSummaryFacts(config, current, allTasks);
     const pm = (deps.resolvePm ?? resolvePmAgent)(config);
@@ -409,11 +465,29 @@ export async function runTaskSummaryNow(
     mkdirSync(dir, { recursive: true });
     const absPath = join(dir, "summary.md");
     writeFileSync(absPath, `${markdown.trim()}\n`);
-    const committed = (deps.commit ?? commitFiles)(
-      config.root,
-      [absPath],
-      `docs(${taskId}): post-merge summary report`,
-    );
+    // Serialize the bookkeeping commit with publication: a landing holds the
+    // same locks while merging, so committing blind could contend with its
+    // shared index/ref and fail that landing. Waiting here never blocks a
+    // landing — only this background job, which fails visibly when the slot
+    // never opens.
+    const slot = await (deps.commitSlot ?? acquireSummaryCommitSlot)(config.root, taskId);
+    if (!slot)
+      return fail(
+        config,
+        taskId,
+        "A landing is publishing and the summary could not take the commit slot — " +
+          `retry with \`repoos summary ${taskId}\`.`,
+      );
+    let committed = false;
+    try {
+      committed = (deps.commit ?? commitFiles)(
+        config.root,
+        [absPath],
+        `docs(${taskId}): post-merge summary report`,
+      );
+    } finally {
+      slot();
+    }
     if (!committed)
       return fail(
         config,
