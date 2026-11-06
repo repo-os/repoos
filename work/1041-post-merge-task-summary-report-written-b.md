@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T19:32:25Z"
+updated_at: "2026-11-06T19:32:26Z"
 review_passes: 8
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 63a04ffa3ef54b19f5cbbd5d623b6aca0bd26606
@@ -252,3 +252,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:32:24Z · status review→active
 - 2026-11-06T19:32:25Z · needs_input
 - 2026-11-06T19:32:25Z · message_queued at 2026-11-06T19:32:25.464Z
+- 2026-11-06T19:32:26Z · CTO nudge: held — handoff gate is running
