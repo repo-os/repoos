@@ -2,7 +2,7 @@
 id: 1043
 title: "Easter eggs bundle: pipeline card round chip and sent-back note"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -73,4 +73,3 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T16:45:52Z · message_delivered: 1 message(s)
 - 2026-11-06T16:45:53Z · message_queued at 2026-11-06T16:45:53.722Z
 - 2026-11-06T16:47:29Z · body
-- 2026-11-06T16:49:09Z · status active→review
