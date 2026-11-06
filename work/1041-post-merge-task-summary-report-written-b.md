@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T15:25:03Z"
+updated_at: "2026-11-06T15:27:35Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-06T09:20:05.482Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -158,3 +158,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T13:41:28Z · needs_input
 - 2026-11-06T13:41:28Z · needs_input
 - 2026-11-06T13:49:44Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d80809163) during finalization (#0734)
+- 2026-11-06T15:27:35Z · message_overdue: still queued after 60m without being delivered
