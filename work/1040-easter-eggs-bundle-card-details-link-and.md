@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
@@ -11,7 +10,8 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T01:58:39Z"
+updated_at: "2026-11-06T02:10:03Z"
+handoff_signal_retry_count: 1
 ---
 ## Items
 - E1 · Task card: drop the redundant "Details" link under the needs-input blurb
@@ -78,4 +78,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T01:51:13Z · status inbox→ready
 - 2026-11-06T01:51:15Z · status ready→active, branch
 - 2026-11-06T01:58:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: off. · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-details-link-and (cwd default) muse: workspace trust: trusted source=run-flag muse: warning: rules file at /Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-details-link-and/CLAUDE.md is ignored this session bec…
-
+- 2026-11-06T02:10:03Z · CTO nudge: held — handoff gate is running
