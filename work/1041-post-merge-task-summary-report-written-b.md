@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -73,12 +73,12 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 "selector": "[data-test-id=\"engineering-report-tab\"]",
 "highlight": ".engineering-report-view",
 "steps": [
-  {
-    "click": "[data-test-id=\"engineering-report-tab\"]"
-  },
-  {
-    "waitFor": ".engineering-report-view"
-  }
+{
+  "click": "[data-test-id=\"engineering-report-tab\"]"
+},
+{
+  "waitFor": ".engineering-report-view"
+}
 ]
 }
 ]
@@ -232,3 +232,5 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:02:17Z · message_delivered: 1 message(s)
 - 2026-11-06T19:02:33Z · body
 - 2026-11-06T19:02:33Z · needs_input
+- 2026-11-06T19:02:33Z · status review→active
+- 2026-11-06T19:02:33Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
