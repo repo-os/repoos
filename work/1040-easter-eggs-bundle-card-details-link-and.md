@@ -115,3 +115,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T02:40:07Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-11-06T02:45:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T03:08:27Z · note: ui verification failed (5 issue(s)): [missing-target] Needs-human-step card blurb without Details link (target "default"): state "card:humanStep" did not render on target "default" — / shows no task card (http://127.0.0.1:60860/?shotState=card%3AhumanStep); [missing-target] Needs-human-step card blurb without Details link (target "default"): highlight [data-test-id="task-card-needs-input-detail"] matched nothing on / (http://127.0.0.1:60860/?shotState=card%3AhumanStep); [missing-target] Agent ho
+- 2026-11-06T03:08:27Z · message_queued at 2026-11-06T03:08:27.469Z
