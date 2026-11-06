@@ -56,6 +56,8 @@ describe("muse invocation shapes", () => {
         "never",
         "--max-model-steps",
         String(MUSE_MAX_MODEL_STEPS),
+        "--reasoning-effort",
+        "medium",
         "do the thing",
       ],
     });
@@ -109,6 +111,8 @@ describe("muse invocation shapes", () => {
       "never",
       "--max-model-steps",
       String(MUSE_MAX_MODEL_STEPS),
+      "--reasoning-effort",
+      "medium",
       "--session-id",
       UUID,
       "--model",
