@@ -121,6 +121,9 @@ function seedAgents(): void {
 async function mountCard(pinia: Pinia, task: Task) {
   const wrapper = mount(TaskCard, {
     props: { task, dragEnabled: false },
+    // Attached: the preview teleports to body, and the focus-management tests
+    // need the trigger in the same document to move focus between the two.
+    attachTo: document.body,
     global: { plugins: [pinia] },
   });
   await flush();
@@ -266,8 +269,67 @@ describe("agent preview rows open the editor (#1040 E2)", () => {
     const trigger = wrapper.find(".tc-agent-btn");
     expect(trigger.attributes("aria-haspopup")).toBe("dialog");
     expect(trigger.attributes("aria-describedby")).toBeUndefined();
+    expect(trigger.attributes("title")).toBeUndefined();
     expect(preview.getAttribute("role")).toBe("dialog");
     expect(preview.getAttribute("aria-label")).toContain("agent assignments");
+    wrapper.unmount();
+  });
+
+  it("Tab from the trigger moves focus into the rows; Shift+Tab returns", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask({ needsInput: false });
+    stubFetch(task);
+    await useRepoStore().init();
+    seedAgents();
+    const wrapper = await mountCard(pinia, task);
+
+    // Keyboard users open the preview by focusing the trigger…
+    const trigger = wrapper.find(".tc-agent-btn");
+    await trigger.trigger("focus");
+    await flush();
+    const preview = document.body.querySelector("[data-test-id='task-agent-preview']");
+    expect(preview).not.toBeNull();
+    // …and the trigger names the preview while it is open.
+    expect(trigger.attributes("aria-controls")).toContain(`task-agent-preview-${task.id}`);
+    // The actual keyboard sequence: Tab enters the first row (the body-teleported
+    // preview sits last in tab order, so default Tab would walk the card instead).
+    await trigger.trigger("keydown", { key: "Tab" });
+    const firstRow = document.body.querySelector(
+      "[data-test-id='task-agent-preview-row-pm']",
+    )!;
+    expect(document.activeElement).toBe(firstRow);
+    // Shift+Tab on the first row returns to the trigger.
+    await new DOMWrapper(firstRow).trigger("keydown", { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(trigger.element);
+    wrapper.unmount();
+  });
+
+  it("Escape closes the preview and returns focus to the trigger", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask({ needsInput: false });
+    stubFetch(task);
+    await useRepoStore().init();
+    seedAgents();
+    const wrapper = await mountCard(pinia, task);
+
+    const trigger = wrapper.find(".tc-agent-btn");
+    await trigger.trigger("focus");
+    await flush();
+    await trigger.trigger("keydown", { key: "Tab" });
+    const firstRow = new DOMWrapper(
+      document.body.querySelector("[data-test-id='task-agent-preview-row-pm']")!,
+    );
+    expect(document.activeElement).toBe(firstRow.element);
+    await firstRow.trigger("keydown", { key: "Escape" });
+    await flush();
+    expect(document.body.querySelector("[data-test-id='task-agent-preview']")).toBeNull();
+    expect(document.activeElement).toBe(trigger.element);
     wrapper.unmount();
   });
 
