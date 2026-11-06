@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pipeline-view.test.ts > pipeline-card lib > renders reviewer chips per verdict tone on mini — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 889dd843459ef5d9a81dc2810c95d43f0718867c
 id: 1043
 title: "Easter eggs bundle: pipeline card round chip and sent-back note"
 type: chore
@@ -76,3 +78,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T16:49:09Z · note: handoff requested (cli)
 - 2026-11-06T16:58:18Z · message_queued at 2026-11-06T16:58:18.714Z
 - 2026-11-06T16:58:19Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/pipeline-view.test.ts > pipeline-card lib > renders reviewer chips per verdict tone on mini — fix it in the feature branch and re-run the gate
+
