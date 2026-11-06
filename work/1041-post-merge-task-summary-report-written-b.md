@@ -243,3 +243,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:16:10Z · note: handoff requested (cli)
 - 2026-11-06T19:20:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T19:25:42Z · message_queued at 2026-11-06T19:25:42.102Z
+- 2026-11-06T19:25:42Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate
