@@ -2,15 +2,15 @@
 id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T01:51:13Z"
+updated_at: "2026-11-06T01:51:15Z"
 ---
 ## Items
 - E1 · Task card: drop the redundant "Details" link under the needs-input blurb
@@ -75,3 +75,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-05T14:38:40Z · cli_override
 - 2026-11-05T14:38:41Z · cli_override
 - 2026-11-06T01:51:13Z · status inbox→ready
+- 2026-11-06T01:51:15Z · status ready→active, branch
