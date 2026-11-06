@@ -84,3 +84,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T17:05:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T17:09:22Z · message_queued at 2026-11-06T17:09:22.688Z
 - 2026-11-06T17:09:25Z · message_delivered: 1 message(s)
+- 2026-11-06T17:12:30Z · note: handoff requested (cli)
