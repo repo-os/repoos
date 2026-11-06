@@ -4,8 +4,8 @@ title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — publication failures, retry state, silent session loss, and weak section checks still violate requirements."
 priority: p2
 area: [core, web]
 assigned_to: ai
