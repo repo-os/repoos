@@ -32,6 +32,7 @@ import {
   isSummaryPollTerminal,
   pollSummaryState,
   waitForReviewHandoff,
+  type TaskSummaryState,
 } from "../../commands/control-api";
 import { RepoOsApi } from "../../cli/repoos-api";
 import { beginHandoffStatus, finishHandoffStatus } from "../../server/handoff-status";
@@ -754,9 +755,6 @@ describe("control API CLI", () => {
 });
 
 describe("repoos summary polling", () => {
-  const terminal = (status: string, exists: boolean) =>
-    isSummaryPollTerminal({ status, exists }) as boolean;
-
   it.each([
     ["done reports terminal", "done", false, true],
     ["failed reports terminal", "failed", false, true],
@@ -765,7 +763,12 @@ describe("repoos summary polling", () => {
     ["pending without a report keeps polling", "pending", false, false],
     ["idle without a report keeps polling", "idle", false, false],
   ])("%s", (_name, status, exists, expected) => {
-    expect(terminal(status, exists)).toBe(expected);
+    expect(
+      isSummaryPollTerminal({
+        status: status as TaskSummaryState["status"],
+        exists: exists as boolean,
+      }),
+    ).toBe(expected as boolean);
   });
 
   it("resolves once the report commits, without waiting for the status file", async () => {
