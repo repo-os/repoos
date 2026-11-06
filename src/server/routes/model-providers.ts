@@ -56,18 +56,18 @@ export const getModelProviderUsage: RouteHandler = async (ctx, _req, res, params
       error: `${row.label} has no live RepoOS usage integration — it renders as a dashboard link-out.`,
     });
   }
-  const apiKey = readProviderKey(ctx.config, row);
-  if (!apiKey) {
-    return json(res, 400, {
-      error: `No ${row.label} API key saved yet — paste one on its row first.`,
-    });
-  }
   try {
-    // Muse reads the local `muse login` session, not a pasted key — there is
-    // nothing to look up before spawning the check.
+    // Muse reads the local `muse login` session, not a pasted key — it must
+    // run before the key lookup below, which is always empty for this row.
     if (row.id === "muse") {
       const usage = await fetchMuseUsage();
       return json(res, 200, { kind: row.id, ...usage, at: new Date().toISOString() });
+    }
+    const apiKey = readProviderKey(ctx.config, row);
+    if (!apiKey) {
+      return json(res, 400, {
+        error: `No ${row.label} API key saved yet — paste one on its row first.`,
+      });
     }
     if (row.id === "jev" || row.id === "clef-flash") {
       return json(res, 400, {
