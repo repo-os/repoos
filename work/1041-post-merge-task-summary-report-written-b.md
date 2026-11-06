@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -58,3 +59,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T04:54:12Z · status inbox→ready
 - 2026-11-06T05:09:29Z · status ready→active, branch
 - 2026-11-06T05:15:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Still missing:** server task-summary module, orchestrator hook, API routes + CLI + parity entries, drawer Summary block, `user-docs/engineering-reports.md` update, tests (generation, idempotency, failure path), and the scoped `repoos che… · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/post-merge-task-summary-report-written-b (cwd default) muse: workspace trust: trusted source=run-flag muse: warning: rules file at /Users/nick/code/nick/repoos-worktrees/feat/post-merge-task-summary-report-written-b/CLAUDE.md is ignored this session bec…
+
