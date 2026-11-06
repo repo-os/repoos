@@ -31,6 +31,7 @@ const facts = (over: Partial<TaskSummaryFacts> = {}): TaskSummaryFacts => ({
   reviews: [],
   sessions: [],
   linked: [],
+  loadErrors: [],
   ...over,
 });
 

@@ -64,15 +64,29 @@ export function countSummaryNarrativeWords(markdown: string): number {
 }
 
 /**
- * Hard acceptance checks for a summary report: it starts with `## TL;DR`
- * and the narrative stays within the word budget. Returns one message per
- * failure, empty when the report passes.
+ * Hard acceptance checks for a summary report: it starts with `## TL;DR`,
+ * includes all required sections, and the narrative stays within the word
+ * budget. Returns one message per failure, empty when the report passes.
  */
 export function validateTaskSummary(markdown: string): string[] {
   const errors: string[] = [];
   if (!markdown.trim()) return ["Task summary is empty."];
   if (!markdown.trimStart().startsWith("## TL;DR"))
     errors.push("Task summary must begin with ## TL;DR; remove any text before it.");
+
+  const requiredSections = [
+    "## Outcome",
+    "## Process stats",
+    "## What went wrong",
+    "## Learnings",
+    "## Follow-ups",
+  ];
+  for (const section of requiredSections) {
+    if (!markdown.includes(section)) {
+      errors.push(`Task summary must include "${section}" section.`);
+    }
+  }
+
   const words = countSummaryNarrativeWords(markdown);
   if (words > TASK_SUMMARY_MAX_WORDS)
     errors.push(
@@ -147,6 +161,8 @@ export interface TaskSummaryFacts {
   reviews: TaskSummaryReviewFacts[];
   sessions: TaskSummarySessionFacts[];
   linked: TaskSummaryLinkedTask[];
+  /** Load errors that occurred while gathering facts. Empty if all sources loaded cleanly. */
+  loadErrors: string[];
 }
 
 function fmt(value: string | null | undefined): string {
@@ -162,6 +178,18 @@ export function renderTaskSummaryFacts(facts: TaskSummaryFacts): string {
     `- Type: ${fmt(facts.type)} · Area: ${fmt(facts.area)} · Priority: ${fmt(facts.priority)} · Status: ${fmt(facts.status)}`,
     `- Branch: ${fmt(facts.branch)} · Created: ${fmt(facts.createdAt)} · Done: ${fmt(facts.updatedAt)} · Merged commit: ${fmt(facts.mergedCommit)}`,
     "",
+  ];
+
+  if (facts.loadErrors.length) {
+    lines.push(
+      "⚠️ **Load errors — some recorded facts could not be read:**",
+      "",
+      ...facts.loadErrors.map((err) => `- ${err}`),
+      "",
+    );
+  }
+
+  lines.push(
     "## Task body",
     "",
     facts.body.trim() || "—",
@@ -172,7 +200,7 @@ export function renderTaskSummaryFacts(facts: TaskSummaryFacts): string {
     "",
     "## Engineering rounds",
     "",
-  ];
+  );
   for (const round of facts.rounds) {
     lines.push(
       `### Round ${round.round} — ${fmt(round.at)} · ${fmt(round.agent)} · ${fmt(round.model)}`,

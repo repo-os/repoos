@@ -9,7 +9,14 @@
  * `repoos summary <id>` (or `POST /api/tasks/:id/summary`) retries it.
  * Re-running overwrites the same file — idempotent, never duplicated.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+} from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { SessionRecord } from "../core/db.js";
@@ -34,6 +41,8 @@ import {
   type TaskSummaryFacts,
   type TaskSummaryFileChange,
   type TaskSummarySessionFacts,
+  type TaskSummaryRoundFacts,
+  type TaskSummaryReviewFacts,
 } from "../core/task-summary.js";
 
 /** Visible lifecycle of a task's summary job. `idle` means never attempted. */
@@ -291,6 +300,8 @@ export function collectTaskSummaryFacts(
   task: Task,
   allTasks: Task[],
 ): TaskSummaryFacts {
+  const loadErrors: string[] = [];
+
   let body = task.body ?? "";
   try {
     if (task.absPath && existsSync(task.absPath))
@@ -299,31 +310,45 @@ export function collectTaskSummaryFacts(
     /* fall back to the passed task body */
   }
   const { body: bodyWithoutActivity, activity } = splitBodyAndActivity(body);
-  const rounds = loadEngineeringReports(config, task.id).reports.map((report) => ({
-    round: report.round,
-    at: report.at,
-    agent: report.agent,
-    model: report.model,
-    branch: report.branch,
-    wordCount: report.wordCount,
-    markdown: report.markdown,
-  }));
-  const reviews = listReviewPasses(config, task.id).map((pass) => ({
-    pass: pass.pass,
-    at: pass.at,
-    state: pass.state,
-    verdict: pass.verdict,
-    agent: pass.agent,
-    cli: pass.cli,
-    model: pass.model,
-    markdown: readReviewBody(config, task.id, pass.pass),
-  }));
+
+  let rounds: TaskSummaryRoundFacts[] = [];
+  try {
+    rounds = loadEngineeringReports(config, task.id).reports.map((report) => ({
+      round: report.round,
+      at: report.at,
+      agent: report.agent,
+      model: report.model,
+      branch: report.branch,
+      wordCount: report.wordCount,
+      markdown: report.markdown,
+    }));
+  } catch (err) {
+    loadErrors.push(`Could not load engineering reports: ${(err as Error).message}`);
+  }
+
+  let reviews: TaskSummaryReviewFacts[] = [];
+  try {
+    reviews = listReviewPasses(config, task.id).map((pass) => ({
+      pass: pass.pass,
+      at: pass.at,
+      state: pass.state,
+      verdict: pass.verdict,
+      agent: pass.agent,
+      cli: pass.cli,
+      model: pass.model,
+      markdown: readReviewBody(config, task.id, pass.pass),
+    }));
+  } catch (err) {
+    loadErrors.push(`Could not load review passes: ${(err as Error).message}`);
+  }
+
   let sessions: TaskSummarySessionFacts[] = [];
   try {
     sessions = (getRepoOSDb(config.root)?.getTaskSessions(task.id) ?? []).map(toSessionFacts);
-  } catch {
-    sessions = [];
+  } catch (err) {
+    loadErrors.push(`Could not load session records: ${(err as Error).message}`);
   }
+
   const linked = allTasks
     .filter((candidate) => candidate.id !== task.id)
     .flatMap((candidate) => {
@@ -344,6 +369,7 @@ export function collectTaskSummaryFacts(
         });
       return out;
     });
+
   return {
     taskId: task.id,
     title: task.title,
@@ -361,6 +387,7 @@ export function collectTaskSummaryFacts(
     reviews,
     sessions,
     linked,
+    loadErrors,
   };
 }
 
@@ -471,15 +498,13 @@ export async function runTaskSummaryNow(
     if (errors.length) return fail(config, taskId, errors.join(" "));
     const files = await computeChangedFiles(config, current, facts.mergedCommit);
     const markdown = `${narrative}\n\n${formatTaskSummaryFileChanges(files)}`;
-    const dir = reportsTaskDir(config, taskId);
-    mkdirSync(dir, { recursive: true });
-    const absPath = join(dir, "summary.md");
-    writeFileSync(absPath, `${markdown.trim()}\n`);
+
     // Serialize the bookkeeping commit with publication: a landing holds the
     // same locks while merging, so committing blind could contend with its
     // shared index/ref and fail that landing. Waiting here never blocks a
     // landing — only this background job, which fails visibly when the slot
-    // never opens.
+    // never opens. Acquire the slot BEFORE writing the file so failures never
+    // leave it uncommitted and dirty in the checkout.
     const slot = await (deps.commitSlot ?? acquireSummaryCommitSlot)(config.root, taskId);
     if (!slot)
       return fail(
@@ -488,22 +513,36 @@ export async function runTaskSummaryNow(
         "A landing is publishing and the summary could not take the commit slot — " +
           `retry with \`repoos summary ${taskId}\`.`,
       );
+
     let committed = false;
+    let absPath: string | null = null;
     try {
+      const dir = reportsTaskDir(config, taskId);
+      mkdirSync(dir, { recursive: true });
+      absPath = join(dir, "summary.md");
+      writeFileSync(absPath, `${markdown.trim()}\n`);
       committed = (deps.commit ?? commitFiles)(
         config.root,
         [absPath],
         `docs(${taskId}): post-merge summary report`,
       );
+      if (!committed) {
+        // Clean up the uncommitted file so it doesn't block close-out
+        try {
+          unlinkSync(absPath);
+        } catch {
+          /* ignore cleanup failure */
+        }
+        return fail(
+          config,
+          taskId,
+          "Wrote summary.md but the bookkeeping commit failed — retry to commit it.",
+        );
+      }
     } finally {
       slot();
     }
-    if (!committed)
-      return fail(
-        config,
-        taskId,
-        "Wrote summary.md but the bookkeeping commit failed — retry to commit it.",
-      );
+
     // A lost done-status is logged, not fatal: the committed report is ground
     // truth and polling/CLI recognize it via `exists`.
     writeSummaryStatus(config, taskId, "done");
