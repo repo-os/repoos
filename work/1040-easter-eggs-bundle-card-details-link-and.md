@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T03:14:41Z"
+updated_at: "2026-11-06T03:39:46Z"
 handoff_signal_retry_count: 1
 ---
 ## Items
@@ -117,3 +117,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T03:08:27Z · note: ui verification failed (5 issue(s)): [missing-target] Needs-human-step card blurb without Details link (target "default"): state "card:humanStep" did not render on target "default" — / shows no task card (http://127.0.0.1:60860/?shotState=card%3AhumanStep); [missing-target] Needs-human-step card blurb without Details link (target "default"): highlight [data-test-id="task-card-needs-input-detail"] matched nothing on / (http://127.0.0.1:60860/?shotState=card%3AhumanStep); [missing-target] Agent ho
 - 2026-11-06T03:08:27Z · message_queued at 2026-11-06T03:08:27.469Z
 - 2026-11-06T03:14:41Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T03:39:46Z · handoff failed · handoff recovery attempted · finalization failed
