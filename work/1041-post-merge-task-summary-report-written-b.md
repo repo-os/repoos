@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 5f1d413c2d6afa3d916116ae3911bac0401f181c
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -14,7 +12,9 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T18:52:28Z"
+updated_at: "2026-11-06T18:52:29Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 5f1d413c2d6afa3d916116ae3911bac0401f181c
 last_check_failure: "repoos check at 2026-11-06T17:47:51.582Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 6
 review_rounds: 2
@@ -222,4 +222,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T18:25:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T18:52:28Z · message_queued at 2026-11-06T18:52:28.726Z
 - 2026-11-06T18:52:28Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-06T18:52:29Z · message_delivered: 2 message(s)
