@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 728827
+last_close_out_gate_at: "2026-11-06T14:20:53.763Z"
 id: 1042
 title: Add Muse usage details and provider navigation
 type: feature
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-muse-usage-details-and-provider-navi
 created_at: "2026-11-06T10:56:43Z"
-updated_at: "2026-11-06T13:48:23Z"
+updated_at: "2026-11-06T14:20:53Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T13:27:10.885Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 2
@@ -128,3 +130,5 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 - 2026-11-06T13:27:10Z · message_delivered: 1 message(s)
 - 2026-11-06T13:31:48Z · body
 - 2026-11-06T13:48:23Z · message_queued at 2026-11-06T13:48:23.415Z
+- 2026-11-06T14:20:53Z · close-out gate completed in 729s
+
