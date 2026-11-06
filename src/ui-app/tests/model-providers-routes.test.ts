@@ -36,7 +36,7 @@ vi.mock("../../core/providers/harness-auth.js", () => ({
 // the spawn itself is covered by `parseMuseUsage`/`fetchMuseUsage` unit tests
 // in model-provider-spend.test.ts.
 const { mockFetchMuseUsage } = vi.hoisted(() => ({ mockFetchMuseUsage: vi.fn() }));
-vi.mock("../../core/providers/spend", async (importOriginal) => {
+vi.mock("../../core/providers/spend.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../core/providers/spend")>();
   return { ...actual, fetchMuseUsage: mockFetchMuseUsage };
 });
