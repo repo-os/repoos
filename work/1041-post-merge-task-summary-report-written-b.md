@@ -3,12 +3,6 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: the cursor agent timed out after 15 minutes
-debug_tldr: The Cursor review agent timed out twice without producing a report — retry the review or inspect the branch diff manually.
-debug_tldr_at: "2026-11-06T06:57:22Z"
-debug_tldr_key: review-failed|the cursor agent timed out after 15 minutes
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -16,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T07:06:53Z"
+updated_at: "2026-11-06T07:06:59Z"
 review_timeout_retries: 1
 handoff_signal_retry_count: 2
 dev_error_count: 2
@@ -86,3 +80,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T06:56:57Z · note: review pass 2: timed out after 15 minutes — no report; human needed
 - 2026-11-06T06:56:58Z · needs_input
 - 2026-11-06T07:06:51Z · review_cli_override
+- 2026-11-06T07:06:59Z · needs_input (review-failed) cleared for review again by hello@repoos.org
