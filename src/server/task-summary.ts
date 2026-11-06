@@ -203,6 +203,19 @@ export function readSummaryStatus(config: RepoOSConfig, taskId: string): TaskSum
     };
   }
   if (parsed.status === "pending" || parsed.status === "done" || parsed.status === "failed") {
+    // If status is "done", validate that the summary file exists and is readable.
+    // If the file is missing or unreadable, return failed instead.
+    if (parsed.status === "done") {
+      const markdown = loadTaskSummaryMarkdown(config, taskId);
+      if (!markdown) {
+        return {
+          taskId,
+          status: "failed",
+          at: new Date().toISOString(),
+          error: "Summary marked done but summary.md is missing or unreadable.",
+        };
+      }
+    }
     return {
       taskId,
       status: parsed.status,
@@ -874,9 +887,19 @@ export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Tas
   if (inFlight.has(task.id)) return;
   inFlight.add(task.id);
   const diskFallback = allTasks.length === 0 ? loadCandidateTasksFromDisk(config) : null;
-  // A lost pending state is logged inside writeSummaryStatus; the job itself
-  // still runs and the committed report stays ground truth for polling.
-  writeSummaryStatus(config, task.id, "pending");
+  // Mark the job as pending before starting. If the status write fails, do not
+  // start the job and mark it failed instead so polling doesn't hang.
+  const pendingWriteOk = writeSummaryStatus(config, task.id, "pending");
+  if (!pendingWriteOk) {
+    inFlight.delete(task.id);
+    writeSummaryStatus(
+      config,
+      task.id,
+      "failed",
+      "Could not write pending status — job not started",
+    );
+    return;
+  }
   void (async () => {
     try {
       // Fire-and-forget callers (close-out) hold no live index, so an empty
