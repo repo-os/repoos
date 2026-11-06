@@ -161,3 +161,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T05:04:26Z · body
 - 2026-11-06T05:08:38Z · status active→review
 - 2026-11-06T05:08:39Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-06T05:08:39Z · message_queued at 2026-11-06T05:08:39.454Z
