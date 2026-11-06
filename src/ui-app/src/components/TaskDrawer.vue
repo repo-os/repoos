@@ -4360,7 +4360,10 @@ const taskSummaryHtml = computed(() =>
   taskSummary.value ? renderMarkdown(taskSummary.value.markdown) : "",
 );
 let taskSummaryGeneration = 0;
-async function loadTaskSummary(taskId: string): Promise<void> {
+/** Re-fetch interval/cap while a summary is still generating (10s × 60 ≈ 10 min). */
+const TASK_SUMMARY_POLL_MS = 10_000;
+const TASK_SUMMARY_POLL_MAX = 60;
+async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
   const generation = ++taskSummaryGeneration;
   const stillCurrent = () => generation === taskSummaryGeneration && ui.active?.id === taskId;
   try {
@@ -4369,6 +4372,14 @@ async function loadTaskSummary(taskId: string): Promise<void> {
     taskSummary.value = response.markdown ? { markdown: response.markdown } : null;
     taskSummaryStatus.value = response.status ?? "idle";
     taskSummaryError.value = response.error ?? "";
+    // Generation finishes in the background after close-out; keep refreshing
+    // while it is pending so the open drawer settles without a reopen. The
+    // generation guard stops stale chains when the task changes.
+    if (response.status === "pending" && attempt < TASK_SUMMARY_POLL_MAX) {
+      setTimeout(() => {
+        if (stillCurrent()) void loadTaskSummary(taskId, attempt + 1);
+      }, TASK_SUMMARY_POLL_MS);
+    }
   } catch {
     if (!stillCurrent()) return;
     taskSummary.value = null;

@@ -52,6 +52,33 @@ describe("post-merge task summary", () => {
     expect(validateTaskSummary(withListing)).toEqual([]);
   });
 
+  it.each([
+    ["no listing counts every word", "## TL;DR\n\none two three", 5],
+    [
+      "trailing listing is excluded",
+      `## TL;DR\n\none two\n\n${formatTaskSummaryFileChanges([{ path: "a.ts", status: "M", additions: "100", deletions: "200" }])}`,
+      4,
+    ],
+    [
+      "mid-narrative heading cannot hide later words",
+      "## TL;DR\n\none two\n\n## Changed files\n\nthree four five six",
+      10,
+    ],
+    [
+      "lookalike heading without the server marker counts fully",
+      `## TL;DR\n\none\n\n## Generated change summary\n\n- M x`,
+      8,
+    ],
+    ["document without headings counts fully", "just some words here", 4],
+  ])("counts narrative words: %s", (_name, markdown, expected) => {
+    expect(countSummaryNarrativeWords(markdown)).toBe(expected);
+  });
+
+  it("rejects a padded narrative hidden after a mid-text listing heading", () => {
+    const padded = `## TL;DR\n\nok\n\n## Changed files\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS)}`;
+    expect(validateTaskSummary(padded).length).toBe(1);
+  });
+
   it("builds a prompt with the required sections and a no-invented-numbers rule", () => {
     const prompt = buildTaskSummaryPrompt(
       facts({
