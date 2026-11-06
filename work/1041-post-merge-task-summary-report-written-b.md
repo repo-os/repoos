@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)"
@@ -102,4 +102,3 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T07:34:02Z · engineer crash recovery: resuming muse + muse-spark-1.3 (1/12 crashes in 30m) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
 - 2026-11-06T07:34:05Z · needs_input
 - 2026-11-06T07:34:17Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
-- 2026-11-06T07:34:18Z · status active→review
