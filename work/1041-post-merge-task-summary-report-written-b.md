@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 5f1d413c2d6afa3d916116ae3911bac0401f181c
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -220,3 +222,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T18:25:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T18:52:28Z · message_queued at 2026-11-06T18:52:28.726Z
 - 2026-11-06T18:52:28Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
