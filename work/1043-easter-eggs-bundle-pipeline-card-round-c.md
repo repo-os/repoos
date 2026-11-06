@@ -2,18 +2,18 @@
 id: 1043
 title: "Easter eggs bundle: pipeline card round chip and sent-back note"
 type: chore
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-pipeline-card-round-c
 cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T15:53:22Z"
+updated_at: "2026-11-06T15:53:24Z"
 ---
 ## Problem
 
@@ -45,3 +45,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T15:53:15Z · review_cli_override
 - 2026-11-06T15:53:20Z · review_cli_override
 - 2026-11-06T15:53:22Z · review_model_override
+- 2026-11-06T15:53:24Z · status ready→active, branch
