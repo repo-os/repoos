@@ -252,6 +252,25 @@ describe("agent preview rows open the editor (#1040 E2)", () => {
     },
   );
 
+  it("uses interactive popover semantics, not tooltip semantics", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    FakeEventSource.instances = [];
+    vi.stubGlobal("EventSource", FakeEventSource);
+    const task = makeTask({ needsInput: false });
+    stubFetch(task);
+    await useRepoStore().init();
+    seedAgents();
+    const { wrapper, preview } = await openPreview(pinia, task);
+
+    const trigger = wrapper.find(".tc-agent-btn");
+    expect(trigger.attributes("aria-haspopup")).toBe("dialog");
+    expect(trigger.attributes("aria-describedby")).toBeUndefined();
+    expect(preview.getAttribute("role")).toBe("dialog");
+    expect(preview.getAttribute("aria-label")).toContain("agent assignments");
+    wrapper.unmount();
+  });
+
   it("rows are keyboard-operable: Enter and Space open the role editor", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
