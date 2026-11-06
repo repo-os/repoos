@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 728827
-last_close_out_gate_at: "2026-11-06T14:20:53.763Z"
 id: 1042
 title: Add Muse usage details and provider navigation
 type: feature
-status: review
+status: done
 priority: p2
 area: [ui, server]
+merged_commit: d3ecaed27c2314f9fe2e0f473de791c17e9fc914
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-muse-usage-details-and-provider-navi
 created_at: "2026-11-06T10:56:43Z"
 updated_at: "2026-11-06T14:20:53Z"
+last_close_out_gate_ms: 728827
+last_close_out_gate_at: "2026-11-06T14:20:53.763Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T13:27:10.885Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 2
