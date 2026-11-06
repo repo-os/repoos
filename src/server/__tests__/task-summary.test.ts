@@ -2,19 +2,21 @@
  * Generation, idempotency and failure checks for the post-merge summary (#1041).
  * The PM runner and the bookkeeping commit are injected — no real agent runs.
  */
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GENERATED_CHANGES_MARKER } from "../../core/task-summary.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
 import {
+  acquireSummaryCommitSlot,
   collectTaskSummaryFacts,
   loadCandidateTasksFromDisk,
   loadTaskSummaryMarkdown,
   readSummaryStatus,
   readTaskFromDisk,
   runTaskSummaryNow,
+  summaryReleaseGate,
 } from "../task-summary.js";
 
 const VALID = [
@@ -90,7 +92,7 @@ function setup(): { config: RepoOSConfig; task: Task } {
     mergedCommit: null,
     dependsOn: [],
   } as unknown as Task;
-  writeFileSync(task.absPath, "---\nid: '0099'\n---\n\nBody.\n");
+  writeFileSync(task.absPath, "---\nid: '0099'\ntitle: T\nstatus: done\n---\n\nBody.\n");
   return { config, task };
 }
 
@@ -201,6 +203,111 @@ describe("post-merge summary freshness and marker hygiene", () => {
     const stored = loadTaskSummaryMarkdown(config, "0099") ?? "";
     expect(stored).toContain("Tail.");
     expect(stored.split(GENERATED_CHANGES_MARKER).length - 1).toBe(1);
+  });
+});
+
+describe("post-merge summary lifecycle gate", () => {
+  it.each([
+    ["done passes", "done", true],
+    ["review refuses", "review", false],
+    ["active refuses", "active", false],
+    ["inbox refuses", "inbox", false],
+  ])("gate: %s", (_name, status, passes) => {
+    const verdict = summaryReleaseGate({ id: "0099", status } as Task);
+    if (passes) expect(verdict).toBeNull();
+    else expect(verdict ?? "").toMatch(/not released/);
+  });
+
+  it("refuses a non-released task without running the PM or committing", async () => {
+    const { config, task } = setup();
+    writeFileSync(task.absPath, "---\nid: '0099'\ntitle: T\nstatus: review\n---\n\nBody.\n");
+    const reviewing = { ...task, status: "review" } as Task;
+    const runPrompt = vi.fn(async () => ({ ok: true, output: VALID }));
+    const commit = vi.fn(() => true);
+    const res = await runTaskSummaryNow(config, reviewing, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: runPrompt as never,
+      commit,
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error ?? "").toMatch(/not released/);
+    expect(runPrompt).not.toHaveBeenCalled();
+    expect(commit).not.toHaveBeenCalled();
+    expect(loadTaskSummaryMarkdown(config, "0099")).toBeNull();
+    expect(readSummaryStatus(config, "0099").status).toBe("failed");
+    expect(task.status).toBe("done");
+  });
+
+  it("lets the disk file govern over a stale done object", async () => {
+    const { config, task } = setup();
+    writeFileSync(task.absPath, "---\nid: '0099'\ntitle: T\nstatus: active\n---\n\nBody.\n");
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+      commit: () => true,
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error ?? "").toMatch(/status: active/);
+  });
+});
+
+describe("post-merge summary commit slot", () => {
+  it("acquires and releases the publication locks on a free root", async () => {
+    const { config } = setup();
+    const slot = await acquireSummaryCommitSlot(root(config), "0099", { tries: 2, delayMs: 1 });
+    expect(slot).not.toBeNull();
+    expect(existsSync(join(root(config), ".repoos", "close-out.lock"))).toBe(true);
+    expect(existsSync(join(root(config), ".repoos", "root.lock"))).toBe(true);
+    slot!();
+    expect(existsSync(join(root(config), ".repoos", "close-out.lock"))).toBe(false);
+    expect(existsSync(join(root(config), ".repoos", "root.lock"))).toBe(false);
+  });
+
+  it("gives up visibly when a landing holds publication", async () => {
+    const { config } = setup();
+    mkdirSync(join(root(config), ".repoos"), { recursive: true });
+    writeFileSync(
+      join(root(config), ".repoos", "close-out.lock"),
+      JSON.stringify({ taskId: "other", acquiredAt: new Date().toISOString() }),
+    );
+    const slot = await acquireSummaryCommitSlot(root(config), "0099", { tries: 2, delayMs: 1 });
+    expect(slot).toBeNull();
+  });
+
+  it("serializes the commit between acquire and release", async () => {
+    const { config, task } = setup();
+    const order: string[] = [];
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+      commit: () => {
+        order.push("commit");
+        return true;
+      },
+      commitSlot: (async () => {
+        order.push("acquire");
+        return () => {
+          order.push("release");
+        };
+      }) as never,
+    });
+    expect(res.ok).toBe(true);
+    expect(order).toEqual(["acquire", "commit", "release"]);
+  });
+
+  it("fails visibly without committing when the slot never opens", async () => {
+    const { config, task } = setup();
+    const commit = vi.fn(() => true);
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+      commit,
+      commitSlot: (async () => null) as never,
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error ?? "").toMatch(/commit slot/);
+    expect(commit).not.toHaveBeenCalled();
+    expect(readSummaryStatus(config, "0099").status).toBe("failed");
   });
 });
 

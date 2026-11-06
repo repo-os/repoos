@@ -63,7 +63,10 @@ instead of quietly hiding that round or presenting an older one as current.
 After a task merges to `done`, the PM agent writes one `summary.md` into the
 same `work/reports/<task-id>/` directory, in the background. It never blocks
 or fails the landing: a slow or failed summary only records a visible failed
-state, retryable with `repoos summary <id>`.
+state, retryable with `repoos summary <id>`. Generation requires a released
+(`done`) task — retrying earlier refuses with a 409, and the automatic queue
+only fires after the release stamp succeeds. The bookkeeping commit takes the
+publication lock, so it never contends with a landing.
 
 The report starts with `## TL;DR`, then covers `## Outcome`,
 `## Process stats`, `## What went wrong`, `## Learnings` and `## Follow-ups`.

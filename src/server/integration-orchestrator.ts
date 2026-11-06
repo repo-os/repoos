@@ -4334,6 +4334,11 @@ export class CloseOutOrchestrator {
     // task sat published-but-not-released until a manual retry). Falling back
     // to a direct on-disk lookup by id makes this step independent of index
     // freshness — the file is exactly what markTaskReleased writes to anyway.
+    // Only queue the post-merge summary after the release stamp succeeds: an
+    // unreleased task has incomplete facts, and the generator refuses it
+    // anyway. A failed stamp here never fails cleanup (the merge already
+    // succeeded) — it just skips the queue with a retry pointer.
+    let releasedOk = false;
     try {
       const absPath =
         this.getTask?.(job.taskId)?.absPath ??
@@ -4356,6 +4361,7 @@ export class CloseOutOrchestrator {
             note: "close-out kept a worktree with uncommitted changes",
           });
         }
+        releasedOk = true;
       } else {
         console.error(
           `Could not locate task ${job.taskId} on disk to mark it released — publish succeeded but release marking was skipped`,
@@ -4373,9 +4379,15 @@ export class CloseOutOrchestrator {
     // (same fallback as the release stamp above); linked tasks come from a
     // best-effort work-dir scan inside queueTaskSummary.
     try {
-      const summaryTask = this.getTask?.(job.taskId) ?? readTaskFromDisk(this.config, job.taskId);
-      if (summaryTask) queueTaskSummary(this.config, summaryTask, []);
-      else console.error(`Could not locate task ${job.taskId} for post-merge summary — skipping`);
+      if (!releasedOk) {
+        console.error(
+          `Post-merge summary skipped for ${job.taskId} — release marking did not succeed; retry with \`repoos summary ${job.taskId}\` after release`,
+        );
+      } else {
+        const summaryTask = this.getTask?.(job.taskId) ?? readTaskFromDisk(this.config, job.taskId);
+        if (summaryTask) queueTaskSummary(this.config, summaryTask, []);
+        else console.error(`Could not locate task ${job.taskId} for post-merge summary — skipping`);
+      }
     } catch (err) {
       console.error(`Could not queue post-merge summary for ${job.taskId}:`, err);
       this.logger?.integration(job.taskId, "warn", "post-merge summary not queued", {
