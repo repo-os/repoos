@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -10,7 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T05:29:37Z"
+updated_at: "2026-11-06T05:36:44Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 
@@ -60,4 +60,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T05:09:29Z · status ready→active, branch
 - 2026-11-06T05:15:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Still missing:** server task-summary module, orchestrator hook, API routes + CLI + parity entries, drawer Summary block, `user-docs/engineering-reports.md` update, tests (generation, idempotency, failure path), and the scoped `repoos che… · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/post-merge-task-summary-report-written-b (cwd default) muse: workspace trust: trusted source=run-flag muse: warning: rules file at /Users/nick/code/nick/repoos-worktrees/feat/post-merge-task-summary-report-written-b/CLAUDE.md is ignored this session bec…
 - 2026-11-06T05:29:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Verification state: `REPOOS_CHECK_CHANGED=main repoos check` failed on one typecheck error (`Agent` not exported from `agents.js`); fixed by deriving `PmAgent` from the resolver return type. The scoped check has NOT been re-run green — nex… · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/post-merge-task-summary-report-written-b (cwd default) muse: workspace trust: trusted source=run-flag
-
+- 2026-11-06T05:36:44Z · note: stopped orphaned engineer pid 30533
