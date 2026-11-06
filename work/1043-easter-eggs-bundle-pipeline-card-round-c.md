@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 188810
-last_close_out_gate_at: "2026-11-06T17:40:08.689Z"
 id: 1043
 title: "Easter eggs bundle: pipeline card round chip and sent-back note"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 53d01d44711d3327c70c623724f8690c3985d189
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-pipeline-card-round-c
@@ -16,6 +15,8 @@ review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
 updated_at: "2026-11-06T17:40:08Z"
+last_close_out_gate_ms: 188810
+last_close_out_gate_at: "2026-11-06T17:40:08.689Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-06T17:09:26.078Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pipeline-view.test.ts > pipeline-card lib > renders reviewer chips per verdict tone on mini — fix it in the feature branch and re-run the gate"
