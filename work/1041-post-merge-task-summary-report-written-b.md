@@ -12,7 +12,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T18:22:24Z"
+updated_at: "2026-11-06T18:22:28Z"
 last_check_failure: "repoos check at 2026-11-06T17:47:51.582Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 6
 review_rounds: 2
@@ -64,19 +64,19 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 ```json
 [
 {
-  "label": "Task drawer Dev > Report pane",
-  "target": "default",
-  "route": "/work?task=1041&tab=dev",
-  "selector": "[data-test-id=\"engineering-report-tab\"]",
-  "highlight": ".engineering-report-view",
-  "steps": [
-    {
-      "click": "[data-test-id=\"engineering-report-tab\"]"
-    },
-    {
-      "waitFor": ".engineering-report-view"
-    }
-  ]
+"label": "Task drawer Dev > Report pane",
+"target": "default",
+"route": "/work?task=1041&tab=dev",
+"selector": "[data-test-id=\"engineering-report-tab\"]",
+"highlight": ".engineering-report-view",
+"steps": [
+{
+  "click": "[data-test-id=\"engineering-report-tab\"]"
+},
+{
+  "waitFor": ".engineering-report-view"
+}
+]
 }
 ]
 ```
