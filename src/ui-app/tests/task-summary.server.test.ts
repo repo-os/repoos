@@ -3,7 +3,6 @@
  * Generation, idempotency and failure checks for the post-merge summary (#1041).
  * The PM runner and the bookkeeping commit are injected — no real agent runs.
  */
-import * as fs from "node:fs";
 import {
   chmodSync,
   existsSync,
@@ -11,6 +10,7 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  unlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -365,27 +365,22 @@ describe("post-merge summary commit slot", () => {
     const { config, task } = setup();
     const summaryPath = join(root(config), "work", "reports", "0099", "summary.md");
     writeFileSync(summaryPath, "KEEP_ME\n");
-    const rf = vi.spyOn(fs, "readFileSync");
     let reads = 0;
-    rf.mockImplementation(((p: string, enc: BufferEncoding) => {
-      if (p === summaryPath) {
-        reads += 1;
-        if (reads === 1) throw new Error("EPERM");
-      }
-      return (readFileSync as (path: string, enc: BufferEncoding) => string)(p, enc);
-    }) as typeof readFileSync);
-    try {
-      const res = await runTaskSummaryNow(config, task, [], {
-        resolvePm: () => ({ name: "pm" }) as never,
-        runPrompt: (async () => ({ ok: true, output: VALID })) as never,
-        commit: () => false,
-      });
-      expect(res.ok).toBe(false);
-      expect(res.error ?? "").toMatch(/Existing summary\.md is unreadable/);
-      expect(readFileSync(summaryPath, "utf8")).toBe("KEEP_ME\n");
-    } finally {
-      rf.mockRestore();
-    }
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+      commit: () => false,
+      summaryReadFileSync: ((p: string, enc: BufferEncoding) => {
+        if (p === summaryPath) {
+          reads += 1;
+          if (reads === 1) throw new Error("EPERM");
+        }
+        return readFileSync(p, enc);
+      }) as typeof readFileSync,
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error ?? "").toMatch(/Existing summary\.md is unreadable/);
+    expect(readFileSync(summaryPath, "utf8")).toBe("KEEP_ME\n");
   });
 
   it("surfaces restore failures when commit returns false", async () => {
@@ -393,46 +388,40 @@ describe("post-merge summary commit slot", () => {
     const summaryPath = join(root(config), "work", "reports", "0099", "summary.md");
     writeFileSync(summaryPath, "ORIGINAL_MARK\n");
     let writesToSummary = 0;
-    const wf = vi.spyOn(fs, "writeFileSync");
-    wf.mockImplementation(((p: string, content: string) => {
-      if (p === summaryPath) {
-        writesToSummary += 1;
-        if (writesToSummary === 2) throw new Error("restore failed");
-      }
-      return (writeFileSync as (path: string, data: string) => void)(p, content);
-    }) as typeof writeFileSync);
-    try {
-      const res = await runTaskSummaryNow(config, task, [], {
-        resolvePm: () => ({ name: "pm" }) as never,
-        runPrompt: (async () => ({ ok: true, output: VALID })) as never,
-        commit: () => false,
-      });
-      expect(res.ok).toBe(false);
-      expect(res.error ?? "").toMatch(/restore error: restore failed/);
-      expect(readFileSync(summaryPath, "utf8")).toContain("ORIGINAL_MARK");
-    } finally {
-      wf.mockRestore();
-    }
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+      commit: () => false,
+      summaryWriteFileSync: ((p: string, content: string) => {
+        if (p === summaryPath) {
+          writesToSummary += 1;
+          // 1st write: PM output; 2nd: restore of backup after failed commit.
+          if (writesToSummary >= 2) throw new Error("restore failed");
+        }
+        writeFileSync(p, content);
+      }) as typeof writeFileSync,
+    });
+    expect(res.ok).toBe(false);
+    expect(res.error ?? "").toMatch(/restore error: restore failed/);
+    // New summary was written before commit failed; restore threw — file stays as written output.
+    expect(readFileSync(summaryPath, "utf8")).toContain("## TL;DR");
+    expect(readFileSync(summaryPath, "utf8")).not.toContain("ORIGINAL_MARK");
   });
 
   it("surfaces unlink failures on commit failure when there was no prior file", async () => {
     const { config, task } = setup();
     const summaryPath = join(root(config), "work", "reports", "0099", "summary.md");
     if (existsSync(summaryPath)) rmSync(summaryPath);
-    const ul = vi.spyOn(fs, "unlinkSync").mockImplementation(() => {
-      throw new Error("unlink blocked");
+    const res = await runTaskSummaryNow(config, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+      commit: () => false,
+      summaryUnlinkSync: ((p: string) => {
+        throw new Error("unlink blocked");
+      }) as typeof unlinkSync,
     });
-    try {
-      const res = await runTaskSummaryNow(config, task, [], {
-        resolvePm: () => ({ name: "pm" }) as never,
-        runPrompt: (async () => ({ ok: true, output: VALID })) as never,
-        commit: () => false,
-      });
-      expect(res.ok).toBe(false);
-      expect(res.error ?? "").toMatch(/unlink blocked/);
-    } finally {
-      ul.mockRestore();
-    }
+    expect(res.ok).toBe(false);
+    expect(res.error ?? "").toMatch(/unlink blocked/);
   });
 
   it("fails visibly without committing when the slot never opens", async () => {
@@ -580,13 +569,10 @@ describe("post-merge summary disk fallbacks", () => {
     const { config } = setup();
     writeFileSync(join(root(config), "work", "0102-bad-read.md"), "x");
     chmodSync(join(root(config), "work", "0102-bad-read.md"), 0);
-    writeFileSync(
-      join(root(config), "work", "0103-bad-parse.md"),
-      "not valid frontmatter at all\n",
-    );
+    writeFileSync(join(root(config), "work", "0103-bad-parse.md"), "not valid frontmatter at all\n");
     try {
       const { tasks, loadErrors } = loadCandidateTasksFromDisk(config);
-      expect(tasks.map((t: Task) => t.id).sort()).toEqual(["0099", "0103"]);
+      expect(tasks.map((t: Task) => t.id).sort()).toEqual(["0099"]);
       expect(
         loadErrors.some(
           (e: string) => /0102-bad-read\.md/.test(e) && /read|Could not read/i.test(e),
@@ -594,7 +580,8 @@ describe("post-merge summary disk fallbacks", () => {
       ).toBe(true);
       expect(
         loadErrors.some(
-          (e: string) => /0103-bad-parse\.md/.test(e) && /parse|Could not parse/i.test(e),
+          (e: string) =>
+            /0103-bad-parse\.md/.test(e) && /frontmatter|YAML|parse/i.test(e),
         ),
       ).toBe(true);
     } finally {

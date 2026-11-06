@@ -53,10 +53,14 @@ type SummaryPriorState =
   | { kind: "unreadable"; message: string };
 
 /** Restore `summary.md` after a failed write/commit, or delete only when there was no prior file. */
-function restoreSummaryPathAfterFailure(absPath: string, prior: SummaryPriorState): Error | null {
+function restoreSummaryPathAfterFailure(
+  absPath: string,
+  prior: SummaryPriorState,
+  io: { writeFileSync: typeof writeFileSync; unlinkSync: typeof unlinkSync },
+): Error | null {
   if (prior.kind === "backup") {
     try {
-      writeFileSync(absPath, prior.content);
+      io.writeFileSync(absPath, prior.content);
       return null;
     } catch (err) {
       return err as Error;
@@ -64,7 +68,7 @@ function restoreSummaryPathAfterFailure(absPath: string, prior: SummaryPriorStat
   }
   if (prior.kind === "absent") {
     try {
-      unlinkSync(absPath);
+      io.unlinkSync(absPath);
       return null;
     } catch (err) {
       return err as Error;
@@ -108,6 +112,13 @@ export interface TaskSummaryDeps {
   commitSlot?: (root: string, taskId: string) => Promise<(() => void) | null>;
   /** Test seam for merge diff listing — never set in production. */
   runGit?: (root: string, args: string[], timeout: number) => Promise<GitRun>;
+  /**
+   * Optional I/O for the generated `summary.md` path only — lets tests simulate
+   * read/write/unlink failures without spying on ESM `fs` exports (#1041).
+   */
+  summaryReadFileSync?: typeof readFileSync;
+  summaryWriteFileSync?: typeof writeFileSync;
+  summaryUnlinkSync?: typeof unlinkSync;
 }
 
 /**
@@ -344,6 +355,24 @@ function writeSummaryStatus(
   return false;
 }
 
+/** Stricter than `parseTask` alone: body-only files are rejected as invalid task files (#1041 disk scan). */
+function parseTaskFileFromDiskContent(
+  config: RepoOSConfig,
+  content: string,
+  absPath: string,
+): Task {
+  const { hadFrontmatter } = parseDocument(content);
+  if (!hadFrontmatter)
+    throw new Error("Task file has no YAML frontmatter — expected opening --- delimiter.");
+  return parseTask({
+    content,
+    absPath,
+    root: config.root,
+    defaultStatus: config.defaultStatus ?? "inbox",
+    defaultAssignee: config.defaultAssignee ?? "unassigned",
+  });
+}
+
 /**
  * Best-effort task list read straight from the work directory, for
  * fire-and-forget callers (close-out) that hold no live index. Used only for
@@ -378,15 +407,7 @@ export function loadCandidateTasksFromDisk(config: RepoOSConfig): {
       continue;
     }
     try {
-      out.push(
-        parseTask({
-          content,
-          absPath,
-          root: config.root,
-          defaultStatus: config.defaultStatus ?? "inbox",
-          defaultAssignee: config.defaultAssignee ?? "unassigned",
-        }),
-      );
+      out.push(parseTaskFileFromDiskContent(config, content, absPath));
     } catch (err) {
       loadErrors.push(`Could not parse task file ${entry}: ${(err as Error).message}`);
     }
@@ -781,6 +802,10 @@ export async function runTaskSummaryNow(
     let committed = false;
     let absPath: string | null = null;
     let prior: SummaryPriorState = { kind: "absent" };
+    const summaryRead = deps.summaryReadFileSync ?? readFileSync;
+    const summaryWrite = deps.summaryWriteFileSync ?? writeFileSync;
+    const summaryUnlink = deps.summaryUnlinkSync ?? unlinkSync;
+    const pathIo = { writeFileSync: summaryWrite, unlinkSync: summaryUnlink };
     try {
       const dir = reportsTaskDir(config, taskId);
       mkdirSync(dir, { recursive: true });
@@ -789,20 +814,27 @@ export async function runTaskSummaryNow(
       // exists but is unreadable, never unlink it on rollback (#1041 review).
       if (existsSync(absPath)) {
         try {
-          prior = { kind: "backup", content: readFileSync(absPath, "utf8") };
+          prior = { kind: "backup", content: summaryRead(absPath, "utf8") };
         } catch (err) {
           prior = { kind: "unreadable", message: (err as Error).message };
         }
       }
+      if (prior.kind === "unreadable") {
+        return fail(
+          config,
+          taskId,
+          `Existing summary.md is unreadable; left in place: ${prior.message}`,
+        );
+      }
       try {
-        writeFileSync(absPath, `${markdown.trim()}\n`);
+        summaryWrite(absPath, `${markdown.trim()}\n`);
         committed = (deps.commit ?? commitFiles)(
           config.root,
           [absPath],
           `docs(${taskId}): post-merge summary report`,
         );
       } catch (err) {
-        const restoreErr = restoreSummaryPathAfterFailure(absPath, prior);
+        const restoreErr = restoreSummaryPathAfterFailure(absPath, prior, pathIo);
         if (restoreErr)
           throw new Error(
             `${(err as Error).message}; additionally could not restore checkout: ${restoreErr.message}`,
@@ -810,7 +842,7 @@ export async function runTaskSummaryNow(
         throw err;
       }
       if (!committed) {
-        const restoreErr = restoreSummaryPathAfterFailure(absPath, prior);
+        const restoreErr = restoreSummaryPathAfterFailure(absPath, prior, pathIo);
         return fail(
           config,
           taskId,
