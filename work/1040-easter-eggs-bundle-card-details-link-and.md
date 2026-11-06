@@ -3,9 +3,6 @@ id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (6 in 30m): a human-set task override (muse + muse-spark-1.3) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1040 --fresh`."
 priority: p3
 area: web
 assigned_to: ai
@@ -13,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T04:02:29Z"
+updated_at: "2026-11-06T04:16:01Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T03:47:52.916Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
@@ -143,3 +140,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T03:57:29Z · agent exited with an error (muse) · received SIGTERM; flushed session logs
 - 2026-11-06T03:57:29Z · engineer crash recovery: surfaced instead of switching — a human-set task override (muse + muse-spark-1.3) is pinned, so RepoOS did not replace it (6/3 crashes in 30m)
 - 2026-11-06T04:02:29Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T04:16:01Z · watchdog: restarting engineer after 11m with no live process
