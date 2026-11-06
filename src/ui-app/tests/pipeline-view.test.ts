@@ -14,6 +14,7 @@ import { useUiStore } from "../src/stores/ui";
 import {
   pipelineHostLabel,
   pipelineModelsLabel,
+  pipelineRoundLabel,
   reviewerChip,
   taskInDevPass,
   taskRoundCounts,
@@ -56,11 +57,19 @@ describe("pipeline-card lib", () => {
   });
 
   it("renders reviewer chips per verdict tone", () => {
-    expect(reviewerChip({ passes: 1, tone: "green", reviewRunning: false })).toBe("R1 ✓");
-    expect(reviewerChip({ passes: 1, tone: "amber", reviewRunning: false })).toBe("R1 changes");
-    expect(reviewerChip({ passes: 2, tone: "red", reviewRunning: false })).toBe("R2 ↻");
+    expect(reviewerChip({ passes: 1, tone: "green", reviewRunning: false })).toBe("✓");
+    expect(reviewerChip({ passes: 1, tone: "amber", reviewRunning: false })).toBe("");
+    expect(reviewerChip({ passes: 2, tone: "red", reviewRunning: false })).toBe("↻");
     expect(reviewerChip({ passes: 0, tone: null, reviewRunning: true })).toBe("R1 …");
     expect(reviewerChip({ passes: 0, tone: null, reviewRunning: false })).toBeNull();
+    expect(pipelineRoundLabel({ dev: 14, review: 3 }, { tone: "amber", reviewRunning: false }))
+      .toBe("D14 · R3");
+    expect(pipelineRoundLabel({ dev: 4, review: 2 }, { tone: "green", reviewRunning: false }))
+      .toBe("D4 · R2 ✓");
+    expect(pipelineRoundLabel({ dev: 4, review: 2 }, { tone: "red", reviewRunning: false }))
+      .toBe("D4 · R2 ↻");
+    expect(pipelineRoundLabel({ dev: 4, review: 2 }, { tone: null, reviewRunning: true }))
+      .toBe("D4 · R3 …");
   });
 
   it("labels models and host without inventing data", () => {
@@ -83,8 +92,7 @@ describe("PipelineCard", () => {
       chipText: null,
       stateSince: new Date(Date.now() - 12 * 60_000).toISOString(),
       nowMs: Date.now(),
-      engineerRound: 2,
-      reviewerChip: "R1 ✓",
+      roundsLabel: "D2 · R1 ✓",
       reviewerTone: "green",
       modelsLabel: "spark",
       hostLabel: "this Mac",
@@ -99,8 +107,8 @@ describe("PipelineCard", () => {
     expect(wrapper.find(".pl-row-2").text()).toContain("Pipeline view");
     expect(wrapper.find(".pl-row-3").text()).toContain("Coding");
     const row4 = wrapper.find(".pl-row-4").text();
-    expect(row4).toContain("E2");
-    expect(row4).toContain("R1 ✓");
+    expect(row4).toContain("D2 · R1 ✓");
+    expect(wrapper.find(".pl-round").classes()).toContain("rounds-badge");
     expect(row4).toContain("spark");
     expect(row4).toContain("this Mac");
   });
