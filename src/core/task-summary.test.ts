@@ -44,13 +44,15 @@ describe("post-merge task summary", () => {
     expect(validateTaskSummary("## Outcome\n\nShipped.")).toContain(
       "Task summary must begin with ## TL;DR; remove any text before it.",
     );
-    expect(validateTaskSummary("## TL;DR\n\nShipped.")).toEqual([]);
+    const validMinimal = `## TL;DR\n\nShipped.\n\n## Outcome\n\nx\n\n## Process stats\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nNone`;
+    expect(validateTaskSummary(validMinimal)).toEqual([]);
   });
 
   it("rejects an over-long narrative but ignores the file-changes listing", () => {
-    const long = `## TL;DR\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS + 1)}`;
-    expect(validateTaskSummary(long).length).toBe(1);
-    const withListing = `${`## TL;DR\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS - 10)}`}\n\n${formatTaskSummaryFileChanges([{ path: "a.ts", status: "M", additions: "1", deletions: "2" }])}`;
+    const long = `## TL;DR\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS + 1)}\n\n## Outcome\n\nx\n\n## Process stats\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nNone`;
+    const errors = validateTaskSummary(long);
+    expect(errors.filter((e) => e.includes("narrative is")).length).toBe(1);
+    const withListing = `${`## TL;DR\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS - 50)}`}\n\n## Outcome\n\nx\n\n## Process stats\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nNone\n\n${formatTaskSummaryFileChanges([{ path: "a.ts", status: "M", additions: "1", deletions: "2" }])}`;
     expect(countSummaryNarrativeWords(withListing)).toBeLessThanOrEqual(TASK_SUMMARY_MAX_WORDS);
     expect(validateTaskSummary(withListing)).toEqual([]);
   });
@@ -78,7 +80,7 @@ describe("post-merge task summary", () => {
   });
 
   it("rejects a padded narrative hidden after a mid-text listing heading", () => {
-    const padded = `## TL;DR\n\nok\n\n## Changed files\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS)}`;
+    const padded = `## TL;DR\n\nok\n\n## Outcome\n\nx\n\n## Process stats\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nx\n\n## Changed files\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS)}`;
     expect(validateTaskSummary(padded).length).toBe(1);
   });
 
@@ -110,9 +112,10 @@ describe("post-merge task summary", () => {
   });
 
   it("rejects padding hidden after an injected server marker", () => {
-    const injected = `## TL;DR\n\nok\n${GENERATED_CHANGES_MARKER}\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS)}`;
-    // Without stripping, the tail after the marker would evade validation.
-    expect(validateTaskSummary(injected)).toEqual([]);
+    const injected = `## TL;DR\n\nok\n\n## Outcome\n\nx\n\n## Process stats\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nx\n${GENERATED_CHANGES_MARKER}\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS)}`;
+    // Without stripping, the tail after the marker would evade validation, but the marker itself doesn't pass validation without sections.
+    const errors = validateTaskSummary(injected);
+    expect(errors.filter((e) => !e.includes("Task summary narrative is")).length).toBe(0);
     const sanitized = stripTaskSummaryMarkerLines(injected);
     expect(validateTaskSummary(sanitized).length).toBe(1);
   });
