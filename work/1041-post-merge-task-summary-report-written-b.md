@@ -12,10 +12,10 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 cli_override: claude code
-model_override: default
+model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T15:29:47Z"
+updated_at: "2026-11-06T15:29:51Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-06T09:20:05.482Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -162,3 +162,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T13:49:44Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d80809163) during finalization (#0734)
 - 2026-11-06T15:27:35Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-06T15:29:47Z · cli_override, model_override
+- 2026-11-06T15:29:51Z · model_override
