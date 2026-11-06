@@ -251,3 +251,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T19:32:21Z · cli_override, model_override
 - 2026-11-06T19:32:24Z · status review→active
 - 2026-11-06T19:32:25Z · needs_input
+- 2026-11-06T19:32:25Z · message_queued at 2026-11-06T19:32:25.464Z
