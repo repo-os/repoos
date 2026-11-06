@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-06T23:05:16Z"
-review_passes: 13
+last_close_out_gate_ms: 582589
+last_close_out_gate_at: "2026-11-06T23:43:25.671Z"
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -17,6 +17,8 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
+updated_at: "2026-11-06T23:43:25Z"
+review_passes: 13
 last_check_failure: "repoos check at 2026-11-06T21:28:11.977Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 routing_switches: 1
@@ -339,4 +341,5 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T23:02:32Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-11-06T23:05:16Z · note: review pass 15: needs some work
 - 2026-11-06T23:05:16Z · needs_input
+- 2026-11-06T23:43:25Z · close-out gate completed in 583s
 
