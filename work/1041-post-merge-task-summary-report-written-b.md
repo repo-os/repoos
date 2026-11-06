@@ -71,10 +71,10 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 "highlight": ".engineering-report-view",
 "steps": [
 {
-  "click": "[data-test-id=\"engineering-report-tab\"]"
+"click": "[data-test-id=\"engineering-report-tab\"]"
 },
 {
-  "waitFor": ".engineering-report-view"
+"waitFor": ".engineering-report-view"
 }
 ]
 }
@@ -216,3 +216,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T18:20:47Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-06T18:21:52Z · note: ui verification failed (1 issue(s)): [missing-target] Task drawer Dev > Report pane (target "default"): highlight [data-test-id="report-tab-content"] matched nothing on /work?task=1041&tab=dev (http://127.0.0.1:54460/work)
 - 2026-11-06T18:22:24Z · body
+- 2026-11-06T18:22:28Z · note: handoff requested (cli)
