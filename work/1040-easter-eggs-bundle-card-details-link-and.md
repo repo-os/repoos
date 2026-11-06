@@ -69,26 +69,26 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 ```json
 [
 {
-  "label": "Needs-human-step card blurb without Details link",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-needs-input-detail\"]",
-  "state": "card:humanStep"
+"label": "Needs-human-step card blurb without Details link",
+"target": "default",
+"route": "/",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-needs-input-detail\"]",
+"state": "card:humanStep"
 },
 {
-  "label": "Agent hover popover with clickable rows",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-test-id=\"task-agent-preview\"] tbody tr",
-  "steps": [
-    {
-      "hover": "[data-task-id=\"9999\"] .tc-agent-btn"
-    },
-    {
-      "waitMs": 400
-    }
-  ],
-  "state": "card:humanStep"
+"label": "Agent hover popover with clickable rows",
+"target": "default",
+"route": "/",
+"highlight": "[data-test-id=\"task-agent-preview\"] tbody tr",
+"steps": [
+  {
+    "hover": "[data-task-id=\"9999\"] .tc-agent-btn"
+  },
+  {
+    "waitMs": 400
+  }
+],
+"state": "card:humanStep"
 }
 ]
 ```
@@ -152,3 +152,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T04:52:37Z · body
 - 2026-11-06T04:54:15Z · body
 - 2026-11-06T04:57:20Z · body
+- 2026-11-06T04:57:20Z · message_queued at 2026-11-06T04:57:20.630Z
