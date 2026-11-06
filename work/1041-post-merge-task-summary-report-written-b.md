@@ -1,13 +1,8 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-11-06T20:22:24.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b0f58a2a to ef82ca9a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — remaining rollback, validation, fact-loading, and Git-lock races block sign-off."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -18,6 +13,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
 updated_at: "2026-11-06T20:22:24Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-06T20:22:24.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b0f58a2a to ef82ca9a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 9
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 63a04ffa3ef54b19f5cbbd5d623b6aca0bd26606
@@ -272,4 +269,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T20:22:21Z · message_queued at 2026-11-06T20:22:21.507Z
 - 2026-11-06T20:22:23Z · status review→active
 - 2026-11-06T20:22:24Z · message_delivered: 1 message(s)
-
+- 2026-11-06T20:22:24Z · needs_input
