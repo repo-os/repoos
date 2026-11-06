@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T16:02:49Z"
+updated_at: "2026-11-06T16:09:01Z"
 ---
 ## Problem
 
@@ -62,3 +62,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T15:56:21Z · body
 - 2026-11-06T15:59:04Z · body
 - 2026-11-06T16:02:49Z · body
+- 2026-11-06T16:09:01Z · CTO nudge: held — handoff gate is running
