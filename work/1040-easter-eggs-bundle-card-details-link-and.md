@@ -145,3 +145,4 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T04:21:11Z · body
 - 2026-11-06T04:28:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T04:42:15Z · note: ui verification failed (2 issue(s)): [missing-target] Agent hover popover rows open the editor (target "default"): hover button.tc-agent-btn: hover: Timeout 5000ms exceeded. on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep); [missing-target] Agent hover popover rows open the editor (target "default"): highlight [data-test-id="task-agent-preview"] tbody tr matched nothing on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep)
+- 2026-11-06T04:42:15Z · message_queued at 2026-11-06T04:42:15.753Z
