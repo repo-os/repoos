@@ -20,8 +20,10 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 ## Screenshots
 
 ![Screenshot-2026-11-06-at-18.52.45](/api/tasks/1042/attachments/att_582922cb-41c5-4308-93ed-089a4a3701b7.png)
+![Screenshot-2026-11-06-at-18.53.09](/api/tasks/1042/attachments/att_5b152270-ab8e-42c5-8e21-db3c93abf181.png)
 
 ## Activity
 
 - 2026-11-06T10:56:43Z · created · hello@repoos.org
+- 2026-11-06T10:56:46Z · screenshots
 - 2026-11-06T10:56:46Z · screenshots
