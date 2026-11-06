@@ -275,3 +275,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T20:30:16Z · body
 - 2026-11-06T20:33:35Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-06T20:33:36Z · message_queued at 2026-11-06T20:33:36.032Z
+- 2026-11-06T20:33:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Checking git state and running `repoos check` with a stable worktree before re-requesting handoff. · stderr: (empty)
