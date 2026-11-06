@@ -6,13 +6,16 @@ status: review
 needs_input: true
 needs_input_reason: review-failed
 needs_input_detail: the cursor agent timed out after 15 minutes
+debug_tldr: The Cursor review agent timed out twice without producing a report — retry the review or inspect the branch diff manually.
+debug_tldr_at: "2026-11-06T06:57:22Z"
+debug_tldr_key: review-failed|the cursor agent timed out after 15 minutes
 priority: p2
 area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T06:56:58Z"
+updated_at: "2026-11-06T06:57:22Z"
 review_timeout_retries: 1
 handoff_signal_retry_count: 2
 dev_error_count: 2
