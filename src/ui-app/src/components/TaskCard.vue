@@ -214,6 +214,20 @@ function openAgentAssignments(): void {
   agentPreviewOpen.value = false;
   toggleAgentPanel();
 }
+/**
+ * A hover-preview row opens the same editor the robot button opens, focused
+ * on that row's role: the click-opened assignment panel, plus the agent/model
+ * picker for the role (the editor supports per-role focus via the modal).
+ */
+function openPreviewAssignment(assignment: AgentAssignment): void {
+  clearAgentPreviewDismiss();
+  agentPreviewOpen.value = false;
+  if (!agentPanelOpen.value) {
+    agentPanelOpen.value = true;
+  }
+  armAgentPanelTimer();
+  openAssignmentModal(assignment);
+}
 onBeforeUnmount(() => {
   clearAgentPreviewDismiss();
   clearAgentPanelTimer();
@@ -1556,8 +1570,11 @@ async function openDebuggerFromError(): Promise<void> {
             role="tooltip"
             aria-label="Task agent assignments preview"
             data-test-id="task-agent-preview"
+            data-overlay-layer="floating"
             @mouseenter="clearAgentPreviewDismiss"
             @mouseleave="scheduleAgentPreviewDismiss"
+            @focusin="clearAgentPreviewDismiss"
+            @focusout="scheduleAgentPreviewDismiss"
           >
             <table>
               <thead>
@@ -1568,7 +1585,18 @@ async function openDebuggerFromError(): Promise<void> {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="a in agentAssignments" :key="a.key">
+                <tr
+                  v-for="a in agentAssignments"
+                  :key="a.key"
+                  class="tc-agent-preview-row"
+                  tabindex="0"
+                  role="button"
+                  :aria-label="`${a.key === 'engineer' ? 'Engineer' : a.key === 'reviewer' ? 'Reviewer' : 'PM'}: ${a.cli}, ${a.model}. Open agent editor.`"
+                  :data-test-id="`task-agent-preview-row-${a.key}`"
+                  @click="openPreviewAssignment(a)"
+                  @keydown.enter.prevent="openPreviewAssignment(a)"
+                  @keydown.space.prevent="openPreviewAssignment(a)"
+                >
                   <th scope="row">
                     {{
                       a.key === "engineer" ? "Engineer" : a.key === "reviewer" ? "Reviewer" : "PM"
@@ -1652,13 +1680,14 @@ async function openDebuggerFromError(): Promise<void> {
           data-test-id="task-card-needs-input-detail"
           :aria-label="`${needsInputDetailLine}. Open Status details.`"
           @click.stop="onNeedsInputDetailClick"
+          @keydown.enter.stop.prevent="onNeedsInputDetailClick"
+          @keydown.space.prevent.stop="onNeedsInputDetailClick"
         >
           <span
             class="tc-needs-detail-text"
             :class="{ 'tc-needs-detail-text--clamp': needsInputDetailClamp }"
             >{{ needsInputDetailLine }}</span
           >
-          <span class="diagnostic-details-affordance">Details</span>
         </button>
       </div>
     </div>
