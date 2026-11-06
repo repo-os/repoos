@@ -68,10 +68,39 @@ export function countSummaryNarrativeWords(markdown: string): number {
  * includes all required sections, and the narrative stays within the word
  * budget. Returns one message per failure, empty when the report passes.
  */
+/**
+ * Visible markdown lines for heading checks: fenced blocks (``` … ```) are
+ * skipped so headings inside code samples do not satisfy validation; indented
+ * code blocks are left in (they are not markdown headings).
+ */
+function visibleSummaryLines(markdown: string): string[] {
+  const lines = markdown.split("\n");
+  const out: string[] = [];
+  let fence: string | null = null;
+  for (const line of lines) {
+    const trimmed = line.trimStart();
+    if (fence) {
+      if (trimmed.startsWith(fence)) fence = null;
+      continue;
+    }
+    const fenceMatch = /^(`{3,}|~{3,})/.exec(trimmed);
+    if (fenceMatch) {
+      fence = fenceMatch[1]!;
+      continue;
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+const HEADING_LINE = /^##\s+(.+?)\s*$/;
+
 export function validateTaskSummary(markdown: string): string[] {
   const errors: string[] = [];
   if (!markdown.trim()) return ["Task summary is empty."];
-  if (!markdown.trimStart().startsWith("## TL;DR"))
+  const visible = visibleSummaryLines(markdown);
+  const firstBodyLine = visible.find((l) => l.trim().length > 0);
+  if (firstBodyLine?.trim() !== "## TL;DR")
     errors.push("Task summary must begin with ## TL;DR; remove any text before it.");
 
   const requiredSections = [
@@ -81,12 +110,24 @@ export function validateTaskSummary(markdown: string): string[] {
     "Learnings",
     "Follow-ups",
   ];
-  for (const section of requiredSections) {
-    // Match real markdown heading at line start, not substring inside prose or code
-    const regex = new RegExp(`^## ${section}`, "m");
-    if (!regex.test(markdown)) {
-      errors.push(`Task summary must include "## ${section}" section.`);
-    }
+  const headingTitles: string[] = [];
+  for (const line of visible) {
+    const m = HEADING_LINE.exec(line.trimEnd());
+    if (!m) continue;
+    headingTitles.push(m[1]!.trim());
+  }
+  let reqIdx = 0;
+  for (const title of headingTitles) {
+    if (reqIdx < requiredSections.length && title === requiredSections[reqIdx]) reqIdx += 1;
+  }
+  if (reqIdx < requiredSections.length) {
+    const missing = requiredSections.slice(reqIdx);
+    errors.push(
+      `Task summary must include these sections in order: ${requiredSections.join(", ")}. ` +
+        (missing.length === requiredSections.length
+          ? "No matching ## headings found (check spelling and order — e.g. use ## Outcome, not ## Outcomes)."
+          : `Missing or out of order after "${requiredSections[reqIdx - 1] ?? "start"}": ${missing.join(", ")}.`),
+    );
   }
 
   const words = countSummaryNarrativeWords(markdown);

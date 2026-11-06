@@ -758,8 +758,8 @@ describe("repoos summary polling", () => {
   it.each([
     ["done reports terminal", "done", false, true],
     ["failed reports terminal", "failed", false, true],
-    ["a committed report is terminal even while pending", "pending", true, true],
-    ["a committed report is terminal even when idle", "idle", true, true],
+    ["a committed report keeps polling while status is still pending", "pending", true, false],
+    ["a committed report is terminal when idle (lost status write)", "idle", true, true],
     ["pending without a report keeps polling", "pending", false, false],
     ["idle without a report keeps polling", "idle", false, false],
   ])("%s", (_name, status, exists, expected) => {
@@ -779,6 +779,14 @@ describe("repoos summary polling", () => {
         exists: true,
         markdown: "## TL;DR",
         status: "pending",
+        statusAt: "",
+        error: null,
+      },
+      {
+        ok: true,
+        exists: true,
+        markdown: "## TL;DR",
+        status: "idle",
         statusAt: "",
         error: null,
       },

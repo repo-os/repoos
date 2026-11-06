@@ -30,10 +30,12 @@ function processHasLockOpen(path: string): boolean {
         stdio: ["ignore", "pipe", "ignore"],
       }).trim().length > 0
     );
-  } catch (error) {
-    // lsof exits 1 when no process has the file open. If the probe itself is
-    // unavailable, fail safe and leave the lock for a later maintenance tick.
-    return (error as { status?: number }).status !== 1;
+  } catch {
+    // lsof exits 1 when no process has the file open; we catch above when `lsof`
+    // succeeds. Any other throw (missing binary, permission) means we cannot
+    // prove a holder — treat as not live so stale index.lock recovery still
+    // runs in minimal CI images (#1041).
+    return false;
   }
 }
 

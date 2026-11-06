@@ -2,12 +2,21 @@
  * Generation, idempotency and failure checks for the post-merge summary (#1041).
  * The PM runner and the bookkeeping commit are injected — no real agent runs.
  */
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import * as fs from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { GENERATED_CHANGES_MARKER } from "../../core/task-summary.js";
 import type { RepoOSConfig, Task } from "../../core/types.js";
+import * as dbModule from "../../core/db.js";
 import {
   acquireSummaryCommitSlot,
   collectTaskSummaryFacts,
@@ -296,6 +305,53 @@ describe("post-merge summary commit slot", () => {
     expect(order).toEqual(["acquire", "commit", "release"]);
   });
 
+  it("surfaces restore failures when commit returns false", async () => {
+    const { config, task } = setup();
+    const summaryPath = join(root(config), "work", "reports", "0099", "summary.md");
+    writeFileSync(summaryPath, "ORIGINAL_MARK\n");
+    let writesToSummary = 0;
+    const wf = vi.spyOn(fs, "writeFileSync");
+    wf.mockImplementation(((p: string, content: string) => {
+      if (p === summaryPath) {
+        writesToSummary += 1;
+        if (writesToSummary === 2) throw new Error("restore failed");
+      }
+      return (writeFileSync as (path: string, data: string) => void)(p, content);
+    }) as typeof writeFileSync);
+    try {
+      const res = await runTaskSummaryNow(config, task, [], {
+        resolvePm: () => ({ name: "pm" }) as never,
+        runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+        commit: () => false,
+      });
+      expect(res.ok).toBe(false);
+      expect(res.error ?? "").toMatch(/restore error: restore failed/);
+      expect(readFileSync(summaryPath, "utf8")).not.toContain("ORIGINAL_MARK");
+    } finally {
+      wf.mockRestore();
+    }
+  });
+
+  it("surfaces unlink failures on commit failure when there was no prior file", async () => {
+    const { config, task } = setup();
+    const summaryPath = join(root(config), "work", "reports", "0099", "summary.md");
+    if (existsSync(summaryPath)) rmSync(summaryPath);
+    const ul = vi.spyOn(fs, "unlinkSync").mockImplementation(() => {
+      throw new Error("unlink blocked");
+    });
+    try {
+      const res = await runTaskSummaryNow(config, task, [], {
+        resolvePm: () => ({ name: "pm" }) as never,
+        runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+        commit: () => false,
+      });
+      expect(res.ok).toBe(false);
+      expect(res.error ?? "").toMatch(/unlink blocked/);
+    } finally {
+      ul.mockRestore();
+    }
+  });
+
   it("fails visibly without committing when the slot never opens", async () => {
     const { config, task } = setup();
     const commit = vi.fn(() => true);
@@ -361,10 +417,18 @@ describe("post-merge summary disk fallbacks", () => {
       join(root(config), "work", "0100-follow-up.md"),
       "---\nid: '0100'\ntitle: Follow-up\ndepends_on: ['0099']\n---\n\nFollow-up body.\n",
     );
-    const ids = loadCandidateTasksFromDisk(config)
+    const ids = loadCandidateTasksFromDisk(config).tasks
       .map((task) => task.id)
       .sort();
     expect(ids).toEqual(["0099", "0100"]);
+  });
+
+  it("surfaces a work-dir scan failure instead of an empty candidate list", () => {
+    const { config } = setup();
+    const bad = { ...config, workDir: "work/nope" } as RepoOSConfig;
+    const { tasks, loadErrors } = loadCandidateTasksFromDisk(bad);
+    expect(tasks).toEqual([]);
+    expect(loadErrors.some((e) => /scan work directory/i.test(e))).toBe(true);
   });
 
   it("collects depends-on and dependent links for the prompt", () => {
@@ -382,11 +446,23 @@ describe("post-merge summary disk fallbacks", () => {
       dependsOn: [],
     } as Task;
     writeFileSync(other.absPath, "---\nid: '0098'\ntitle: Other\n---\n\nOther body.\n");
-    const facts = collectTaskSummaryFacts(config, parent, loadCandidateTasksFromDisk(config));
+    const facts = collectTaskSummaryFacts(config, parent, loadCandidateTasksFromDisk(config).tasks);
     const linked = [...facts.linked].sort((a, b) => a.id.localeCompare(b.id));
     expect(linked).toEqual([
       { id: "0098", title: "Other", status: "inbox", relation: "depends-on" },
       { id: "0100", title: "Follow-up", status: "inbox", relation: "dependent" },
     ]);
+  });
+
+  it("records session DB unavailability in loadErrors", () => {
+    const { config, task } = setup();
+    const spy = vi.spyOn(dbModule, "getRepoOSDb").mockReturnValue(null);
+    try {
+      const facts = collectTaskSummaryFacts(config, task, []);
+      expect(facts.sessions).toEqual([]);
+      expect(facts.loadErrors.some((e) => /Session database unavailable/i.test(e))).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
