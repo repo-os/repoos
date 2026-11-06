@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T16:45:53.531Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -17,7 +19,6 @@ review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
 updated_at: "2026-11-06T16:45:53Z"
 review_passes: 5
-last_check_failure: "repoos check at 2026-11-06T09:20:05.482Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -172,3 +173,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T16:45:48Z · message_queued at 2026-11-06T16:45:48.458Z
 - 2026-11-06T16:45:48Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-06T16:45:53Z · message_delivered: 1 message(s)
+
