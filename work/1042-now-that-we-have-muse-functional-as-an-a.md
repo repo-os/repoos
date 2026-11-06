@@ -100,3 +100,4 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 - 2026-11-06T11:51:08Z · body
 - 2026-11-06T11:56:45Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T12:12:02Z · note: ui verification failed (8 issue(s)): [request] HTTP 400 for http://127.0.0.1:59681/api/model-providers/muse/usage (http://127.0.0.1:59681/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 400 (Bad Request) (http://127.0.0.1:59681/api/model-providers/muse/usage); [request] HTTP 400 for http://127.0.0.1:59681/api/model-providers/muse/usage (http://127.0.0.1:59681/api/model-providers/muse/usage); [request] Failed to load resource: the server r
+- 2026-11-06T12:12:02Z · message_queued at 2026-11-06T12:12:02.572Z
