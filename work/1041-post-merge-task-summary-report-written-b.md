@@ -3,9 +3,6 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — a failed pending-status write can make a retry return the old report as success.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -15,7 +12,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T22:44:47Z"
+updated_at: "2026-11-06T22:52:12Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-11-06T21:28:11.977Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -334,3 +331,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T22:42:18Z · message_delivered: 3 message(s)
 - 2026-11-06T22:44:43Z · status active→review, needs_input
 - 2026-11-06T22:44:47Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a0efe772a) during finalization (#0734)
+- 2026-11-06T22:52:12Z · needs_input (review-rounds-exhausted) dismissed by hello@repoos.org
