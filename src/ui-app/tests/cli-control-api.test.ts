@@ -774,19 +774,48 @@ describe("repoos summary polling", () => {
         status: status as TaskSummaryState["status"],
         exists: exists as boolean,
         statusAt,
+        pendingSince: null,
+        reportMtimeMs: null,
       }),
     ).toBe(expected as boolean);
   });
 
+  it("stale pending with an older report than this run is terminal (failed)", () => {
+    const staleAt = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
+    const anchor = Date.parse(staleAt);
+    expect(
+      isSummaryPollTerminal({
+        status: "failed",
+        exists: true,
+        statusAt: staleAt,
+        pendingSince: staleAt,
+        reportMtimeMs: anchor - 60_000,
+      }),
+    ).toBe(true);
+  });
+
   it("resolves once the report commits, without waiting for the status file", async () => {
+    const staleAt = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
+    const staleMs = Date.parse(staleAt);
     const states: TaskSummaryState[] = [
-      { ok: true, exists: false, markdown: null, status: "pending", statusAt: "", error: null },
+      {
+        ok: true,
+        exists: false,
+        markdown: null,
+        status: "pending",
+        statusAt: "",
+        pendingSince: null,
+        reportMtimeMs: null,
+        error: null,
+      },
       {
         ok: true,
         exists: true,
         markdown: "## TL;DR",
         status: "pending",
-        statusAt: new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString(),
+        statusAt: staleAt,
+        pendingSince: staleAt,
+        reportMtimeMs: staleMs + 1,
         error: null,
       },
     ];

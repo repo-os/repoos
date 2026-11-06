@@ -49,17 +49,40 @@ export function isStaleSummaryPending(
   return nowMs - t >= SUMMARY_PENDING_STALE_MS;
 }
 
+/** Anchor for “this run” when status is `pending`: prefer `pendingSince`, else `at` (legacy files). */
+function pendingRunAnchorMs(pendingSince: string | null | undefined, statusAt: string): number | null {
+  const raw = (pendingSince?.trim() || statusAt?.trim()) ?? "";
+  if (!raw) return null;
+  const t = Date.parse(raw);
+  return Number.isNaN(t) ? null : t;
+}
+
 /**
  * Visible job status for API/CLI/drawer: a committed report plus stale `pending`
- * resolves as `done` so polling does not hang forever.
+ * resolves as `done` when the report is at least as new as this pending run
+ * (mtime ≥ pending anchor). Otherwise stale `pending` with an older on-disk
+ * report becomes `failed` — a retry must not pass while the PM is still writing.
  */
 export function effectiveSummaryJobStatus(
   stored: "idle" | "pending" | "done" | "failed",
   statusAt: string,
   reportExists: boolean,
   nowMs: number = Date.now(),
+  reportMtimeMs: number | null = null,
+  pendingSince: string | null = null,
 ): "idle" | "pending" | "done" | "failed" {
-  if (stored === "pending" && reportExists && isStaleSummaryPending(statusAt, nowMs)) return "done";
+  if (
+    stored === "pending" &&
+    reportExists &&
+    isStaleSummaryPending(statusAt, nowMs)
+  ) {
+    const anchor = pendingRunAnchorMs(pendingSince, statusAt);
+    if (anchor !== null && reportMtimeMs !== null) {
+      return reportMtimeMs >= anchor ? "done" : "failed";
+    }
+    // Legacy: no anchor or unknown mtime — preserve lost-done-write recovery.
+    return "done";
+  }
   return stored;
 }
 

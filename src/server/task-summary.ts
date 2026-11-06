@@ -14,6 +14,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  statSync,
   writeFileSync,
   unlinkSync,
 } from "node:fs";
@@ -80,6 +81,8 @@ export interface TaskSummaryState {
   taskId: string;
   status: TaskSummaryStatus;
   at: string;
+  /** When status is `pending`, start of this run (ISO) — stale checks compare report mtime to this. */
+  pendingSince?: string;
   error?: string;
 }
 
@@ -160,20 +163,54 @@ const statusFile = (config: RepoOSConfig, taskId: string): string =>
   join(statusDir(config), `${taskId}.json`);
 
 export function readSummaryStatus(config: RepoOSConfig, taskId: string): TaskSummaryState {
+  const path = statusFile(config, taskId);
+  let raw: string;
   try {
-    const raw = readFileSync(statusFile(config, taskId), "utf8");
-    const parsed = JSON.parse(raw) as Partial<TaskSummaryState>;
-    if (parsed.status === "pending" || parsed.status === "done" || parsed.status === "failed")
-      return {
-        taskId,
-        status: parsed.status,
-        at: typeof parsed.at === "string" ? parsed.at : "",
-        error: typeof parsed.error === "string" ? parsed.error : undefined,
-      };
-  } catch {
-    /* never attempted — idle */
+    raw = readFileSync(path, "utf8");
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (code === "ENOENT") return { taskId, status: "idle", at: "" };
+    return {
+      taskId,
+      status: "failed",
+      at: new Date().toISOString(),
+      error: `Could not read summary job status file: ${(err as Error).message}`.slice(0, 500),
+    };
   }
-  return { taskId, status: "idle", at: "" };
+  let parsed: Partial<TaskSummaryState>;
+  try {
+    parsed = JSON.parse(raw) as Partial<TaskSummaryState>;
+  } catch (err) {
+    return {
+      taskId,
+      status: "failed",
+      at: new Date().toISOString(),
+      error: `Summary job status file is corrupted (invalid JSON): ${(err as Error).message}`.slice(
+        0,
+        500,
+      ),
+    };
+  }
+  if (parsed.status === "pending" || parsed.status === "done" || parsed.status === "failed") {
+    return {
+      taskId,
+      status: parsed.status,
+      at: typeof parsed.at === "string" ? parsed.at : "",
+      pendingSince:
+        typeof parsed.pendingSince === "string" && parsed.pendingSince.trim()
+          ? parsed.pendingSince
+          : parsed.status === "pending" && typeof parsed.at === "string"
+            ? parsed.at
+            : undefined,
+      error: typeof parsed.error === "string" ? parsed.error : undefined,
+    };
+  }
+  return {
+    taskId,
+    status: "failed",
+    at: new Date().toISOString(),
+    error: "Summary job status file has an invalid status field.",
+  };
 }
 
 /**
@@ -188,17 +225,66 @@ export function getTaskSummaryJobPayload(
   markdown: string | null;
   status: TaskSummaryStatus;
   statusAt: string | null;
+  pendingSince: string | null;
+  reportMtimeMs: number | null;
   error: string | null;
 } {
-  const markdown = loadTaskSummaryMarkdown(config, taskId);
   const disk = readSummaryStatus(config, taskId);
+  const sf = disk.taskId === "" ? { ...disk, taskId } : disk;
+  const reportPath = join(reportsTaskDir(config, taskId), "summary.md");
+  let markdown: string | null = null;
+  let reportMtimeMs: number | null = null;
+  let reportReadError: string | null = null;
+  if (existsSync(reportPath)) {
+    try {
+      reportMtimeMs = statSync(reportPath).mtimeMs;
+    } catch (err) {
+      reportReadError = `Could not stat summary report: ${(err as Error).message}`;
+    }
+    try {
+      markdown = readFileSync(reportPath, "utf8");
+    } catch (err) {
+      const msg = `Could not read summary report: ${(err as Error).message}`;
+      reportReadError = reportReadError ? `${reportReadError}; ${msg}` : msg;
+      markdown = null;
+    }
+  }
+  const nowMs = opts.nowMs ?? Date.now();
   const exists = markdown !== null;
-  const status = effectiveSummaryJobStatus(disk.status, disk.at, exists, opts.nowMs);
+  let status = effectiveSummaryJobStatus(
+    sf.status,
+    sf.at,
+    exists,
+    nowMs,
+    reportMtimeMs,
+    sf.pendingSince ?? null,
+  );
+  const parts: string[] = [];
+  if (sf.error) parts.push(sf.error);
+  if (reportReadError) parts.push(reportReadError);
+  if (status === "failed" && sf.status === "pending" && exists && reportMtimeMs !== null) {
+    const anchorRaw = (sf.pendingSince?.trim() || sf.at.trim()) ?? "";
+    const anchor = anchorRaw ? Date.parse(anchorRaw) : NaN;
+    if (!Number.isNaN(anchor) && reportMtimeMs < anchor) {
+      parts.push(
+        "Post-merge summary retry timed out: on-disk report is older than this run — run `repoos summary <id>` again.",
+      );
+    }
+  }
+  if (reportReadError) {
+    if (sf.status === "pending") status = "failed";
+    else if (sf.status === "idle") {
+      status = "failed";
+      parts.push("Could not load the committed summary report.");
+    }
+  }
   return {
     markdown,
     status,
-    statusAt: disk.at || null,
-    error: disk.error ?? null,
+    statusAt: sf.at || null,
+    pendingSince: sf.pendingSince?.trim() || (sf.status === "pending" ? sf.at || null : null),
+    reportMtimeMs,
+    error: parts.length ? parts.join(" — ") : null,
   };
 }
 
@@ -207,6 +293,7 @@ export function getTaskSummaryJobPayload(
  * fails instead of throwing: callers treat the report file as ground truth,
  * but a lost status must stay visible in the server log — silently mapping to
  * `idle` is what used to hide failures from polling and the drawer.
+ * Two write attempts; on total failure records `failed` with the I/O error (#1041).
  */
 function writeSummaryStatus(
   config: RepoOSConfig,
@@ -214,22 +301,47 @@ function writeSummaryStatus(
   status: Exclude<TaskSummaryStatus, "idle">,
   error?: string,
 ): boolean {
+  const now = new Date().toISOString();
+  const state: TaskSummaryState = {
+    taskId,
+    status,
+    at: now,
+    ...(status === "pending" ? { pendingSince: now } : {}),
+    ...(error ? { error: error.slice(0, 500) } : {}),
+  };
+  const path = statusFile(config, taskId);
+  const body = `${JSON.stringify(state, null, 2)}\n`;
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      mkdirSync(statusDir(config), { recursive: true });
+      writeFileSync(path, body);
+      return true;
+    } catch (err) {
+      lastErr = err as Error;
+      console.error(
+        `Task summary status write attempt ${attempt + 1} failed for ${taskId} (${status}): ${lastErr.message}`,
+      );
+    }
+  }
+  const detail =
+    lastErr?.message ?? "unknown error";
+  console.error(`Task summary status not persisted for ${taskId} (${status}): ${detail}`);
   try {
     mkdirSync(statusDir(config), { recursive: true });
-    const state: TaskSummaryState = {
+    const failedState: TaskSummaryState = {
       taskId,
-      status,
-      at: new Date().toISOString(),
-      ...(error ? { error } : {}),
+      status: "failed",
+      at: now,
+      error: `Could not persist summary job status (${status}): ${detail}`.slice(0, 500),
     };
-    writeFileSync(statusFile(config, taskId), `${JSON.stringify(state, null, 2)}\n`);
-    return true;
-  } catch (err) {
+    writeFileSync(statusFile(config, taskId), `${JSON.stringify(failedState, null, 2)}\n`);
+  } catch (err2) {
     console.error(
-      `Task summary status not persisted for ${taskId} (${status}): ${(err as Error).message}`,
+      `Task summary failed-state could not be persisted for ${taskId}: ${(err2 as Error).message}`,
     );
-    return false;
   }
+  return false;
 }
 
 /**

@@ -1782,6 +1782,9 @@ export interface TaskSummaryState {
   markdown: string | null;
   status: "idle" | "pending" | "done" | "failed";
   statusAt: string | null;
+  /** Anchor for this `pending` run (ISO); mirrors server payload. */
+  pendingSince: string | null;
+  reportMtimeMs: number | null;
   error: string | null;
 }
 
@@ -1791,10 +1794,20 @@ export interface TaskSummaryState {
  * (API returns `done` when stale; this mirrors that for older servers).
  */
 export function isSummaryPollTerminal(
-  state: Pick<TaskSummaryState, "status" | "exists" | "statusAt">,
+  state: Pick<
+    TaskSummaryState,
+    "status" | "exists" | "statusAt" | "pendingSince" | "reportMtimeMs"
+  >,
 ): boolean {
   if (state.status === "done" || state.status === "failed") return true;
-  const eff = effectiveSummaryJobStatus(state.status, state.statusAt ?? "", state.exists);
+  const eff = effectiveSummaryJobStatus(
+    state.status,
+    state.statusAt ?? "",
+    state.exists,
+    Date.now(),
+    state.reportMtimeMs ?? null,
+    state.pendingSince,
+  );
   if (eff === "done") return true;
   if (state.exists && state.status !== "pending") return true;
   return false;
@@ -1875,7 +1888,14 @@ export async function cmdSummary(args: string[]): Promise<number> {
         (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState,
       { label: `summary for #${id}` },
     );
-    const eff = effectiveSummaryJobStatus(final.status, final.statusAt ?? "", final.exists);
+    const eff = effectiveSummaryJobStatus(
+      final.status,
+      final.statusAt ?? "",
+      final.exists,
+      Date.now(),
+      final.reportMtimeMs ?? null,
+      final.pendingSince,
+    );
     const success = eff === "done" || (final.exists && eff !== "failed" && eff !== "pending");
     if (opts.json) {
       printJson(final);
