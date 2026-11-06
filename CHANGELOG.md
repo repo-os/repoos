@@ -5,6 +5,18 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.77] - 2026-11-06
+
+### More reliable Muse engineering runs
+
+Muse engineers can now run with a higher step limit, clearer notice when that limit is reached, and smoother handling of streamed output. They’re also guided to scope screenshot selectors to the relevant fixture card.
+
+### Expanded Muse model support
+
+The available Muse models now include Spark 1.3, Spark 1.2, and Wonder 1.0. Native Muse drivers for Spark 1.3 and Contributor can also be included in the budget allowlist.
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.77)
+
 ## [v0.5.76] - 2026-11-05
 
 ### A Pipeline view for work in flight

@@ -15,6 +15,32 @@ export interface TaskRoundCounts {
   review: number;
 }
 
+/** Shared label used by the task drawer and pipeline card. */
+export function taskRoundLabel(counts: TaskRoundCounts): string {
+  return `D${counts.dev} · R${counts.review}`;
+}
+
+export function pipelineRoundLabel(
+  counts: TaskRoundCounts,
+  opts: { tone: ReviewVerdictTone | null; reviewRunning: boolean },
+): string {
+  return reviewerChip({ counts, ...opts });
+}
+
+/** Complete compact badge label used on the pipeline card. */
+export function reviewerChip(opts: {
+  counts: TaskRoundCounts;
+  tone: ReviewVerdictTone | null;
+  reviewRunning: boolean;
+}): string {
+  const { counts } = opts;
+  if (opts.reviewRunning && opts.tone === null) {
+    return `D${counts.dev} · R${counts.review + 1} …`;
+  }
+  const mark = opts.tone === "green" ? " ✓" : opts.tone === "red" ? " ↻" : "";
+  return `${taskRoundLabel(counts)}${mark}`;
+}
+
 function countField(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
@@ -54,24 +80,6 @@ export function taskInDevPass(
       task.status === "active" ||
       (task.status === "review" && engineerRunning))
   );
-}
-
-/**
- * Reviewer round chip: `R1 ✓` (green), `R1 changes` (amber), `R2 ↻` (red),
- * or the upcoming pass while a review is running with no verdict yet. Null
- * when there is nothing to show — the card omits the chip rather than
- * inventing a round.
- */
-export function reviewerChip(opts: {
-  passes: number;
-  tone: ReviewVerdictTone | null;
-  reviewRunning: boolean;
-}): string | null {
-  if (opts.tone === "green") return `R${opts.passes} ✓`;
-  if (opts.tone === "amber") return `R${opts.passes} changes`;
-  if (opts.tone === "red") return `R${opts.passes} ↻`;
-  if (opts.reviewRunning) return `R${opts.passes + 1} …`;
-  return null;
 }
 
 function shortModel(model: string): string {

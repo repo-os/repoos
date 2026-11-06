@@ -134,7 +134,8 @@ Other tabs:
 - **Detected Coding Agents** — what's installed on this machine.
 - **Model Playground** — try a prompt against a CLI/model and compare output.
 - **Model providers** — live spend where a provider exposes an API (OpenRouter,
-  opencode Go, DeepInfra), plus links to provider dashboards such as Cursor's
+  opencode Go, DeepInfra), plus Muse's subscription allowance read from your
+  `muse login` session, plus links to provider dashboards such as Cursor's
   Spending page. A provider's key is read from RepoOS's `.env` or from a coding
   agent's own login store, so a provider a harness is already signed into shows
   as connected without re-pasting the key. GitHub Copilot is a link-out too:

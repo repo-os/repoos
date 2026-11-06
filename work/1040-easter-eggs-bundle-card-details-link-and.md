@@ -2,15 +2,22 @@
 id: 1040
 title: "Easter eggs bundle: card details link and agent popover rows"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 302bb212fc3d9e1135060024714b8dbb5d2946a1
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-details-link-and
 cli_override: muse
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-11-05T11:41:20Z"
-updated_at: "2026-11-06T05:08:39Z"
+updated_at: "2026-11-06T16:45:48Z"
+last_close_out_gate_ms: 697214
+last_close_out_gate_at: "2026-11-06T16:08:57.427Z"
+review_passes: 3
+review_rounds: 2
 last_check_failure: "repoos check at 2026-11-06T04:42:19.073Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Agent hover popover rows open the editor (target \"default\"): hover button.tc-agent-btn: hover: Timeout 5000ms exceeded. on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep); [missing-target] Agent hover popover rows open the editor (target \"default\"): highlight [data-test-id=\"task-agent-preview\"] tbody tr matched nothing on /work (http://127.0.0.1:62027/work?shotState=card%3AhumanStep)"
 handoff_signal_retry_count: 1
 dev_error_count: 6
@@ -163,3 +170,31 @@ Find the popover by grepping for "Reviewer" and the robot icon in `src/ui-app/sr
 - 2026-11-06T05:08:39Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-06T05:08:39Z · message_queued at 2026-11-06T05:08:39.454Z
 - 2026-11-06T05:08:39Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-06T05:09:57Z · note: review pass 1: failed — no usable report
+- 2026-11-06T05:09:57Z · needs_input
+- 2026-11-06T05:12:02Z · review_cli_override, review_model_override
+- 2026-11-06T05:12:05Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-06T05:18:03Z · note: review pass 2: needs some work
+- 2026-11-06T05:18:04Z · message_delivered: 1 message(s)
+- 2026-11-06T05:18:04Z · status review→active
+- 2026-11-06T05:21:34Z · body
+- 2026-11-06T05:26:24Z · message_queued at 2026-11-06T05:26:24.523Z
+- 2026-11-06T05:26:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T05:31:45Z · message_delivered: 1 message(s)
+- 2026-11-06T05:31:46Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-11-06T05:34:14Z · body
+- 2026-11-06T05:36:30Z · status active→review
+- 2026-11-06T05:36:30Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-06T15:25:03Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-11-06T15:27:34Z · note: review pass 3: needs some work
+- 2026-11-06T15:27:35Z · status review→active
+- 2026-11-06T15:41:12Z · body
+- 2026-11-06T15:47:35Z · body
+- 2026-11-06T15:53:08Z · status active→review
+- 2026-11-06T15:53:08Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-06T15:53:08Z · message_queued at 2026-11-06T15:53:08.678Z
+- 2026-11-06T15:53:08Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-06T15:55:42Z · note: review pass 4: good to go
+- 2026-11-06T16:08:57Z · close-out gate completed in 697s
+- 2026-11-06T16:10:13Z · status done→done, release:success
+- 2026-11-06T16:45:48Z · message_dropped: 1 queued message(s) discarded — task is done

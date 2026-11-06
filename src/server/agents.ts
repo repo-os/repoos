@@ -72,7 +72,7 @@ import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { effectiveAgentCapacity, registeredEngineerCount } from "../core/global-engineers.js";
 import { clearQueueMarker, writeQueueMarker } from "../core/local-queue-marker.js";
 import { isProviderFailureReason } from "../core/attention.js";
-import { MUSE_MAX_MODEL_STEPS } from "../core/agent-contract.js";
+import { MUSE_ENGINEER_MAX_MODEL_STEPS, MUSE_MAX_MODEL_STEPS } from "../core/agent-contract.js";
 import {
   creditIdleMs,
   DegenerateOutputTracker,
@@ -2900,6 +2900,8 @@ export interface MuseParseResult {
   textDelta?: boolean;
   /** True when this line is the terminal `run.terminal` record. */
   terminal?: "completed" | "failure";
+  /** Model calls the turn made, from the `run.usage` record (step-cap detection). */
+  usageCalls?: number;
   toolEvent?: {
     phase: "start" | "complete";
     id: string;
@@ -3011,6 +3013,9 @@ export function parseMuseEvent(raw: string): MuseParseResult | null {
         error: /error|fail|denied|cancel/i.test(outcome),
       },
     };
+  }
+  if (payloadType === "run.usage" && typeof payload.calls === "number") {
+    return { ...meta, usageCalls: payload.calls };
   }
   // run.usage and every other envelope record are voiceless: usage folds from
   // the raw line in lineTouched, so there is no transcript entry — but the
@@ -3561,7 +3566,7 @@ function museExecArgs(
       "--approval-mode",
       "never",
       "--max-model-steps",
-      String(MUSE_MAX_MODEL_STEPS),
+      String(unsandboxed ? MUSE_ENGINEER_MAX_MODEL_STEPS : MUSE_MAX_MODEL_STEPS),
       "--reasoning-effort",
       MUSE_REASONING_EFFORT,
       ...(isValidMuseSessionId(sessionId) ? ["--session-id", sessionId as string] : []),
@@ -4419,7 +4424,7 @@ export function missionFor(
     '[{"target": "default", "route": "/", "label": "New-task drawer open", "highlight": "[data-test-id=\\\"new-task\\\"] .drawer", "steps": [{"click": "button[data-test-id=\\\"new-task\\\"]"}, {"waitMs": 300}]}]',
     "```",
     "",
-    'Entries take `target`, `route`, an optional `selector`, a human `label`, an optional `highlight` selector, optional `state` (a preview-board fixture — see below), and ordered `steps` (`click` / `fill`+`text` / `waitFor` / `hover` / `waitMs`, plain CSS selectors). Pass the raw JSON list to `--shots`; do not add Markdown fences yourself. Plain routes and selectors only — no framework knowledge. Say what changed: give every entry a `label` naming the change ("Task drawer with new title"), and where possible a `highlight` CSS selector — RepoOS outlines the matched element(s) in the capture so the reviewer sees the change, not just the page. Tooltip, popover, and hover-only UI need a `hover` or `click` step on the trigger plus a `state` fixture that seeds the data the preview board would not show on its own. A declared shot whose step, `highlight`, or `selector` target is missing **fails handoff** with a per-shot message (route, step, selector) — fix the plan before requesting review. Auto-matched (undeclared) captures keep lenient behaviour: a miss is a warning only. Known `state` fixtures: ' +
+    'Entries take `target`, `route`, an optional `selector`, a human `label`, an optional `highlight` selector, optional `state` (a preview-board fixture — see below), and ordered `steps` (`click` / `fill`+`text` / `waitFor` / `hover` / `waitMs`, plain CSS selectors). Pass the raw JSON list to `--shots`; do not add Markdown fences yourself. Plain routes and selectors only — no framework knowledge. Say what changed: give every entry a `label` naming the change ("Task drawer with new title"), and where possible a `highlight` CSS selector — RepoOS outlines the matched element(s) in the capture so the reviewer sees the change, not just the page. Tooltip, popover, and hover-only UI need a `hover` or `click` step on the trigger plus a `state` fixture that seeds the data the preview board would not show on its own. The preview board holds hundreds of cards, so a bare class like `.tc-agent-btn` matches many elements and a `hover`/`click` on it times out: with a `card:*` fixture, scope every step, `selector` and `highlight` to the fixture card, `[data-task-id=\"9999\"] <selector>`, and confirm the selector matches exactly one element before declaring it. A declared shot whose step, `highlight`, or `selector` target is missing **fails handoff** with a per-shot message (route, step, selector) — fix the plan before requesting review. Auto-matched (undeclared) captures keep lenient behaviour: a miss is a warning only. Known `state` fixtures: ' +
       SHOT_PREVIEW_FIXTURE_IDS.map((id) => `\`${id}\``).join(", ") +
       ". Keep it short: the shots a reviewer needs, usually 1–3. Shots are captured automatically only when the task declares them or the diff touches a UI target's paths and a route exists to shoot — a tests-only or docs-wording-only diff gets a visible `shots: skipped`, which is correct, not a failure. When the task is handed off to review, RepoOS captures declared shots through the managed preview (`repoos shot` by hand stays available), so writing the list is the whole job.",
   );
@@ -8790,6 +8795,20 @@ export class AgentRunner {
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.model) session.model = parsed.model;
+    if (parsed.usageCalls !== undefined) {
+      // Muse stops cleanly at --max-model-steps with a "completed" terminal, so
+      // the cap is only visible as calls == cap. Say so, or the turn just looks
+      // like it quit without a handoff.
+      // AgentRunner sessions are engineer turns (MUSE_ENGINEER_MAX_MODEL_STEPS).
+      const cap = MUSE_ENGINEER_MAX_MODEL_STEPS;
+      if (parsed.usageCalls >= cap) {
+        this.flushMusePendingText(taskId, session, raw);
+        this.recordEntry(taskId, session, "out", {
+          type: "sys",
+          d: `Muse hit its per-turn step cap (${parsed.usageCalls}/${cap} model calls); the work is probably unfinished and the session will be resumed.`,
+        });
+      }
+    }
     if (parsed.toolEvent) {
       this.flushMusePendingText(taskId, session, raw);
       const event = parsed.toolEvent;

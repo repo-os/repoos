@@ -31,6 +31,16 @@ vi.mock("../../core/providers/harness-auth.js", () => ({
   readProviderKeyFromHarness: () => "",
 }));
 
+// The Muse usage branch spawns the real `muse` CLI. Stub the fetcher so no
+// route test ever executes the machine's login session (review round 1) —
+// the spawn itself is covered by `parseMuseUsage`/`fetchMuseUsage` unit tests
+// in model-provider-spend.test.ts.
+const { mockFetchMuseUsage } = vi.hoisted(() => ({ mockFetchMuseUsage: vi.fn() }));
+vi.mock("../../core/providers/spend.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../core/providers/spend")>();
+  return { ...actual, fetchMuseUsage: mockFetchMuseUsage };
+});
+
 const ENV_KEYS = [
   "REPOOS_OPENROUTER_API_KEY",
   "REPOOS_OPENCODE_GO_API_KEY",
@@ -54,6 +64,7 @@ const tmpRoots: string[] = [];
 // shipped with only the `afterEach` half of the isolation.
 beforeEach(() => {
   for (const k of ENV_KEYS) delete process.env[k];
+  mockFetchMuseUsage.mockReset();
 });
 
 afterEach(() => {
@@ -147,6 +158,7 @@ describe("GET /api/model-providers", () => {
       "claude-code",
       "qwen-code",
       "codex",
+      "muse",
       "github-copilot",
       "antigravity",
       "kiro",
@@ -160,6 +172,12 @@ describe("GET /api/model-providers", () => {
     const deepinfra = capture.body.providers.find((p: { id: string }) => p.id === "deepinfra");
     expect(deepinfra.hasKey).toBe(false);
     expect(deepinfra.kind).toBe("live");
+    expect(deepinfra.usesCliLogin).toBe(false);
+    // Muse is the only live row with no key variable — it reads `muse login`.
+    const muse = capture.body.providers.find((p: { id: string }) => p.id === "muse");
+    expect(muse.kind).toBe("live");
+    expect(muse.hasKey).toBe(false);
+    expect(muse.usesCliLogin).toBe(true);
     expect(JSON.stringify(capture.body)).not.toContain("sk-or-v1-secret-value");
   });
 });
@@ -280,6 +298,23 @@ describe("POST /api/model-providers/:id/key", () => {
     expect(existsSync(join(root, ".env"))).toBe(false);
   });
 
+  it("refuses a key save for Muse — the row reads `muse login`, not a pasted key", async () => {
+    const root = tmpRoot();
+    const ctx = makeCtx(root);
+    const { capture, res } = makeRes();
+    await setModelProviderKey(
+      ctx as never,
+      reqWithBody({ key: "x" }) as IncomingMessage,
+      res as never,
+      {
+        param1: "muse",
+      },
+    );
+    expect(capture.statusCode).toBe(400);
+    expect(capture.body.error).toContain("muse login");
+    expect(existsSync(join(root, ".env"))).toBe(false);
+  });
+
   it("rejects an overlong value without touching .env", async () => {
     const root = tmpRoot();
     const ctx = makeCtx(root);
@@ -318,6 +353,44 @@ describe("GET /api/model-providers/:id/usage", () => {
     await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "openrouter" });
     expect(capture.statusCode).toBe(400);
     expect(capture.body.error).toContain("No OpenRouter API key saved yet");
+  });
+
+  it("serves Muse usage with no saved key — never the missing-key 400", async () => {
+    mockFetchMuseUsage.mockResolvedValue({
+      tier: "Muse Code Everyday Usage",
+      windows: [
+        {
+          id: "window",
+          label: "Current window",
+          usedPct: 18,
+          usedUsd: null,
+          limitUsd: null,
+          resetsAt: "2026-12-06T04:30:08.000Z",
+        },
+      ],
+      unrecognized: false,
+    });
+    const ctx = makeCtx(tmpRoot());
+    const { capture, res } = makeRes();
+    await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "muse" });
+    // The pasted-key refusal must not fire — the Muse branch runs before the
+    // key lookup, which was the #1042 ordering bug.
+    expect(mockFetchMuseUsage).toHaveBeenCalledTimes(1);
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body.kind).toBe("muse");
+    expect(capture.body.tier).toBe("Muse Code Everyday Usage");
+    expect(capture.body.windows).toHaveLength(1);
+  });
+
+  it("maps a Muse allowance failure to a 502 with the login hint", async () => {
+    mockFetchMuseUsage.mockRejectedValue(
+      new Error("muse usage: not logged in: run `muse login` first"),
+    );
+    const ctx = makeCtx(tmpRoot());
+    const { capture, res } = makeRes();
+    await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "muse" });
+    expect(capture.statusCode).toBe(502);
+    expect(capture.body.error).toContain("not logged in");
   });
 
   it("renders GitHub Copilot as a link row with no scope in the payload (#0629)", async () => {

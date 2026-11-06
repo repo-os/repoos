@@ -3,10 +3,12 @@
  *
  * OpenRouter and opencode Go expose real spend APIs and render live (each
  * needs an API key the user pastes once — stored via `setDotEnvSecret`, never
- * logged, never echoed back). Cursor's CLI does not report usage, and its
- * public dashboard is the supported view for individual-account usage, so it
- * joins opencode Zen and DeepInfra as a dashboard link-out. All upstream calls
- * are plain `fetch` with a hard timeout — zero
+ * logged, never echoed back). Muse renders live from the local `muse login`
+ * session via `muse usage --json` — no API key involved. Cursor's CLI does
+ * not report usage, and its public dashboard is the supported view for
+ * individual-account usage, so it joins opencode Zen as a dashboard link-out.
+ * All upstream calls are plain `fetch` (or a short-timeout CLI spawn for
+ * Muse) with a hard timeout — zero
  * runtime dependencies, same rule as the playground adapters next door.
  *
  * The parsers (`parseOpenRouterCredits`, `parseOpenRouterKey`,
@@ -14,6 +16,7 @@
  * the response shapes without stubbing global fetch, and so an upstream
  * response shape change fails as a typed null instead of a crash.
  */
+import { execFile } from "node:child_process";
 import { parseJsonResponse } from "./types.js";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
@@ -35,15 +38,18 @@ export type ModelProviderId =
   | "claude-code"
   | "qwen-code"
   | "codex"
+  | "muse"
   | "github-copilot"
   | "antigravity"
   | "kiro";
 
 /**
- * One row of the Model providers tab. `kind: "live"` rows have a real spend
- * API behind a user-pasted key (`envVar` names the `.env` variable and
- * `configKey` the loadConfig section field the key is read back through);
- * `kind: "link"` rows are dashboard link-outs with no key collection at all.
+ * One row of the Model providers tab. `kind: "live"` rows have live data:
+ * usually a real spend API behind a user-pasted key (`envVar` names the
+ * `.env` variable and `configKey` the loadConfig section field the key is
+ * read back through), or — when both are null, as for Muse — the coding
+ * agent's own login on this machine, with no key collection at all.
+ * `kind: "link"` rows are dashboard link-outs.
  */
 export interface ModelProviderRow {
   id: ModelProviderId;
@@ -150,6 +156,15 @@ export const MODEL_PROVIDERS: ModelProviderRow[] = [
     kind: "link",
     dashboardUrl: "https://chatgpt.com/codex/settings",
     note: "Codex subscription and usage details live in the ChatGPT Codex settings.",
+    envVar: null,
+    configKey: null,
+  },
+  {
+    id: "muse",
+    label: "Muse",
+    kind: "live",
+    dashboardUrl: "https://dev.meta.ai/docs/muse-code",
+    note: "Subscription allowance from your `muse login` session on this machine — no API key to paste.",
     envVar: null,
     configKey: null,
   },
@@ -711,4 +726,134 @@ export async function fetchDeepInfraSpend(apiKey: string): Promise<DeepInfraSpen
         ? usagePart.error
         : (usagePart.error ?? UNRECOGNIZED),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Muse
+// ---------------------------------------------------------------------------
+
+export interface MuseUsage {
+  /** Subscription tier name, e.g. "Muse Code Everyday Usage". */
+  tier: string | null;
+  /**
+   * Rolling allowance windows, in the opencode Go window shape (dollars are
+   * never reported, so both stay null) so the tab renders them with the same
+   * percent bars.
+   */
+  windows: OpenCodeGoWindow[];
+  /** True when the response parsed but no allowance window was recognized. */
+  unrecognized: boolean;
+}
+
+const MUSE_WINDOW_LABELS: Record<string, string> = {
+  window: "Current window",
+  weekly: "Weekly",
+};
+
+function museResetsAt(ms: unknown): string | null {
+  const t = num(ms);
+  if (t == null) return null;
+  const d = new Date(t);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+/**
+ * Parse the `muse usage --json` response (observed 2026-11-06: `{ allowance:
+ * { tier, window: { usedPercent, resetsAtMs }, weekly: {...} }, reason, hint
+ * }`). Unknown allowance members shaped like a window (a `usedPercent`
+ * number or a `resetsAtMs` timestamp) are accepted by the same rule, so a
+ * new window key renders instead of failing the whole card.
+ */
+export function parseMuseUsage(body: unknown): MuseUsage {
+  const allowance =
+    typeof body === "object" && body !== null ? (body as { allowance?: unknown }).allowance : null;
+  if (typeof allowance !== "object" || allowance === null || Array.isArray(allowance)) {
+    return { tier: null, windows: [], unrecognized: true };
+  }
+  const rec = allowance as Record<string, unknown>;
+  const windows: OpenCodeGoWindow[] = [];
+  for (const [key, value] of Object.entries(rec)) {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) continue;
+    const win = value as Record<string, unknown>;
+    const usedRaw = num(win.usedPercent);
+    const usedPct = usedRaw != null ? clampPct(usedRaw <= 1 ? usedRaw * 100 : usedRaw) : null;
+    const resetsAt = museResetsAt(win.resetsAtMs);
+    if (usedPct == null && resetsAt == null) continue;
+    windows.push({
+      id: key,
+      label: MUSE_WINDOW_LABELS[key] ?? windowLabel(key),
+      usedPct,
+      usedUsd: null,
+      limitUsd: null,
+      resetsAt,
+    });
+  }
+  if (!windows.length) return { tier: str(rec.tier), windows, unrecognized: true };
+  return { tier: str(rec.tier), windows, unrecognized: false };
+}
+
+/** Actionable error text from a Muse response that carries no windows. */
+function museRefusal(body: unknown): string | null {
+  if (typeof body !== "object" || body === null) return null;
+  const rec = body as Record<string, unknown>;
+  for (const k of ["reason", "hint", "error", "message"]) {
+    const v = rec[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+/** Map a `muse usage` spawn failure to the row's retryable error text. */
+function museExecError(err: unknown): string {
+  const code = (err as { code?: unknown })?.code;
+  if (code === "ENOENT") {
+    return "Muse CLI is not on PATH — install it, then run `muse login` on this machine.";
+  }
+  if ((err as { killed?: boolean })?.killed) {
+    return "Muse usage check timed out — retry from the row.";
+  }
+  const stderr = (err as { stderr?: unknown })?.stderr;
+  if (typeof stderr === "string" && stderr.trim()) return stderr.trim();
+  if (err instanceof Error && err.message.trim()) return err.message.trim();
+  return "Could not read the Muse allowance.";
+}
+
+/**
+ * Fetch the local Muse subscription allowance via `muse usage --json` — the
+ * machine's `muse login` session, not a pasted API key, so there is no
+ * secret to store and nothing to fall back to. Throws with an actionable
+ * message when the CLI is missing, the session is not logged in, or the
+ * output cannot be read; the route maps that to a 502 the row renders with
+ * a retry affordance.
+ */
+export async function fetchMuseUsage(): Promise<MuseUsage> {
+  let stdout: string;
+  let stderr: string;
+  try {
+    ({ stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>(
+      (resolve, reject) => {
+        execFile("muse", ["usage", "--json"], { timeout: FETCH_TIMEOUT_MS }, (err, out, errOut) => {
+          if (err) reject(err);
+          else resolve({ stdout: String(out), stderr: String(errOut) });
+        });
+      },
+    ));
+  } catch (err) {
+    throw new Error(museExecError(err));
+  }
+  // A logged-out session exits 0 with empty stdout and the hint on stderr —
+  // the exit code alone cannot tell success from "run `muse login` first".
+  let body: unknown;
+  try {
+    body = JSON.parse(stdout);
+  } catch {
+    throw new Error(stderr.trim() || "Muse usage returned output this build could not read.");
+  }
+  const usage = parseMuseUsage(body);
+  if (usage.unrecognized) {
+    throw new Error(
+      museRefusal(body) ?? "Muse responded in a format this build doesn't recognize.",
+    );
+  }
+  return usage;
 }
