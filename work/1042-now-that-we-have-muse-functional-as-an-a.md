@@ -10,7 +10,6 @@ created_by: hello@repoos.org
 branch: feat/add-muse-usage-details-and-provider-navi
 created_at: "2026-11-06T10:56:43Z"
 updated_at: "2026-11-06T12:21:45Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-06T12:12:05.932Z: repoos check failed: ui verification failed (8 issue(s)): [request] HTTP 400 for http://127.0.0.1:59681/api/model-providers/muse/usage (http://127.0.0.1:59681/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 400 (Bad Request) (http://127.0.0.1:59681/api/model-providers/muse/usage); [request] HTTP 400 for http://127.0.0.1:59681/api/model-providers/muse/usage (http://127.0.0.1:59681/api/model-providers/muse/usage); [request] Failed to load r… (truncated)"
 ---
 ## Problem
@@ -105,3 +104,4 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 - 2026-11-06T12:12:05Z · message_delivered: 1 message(s)
 - 2026-11-06T12:16:44Z · body
 - 2026-11-06T12:21:45Z · CTO nudge: held — handoff gate is running
+
