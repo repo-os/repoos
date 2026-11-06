@@ -219,3 +219,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T18:22:28Z · note: handoff requested (cli)
 - 2026-11-06T18:25:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T18:52:28Z · message_queued at 2026-11-06T18:52:28.726Z
+- 2026-11-06T18:52:28Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
