@@ -2,14 +2,14 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T15:29:56Z"
+updated_at: "2026-11-06T16:47:42Z"
 ---
 ## Problem
 
@@ -63,3 +63,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T12:52:49Z · status review→active
 - 2026-11-06T13:36:24Z · status active→review
 - 2026-11-06T15:29:56Z · status review→active
+- 2026-11-06T16:47:42Z · status active→review
