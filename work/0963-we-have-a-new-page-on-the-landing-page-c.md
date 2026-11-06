@@ -2,7 +2,7 @@
 id: "0963"
 title: Build the simplified client project board
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 pm_cli_override: cursor
 pm_model_override: grok-4.7-medium
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-10-26T19:47:47Z"
+updated_at: "2026-11-06T05:05:53Z"
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-10-26T19:47:08Z · needs_input
 - 2026-10-26T19:47:47Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-26T19:47:47Z · needs_input
+- 2026-11-06T05:05:53Z · status inbox→ready
