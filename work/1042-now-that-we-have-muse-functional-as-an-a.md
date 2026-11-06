@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T11:44:56.325Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Provider quick-nav chips at top of Model providers (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /agents?tab=providers (http://127.0.0.1:56404/agents?tab=providers)"
 id: 1042
 title: Add Muse usage details and provider navigation
 type: feature
@@ -79,3 +81,4 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 - 2026-11-06T11:44:52Z · note: ui verification failed (1 issue(s)): [missing-target] Provider quick-nav chips at top of Model providers (target "default"): loading state detected: loading indicator [aria-busy="true"] on /agents?tab=providers (http://127.0.0.1:56404/agents?tab=providers)
 - 2026-11-06T11:44:52Z · message_queued at 2026-11-06T11:44:52.922Z
 - 2026-11-06T11:44:56Z · message_delivered: 1 message(s)
+
