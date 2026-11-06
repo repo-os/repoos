@@ -128,7 +128,8 @@ describe("check-wait diagnostic clamp (#1034)", () => {
     const clampedText = detail.get(".tc-needs-detail-text");
     expect(clampedText.classes()).toContain("tc-needs-detail-text--clamp");
     expect(detail.text()).toContain("waiting for a local check slot");
-    expect(detail.text()).toContain("Details");
+    // #1040 E1: the blurb alone is the affordance — no separate Details link.
+    expect(detail.text()).not.toContain("Details");
 
     FakeEventSource.instances = [];
     stubDrawerApi(task);
