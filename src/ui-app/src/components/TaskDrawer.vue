@@ -4343,6 +4343,39 @@ const selectedEngineeringReport = computed(
 const engineeringReportHtml = computed(() =>
   selectedEngineeringReport.value ? renderMarkdown(selectedEngineeringReport.value.markdown) : "",
 );
+
+/** Post-merge PM summary report (#1041), committed on main at close-out. */
+interface TaskSummaryPayload {
+  ok: boolean;
+  exists: boolean;
+  markdown: string | null;
+  status: string;
+  statusAt: string | null;
+  error: string | null;
+}
+const taskSummary = ref<{ markdown: string } | null>(null);
+const taskSummaryStatus = ref("idle");
+const taskSummaryError = ref("");
+const taskSummaryHtml = computed(() =>
+  taskSummary.value ? renderMarkdown(taskSummary.value.markdown) : "",
+);
+let taskSummaryGeneration = 0;
+async function loadTaskSummary(taskId: string): Promise<void> {
+  const generation = ++taskSummaryGeneration;
+  const stillCurrent = () => generation === taskSummaryGeneration && ui.active?.id === taskId;
+  try {
+    const response = await api<TaskSummaryPayload>(`/api/tasks/${taskId}/summary`);
+    if (!stillCurrent()) return;
+    taskSummary.value = response.markdown ? { markdown: response.markdown } : null;
+    taskSummaryStatus.value = response.status ?? "idle";
+    taskSummaryError.value = response.error ?? "";
+  } catch {
+    if (!stillCurrent()) return;
+    taskSummary.value = null;
+    taskSummaryStatus.value = "idle";
+    taskSummaryError.value = "";
+  }
+}
 // Every load bumps the generation. A response is applied only when it belongs
 // to the newest load for the task still open in the drawer, so a slow older
 // request can never overwrite newer history — even when the task id and branch
@@ -4382,7 +4415,13 @@ watch(
     engineeringReports.value = [];
     engineeringReportsError.value = "";
     selectedEngineeringRound.value = null;
-    if (id) void loadEngineeringReports(id);
+    taskSummary.value = null;
+    taskSummaryStatus.value = "idle";
+    taskSummaryError.value = "";
+    if (id) {
+      void loadEngineeringReports(id);
+      void loadTaskSummary(id);
+    }
   },
   { immediate: true },
 );
@@ -6354,6 +6393,24 @@ watch(
             >
               {{ engineeringReportsError }}
             </p>
+            <div
+              v-if="taskSummary?.markdown || taskSummaryStatus === 'pending' || taskSummaryStatus === 'failed'"
+              data-test-id="task-summary"
+            >
+              <div class="task-section-title">Post-merge summary</div>
+              <p v-if="taskSummaryStatus === 'pending'" class="review-hint">
+                The PM agent is writing the post-merge summary…
+              </p>
+              <p v-else-if="taskSummaryStatus === 'failed'" class="ff-error" role="alert">
+                The post-merge summary failed{{ taskSummaryError ? `: ${taskSummaryError}` : "" }} —
+                retry with <code>repoos summary {{ ui.active?.id }}</code>.
+              </p>
+              <div
+                v-if="taskSummary?.markdown"
+                class="md-rendered engineering-report-body"
+                v-html="taskSummaryHtml"
+              ></div>
+            </div>
             <table
               v-if="engineeringReports.length"
               class="review-history-table"
