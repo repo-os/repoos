@@ -2,7 +2,7 @@
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — summary-state persistence failures are hidden, and the required drawer view was not captured."
@@ -13,7 +13,7 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T13:21:45Z"
+updated_at: "2026-11-06T13:36:24Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-06T09:20:05.482Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -152,3 +152,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T12:52:59Z · message_delivered: 1 message(s)
 - 2026-11-06T13:13:59Z · body
 - 2026-11-06T13:21:45Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T13:36:24Z · status active→review
