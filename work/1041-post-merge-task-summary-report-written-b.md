@@ -3,6 +3,9 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 9 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -265,3 +268,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T20:05:37Z · body
 - 2026-11-06T20:11:14Z · status active→review
 - 2026-11-06T20:15:15Z · note: review pass 11: needs some work
+- 2026-11-06T20:15:15Z · needs_input
