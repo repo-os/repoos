@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-06T09:19:34Z"
-review_passes: 2
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -12,6 +10,8 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
+updated_at: "2026-11-06T09:19:35Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-11-06T07:33:19.730Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 review_rounds: 1
 routing_switches: 1
@@ -117,4 +117,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T09:11:32Z · body
 - 2026-11-06T09:15:40Z · status active→review
 - 2026-11-06T09:19:34Z · note: review pass 4: needs some work
-
+- 2026-11-06T09:19:35Z · message_queued at 2026-11-06T09:19:35.971Z
