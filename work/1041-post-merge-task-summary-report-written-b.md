@@ -3,9 +3,6 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — retries can report success while still running, and status-I/O failures can hide failures."
 priority: p2
 area: [core, web]
 assigned_to: ai
@@ -15,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T21:32:20Z"
+updated_at: "2026-11-06T21:32:21Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T21:28:11.977Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 11
@@ -75,22 +72,22 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 "route": "/work?task=1041&tab=agent",
 "highlight": ".engineering-report-view",
 "steps": [
-  {
-    "click": "[data-test-id=\"engineering-report-tab\"]"
-  },
-  {
-    "waitFor": ".engineering-report-view"
-  }
+{
+  "click": "[data-test-id=\"engineering-report-tab\"]"
+},
+{
+  "waitFor": ".engineering-report-view"
+}
 ],
 "assert": [
-  {
-    "selector": "[data-test-id=\"engineering-report-tab\"]",
-    "label": "Report sub-tab"
-  },
-  {
-    "selector": ".engineering-report-view",
-    "label": "Report pane"
-  }
+{
+  "selector": "[data-test-id=\"engineering-report-tab\"]",
+  "label": "Report sub-tab"
+},
+{
+  "selector": ".engineering-report-view",
+  "label": "Report pane"
+}
 ]
 }
 ]
@@ -310,3 +307,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T21:28:11Z · message_delivered: 1 message(s)
 - 2026-11-06T21:29:39Z · body
 - 2026-11-06T21:32:20Z · status review→active
+- 2026-11-06T21:32:21Z · needs_input
