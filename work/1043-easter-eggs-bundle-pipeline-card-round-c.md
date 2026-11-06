@@ -16,7 +16,6 @@ created_at: "2026-11-06T12:18:04Z"
 updated_at: "2026-11-06T17:05:47Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pipeline-view.test.ts > pipeline-card lib > renders reviewer chips per verdict tone on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 889dd843459ef5d9a81dc2810c95d43f0718867c
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-06T16:45:53.983Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-06T16:45:49.390Z\",\"reason\":\"handoff-deferred\"}]"
 ---
@@ -82,3 +81,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T17:02:31Z · body
 - 2026-11-06T17:04:34Z · CTO nudge: held — remote validation is running
 - 2026-11-06T17:05:47Z · CTO nudge: held — handoff gate is running
+
