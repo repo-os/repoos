@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-muse-usage-details-and-provider-navi
 created_at: "2026-11-06T10:56:43Z"
-updated_at: "2026-11-06T11:17:32Z"
+updated_at: "2026-11-06T11:23:04Z"
 ---
 ## Problem
 
@@ -74,3 +74,4 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 - 2026-11-06T10:57:59Z · status ready→active, branch
 - 2026-11-06T11:13:18Z · body
 - 2026-11-06T11:17:32Z · body
+- 2026-11-06T11:23:04Z · body
