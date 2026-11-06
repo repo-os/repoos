@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T12:18:04Z"
-updated_at: "2026-11-06T15:56:21Z"
+updated_at: "2026-11-06T15:59:04Z"
 ---
 ## Problem
 
@@ -38,11 +38,11 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 ```json
 [
 {
-  "label": "Pipeline card with amber D/R round badge",
-  "target": "default",
-  "route": "/work?shotState=board:pipeline",
-  "highlight": ".rounds-badge",
-  "state": "board:pipeline"
+"label": "Pipeline card with amber D/R round badge",
+"target": "default",
+"route": "/work?shotState=board:pipeline",
+"highlight": ".rounds-badge",
+"state": "board:pipeline"
 }
 ]
 ```
@@ -60,3 +60,4 @@ Files: `src/ui-app/src/components/PipelineView.vue` (sentBackNote, lane chips, e
 - 2026-11-06T15:53:22Z · review_model_override
 - 2026-11-06T15:53:24Z · status ready→active, branch
 - 2026-11-06T15:56:21Z · body
+- 2026-11-06T15:59:04Z · body
