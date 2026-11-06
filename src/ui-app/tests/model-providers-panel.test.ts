@@ -517,7 +517,12 @@ describe("ModelProvidersPanel — Muse live data", () => {
     expect(row.find(".mp-key-form").exists()).toBe(false);
     expect(row.text()).not.toContain("Replace key");
     expect(row.text()).not.toContain("Clear");
-    expect(row.findAll("button").find((b) => b.text() === "Refresh")!.exists()).toBe(true);
+    expect(
+      row
+        .findAll("button")
+        .find((b) => b.text() === "Refresh")!
+        .exists(),
+    ).toBe(true);
   });
 
   it("shows a retryable error when the session is not logged in", async () => {
@@ -533,9 +538,7 @@ describe("ModelProvidersPanel — Muse live data", () => {
     expect(row.text()).toContain("not logged in");
     expect(row.find(".mp-retry").exists()).toBe(true);
     // The dashboard link-out is still one click away.
-    expect(row.find(".mp-dash-link").attributes("href")).toBe(
-      "https://dev.meta.ai/docs/muse-code",
-    );
+    expect(row.find(".mp-dash-link").attributes("href")).toBe("https://dev.meta.ai/docs/muse-code");
   });
 });
 

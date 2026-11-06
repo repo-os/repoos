@@ -766,9 +766,7 @@ function museResetsAt(ms: unknown): string | null {
  */
 export function parseMuseUsage(body: unknown): MuseUsage {
   const allowance =
-    typeof body === "object" && body !== null
-      ? (body as { allowance?: unknown }).allowance
-      : null;
+    typeof body === "object" && body !== null ? (body as { allowance?: unknown }).allowance : null;
   if (typeof allowance !== "object" || allowance === null || Array.isArray(allowance)) {
     return { tier: null, windows: [], unrecognized: true };
   }
@@ -853,7 +851,9 @@ export async function fetchMuseUsage(): Promise<MuseUsage> {
   }
   const usage = parseMuseUsage(body);
   if (usage.unrecognized) {
-    throw new Error(museRefusal(body) ?? "Muse responded in a format this build doesn't recognize.");
+    throw new Error(
+      museRefusal(body) ?? "Muse responded in a format this build doesn't recognize.",
+    );
   }
   return usage;
 }
