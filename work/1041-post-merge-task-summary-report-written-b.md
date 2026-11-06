@@ -12,7 +12,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T17:12:27Z"
+updated_at: "2026-11-06T17:14:48Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-06T16:45:53.531Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 2
@@ -183,3 +183,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T17:12:24Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
 - 2026-11-06T17:12:25Z · message_queued at 2026-11-06T17:12:25.051Z
 - 2026-11-06T17:12:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T17:14:48Z · message_queued at 2026-11-06T17:14:48.203Z
