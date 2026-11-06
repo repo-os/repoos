@@ -772,7 +772,7 @@ describe("repoos summary polling", () => {
   });
 
   it("resolves once the report commits, without waiting for the status file", async () => {
-    const states = [
+    const states: TaskSummaryState[] = [
       { ok: true, exists: false, markdown: null, status: "pending", statusAt: "", error: null },
       {
         ok: true,
