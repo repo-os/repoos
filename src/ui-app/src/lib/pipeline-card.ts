@@ -15,6 +15,22 @@ export interface TaskRoundCounts {
   review: number;
 }
 
+/** Shared label used by the task drawer and pipeline card. */
+export function taskRoundLabel(counts: TaskRoundCounts): string {
+  return `D${counts.dev} · R${counts.review}`;
+}
+
+export function pipelineRoundLabel(
+  counts: TaskRoundCounts,
+  opts: { tone: ReviewVerdictTone | null; reviewRunning: boolean },
+): string {
+  if (opts.reviewRunning && opts.tone === null) {
+    return `D${counts.dev} · R${counts.review + 1} …`;
+  }
+  const mark = opts.tone === "green" ? " ✓" : opts.tone === "red" ? " ↻" : "";
+  return `${taskRoundLabel(counts)}${mark}`;
+}
+
 function countField(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
@@ -57,19 +73,17 @@ export function taskInDevPass(
 }
 
 /**
- * Reviewer round chip: `R1 ✓` (green), `R1 changes` (amber), `R2 ↻` (red),
- * or the upcoming pass while a review is running with no verdict yet. Null
- * when there is nothing to show — the card omits the chip rather than
- * inventing a round.
+ * Optional compact reviewer suffix appended to the shared round label.
+ * Amber tone is carried by the pill itself, so no word is needed.
  */
 export function reviewerChip(opts: {
   passes: number;
   tone: ReviewVerdictTone | null;
   reviewRunning: boolean;
 }): string | null {
-  if (opts.tone === "green") return `R${opts.passes} ✓`;
-  if (opts.tone === "amber") return `R${opts.passes} changes`;
-  if (opts.tone === "red") return `R${opts.passes} ↻`;
+  if (opts.tone === "green") return "✓";
+  if (opts.tone === "amber") return "";
+  if (opts.tone === "red") return "↻";
   if (opts.reviewRunning) return `R${opts.passes + 1} …`;
   return null;
 }

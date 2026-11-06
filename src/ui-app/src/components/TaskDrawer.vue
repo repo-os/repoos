@@ -173,7 +173,7 @@ import { GENERIC_PATCH_TARGETS } from "../lib/taskTransitions";
 import { parseReviewVerdict } from "../lib/reviewVerdict";
 import { reportPredatesLatestHandoff, reviewSupersededByFixRound } from "../lib/reviewFreshness";
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
-import { taskInDevPass, taskRoundCounts } from "../lib/pipeline-card";
+import { taskInDevPass, taskRoundCounts, taskRoundLabel } from "../lib/pipeline-card";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
@@ -3213,6 +3213,7 @@ const taskRounds = computed(() => {
   if (!task) return { dev: 0, review: 0 };
   return taskRoundCounts(task, taskInDevPass(task, repo.isRunning(task.id)));
 });
+const taskRoundsLabel = computed(() => taskRoundLabel(taskRounds.value));
 
 /** Rendered (safe) Markdown of the report body. */
 const selectedReviewPass = ref<number | null>(null);
@@ -5292,7 +5293,7 @@ watch(
                 class="rounds-badge"
                 title="Dev and review passes for this task"
               >
-                D{{ taskRounds.dev }} · R{{ taskRounds.review }}
+                {{ taskRoundsLabel }}
               </span>
               <Button
                 v-if="ui.active.status === 'draft'"
@@ -7724,19 +7725,6 @@ watch(
   color: var(--txt-faint);
   font-size: 12px;
   text-align: center;
-}
-
-.rounds-badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  color: var(--txt-faint);
-  font: 600 10px/1 var(--font-mono);
-  letter-spacing: 0.04em;
-  white-space: nowrap;
 }
 
 /* Changes tab — full diff output */

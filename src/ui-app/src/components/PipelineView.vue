@@ -16,7 +16,7 @@ import {
 import {
   pipelineHostLabel,
   pipelineModelsLabel,
-  reviewerChip,
+  pipelineRoundLabel,
   taskInDevPass,
   taskRoundCounts,
 } from "../lib/pipeline-card";
@@ -61,8 +61,7 @@ interface Lane {
   model: PipelineCardModel;
   chipText: string | null;
   stateSince: string | null;
-  engineerRound: number;
-  reviewerChipText: string | null;
+  roundsLabel: string;
   reviewerTone: "green" | "amber" | "red" | null;
   models: string;
   host: string;
@@ -190,9 +189,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
     model,
     chipText,
     stateSince: model.state === "merged" ? (task.releasedAt ?? task.updated_at) : task.updated_at,
-    engineerRound: rounds.dev,
-    reviewerChipText: reviewerChip({
-      passes: rounds.review,
+    roundsLabel: pipelineRoundLabel(rounds, {
       tone: verdict?.tone ?? null,
       reviewRunning,
     }),
@@ -224,10 +221,6 @@ const lanes = computed<Lane[]>(() => {
 });
 
 const readyCount = computed(() => repo.byStatus("ready").length);
-
-function sentBackNote(count: number): string {
-  return count === 1 ? "sent back once" : `sent back ×${count}`;
-}
 
 function openTask(id: string): void {
   const lane = lanes.value.find((l) => l.task.id === id);
@@ -288,11 +281,6 @@ function stageCells(stage: PipelineStage): string {
             :key="`${lane.task.id}-${stage}`"
             :class="stageCells(stage)"
           >
-            <span
-              v-if="lane.model.stage === stage && lane.model.sentBackCount > 0"
-              class="pipeline-sent-back"
-              >{{ sentBackNote(lane.model.sentBackCount) }}</span
-            >
             <PipelineCard
               v-if="lane.model.stage === stage"
               :task-id="lane.task.id"
@@ -304,8 +292,7 @@ function stageCells(stage: PipelineStage): string {
               :chip-text="lane.chipText"
               :state-since="lane.stateSince"
               :now-ms="now"
-              :engineer-round="lane.engineerRound"
-              :reviewer-chip="lane.reviewerChipText"
+              :rounds-label="lane.roundsLabel"
               :reviewer-tone="lane.reviewerTone"
               :models-label="lane.models"
               :host-label="lane.host"
@@ -403,14 +390,6 @@ function stageCells(stage: PipelineStage): string {
 .pipeline-cell.stage-merged :deep(.pipeline-card) {
   left: auto;
   right: 12px;
-}
-.pipeline-sent-back {
-  position: absolute;
-  top: 4px;
-  left: 14px;
-  color: var(--amber);
-  font-size: 10px;
-  white-space: nowrap;
 }
 .pipeline-cell {
   position: relative;
