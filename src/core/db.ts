@@ -658,16 +658,12 @@ export class RepoOSDb {
     return out;
   }
 
-  /** Retrieve all sessions for a task. */
+  /** Retrieve all sessions for a task. Throws on database errors. */
   getTaskSessions(taskId: string): SessionRecord[] {
     if (!this.available || !this.db) return [];
-    try {
-      return this.db
-        .prepare("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC")
-        .all(taskId) as SessionRecord[];
-    } catch {
-      return [];
-    }
+    return this.db
+      .prepare("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC")
+      .all(taskId) as SessionRecord[];
   }
 
   /** Aggregate stats for a task (all sessions and review rounds). */

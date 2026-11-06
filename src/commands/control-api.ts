@@ -1784,9 +1784,9 @@ export interface TaskSummaryState {
   error: string | null;
 }
 
-/** Terminal poll states: a committed report counts even when its status write was lost. */
+/** Terminal poll states: only "done" or "failed" status is terminal, not file existence. */
 export function isSummaryPollTerminal(state: Pick<TaskSummaryState, "status" | "exists">): boolean {
-  return state.status === "done" || state.status === "failed" || state.exists;
+  return state.status === "done" || state.status === "failed";
 }
 
 const SUMMARY_MAX_GET_ERRORS = 10;
@@ -1864,14 +1864,16 @@ export async function cmdSummary(args: string[]): Promise<number> {
         (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState,
       { label: `summary for #${id}` },
     );
-    if (opts.json) printJson(final);
-    else if (final.status === "done")
-      console.log(c.green(`  ✓ #${id} summary ready: work/reports/${id}/summary.md`));
-    else {
-      printErr(final.error ?? `summary generation failed for #${id}`);
-      return 1;
+    if (opts.json) {
+      printJson(final);
+      return final.status === "done" ? 0 : 1;
     }
-    return 0;
+    if (final.status === "done") {
+      console.log(c.green(`  ✓ #${id} summary ready: work/reports/${id}/summary.md`));
+      return 0;
+    }
+    printErr(final.error ?? `summary generation failed for #${id}`);
+    return 1;
   } catch (e) {
     printErr((e as RepoOsApiError).message);
     return 1;
