@@ -72,7 +72,7 @@ import type { MemoryPressureProbe } from "../core/memory-pressure.js";
 import { effectiveAgentCapacity, registeredEngineerCount } from "../core/global-engineers.js";
 import { clearQueueMarker, writeQueueMarker } from "../core/local-queue-marker.js";
 import { isProviderFailureReason } from "../core/attention.js";
-import { MUSE_MAX_MODEL_STEPS } from "../core/agent-contract.js";
+import { MUSE_ENGINEER_MAX_MODEL_STEPS, MUSE_MAX_MODEL_STEPS } from "../core/agent-contract.js";
 import {
   creditIdleMs,
   DegenerateOutputTracker,
@@ -2900,6 +2900,8 @@ export interface MuseParseResult {
   textDelta?: boolean;
   /** True when this line is the terminal `run.terminal` record. */
   terminal?: "completed" | "failure";
+  /** Model calls the turn made, from the `run.usage` record (step-cap detection). */
+  usageCalls?: number;
   toolEvent?: {
     phase: "start" | "complete";
     id: string;
@@ -3011,6 +3013,9 @@ export function parseMuseEvent(raw: string): MuseParseResult | null {
         error: /error|fail|denied|cancel/i.test(outcome),
       },
     };
+  }
+  if (payloadType === "run.usage" && typeof payload.calls === "number") {
+    return { ...meta, usageCalls: payload.calls };
   }
   // run.usage and every other envelope record are voiceless: usage folds from
   // the raw line in lineTouched, so there is no transcript entry — but the
@@ -3561,7 +3566,7 @@ function museExecArgs(
       "--approval-mode",
       "never",
       "--max-model-steps",
-      String(MUSE_MAX_MODEL_STEPS),
+      String(unsandboxed ? MUSE_ENGINEER_MAX_MODEL_STEPS : MUSE_MAX_MODEL_STEPS),
       "--reasoning-effort",
       MUSE_REASONING_EFFORT,
       ...(isValidMuseSessionId(sessionId) ? ["--session-id", sessionId as string] : []),
@@ -8790,6 +8795,20 @@ export class AgentRunner {
     }
     if (parsed.sessionID && !session.sessionId) session.sessionId = parsed.sessionID;
     if (parsed.model) session.model = parsed.model;
+    if (parsed.usageCalls !== undefined) {
+      // Muse stops cleanly at --max-model-steps with a "completed" terminal, so
+      // the cap is only visible as calls == cap. Say so, or the turn just looks
+      // like it quit without a handoff.
+      // AgentRunner sessions are engineer turns (MUSE_ENGINEER_MAX_MODEL_STEPS).
+      const cap = MUSE_ENGINEER_MAX_MODEL_STEPS;
+      if (parsed.usageCalls >= cap) {
+        this.flushMusePendingText(taskId, session, raw);
+        this.recordEntry(taskId, session, "out", {
+          type: "sys",
+          d: `Muse hit its per-turn step cap (${parsed.usageCalls}/${cap} model calls); the work is probably unfinished and the session will be resumed.`,
+        });
+      }
+    }
     if (parsed.toolEvent) {
       this.flushMusePendingText(taskId, session, raw);
       const event = parsed.toolEvent;
