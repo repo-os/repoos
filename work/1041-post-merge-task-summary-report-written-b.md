@@ -12,7 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T21:22:50Z"
+updated_at: "2026-11-06T21:26:27Z"
 review_passes: 10
 last_check_failure: "repoos check at 2026-11-06T20:22:24.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b0f58a2a to ef82ca9a) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate"
@@ -292,3 +292,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T21:13:29Z · note: shots: failed — preview for target "default" did not start: preview server for #1041 did not become ready
 - 2026-11-06T21:18:41Z · body
 - 2026-11-06T21:22:50Z · status active→review
+- 2026-11-06T21:26:27Z · note: review pass 13: needs some work
