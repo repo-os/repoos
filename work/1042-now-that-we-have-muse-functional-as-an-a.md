@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/add-muse-usage-details-and-provider-navi
 created_at: "2026-11-06T10:56:43Z"
-updated_at: "2026-11-06T15:24:33Z"
+updated_at: "2026-11-06T15:27:35Z"
 last_close_out_gate_ms: 728827
 last_close_out_gate_at: "2026-11-06T14:20:53.763Z"
 check_retry_count: 1
@@ -133,3 +133,4 @@ Now that we have muse functional as an AI coding agent let's also add it to the 
 - 2026-11-06T13:48:23Z · message_queued at 2026-11-06T13:48:23.415Z
 - 2026-11-06T14:20:53Z · close-out gate completed in 729s
 - 2026-11-06T15:24:33Z · status done→done, release:success
+- 2026-11-06T15:27:35Z · message_dropped: 1 queued message(s) discarded — task is done
