@@ -829,6 +829,13 @@ function parseMuseRun(stdout: string): RunParseResult {
  * resume). Generous enough for a real engineer turn; revisit at certification.
  */
 export const MUSE_MAX_MODEL_STEPS = 50;
+/**
+ * Per-turn step cap for MANAGED ENGINEER turns. 50 is right for probes and
+ * advisory turns but far too small for real work: a live #1041 turn used
+ * exactly 50 model calls and stopped mid-feature (2026-11-06), which RepoOS
+ * read as "ended without a handoff". Muse is the only driver with a step cap.
+ */
+export const MUSE_ENGINEER_MAX_MODEL_STEPS = 200;
 
 /** Muse Code (Meta) — headless `exec --json`, UUID session resume. */
 const MUSE_CONTRACT: ContractCommandTemplates = {

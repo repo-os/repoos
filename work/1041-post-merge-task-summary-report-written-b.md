@@ -3,13 +3,31 @@ id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — retries can report success while still running, and status-I/O failures can hide failures."
 priority: p2
 area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-task-summary-report-written-b
+cli_override: cursor
+model_override: composer-2.5
+review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T16:47:42Z"
+updated_at: "2026-11-06T21:29:39Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-06T21:28:11.977Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+review_passes: 11
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 63a04ffa3ef54b19f5cbbd5d623b6aca0bd26606
+review_rounds: 2
+routing_switches: 1
+routing_escalations: 1
+review_timeout_retries: 0
+handoff_signal_retry_count: 2
+dev_error_count: 11
+engineer_stall_resume_log: "[{\"at\":\"2026-11-06T19:07:40.805Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 
@@ -49,6 +67,35 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - Look at how the engineering report draft (`.repoos/engineering-report-drafts/<id>.md`) and its `## TL;DR` validation work, and at the close-out pipeline's post-merge hooks (`docs/close-out-pipeline.md`).
 - Source: Nick, 2026-11-06.
 
+## Shots
+```json
+[
+{
+  "label": "Task drawer Dev > Report pane (post-merge summary)",
+  "route": "/work?task=1041&tab=agent",
+  "highlight": ".engineering-report-view",
+  "steps": [
+    {
+      "click": "[data-test-id=\"engineering-report-tab\"]"
+    },
+    {
+      "waitFor": ".engineering-report-view"
+    }
+  ],
+  "assert": [
+    {
+      "selector": "[data-test-id=\"engineering-report-tab\"]",
+      "label": "Report sub-tab"
+    },
+    {
+      "selector": ".engineering-report-view",
+      "label": "Report pane"
+    }
+  ]
+}
+]
+```
+
 ## Activity
 
 - 2026-11-06T04:37:35Z · created · njachowski@gmail.com
@@ -57,10 +104,208 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T04:48:38Z · needs_input
 - 2026-11-06T04:54:12Z · status inbox→ready
 - 2026-11-06T05:09:29Z · status ready→active, branch
+- 2026-11-06T05:15:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Still missing:** server task-summary module, orchestrator hook, API routes + CLI + parity entries, drawer Summary block, `user-docs/engineering-reports.md` update, tests (generation, idempotency, failure path), and the scoped `repoos che… · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/post-merge-task-summary-report-written-b (cwd default) muse: workspace trust: trusted source=run-flag muse: warning: rules file at /Users/nick/code/nick/repoos-worktrees/feat/post-merge-task-summary-report-written-b/CLAUDE.md is ignored this session bec…
+- 2026-11-06T05:29:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Verification state: `REPOOS_CHECK_CHANGED=main repoos check` failed on one typecheck error (`Agent` not exported from `agents.js`); fixed by deriving `PmAgent` from the resolver return type. The scoped check has NOT been re-run green — nex… · stderr: muse: workspace root: /Users/nick/code/nick/repoos-worktrees/feat/post-merge-task-summary-report-written-b (cwd default) muse: workspace trust: trusted source=run-flag
+- 2026-11-06T05:36:44Z · note: stopped orphaned engineer pid 30533
+- 2026-11-06T05:36:45Z · agent exited with an error (muse) · received SIGTERM; flushed session logs
+- 2026-11-06T05:36:45Z · engineer crash recovery: resuming muse + muse-spark-1.3 (1/3 crashes in 30m) · received SIGTERM; flushed session logs
+- 2026-11-06T05:44:27Z · needs_input
+- 2026-11-06T05:45:29Z · agent exited with an error (muse) · run ended with Failed: network connection could not be opened within 15 seconds (after 2 provider attempts)
+- 2026-11-06T05:45:29Z · engineer crash recovery: resuming muse + muse-spark-1.3 (2/3 crashes in 30m) · run ended with Failed: network connection could not be opened within 15 seconds (after 2 provider attempts)
+- 2026-11-06T05:45:32Z · needs_input
+- 2026-11-06T05:53:26Z · body
+- 2026-11-06T05:58:17Z · body
+- 2026-11-06T06:01:43Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T06:26:44Z · status active→review
+- 2026-11-06T06:26:45Z · message_queued at 2026-11-06T06:26:45.176Z
+- 2026-11-06T06:39:55Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (6595e997d) during finalization (#0734)
+- 2026-11-06T06:41:49Z · note: review pass 1: timed out after 15 minutes — no report (retrying once automatically)
+- 2026-11-06T06:56:57Z · note: review pass 2: timed out after 15 minutes — no report; human needed
+- 2026-11-06T06:56:58Z · needs_input
+- 2026-11-06T07:06:51Z · review_cli_override
+- 2026-11-06T07:06:59Z · needs_input (review-failed) cleared for review again by hello@repoos.org
+- 2026-11-06T07:09:57Z · note: review pass 3: needs some work
+- 2026-11-06T07:09:59Z · message_delivered: 1 message(s)
+- 2026-11-06T07:09:59Z · status review→active
+- 2026-11-06T07:21:48Z · body
+- 2026-11-06T07:27:33Z · body
+- 2026-11-06T07:31:43Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T07:33:16Z · message_queued at 2026-11-06T07:33:16.487Z
+- 2026-11-06T07:33:19Z · message_delivered: 1 message(s)
+- 2026-11-06T07:33:32Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T07:34:02Z · engineer crash recovery: resuming muse + muse-spark-1.3 (1/12 crashes in 30m) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T07:34:05Z · needs_input
+- 2026-11-06T07:34:17Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T07:44:31Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-06T07:49:35Z · body
+- 2026-11-06T07:55:00Z · body
+- 2026-11-06T07:58:07Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T08:08:16Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-06T08:08:32Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T08:18:46Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-06T08:19:04Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T08:29:16Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-06T08:29:33Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T08:39:46Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-06T08:40:05Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T08:50:16Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-06T08:50:34Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T09:00:46Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-06T09:01:04Z · agent exited with an error (muse) · run ended with Failed: transport error: error sending request for url (https://api.meta.ai/v1/responses) (after 4 provider attempts)
+- 2026-11-06T09:06:06Z · needs_input
+- 2026-11-06T09:11:32Z · body
+- 2026-11-06T09:15:40Z · status active→review
+- 2026-11-06T09:19:34Z · note: review pass 4: needs some work
+- 2026-11-06T09:19:35Z · message_queued at 2026-11-06T09:19:35.971Z
+- 2026-11-06T09:19:36Z · status review→active
+- 2026-11-06T09:19:38Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T09:20:02Z · message_queued at 2026-11-06T09:20:02.264Z
+- 2026-11-06T09:20:05Z · message_delivered: 2 message(s)
+- 2026-11-06T09:21:43Z · CTO nudge: held — remote validation is running
+- 2026-11-06T09:27:19Z · body
+- 2026-11-06T09:31:43Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T09:46:28Z · status active→review
+- 2026-11-06T09:46:28Z · message_queued at 2026-11-06T09:46:28.795Z
+- 2026-11-06T09:50:48Z · note: review pass 5: needs some work
+- 2026-11-06T09:50:49Z · needs_input
+- 2026-11-06T09:59:39Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a40eef487) during finalization (#0734)
 - 2026-11-06T10:51:39Z · status review→active
+- 2026-11-06T10:51:42Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T10:51:47Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-06T10:51:47Z · message_delivered: 1 message(s)
+- 2026-11-06T11:03:44Z · body
+- 2026-11-06T11:11:45Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T11:24:21Z · status active→review
-- 2026-11-06T12:52:49Z · status review→active
+- 2026-11-06T11:24:22Z · message_queued at 2026-11-06T11:24:22.098Z
+- 2026-11-06T11:27:10Z · note: review pass 6: needs some work
+- 2026-11-06T11:27:10Z · needs_input
+- 2026-11-06T11:27:10Z · needs_input
+- 2026-11-06T11:38:11Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a6c68ff14) during finalization (#0734)
+- 2026-11-06T12:29:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-06T12:52:48Z · status review→active
+- 2026-11-06T12:52:51Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T12:52:59Z · message_delivered: 1 message(s)
+- 2026-11-06T13:13:59Z · body
+- 2026-11-06T13:21:45Z · CTO nudge: held — handoff gate is running
 - 2026-11-06T13:36:24Z · status active→review
-- 2026-11-06T15:29:56Z · status review→active
-- 2026-11-06T16:47:42Z · status active→review
+- 2026-11-06T13:36:24Z · message_queued at 2026-11-06T13:36:24.506Z
+- 2026-11-06T13:41:28Z · note: review pass 7: needs some work
+- 2026-11-06T13:41:28Z · needs_input
+- 2026-11-06T13:41:28Z · needs_input
+- 2026-11-06T13:49:44Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (d80809163) during finalization (#0734)
+- 2026-11-06T15:27:35Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-06T15:29:47Z · cli_override, model_override
+- 2026-11-06T15:29:51Z · model_override
+- 2026-11-06T15:29:55Z · status review→active
+- 2026-11-06T15:29:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T15:30:01Z · message_delivered: 1 message(s)
+- 2026-11-06T15:40:41Z · body
+- 2026-11-06T15:49:18Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T16:20:46Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T16:45:48Z · message_queued at 2026-11-06T16:45:48.458Z
+- 2026-11-06T16:45:48Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-06T16:45:53Z · message_delivered: 1 message(s)
+- 2026-11-06T16:47:44Z · note: handoff requested (cli)
+- 2026-11-06T17:02:08Z · message_queued at 2026-11-06T17:02:08.723Z
+- 2026-11-06T17:02:08Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-06T17:02:09Z · message_delivered: 1 message(s)
+- 2026-11-06T17:04:30Z · status active→review
+- 2026-11-06T17:07:27Z · note: review pass 8: needs some work
+- 2026-11-06T17:07:27Z · needs_input
+- 2026-11-06T17:07:27Z · needs_input
+- 2026-11-06T17:07:58Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (77b00337a) during finalization (#0734)
+- 2026-11-06T17:12:24Z · needs_input
+- 2026-11-06T17:12:24Z · status review→active
+- 2026-11-06T17:12:24Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-11-06T17:12:25Z · message_queued at 2026-11-06T17:12:25.051Z
+- 2026-11-06T17:12:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T17:14:48Z · message_queued at 2026-11-06T17:14:48.203Z
+- 2026-11-06T17:14:51Z · message_delivered: 2 message(s)
+- 2026-11-06T17:16:16Z · body
+- 2026-11-06T17:20:47Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T17:47:48Z · message_queued at 2026-11-06T17:47:48.517Z
+- 2026-11-06T17:47:51Z · message_delivered: 1 message(s)
+- 2026-11-06T17:53:45Z · note: ui verification failed (1 issue(s)): [missing-target] Task drawer Dev > Report pane (target "default"): highlight [data-test-id="report-tab-content"] matched nothing on /work?task=1041&tab=dev (http://127.0.0.1:51749/work)
+- 2026-11-06T18:18:37Z · handoff failed · check failed after 2 automatic retries · server-side finalization timed out (deadline exceeded)
+- 2026-11-06T18:18:37Z · message_queued at 2026-11-06T18:18:37.722Z
+- 2026-11-06T18:20:47Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T18:21:52Z · note: ui verification failed (1 issue(s)): [missing-target] Task drawer Dev > Report pane (target "default"): highlight [data-test-id="report-tab-content"] matched nothing on /work?task=1041&tab=dev (http://127.0.0.1:54460/work)
+- 2026-11-06T18:22:24Z · body
+- 2026-11-06T18:22:28Z · note: handoff requested (cli)
+- 2026-11-06T18:25:47Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T18:52:28Z · message_queued at 2026-11-06T18:52:28.726Z
+- 2026-11-06T18:52:28Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-06T18:52:29Z · message_delivered: 2 message(s)
+- 2026-11-06T18:52:43Z · status active→review
+- 2026-11-06T18:55:15Z · note: review pass 9: needs some work
+- 2026-11-06T18:55:15Z · needs_input
+- 2026-11-06T18:56:48Z · note: ui verification failed (4 issue(s)): [missing-target] Task drawer Dev > Report pane (target "default"): click [data-test-id="engineering-report-tab"]: click: Timeout 5000ms exceeded. on /work?task=1041&tab=dev (http://127.0.0.1:57297/work); [missing-target] Task drawer Dev > Report pane (target "default"): waitFor .engineering-report-view: waitFor: Timeout 5000ms exceeded. on /work?task=1041&tab=dev (http://127.0.0.1:57297/work); [missing-target] Task drawer Dev > Report pane (target "default"):
+- 2026-11-06T19:02:14Z · message_queued at 2026-11-06T19:02:14.286Z
+- 2026-11-06T19:02:17Z · message_delivered: 1 message(s)
+- 2026-11-06T19:02:33Z · body
+- 2026-11-06T19:02:33Z · needs_input
+- 2026-11-06T19:02:33Z · status review→active
+- 2026-11-06T19:02:33Z · note: follow-up message — moved from review to active so work can be committed and re-handoffed
+- 2026-11-06T19:02:34Z · message_queued at 2026-11-06T19:02:34.007Z
+- 2026-11-06T19:02:34Z · message_queued at 2026-11-06T19:02:34.374Z
+- 2026-11-06T19:07:40Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-06T19:07:44Z · message_delivered: 2 message(s)
+- 2026-11-06T19:16:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Fixed all 4 bugs identified in the review: 1. **Publication rollback** – Now preserves and restores any previously committed `summary.md` on write/commit failures, preventing dirty checkouts 2. **Retry-state handling** – Updated `isSummary… · stderr: (empty)
+- 2026-11-06T19:16:10Z · note: handoff requested (cli)
+- 2026-11-06T19:20:47Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T19:25:42Z · message_queued at 2026-11-06T19:25:42.102Z
+- 2026-11-06T19:25:42Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even while pending, tests/cli-control-api.test.ts > repoos summary polling > a committed report is terminal even when idle, tests/cli-control-api.test.ts > repoos summary polling > resolves once the report commits, without waiting for the status file on bee — fix it in the feature branch and re-run the gate
+- 2026-11-06T19:25:42Z · message_delivered: 1 message(s)
+- 2026-11-06T19:28:12Z · status active→review
+- 2026-11-06T19:31:38Z · note: review pass 10: needs some work
+- 2026-11-06T19:31:38Z · needs_input
+- 2026-11-06T19:32:21Z · cli_override, model_override
+- 2026-11-06T19:32:24Z · status review→active
+- 2026-11-06T19:32:25Z · needs_input
+- 2026-11-06T19:32:25Z · message_queued at 2026-11-06T19:32:25.464Z
+- 2026-11-06T19:32:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-06T19:36:22Z · handoff failed · remote validation failed: test failure: tests/git-maintenance.test.ts > commit-graph maintenance > removes stale index locks and keeps locks held by a live git process on mini — fix it in the feature branch and re-run the gate
+- 2026-11-06T19:36:22Z · message_queued at 2026-11-06T19:36:22.510Z
+- 2026-11-06T19:40:47Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T19:45:49Z · message_delivered: 2 message(s)
+- 2026-11-06T19:45:51Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-11-06T19:55:47Z · message_queued at 2026-11-06T19:55:47.220Z
+- 2026-11-06T19:55:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-06T19:56:51Z · body
+- 2026-11-06T20:00:47Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T20:05:37Z · body
+- 2026-11-06T20:11:14Z · status active→review
+- 2026-11-06T20:15:15Z · note: review pass 11: needs some work
+- 2026-11-06T20:15:15Z · needs_input
+- 2026-11-06T20:22:21Z · message_queued at 2026-11-06T20:22:21.507Z
+- 2026-11-06T20:22:23Z · status review→active
+- 2026-11-06T20:22:24Z · message_delivered: 1 message(s)
+- 2026-11-06T20:22:24Z · needs_input
+- 2026-11-06T20:22:25Z · message_queued at 2026-11-06T20:22:25.256Z
+- 2026-11-06T20:22:26Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T20:30:16Z · body
+- 2026-11-06T20:33:35Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-06T20:33:36Z · message_queued at 2026-11-06T20:33:36.032Z
+- 2026-11-06T20:33:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Checking git state and running `repoos check` with a stable worktree before re-requesting handoff. · stderr: (empty)
+- 2026-11-06T20:33:36Z · message_delivered: 2 message(s)
+- 2026-11-06T20:35:47Z · message_queued at 2026-11-06T20:35:47.463Z
+- 2026-11-06T20:35:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-06T20:40:47Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-06T20:45:38Z · body
+- 2026-11-06T20:49:46Z · status active→review
+- 2026-11-06T20:53:44Z · note: review pass 12: needs some work
+- 2026-11-06T20:53:44Z · needs_input
+- 2026-11-06T20:55:03Z · handoff failed · check failed after 2 automatic retries · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-06T20:55:03Z · message_queued at 2026-11-06T20:55:03.800Z
+- 2026-11-06T21:02:17Z · status review→active
+- 2026-11-06T21:02:18Z · needs_input
+- 2026-11-06T21:02:19Z · message_delivered: 1 message(s)
+- 2026-11-06T21:02:20Z · CTO nudge: held — remote validation is running
+- 2026-11-06T21:13:29Z · note: shots: failed — preview for target "default" did not start: preview server for #1041 did not become ready
+- 2026-11-06T21:18:41Z · body
+- 2026-11-06T21:22:50Z · status active→review
+- 2026-11-06T21:26:27Z · note: review pass 13: needs some work
+- 2026-11-06T21:26:27Z · needs_input
+- 2026-11-06T21:28:08Z · message_queued at 2026-11-06T21:28:08.636Z
+- 2026-11-06T21:28:11Z · message_delivered: 1 message(s)
+- 2026-11-06T21:29:39Z · body

@@ -956,7 +956,7 @@ describe("muse driver", () => {
           "--approval-mode",
           "never",
           "--max-model-steps",
-          "50",
+          "200",
           "--session-id",
           out.sessionId,
         ]),
