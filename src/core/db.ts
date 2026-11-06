@@ -658,12 +658,20 @@ export class RepoOSDb {
     return out;
   }
 
-  /** Retrieve all sessions for a task. Throws on database errors. */
+  /**
+   * Retrieve all sessions for a task. Returns [] when SQLite is unavailable
+   * (no DB). Throws on query/prepare failures so callers can distinguish
+   * "no rows" from a broken read (#1041).
+   */
   getTaskSessions(taskId: string): SessionRecord[] {
     if (!this.available || !this.db) return [];
-    return this.db
-      .prepare("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC")
-      .all(taskId) as SessionRecord[];
+    try {
+      return this.db
+        .prepare("SELECT * FROM sessions WHERE taskId = ? ORDER BY startedAt DESC")
+        .all(taskId) as SessionRecord[];
+    } catch (err) {
+      throw new Error(`getTaskSessions failed: ${(err as Error).message}`);
+    }
   }
 
   /** Aggregate stats for a task (all sessions and review rounds). */

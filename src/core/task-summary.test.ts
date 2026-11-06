@@ -48,6 +48,49 @@ describe("post-merge task summary", () => {
     expect(validateTaskSummary(validMinimal)).toEqual([]);
   });
 
+  it("does not treat headings inside fenced code as real sections", () => {
+    const md = [
+      "## TL;DR",
+      "",
+      "Intro.",
+      "",
+      "```md",
+      "## Outcome",
+      "fake",
+      "```",
+      "",
+      "## Outcome",
+      "",
+      "Real.",
+      "",
+      "## Process stats",
+      "",
+      "x",
+      "",
+      "## What went wrong",
+      "",
+      "x",
+      "",
+      "## Learnings",
+      "",
+      "x",
+      "",
+      "## Follow-ups",
+      "",
+      "None",
+    ].join("\n");
+    expect(validateTaskSummary(md)).toEqual([]);
+  });
+
+  it("rejects wrong titles, order, and near-matches", () => {
+    const wrongTitle = `## TL;DR\n\nx\n\n## Outcomes\n\nx\n\n## Process stats\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nx`;
+    expect(validateTaskSummary(wrongTitle).some((e) => /order|Outcome|Outcomes/i.test(e))).toBe(
+      true,
+    );
+    const outOfOrder = `## TL;DR\n\nx\n\n## Process stats\n\nx\n\n## Outcome\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nx`;
+    expect(validateTaskSummary(outOfOrder).some((e) => /order/i.test(e))).toBe(true);
+  });
+
   it("rejects an over-long narrative but ignores the file-changes listing", () => {
     const long = `## TL;DR\n\n${"word ".repeat(TASK_SUMMARY_MAX_WORDS + 1)}\n\n## Outcome\n\nx\n\n## Process stats\n\nx\n\n## What went wrong\n\nx\n\n## Learnings\n\nx\n\n## Follow-ups\n\nNone`;
     const errors = validateTaskSummary(long);

@@ -1784,9 +1784,16 @@ export interface TaskSummaryState {
   error: string | null;
 }
 
-/** Terminal poll states: "done", "failed" status, or file existence (committed report). */
+/**
+ * Terminal poll states: only `done` and `failed`, or a committed report while
+ * status is still `idle` (lost status write after success). While `pending`, we
+ * keep polling even if `summary.md` exists — a prior run may have committed
+ * before a new retry; the file must not end the poll early.
+ */
 export function isSummaryPollTerminal(state: Pick<TaskSummaryState, "status" | "exists">): boolean {
-  return state.status === "done" || state.status === "failed" || state.exists;
+  if (state.status === "done" || state.status === "failed") return true;
+  if (state.exists && state.status !== "pending") return true;
+  return false;
 }
 
 const SUMMARY_MAX_GET_ERRORS = 10;
@@ -1864,11 +1871,13 @@ export async function cmdSummary(args: string[]): Promise<number> {
         (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState,
       { label: `summary for #${id}` },
     );
+    const success =
+      final.status === "done" || (final.exists && final.status !== "failed" && final.status !== "pending");
     if (opts.json) {
       printJson(final);
-      return final.status === "done" ? 0 : 1;
+      return success ? 0 : 1;
     }
-    if (final.status === "done") {
+    if (success) {
       console.log(c.green(`  ✓ #${id} summary ready: work/reports/${id}/summary.md`));
       return 0;
     }

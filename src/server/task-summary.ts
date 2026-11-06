@@ -45,6 +45,24 @@ import {
   type TaskSummaryReviewFacts,
 } from "../core/task-summary.js";
 
+/** Restore `summary.md` after a failed write/commit, or delete a new file. */
+function restoreSummaryPathAfterFailure(absPath: string, originalContent: string | null): Error | null {
+  if (originalContent !== null) {
+    try {
+      writeFileSync(absPath, originalContent);
+      return null;
+    } catch (err) {
+      return err as Error;
+    }
+  }
+  try {
+    unlinkSync(absPath);
+    return null;
+  } catch (err) {
+    return err as Error;
+  }
+}
+
 /** Visible lifecycle of a task's summary job. `idle` means never attempted. */
 export type TaskSummaryStatus = "idle" | "pending" | "done" | "failed";
 
@@ -177,15 +195,22 @@ function writeSummaryStatus(
  * Best-effort task list read straight from the work directory, for
  * fire-and-forget callers (close-out) that hold no live index. Used only for
  * linked-task facts — never for status decisions. Unparseable files are
- * skipped, and a missing directory yields an empty list.
+ * skipped. A failed directory read yields `loadErrors` instead of an empty
+ * list silently (#1041).
  */
-export function loadCandidateTasksFromDisk(config: RepoOSConfig): Task[] {
+export function loadCandidateTasksFromDisk(config: RepoOSConfig): {
+  tasks: Task[];
+  loadErrors: string[];
+} {
   const dir = join(config.root, config.workDir ?? "work");
   let entries: string[];
   try {
     entries = readdirSync(dir);
-  } catch {
-    return [];
+  } catch (err) {
+    return {
+      tasks: [],
+      loadErrors: [`Could not scan work directory for linked tasks: ${(err as Error).message}`],
+    };
   }
   const out: Task[] = [];
   for (const entry of entries) {
@@ -205,7 +230,7 @@ export function loadCandidateTasksFromDisk(config: RepoOSConfig): Task[] {
       /* skip files that do not parse — facts only */
     }
   }
-  return out;
+  return { tasks: out, loadErrors: [] };
 }
 
 /**
@@ -350,12 +375,24 @@ export function collectTaskSummaryFacts(
 
   let sessions: TaskSummarySessionFacts[] = [];
   try {
-    sessions = (getRepoOSDb(config.root)?.getTaskSessions(task.id) ?? []).map(toSessionFacts);
+    const db = getRepoOSDb(config.root);
+    if (!db) {
+      loadErrors.push("Session database unavailable — session facts were not loaded.");
+    } else {
+      sessions = db.getTaskSessions(task.id).map(toSessionFacts);
+    }
   } catch (err) {
     loadErrors.push(`Could not load session records: ${(err as Error).message}`);
   }
 
-  const linked = allTasks
+  let candidateTasks = allTasks;
+  if (allTasks.length === 0) {
+    const disk = loadCandidateTasksFromDisk(config);
+    loadErrors.push(...disk.loadErrors);
+    candidateTasks = disk.tasks;
+  }
+
+  const linked = candidateTasks
     .filter((candidate) => candidate.id !== task.id)
     .flatMap((candidate) => {
       const out: TaskSummaryFacts["linked"] = [];
@@ -543,43 +580,21 @@ export async function runTaskSummaryNow(
           `docs(${taskId}): post-merge summary report`,
         );
       } catch (err) {
-        // Restore the previous file on error so the checkout stays clean
-        if (originalContent !== null) {
-          try {
-            writeFileSync(absPath, originalContent);
-          } catch {
-            /* ignore restore failure */
-          }
-        } else {
-          // No prior version, so delete the new file to avoid leaving it uncommitted
-          try {
-            unlinkSync(absPath);
-          } catch {
-            /* ignore cleanup failure */
-          }
-        }
+        const restoreErr = restoreSummaryPathAfterFailure(absPath, originalContent);
+        if (restoreErr)
+          throw new Error(
+            `${(err as Error).message}; additionally could not restore checkout: ${restoreErr.message}`,
+          );
         throw err;
       }
       if (!committed) {
-        // Restore the previous file on commit failure
-        if (originalContent !== null) {
-          try {
-            writeFileSync(absPath, originalContent);
-          } catch {
-            /* ignore restore failure */
-          }
-        } else {
-          // No prior version, so delete the new file
-          try {
-            unlinkSync(absPath);
-          } catch {
-            /* ignore cleanup failure */
-          }
-        }
+        const restoreErr = restoreSummaryPathAfterFailure(absPath, originalContent);
         return fail(
           config,
           taskId,
-          "Wrote summary.md but the bookkeeping commit failed — retry to commit it.",
+          restoreErr
+            ? `Wrote summary.md but the bookkeeping commit failed — restore error: ${restoreErr.message}`
+            : "Wrote summary.md but the bookkeeping commit failed — retry to commit it.",
         );
       }
     } finally {
@@ -613,7 +628,8 @@ export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Tas
       // Fire-and-forget callers (close-out) hold no live index, so an empty
       // list falls back to a best-effort work-dir scan — automatic reports
       // must carry the same linked-task facts as a manual retry.
-      const candidates = allTasks.length > 0 ? allTasks : loadCandidateTasksFromDisk(config);
+      const candidates =
+        allTasks.length > 0 ? allTasks : loadCandidateTasksFromDisk(config).tasks;
       await runTaskSummaryNow(config, task, candidates);
     } catch (err) {
       try {
