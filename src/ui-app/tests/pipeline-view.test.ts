@@ -57,11 +57,12 @@ describe("pipeline-card lib", () => {
   });
 
   it("renders reviewer chips per verdict tone", () => {
-    expect(reviewerChip({ passes: 1, tone: "green", reviewRunning: false })).toBe("✓");
-    expect(reviewerChip({ passes: 1, tone: "amber", reviewRunning: false })).toBe("");
-    expect(reviewerChip({ passes: 2, tone: "red", reviewRunning: false })).toBe("↻");
-    expect(reviewerChip({ passes: 0, tone: null, reviewRunning: true })).toBe("R1 …");
-    expect(reviewerChip({ passes: 0, tone: null, reviewRunning: false })).toBeNull();
+    const counts = { dev: 4, review: 2 };
+    expect(reviewerChip({ counts, tone: "green", reviewRunning: false })).toBe("D4 · R2 ✓");
+    expect(reviewerChip({ counts, tone: "amber", reviewRunning: false })).toBe("D4 · R2");
+    expect(reviewerChip({ counts, tone: "red", reviewRunning: false })).toBe("D4 · R2 ↻");
+    expect(reviewerChip({ counts, tone: null, reviewRunning: true })).toBe("D4 · R3 …");
+    expect(reviewerChip({ counts, tone: null, reviewRunning: false })).toBe("D4 · R2");
     expect(
       pipelineRoundLabel({ dev: 14, review: 3 }, { tone: "amber", reviewRunning: false }),
     ).toBe("D14 · R3");
@@ -74,6 +75,9 @@ describe("pipeline-card lib", () => {
     expect(pipelineRoundLabel({ dev: 4, review: 2 }, { tone: null, reviewRunning: true })).toBe(
       "D4 · R3 …",
     );
+    expect(
+      pipelineRoundLabel({ dev: 14, review: 3 }, { tone: "amber", reviewRunning: false }),
+    ).toHaveLength(9);
   });
 
   it("labels models and host without inventing data", () => {

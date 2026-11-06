@@ -24,6 +24,16 @@ export function pipelineRoundLabel(
   counts: TaskRoundCounts,
   opts: { tone: ReviewVerdictTone | null; reviewRunning: boolean },
 ): string {
+  return reviewerChip({ counts, ...opts });
+}
+
+/** Complete compact badge label used on the pipeline card. */
+export function reviewerChip(opts: {
+  counts: TaskRoundCounts;
+  tone: ReviewVerdictTone | null;
+  reviewRunning: boolean;
+}): string {
+  const { counts } = opts;
   if (opts.reviewRunning && opts.tone === null) {
     return `D${counts.dev} · R${counts.review + 1} …`;
   }
@@ -70,22 +80,6 @@ export function taskInDevPass(
       task.status === "active" ||
       (task.status === "review" && engineerRunning))
   );
-}
-
-/**
- * Optional compact reviewer suffix appended to the shared round label.
- * Amber tone is carried by the pill itself, so no word is needed.
- */
-export function reviewerChip(opts: {
-  passes: number;
-  tone: ReviewVerdictTone | null;
-  reviewRunning: boolean;
-}): string | null {
-  if (opts.tone === "green") return "✓";
-  if (opts.tone === "amber") return "";
-  if (opts.tone === "red") return "↻";
-  if (opts.reviewRunning) return `R${opts.passes + 1} …`;
-  return null;
 }
 
 function shortModel(model: string): string {
