@@ -1784,6 +1784,52 @@ interface TaskSummaryState {
   error: string | null;
 }
 
+/** Terminal poll states: a committed report counts even when its status write was lost. */
+export function isSummaryPollTerminal(state: Pick<TaskSummaryState, "status" | "exists">): boolean {
+  return state.status === "done" || state.status === "failed" || state.exists;
+}
+
+const SUMMARY_MAX_GET_ERRORS = 10;
+
+/**
+ * Poll a summary status fetcher until terminal. A committed report
+ * (`exists`) is terminal even when the status file was lost, so polling can
+ * never wait out the timeout after the report landed. Persistent fetch
+ * failures fail fast instead of hanging silently until the timeout.
+ */
+export async function pollSummaryState(
+  getState: () => Promise<TaskSummaryState>,
+  opts: {
+    label?: string;
+    timeoutMs?: number;
+    intervalMs?: number;
+    maxConsecutiveErrors?: number;
+  } = {},
+): Promise<TaskSummaryState> {
+  const maxConsecutiveErrors = opts.maxConsecutiveErrors ?? SUMMARY_MAX_GET_ERRORS;
+  let consecutiveGetErrors = 0;
+  const label = opts.label ?? "summary";
+  return pollUntil(
+    async () => {
+      let state: TaskSummaryState;
+      try {
+        state = await getState();
+      } catch (err) {
+        consecutiveGetErrors += 1;
+        if (consecutiveGetErrors >= maxConsecutiveErrors)
+          throw new RepoOsApiError(
+            `summary status unreachable (${label}): ${(err as Error).message}`,
+            503,
+          );
+        return null;
+      }
+      consecutiveGetErrors = 0;
+      return isSummaryPollTerminal(state) ? state : null;
+    },
+    { label, timeoutMs: opts.timeoutMs ?? 900_000, intervalMs: opts.intervalMs ?? 2_000 },
+  );
+}
+
 /**
  * `repoos summary <id>` (#1041): queue the post-merge PM summary report and
  * wait for its terminal state. Requires a released (`done`) task — the normal
@@ -1813,23 +1859,13 @@ export async function cmdSummary(args: string[]): Promise<number> {
         queued.body,
       );
     if (!opts.json) console.log(c.dim(`  … generating post-merge summary for #${id}`));
-    const final = await pollUntil(
-      async () => {
-        let state: TaskSummaryState;
-        try {
-          state = (await api.requestOk(
-            "GET",
-            `/api/tasks/${id}/summary`,
-          )) as unknown as TaskSummaryState;
-        } catch {
-          return null;
-        }
-        return state.status === "done" || state.status === "failed" ? state : null;
-      },
-      { label: `summary for #${id}`, timeoutMs: 900_000, intervalMs: 2_000 },
+    const final = await pollSummaryState(
+      async () =>
+        (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState,
+      { label: `summary for #${id}` },
     );
     if (opts.json) printJson(final);
-    else if (final.status === "done")
+    else if (final.status === "done" || final.exists)
       console.log(c.green(`  ✓ #${id} summary ready: work/reports/${id}/summary.md`));
     else {
       printErr(final.error ?? `summary generation failed for #${id}`);

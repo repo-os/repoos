@@ -13,6 +13,7 @@ import {
   collectTaskSummaryFacts,
   loadCandidateTasksFromDisk,
   loadTaskSummaryMarkdown,
+  queueTaskSummary,
   readSummaryStatus,
   readTaskFromDisk,
   runTaskSummaryNow,
@@ -308,6 +309,34 @@ describe("post-merge summary commit slot", () => {
     expect(res.error ?? "").toMatch(/commit slot/);
     expect(commit).not.toHaveBeenCalled();
     expect(readSummaryStatus(config, "0099").status).toBe("failed");
+  });
+});
+
+describe("post-merge summary status persistence", () => {
+  it("still succeeds when the done-status write fails — the report is ground truth", async () => {
+    const { config, task } = setup();
+    writeFileSync(join(root(config), "blocked"), "not a dir");
+    const blocked = { ...config, cacheDir: "blocked" } as RepoOSConfig;
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await runTaskSummaryNow(blocked, task, [], {
+      resolvePm: () => ({ name: "pm" }) as never,
+      runPrompt: (async () => ({ ok: true, output: VALID })) as never,
+      commit: () => true,
+    });
+    expect(res.ok).toBe(true);
+    expect(loadTaskSummaryMarkdown(blocked, "0099")).toContain("## TL;DR");
+    expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(/not persisted/);
+    err.mockRestore();
+  });
+
+  it("logs instead of suppressing when the pending-status write fails", async () => {
+    const { config, task } = setup();
+    writeFileSync(join(root(config), "blocked"), "not a dir");
+    const blocked = { ...config, cacheDir: "blocked" } as RepoOSConfig;
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    queueTaskSummary(blocked, task, []);
+    expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(/not persisted/);
+    err.mockRestore();
   });
 });
 
