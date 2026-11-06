@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-06T18:55:16Z"
-review_passes: 7
 id: 1041
 title: Post-merge task summary report written by the PM agent
 type: feature
@@ -17,6 +15,8 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
+updated_at: "2026-11-06T18:56:48Z"
+review_passes: 7
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 5f1d413c2d6afa3d916116ae3911bac0401f181c
 last_check_failure: "repoos check at 2026-11-06T17:47:51.582Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -229,4 +229,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T18:52:43Z · status active→review
 - 2026-11-06T18:55:15Z · note: review pass 9: needs some work
 - 2026-11-06T18:55:15Z · needs_input
-
+- 2026-11-06T18:56:48Z · note: ui verification failed (4 issue(s)): [missing-target] Task drawer Dev > Report pane (target "default"): click [data-test-id="engineering-report-tab"]: click: Timeout 5000ms exceeded. on /work?task=1041&tab=dev (http://127.0.0.1:57297/work); [missing-target] Task drawer Dev > Report pane (target "default"): waitFor .engineering-report-view: waitFor: Timeout 5000ms exceeded. on /work?task=1041&tab=dev (http://127.0.0.1:57297/work); [missing-target] Task drawer Dev > Report pane (target "default"):
