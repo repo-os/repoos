@@ -4354,18 +4354,24 @@ interface TaskSummaryPayload {
   markdown: string | null;
   status: string;
   statusAt: string | null;
+  pendingSince: string | null;
+  reportMtimeMs: number | null;
   error: string | null;
 }
 const taskSummary = ref<{ markdown: string } | null>(null);
 const taskSummaryStatus = ref("idle");
 const taskSummaryStatusAt = ref<string | null>(null);
 const taskSummaryError = ref("");
+const taskSummaryPendingSince = ref<string | null>(null);
+const taskSummaryReportMtimeMs = ref<number | null>(null);
 const effectiveTaskSummaryStatus = computed(() =>
   effectiveSummaryJobStatus(
     taskSummaryStatus.value as "idle" | "pending" | "done" | "failed",
     taskSummaryStatusAt.value ?? "",
     Boolean(taskSummary.value?.markdown),
     summaryNow.value,
+    taskSummaryReportMtimeMs.value,
+    taskSummaryPendingSince.value,
   ),
 );
 const taskSummaryHtml = computed(() =>
@@ -4384,6 +4390,9 @@ async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
     taskSummary.value = response.markdown ? { markdown: response.markdown } : null;
     taskSummaryStatus.value = response.status ?? "idle";
     taskSummaryStatusAt.value = response.statusAt ?? null;
+    taskSummaryPendingSince.value = response.pendingSince ?? null;
+    taskSummaryReportMtimeMs.value =
+      typeof response.reportMtimeMs === "number" ? response.reportMtimeMs : null;
     taskSummaryError.value = response.error ?? "";
     // Generation finishes in the background after close-out; keep refreshing
     // while it is pending so the open drawer settles without a reopen. The
@@ -4393,6 +4402,8 @@ async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
       response.statusAt ?? "",
       Boolean(response.markdown),
       summaryNow.value,
+      typeof response.reportMtimeMs === "number" ? response.reportMtimeMs : null,
+      response.pendingSince ?? null,
     );
     if (eff === "pending" && attempt < TASK_SUMMARY_POLL_MAX) {
       setTimeout(() => {
@@ -4448,6 +4459,8 @@ watch(
     taskSummary.value = null;
     taskSummaryStatus.value = "idle";
     taskSummaryStatusAt.value = null;
+    taskSummaryPendingSince.value = null;
+    taskSummaryReportMtimeMs.value = null;
     taskSummaryError.value = "";
     if (id) {
       void loadEngineeringReports(id);

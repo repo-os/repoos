@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * Generation, idempotency and failure checks for the post-merge summary (#1041).
  * The PM runner and the bookkeeping commit are injected — no real agent runs.
@@ -10,6 +11,7 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -30,7 +32,7 @@ import {
   readTaskFromDisk,
   runTaskSummaryNow,
   summaryReleaseGate,
-} from "../task-summary.js";
+} from "../../server/task-summary.js";
 
 const VALID = [
   "## TL;DR",
@@ -228,7 +230,36 @@ describe("post-merge summary freshness and marker hygiene", () => {
 
   it("strips an injected marker from passing output so the file carries exactly one", async () => {
     const { config, task } = setup();
-    const injected = `## TL;DR\n\nShort.\n${GENERATED_CHANGES_MARKER}\nTail.`;
+    const injected = [
+      "## TL;DR",
+      "",
+      "Short.",
+      "",
+      GENERATED_CHANGES_MARKER,
+      "",
+      "Tail after marker.",
+      "",
+      "## Outcome",
+      "",
+      "Shipped.",
+      "",
+      "## Process stats",
+      "",
+      "One round.",
+      "",
+      "## What went wrong",
+      "",
+      "Nothing.",
+      "",
+      "## Learnings",
+      "",
+      "None.",
+      "",
+      "## Follow-ups",
+      "",
+      "None.",
+      "",
+    ].join("\n");
     const res = await runTaskSummaryNow(config, task, [], {
       resolvePm: () => ({ name: "pm" }) as never,
       runPrompt: (async () => ({ ok: true, output: injected })) as never,
@@ -236,7 +267,7 @@ describe("post-merge summary freshness and marker hygiene", () => {
     });
     expect(res.ok).toBe(true);
     const stored = loadTaskSummaryMarkdown(config, "0099") ?? "";
-    expect(stored).toContain("Tail.");
+    expect(stored).toContain("Tail after marker.");
     expect(stored.split(GENERATED_CHANGES_MARKER).length - 1).toBe(1);
   });
 });
@@ -434,6 +465,52 @@ describe("getTaskSummaryJobPayload (stale pending recovery)", () => {
     expect(payload.markdown).toContain("## TL;DR");
     expect(payload.status).toBe("done");
   });
+
+  it("does not accept a new pending run as done while summary.md still predates that run (stale retry)", () => {
+    const { config, task } = setup();
+    const summaryPath = join(root(config), "work", "reports", "0099", "summary.md");
+    writeFileSync(summaryPath, "## TL;DR\n\nold run\n");
+    const retryStart = Date.now() - 120_000;
+    utimesSync(summaryPath, new Date(retryStart - 3_600_000), new Date(retryStart - 3_600_000));
+    mkdirSync(join(root(config), ".repoos", "task-summary"), { recursive: true });
+    const staleAt = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
+    const pendingSince = new Date(retryStart).toISOString();
+    writeFileSync(
+      join(root(config), ".repoos", "task-summary", "0099.json"),
+      JSON.stringify({ taskId: "0099", status: "pending", at: staleAt, pendingSince }),
+    );
+    const payload = getTaskSummaryJobPayload(config, task.id);
+    expect(payload.markdown).toContain("## TL;DR");
+    expect(payload.status).toBe("failed");
+    expect(payload.error ?? "").toMatch(/older than this run|retry timed out/i);
+  });
+});
+
+describe("readSummaryStatus (I/O and schema)", () => {
+  it("returns failed with a visible error when the status file is unreadable", () => {
+    const { config } = setup();
+    const path = join(root(config), ".repoos", "task-summary", "0099.json");
+    mkdirSync(join(path, ".."), { recursive: true });
+    writeFileSync(path, '{"taskId":"0099","status":"pending","at":"2026-01-01T00:00:00.000Z"}\n');
+    chmodSync(path, 0);
+    try {
+      const s = readSummaryStatus(config, "0099");
+      expect(s.status).toBe("failed");
+      expect(s.error ?? "").toMatch(/Could not read summary job status file/);
+    } finally {
+      chmodSync(path, 0o644);
+    }
+  });
+
+  it("returns failed when the status JSON is corrupted", () => {
+    const { config } = setup();
+    const path = join(root(config), ".repoos", "task-summary", "0099.json");
+    mkdirSync(join(path, ".."), { recursive: true });
+    writeFileSync(path, "NOT JSON\n");
+    const s = readSummaryStatus(config, "0099");
+    expect(s.status).toBe("failed");
+    expect(s.error ?? "").toMatch(/corrupted|invalid JSON/i);
+  });
 });
 
 describe("post-merge summary status persistence", () => {
@@ -486,7 +563,7 @@ describe("post-merge summary disk fallbacks", () => {
       "---\nid: '0100'\ntitle: Follow-up\ndepends_on: ['0099']\n---\n\nFollow-up body.\n",
     );
     const ids = loadCandidateTasksFromDisk(config)
-      .tasks.map((task) => task.id)
+      .tasks.map((task: Task) => task.id)
       .sort();
     expect(ids).toEqual(["0099", "0100"]);
   });
@@ -496,7 +573,7 @@ describe("post-merge summary disk fallbacks", () => {
     const bad = { ...config, workDir: "work/nope" } as RepoOSConfig;
     const { tasks, loadErrors } = loadCandidateTasksFromDisk(bad);
     expect(tasks).toEqual([]);
-    expect(loadErrors.some((e) => /scan work directory/i.test(e))).toBe(true);
+    expect(loadErrors.some((e: string) => /scan work directory/i.test(e))).toBe(true);
   });
 
   it("records per-file read and parse failures when listing candidates from disk", () => {
@@ -509,12 +586,16 @@ describe("post-merge summary disk fallbacks", () => {
     );
     try {
       const { tasks, loadErrors } = loadCandidateTasksFromDisk(config);
-      expect(tasks.map((t) => t.id).sort()).toEqual(["0099"]);
+      expect(tasks.map((t: Task) => t.id).sort()).toEqual(["0099", "0103"]);
       expect(
-        loadErrors.some((e) => /0102-bad-read\.md/.test(e) && /read|Could not read/i.test(e)),
+        loadErrors.some(
+          (e: string) => /0102-bad-read\.md/.test(e) && /read|Could not read/i.test(e),
+        ),
       ).toBe(true);
       expect(
-        loadErrors.some((e) => /0103-bad-parse\.md/.test(e) && /parse|Could not parse/i.test(e)),
+        loadErrors.some(
+          (e: string) => /0103-bad-parse\.md/.test(e) && /parse|Could not parse/i.test(e),
+        ),
       ).toBe(true);
     } finally {
       chmodSync(join(root(config), "work", "0102-bad-read.md"), 0o644);
@@ -575,7 +656,9 @@ describe("post-merge summary disk fallbacks", () => {
     try {
       const facts = collectTaskSummaryFacts(config, task, []);
       expect(facts.sessions).toEqual([]);
-      expect(facts.loadErrors.some((e) => /Session database unavailable/i.test(e))).toBe(true);
+      expect(facts.loadErrors.some((e: string) => /Session database unavailable/i.test(e))).toBe(
+        true,
+      );
     } finally {
       spy.mockRestore();
     }

@@ -4085,6 +4085,8 @@ export const getTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
     markdown: payload.markdown,
     status: payload.status,
     statusAt: payload.statusAt,
+    pendingSince: payload.pendingSince,
+    reportMtimeMs: payload.reportMtimeMs,
     error: payload.error,
   });
 };
