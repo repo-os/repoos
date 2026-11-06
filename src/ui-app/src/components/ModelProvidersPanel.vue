@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { nextTick, onMounted, reactive, ref } from "vue";
 import { Check } from "lucide-vue-next";
 import { api, JSON_OPTS } from "../api";
 import { useRepoStore } from "../stores/repo";
@@ -8,6 +8,8 @@ import type {
   ModelProvidersResponse,
   ModelProvidersKeyResponse,
   ModelProviderUsage,
+  ModelProviderUsageWindow,
+  MuseUsage,
   OpenCodeGoUsage,
   OpenRouterUsage,
   DeepInfraUsage,
@@ -18,6 +20,8 @@ import PageSkeleton from "./PageSkeleton.vue";
 const rows = ref<ModelProviderRow[]>([]);
 const loading = ref(false);
 const loadError = ref("");
+/** The provider a nav chip was last used to jump to — the row's active chip. */
+const activeProvider = ref<string | null>(null);
 
 interface RowState {
   usage: ModelProviderUsage | null;
@@ -61,7 +65,8 @@ async function loadProviders(): Promise<void> {
     const res = await api<ModelProvidersResponse>("/api/model-providers");
     rows.value = res.providers;
     for (const row of res.providers) {
-      if (row.kind === "live" && row.hasKey && !states[row.id]?.usage) {
+      // CLI-login rows (Muse) have no key to wait for — fetch on open.
+      if (row.kind === "live" && (row.hasKey || row.usesCliLogin) && !states[row.id]?.usage) {
         void loadUsage(row.id);
       }
     }
@@ -196,8 +201,46 @@ const openrouterUsage = (u: ModelProviderUsage | null): OpenRouterUsage | null =
   u?.kind === "openrouter" ? u : null;
 const goUsage = (u: ModelProviderUsage | null): OpenCodeGoUsage | null =>
   u?.kind === "opencode-go" ? u : null;
+const museUsage = (u: ModelProviderUsage | null): MuseUsage | null =>
+  u?.kind === "muse" ? u : null;
 const deepinfraUsage = (u: ModelProviderUsage | null): DeepInfraUsage | null =>
   u?.kind === "deepinfra" ? u : null;
+
+/**
+ * Rolling allowance windows rendered as percent bars — opencode Go and Muse
+ * share the shape (Muse never reports dollars, so those stay null). The tier
+ * is Muse-only; Go rows pass null.
+ */
+function windowedUsage(u: ModelProviderUsage | null): {
+  tier: string | null;
+  windows: ModelProviderUsageWindow[];
+  unrecognized: boolean;
+} | null {
+  const go = goUsage(u);
+  if (go) return { tier: null, windows: go.windows, unrecognized: go.unrecognized };
+  return museUsage(u);
+}
+
+/** Anchor id for a provider row — the target a nav chip scrolls to. */
+function providerAnchor(id: string): string {
+  return `mp-provider-${id}`;
+}
+
+/**
+ * Jump to a provider row, following the Settings General tab's section nav:
+ * smooth-scroll the row into view and flash it so the landing spot reads.
+ */
+function goToProvider(id: string): void {
+  activeProvider.value = id;
+  void nextTick(() => {
+    const el = document.getElementById(providerAnchor(id));
+    if (!el) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    el.classList.add("flash");
+    window.setTimeout(() => el.classList.remove("flash"), 2000);
+  });
+}
 
 onMounted(() => {
   void loadProviders();
@@ -210,16 +253,36 @@ onMounted(() => {
       <span class="live-dot"></span>Model providers
     </div>
     <div class="agent-desc">
-      Spend and usage per model provider, without leaving RepoOS. Three providers report live
-      numbers behind an API key — read from RepoOS's `.env`, or from a coding agent's own login (pi,
-      opencode) when one is already connected; the other rows link to dashboards until live data is
-      connected here.
+      Spend and usage per model provider, without leaving RepoOS. OpenRouter, opencode Go and
+      DeepInfra report live numbers behind an API key, and Muse through your `muse login` session —
+      keys come from RepoOS's `.env`, or from a coding agent's own login (pi, opencode) when one is
+      already connected; the other rows link to dashboards until live data is connected here.
     </div>
+
+    <nav v-if="rows.length > 1" class="mp-provider-nav" aria-label="Model providers">
+      <button
+        v-for="row in rows"
+        :key="row.id"
+        type="button"
+        class="mp-provider-chip"
+        :class="{ active: activeProvider === row.id }"
+        :aria-current="activeProvider === row.id ? 'true' : undefined"
+        @click="goToProvider(row.id)"
+      >
+        {{ row.label }}
+      </button>
+    </nav>
 
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>
     <PageSkeleton v-else-if="loading && !rows.length" kind="rows" />
 
-    <div v-for="row in rows" :key="row.id" class="mp-row" :data-provider-id="row.id">
+    <div
+      v-for="row in rows"
+      :key="row.id"
+      :id="providerAnchor(row.id)"
+      class="mp-row"
+      :data-provider-id="row.id"
+    >
       <div class="mp-row-head">
         <div class="mp-row-title">
           <span class="agent-name">{{ row.label }}</span>
@@ -235,7 +298,11 @@ onMounted(() => {
 
       <!-- Live rows: inline key form when no key is saved (or when replacing) -->
       <template v-if="isLive(row)">
-        <div v-if="!row.hasKey || formOpen[row.id]" class="mp-key-form">
+        <div v-if="row.usesCliLogin" class="mp-cli-hint">
+          Reads the allowance from your <code>muse login</code> session on this machine — no API key
+          to paste.
+        </div>
+        <div v-if="!row.usesCliLogin && (!row.hasKey || formOpen[row.id])" class="mp-key-form">
           <input
             v-model="drafts[row.id]"
             type="password"
@@ -328,11 +395,17 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- opencode Go rolling windows -->
-          <div v-else-if="goUsage(rowState(row.id).usage)" class="mp-data">
-            <template v-if="goUsage(rowState(row.id).usage)!.windows.length">
+          <!-- Rolling allowance windows (opencode Go, Muse) -->
+          <div v-else-if="windowedUsage(rowState(row.id).usage)" class="mp-data">
+            <div v-if="windowedUsage(rowState(row.id).usage)!.tier" class="mp-stat mp-stat-hero">
+              <span class="mp-stat-label">Plan</span>
+              <span class="mp-stat-value mp-tier-value">{{
+                windowedUsage(rowState(row.id).usage)!.tier
+              }}</span>
+            </div>
+            <template v-if="windowedUsage(rowState(row.id).usage)!.windows.length">
               <div
-                v-for="w in goUsage(rowState(row.id).usage)!.windows"
+                v-for="w in windowedUsage(rowState(row.id).usage)!.windows"
                 :key="w.id"
                 class="mp-window"
               >
@@ -364,7 +437,10 @@ onMounted(() => {
                 </div>
               </div>
             </template>
-            <div v-else-if="goUsage(rowState(row.id).usage)!.unrecognized" class="mp-part-error">
+            <div
+              v-else-if="windowedUsage(rowState(row.id).usage)!.unrecognized"
+              class="mp-part-error"
+            >
               Live usage responded, but in a format this build doesn't recognize — check the
               <a :href="row.dashboardUrl" target="_blank" rel="noopener noreferrer">console</a>.
             </div>
@@ -464,7 +540,7 @@ onMounted(() => {
           </div>
 
           <div
-            v-if="row.hasKey && !formOpen[row.id]"
+            v-if="(row.hasKey || row.usesCliLogin) && !formOpen[row.id]"
             class="mp-actions"
             data-test-id="model-providers-balance-meta"
           >
@@ -494,10 +570,14 @@ onMounted(() => {
             >
               {{ rowState(row.id).loading ? "Refreshing…" : "Refresh" }}
             </Button>
-            <Button variant="ghost" size="sm" @click="formOpen[row.id] = true">Replace key</Button>
-            <Button variant="ghost" size="sm" :disabled="saving[row.id]" @click="clearKey(row)">
-              Clear
-            </Button>
+            <template v-if="!row.usesCliLogin">
+              <Button variant="ghost" size="sm" @click="formOpen[row.id] = true"
+                >Replace key</Button
+              >
+              <Button variant="ghost" size="sm" :disabled="saving[row.id]" @click="clearKey(row)">
+                Clear
+              </Button>
+            </template>
           </div>
         </template>
       </template>
@@ -511,13 +591,65 @@ onMounted(() => {
   padding: 0 18px 14px;
   margin-bottom: 16px;
 }
+/* Provider quick-nav, following the Settings General tab's section chips. */
+.mp-provider-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 4px;
+}
+.mp-provider-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--txt-dim);
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color 0.12s,
+    border-color 0.12s;
+}
+.mp-provider-chip:hover {
+  color: var(--txt);
+}
+.mp-provider-chip.active {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+.mp-provider-chip:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
 /* Card treatment matches .agent-card / .detect-row (#0384 follow-up):
    own border + radius + surface fill, separated by margin between rows. */
 .mp-row {
+  position: relative;
+  scroll-margin-top: 12px;
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--panel-solid);
+}
+/* Jump-target ring, drawn inside the card like .settings-section.flash. */
+.mp-row.flash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: mp-provider-flash 2s ease;
+}
+@keyframes mp-provider-flash {
+  0%,
+  55% {
+    box-shadow: inset 0 0 0 2px var(--cyan);
+  }
 }
 .mp-row + .mp-row {
   margin-top: 12px;
@@ -593,6 +725,22 @@ onMounted(() => {
   flex-basis: 100%;
   font-size: 10.5px;
   color: var(--txt-faint);
+}
+/* CLI-login rows (Muse): no key to paste, just what the row reads. */
+.mp-cli-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--txt-dim);
+  line-height: 1.5;
+}
+.mp-cli-hint code {
+  font:
+    10px "JetBrains Mono",
+    monospace;
+}
+/* Muse plan names run long — hero value at body size, not display size. */
+.mp-tier-value {
+  font-size: 13px;
 }
 .mp-key-hint code,
 .mp-error code {
@@ -746,6 +894,10 @@ onMounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .mp-bar-fill {
     transition: none;
+  }
+  .mp-row.flash::after {
+    animation: none;
+    box-shadow: inset 0 0 0 2px var(--cyan);
   }
 }
 </style>

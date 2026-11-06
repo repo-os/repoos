@@ -24,6 +24,7 @@ import {
   fetchOpenRouterSpend,
   fetchOpenCodeGoUsage,
   fetchDeepInfraSpend,
+  fetchMuseUsage,
 } from "../../core/providers/spend.js";
 import { readProviderKey } from "../../core/providers/provider-keys.js";
 
@@ -40,6 +41,9 @@ export const getModelProviders: RouteHandler = async (ctx, _req, res) => {
     dashboardUrl: p.dashboardUrl,
     note: p.note,
     hasKey: readProviderKey(ctx.config, p).length > 0,
+    // A live row with no key variable reads the coding agent's own login on
+    // this machine (currently only Muse) instead of a pasted API key.
+    usesCliLogin: p.kind === "live" && p.envVar == null,
   }));
   return json(res, 200, { providers, at: new Date().toISOString() });
 };
@@ -52,13 +56,19 @@ export const getModelProviderUsage: RouteHandler = async (ctx, _req, res, params
       error: `${row.label} has no live RepoOS usage integration — it renders as a dashboard link-out.`,
     });
   }
-  const apiKey = readProviderKey(ctx.config, row);
-  if (!apiKey) {
-    return json(res, 400, {
-      error: `No ${row.label} API key saved yet — paste one on its row first.`,
-    });
-  }
   try {
+    // Muse reads the local `muse login` session, not a pasted key — it must
+    // run before the key lookup below, which is always empty for this row.
+    if (row.id === "muse") {
+      const usage = await fetchMuseUsage();
+      return json(res, 200, { kind: row.id, ...usage, at: new Date().toISOString() });
+    }
+    const apiKey = readProviderKey(ctx.config, row);
+    if (!apiKey) {
+      return json(res, 400, {
+        error: `No ${row.label} API key saved yet — paste one on its row first.`,
+      });
+    }
     if (row.id === "jev" || row.id === "clef-flash") {
       return json(res, 400, {
         error: `${row.label} has no spend API in RepoOS — the saved key is used for adaptive model routing only.`,
@@ -96,6 +106,11 @@ export const getModelProviderUsage: RouteHandler = async (ctx, _req, res, params
 export const setModelProviderKey: RouteHandler = async (ctx, req, res, params) => {
   const row = modelProviderById(params.param1 ?? "");
   if (!row) return json(res, 404, { error: "Unknown model provider." });
+  if (row.id === "muse") {
+    return json(res, 400, {
+      error: "Muse reads your `muse login` session on this machine — there is no API key to save.",
+    });
+  }
   if (row.kind !== "live" || !row.envVar) {
     return json(res, 400, {
       error: `${row.label} does not support saving an API key in RepoOS yet — it renders as a dashboard link-out.`,

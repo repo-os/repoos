@@ -1654,6 +1654,12 @@ export interface ModelProviderRow {
   note: string;
   /** Whether an API key is saved — never the key itself. */
   hasKey: boolean;
+  /**
+   * True when a live row reads the coding agent's own login on this machine
+   * (Muse via `muse login`) instead of a pasted API key — the row shows a
+   * login hint rather than the key form. Absent on older payloads.
+   */
+  usesCliLogin?: boolean;
 }
 
 export interface ModelProvidersResponse {
@@ -1875,8 +1881,19 @@ export interface DeepInfraUsage {
   usageError: string | null;
 }
 
+/** Muse live allowance (GET /api/model-providers/muse/usage). */
+export interface MuseUsage {
+  kind: "muse";
+  at?: string;
+  /** Subscription tier name, e.g. "Muse Code Everyday Usage". */
+  tier: string | null;
+  /** Rolling allowance windows, in the opencode Go window shape (no dollars). */
+  windows: ModelProviderUsageWindow[];
+  unrecognized: boolean;
+}
+
 /** GitHub Copilot's usage lives in its web settings — no public API for personal accounts. */
-export type ModelProviderUsage = OpenRouterUsage | OpenCodeGoUsage | DeepInfraUsage;
+export type ModelProviderUsage = OpenRouterUsage | OpenCodeGoUsage | DeepInfraUsage | MuseUsage;
 
 export interface DocMeta {
   path: string;
