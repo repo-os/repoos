@@ -14,7 +14,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
-updated_at: "2026-11-07T04:41:31Z"
+updated_at: "2026-11-07T04:45:04Z"
 last_close_out_gate_ms: 242146
 last_close_out_gate_at: "2026-11-07T04:40:15.108Z"
 review_passes: 1
@@ -102,3 +102,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T04:40:15Z · close-out gate completed in 242s
 - 2026-11-07T04:41:21Z · message_dropped: 1 queued message(s) discarded — task is done
 - 2026-11-07T04:41:31Z · status done→done, release:success
+- 2026-11-07T04:45:04Z · note: shots: skipped — the diff (0 changed paths) touches no capture target's globs — no UI change to capture
