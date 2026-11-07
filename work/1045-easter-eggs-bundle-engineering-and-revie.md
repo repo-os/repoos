@@ -14,7 +14,6 @@ review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
 updated_at: "2026-11-07T03:29:03Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T03:09:08.714Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -88,3 +87,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T03:23:58Z · body
 - 2026-11-07T03:24:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T03:29:03Z · CTO nudge: held — handoff gate is running
+
