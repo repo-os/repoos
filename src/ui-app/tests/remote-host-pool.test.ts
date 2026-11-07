@@ -2616,6 +2616,12 @@ describe("hang detector (#0729)", () => {
         hung: true,
       },
       {
+        name: "busy host with active container",
+        loadPerCpu: 4,
+        containerCpuActive: true,
+        hung: false,
+      },
+      {
         name: "failed probe after busy sample with inactive container",
         loadPerCpu: Number.POSITIVE_INFINITY,
         lastKnownLoadPerCpu: 4,
