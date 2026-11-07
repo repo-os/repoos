@@ -217,3 +217,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T14:32:15Z · message_delivered: 2 message(s)
 - 2026-11-07T14:32:37Z · body
 - 2026-11-07T14:33:41Z · message_queued at 2026-11-07T14:33:41.472Z
+- 2026-11-07T14:33:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
