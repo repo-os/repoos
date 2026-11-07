@@ -109,3 +109,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T07:13:03Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-07T07:13:03Z · message_queued at 2026-11-07T07:13:03.419Z
 - 2026-11-07T07:13:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin... 2026-11-07T06:44:06.202650Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/remote-validation-stop-killing-healthy-r/docs/remote-validation.md: **not** `status=running`, so a live…
+- 2026-11-07T07:13:03Z · message_delivered: 2 message(s)
