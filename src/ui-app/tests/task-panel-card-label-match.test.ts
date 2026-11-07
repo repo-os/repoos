@@ -221,11 +221,17 @@ describe("task panel status label matches the board card (#1023)", () => {
     expect(drawer.text()).not.toContain("Quiet — may be stalled");
     expect(drawer.text()).not.toContain("stuck · silent");
     expect(card.find('[data-test-id="task-card-check-progress"] progress').exists()).toBe(true);
-    expect(card.find('[data-test-id="task-card-check-progress"] progress').attributes("value")).toBeUndefined();
+    expect(
+      card.find('[data-test-id="task-card-check-progress"] progress').attributes("value"),
+    ).toBeUndefined();
     expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain("attempt 1");
-    expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain("on fixture host");
+    expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain(
+      "on fixture host",
+    );
     expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain("attempt 1");
-    expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain("on fixture host");
+    expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+      "on fixture host",
+    );
     const progress = drawer.find('[data-test-id="close-out-check-progress"] progress');
     expect(progress.exists()).toBe(true);
     expect(progress.attributes("value")).toBeUndefined();
