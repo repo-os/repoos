@@ -1,5 +1,5 @@
 ---
-id: "1048"
+id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
 status: active
@@ -13,7 +13,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T20:22:06Z"
+updated_at: "2026-11-07T20:29:40Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -88,9 +88,9 @@ right before writing new CSS.
 "route": "/work?task=9999&tab=details",
 "highlight": ".human-done-modal",
 "steps": [
-  {
-    "click": "[data-task-id=\"9999\"] .drawer-human-task button"
-  }
+{
+  "click": "[data-task-id=\"9999\"] .drawer-human-task button"
+}
 ],
 "state": "card:humanStep"
 }
@@ -169,3 +169,4 @@ right before writing new CSS.
 - 2026-11-07T20:02:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T20:03:37Z · body
 - 2026-11-07T20:22:06Z · body
+- 2026-11-07T20:29:40Z · handoff_deferred: 1 queued message(s) must be read before review
