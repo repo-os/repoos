@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
@@ -45,6 +45,11 @@ describe("debugEventExpandable (#0829)", () => {
   it("does not expand duplicate title/detail when the line fits", () => {
     const text = "status review→done";
     expect(debugEventExpandable({ kind: "activity", title: text, detail: text })).toBe(false);
+  });
+
+  it("expands multiline activity reports without waiting for ellipsis measurement", () => {
+    const report = "note: tested on device\n- **Observed:** stayed awake";
+    expect(debugEventExpandable({ kind: "activity", title: report, detail: report })).toBe(true);
   });
 
   it("relies on layout truncation for title-only rows", () => {
@@ -117,31 +122,22 @@ describe("DebugPanel expanded rows (#0829)", () => {
     const activity = `- 2026-11-07T03:00:00Z · ${report.replace(/\n/g, "\n> ")}`;
     const task = {
       ...TASK,
-      body: `## Activity\n\n${activity}\n`,
+      body: `## Problem\n\nTask body.\n\n## Activity\n\n${activity}\n`,
     } as Task;
-    const scrollWidth = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(300);
-    const clientWidth = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(80);
-    let wrapper: ReturnType<typeof mount> | undefined;
+    const wrapper = mount(DebugPanel, {
+      props: { task },
+      global: { plugins: [createPinia()], stubs: { teleport: true } },
+      attachTo: document.body,
+    });
+    await nextTick();
+    await nextTick();
 
-    try {
-      wrapper = mount(DebugPanel, {
-        props: { task },
-        global: { plugins: [createPinia()], stubs: { teleport: true } },
-        attachTo: document.body,
-      });
-      await nextTick();
-      await nextTick();
+    const row = wrapper.get('.debug-event[data-debug-event^="activity-"]');
+    expect(row.classes()).toContain("debug-event-expandable");
+    await row.trigger("click");
+    await nextTick();
 
-      const row = wrapper.get('.debug-event[data-debug-event^="activity-"]');
-      expect(row.classes()).toContain("debug-event-expandable");
-      await row.trigger("click");
-      await nextTick();
-
-      expect(wrapper.get(".debug-event-message").text()).toBe(report);
-    } finally {
-      wrapper?.unmount();
-      scrollWidth.mockRestore();
-      clientWidth.mockRestore();
-    }
+    expect(wrapper.get(".debug-event-message").text()).toBe(report);
+    wrapper.unmount();
   });
 });
