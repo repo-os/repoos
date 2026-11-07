@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 748617
-last_close_out_gate_at: "2026-11-07T13:10:07.837Z"
 id: 1052
 title: "repoos message and send-back: accept stdin, files and heredocs; never send junk as a message"
 type: bug
-status: review
+status: done
 priority: p2
 area: core
+merged_commit: b33072aca9bf2c855a322899274edf143137b3ee
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-message-and-send-back-accept-stdi
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T07:57:47Z"
 updated_at: "2026-11-07T13:10:07Z"
+last_close_out_gate_ms: 748617
+last_close_out_gate_at: "2026-11-07T13:10:07.837Z"
 review_passes: 1
 ---
 ## Problem
