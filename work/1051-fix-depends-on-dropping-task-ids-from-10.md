@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-07T15:28:00Z"
-review_passes: 1
+last_close_out_gate_ms: 260362
+last_close_out_gate_at: "2026-11-07T15:36:14.882Z"
 id: 1051
 title: "Fix depends_on dropping task ids from 1000 up (written unquoted, parsed as number)"
 type: bug
@@ -11,6 +11,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fix-depends-on-dropping-task-ids-from-10
 created_at: "2026-11-07T07:23:45Z"
+updated_at: "2026-11-07T15:36:14Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -47,4 +49,5 @@ Cause (read from the code): `repoos update --depends-on` writes the frontmatter 
 - 2026-11-07T15:25:40Z · message_queued at 2026-11-07T15:25:40.767Z
 - 2026-11-07T15:25:41Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-07T15:27:59Z · note: review pass 1: good to go
+- 2026-11-07T15:36:14Z · close-out gate completed in 260s
 
