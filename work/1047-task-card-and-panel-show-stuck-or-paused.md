@@ -113,3 +113,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T04:49:49Z · CTO nudge: held — remote validation is running
 - 2026-11-07T04:57:34Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (13c13753c) during finalization (#0734)
 - 2026-11-07T05:04:03Z · message_queued at 2026-11-07T05:04:03.416Z
+- 2026-11-07T05:04:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
