@@ -92,3 +92,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T02:27:50Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T02:44:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T03:09:05Z · message_queued at 2026-11-07T03:09:05.097Z
+- 2026-11-07T03:09:05Z · handoff failed · handoff recovery attempted · finalization failed
