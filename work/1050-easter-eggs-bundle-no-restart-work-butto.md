@@ -1,5 +1,5 @@
 ---
-id: 1050
+id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: active
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-no-restart-work-butto
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T16:01:51Z"
+updated_at: "2026-11-07T16:14:16Z"
 ---
 ## Items
 
@@ -84,3 +84,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T13:57:20Z · status inbox→ready
 - 2026-11-07T16:01:49Z · released
 - 2026-11-07T16:01:51Z · status ready→active, needs_input, branch
+- 2026-11-07T16:14:16Z · body
