@@ -13,10 +13,13 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T05:18:06Z"
-review_rounds: 1
-review_passes: 1
-last_check_failure: "repoos check at 2026-11-07T03:51:58.074Z: repoos check failed: ui verification failed (14 issue(s)): [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/handoff-status (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/summary (http://127.0.0.1:54780/api/tasks/9999/summary); [request] Failed to load resource: the server … (truncated)"
+updated_at: "2026-11-07T09:07:10Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T09:05:59.485Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer showing live check progress, attempt and machine (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work?task=1047&tab=changes (http://127.0.0.1:52490/work?shotState=closeOut:checkProgress)"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 5d7d4bce to a86da372) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 5d7d4bcef77cfb7c522edb86626c494cc66396a8
+review_passes: 3
+review_rounds: 2
 ---
 ## Problem
 
@@ -59,11 +62,11 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 ```json
 [
 {
-"label": "Task panel check progress bar",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": "[data-test-id=\"close-out-check-progress\"]",
-"state": "closeOut:checkProgress"
+  "label": "Task drawer showing live check progress, attempt and machine",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "closeOut:checkProgress"
 }
 ]
 ```
@@ -116,3 +119,54 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T05:04:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T05:09:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T05:18:06Z · body
+- 2026-11-07T05:36:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T05:54:41Z · status active→review
+- 2026-11-07T05:54:42Z · message_queued at 2026-11-07T05:54:42.260Z
+- 2026-11-07T05:56:52Z · note: review pass 2: needs some work
+- 2026-11-07T05:56:52Z · message_delivered: 1 message(s)
+- 2026-11-07T05:56:53Z · status review→active
+- 2026-11-07T05:56:56Z · CTO nudge: held — remote validation is running
+- 2026-11-07T06:42:27Z · body
+- 2026-11-07T06:46:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T07:12:03Z · status active→review
+- 2026-11-07T07:12:04Z · message_queued at 2026-11-07T07:12:04.116Z
+- 2026-11-07T07:13:48Z · note: review pass 3: needs some work
+- 2026-11-07T07:13:48Z · needs_input
+- 2026-11-07T07:21:12Z · status review→active
+- 2026-11-07T07:21:12Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-07T07:21:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T07:31:16Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-07T07:31:19Z · message_delivered: 1 message(s)
+- 2026-11-07T07:31:20Z · CTO nudge: held — remote validation is running
+- 2026-11-07T07:32:01Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (01003f662) during finalization (#0734)
+- 2026-11-07T07:32:12Z · message_queued at 2026-11-07T07:32:12.498Z
+- 2026-11-07T07:32:40Z · message_queued at 2026-11-07T07:32:40.539Z
+- 2026-11-07T07:33:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T07:33:04Z · body
+- 2026-11-07T07:51:35Z · body
+- 2026-11-07T08:00:54Z · body
+- 2026-11-07T08:03:32Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-07T08:03:32Z · message_queued at 2026-11-07T08:03:32.980Z
+- 2026-11-07T08:03:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The formatted rerun is now green for build, formatting, lint, all 364 scoped test files (5,007 passed, 1 skipped), and rendered contrast on both the remote and local guard paths. RepoOS is completing its local UI smoke check now. · stderr: Reading additional input from stdin...
+- 2026-11-07T08:03:33Z · status active→review
+- 2026-11-07T08:03:33Z · message_delivered: 3 message(s)
+- 2026-11-07T08:03:34Z · note: handoff requested (cli)
+- 2026-11-07T08:06:20Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T08:15:44Z · message_queued at 2026-11-07T08:15:44.688Z
+- 2026-11-07T08:15:44Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 5d7d4bce to a86da372) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-07T08:16:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T08:32:21Z · body
+- 2026-11-07T08:36:36Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T08:36:37Z · message_queued at 2026-11-07T08:36:37.066Z
+- 2026-11-07T08:36:37Z · message_delivered: 2 message(s)
+- 2026-11-07T08:41:20Z · message_queued at 2026-11-07T08:41:20.196Z
+- 2026-11-07T08:41:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-07T08:46:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T08:48:28Z · body
+- 2026-11-07T08:51:20Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T09:05:55Z · note: ui verification failed (1 issue(s)): [missing-target] Task drawer showing live check progress, attempt and machine (target "default"): highlight [data-test-id="close-out-check-progress"] matched nothing on /work?task=1047&tab=changes (http://127.0.0.1:52490/work?shotState=closeOut:checkProgress)
+- 2026-11-07T09:05:56Z · message_queued at 2026-11-07T09:05:56.167Z
+- 2026-11-07T09:05:59Z · message_delivered: 1 message(s)
+- 2026-11-07T09:06:38Z · message_queued at 2026-11-07T09:06:38.487Z
+- 2026-11-07T09:06:44Z · message_queued at 2026-11-07T09:06:44.324Z
+- 2026-11-07T09:07:10Z · body

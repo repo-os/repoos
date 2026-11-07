@@ -931,10 +931,12 @@ The runner now watches each in-flight run. It samples the host's own 1-minute
 load average (per CPU) on a timer, and every `hangCheckIntervalMs` (30 s) asks:
 has this run's output been unchanged for `hangIdleMinutes` (default **5**) **and**
 is the host idle (load per CPU below `0.5`)? Both must hold — a quiet run on a
-**busy** host may simply be queued behind real work. When load probes fail, the
-runner still recovers: output idle for `hangIdleMinutes` while load has been
-unknown that long **and** the host was not busy the last time load was measured
-(#0739) — unreachable stats must not hold a slot until the outer SSH timeout.
+**busy** host may simply be queued behind real work. When the load probe fails
+or times out, load is **unknown**, not idle. That result never triggers a kill
+by itself. The runner also samples the container's CPU on the host: observed
+CPU activity protects a quiet SSH stream, while a successful idle-host sample
+plus an explicitly inactive container can confirm a hang. A failed stream or
+second SSH probe alone cannot kill a progressing run.
 When both hold the runner removes **that run's** container by name (`docker rm -f
 repoos-validate-<run-id>`, never a blanket `docker kill`), marks the summary
 `hung` (transient, so the caller retries on another host, which the pool

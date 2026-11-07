@@ -1081,7 +1081,7 @@ describe("prepareCandidateUpload (#0717)", () => {
         const { resolveTestSelection } = await import("../../../scripts/select-test-files.mjs");
         const requireFromRepo = createRequire(join(process.cwd(), "package.json"));
         const vitest = join(requireFromRepo.resolve("vitest/package.json"), "..", "vitest.mjs");
-        const config = join(process.cwd(), "src/ui-app/vite.config.ts");
+        const config = join(process.cwd(), "vite.config.ts");
         const local = resolveTestSelection(process.execPath, vitest, config, "main", [], root);
         const viaBase = resolveTestSelection(
           process.execPath,
@@ -1091,8 +1091,8 @@ describe("prepareCandidateUpload (#0717)", () => {
           [],
           root,
         );
-        expect(local.files).not.toBeNull();
-        expect(viaBase.files).not.toBeNull();
+        expect(local.files, local.warning).not.toBeNull();
+        expect(viaBase.files, viaBase.warning).not.toBeNull();
         expect(new Set(viaBase.files)).toEqual(new Set(local.files));
       } finally {
         rmSync(root, { recursive: true, force: true });

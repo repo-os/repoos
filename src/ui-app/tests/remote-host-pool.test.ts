@@ -2591,6 +2591,7 @@ describe("hang detector (#0729)", () => {
     expect(reaperCommand()).toContain("docker rm -f");
     expect(reaperCommand()).toContain("1500");
     expect(reaperCommand()).toContain("older than 25 minutes");
+    expect(reaperCommand()).toContain("name=^/repoos-validate-");
     expect(reaperCommand()).toContain('case "$name" in repoos-validate-*)');
     expect(reaperCommand()).toContain("Reaping stale validation container");
     expect(containerReaperDue(undefined, 1_000_000)).toBe(true);
@@ -2712,7 +2713,7 @@ describe("hung container cleanup (#0729)", () => {
   it("sweeps stale containers by the repoos-validate- prefix only", () => {
     const cmd = staleContainerCleanupCommand();
     expect(cmd).toContain("docker ps -aq");
-    expect(cmd).toContain("name=repoos-validate-");
+    expect(cmd).toContain("name=^/repoos-validate-");
     expect(cmd).toContain('case "$name" in repoos-validate-*)');
     expect(cmd).toContain('docker rm -f "$id"');
     // Never a blanket kill of every container on the host.
@@ -2770,7 +2771,7 @@ describe("hung container cleanup (#0729)", () => {
 
   it("probes for stale containers when checking a docker host", () => {
     const cmd = prereqProbeCommand("docker", "repoos-ci");
-    expect(cmd).toContain("name=repoos-validate-");
+    expect(cmd).toContain("name=^/repoos-validate-");
     expect(cmd).toContain(staleBundlePruneCommand());
   });
 

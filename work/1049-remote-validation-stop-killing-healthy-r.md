@@ -2,21 +2,22 @@
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: review
+status: active
 priority: p0
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-validation-stop-killing-healthy-r
-cli_override: claude code
-model_override: haiku
-review_cli_override: codex
-review_model_override: gpt-6-luna
+cli_override: codex
+model_override: gpt-6-luna
+review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T07:30:37Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-07T05:19:38.063Z: repoos check failed: tests — Test Files 2 failed | 145 passed (147)"
-engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"}]"
+updated_at: "2026-11-07T09:06:37Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-07T08:53:19.245Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Task debug events with expanded remote details (target \"default\"): state \"drawer:debugLogs\" did not render on target \"default\" — /work has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:50620/work?shotState=drawer%3AdebugLogs); [missing-target] Task debug events with expanded remote details (target \"default\"): highlight .debug-event matched nothing on /work (htt… (truncated)"
+review_rounds: 1
+review_passes: 1
+engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T07:19:30.902Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -56,6 +57,19 @@ Findings from the investigation (no single root cause proven):
 - Do not pick new numeric thresholds for memory or swap; this is only about hang detection and cleanup (see the resource-pressure rule in AGENTS.md).
 - Evidence: `.repoos/logs/system.log` (warn lines "looks hung", link probe failures) and `repoos api GET /api/tasks/1046/remote-validation/events`.
 
+## Shots
+```json
+[
+{
+"label": "Task debug events with expanded remote details",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-event",
+"state": "drawer:debugLogs"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-07T03:30:53Z · created · njachowski@gmail.com
@@ -80,4 +94,62 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T05:19:34Z · message_queued at 2026-11-07T05:19:34.732Z
 - 2026-11-07T05:19:37Z · message_delivered: 1 message(s)
 - 2026-11-07T05:31:20Z · note: adopted orphaned engineer pid 83257
+- 2026-11-07T05:33:59Z · message_queued at 2026-11-07T05:33:59.269Z
+- 2026-11-07T05:36:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T05:41:22Z · message_delivered: 1 message(s)
+- 2026-11-07T05:41:24Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > shows hung · killing on the active run while the kill SSH is still pending (#0735), tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > kills a stalled run's container and retries it on another host, tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > settles validate when hang kill completes but main SSH never resolves and abort is a no-op (#0739) on mini — fix it in the feature branch and re-run the gate
+- 2026-11-07T05:45:15Z · body
+- 2026-11-07T05:45:18Z · message_queued at 2026-11-07T05:45:18.734Z
+- 2026-11-07T05:47:53Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T05:47:53Z · message_queued at 2026-11-07T05:47:53.352Z
+- 2026-11-07T05:47:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Perfect! The check passed and the engineering report has been written. All the implementation work is complete and the tests are passing. Let me verify the worktree state and request handoff: · stderr: (empty)
+- 2026-11-07T05:47:53Z · message_delivered: 2 message(s)
+- 2026-11-07T05:48:18Z · message_queued at 2026-11-07T05:48:18.113Z
+- 2026-11-07T05:53:23Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 2/3
+- 2026-11-07T05:53:26Z · message_delivered: 1 message(s)
+- 2026-11-07T06:07:11Z · engineer stopped by request
+- 2026-11-07T06:11:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T06:25:00Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails, tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > records a queued event while a job waits for a host slot (#0568), tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > runs two jobs on two hosts and queues a third until one frees on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-07T06:25:00Z · message_queued at 2026-11-07T06:25:00.663Z
+- 2026-11-07T06:26:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T06:31:23Z · message_delivered: 1 message(s)
+- 2026-11-07T06:31:28Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > shows hung · killing on the active run while the kill SSH is still pending (#0735), tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > kills a stalled run's container and retries it on another host, tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > settles validate when hang kill completes but main SSH never resolves and abort is a no-op (#0739) on mini — fix it in the feature branch and re-run the gate
+- 2026-11-07T06:40:00Z · engineer stopped by request
+- 2026-11-07T06:40:02Z · cli_override, model_override
+- 2026-11-07T06:40:15Z · review_cli_override, review_model_override
+- 2026-11-07T06:40:16Z · message_queued at 2026-11-07T06:40:16.006Z
+- 2026-11-07T06:41:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T06:58:00Z · body
+- 2026-11-07T07:08:40Z · body
+- 2026-11-07T07:13:03Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T07:13:03Z · message_queued at 2026-11-07T07:13:03.419Z
+- 2026-11-07T07:13:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin... 2026-11-07T06:44:06.202650Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/remote-validation-stop-killing-healthy-r/docs/remote-validation.md: **not** `status=running`, so a live…
+- 2026-11-07T07:13:03Z · message_delivered: 2 message(s)
+- 2026-11-07T07:14:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I can’t see a queued message for #1049 to read. The available queued-message API currently shows only a message for #1047, so I haven’t requested handoff again. Please resend the #1049 message here or make it available in the task queue; I… · stderr: 2026-11-07T07:12:15.132781Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 32150
+- 2026-11-07T07:19:30Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 3/3
+- 2026-11-07T07:24:46Z · body
 - 2026-11-07T07:30:37Z · status active→review
+- 2026-11-07T07:30:37Z · message_queued at 2026-11-07T07:30:37.743Z
+- 2026-11-07T07:30:37Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-07T07:33:01Z · note: review pass 1: needs some work
+- 2026-11-07T07:33:01Z · message_delivered: 1 message(s)
+- 2026-11-07T07:33:01Z · status review→active
+- 2026-11-07T07:38:18Z · body
+- 2026-11-07T07:45:25Z · body
+- 2026-11-07T07:51:20Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T08:13:54Z · note: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:63511/api/tasks/1049/diff-stats (http://127.0.0.1:63511/api/tasks/1049/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:63511/api/tasks/1049/diff-stats); [request] HTTP 404 for http://127.0.0.1:63511/api/tasks/1049/engineering-reports (http://127.0.0.1:63511/api/tasks/1049/engineering-reports); [request] Failed to load resource: the server responded
+- 2026-11-07T08:13:54Z · message_queued at 2026-11-07T08:13:54.983Z
+- 2026-11-07T08:13:58Z · message_delivered: 1 message(s)
+- 2026-11-07T08:15:48Z · body
+- 2026-11-07T08:22:54Z · body
+- 2026-11-07T08:26:20Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T08:53:15Z · note: ui verification failed (2 issue(s)): [missing-target] Task debug events with expanded remote details (target "default"): state "drawer:debugLogs" did not render on target "default" — /work has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:50620/work?shotState=drawer%3AdebugLogs); [missing-target] Task debug events with expanded remote details (target "default"): highlight .debug-event matched nothing on /work (http://127.0.0.1:50620/w
+- 2026-11-07T08:53:15Z · message_queued at 2026-11-07T08:53:15.781Z
+- 2026-11-07T08:53:18Z · message_delivered: 1 message(s)
+- 2026-11-07T08:53:36Z · body
+- 2026-11-07T08:59:04Z · body
+- 2026-11-07T09:01:20Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T09:02:47Z · handoff failed · check failed after 2 automatic retries · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+- 2026-11-07T09:02:47Z · message_queued at 2026-11-07T09:02:47.863Z
+- 2026-11-07T09:06:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T09:06:37Z · message_delivered: 1 message(s)
