@@ -16,8 +16,12 @@ const summary = computed(() => {
       <span class="agent-diagnostic-summary">{{ summary }}</span>
       <span v-if="count && count > 1" class="agent-diagnostic-count">×{{ count }}</span>
       <time v-if="firstAt || at" class="agent-tool-time">{{ fmtTime(firstAt || at) }}</time>
-      <span v-if="count && count > 1 && at && at !== firstAt" class="agent-tool-time">→ {{ fmtTime(at) }}</span>
+      <span v-if="count && count > 1 && at && at !== firstAt" class="agent-tool-time"
+        >→ {{ fmtTime(at) }}</span
+      >
     </summary>
-    <pre class="agent-tool-out">{{ count && count > 1 ? `${count} identical entries:\n${text}` : text }}</pre>
+    <pre class="agent-tool-out">{{
+      count && count > 1 ? `${count} identical entries:\n${text}` : text
+    }}</pre>
   </details>
 </template>

@@ -287,8 +287,8 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
       entries: [entry],
       text,
       s: "type" in entry ? undefined : entry.s,
-      repeatCount: !(("type" in entry)) && entry.s === "err" ? 1 : undefined,
-      firstAt: !(("type" in entry)) && entry.s === "err" ? entry.at : undefined,
+      repeatCount: !("type" in entry) && entry.s === "err" ? 1 : undefined,
+      firstAt: !("type" in entry) && entry.s === "err" ? entry.at : undefined,
     });
   }
 

@@ -222,9 +222,7 @@ function onKeydown(e: KeyboardEvent): void {
           </section>
         </template>
 
-        <p v-else-if="!error" class="repo-dirty-note">
-          Nothing is uncommitted in this checkout.
-        </p>
+        <p v-else-if="!error" class="repo-dirty-note">Nothing is uncommitted in this checkout.</p>
       </div>
 
       <footer class="repo-dirty-foot">
