@@ -105,9 +105,24 @@ describe("PipelineCard", () => {
       modelsLabel: "spark",
       hostLabel: "this Mac",
       action: { icon: "pause", label: "Pause work on task 1035" },
+      checkProgress: null,
       ...over,
     } as never;
   }
+
+  it("shows a determinate bar when check counts exist", () => {
+    const wrapper = track(
+      mount(PipelineCard, {
+        props: cardProps({
+          stepLabel: "Running checks 3/680",
+          checkProgress: { stepsDone: null, stepsTotal: null, testsDone: 3, testsTotal: 680 },
+        }),
+      }),
+    );
+    expect(wrapper.find('[data-test-id="pipeline-card-check-progress"] progress').exists()).toBe(
+      true,
+    );
+  });
 
   it("renders four rows with rounds, models and host", () => {
     const wrapper = track(mount(PipelineCard, { props: cardProps() }));

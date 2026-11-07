@@ -173,7 +173,7 @@ describe("task drawer check chip (#0564)", () => {
 
     const wrapper = await mountDrawer(pinia, makeTask());
     expect(wrapper.find(".drawer-status-l1").text()).toMatch(/^Checks · step 5 of 12/);
-    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+    expect(wrapper.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
       "on macbook",
     );
 
@@ -191,7 +191,9 @@ describe("task drawer check chip (#0564)", () => {
     // Advance past the 5s rows poll; the chip must pick the host up.
     await vi.advanceTimersByTimeAsync(5_100);
     await flush();
-    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain("on mini");
+    expect(wrapper.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
+      "on mini",
+    );
 
     await wrapper.find(".drawer-status-summary").trigger("click");
     await flush();
@@ -248,7 +250,7 @@ describe("task drawer check chip (#0564)", () => {
 
     const wrapper = await mountDrawer(pinia, makeTask());
     expect(wrapper.find(".drawer-status-l1").text()).toMatch(/^Checks ·/);
-    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+    expect(wrapper.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
       "on macbook",
     );
   });

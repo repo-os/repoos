@@ -107,6 +107,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "card:checksProgress",
   // #1054 — active board card while handoff reuses an earlier clean check (no bar).
   "card:checksReuse",
+  "drawer:checksProgress",
+  "drawer:checksReuse",
+  "pipeline:checksProgress",
   // #0776/#0795 — a multi-area, human-assigned card with seeded diff stats, so
   // a capture can show the combined area chip, the human chip and the
   // file-count chip.

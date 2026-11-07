@@ -47,8 +47,9 @@ import {
   STARTING_LABEL,
   runningChecksLabel,
 } from "../lib/task-status-copy";
-import { checkProgressPercent, type CheckProgress } from "../lib/check-progress";
-import { formatChecksCardLine } from "../lib/checks-card-status";
+import { toCheckProgress, type CheckProgress } from "../lib/check-progress";
+import { activeTaskChecksBusy, isReusedCheckOutput } from "../lib/checks-card-status";
+import ChecksProgressDisplay from "./ChecksProgressDisplay.vue";
 import { formatDuration } from "../lib/time";
 import { useNow } from "../composables/useNow";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
@@ -76,49 +77,33 @@ const handoffProgress = computed(
     repo.handoffStatuses[props.task.id]?.progress ??
     null,
 );
-const cardCheckProgressPercent = computed(() =>
-  handoffProgress.value ? checkProgressPercent(handoffProgress.value) : null,
-);
 const handoffStatus = computed(() => repo.handoffStatuses[props.task.id] ?? null);
-const showCardCheckProgress = computed(() => {
-  const id = props.task.id;
-  return (
-    repo.handoffInFlight(id) ||
-    (repo.taskChecks[id] ?? []).some((run) => run.running) ||
-    !!repo.localCheckSlotForTask(id, Date.now())
-  );
-});
+const showCardCheckProgress = computed(() => activeTaskChecksBusy(repo, props.task.id, now.value));
 const cardCheckRun = computed(
   () => (repo.taskChecks[props.task.id] ?? []).find((run) => run.running) ?? null,
 );
 function cardCheckProgressFields(run: TaskCheckRun | null): CheckProgress | null {
   if (!run) return handoffProgress.value;
-  return {
-    stepsDone: run.stepsDone ?? null,
-    stepsTotal: run.stepsTotal ?? null,
-    currentStep: run.currentStep ?? null,
-    stepName: run.stepName ?? null,
-    testsDone: run.testsDone ?? null,
-    testsTotal: run.testsTotal ?? null,
-    testsPass: run.testsPass ?? null,
-  };
+  return toCheckProgress(run);
 }
-const cardCheckStatusLine = computed(() => {
+const cardChecksDisplay = computed(() => {
   const id = props.task.id;
   const status = handoffStatus.value;
   const run = cardCheckRun.value;
   const slot = repo.localCheckSlotForTask(id, now.value);
   const startedAt = status?.startedAt ?? run?.startedAt ?? null;
+  let elapsed: string | null = null;
+  if (startedAt) elapsed = formatDuration(Math.max(0, now.value - Date.parse(startedAt)));
+  else if (slot?.ageMs != null) elapsed = formatDuration(slot.ageMs);
   const progress = cardCheckProgressFields(run);
-  return formatChecksCardLine({
-    nowMs: now.value,
-    startedAt,
+  return {
     progress,
-    handoffStep: status?.step ?? repo.handoffSteps[id] ?? null,
-    checkOutput: run?.output,
+    elapsed,
+    reused: isReusedCheckOutput(run?.output),
     slow: !!slowCheck.value,
-    slotAgeMs: slot?.ageMs ?? null,
-  });
+    handoffStep:
+      !progress && !run ? (status?.step ?? repo.handoffSteps[id] ?? (slot ? "check" : null)) : null,
+  };
 });
 
 /**
@@ -1197,7 +1182,10 @@ const action = computed<CardAction | null>(() => {
   // back into the same failure. The task drawer keeps its own Move to done
   // button, so retrying is still one click away, just not from the card.
   if (t.status === "review" && repo.doneErrorFor(t.id)) return null;
-  if (t.status === "active") return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+  if (t.status === "active") {
+    if (showCardCheckProgress.value) return null;
+    return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+  }
   return ACTIONS[t.status] ?? null;
 });
 
@@ -1576,11 +1564,53 @@ async function openDebuggerFromError(): Promise<void> {
           >needs merge</span
         >
         <HotfixBadge v-if="task.hotfix" :target="task.hotfixTarget" :branch="task.branch" />
-        <span
-          class="ml-auto rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
-          :class="task.priority"
-          >{{ task.priority }}</span
-        >
+        <span class="ml-auto flex items-center gap-[6px]">
+          <button
+            ref="agentTrigger"
+            type="button"
+            class="tc-agent-btn"
+            :class="{ open: agentPanelOpen }"
+            :aria-expanded="agentPanelOpen"
+            :aria-controls="agentTriggerControls"
+            aria-haspopup="dialog"
+            aria-label="Show or hide agent assignments for this task"
+            data-test-id="task-card-agent-btn"
+            @mouseenter="showAgentPreview"
+            @mouseleave="scheduleAgentPreviewDismiss"
+            @focus="showAgentPreview"
+            @blur="scheduleAgentPreviewDismiss"
+            @keydown.tab="onAgentTriggerTab"
+            @keydown.escape="closeAgentPreviewToTrigger"
+            @click.stop="openAgentAssignments"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+              <rect
+                x="4.5"
+                y="8"
+                width="15"
+                height="11"
+                rx="3"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
+              <path d="M12 8V5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <circle cx="12" cy="4.3" r="1.4" fill="currentColor" />
+              <circle cx="9.6" cy="12.6" r="1.2" fill="currentColor" />
+              <circle cx="14.4" cy="12.6" r="1.2" fill="currentColor" />
+              <path
+                d="M9.2 15.7h5.6"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          <span
+            class="rounded-[5px] px-[6px] py-[2px] font-mono text-[9px] font-bold"
+            :class="task.priority"
+            >{{ task.priority }}</span
+          >
+        </span>
       </div>
 
       <h3 class="mt-[11px] line-clamp-2 text-[13px] font-semibold leading-[1.4]">
@@ -1657,60 +1687,17 @@ async function openDebuggerFromError(): Promise<void> {
             />
           </svg>
         </span>
-        <div
+        <ChecksProgressDisplay
           v-if="showCardCheckProgress"
-          class="check-progress task-card-check-progress"
-          role="status"
-          data-test-id="task-card-check-progress"
-        >
-          <span v-if="cardCheckProgressPercent != null" class="check-progress-meter">
-            <progress
-              :value="cardCheckProgressPercent"
-              max="100"
-              aria-label="Checks running progress"
-            />
-          </span>
-          <span data-test-id="task-card-check-status-line">{{ cardCheckStatusLine }}</span>
-        </div>
-        <button
-          ref="agentTrigger"
-          type="button"
-          class="tc-agent-btn"
-          :class="{ open: agentPanelOpen, 'ml-auto': !worktreeFrozen, 'ml-1': worktreeFrozen }"
-          :aria-expanded="agentPanelOpen"
-          :aria-controls="agentTriggerControls"
-          aria-haspopup="dialog"
-          aria-label="Show or hide agent assignments for this task"
-          @mouseenter="showAgentPreview"
-          @mouseleave="scheduleAgentPreviewDismiss"
-          @focus="showAgentPreview"
-          @blur="scheduleAgentPreviewDismiss"
-          @keydown.tab="onAgentTriggerTab"
-          @keydown.escape="closeAgentPreviewToTrigger"
-          @click.stop="openAgentAssignments"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
-            <rect
-              x="4.5"
-              y="8"
-              width="15"
-              height="11"
-              rx="3"
-              stroke="currentColor"
-              stroke-width="1.8"
-            />
-            <path d="M12 8V5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-            <circle cx="12" cy="4.3" r="1.4" fill="currentColor" />
-            <circle cx="9.6" cy="12.6" r="1.2" fill="currentColor" />
-            <circle cx="14.4" cy="12.6" r="1.2" fill="currentColor" />
-            <path
-              d="M9.2 15.7h5.6"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
+          class="task-card-check-progress"
+          variant="card"
+          test-id="task-card-check-progress"
+          :progress="cardChecksDisplay.progress"
+          :elapsed="cardChecksDisplay.elapsed"
+          :reused="cardChecksDisplay.reused"
+          :slow="cardChecksDisplay.slow"
+          :handoff-step="cardChecksDisplay.handoffStep"
+        />
         <Teleport to="body">
           <div
             v-if="agentPreviewOpen"

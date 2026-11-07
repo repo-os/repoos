@@ -1,8 +1,25 @@
-import { checkProgressLabel, type CheckProgress } from "./check-progress.js";
+import { checkProgressDetailLabel, type CheckProgress } from "./check-progress.js";
 import { formatDuration } from "./time.js";
 
 export function isReusedCheckOutput(output: string | null | undefined): boolean {
   return output?.includes("reused check ") ?? false;
+}
+
+/** Same gate as the card checks block — handoff, live run, or held local slot. */
+export function activeTaskChecksBusy(
+  signals: {
+    handoffInFlight: (id: string) => boolean;
+    taskChecks: Record<string, { running?: boolean }[] | undefined>;
+    localCheckSlotForTask: (id: string, nowMs: number) => unknown;
+  },
+  taskId: string,
+  nowMs: number,
+): boolean {
+  return (
+    signals.handoffInFlight(taskId) ||
+    (signals.taskChecks[taskId] ?? []).some((run) => run.running) ||
+    !!signals.localCheckSlotForTask(taskId, nowMs)
+  );
 }
 
 /**
@@ -27,7 +44,7 @@ export function formatChecksCardLine(opts: {
       opts.progress.currentStep != null ||
       opts.progress.testsDone != null;
     if (hasCounts) {
-      parts.push(checkProgressLabel(opts.progress));
+      parts.push(checkProgressDetailLabel(opts.progress));
     } else if (opts.progress.stepName) {
       parts.push(`checking ${opts.progress.stepName}`);
     } else {

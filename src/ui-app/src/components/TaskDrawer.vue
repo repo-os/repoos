@@ -181,7 +181,14 @@ import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { taskInDevPass, taskRoundCounts, taskRoundLabel } from "../lib/pipeline-card";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
-import { formatChecksCardLine } from "../lib/checks-card-status";
+import {
+  activeTaskChecksBusy,
+  formatChecksCardLine,
+  isReusedCheckOutput,
+} from "../lib/checks-card-status";
+import ChecksProgressDisplay from "./ChecksProgressDisplay.vue";
+import { toCheckProgress } from "../lib/check-progress";
+import { MAX_CHECK_RETRY_ATTEMPTS } from "../lib/retryHints";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -432,6 +439,51 @@ const statusProgressLabel = computed(() => {
 const showStatusProgress = computed(() =>
   Boolean(statusProgress.value || handoffBusy.value || localCheckSlot.value),
 );
+const activeChecksBusy = computed(() =>
+  ui.active ? activeTaskChecksBusy(repo, ui.active.id, checkNow.value) : false,
+);
+const checksAutoRetryLine = computed(() => {
+  const task = ui.active;
+  if (!task) return null;
+  const count = retryCountFrom(task, "check");
+  if (count && count > 0) return `auto-retry ${count} of ${MAX_CHECK_RETRY_ATTEMPTS}`;
+  return null;
+});
+const drawerChecksDisplay = computed(() => {
+  const task = ui.active;
+  if (!task) return null;
+  const run = activeCheckRun.value;
+  const status = repo.handoffStatuses[task.id];
+  const progress = statusProgress.value
+    ? toCheckProgress(statusProgress.value)
+    : run
+      ? toCheckProgress(run)
+      : null;
+  const startedAt = status?.startedAt ?? run?.startedAt ?? null;
+  const elapsed = startedAt
+    ? formatDuration(Math.max(0, checkNow.value - Date.parse(startedAt)))
+    : localCheckSlot.value
+      ? formatDuration(localCheckSlot.value.ageMs)
+      : null;
+  const scopeWhereLine = run
+    ? (() => {
+        const where = scopeWhere(run.scope, checkMachine.value ?? run.machine);
+        if (where === "Full check") return null;
+        const machine = checkMachine.value ?? run.machine;
+        return machine ? `${where} · ${machine}` : where;
+      })()
+    : null;
+  return {
+    progress,
+    elapsed,
+    reused: isReusedCheckOutput(run?.output),
+    scopeLine: scopeWhereLine,
+    machineLine: scopeWhereLine
+      ? null
+      : (checkMachine.value ?? run?.machine ?? status?.machine ?? null),
+    retryLine: checksAutoRetryLine.value,
+  };
+});
 
 const lastCheckRun = computed(() => {
   const id = ui.active?.id;
@@ -5517,7 +5569,8 @@ watch(
                 v-if="
                   !isHumanTask &&
                   (ui.active.status === 'ready' || ui.active.status === 'active') &&
-                  (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))
+                  (ui.active.status === 'ready' || !repo.isRunning(ui.active.id)) &&
+                  !activeChecksBusy
                 "
                 data-test-id="task-drawer-start-work"
                 variant="status"
@@ -5540,7 +5593,8 @@ watch(
                   !isHumanTask &&
                   ui.active.status === 'active' &&
                   !repo.isRunning(ui.active.id) &&
-                  !handoffBusy
+                  !handoffBusy &&
+                  !activeChecksBusy
                 "
                 data-test-id="task-drawer-request-review"
                 variant="status"
@@ -5553,7 +5607,12 @@ watch(
                 Review
               </Button>
               <Button
-                v-if="!isHumanTask && ui.active.status === 'active' && repo.isRunning(ui.active.id)"
+                v-if="
+                  !isHumanTask &&
+                  ui.active.status === 'active' &&
+                  repo.isRunning(ui.active.id) &&
+                  !activeChecksBusy
+                "
                 variant="outline"
                 :disabled="ui.saving"
                 @click="pauseWork"
@@ -5918,40 +5977,19 @@ watch(
               :class="index === 0 ? 'drawer-status-l2' : 'drawer-status-l3'"
               >{{ line }}</span
             >
-            <div
-              v-if="showStatusProgress"
-              class="check-progress close-out-check-progress"
-              data-test-id="close-out-check-progress"
-              role="status"
-            >
-              <span v-if="statusProgressPercent != null" class="check-progress-meter">
-                <progress
-                  :value="statusProgressPercent"
-                  max="100"
-                  aria-label="Checks running progress"
-                />
-              </span>
-              <span
-                >{{ statusProgressLabel
-                }}<template v-if="handoffBusy"> · {{ handoffStepLabel }}</template></span
-              >
-              <span
-                v-if="
-                  statusProgress?.attempt ||
-                  checkMachine ||
-                  repo.handoffStatuses[ui.active.id]?.attempt ||
-                  repo.handoffStatuses[ui.active.id]?.machine
-                "
-                >{{
-                  (statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt)
-                    ? `attempt ${statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt}`
-                    : ""
-                }}<template v-if="checkMachine ?? repo.handoffStatuses[ui.active.id]?.machine">
-                  · on
-                  {{ checkMachine ?? repo.handoffStatuses[ui.active.id]?.machine }}</template
-                ></span
-              >
-            </div>
+            <ChecksProgressDisplay
+              v-if="showStatusProgress && drawerChecksDisplay"
+              class="close-out-check-progress"
+              variant="drawer"
+              test-id="close-out-check-progress"
+              :show-title="true"
+              :progress="drawerChecksDisplay.progress"
+              :elapsed="drawerChecksDisplay.elapsed"
+              :reused="drawerChecksDisplay.reused"
+              :scope-line="drawerChecksDisplay.scopeLine"
+              :machine-line="drawerChecksDisplay.machineLine"
+              :retry-line="drawerChecksDisplay.retryLine"
+            />
           </button>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
