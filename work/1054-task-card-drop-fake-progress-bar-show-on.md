@@ -1,5 +1,5 @@
 ---
-id: 1054
+id: "1054"
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
 status: active
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T16:13:41Z"
+updated_at: "2026-11-07T16:22:49Z"
 last_check_failure: "repoos check at 2026-11-07T15:39:14.366Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
@@ -116,4 +116,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T16:04:50Z · body
 - 2026-11-07T16:10:54Z · note: handoff requested (ui-review)
 - 2026-11-07T16:13:41Z · CTO nudge: held — handoff gate is running
-
+- 2026-11-07T16:22:49Z · body
