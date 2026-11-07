@@ -13,7 +13,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T20:02:32Z"
+updated_at: "2026-11-07T20:03:37Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -83,16 +83,16 @@ right before writing new CSS.
 ```json
 [
 {
-"label": "Human task completion report modal",
-"target": "default",
-"route": "/work?task=9999&tab=details",
-"highlight": ".human-done-modal",
-"steps": [
-{
-"click": ".drawer-human-task button"
-}
-],
-"state": "card:noChanges"
+  "label": "Human task completion report modal",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".human-done-modal",
+  "steps": [
+    {
+      "click": "[data-task-id=\"9999\"] .drawer-human-task button"
+    }
+  ],
+  "state": "card:humanStep"
 }
 ]
 ```
@@ -167,3 +167,4 @@ right before writing new CSS.
 - 2026-11-07T20:02:00Z · message_delivered: 1 message(s)
 - 2026-11-07T20:02:02Z · message_queued at 2026-11-07T20:02:02.462Z
 - 2026-11-07T20:02:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T20:03:37Z · body
