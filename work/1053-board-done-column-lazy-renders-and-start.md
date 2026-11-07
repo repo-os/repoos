@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
@@ -47,3 +48,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T12:42:52Z · model_override
 - 2026-11-07T12:43:07Z · status ready→active, branch
 - 2026-11-07T12:45:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1053 is **not complete**. I read the full specification and confirmed that the Done column currently instantiates cards even when collapsed. The baseline build passed, but I did not obtain the required before measurements or implemen… · stderr: Reading additional input from stdin...
+
