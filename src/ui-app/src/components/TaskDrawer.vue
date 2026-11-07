@@ -1065,9 +1065,7 @@ const drawerStatusSummary = computed(() => {
     lines = compactStatusLines(cardChecksHeading.value);
   } else if (key === "checksRunning" && handoffBusy.value) {
     motion = "reviewing";
-    lines = activeCheckRun.value
-      ? compactStatusLines(cardChecksHeading.value)
-      : compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…");
+    lines = compactStatusLines(cardChecksHeading.value);
   } else if (key === "integrating") {
     motion = "reviewing";
     lines = compactStatusLines(integrationCardLabel.value ?? "integrating");
@@ -1106,7 +1104,7 @@ const drawerStatusSummary = computed(() => {
   } else if (key === "confirmingHandoff") {
     motion = "reviewing";
     lines = handoffBusy.value
-      ? compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…")
+      ? compactStatusLines(cardChecksHeading.value)
       : compactStatusLines(
           AWAITING_FRESH_REVIEW_LABEL,
           "The visible review report is older than the latest handoff.",
