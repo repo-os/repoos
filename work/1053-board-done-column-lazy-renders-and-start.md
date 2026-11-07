@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/board-done-column-lazy-renders-and-start
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T08:04:58Z"
-updated_at: "2026-11-07T13:23:41Z"
+updated_at: "2026-11-07T13:49:56Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -76,3 +76,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T13:13:43Z · note: adopted orphaned engineer pid 10769
 - 2026-11-07T13:17:07Z · body
 - 2026-11-07T13:23:41Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T13:49:56Z · message_queued at 2026-11-07T13:49:56.588Z
