@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 260362
-last_close_out_gate_at: "2026-11-07T15:36:14.882Z"
 id: 1051
 title: "Fix depends_on dropping task ids from 1000 up (written unquoted, parsed as number)"
 type: bug
-status: review
+status: done
 priority: p1
 area: core
+merged_commit: e74d0fa1ee5d6b37e1fa8ff2f1f57b531d4e9fea
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fix-depends-on-dropping-task-ids-from-10
 created_at: "2026-11-07T07:23:45Z"
 updated_at: "2026-11-07T15:36:14Z"
+last_close_out_gate_ms: 260362
+last_close_out_gate_at: "2026-11-07T15:36:14.882Z"
 review_passes: 1
 ---
 ## Problem
