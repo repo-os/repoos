@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 831c9b037a8e4b435aa382d13a7c1bf4a803e1e3
 id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
@@ -14,6 +12,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
 updated_at: "2026-11-07T21:48:54Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 831c9b037a8e4b435aa382d13a7c1bf4a803e1e3
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -184,4 +184,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T21:23:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T21:48:54Z · message_queued at 2026-11-07T21:48:54.285Z
 - 2026-11-07T21:48:54Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-07T21:48:54Z · message_delivered: 1 message(s)
