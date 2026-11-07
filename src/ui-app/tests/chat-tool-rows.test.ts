@@ -1040,9 +1040,14 @@ describe("CLI diagnostic presentation", () => {
       { s: "out", d: "retrying" },
       { s: "err", d: "third failure" },
     ]);
-    expect(rows).toHaveLength(4);
-    expect(messages(rows)[0].text).toContain("first failure\ndetails");
-    expect(messages(rows)[1].text).toContain("second failure");
+    expect(rows).toHaveLength(5);
+    expect(messages(rows).map((row) => row.text)).toEqual([
+      "2026-09-27T14:19:40Z ERROR router: first failure",
+      "details",
+      "2026-09-27T14:21:42Z ERROR router: second failure",
+      "retrying",
+      "third failure",
+    ]);
   });
 
   it("starts collapsed with a readable patch summary and preserves selectable details", () => {

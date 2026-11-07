@@ -255,6 +255,22 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
       last.at = latestAt(last.entries) ?? last.at;
       continue;
     }
+    // A timestamped diagnostic often continues with indented source/detail
+    // lines. Keep those attached to that one diagnostic while leaving a new
+    // timestamped record or any non-indented stderr line as its own row.
+    if (
+      !("type" in entry) &&
+      entry.s === "err" &&
+      last?.kind === "line" &&
+      last.s === "err" &&
+      /^\s/.test(text) &&
+      !/^\d{4}-\d{2}-\d{2}T\S+\s+(?:ERROR|WARN|INFO|DEBUG)\b/.test(text)
+    ) {
+      last.text += "\n" + rawText;
+      last.entries.push(entry);
+      last.at = latestAt(last.entries) ?? last.at;
+      continue;
+    }
     // Consecutive assistant text parts are one message. opencode streams a
     // reply part by part; without this they render as several stacked bubbles.
     if (last && last.kind === "text" && isAssistantText) {
