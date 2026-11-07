@@ -1,8 +1,8 @@
 ---
-id: 1049
+id: "1049"
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: review
+status: active
 priority: p0
 area: server
 assigned_to: ai
@@ -12,8 +12,8 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T21:40:49Z"
-review_passes: 7
+updated_at: "2026-11-07T22:07:54Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-11-07T15:55:08.194Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T07:19:30.902Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:38:04.474Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:51:34.771Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -361,3 +361,16 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T21:40:49Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-07T21:40:49Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-07T21:40:49Z · message_queued at 2026-11-07T21:40:49.899Z
+- 2026-11-07T21:43:10Z · note: review pass 8: needs some work
+- 2026-11-07T21:43:10Z · needs_input
+- 2026-11-07T21:51:53Z · status review→active
+- 2026-11-07T21:51:53Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-07T21:51:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T21:51:57Z · message_delivered: 1 message(s)
+- 2026-11-07T21:51:57Z · needs_input
+- 2026-11-07T21:51:58Z · message_queued at 2026-11-07T21:51:58.735Z
+- 2026-11-07T21:52:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’m blocked from editing the reaper fix while task #1049 is in `review`. The provided finding confirms a real cross-process ownership race, but RepoOS rules require the task to be returned to `active` before its branch is edited. I attempt… · stderr: Reading additional input from stdin...
+- 2026-11-07T21:52:53Z · status active→review
+- 2026-11-07T21:52:53Z · message_delivered: 1 message(s)
+- 2026-11-07T21:52:54Z · note: handoff requested (cli)
+- 2026-11-07T22:07:54Z · body
