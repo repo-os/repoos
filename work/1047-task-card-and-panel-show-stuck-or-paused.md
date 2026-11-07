@@ -12,7 +12,7 @@ branch: feat/task-card-and-panel-show-running-checks-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T12:37:11Z"
+updated_at: "2026-11-07T12:38:41Z"
 last_close_out_gate_ms: 279972
 last_close_out_gate_at: "2026-11-07T12:37:11.120Z"
 review_passes: 4
@@ -202,4 +202,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T11:44:30Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c4e74523b) during finalization (#0734)
 - 2026-11-07T11:47:25Z · note: review pass 6: good to go
 - 2026-11-07T12:37:11Z · close-out gate completed in 280s
-
+- 2026-11-07T12:38:41Z · status done→done, release:success
