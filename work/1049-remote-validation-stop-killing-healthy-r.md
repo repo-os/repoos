@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 646745
-last_close_out_gate_at: "2026-11-07T23:42:39.498Z"
 id: "1049"
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: review
+status: done
 priority: p0
 area: server
+merged_commit: b0ad295ec14228c9d68e899f022a55c9ab50e4fa
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-validation-stop-killing-healthy-r
@@ -15,6 +14,8 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
 updated_at: "2026-11-07T23:42:39Z"
+last_close_out_gate_ms: 646745
+last_close_out_gate_at: "2026-11-07T23:42:39.498Z"
 review_passes: 10
 last_check_failure: "repoos check at 2026-11-07T15:55:08.194Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
