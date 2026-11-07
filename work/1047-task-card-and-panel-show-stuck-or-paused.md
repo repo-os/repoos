@@ -143,3 +143,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T07:51:35Z · body
 - 2026-11-07T08:00:54Z · body
 - 2026-11-07T08:03:32Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-07T08:03:32Z · message_queued at 2026-11-07T08:03:32.980Z
