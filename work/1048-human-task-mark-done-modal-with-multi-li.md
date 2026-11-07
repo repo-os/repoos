@@ -19,8 +19,6 @@ routing_switches: 1
 routing_escalations: 1
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-07T20:37:20.985Z: repoos check failed: reused check inputs changed during handoff — run the check again"
-last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
-last_handoff_failure_sha: ec05d12b44136bc03515ff7cdc063c851668741a
 ---
 ## Problem
 
@@ -196,3 +194,4 @@ right before writing new CSS.
 - 2026-11-07T21:14:13Z · body
 - 2026-11-07T21:18:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T21:40:40Z · status active→review
+
