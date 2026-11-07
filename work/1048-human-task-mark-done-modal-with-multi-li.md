@@ -18,7 +18,6 @@ review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 review_passes: 3
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T20:37:20.985Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: ec05d12b44136bc03515ff7cdc063c851668741a
@@ -196,3 +195,4 @@ right before writing new CSS.
 - 2026-11-07T21:13:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T21:14:13Z · body
 - 2026-11-07T21:18:41Z · CTO nudge: held — handoff gate is running
+
