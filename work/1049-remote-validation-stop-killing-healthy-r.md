@@ -212,3 +212,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T14:23:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T14:29:11Z · body
 - 2026-11-07T14:32:15Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T14:32:15Z · message_queued at 2026-11-07T14:32:15.396Z
