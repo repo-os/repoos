@@ -85,3 +85,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T01:34:18Z · body
 - 2026-11-07T01:37:50Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T01:56:16Z · note: ui verification failed (1 issue(s)): [missing-target] Task panel check progress bar (target "default"): highlight [data-test-id="close-out-check-progress"] matched nothing on /work (http://127.0.0.1:55797/work?shotState=closeOut%3AcheckProgress)
+- 2026-11-07T01:56:16Z · message_queued at 2026-11-07T01:56:16.752Z
