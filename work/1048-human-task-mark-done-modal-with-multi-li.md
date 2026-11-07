@@ -83,9 +83,9 @@ right before writing new CSS.
 "route": "/work?task=9999&tab=details",
 "highlight": ".human-done-modal",
 "steps": [
-  {
-    "click": ".drawer-human-task button"
-  }
+{
+  "click": ".drawer-human-task button"
+}
 ],
 "state": "card:noChanges"
 }
@@ -145,3 +145,4 @@ right before writing new CSS.
 - 2026-11-07T18:27:11Z · body
 - 2026-11-07T18:27:22Z · body
 - 2026-11-07T18:28:41Z · message_queued at 2026-11-07T18:28:41.358Z
+- 2026-11-07T18:28:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
