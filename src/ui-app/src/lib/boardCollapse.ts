@@ -161,11 +161,17 @@ let defaultsApplied = false;
 export function applyCollapseDefaults(repo: {
   byStatus: (s: string) => unknown[];
   columns: readonly Column[];
+  doneCollapsedByDefault?: boolean;
 }): void {
   if (defaultsApplied) return;
   defaultsApplied = true;
   if (hadSavedState) return;
   const ids = ["draft", ...repo.columns.map((c) => c.id)];
-  collapsedIds.value = new Set(ids.filter((id) => repo.byStatus(id).length === 0));
+  collapsedIds.value = new Set(
+    ids.filter(
+      (id) =>
+        repo.byStatus(id).length === 0 || (id === "done" && repo.doneCollapsedByDefault !== false),
+    ),
+  );
   persist();
 }

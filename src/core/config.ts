@@ -323,6 +323,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   worktreeWarnThreshold: 20,
   board: {
     agentPopoverCloseSeconds: 15,
+    doneCollapsedByDefault: true,
   },
   whisper: {
     provider: "none",
@@ -1650,6 +1651,9 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       cfg.worktreeWarnThreshold = Math.floor(worktreeWarnThreshold);
     else if (typeof worktreeWarnThreshold === "string" && /^\d+$/.test(worktreeWarnThreshold))
       cfg.worktreeWarnThreshold = Number(worktreeWarnThreshold);
+    const doneCollapsedByDefault = get("board.doneCollapsedByDefault");
+    if (typeof doneCollapsedByDefault === "boolean")
+      cfg.board = { ...cfg.board, doneCollapsedByDefault };
     const popoverClose = get("board.agentPopoverCloseSeconds");
     const popoverCloseNum =
       typeof popoverClose === "number"
@@ -3093,6 +3097,15 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Advisory ceiling on registered git worktrees. Above it, the Control page's Codebase card turns amber and the server logs a `repoos gc` reminder. Never blocks a task.",
     },
     {
+      key: "board.doneCollapsedByDefault",
+      label: "Start Done collapsed",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+      description: "Collapse Done for browsers without a saved board preference.",
+    },
+    {
       key: "board.agentPopoverCloseSeconds",
       label: "Agent popover auto-close",
       type: "number",
@@ -4311,6 +4324,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "cto.nudgeCooldownMs",
   "skillSuggestions",
   "worktreeWarnThreshold",
+  "board.doneCollapsedByDefault",
   "board.agentPopoverCloseSeconds",
   "dev.inspector.enabled",
   "dev.inspector.editorCommand",

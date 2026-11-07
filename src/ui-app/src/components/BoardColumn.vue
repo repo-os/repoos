@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import { COLUMNS, useRepoStore } from "../stores/repo";
+import { COLUMNS, sortTasks, useRepoStore } from "../stores/repo";
 import type { Column } from "../stores/repo";
 import type { Task } from "../types";
 import { useConfigStore } from "../stores/config";
@@ -52,13 +52,80 @@ const displayEmpty = computed(() =>
 watch(
   () => repo.loading,
   (loading) => {
-    if (!loading) applyCollapseDefaults({ byStatus: repo.byStatus, columns: COLUMNS });
+    if (!loading) {
+      const board = config.data?.board as { doneCollapsedByDefault?: boolean } | undefined;
+      applyCollapseDefaults({
+        byStatus: repo.byStatus,
+        columns: COLUMNS,
+        doneCollapsedByDefault: board?.doneCollapsedByDefault,
+      });
+    }
   },
   { immediate: true },
 );
 
 const bodyEl = ref<HTMLElement | null>(null);
 const scrollable = ref(false);
+
+// The column keeps a bounded slice mounted. Heights are learned from rendered
+// cards so long titles and different card contents retain a useful scroll range.
+const WINDOW_SIZE = 40;
+const ESTIMATED_HEIGHT = 150;
+const GAP = 10;
+const scrollTop = ref(0);
+const heightVersion = ref(0);
+const heights = new Map<string, number>();
+let cardObserver: ResizeObserver | null = null;
+const columnTasks = computed(() => {
+  const tasks = repo.byStatus(props.col.id);
+  return props.col.id === "done" && repo.sortOrder === "current"
+    ? sortTasks(tasks, "recent", "done")
+    : tasks;
+});
+const offsets = computed(() => {
+  void heightVersion.value;
+  const result = [0];
+  for (const task of columnTasks.value)
+    result.push(result[result.length - 1] + (heights.get(task.id) ?? ESTIMATED_HEIGHT) + GAP);
+  return result;
+});
+const windowStart = computed(() => {
+  if (props.col.id !== "done") return 0;
+  const positions = offsets.value;
+  let lo = 0,
+    hi = columnTasks.value.length;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (positions[mid + 1] < scrollTop.value) lo = mid + 1;
+    else hi = mid;
+  }
+  return Math.min(Math.max(0, lo - 10), Math.max(0, columnTasks.value.length - WINDOW_SIZE));
+});
+const windowEnd = computed(() =>
+  Math.min(columnTasks.value.length, windowStart.value + WINDOW_SIZE),
+);
+const renderedTasks = computed(() =>
+  collapsed.value
+    ? []
+    : props.col.id === "done"
+      ? columnTasks.value.slice(windowStart.value, windowEnd.value)
+      : columnTasks.value,
+);
+const topSpace = computed(() => offsets.value[windowStart.value]);
+const bottomSpace = computed(
+  () => offsets.value[columnTasks.value.length] - offsets.value[windowEnd.value],
+);
+function observeCards() {
+  if (!cardObserver || !bodyEl.value) return;
+  cardObserver.disconnect();
+  bodyEl.value
+    .querySelectorAll<HTMLElement>("[data-virtual-task]")
+    .forEach((el) => cardObserver!.observe(el));
+}
+function onScroll() {
+  scrollTop.value = bodyEl.value?.scrollTop ?? 0;
+}
+watch(renderedTasks, () => nextTick(observeCards));
 
 let mo: MutationObserver | null = null;
 let ro: ResizeObserver | null = null;
@@ -69,9 +136,26 @@ const checkScroll = () => {
 };
 
 onMounted(() => {
+  if (props.col.id === "done" && repo.doneAckCount > 0 && collapsed.value)
+    toggleColumnCollapsed("done");
   const el = bodyEl.value;
   if (!el) return;
   checkScroll();
+  if ("ResizeObserver" in window) {
+    cardObserver = new ResizeObserver((entries) => {
+      let changed = false;
+      for (const entry of entries) {
+        const id = (entry.target as HTMLElement).dataset.virtualTask;
+        const height = entry.contentRect.height;
+        if (id && height > 0 && heights.get(id) !== height) {
+          heights.set(id, height);
+          changed = true;
+        }
+      }
+      if (changed) heightVersion.value++;
+    });
+    observeCards();
+  }
   mo = new MutationObserver(() => checkScroll());
   mo.observe(el, { childList: true, subtree: true });
   if ("ResizeObserver" in window) {
@@ -81,6 +165,7 @@ onMounted(() => {
   window.addEventListener("resize", checkScroll);
 });
 onUnmounted(() => {
+  cardObserver?.disconnect();
   mo?.disconnect();
   ro?.disconnect();
   window.removeEventListener("resize", checkScroll);
@@ -356,17 +441,28 @@ const unackedBadge = computed(() =>
         />
       </svg>
     </div>
-    <div ref="bodyEl" class="col-body">
+    <div ref="bodyEl" class="col-body" @scroll.passive="onScroll">
       <div v-if="leavingTaskName" class="board-ghost" :key="'ghost-' + repo.transitionState?.id">
         Moved to {{ repo.transitionState?.to }}
       </div>
-      <TaskCard
-        v-for="t in repo.byStatus(col.id)"
+      <div
+        v-if="col.id === 'done' && !collapsed && topSpace"
+        :style="{ height: `${Math.max(0, topSpace - 10)}px`, flexShrink: 0 }"
+        aria-hidden="true"
+      ></div>
+      <div
+        v-for="t in renderedTasks"
         :key="t.id"
-        :task="t"
-        :drag-enabled="dragEnabled"
-        :highlighted="props.highlightId === t.id"
-      />
+        :data-virtual-task="col.id === 'done' ? t.id : undefined"
+        style="flex-shrink: 0"
+      >
+        <TaskCard :task="t" :drag-enabled="dragEnabled" :highlighted="props.highlightId === t.id" />
+      </div>
+      <div
+        v-if="col.id === 'done' && !collapsed && bottomSpace"
+        :style="{ height: `${Math.max(0, bottomSpace - 10)}px`, flexShrink: 0 }"
+        aria-hidden="true"
+      ></div>
       <div v-if="!repo.byStatus(col.id).length" class="col-empty">{{ displayEmpty }}</div>
     </div>
   </div>
