@@ -59,11 +59,11 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 ```json
 [
 {
-"label": "Task panel check progress bar",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": "[data-test-id=\"close-out-check-progress\"]",
-"state": "closeOut:checkProgress"
+  "label": "Task drawer showing live check progress, attempt and machine",
+  "target": "default",
+  "route": "/work?task=1047&tab=changes",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "closeOut:checkProgress"
 }
 ]
 ```
@@ -139,3 +139,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T07:32:12Z · message_queued at 2026-11-07T07:32:12.498Z
 - 2026-11-07T07:32:40Z · message_queued at 2026-11-07T07:32:40.539Z
 - 2026-11-07T07:33:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T07:33:04Z · body
