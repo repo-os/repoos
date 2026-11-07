@@ -158,6 +158,7 @@ describe("task panel status label matches the board card (#1023)", () => {
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     // A running state carries the Settings-selected activity animation.
     expect(drawer.find(".drawer-status-l1 .ai").exists()).toBe(true);
+    expect(drawer.find('[data-test-id="close-out-check-progress"] progress').exists()).toBe(true);
     card.unmount();
     drawer.unmount();
   });
@@ -188,6 +189,40 @@ describe("task panel status label matches the board card (#1023)", () => {
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     expect(drawer.text()).not.toContain("Quiet — may be stalled");
     expect(drawer.text()).not.toContain("stuck · silent");
+    const progress = drawer.get('[data-test-id="close-out-check-progress"] progress');
+    expect(progress.exists()).toBe(true);
+    expect(progress.attributes("value")).toBeUndefined();
+    card.unmount();
+    drawer.unmount();
+  });
+
+  it("uses persisted handoff status after reload when no check run or SSE step exists", async () => {
+    const task = activeTask();
+    stubApi(task);
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [];
+
+    const card = await mountCard(pinia, task);
+    const drawer = await mountDrawer(pinia, task);
+    repo.handoffStatuses[task.id] = {
+      state: "running",
+      step: "verify",
+      startedAt: new Date(Date.now() - 75_000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      attempt: 1,
+      progress: null,
+      machine: null,
+    };
+    await flush();
+
+    const expected = cardLabel(card);
+    expect(expected).toMatch(/^running checks · verify · /);
+    expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
+    expect(drawer.text()).not.toContain("Quiet — may be stalled");
+    expect(drawer.text()).not.toContain("stuck · silent");
+    const progress = drawer.get('[data-test-id="close-out-check-progress"] progress');
+    expect(progress.exists()).toBe(true);
+    expect(progress.attributes("value")).toBeUndefined();
     card.unmount();
     drawer.unmount();
   });
