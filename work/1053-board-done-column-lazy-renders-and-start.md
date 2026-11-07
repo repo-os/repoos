@@ -10,7 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/board-done-column-lazy-renders-and-start
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T08:04:58Z"
-updated_at: "2026-11-07T13:04:11Z"
+updated_at: "2026-11-07T13:13:43Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -56,9 +56,9 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 "route": "/work",
 "highlight": "[data-board-column=\"done\"]",
 "steps": [
-  {
-    "click": "[data-board-column=\"done\"] .col-head"
-  }
+{
+  "click": "[data-board-column=\"done\"] .col-head"
+}
 ]
 }
 ]
@@ -73,3 +73,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T12:45:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1053 is **not complete**. I read the full specification and confirmed that the Done column currently instantiates cards even when collapsed. The baseline build passed, but I did not obtain the required before measurements or implemen… · stderr: Reading additional input from stdin...
 - 2026-11-07T12:51:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1053 remains incomplete, so I have not requested handoff. I collected a preliminary three-run baseline with 1,000 synthetic Done tasks: each run rendered 1,000 Done cards and 21,053 board descendant elements. The median navigation-to… · stderr: Reading additional input from stdin...
 - 2026-11-07T13:04:11Z · body
+- 2026-11-07T13:13:43Z · note: adopted orphaned engineer pid 10769
