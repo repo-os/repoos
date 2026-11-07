@@ -2,14 +2,14 @@
 id: "1055"
 title: Review and safely clean task worktrees
 type: chore
-status: ready
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: schedule
-branch: ""
+branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-07T22:37:10Z"
+updated_at: "2026-11-07T23:51:45Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 ## Activity
 
 - 2026-11-07T22:37:10Z · created · schedule
+- 2026-11-07T23:51:45Z · status ready→active, branch
