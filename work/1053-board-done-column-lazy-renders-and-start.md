@@ -45,21 +45,21 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 ```json
 [
 {
-  "label": "Done column collapsed by default",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-board-column=\"done\"]"
+"label": "Done column collapsed by default",
+"target": "default",
+"route": "/work",
+"highlight": "[data-board-column=\"done\"]"
 },
 {
-  "label": "Done column expanded",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-board-column=\"done\"]",
-  "steps": [
-    {
-      "click": "[data-board-column=\"done\"] .col-head"
-    }
-  ]
+"label": "Done column expanded",
+"target": "default",
+"route": "/work",
+"highlight": "[data-board-column=\"done\"]",
+"steps": [
+  {
+    "click": "[data-board-column=\"done\"] .col-head"
+  }
+]
 }
 ]
 ```
