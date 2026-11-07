@@ -3,9 +3,6 @@ id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — explicit container inactivity is ignored whenever the host is known to be busy.
 priority: p0
 area: server
 assigned_to: ai
@@ -295,3 +292,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T17:32:04Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-07T17:32:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T17:32:11Z · message_delivered: 1 message(s)
+- 2026-11-07T17:32:11Z · needs_input
