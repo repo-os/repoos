@@ -76,7 +76,7 @@ describe("toDisplayRows — run splitting", () => {
     const rows = toDisplayRows(entries);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ kind: "line", repeatCount: 21, firstAt: AT_0, at: AT_1 });
-    expect(rows[0].entries).toHaveLength(21);
+    expect(messages(rows)[0].entries).toHaveLength(21);
     expect(toDisplayRows([...entries, { s: "err", d: "different diagnostic", at: AT_2 }])).toHaveLength(2);
   });
   it("collapses a maximal run of adjacent tool calls into one row", () => {
