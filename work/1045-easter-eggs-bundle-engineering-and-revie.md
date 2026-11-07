@@ -84,3 +84,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T03:09:08Z · message_delivered: 1 message(s)
 - 2026-11-07T03:11:10Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:51875/api/tasks/9999/summary (http://127.0.0.1:51875/api/tasks/9999/summary); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:51875/api/tasks/9999/summary)
 - 2026-11-07T03:19:03Z · message_queued at 2026-11-07T03:19:03.553Z
+- 2026-11-07T03:19:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
