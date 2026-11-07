@@ -212,3 +212,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T13:54:37Z · body
 - 2026-11-07T13:57:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T14:21:09Z · note: ui verification failed (1 issue(s)): [missing-target] Task debug events with expanded remote details (target "default"): highlight .debug-event[data-debug-event^="remote-"] matched nothing on /work?task=9999&tab=debug (http://127.0.0.1:50411/work?shotState=drawer:debugLogs)
+- 2026-11-07T14:21:09Z · message_queued at 2026-11-07T14:21:09.547Z
