@@ -67,6 +67,18 @@ function messages(rows: DisplayRow[]) {
 }
 
 describe("toDisplayRows — run splitting", () => {
+  it("collapses consecutive identical stderr lines with count and time bounds", () => {
+    const entries = Array.from({ length: 21 }, (_, i) => ({
+      s: "err" as const,
+      d: "ERROR codex_core: missing tool output",
+      at: i === 0 ? AT_0 : AT_1,
+    }));
+    const rows = toDisplayRows(entries);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kind: "line", repeatCount: 21, firstAt: AT_0, at: AT_1 });
+    expect(rows[0].entries).toHaveLength(21);
+    expect(toDisplayRows([...entries, { s: "err", d: "different diagnostic", at: AT_2 }])).toHaveLength(2);
+  });
   it("collapses a maximal run of adjacent tool calls into one row", () => {
     const rows = toDisplayRows([tool("bash", "completed", AT_0), tool("read", "completed", AT_1)]);
     expect(rows).toHaveLength(1);
@@ -1040,14 +1052,14 @@ describe("CLI diagnostic presentation", () => {
     expect(wrapper.find("details").attributes("open")).toBeUndefined();
     expect(wrapper.find("summary").text()).toContain("Patch could not be applied");
     expect(wrapper.find("summary").text()).not.toContain("codex_core");
-    expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(true);
+    expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
     expect(wrapper.find("pre").text()).toBe(raw);
     expect(wrapper.find("time").exists()).toBe(true);
   });
 
   it("does not label ordinary stderr notices as errors", () => {
     const wrapper = mount(ChatDiagnosticRow, { props: { text: "Downloading browser…" } });
-    expect(wrapper.find(".agent-diagnostic-label").text()).toBe("Diagnostic");
+    expect(wrapper.find(".agent-diagnostic-label").text()).toBe("Agent output");
     expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
   });
 });

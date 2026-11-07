@@ -50,7 +50,6 @@ const message = ref("");
 const busy = ref(false);
 const error = ref("");
 const hookOutput = ref("");
-const committedNote = ref("");
 
 const patch = ref("");
 const truncated = ref(false);
@@ -104,7 +103,6 @@ watch(open, (isOpen) => {
   if (!isOpen) return;
   error.value = "";
   hookOutput.value = "";
-  committedNote.value = "";
   // The button only opens on a live snapshot, but a refresh here keeps the
   // panel and the sidebar chip honest if they were opened moments apart.
   void repo.refreshGitStatus();
@@ -124,7 +122,6 @@ async function commit(): Promise<void> {
   busy.value = true;
   error.value = "";
   hookOutput.value = "";
-  committedNote.value = "";
   try {
     const r = await repo.commitRepoRoot(message.value);
     message.value = "";
@@ -133,13 +130,12 @@ async function commit(): Promise<void> {
     // sidebar chip (the commit route also pushes `repo.status`).
     patch.value = "";
     truncated.value = false;
-    committedNote.value = `Committed ${r.files} file${r.files === 1 ? "" : "s"} to ${r.branch} (${r.sha}).`;
     repo.pushToast(
       `Committed ${r.files} file${r.files === 1 ? "" : "s"} to ${r.branch} (${r.sha})`,
       "success",
     );
     await repo.refreshGitStatus();
-    if (dirtyCount.value > 0) void loadDiff();
+    open.value = false;
   } catch (err) {
     error.value = err instanceof Error ? err.message : "Commit failed";
     const body =
@@ -184,10 +180,6 @@ function onKeydown(e: KeyboardEvent): void {
       </div>
 
       <div class="drawer-body repo-dirty-body">
-        <p v-if="committedNote && dirtyCount === 0" class="repo-dirty-success" role="status">
-          {{ committedNote }}
-        </p>
-
         <template v-if="dirtyCount > 0">
           <section class="repo-dirty-sec">
             <h3>Changed files</h3>
@@ -230,7 +222,7 @@ function onKeydown(e: KeyboardEvent): void {
           </section>
         </template>
 
-        <p v-else-if="!committedNote" class="repo-dirty-note">
+        <p v-else-if="!error" class="repo-dirty-note">
           Nothing is uncommitted in this checkout.
         </p>
       </div>
