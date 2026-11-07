@@ -2,18 +2,18 @@
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
-status: ready
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/task-card-and-panel-show-running-checks-
 cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T00:50:01Z"
+updated_at: "2026-11-07T00:50:03Z"
 ---
 ## Problem
 
@@ -67,3 +67,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T00:49:57Z · review_cli_override
 - 2026-11-07T00:49:57Z · review_model_override
 - 2026-11-07T00:50:01Z · status inbox→ready
+- 2026-11-07T00:50:03Z · status ready→active, branch
