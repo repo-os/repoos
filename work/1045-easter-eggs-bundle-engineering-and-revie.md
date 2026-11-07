@@ -78,3 +78,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T02:37:50Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T02:44:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T03:09:05Z · message_queued at 2026-11-07T03:09:05.440Z
+- 2026-11-07T03:09:05Z · handoff failed · handoff recovery attempted · finalization failed
