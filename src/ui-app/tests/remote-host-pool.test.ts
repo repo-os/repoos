@@ -599,7 +599,9 @@ function poolFixture(opts: {
         if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
           return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
         }
-        if (cmd.includes("Reaping stale validation container")) {
+        // The periodic container reaper lists candidates independently of
+        // validation jobs. Most dispatch fixtures have no stale containers.
+        if (cmd.startsWith("docker ps -aq --filter 'name=^/repoos-validate-")) {
           return { code: 0, output: "", timedOut: false };
         }
         if (opts.timeoutRunOn?.includes(host.ip)) {
