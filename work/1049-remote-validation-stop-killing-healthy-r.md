@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T20:02:16Z"
+updated_at: "2026-11-07T20:03:41Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-07T15:55:08.194Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -347,3 +347,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T20:02:15Z · message_delivered: 1 message(s)
 - 2026-11-07T20:02:15Z · needs_input
 - 2026-11-07T20:02:16Z · message_queued at 2026-11-07T20:02:16.904Z
+- 2026-11-07T20:03:41Z · CTO nudge: held — an undelivered message is already queued
