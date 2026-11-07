@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T07:33:04Z"
+updated_at: "2026-11-07T07:51:35Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-07T03:51:58.074Z: repoos check failed: ui verification failed (14 issue(s)): [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/handoff-status (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/summary (http://127.0.0.1:54780/api/tasks/9999/summary); [request] Failed to load resource: the server … (truncated)"
@@ -59,11 +59,11 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 ```json
 [
 {
-  "label": "Task drawer showing live check progress, attempt and machine",
-  "target": "default",
-  "route": "/work?task=1047&tab=changes",
-  "highlight": "[data-test-id=\"close-out-check-progress\"]",
-  "state": "closeOut:checkProgress"
+"label": "Task drawer showing live check progress, attempt and machine",
+"target": "default",
+"route": "/work?task=1047&tab=changes",
+"highlight": "[data-test-id=\"close-out-check-progress\"]",
+"state": "closeOut:checkProgress"
 }
 ]
 ```
@@ -140,3 +140,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T07:32:40Z · message_queued at 2026-11-07T07:32:40.539Z
 - 2026-11-07T07:33:04Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T07:33:04Z · body
+- 2026-11-07T07:51:35Z · body
