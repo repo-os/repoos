@@ -219,3 +219,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T14:33:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T14:38:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T14:59:12Z · status active→review
+- 2026-11-07T14:59:12Z · message_queued at 2026-11-07T14:59:12.588Z
