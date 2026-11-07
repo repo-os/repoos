@@ -383,3 +383,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T22:51:53Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T22:56:02Z · body
 - 2026-11-07T22:57:03Z · status active→review
+- 2026-11-07T22:57:03Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
