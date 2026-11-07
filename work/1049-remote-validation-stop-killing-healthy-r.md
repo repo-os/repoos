@@ -2,18 +2,18 @@
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: ready
+status: active
 priority: p0
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/remote-validation-stop-killing-healthy-r
 cli_override: claude code
 model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T03:51:17Z"
+updated_at: "2026-11-07T03:51:19Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T03:51:16Z · review_cli_override
 - 2026-11-07T03:51:17Z · review_model_override
 - 2026-11-07T03:51:17Z · status inbox→ready
+- 2026-11-07T03:51:19Z · status ready→active, branch
