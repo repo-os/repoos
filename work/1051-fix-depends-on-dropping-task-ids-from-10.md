@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fix-depends-on-dropping-task-ids-from-10
 created_at: "2026-11-07T07:23:45Z"
-updated_at: "2026-11-07T15:38:36Z"
+updated_at: "2026-11-07T15:39:10Z"
 last_close_out_gate_ms: 260362
 last_close_out_gate_at: "2026-11-07T15:36:14.882Z"
 review_passes: 1
@@ -52,3 +52,4 @@ Cause (read from the code): `repoos update --depends-on` writes the frontmatter 
 - 2026-11-07T15:27:59Z · note: review pass 1: good to go
 - 2026-11-07T15:36:14Z · close-out gate completed in 260s
 - 2026-11-07T15:38:36Z · status done→done, release:success
+- 2026-11-07T15:39:10Z · message_dropped: 1 queued message(s) discarded — task is done
