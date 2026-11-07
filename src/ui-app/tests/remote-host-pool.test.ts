@@ -476,6 +476,8 @@ function poolFixture(opts: {
   /** Load idle probes always fail — hang must still be bounded (#0739). */
   loadProbeFails?: boolean;
   containerCpuOutput?: string;
+  containerLogsOutput?: string;
+  containerStateOutput?: string;
   /** Validation SSH never resolves and ignores registerAbort (#0739 wedge). */
   validateStallNoAbortOn?: string[];
   /** Stream `repoos check` step headings so phase timings split build/tests (#0897). */
@@ -541,8 +543,8 @@ function poolFixture(opts: {
           return {
             code: 0,
             output: cmd.startsWith("docker logs")
-              ? "container log evidence"
-              : "container state evidence",
+              ? (opts.containerLogsOutput ?? "container log evidence")
+              : (opts.containerStateOutput ?? "container state evidence"),
             timedOut: false,
           };
         }
@@ -3001,6 +3003,22 @@ describe("hung run recovery end to end (#0729)", () => {
     }
     const killResult = await f.runner.killHungValidation!("0739-manual-wedge");
     expect(killResult.ok).toBe(true);
+    const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
+    const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
+    const removeAt = f.remoteOrder.findIndex((cmd) =>
+      cmd.startsWith("docker rm -f 'repoos-validate-"),
+    );
+    expect(logsAt).toBeGreaterThanOrEqual(0);
+    expect(inspectAt).toBeGreaterThan(logsAt);
+    expect(removeAt).toBeGreaterThan(inspectAt);
+    const manualEvent = readRemoteValidationEvents(f.root, "0739-manual-wedge").find(
+      (event) => event.hangEvidence?.condition === "manual-kill",
+    );
+    expect(manualEvent?.hangEvidence).toMatchObject({
+      condition: "manual-kill",
+      containerLogs: "container log evidence",
+      containerState: "container state evidence",
+    });
     const summary = await Promise.race([
       resultPromise,
       tick(3_000).then(() => {
@@ -3273,35 +3291,47 @@ describe("hung run recovery end to end (#0729)", () => {
     expect(f.cleanupCmds.some((c) => c.includes(".bundle"))).toBe(true);
   });
 
-  it("captures container logs and inspect state before removing a hung container (#1049)", async () => {
-    const f = poolFixture({
-      hosts: [{ host: "a" }],
-      fixedLoad: 0,
-      hangIdleMinutes: 0.0005,
-      hangCheckIntervalMs: 15,
-      loadSampleIntervalMs: 10,
-    });
-    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
-    const resultPromise = f.runner.validate(opts("1049-evidence"));
-    let attempts = 0;
-    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
-    const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
-    const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
-    const removeAt = f.remoteOrder.findIndex((cmd) =>
-      cmd.startsWith("docker rm -f 'repoos-validate-"),
-    );
-    expect(logsAt).toBeGreaterThanOrEqual(0);
-    expect(inspectAt).toBeGreaterThan(logsAt);
-    expect(removeAt).toBeGreaterThan(inspectAt);
-    const events = readRemoteValidationEvents(f.root, "1049-evidence");
-    const hang = events.find((event) => event.message.includes("killed as hung"));
-    expect(hang?.hangEvidence).toMatchObject({
-      condition: "host-idle",
-      containerLogs: expect.stringContaining("container log evidence"),
-      containerState: expect.stringContaining("container state evidence"),
-    });
-    await resultPromise;
-  });
+  it.each([
+    { load: 0, condition: "host-idle", detail: "host was idle" },
+    { load: Number.NaN, condition: "container-inactive", detail: "container was inactive" },
+  ] as const)(
+    "reports $condition and captures evidence before removal (#1049)",
+    async ({ load, condition, detail }) => {
+      const logs = `${"older log output\n".repeat(300)}LATEST CONTAINER OUTPUT`;
+      const state = `${JSON.stringify({ Status: "exited" })}${" ".repeat(2100)}LATEST STATE FIELD`;
+      const f = poolFixture({
+        hosts: [{ host: "a" }],
+        fixedLoad: load,
+        hangIdleMinutes: 0.0005,
+        hangCheckIntervalMs: 15,
+        loadSampleIntervalMs: 10,
+        containerLogsOutput: logs,
+        containerStateOutput: state,
+      });
+      for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+      const resultPromise = f.runner.validate(opts("1049-evidence"));
+      let attempts = 0;
+      while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+      const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
+      const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
+      const removeAt = f.remoteOrder.findIndex((cmd) =>
+        cmd.startsWith("docker rm -f 'repoos-validate-"),
+      );
+      expect(logsAt).toBeGreaterThanOrEqual(0);
+      expect(inspectAt).toBeGreaterThan(logsAt);
+      expect(removeAt).toBeGreaterThan(inspectAt);
+      const events = readRemoteValidationEvents(f.root, "1049-evidence");
+      const hang = events.find((event) => event.message.includes("killed as hung"));
+      expect(hang?.hangEvidence).toMatchObject({
+        condition,
+        containerLogs: expect.stringContaining("LATEST CONTAINER OUTPUT"),
+        containerState: expect.stringContaining("LATEST STATE FIELD"),
+      });
+      const result = events.find((event) => event.phase === "result");
+      expect(result?.message).toContain(detail);
+      await resultPromise;
+    },
+  );
 
   it("records outcome 'hung' in the check-run history", async () => {
     const f = poolFixture({
