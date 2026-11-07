@@ -14,7 +14,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
-updated_at: "2026-11-07T04:40:15Z"
+updated_at: "2026-11-07T04:41:21Z"
 last_close_out_gate_ms: 242146
 last_close_out_gate_at: "2026-11-07T04:40:15.108Z"
 review_passes: 1
@@ -100,4 +100,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T04:31:46Z · message_queued at 2026-11-07T04:31:46.576Z
 - 2026-11-07T04:34:18Z · note: review pass 1: good to go
 - 2026-11-07T04:40:15Z · close-out gate completed in 242s
-
+- 2026-11-07T04:41:21Z · message_dropped: 1 queued message(s) discarded — task is done
