@@ -60,10 +60,7 @@ describe("shot-preview fixture task avoids server fetches (#0819)", () => {
     vi.stubGlobal("fetch", fetchMock);
     const repo = useRepoStore();
 
-    await Promise.all([
-      repo.refreshHandoffStatus("9999"),
-      repo.refreshTaskChecks("9999"),
-    ]);
+    await Promise.all([repo.refreshHandoffStatus("9999"), repo.refreshTaskChecks("9999")]);
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
