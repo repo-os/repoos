@@ -103,9 +103,10 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "send-back",
-        usage: 'send-back <id> (--message "…" | --message-file <file|->) [--json] [--port N]',
+        usage:
+          'send-back <id> [text | - | --message "…" | --file <path> | --message-file <path>] [--json] [--port N]',
         desc: "Return a task to the engineer, start work, then queue feedback",
-        flags: "--message · --message-file · --json · --port",
+        flags: "--message · --file · --message-file · --json · --port",
       },
       {
         name: "start",
@@ -133,9 +134,10 @@ const GROUPS: readonly CommandGroup[] = [
       },
       {
         name: "message",
-        usage: 'message <id> "<text>" [--now] [--json] [--port N]',
+        usage:
+          'message <id> [text | - | --message "…" | --file <path> | --message-file <path>] [--now] [--json] [--port N]',
         desc: "Send a follow-up to the task agent; queues while busy, --now interrupts the turn and delivers immediately (POST /api/tasks/:id/message)",
-        flags: "--now · --json · --port",
+        flags: "--message · --file · --message-file · --now · --json · --port",
       },
       {
         name: "review",
