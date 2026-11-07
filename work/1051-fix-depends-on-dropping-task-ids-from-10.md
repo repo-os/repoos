@@ -43,3 +43,4 @@ Cause (read from the code): `repoos update --depends-on` writes the frontmatter 
 - 2026-11-07T15:13:45Z · body
 - 2026-11-07T15:18:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T15:25:40Z · status active→review
+- 2026-11-07T15:25:40Z · message_queued at 2026-11-07T15:25:40.767Z
