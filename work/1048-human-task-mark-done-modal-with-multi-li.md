@@ -1,5 +1,5 @@
 ---
-id: 1048
+id: "1048"
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
 status: active
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/human-task-mark-done-modal-with-multi-li
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T16:33:41Z"
+updated_at: "2026-11-07T16:42:19Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T16:29:03.114Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -121,3 +121,4 @@ right before writing new CSS.
 - 2026-11-07T16:29:00Z · message_queued at 2026-11-07T16:29:00.001Z
 - 2026-11-07T16:31:00Z · message_delivered: 1 message(s)
 - 2026-11-07T16:33:41Z · CTO nudge: held — remote validation is running
+- 2026-11-07T16:42:19Z · body
