@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T04:19:08Z"
+updated_at: "2026-11-07T04:34:03Z"
 ---
 ## Problem
 
@@ -68,3 +68,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T04:14:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T04:19:06Z · message_delivered: 1 message(s)
 - 2026-11-07T04:19:08Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > shows hung · killing on the active run while the kill SSH is still pending (#0735), tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > kills a stalled run's container and retries it on another host, tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > settles validate when hang kill completes but main SSH never resolves and abort is a no-op (#0739) on mini — fix it in the feature branch and re-run the gate
+- 2026-11-07T04:34:03Z · CTO nudge: held — handoff gate is running
