@@ -57,6 +57,7 @@ function submit(): void {
               ref="textarea"
               v-model="report"
               class="ff-textarea human-done-report"
+              rows="6"
               :disabled="busy"
             />
           </div>
