@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T00:01:56.991Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1046
 title: Use the active theme pair for diff highlighting
 type: feature
@@ -80,3 +82,4 @@ This task covers theme-family selection, lazy loading, cache behavior, and verif
 - 2026-11-06T23:35:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T00:01:53Z · message_queued at 2026-11-07T00:01:53.913Z
 - 2026-11-07T00:01:56Z · message_delivered: 1 message(s)
+
