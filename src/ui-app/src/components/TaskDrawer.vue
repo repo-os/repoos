@@ -4533,6 +4533,11 @@ const TASK_SUMMARY_POLL_MS = 10_000;
 const TASK_SUMMARY_POLL_MAX = 60;
 async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
   if (typeof window !== "undefined" && shotPreviewSkipsTaskSummaryFetch(window.location, taskId)) {
+    if (new URLSearchParams(window.location.search).get("shotState") === "drawer:postMergeSummary") {
+      taskSummary.value = { markdown: "## TL;DR\n\nThe task landed and its post-merge summary is ready.\n\n## Work and rationale\n\nThe change addresses the reported edge case and preserves the existing release flow.\n\n## Approaches tried\n\nThe final implementation follows the narrowest reliable path.\n\n## Challenges and blockers\n\nNo blockers remained.\n\n## Key learnings\n\nPersisted status and the committed report must agree." };
+      taskSummaryStatus.value = "done";
+      taskSummaryError.value = "";
+    }
     return;
   }
   const generation = ++taskSummaryGeneration;
