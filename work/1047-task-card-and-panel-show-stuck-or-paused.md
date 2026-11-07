@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T03:09:08.179Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
@@ -14,7 +16,6 @@ review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
 updated_at: "2026-11-07T03:09:07Z"
-last_check_failure: "repoos check at 2026-11-07T01:56:20.038Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task panel check progress bar (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work (http://127.0.0.1:55797/work?shotState=closeOut%3AcheckProgress)"
 ---
 ## Problem
 
@@ -94,3 +95,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T03:09:05Z · message_queued at 2026-11-07T03:09:05.097Z
 - 2026-11-07T03:09:05Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-07T03:09:07Z · message_delivered: 1 message(s)
+
