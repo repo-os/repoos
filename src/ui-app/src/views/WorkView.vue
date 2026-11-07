@@ -288,11 +288,16 @@ function setWorkViewMode(mode: WorkViewMode): void {
   }
 }
 onMounted(loadWorkViewMode);
-// A `board:pipeline` shot capture must land on the track even though the
-// stored preference is board-first. Preview builds only — production
-// behaviour always follows the stored choice.
+// Shot captures must land on the track even when the stored preference is
+// board-first (`board:pipeline`, `pipeline:*`, or `/work?tab=pipeline`).
+// Preview builds only — production behaviour follows the stored choice.
 const effectiveView = computed<WorkViewMode>(() => {
-  if (repo.health?.isPreviewBuild && route.query.shotState === "board:pipeline") return "pipeline";
+  if (repo.health?.isPreviewBuild) {
+    const shot = route.query.shotState;
+    if (shot === "board:pipeline") return "pipeline";
+    if (typeof shot === "string" && shot.startsWith("pipeline:")) return "pipeline";
+    if (route.query.tab === "pipeline") return "pipeline";
+  }
   return viewMode.value;
 });
 
