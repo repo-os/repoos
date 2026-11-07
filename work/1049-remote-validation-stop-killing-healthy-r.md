@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T05:09:03Z"
+updated_at: "2026-11-07T05:19:34Z"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
@@ -75,3 +75,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T04:41:31Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-07T04:41:35Z · message_delivered: 1 message(s)
 - 2026-11-07T05:09:03Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T05:19:34Z · message_queued at 2026-11-07T05:19:34.732Z
