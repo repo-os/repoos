@@ -8,8 +8,9 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
 created_at: "2026-11-06T22:56:38Z"
-updated_at: "2026-11-06T22:56:38Z"
+updated_at: "2026-11-07T02:11:45Z"
 ---
 ## Problem
 
@@ -44,3 +45,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 
 - 2026-11-06T22:56:38Z · created · njachowski@gmail.com
 - 2026-11-06T22:56:38Z · screenshots
+- 2026-11-07T02:11:45Z · cli_override
