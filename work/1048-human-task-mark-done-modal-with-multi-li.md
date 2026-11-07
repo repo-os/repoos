@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T20:37:20.985Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
@@ -19,7 +21,6 @@ last_handoff_failure_sha: ec05d12b44136bc03515ff7cdc063c851668741a
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
-last_check_failure: "repoos check at 2026-11-07T17:13:53.063Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Human task completion report modal (target \"default\"): click .drawer-human-task button: click: Timeout 5000ms exceeded. on /work?task=1048&tab=changes (http://127.0.0.1:51741/work?shotState=card:humanStep); [missing-target] Human task completion report modal (target \"default\"): highlight .human-done-modal matched nothing on /work?task=1048&tab=changes (http://127.0.0.1:51741/work?shotState=card:humanStep)"
 ---
 ## Problem
 
@@ -182,3 +183,4 @@ right before writing new CSS.
 - 2026-11-07T20:33:34Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
 - 2026-11-07T20:37:17Z · message_queued at 2026-11-07T20:37:17.179Z
 - 2026-11-07T20:37:20Z · message_delivered: 1 message(s)
+
