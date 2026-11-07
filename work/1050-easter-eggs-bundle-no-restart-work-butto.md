@@ -1,5 +1,5 @@
 ---
-id: "1050"
+id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: active
@@ -86,3 +86,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T16:14:16Z · body
 - 2026-11-07T16:17:51Z · body
 - 2026-11-07T16:22:33Z · body: Items (added 2, removed 3)
+- 2026-11-07T16:22:33Z · message_queued at 2026-11-07T16:22:33.621Z
