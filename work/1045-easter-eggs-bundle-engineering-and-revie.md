@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 242146
-last_close_out_gate_at: "2026-11-07T04:40:15.108Z"
 id: 1045
 title: "Easter eggs bundle: engineering and review report tables"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 1909e6bf84030293c668512bf5dd06c11c64be75
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-engineering-and-revie
@@ -16,6 +15,8 @@ review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
 updated_at: "2026-11-07T04:40:15Z"
+last_close_out_gate_ms: 242146
+last_close_out_gate_at: "2026-11-07T04:40:15.108Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-07T03:52:16.390Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54844/api/tasks/9999/summary (http://127.0.0.1:54844/api/tasks/9999/summary); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54844/api/tasks/9999/summary)"
 ---
