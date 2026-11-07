@@ -1397,8 +1397,21 @@ export function reaperCommand(): string {
 export function reaperRemoveCommand(id: string): string {
   if (!/^[a-f\d]{12,64}$/i.test(id)) return "false";
   return (
+    `LOCKROOT="$HOME/.repoos-validate-locks"; mkdir -p "$LOCKROOT"; ` +
+    // Serialize the final empty-slot check with hostLockShell's slot creation.
+    // The lease blocks new validations until this inspect/remove transaction ends.
+    `while ! mkdir "$LOCKROOT/.acquire-gate" 2>/dev/null; do sleep 1; done; ` +
+    `if [ -n "$(find "$LOCKROOT" -mindepth 1 -maxdepth 1 -type d -name '[0-9]*' -print -quit)" ]; then ` +
+    `rmdir "$LOCKROOT/.acquire-gate"; exit 75; fi; ` +
+    `_rv_owns_reaper=0; trap '[ "$_rv_owns_reaper" = 1 ] && rmdir "$LOCKROOT/.reaping" 2>/dev/null || true' EXIT HUP INT TERM; ` +
+    `if ! mkdir "$LOCKROOT/.reaping" 2>/dev/null; then rmdir "$LOCKROOT/.acquire-gate"; exit 75; fi; ` +
+    `_rv_owns_reaper=1; rmdir "$LOCKROOT/.acquire-gate"; ` +
     `name=$(docker inspect -f '{{.Name}}' ${shellQuote(id)} 2>/dev/null || true); ` +
-    `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) docker rm -f ${shellQuote(id)} ;; *) exit 1 ;; esac`
+    `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) ;; *) exit 1 ;; esac; ` +
+    `state=$(docker inspect --format '{{.Created}}\t{{.State.Status}}\t{{.State.StartedAt}}\t{{.State.FinishedAt}}' ${shellQuote(id)}) || exit 1; ` +
+    `recent=$(docker logs --since ${Math.ceil(CONTAINER_REAPER_SAFETY_MARGIN_MS / 1000)}s --tail 1 ${shellQuote(id)} 2>/dev/null || true); ` +
+    `if [ -n "$recent" ]; then exit 75; fi; ` +
+    `docker rm -f ${shellQuote(id)}`
   );
 }
 
@@ -2130,6 +2143,9 @@ export function hostLockShell(opts: {
     "    continue",
     "  fi",
     "  fi",
+    // Coordinate slot creation with the reaper's short host-wide lease.
+    '  while ! mkdir "$LOCKROOT/.acquire-gate" 2>/dev/null; do sleep 1; done',
+    '  if [ -d "$LOCKROOT/.reaping" ]; then rmdir "$LOCKROOT/.acquire-gate" 2>/dev/null || true; sleep 1; continue; fi',
     // Host-wide cap = min(this caller's limit, every occupied slot's limit).
     // Scan all slot indices (HOSTMAX), not just 0..SLOTS-1, so a caller with
     // a lower limit cannot grab a free high index while another run holds a
@@ -2172,6 +2188,7 @@ export function hostLockShell(opts: {
     "      _i=$((_i+1))",
     "    done",
     "  fi",
+    '  rmdir "$LOCKROOT/.acquire-gate" 2>/dev/null || true',
     '  [ -n "$_rvslot" ] && break',
     // Self-clocked against the absolute deadline when there is one (immune
     // to setup delay); otherwise the original relative-elapsed counter.
