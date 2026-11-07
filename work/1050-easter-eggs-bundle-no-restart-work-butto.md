@@ -1,17 +1,17 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-11-07T18:09:29.477Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-no-restart-work-butto
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T18:09:26Z"
+updated_at: "2026-11-07T18:10:09Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-07T18:09:29.477Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Items
 ## Items
@@ -120,4 +120,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T17:36:04Z · body
 - 2026-11-07T17:43:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T18:09:26Z · message_queued at 2026-11-07T18:09:26.417Z
-
+- 2026-11-07T18:10:09Z · status active→review
