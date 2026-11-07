@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
-updated_at: "2026-11-07T02:31:39Z"
+updated_at: "2026-11-07T02:37:50Z"
 ---
 ## Problem
 
@@ -49,9 +49,9 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 "selector": "[data-task-id=\"9999\"]",
 "highlight": "[data-task-id=\"9999\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"engineering-report-tab\"]"
-  }
+{
+  "click": "[data-test-id=\"engineering-report-tab\"]"
+}
 ],
 "state": "drawer:engineeringReports"
 }
@@ -75,3 +75,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T02:12:04Z · status ready→active, branch
 - 2026-11-07T02:20:26Z · body
 - 2026-11-07T02:31:39Z · body
+- 2026-11-07T02:37:50Z · CTO nudge: held — handoff gate is running
