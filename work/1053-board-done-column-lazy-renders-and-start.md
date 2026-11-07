@@ -81,3 +81,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T13:49:59Z · message_delivered: 1 message(s)
 - 2026-11-07T13:51:40Z · note: handoff requested (cli)
 - 2026-11-07T14:14:57Z · message_queued at 2026-11-07T14:14:57.222Z
+- 2026-11-07T14:14:57Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
