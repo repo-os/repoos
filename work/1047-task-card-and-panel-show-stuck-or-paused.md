@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-07T01:56:20.038Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task panel check progress bar (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work (http://127.0.0.1:55797/work?shotState=closeOut%3AcheckProgress)"
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
@@ -15,7 +13,9 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T01:56:19Z"
+updated_at: "2026-11-07T01:57:07Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T01:56:20.038Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task panel check progress bar (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work (http://127.0.0.1:55797/work?shotState=closeOut%3AcheckProgress)"
 ---
 ## Problem
 
@@ -58,11 +58,11 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 ```json
 [
 {
-"label": "Task panel check progress bar",
-"target": "default",
-"route": "/work",
-"highlight": "[data-test-id=\"close-out-check-progress\"]",
-"state": "closeOut:checkProgress"
+  "label": "Task panel check progress bar",
+  "target": "default",
+  "route": "/work?task=9999",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "closeOut:checkProgress"
 }
 ]
 ```
@@ -89,4 +89,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T01:56:16Z · note: ui verification failed (1 issue(s)): [missing-target] Task panel check progress bar (target "default"): highlight [data-test-id="close-out-check-progress"] matched nothing on /work (http://127.0.0.1:55797/work?shotState=closeOut%3AcheckProgress)
 - 2026-11-07T01:56:16Z · message_queued at 2026-11-07T01:56:16.752Z
 - 2026-11-07T01:56:19Z · message_delivered: 1 message(s)
-
+- 2026-11-07T01:57:07Z · body
