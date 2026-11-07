@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T03:09:08.714Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1045
 title: "Easter eggs bundle: engineering and review report tables"
 type: chore
@@ -80,3 +82,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T03:09:05Z · message_queued at 2026-11-07T03:09:05.440Z
 - 2026-11-07T03:09:05Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-07T03:09:08Z · message_delivered: 1 message(s)
+
