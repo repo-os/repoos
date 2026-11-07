@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-07T14:41:33Z"
-review_passes: 1
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
@@ -12,6 +10,8 @@ created_by: njachowski@gmail.com
 branch: feat/board-done-column-lazy-renders-and-start
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T08:04:58Z"
+updated_at: "2026-11-07T14:45:42Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-07T13:50:00.006Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
 ---
@@ -98,4 +98,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T14:39:18Z · status active→review
 - 2026-11-07T14:39:18Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-07T14:41:33Z · note: review pass 1: good to go
-
+- 2026-11-07T14:45:42Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
