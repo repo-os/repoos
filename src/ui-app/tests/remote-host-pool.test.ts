@@ -480,7 +480,7 @@ function poolFixture(opts: {
   validateStallNoAbortOn?: string[];
   /** Stream `repoos check` step headings so phase timings split build/tests (#0897). */
   streamStepHeadingsOn?: string[];
-}): Fixture {
+  }): Fixture {
   const root = tmpRoot();
   const config = {
     root,
@@ -2597,6 +2597,52 @@ describe("hang detector (#0729)", () => {
     expect(containerReaperDue(undefined, 1_000_000)).toBe(true);
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000)).toBe(true);
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000 - 1)).toBe(false);
+  });
+
+  it("schedules a reaper after a host becomes available and logs its output", async () => {
+    const runRemote = vi.fn(async (_host, cmd): Promise<RemoteExecResult> => {
+      if (cmd.includes(PREREQ_OK_TOKEN)) {
+        return {
+          code: 0,
+          output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+          timedOut: false,
+        };
+      }
+      if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
+        return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
+      }
+      if (cmd.includes("__HOST_LOCK__")) {
+        return { code: 0, output: "__HOST_LOCK__\\n", timedOut: false };
+      }
+      return { code: 0, output: "Reaping stale validation container repoos-validate-old", timedOut: false };
+    });
+    const logger = { system: vi.fn() };
+    const pool = new TailscaleHostPool(
+      { enabled: true, provider: "tailscale", tailscaleHosts: [{ host: "runner" }] } as never,
+      {
+        exec: {
+          bundleRepo: vi.fn(async () => ({ ok: true })),
+          uploadFile: vi.fn(async () => ({ ok: true })),
+          downloadDir: vi.fn(async () => {}),
+          probeTcp: vi.fn(async () => true),
+          runRemote,
+        },
+        logger: logger as never,
+        pressureProbe: vi.fn(async () => null),
+        pressureOptions: () => ({ enabled: false, thresholds: pressureThresholds() }),
+      },
+    );
+
+    pool.probeDueHosts();
+    await tick(30);
+    pool.probeDueHosts();
+    await tick(30);
+
+    expect(runRemote.mock.calls.some(([, cmd]) => cmd === reaperCommand())).toBe(true);
+    expect(logger.system).toHaveBeenCalledWith(
+      "info",
+      "remote validation Reaping stale validation container repoos-validate-old on runner",
+    );
   });
 
   it("HangWatchdog fires onHung exactly once and stops after firing", () => {
