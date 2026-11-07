@@ -473,6 +473,18 @@ export function readShotPreviewFixtureFromLocation(
   return raw;
 }
 
+const TASK_CHECK_PROGRESS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set([
+  "checks:progress",
+  "card:checksProgress",
+  "drawer:checksProgress",
+  "pipeline:checksProgress",
+]);
+
+/** Preview fixtures that pin a live `taskChecks` row on #9999 (#1054 pipeline shot). */
+export function shotFixtureSeedsLiveTaskChecks(fixture: ShotPreviewFixtureId | null): boolean {
+  return fixture !== null && TASK_CHECK_PROGRESS_FIXTURES.has(fixture);
+}
+
 /** True while a preview handoff shot URL is loaded (`?shotState=`). */
 export function isShotPreviewCaptureActive(location: Pick<Location, "search">): boolean {
   return readShotPreviewFixtureFromLocation(location) !== null;
@@ -2007,6 +2019,125 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "panel:defaultScreenshotPicker":
       useUiStore().openNewTask();
       break;
+    case "drawer:checksProgress":
+    case "card:checksProgress": {
+      applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
+      const startedAt = new Date(Date.now() - 133_000).toISOString();
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-checks-progress-1054",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "handoff-finalize",
+          startedAt,
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "remote host",
+          stepsDone: null,
+          stepsTotal: null,
+          currentStep: null,
+          stepName: "tests",
+          testsDone: 3,
+          testsTotal: 680,
+          testsPass: 1,
+        },
+      ];
+      if (fixture === "drawer:checksProgress") {
+        const ui = useUiStore();
+        const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+        if (task) ui.open(task);
+      }
+      setShotPreviewAppliedAttr(fixture);
+      break;
+    }
+    case "pipeline:checksProgress": {
+      ensureFixtureTask(repo, "active", {
+        title: "Pipeline checks lane: counted tests",
+        priority: "p2",
+        branch: "feat/shot-fixture",
+      });
+      delete repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID];
+      if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
+        repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
+      }
+      repo.agentActivityAt = {
+        ...repo.agentActivityAt,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: new Date(Date.now() - 6 * 60_000).toISOString(),
+      };
+      const startedAt = new Date(Date.now() - 133_000).toISOString();
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-pipeline-checks-progress-1054",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "merge-gate",
+          startedAt,
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "remote host",
+          stepsDone: 3,
+          stepsTotal: 9,
+          currentStep: 4,
+          stepName: "tests",
+          testsDone: 3,
+          testsTotal: 680,
+          testsPass: 1,
+          lastProgressAt: new Date().toISOString(),
+        },
+      ];
+      setShotPreviewAppliedAttr(fixture);
+      break;
+    }
+    case "drawer:checksReuse":
+      applyShotPreviewFixture(repo, "card:checksReuse");
+      {
+        const ui = useUiStore();
+        const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+        if (task) ui.open(task);
+      }
+      setShotPreviewAppliedAttr("drawer:checksReuse");
+      break;
+    case "card:checksReuse": {
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      const startedAt = new Date(Date.now() - 41_000).toISOString();
+      repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "check";
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "check",
+        startedAt,
+        updatedAt: new Date().toISOString(),
+        attempt: 2,
+        progress: null,
+        machine: "fixture host",
+      };
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-card-check-reuse",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "handoff-finalize",
+          startedAt,
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "reused check 9822 — same clean commit and main base",
+          scope: "changed:main",
+          machine: "fixture host",
+          attempt: 2,
+        },
+      ];
+      setShotPreviewAppliedAttr("card:checksReuse");
+      break;
+    }
     case "card:checkpointRecovery":
       // #0834 — a review task whose branch moved after handoff only by WIP self-
       // check checkpoints, so the card renders "re-reviewing checkpoint…"
