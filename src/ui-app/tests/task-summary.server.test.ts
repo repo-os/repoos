@@ -533,7 +533,10 @@ describe("post-merge summary status persistence", () => {
     const { config, task } = setup();
     const statusDir = join(root(config), ".repoos", "task-summary");
     mkdirSync(statusDir, { recursive: true });
-    writeFileSync(join(statusDir, `${task.id}.json`), JSON.stringify({ status: "done", at: new Date().toISOString() }));
+    writeFileSync(
+      join(statusDir, `${task.id}.json`),
+      JSON.stringify({ status: "done", at: new Date().toISOString() }),
+    );
     const payload = getTaskSummaryJobPayload(config, task.id);
     expect(payload.status).toBe("failed");
     expect(payload.error).toMatch(/summary\.md could not be read/);
