@@ -111,7 +111,9 @@ describe("task note mechanism", () => {
         .split("\n")
         .filter((l) => l.startsWith("- ") && l.includes("· note:"));
       expect(noteLines.length).toBe(1);
-      expect(updated.body).toContain("note: Fix the regression\n> and the rendering\n> issue,\n> please");
+      expect(updated.body).toContain(
+        "note: Fix the regression\n> and the rendering\n> issue,\n> please",
+      );
     } finally {
       clean();
     }

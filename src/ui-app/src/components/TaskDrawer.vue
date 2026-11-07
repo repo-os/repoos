@@ -7760,7 +7760,12 @@ watch(
     :open="humanDoneDialogOpen"
     :busy="ui.saving"
     @update:open="(value) => (humanDoneDialogOpen = value)"
-    @confirm="(report) => { humanDoneDialogOpen = false; setStatus('done', report); }"
+    @confirm="
+      (report) => {
+        humanDoneDialogOpen = false;
+        setStatus('done', report);
+      }
+    "
   />
 
   <DirtyCheckoutDialog
