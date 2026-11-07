@@ -77,6 +77,7 @@ const handoffProgress = computed(
     ) ??
     null,
 );
+const handoffStatus = computed(() => repo.handoffStatuses[props.task.id] ?? null);
 
 /**
  * One chip per area (#0583). The parsed board payload carries `areas`;
@@ -1648,9 +1649,9 @@ async function openDebuggerFromError(): Promise<void> {
             aria-label="Checks running progress"
           />
           <span>{{ handoffProgress ? checkProgressLabel(handoffProgress) : "Running checks" }}</span>
-          <span v-if="handoffProgress?.attempt || handoffProgress?.machine">
-            {{ handoffProgress.attempt ? `attempt ${handoffProgress.attempt}` : "" }}
-            <template v-if="handoffProgress.machine"> · on {{ handoffProgress.machine }}</template>
+          <span v-if="handoffProgress?.attempt || handoffProgress?.machine || handoffStatus?.attempt || handoffStatus?.machine">
+            {{ (handoffProgress?.attempt ?? handoffStatus?.attempt) ? `attempt ${handoffProgress?.attempt ?? handoffStatus?.attempt}` : "" }}
+            <template v-if="handoffProgress?.machine ?? handoffStatus?.machine"> · on {{ handoffProgress?.machine ?? handoffStatus?.machine }}</template>
           </span>
         </div>
         <button
