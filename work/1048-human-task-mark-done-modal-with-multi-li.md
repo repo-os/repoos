@@ -2,7 +2,7 @@
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
-status: active
+status: review
 human_step_decision: agent
 human_step_decision_key: 26944cd9
 priority: p2
@@ -13,7 +13,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T20:29:42Z"
+updated_at: "2026-11-07T20:30:30Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -175,3 +175,4 @@ right before writing new CSS.
 - 2026-11-07T20:29:41Z · status active→review
 - 2026-11-07T20:29:42Z · message_delivered: 2 message(s)
 - 2026-11-07T20:29:42Z · note: handoff requested (cli)
+- 2026-11-07T20:30:30Z · status active→review
