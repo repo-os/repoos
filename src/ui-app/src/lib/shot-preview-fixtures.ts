@@ -21,6 +21,7 @@ import type {
   DevTargetView,
   IntegrationPipelineSnapshot,
   RemoteTaskActivity,
+  RemoteValidationEvent,
   RemoteValidationStatusView,
   RepoStatus,
   ShotMeta,
@@ -66,9 +67,18 @@ export function shotPreviewSkipsTaskLogsFetch(
   return taskId === shotPreviewDrawerTaskIdFromLocation(location);
 }
 
+/** True when preview capture should keep fixture remote-validation events. */
+export function shotPreviewSkipsRemoteEventsFetch(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  return shotPreviewSkipsTaskLogsFetch(location, taskId);
+}
+
 export type ShotPreviewDebugLogsSeed = {
   tasks: Task[];
   taskLogs: Record<string, TaskLogEntry[]>;
+  taskRemoteEvents: Record<string, RemoteValidationEvent[]>;
 };
 
 /** Seed Debug-tab log rows for `drawer:debugLogs` shots (#0829). */
@@ -100,6 +110,21 @@ export function seedShotPreviewDebugLogs(repo: ShotPreviewDebugLogsSeed, drawerI
     message: "close-out complete — published to main",
   };
   repo.taskLogs[drawerId] = [longLog, shortLog];
+  repo.taskRemoteEvents[drawerId] = [
+    {
+      at: "2026-10-18T03:22:00Z",
+      level: "warn",
+      phase: "run",
+      host: "thinkpad",
+      message: "Run stopped after its output stream went silent",
+      hangEvidence: {
+        condition: "host-idle",
+        containerLogs:
+          "[remote] installing dependencies\n[remote] building application\n[remote] running tests",
+        containerState: '{"Status":"running","Running":true,"ExitCode":0}',
+      },
+    },
+  ];
 }
 
 type RepoStore = ReturnType<typeof useRepoStore>;
