@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T14:29:11Z"
+updated_at: "2026-11-07T14:32:15Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-07T14:21:12.979Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task debug events with expanded remote details (target \"default\"): highlight .debug-event[data-debug-event^=\"remote-\"] matched nothing on /work?task=9999&tab=debug (http://127.0.0.1:50411/work?shotState=drawer:debugLogs)"
 review_rounds: 1
@@ -211,3 +211,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T14:21:48Z · message_queued at 2026-11-07T14:21:48.316Z
 - 2026-11-07T14:23:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T14:29:11Z · body
+- 2026-11-07T14:32:15Z · handoff_deferred: 1 queued message(s) must be read before review
