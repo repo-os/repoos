@@ -104,3 +104,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T04:21:34Z · body
 - 2026-11-07T04:29:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T04:48:29Z · status active→review
+- 2026-11-07T04:48:29Z · message_queued at 2026-11-07T04:48:29.924Z
