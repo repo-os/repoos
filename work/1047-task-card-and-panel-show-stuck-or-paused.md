@@ -2,7 +2,7 @@
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
