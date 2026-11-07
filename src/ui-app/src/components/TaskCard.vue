@@ -69,6 +69,14 @@ const notices = useNoticesStore();
 
 /** Live slow-check flag from the attention feed (#0720). */
 const slowCheck = computed(() => notices.slowRunByTask[props.task.id]);
+const handoffProgress = computed(
+  () =>
+    repo.handoffStatuses[props.task.id]?.progress ??
+    (repo.taskChecks[props.task.id] ?? []).find(
+      (run) => run.running && run.kind === "handoff-finalize",
+    ) ??
+    null,
+);
 
 /**
  * One chip per area (#0583). The parsed board payload carries `areas`;
@@ -1019,9 +1027,9 @@ const hint = computed<CardHint | null>(() => {
       const elapsed = startedAt
         ? formatDuration(Math.max(0, now.value - Date.parse(startedAt)))
         : null;
-      const stage = status?.step ?? repo.handoffSteps[t.id] ?? "starting";
+      const stage = status?.step ?? repo.handoffSteps[t.id] ?? (run ? "check" : "starting");
       return {
-        label: `running checks · ${stage}${elapsed ? ` · ${elapsed}` : ""}`,
+        label: `running checks · ${stage}${elapsed ? ` · ${elapsed}` : ""}${run ? ` · ${checkProgressLabel(run)}` : ""}`,
         title: "RepoOS is finalizing this task and running its checks",
         cls: "tc-reviewing",
       };
@@ -1616,17 +1624,17 @@ async function openDebuggerFromError(): Promise<void> {
           </svg>
         </span>
         <div
-          v-if="repo.handoffInFlight(task.id) && repo.handoffStatuses[task.id]?.progress"
+          v-if="repo.handoffInFlight(task.id) && handoffProgress"
           class="check-progress task-card-check-progress"
           role="status"
           data-test-id="task-card-check-progress"
         >
           <progress
-            v-if="checkProgressPercent(repo.handoffStatuses[task.id]!.progress!) !== null"
-            :value="checkProgressPercent(repo.handoffStatuses[task.id]!.progress!) ?? 0"
+            v-if="checkProgressPercent(handoffProgress) !== null"
+            :value="checkProgressPercent(handoffProgress) ?? 0"
             max="100"
           />
-          <span>{{ checkProgressLabel(repo.handoffStatuses[task.id]!.progress!) }}</span>
+          <span>{{ checkProgressLabel(handoffProgress) }}</span>
         </div>
         <button
           ref="agentTrigger"
