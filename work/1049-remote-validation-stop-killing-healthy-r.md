@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T05:19:38.063Z: repoos check failed: tests — Test Files 2 failed | 145 passed (147)"
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
@@ -77,3 +79,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T05:09:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T05:19:34Z · message_queued at 2026-11-07T05:19:34.732Z
 - 2026-11-07T05:19:37Z · message_delivered: 1 message(s)
+
