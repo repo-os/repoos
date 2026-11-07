@@ -1,14 +1,13 @@
 ---
-last_close_out_gate_ms: 678269
-last_close_out_gate_at: "2026-11-07T22:48:30.189Z"
 id: "1048"
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
-status: review
+status: done
 human_step_decision: agent
 human_step_decision_key: 26944cd9
 priority: p2
 area: web
+merged_commit: 63a3a20f8b681cc31099bc7a9151c02f0d5c7dc7
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/human-task-mark-done-modal-with-multi-li
@@ -16,6 +15,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
 updated_at: "2026-11-07T22:48:30Z"
+last_close_out_gate_ms: 678269
+last_close_out_gate_at: "2026-11-07T22:48:30.189Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
