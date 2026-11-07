@@ -140,3 +140,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T17:32:18Z · body
 - 2026-11-07T17:35:27Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-07T17:35:27Z · message_queued at 2026-11-07T17:35:27.398Z
+- 2026-11-07T17:35:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Fixing WorkView so pipeline shot captures mount the pipeline track (`?tab=pipeline` wasn't switching the view). · stderr: (empty)
