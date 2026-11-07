@@ -312,3 +312,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T18:18:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T18:19:31Z · status active→review
 - 2026-11-07T18:19:32Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-07T18:19:32Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
