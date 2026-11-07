@@ -53,12 +53,46 @@ afterEach(() => {
   /* pinia is recreated per test; nothing global to unwind */
 });
 
-function render() {
+function render(body = TASK.body) {
   return mount(DebugPanel, {
-    props: { task: TASK },
+    props: { task: { ...TASK, body } },
     global: { plugins: [pinia], stubs: { teleport: true } },
   });
 }
+
+describe("DebugPanel multiline activity reports", () => {
+  it("renders blockquote continuation lines in the expanded activity", async () => {
+    const report = [
+      "Observed the device stay awake after the lid was closed.",
+      "",
+      "Markdown **formatting** and the second paragraph survive.",
+      "Not verified: battery behavior overnight.",
+    ].join("\n");
+    const body = [
+      "Task description.",
+      "",
+      "## Activity",
+      "",
+      "- 2026-11-07T19:04:43Z · marked done. Completion report:",
+      ...report.split("\n").map((line) => `> ${line}`),
+      "",
+    ].join("\n");
+
+    const wrapper = render(body);
+    await wrapper.get(".debug-tab:nth-child(2)").trigger("click");
+    await nextTick();
+
+    const row = wrapper.find(".debug-event[data-debug-event^='activity-']");
+    expect(row.exists()).toBe(true);
+    await row.trigger("click");
+    await nextTick();
+
+    const fullReport = row.find(".debug-event-message");
+    expect(fullReport.exists()).toBe(true);
+    expect(fullReport.text()).toContain(report);
+    expect(fullReport.text()).toContain("\n\n");
+  });
+});
 
 describe("DebugPanel remote validation events (#0568)", () => {
   it("reports the host, exit code, and an infra badge for a non-test failure", async () => {

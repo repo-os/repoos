@@ -99,21 +99,27 @@ describe("task note mechanism", () => {
     }
   });
 
-  it("collapses newlines in a multi-line note so the activity entry stays on one line", () => {
+  it("preserves newlines in a multi-line note as activity continuation lines", () => {
     const { root, absPath, clean } = setupFile(PLAIN);
     try {
       const updated = patchTaskFile(config(root), absPath, {
-        note: "Fix the regression\nand the rendering\nissue,\nplease",
+        status: "done",
+        note: "Tested on device A.\n\n- Lid closed\n- Wake observed\n\nNot verified: overnight behavior.",
       });
-      // The note must not inject raw newlines into the `## Activity` list —
-      // every note activity entry must be a single `- ts · note: ...` line.
+      expect(updated.status).toBe("done");
+      // One timestamped event owns the note; blockquote continuation lines
+      // preserve the report through body indentation normalization.
       const noteLines = updated.body
         .split("\n")
         .filter((l) => l.startsWith("- ") && l.includes("· note:"));
       expect(noteLines.length).toBe(1);
-      expect(noteLines[0]).toContain("note: Fix the regression and the rendering issue, please");
-      // No paragraph break leaks a partial note below the activity entry.
-      expect(updated.body).not.toMatch(/note: Fix the regression\n\n/);
+      expect(updated.body).toContain(
+        "note: Tested on device A.\n> \n> - Lid closed\n> - Wake observed\n> \n> Not verified: overnight behavior.",
+      );
+      // patchTaskFile rereads the serialized file before returning; the
+      // multiline markdown survived that write/parse round trip intact.
+      expect(updated.body).toContain("status review→done");
+      expect(updated.body).toContain("> - Lid closed\n> - Wake observed");
     } finally {
       clean();
     }
