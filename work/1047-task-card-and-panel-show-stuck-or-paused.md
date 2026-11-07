@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T09:05:59.485Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer showing live check progress, attempt and machine (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work?task=1047&tab=changes (http://127.0.0.1:52490/work?shotState=closeOut:checkProgress)"
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
@@ -18,7 +20,6 @@ last_handoff_failure_fingerprint: "check|the worktree changed while the gate was
 last_handoff_failure_sha: 5d7d4bcef77cfb7c522edb86626c494cc66396a8
 review_passes: 3
 review_rounds: 2
-last_check_failure: "repoos check at 2026-11-07T03:51:58.074Z: repoos check failed: ui verification failed (14 issue(s)): [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/handoff-status (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/summary (http://127.0.0.1:54780/api/tasks/9999/summary); [request] Failed to load resource: the server … (truncated)"
 ---
 ## Problem
 
@@ -166,3 +167,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T09:05:55Z · note: ui verification failed (1 issue(s)): [missing-target] Task drawer showing live check progress, attempt and machine (target "default"): highlight [data-test-id="close-out-check-progress"] matched nothing on /work?task=1047&tab=changes (http://127.0.0.1:52490/work?shotState=closeOut:checkProgress)
 - 2026-11-07T09:05:56Z · message_queued at 2026-11-07T09:05:56.167Z
 - 2026-11-07T09:05:59Z · message_delivered: 1 message(s)
+
