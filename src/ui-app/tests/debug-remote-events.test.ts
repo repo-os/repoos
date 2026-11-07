@@ -69,6 +69,8 @@ describe("DebugPanel multiline activity reports", () => {
       "Not verified: battery behavior overnight.",
     ].join("\n");
     const body = [
+      "Task description.",
+      "",
       "## Activity",
       "",
       "- 2026-11-07T19:04:43Z · marked done. Completion report:",
