@@ -5892,10 +5892,11 @@ watch(
                 >{{ statusProgressLabel
                 }}<template v-if="handoffBusy"> · {{ handoffStepLabel }}</template></span
               >
-              <span v-if="statusProgress?.attempt || statusProgress?.machine"
-                >{{ statusProgress.attempt ? `attempt ${statusProgress.attempt}` : ""
-                }}<template v-if="statusProgress.machine">
-                  · on {{ statusProgress.machine }}</template
+              <span
+                v-if="statusProgress?.attempt || statusProgress?.machine || repo.handoffStatuses[ui.active.id]?.attempt || repo.handoffStatuses[ui.active.id]?.machine"
+                >{{ (statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt) ? `attempt ${statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt}` : ""
+                }}<template v-if="statusProgress?.machine ?? repo.handoffStatuses[ui.active.id]?.machine">
+                  · on {{ statusProgress?.machine ?? repo.handoffStatuses[ui.active.id]?.machine }}</template
                 ></span
               >
             </div>
