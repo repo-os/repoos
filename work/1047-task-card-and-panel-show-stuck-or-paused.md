@@ -2,7 +2,7 @@
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T11:06:20Z"
+updated_at: "2026-11-07T11:24:28Z"
 last_check_failure: "repoos check at 2026-11-07T10:47:14.656Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65527/api/tasks/1047/integration-job (http://127.0.0.1:65527/api/tasks/1047/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65527/api/tasks/1047/integration-job)"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 5d7d4bce to a86da372) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 5d7d4bcef77cfb7c522edb86626c494cc66396a8
@@ -193,3 +193,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T10:47:14Z · message_delivered: 1 message(s)
 - 2026-11-07T10:57:42Z · body
 - 2026-11-07T11:06:20Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T11:24:28Z · status active→review
