@@ -1,6 +1,6 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-07T14:45:57.605Z: repoos check failed: reused check inputs changed during handoff — run the check again"
+last_close_out_gate_ms: 244918
+last_close_out_gate_at: "2026-11-07T14:45:58.572Z"
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
@@ -12,7 +12,9 @@ created_by: njachowski@gmail.com
 branch: feat/board-done-column-lazy-renders-and-start
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T08:04:58Z"
-updated_at: "2026-11-07T14:45:57Z"
+updated_at: "2026-11-07T14:45:58Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T14:45:57.605Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: 4c9226dc08783300b496bbfd319929e2a58aa304
 review_passes: 1
@@ -104,4 +106,5 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T14:45:42Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
 - 2026-11-07T14:45:54Z · message_queued at 2026-11-07T14:45:54.158Z
 - 2026-11-07T14:45:57Z · message_delivered: 1 message(s)
+- 2026-11-07T14:45:58Z · close-out gate completed in 245s
 
