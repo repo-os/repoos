@@ -2,7 +2,7 @@
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
-status: review
+status: active
 human_step_decision: agent
 human_step_decision_key: 26944cd9
 priority: p2
@@ -14,13 +14,14 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
 updated_at: "2026-11-07T21:02:40Z"
+review_rounds: 2
+routing_switches: 1
+routing_escalations: 1
 review_passes: 3
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T20:37:20.985Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: ec05d12b44136bc03515ff7cdc063c851668741a
-review_rounds: 1
-routing_switches: 1
 ---
 ## Problem
 
@@ -189,3 +190,4 @@ right before writing new CSS.
 - 2026-11-07T20:56:16Z · note: highlight .human-done-modal matched nothing on /work?task=9999&tab=details
 - 2026-11-07T21:02:37Z · note: review pass 3: needs some work
 - 2026-11-07T21:02:40Z · message_delivered: 1 message(s)
+- 2026-11-07T21:02:40Z · status review→active
