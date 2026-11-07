@@ -20,7 +20,11 @@ function dependencyId(value: unknown): string | undefined {
   if (typeof value !== "string" && typeof value !== "number") return undefined;
   const id = String(value).trim();
   if (!id) return undefined;
-  return /^\d+$/.test(id) ? id.padStart(TASK_ID_WIDTH, "0") : id;
+  // Quoted IDs are already authoritative strings (including unusual short
+  // synthetic IDs); only bare YAML numbers need canonical task-width padding.
+  return typeof value === "number" && /^\d+$/.test(id)
+    ? id.padStart(TASK_ID_WIDTH, "0")
+    : id;
 }
 
 /** Parse task-id lists while tolerating future object-shaped dependency entries. */
