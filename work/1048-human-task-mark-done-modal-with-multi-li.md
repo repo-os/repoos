@@ -1,5 +1,5 @@
 ---
-id: "1048"
+id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
 status: active
@@ -13,7 +13,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T21:14:13Z"
+updated_at: "2026-11-07T21:18:41Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -195,3 +195,4 @@ right before writing new CSS.
 - 2026-11-07T21:13:42Z · message_queued at 2026-11-07T21:13:42.482Z
 - 2026-11-07T21:13:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T21:14:13Z · body
+- 2026-11-07T21:18:41Z · CTO nudge: held — handoff gate is running
