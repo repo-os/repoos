@@ -95,3 +95,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T14:39:05Z · message_delivered: 2 message(s)
 - 2026-11-07T14:39:06Z · note: handoff requested (cli)
 - 2026-11-07T14:39:18Z · status active→review
+- 2026-11-07T14:39:18Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
