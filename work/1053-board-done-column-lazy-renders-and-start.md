@@ -2,7 +2,7 @@
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
