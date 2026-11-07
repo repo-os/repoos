@@ -2770,7 +2770,13 @@ describe("hang detector (#0729)", () => {
     expect(reaperInspectionCommand("0123456789ab")).toContain("docker inspect --format");
     expect(reaperInspectionCommand("0123456789ab")).toContain("docker logs --since 300s");
     expect(reaperRemoveCommand("0123456789ab")).toContain("docker rm -f '0123456789ab'");
+    expect(reaperRemoveCommand("0123456789ab")).toContain('mkdir "$LOCKROOT/.reaping"');
+    expect(reaperRemoveCommand("0123456789ab")).toContain('docker inspect --format');
     expect(reaperRemoveCommand("not-an-id")).toBe("false");
+    const slotLock = hostLockShell({ slots: 2, waitSecs: 30, inner: "true" });
+    expect(slotLock).toContain('mkdir "$LOCKROOT/.acquire-gate"');
+    expect(slotLock).toContain('[ -d "$LOCKROOT/.reaping" ]');
+    expect(slotLock).toContain('rmdir "$LOCKROOT/.acquire-gate"');
     const now = Date.parse("2026-11-07T04:00:00Z");
     const maximumAge = CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS;
     expect(REMOTE_RUN_TIMEOUT_MS).toBe(25 * 60_000);

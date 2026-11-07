@@ -440,11 +440,13 @@ source of truth: the maximum lock wait plus the run timeout (currently 15 + 25
 minutes). The periodic reaper considers a container only when it is older than
 that complete 40-minute legitimate lifetime plus a 5-minute safety margin. It
 also excludes names currently owned by this server process and rechecks Docker
-creation/state timestamps plus recent logs immediately before removal. Dispatch
-is held while the reaper runs and every removal is logged. Cross-process
-ownership is best-effort; safety comes from the shared hard-lifetime bound, the
-extra age margin, and the fresh activity check, rather than a complete host-wide
-ownership view. Safe GC of abandoned workdirs (age-bound, mount-aware) is
+creation/state timestamps plus recent logs immediately before removal. The final
+removal transaction takes a host-wide reaper lease under the same atomic
+acquisition gate used by validation slots. It proceeds only when no slot is held;
+new runs wait until the lease is released after inspection and removal. This
+closes the cross-process gap between a cached lock snapshot and `docker rm`.
+Dispatch is held while the reaper runs and every removal is logged. Safe GC of
+abandoned workdirs (age-bound, mount-aware) is
 deliberately future work; until then, rely on per-run EXIT cleanup, non-running
 container sweeps, and the background reaper.
 
