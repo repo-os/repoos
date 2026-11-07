@@ -673,13 +673,12 @@ export function patchTaskFile(
   // are appended status-first then note, matching the core `updateStatus` path,
   // so the timeline reads identically regardless of entry path.
   //
-  // Preserve note line breaks as indented continuation lines. The activity
-  // parser treats them as part of the preceding entry, keeping a textarea
-  // report readable without making its markdown look like task sections.
+  // Preserve note line breaks as blockquote continuation lines. Unlike
+  // indentation, blockquote markers survive task-body indentation cleanup.
   const note = typeof patch.note === "string" ? patch.note.trim() : "";
   const entries: string[] = [];
   if (changes.length) entries.push(changes.join(", "));
-  if (note) entries.push(`note: ${note.replace(/\r\n?/g, "\n").replace(/\n/g, "\n  ")}`);
+  if (note) entries.push(`note: ${note.replace(/\r\n?/g, "\n").replace(/\n/g, "\n> ")}`);
 
   if (entries.length) {
     for (const entry of entries) recordChange(current, entry);
