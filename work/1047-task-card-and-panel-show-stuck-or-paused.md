@@ -2,7 +2,7 @@
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
-status: review
+status: active
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -13,7 +13,10 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T04:48:29Z"
+updated_at: "2026-11-07T08:03:34Z"
+review_passes: 3
+review_rounds: 2
+last_check_failure: "repoos check at 2026-11-07T03:51:58.074Z: repoos check failed: ui verification failed (14 issue(s)): [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/handoff-status (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/summary (http://127.0.0.1:54780/api/tasks/9999/summary); [request] Failed to load resource: the server … (truncated)"
 ---
 ## Problem
 
@@ -52,6 +55,19 @@ Wanted: a progress bar in the task panel status card above the tabs, visible whe
 
 Acceptance: a task whose handoff checks run shows the bar in the panel above the tabs and on the card, advancing as steps and test files complete, after a reload; a test covers percent, unknown totals and the reload case; a declared shot (fixture `shot-check-progress` already exists in `shot-preview-fixtures.ts`) shows the bar.
 
+## Shots
+```json
+[
+{
+"label": "Task drawer showing live check progress, attempt and machine",
+"target": "default",
+"route": "/work?task=1047&tab=changes",
+"highlight": "[data-test-id=\"close-out-check-progress\"]",
+"state": "closeOut:checkProgress"
+}
+]
+```
+
 ## Screenshots
 
 ![11](/api/tasks/1047/attachments/att_d53d06e7-472f-4f22-8ab7-98a6aebeaed6.png)
@@ -68,4 +84,67 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T00:49:57Z · review_model_override
 - 2026-11-07T00:50:01Z · status inbox→ready
 - 2026-11-07T00:50:03Z · status ready→active, branch
+- 2026-11-07T00:57:04Z · body
+- 2026-11-07T01:34:18Z · body
+- 2026-11-07T01:37:50Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T01:56:16Z · note: ui verification failed (1 issue(s)): [missing-target] Task panel check progress bar (target "default"): highlight [data-test-id="close-out-check-progress"] matched nothing on /work (http://127.0.0.1:55797/work?shotState=closeOut%3AcheckProgress)
+- 2026-11-07T01:56:16Z · message_queued at 2026-11-07T01:56:16.752Z
+- 2026-11-07T01:56:19Z · message_delivered: 1 message(s)
+- 2026-11-07T01:57:07Z · body
+- 2026-11-07T02:27:50Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T02:44:03Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T03:09:05Z · message_queued at 2026-11-07T03:09:05.097Z
+- 2026-11-07T03:09:05Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-07T03:09:07Z · message_delivered: 1 message(s)
+- 2026-11-07T03:11:39Z · note: ui verification failed (14 issue(s)): [request] HTTP 404 for http://127.0.0.1:51952/api/tasks/9999/handoff-status (http://127.0.0.1:51952/api/tasks/9999/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:51952/api/tasks/9999/handoff-status); [request] HTTP 404 for http://127.0.0.1:51952/api/tasks/9999/summary (http://127.0.0.1:51952/api/tasks/9999/summary); [request] Failed to load resource: the server responded with a stat
+- 2026-11-07T03:23:25Z · body
+- 2026-11-07T03:29:03Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T03:51:54Z · note: ui verification failed (14 issue(s)): [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/handoff-status (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/summary (http://127.0.0.1:54780/api/tasks/9999/summary); [request] Failed to load resource: the server responded with a stat
+- 2026-11-07T03:51:54Z · message_queued at 2026-11-07T03:51:54.881Z
+- 2026-11-07T03:51:57Z · message_delivered: 1 message(s)
+- 2026-11-07T04:08:06Z · body
+- 2026-11-07T04:21:34Z · body
+- 2026-11-07T04:29:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T04:48:29Z · status active→review
+- 2026-11-07T04:48:29Z · message_queued at 2026-11-07T04:48:29.924Z
+- 2026-11-07T04:49:46Z · note: review pass 1: needs some work
+- 2026-11-07T04:49:47Z · message_delivered: 1 message(s)
+- 2026-11-07T04:49:47Z · status review→active
+- 2026-11-07T04:49:49Z · CTO nudge: held — remote validation is running
+- 2026-11-07T04:57:34Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (13c13753c) during finalization (#0734)
+- 2026-11-07T05:04:03Z · message_queued at 2026-11-07T05:04:03.416Z
+- 2026-11-07T05:04:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-07T05:09:03Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T05:18:06Z · body
+- 2026-11-07T05:36:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T05:54:41Z · status active→review
+- 2026-11-07T05:54:42Z · message_queued at 2026-11-07T05:54:42.260Z
+- 2026-11-07T05:56:52Z · note: review pass 2: needs some work
+- 2026-11-07T05:56:52Z · message_delivered: 1 message(s)
+- 2026-11-07T05:56:53Z · status review→active
+- 2026-11-07T05:56:56Z · CTO nudge: held — remote validation is running
+- 2026-11-07T06:42:27Z · body
+- 2026-11-07T06:46:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T07:12:03Z · status active→review
+- 2026-11-07T07:12:04Z · message_queued at 2026-11-07T07:12:04.116Z
+- 2026-11-07T07:13:48Z · note: review pass 3: needs some work
+- 2026-11-07T07:13:48Z · needs_input
+- 2026-11-07T07:21:12Z · status review→active
+- 2026-11-07T07:21:12Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-07T07:21:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T07:31:16Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-07T07:31:19Z · message_delivered: 1 message(s)
+- 2026-11-07T07:31:20Z · CTO nudge: held — remote validation is running
+- 2026-11-07T07:32:01Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (01003f662) during finalization (#0734)
+- 2026-11-07T07:32:12Z · message_queued at 2026-11-07T07:32:12.498Z
+- 2026-11-07T07:32:40Z · message_queued at 2026-11-07T07:32:40.539Z
+- 2026-11-07T07:33:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T07:33:04Z · body
+- 2026-11-07T07:51:35Z · body
+- 2026-11-07T08:00:54Z · body
+- 2026-11-07T08:03:32Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-07T08:03:32Z · message_queued at 2026-11-07T08:03:32.980Z
+- 2026-11-07T08:03:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The formatted rerun is now green for build, formatting, lint, all 364 scoped test files (5,007 passed, 1 skipped), and rendered contrast on both the remote and local guard paths. RepoOS is completing its local UI smoke check now. · stderr: Reading additional input from stdin...
+- 2026-11-07T08:03:33Z · status active→review
+- 2026-11-07T08:03:33Z · message_delivered: 3 message(s)
+- 2026-11-07T08:03:34Z · note: handoff requested (cli)
