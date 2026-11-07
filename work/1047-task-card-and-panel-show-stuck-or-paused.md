@@ -3,6 +3,9 @@ id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — re-sync the conflicting fixture file, then fix the card's indeterminate bar and the machine/attempt display."
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -128,3 +131,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T07:12:03Z · status active→review
 - 2026-11-07T07:12:04Z · message_queued at 2026-11-07T07:12:04.116Z
 - 2026-11-07T07:13:48Z · note: review pass 3: needs some work
+- 2026-11-07T07:13:48Z · needs_input
