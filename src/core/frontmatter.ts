@@ -220,7 +220,15 @@ function serializeScalar(v: unknown): string {
   if (typeof v === "boolean" || typeof v === "number") return String(v);
   const s = String(v);
   // quote if it could be misread (leading zero ids, special chars, etc.)
-  if (/^0\d/.test(s) || /[:#\[\]{}",]/.test(s) || s.trim() !== s || s === "") {
+  // Strings that look like YAML numbers must stay strings on a round trip.
+  // This includes task IDs such as "1047", which the scalar parser otherwise
+  // converts to a number and downstream ID parsers may discard.
+  if (
+    /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(s) ||
+    /[:#\[\]{}",]/.test(s) ||
+    s.trim() !== s ||
+    s === ""
+  ) {
     return `"${s.replace(/"/g, '\\"')}"`;
   }
   return s;

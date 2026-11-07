@@ -746,7 +746,7 @@ command = "just macos-build && exec env LLVM_PROFILE_FILE=/dev/null 'macos/.deri
 
 [[budget.allowlist]]
 cli = "opencode"
-models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/muse-spark-1.3-contributor", "opencode-go/mimo-v2.6-flash"]
+models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/mimo-v2.6-flash"]
 pausedModels = [{ model = "opencode-go/mimo-v2.6-flash" }, { model = "opencode-go/glm-5.3-flash" }]
 [[budget.allowlist]]
 cli = "github copilot"
@@ -756,7 +756,7 @@ cli = "cursor"
 models = ["composer-2.5", "grok-4.7-low"]
 [[budget.allowlist]]
 cli = "codex"
-models = ["gpt-6-luna"]
+models = ["gpt-6-luna", "gpt-6.1-terra"]
 [[budget.allowlist]]
 cli = "pi"
 models = ["openrouter/deepseek/deepseek-v4.1-flash"]

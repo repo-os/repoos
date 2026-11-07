@@ -2473,7 +2473,7 @@ describe("hang detector (#0729)", () => {
     const thresholdMs = 300_000;
     const now = 10_000_000;
     const quiet = now - thresholdMs - 1;
-    // Idle output + idle host → hung.
+    // A single idle CPU sample may be an I/O wait and is not enough.
     expect(
       detectHungRun({
         lastOutputAt: quiet,
@@ -2481,6 +2481,17 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: 0.1,
         containerCpuActive: false,
+      }),
+    ).toBe(false);
+    // Sustained idle output and container inactivity → hung.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        containerCpuInactiveForMs: thresholdMs,
       }),
     ).toBe(true);
     // Output advanced recently → not hung, even on an idle host.
@@ -2501,6 +2512,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: 4,
         containerCpuActive: false,
+        containerCpuInactiveForMs: thresholdMs,
       }),
     ).toBe(true);
     // Busy host without a container sample remains inconclusive.
@@ -2530,6 +2542,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: Number.POSITIVE_INFINITY,
         containerCpuActive: false,
+        containerCpuInactiveForMs: thresholdMs,
       }),
     ).toBe(true);
     // A progressing container protects a run from a silent local stream.
@@ -2554,6 +2567,27 @@ describe("hang detector (#0729)", () => {
         loadUnknownSince: quiet,
       }),
     ).toBe(false);
+    // A slow probe must not leave a cached idle sample eligible to kill.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 0.1,
+        loadUnknownSince: now,
+      }),
+    ).toBe(false);
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        containerCpuInactiveForMs: thresholdMs - 1,
+      }),
+    ).toBe(false);
     // The exact container being inactive overrides stale busy host load.
     expect(
       detectHungRun({
@@ -2564,6 +2598,7 @@ describe("hang detector (#0729)", () => {
         lastKnownLoadPerCpu: 4,
         loadUnknownSince: quiet,
         containerCpuActive: false,
+        containerCpuInactiveForMs: thresholdMs,
       }),
     ).toBe(true);
     // Gate already finished — quiet container is not a hang (#0739).
@@ -2588,6 +2623,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs: 300_000,
         loadPerCpu: 0,
         containerCpuActive: false,
+        containerCpuInactiveForMs: 300_000,
       }),
     ).toBe(true);
   });
@@ -2601,6 +2637,7 @@ describe("hang detector (#0729)", () => {
         name: "ok and idle with inactive container",
         loadPerCpu: 0.1,
         containerCpuActive: false,
+        containerCpuInactiveForMs: 300_000,
         hung: true,
       },
       {
@@ -2613,6 +2650,7 @@ describe("hang detector (#0729)", () => {
         name: "busy host with inactive container",
         loadPerCpu: 4,
         containerCpuActive: false,
+        containerCpuInactiveForMs: 300_000,
         hung: true,
       },
       {
@@ -2626,6 +2664,7 @@ describe("hang detector (#0729)", () => {
         loadPerCpu: Number.POSITIVE_INFINITY,
         lastKnownLoadPerCpu: 4,
         containerCpuActive: false,
+        containerCpuInactiveForMs: 300_000,
         hung: true,
       },
       {
@@ -2682,65 +2721,76 @@ describe("hang detector (#0729)", () => {
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000 - 1)).toBe(false);
   });
 
-  it("schedules a reaper after a host becomes available and logs its output", async () => {
-    const staleCreatedAt = new Date(Date.now() - 26 * 60_000).toISOString();
-    const runRemote = vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
-      if (cmd.includes(PREREQ_OK_TOKEN)) {
-        return {
-          code: 0,
-          output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
-          timedOut: false,
-        };
-      }
-      if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
-        return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
-      }
-      if (cmd.includes("__HOST_LOCK__")) {
-        return { code: 0, output: "__HOST_LOCK__\\n", timedOut: false };
-      }
-      if (cmd === reaperCommand()) {
-        return {
-          code: 0,
-          output: `0123456789ab\t/repoos-validate-old\t${staleCreatedAt}`,
-          timedOut: false,
-        };
-      }
-      if (cmd === reaperRemoveCommand("0123456789ab")) {
-        return { code: 0, output: "", timedOut: false };
-      }
-      return { code: 1, output: "unexpected command", timedOut: false };
-    });
-    const logger = { system: vi.fn() };
-    const pool = new TailscaleHostPool(
-      { enabled: true, provider: "tailscale", tailscaleHosts: [{ host: "runner" }] } as never,
-      {
-        exec: {
-          bundleRepo: vi.fn(async () => ({ ok: true })),
-          uploadFile: vi.fn(async () => ({ ok: true })),
-          downloadDir: vi.fn(async () => {}),
-          probeTcp: vi.fn(async () => true),
-          runRemote,
+  it.each([false, true])(
+    "schedules a reaper and preserves stale containers owned by another process (holder=%s)",
+    async (otherProcessOwnsSlot) => {
+      const staleCreatedAt = new Date(Date.now() - 26 * 60_000).toISOString();
+      const runRemote = vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          return {
+            code: 0,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            timedOut: false,
+          };
+        }
+        if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
+          return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
+        }
+        if (cmd.includes("__HOST_LOCK__")) {
+          return {
+            code: 0,
+            output: otherProcessOwnsSlot
+              ? '__HOST_LOCK__\nhold\t0\t60\n{"taskId":"1049","phase":"checks"}\n'
+              : "__HOST_LOCK__\n",
+            timedOut: false,
+          };
+        }
+        if (cmd === reaperCommand()) {
+          return {
+            code: 0,
+            output: `0123456789ab\t/repoos-validate-old\t${staleCreatedAt}`,
+            timedOut: false,
+          };
+        }
+        if (cmd === reaperRemoveCommand("0123456789ab")) {
+          return { code: 0, output: "", timedOut: false };
+        }
+        return { code: 1, output: "unexpected command", timedOut: false };
+      });
+      const logger = { system: vi.fn() };
+      const pool = new TailscaleHostPool(
+        { enabled: true, provider: "tailscale", tailscaleHosts: [{ host: "runner" }] } as never,
+        {
+          exec: {
+            bundleRepo: vi.fn(async () => ({ ok: true })),
+            uploadFile: vi.fn(async () => ({ ok: true })),
+            downloadDir: vi.fn(async () => {}),
+            probeTcp: vi.fn(async () => true),
+            runRemote,
+          },
+          logger: logger as never,
+          pressureProbe: vi.fn(async () => null),
+          pressureOptions: () => ({ enabled: false, thresholds: pressureThresholds() }),
         },
-        logger: logger as never,
-        pressureProbe: vi.fn(async () => null),
-        pressureOptions: () => ({ enabled: false, thresholds: pressureThresholds() }),
-      },
-    );
+      );
 
-    pool.probeDueHosts();
-    await tick(30);
-    pool.probeDueHosts();
-    await tick(30);
+      pool.probeDueHosts();
+      await tick(30);
+      pool.probeDueHosts();
+      await tick(30);
 
-    expect(runRemote.mock.calls.some(([, cmd]) => cmd === reaperCommand())).toBe(true);
-    expect(
-      runRemote.mock.calls.some(([, cmd]) => cmd === reaperRemoveCommand("0123456789ab")),
-    ).toBe(true);
-    expect(logger.system).toHaveBeenCalledWith(
-      "info",
-      "remote validation Reaping stale validation container repoos-validate-old (older than 25 minutes) on runner",
-    );
-  });
+      expect(runRemote.mock.calls.some(([, cmd]) => cmd === reaperCommand())).toBe(true);
+      expect(
+        runRemote.mock.calls.some(([, cmd]) => cmd === reaperRemoveCommand("0123456789ab")),
+      ).toBe(!otherProcessOwnsSlot);
+      if (!otherProcessOwnsSlot) {
+        expect(logger.system).toHaveBeenCalledWith(
+          "info",
+          "remote validation Reaping stale validation container repoos-validate-old (older than 25 minutes) on runner",
+        );
+      }
+    },
+  );
 
   it("HangWatchdog fires onHung exactly once and stops after firing", () => {
     let now = 0;
@@ -2750,6 +2800,7 @@ describe("hang detector (#0729)", () => {
       thresholdMs: 300_000,
       loadPerCpu: () => load,
       containerCpuActive: () => false,
+      containerCpuInactiveForMs: () => now,
       onHung: () => {
         killed++;
       },
@@ -2802,6 +2853,7 @@ describe("hang detector (#0729)", () => {
       thresholdMs: 300_000,
       loadPerCpu: () => load,
       containerCpuActive: () => (load < 0.5 ? false : undefined),
+      containerCpuInactiveForMs: () => (load < 0.5 ? 300_000 : undefined),
       onHung: () => {
         killed++;
       },
@@ -3390,7 +3442,7 @@ describe("hung run recovery end to end (#0729)", () => {
   ] as const)(
     "reports $condition and captures evidence before removal (#1049)",
     async ({ load, condition, detail }) => {
-      const logs = `${"older log output\n".repeat(300)}LATEST CONTAINER OUTPUT`;
+      const logs = `${"older log output\n".repeat(300)}LATEST CONTAINER OUTPUT ghp_testSecret123`;
       const state = `${JSON.stringify({ Status: "exited" })}${" ".repeat(2100)}LATEST STATE FIELD`;
       const f = poolFixture({
         hosts: [{ host: "a" }],
@@ -3398,6 +3450,7 @@ describe("hung run recovery end to end (#0729)", () => {
         hangIdleMinutes: 0.0005,
         hangCheckIntervalMs: 15,
         loadSampleIntervalMs: 10,
+        containerCpuOutput: condition === "host-idle" ? "" : "0.0%",
         containerLogsOutput: logs,
         containerStateOutput: state,
       });
@@ -3420,6 +3473,8 @@ describe("hung run recovery end to end (#0729)", () => {
         containerLogs: expect.stringContaining("LATEST CONTAINER OUTPUT"),
         containerState: expect.stringContaining("LATEST STATE FIELD"),
       });
+      expect(hang?.hangEvidence?.containerLogs).not.toContain("ghp_testSecret123");
+      expect(hang?.hangEvidence?.containerLogs).toContain("***");
       const result = events.find((event) => event.phase === "result");
       expect(result?.message).toContain(detail);
       await resultPromise;

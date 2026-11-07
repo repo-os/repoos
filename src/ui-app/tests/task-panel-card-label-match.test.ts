@@ -73,7 +73,11 @@ function pipeline(over: Partial<IntegrationPipelineSnapshot> = {}): IntegrationP
 
 function stubApi(
   task: Task,
-  opts: { reviewRunning?: boolean; review?: Record<string, unknown> | null } = {},
+  opts: {
+    reviewRunning?: boolean;
+    review?: Record<string, unknown> | null;
+    handoffStatus?: Record<string, unknown>;
+  } = {},
 ): void {
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal(
@@ -88,6 +92,8 @@ function stubApi(
           taskCount: 1,
         });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/handoff-status"))
+        return json(opts.handoffStatus ?? { state: "idle", step: null, attempt: 0 });
       if (url.includes("/review"))
         return json({
           ok: true,
@@ -125,6 +131,8 @@ async function mountDrawer(pinia: Pinia, task: Task) {
 }
 
 function cardLabel(wrapper: Awaited<ReturnType<typeof mountCard>>): string {
+  const progress = wrapper.find('[data-test-id="task-card-check-status-line"]');
+  if (progress.exists()) return progress.text().trim();
   return wrapper.get('[data-test-id="task-card-agent-hint"]').text().trim();
 }
 
@@ -143,6 +151,113 @@ afterEach(() => {
 });
 
 describe("task panel status label matches the board card (#1023)", () => {
+  it.each([
+    { state: "indeterminate", source: "status" },
+    { state: "determinate", source: "run" },
+    { state: "snapshot with richer check-run metadata", source: "status-run" },
+    { state: "slot-held with empty run list", source: "slot" },
+    { state: "handoff with no SSE after reload", source: "reload" },
+  ])("shows card and drawer progress for $state", async ({ source }) => {
+    const task = activeTask();
+    const startedAt = new Date(Date.now() - 75_000).toISOString();
+    const serverStatus = {
+      state: "running",
+      step: "verify",
+      startedAt,
+      updatedAt: new Date().toISOString(),
+      attempt: 2,
+      progress: null,
+      machine: "runner-host",
+    };
+    stubApi(task, {
+      handoffStatus: source === "reload" || source === "status-run" ? serverStatus : undefined,
+    });
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [];
+    if (source === "run" || source === "status-run") {
+      repo.taskChecks[task.id] = [
+        runningCheck({
+          kind: "merge-gate",
+          attempt: 3,
+          machine: "check-host",
+        }),
+      ];
+    }
+    const card = await mountCard(pinia, task);
+    const drawer = await mountDrawer(pinia, task);
+    if (source === "slot") {
+      repo.localCheckSlotHolders = [
+        {
+          slot: 0,
+          pid: 1234,
+          ageMs: 8 * 60_000,
+          heartbeatAgeMs: 2_000,
+          dead: false,
+          wedged: false,
+          meta: { kind: "local-check", taskId: task.id },
+        },
+      ];
+    }
+    if (source === "status" || source === "status-run") {
+      repo.handoffStatuses[task.id] = {
+        ...serverStatus,
+        progress: runningCheck({
+          attempt: null,
+          machine: null as unknown as string,
+          stepsDone: null,
+          stepsTotal: null,
+          currentStep: null,
+          testsDone: null,
+          testsTotal: null,
+          stepName: null,
+        }),
+      };
+    }
+    await flush();
+
+    expect(card.find('[data-test-id="task-card-check-progress"]').exists()).toBe(true);
+    expect(drawer.find('[data-test-id="close-out-check-progress"]').exists()).toBe(true);
+    const cardProgress = card.find('[data-test-id="task-card-check-progress"] progress');
+    const drawerProgress = drawer.find('[data-test-id="close-out-check-progress"] progress');
+    if (source === "run" || source === "status-run") {
+      expect(cardProgress.attributes("value")).toBe("33");
+      expect(drawerProgress.attributes("value")).toBe("33");
+      expect(cardLabel(card)).toMatch(/^Checks · step 4 of 8/);
+      expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+        "on check-host",
+      );
+    } else {
+      expect(cardProgress.exists()).toBe(false);
+      expect(drawerProgress.exists()).toBe(false);
+      expect(
+        card
+          .find('[data-test-id="task-card-check-progress"] .check-progress-indeterminate')
+          .exists(),
+      ).toBe(false);
+      expect(
+        drawer
+          .find('[data-test-id="close-out-check-progress"] .check-progress-indeterminate')
+          .exists(),
+      ).toBe(false);
+    }
+    if (source === "status" || source === "reload") {
+      expect(drawer.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
+        "on runner-host",
+      );
+      expect(cardLabel(card)).toMatch(/^Checks ·/);
+    }
+    expect(drawer.text()).not.toContain("Quiet — may be stalled");
+    expect(drawer.text()).not.toContain("stuck · silent");
+    if (source === "reload") {
+      expect(cardLabel(card)).toMatch(/^Checks · checking verify/);
+      expect(
+        vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes("/handoff-status")),
+      ).toBe(true);
+    }
+    card.unmount();
+    drawer.unmount();
+  });
+
   it("names a running handoff check exactly as the card does", async () => {
     const task = activeTask();
     stubApi(task);
@@ -154,11 +269,102 @@ describe("task panel status label matches the board card (#1023)", () => {
     const drawer = await mountDrawer(pinia, task);
 
     const expected = cardLabel(card);
-    expect(expected).toBe("running checks");
+    expect(expected).toMatch(/^Checks · step 4 of 8/);
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     // A running state carries the Settings-selected activity animation.
     expect(drawer.find(".drawer-status-l1 .ai").exists()).toBe(true);
+    expect(drawer.find('[data-test-id="close-out-check-progress"] progress').exists()).toBe(true);
     card.unmount();
+    drawer.unmount();
+  });
+
+  it("treats a held local check slot as running when check history is empty", async () => {
+    const task = activeTask();
+    stubApi(task);
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [];
+
+    const card = await mountCard(pinia, task);
+    const drawer = await mountDrawer(pinia, task);
+    repo.localCheckSlotHolders = [
+      {
+        slot: 0,
+        pid: 1234,
+        ageMs: 8 * 60_000,
+        heartbeatAgeMs: 2_000,
+        dead: false,
+        wedged: false,
+        meta: { kind: "local-check", taskId: task.id },
+      },
+    ];
+    await flush();
+
+    const expected = cardLabel(card);
+    expect(expected).toMatch(/^Checks · check · /);
+    expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
+    expect(drawer.text()).not.toContain("Quiet — may be stalled");
+    expect(drawer.text()).not.toContain("stuck · silent");
+    const progress = drawer.find('[data-test-id="close-out-check-progress"] progress');
+    expect(progress.exists()).toBe(false);
+    card.unmount();
+    drawer.unmount();
+  });
+
+  it("uses persisted handoff status after reload when no check run or SSE step exists", async () => {
+    const task = activeTask();
+    stubApi(task);
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [];
+
+    const card = await mountCard(pinia, task);
+    const drawer = await mountDrawer(pinia, task);
+    repo.handoffStatuses[task.id] = {
+      state: "running",
+      step: "verify",
+      startedAt: new Date(Date.now() - 75_000).toISOString(),
+      updatedAt: new Date().toISOString(),
+      attempt: 1,
+      progress: null,
+      machine: "fixture host",
+    };
+    await flush();
+
+    const expected = cardLabel(card);
+    expect(expected).toMatch(/^Checks · checking verify/);
+    expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
+    expect(drawer.text()).not.toContain("Quiet — may be stalled");
+    expect(drawer.text()).not.toContain("stuck · silent");
+    expect(card.find('[data-test-id="task-card-check-progress"] progress').exists()).toBe(false);
+    expect(drawer.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
+      "on fixture host",
+    );
+    const progress = drawer.find('[data-test-id="close-out-check-progress"] progress');
+    expect(progress.exists()).toBe(false);
+    card.unmount();
+    drawer.unmount();
+  });
+
+  it("shows checks running, not checks failed, while a new check is in flight after retries", async () => {
+    const task = activeTask({ extra: { check_retry_count: 2 } });
+    stubApi(task);
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [
+      {
+        ...runningCheck(),
+        id: "0001-failed",
+        running: false,
+        passed: false,
+        finishedAt: new Date().toISOString(),
+      },
+      runningCheck({ id: "0001-retry" }),
+    ];
+    repo.handoffSteps[task.id] = "check";
+
+    const drawer = await mountDrawer(pinia, task);
+    const summary = drawer.find(".drawer-status-summary");
+    expect(summary.find(".drawer-status-l1").text()).toMatch(/^Checks ·/);
+    expect(summary.text()).not.toMatch(/Checks failed/i);
+    expect(drawer.find(".drawer-status-chip").exists()).toBe(false);
     drawer.unmount();
   });
 
@@ -172,11 +378,13 @@ describe("task panel status label matches the board card (#1023)", () => {
     const drawer = await mountDrawer(pinia, task);
 
     const expected = cardLabel(card);
-    expect(expected).toBe("running checks");
+    expect(expected).toMatch(/^Checks · check/);
     const summary = drawer.find(".drawer-status-summary");
     expect(summary.find(".drawer-status-l1").text()).toBe(expected);
-    expect(summary.findAll(".drawer-status-row")).toHaveLength(2);
-    expect(summary.find(".drawer-status-l2").text()).toBe("Running repoos check…");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
+    expect(drawer.find('[data-test-id="checks-progress-drawer-title"]').text()).toMatch(
+      /^Running checks/,
+    );
     expect(summary.find(".drawer-status-l1 .ai").exists()).toBe(true);
     // No duplicate or empty row survives the compacting pass.
     const rows = summary.findAll(".drawer-status-row").map((row) => row.text().trim());

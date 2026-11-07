@@ -306,18 +306,78 @@ export async function cmdPause(args: string[]): Promise<number> {
   }
 }
 
-export async function cmdMessage(args: string[]): Promise<number> {
-  const { rest, opts, error } = parseCommonFlags(args);
-  if (error) {
-    printErr(error);
+/** Parse message sources before contacting the server, preserving option values verbatim. */
+export function parseMessageInput(
+  args: string[],
+  stdin = { isTTY: process.stdin.isTTY, read: () => readFileSync(0, "utf8") },
+): { id: string; text: string; opts: CommonOpts } {
+  const opts: CommonOpts = { json: false, wait: false, now: false };
+  let id: string | undefined;
+  let source: "inline" | "stdin" | "file" | "message" | undefined;
+  let value = "";
+  const choose = (next: typeof source, input: string) => {
+    if (source && !(source === "inline" && next === "inline"))
+      throw new Error("Use only one message input source");
+    value = source === "inline" ? `${value} ${input}` : input;
+    source = next;
+  };
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--json") opts.json = true;
+    else if (arg === "--now") opts.now = true;
+    else if (arg === "--port") {
+      const port = Number(args[++i]);
+      if (!Number.isInteger(port) || port <= 0)
+        throw new Error("--port requires a positive integer");
+      opts.port = port;
+    } else if (arg === "--message" || arg === "--file" || arg === "--message-file") {
+      const input = args[++i];
+      if (input === undefined || input.startsWith("--")) throw new Error(`${arg} requires a value`);
+      choose(arg === "--message" ? "message" : "file", input);
+    } else if (arg.startsWith("--")) throw new Error(`Unknown flag: ${arg}`);
+    else if (!id) {
+      if (arg === "-") throw new Error("A task id is required before stdin");
+      id = arg;
+    } else if (arg === "-") choose("stdin", "-");
+    else choose("inline", arg);
+  }
+  if (!id) throw new Error("A task id is required");
+  if (!source && !stdin.isTTY) source = "stdin";
+  if (source === "stdin" || (source === "file" && value === "-")) {
+    if (stdin.isTTY) throw new Error("No stdin provided; pipe a message or use a heredoc");
+    try {
+      value = stdin.read();
+    } catch (e) {
+      throw new Error(`Could not read stdin: ${(e as Error).message}`);
+    }
+  } else if (source === "file") {
+    try {
+      value = readFileSync(value, "utf8");
+    } catch (e) {
+      throw new Error(`Could not read message file: ${(e as Error).message}`);
+    }
+  }
+  const text = value.trim();
+  if (!text) throw new Error("Message cannot be empty or whitespace-only");
+  return { id, text, opts };
+}
+
+function messageSummary(text: string): string {
+  return `${text.length} characters: ${text.split(/\r?\n/, 1)[0]}`;
+}
+
+export async function cmdMessage(
+  args: string[],
+  stdin?: Parameters<typeof parseMessageInput>[1],
+): Promise<number> {
+  let input: ReturnType<typeof parseMessageInput>;
+  try {
+    input = parseMessageInput(args, stdin);
+  } catch (e) {
+    printErr((e as Error).message);
     return 1;
   }
-  const id = rest[0];
-  const text = rest.slice(1).join(" ").trim();
-  if (!id || !text) {
-    printErr('Usage: repoos message <id> "<text>" [--now] [--json] [--port N]');
-    return 1;
-  }
+  const { id, text, opts } = input;
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
@@ -330,12 +390,16 @@ export async function cmdMessage(args: string[]): Promise<number> {
       const why = data.now
         ? (data.reason ?? "agent still busy after the interrupt")
         : "agent busy — delivers when the turn ends";
-      console.log(c.green("  ✓ ") + c.dim(`message queued to #${id} (${why})`));
+      console.log(
+        c.green("  ✓ ") + c.dim(`message queued to #${id} (${why}) — ${messageSummary(text)}`),
+      );
     } else if (data?.deliveredNow) {
       const how = data.interrupted ? " (interrupted the running turn)" : " (agent was idle)";
-      console.log(c.green("  ✓ ") + c.dim(`message delivered now to #${id}${how}`));
+      console.log(
+        c.green("  ✓ ") + c.dim(`message delivered now to #${id}${how} — ${messageSummary(text)}`),
+      );
     } else {
-      console.log(c.green("  ✓ ") + c.dim(`message sent to #${id}`));
+      console.log(c.green("  ✓ ") + c.dim(`message sent to #${id} — ${messageSummary(text)}`));
     }
     return 0;
   } catch (e) {
@@ -345,46 +409,21 @@ export async function cmdMessage(args: string[]): Promise<number> {
 }
 
 /** `repoos send-back` — reopen, start the engineer, then deliver feedback. */
-export async function cmdSendBack(args: string[]): Promise<number> {
-  const { rest, opts, error } = parseCommonFlags(args);
-  if (error) {
-    printErr(error);
+export async function cmdSendBack(
+  args: string[],
+  stdin?: Parameters<typeof parseMessageInput>[1],
+): Promise<number> {
+  let input: ReturnType<typeof parseMessageInput>;
+  try {
+    input = parseMessageInput(args, stdin);
+  } catch (e) {
+    printErr((e as Error).message);
     return 1;
   }
+  const { id, text: message, opts } = input;
   if (opts.now) {
     printErr(
       "repoos send-back does not support --now; feedback is queued after the engineer starts",
-    );
-    return 1;
-  }
-  let id: string | undefined;
-  let message: string | undefined;
-  let messageFile: string | undefined;
-  for (let i = 0; i < rest.length; i++) {
-    if (rest[i] === "--message") message = rest[++i];
-    else if (rest[i] === "--message-file") messageFile = rest[++i];
-    else if (!id) id = rest[i];
-    else {
-      printErr(`Unexpected argument: ${rest[i]}`);
-      return 1;
-    }
-  }
-  if (message !== undefined && messageFile !== undefined) {
-    printErr("Use --message or --message-file, not both");
-    return 1;
-  }
-  if (messageFile !== undefined) {
-    try {
-      message = messageFile === "-" ? readFileSync(0, "utf8") : readFileSync(messageFile, "utf8");
-    } catch (e) {
-      printErr(`Could not read message file: ${(e as Error).message}`);
-      return 1;
-    }
-  }
-  message = message?.trim();
-  if (!id || !message) {
-    printErr(
-      'Usage: repoos send-back <id> (--message "…" | --message-file <file|->) [--json] [--port N]',
     );
     return 1;
   }
@@ -396,7 +435,7 @@ export async function cmdSendBack(args: string[]): Promise<number> {
     else {
       console.log(c.green("  ✓ ") + c.dim(`moved #${id} to active`));
       console.log(c.green("  ✓ ") + c.dim(`started engineer on #${id}`));
-      console.log(c.green("  ✓ ") + c.dim(`queued message to #${id}`));
+      console.log(c.green("  ✓ ") + c.dim(`queued message to #${id} — ${messageSummary(message)}`));
     }
     return 0;
   } catch (e) {

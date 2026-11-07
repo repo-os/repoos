@@ -412,11 +412,15 @@ Three changes close that hole:
   CPU progress stays alive even if SSH output is stalled. A failed or timed-out
   load probe is unknown, never idle, and cannot independently trigger a kill.
   If the host is idle (1-min load per CPU below
-  `HANG_IDLE_LOAD_THRESHOLD`, `0.5`) or a successful container sample shows no
-  CPU activity, the run is declared **hung**. The runner captures the last 100
+  `HANG_IDLE_LOAD_THRESHOLD`, `0.5`) it can support a hang decision only when
+  no container sample is available. One zero-CPU sample is inconclusive: the
+  container must remain inactive across the full output-silence interval. A
+  progressing container protects the run, and a slow in-flight probe invalidates
+  old load/CPU samples until it returns. The runner captures the last 100
   container log lines and `docker inspect` state before removal, then attaches
   them to the task's remote-validation event with the fired condition
-  (`host-idle` or `container-inactive`). It records the outcome as `hung` and
+  (`host-idle` or `container-inactive`). Logs are ANSI stripped and secret-
+  redacted before storage. It records the outcome as `hung` and
   returns a transient failure so `retryOtherHosts` can try another host. Tune
   the threshold with `repoos.toml` / Settings
   (`remoteValidation.hangIdleMinutes`).
@@ -433,9 +437,10 @@ per-run trap, the host prerequisite probe's **stale-container** sweep
 **not** `status=running`, so a live sibling run is never removed; and a periodic
 background reaper that removes leaked containers older than the run cap (25 min)
 (`reaperCommand()`) (#1049). The periodic reaper removes prefixed containers
-older than the 25-minute run cap, but only while the host has no active lock
-occupancy; dispatch is held while the reaper runs, and locally owned container
-names are excluded and rechecked before removal. The lock-wait allowance can
+older than the 25-minute run cap, but only while a fresh host-lock inspection
+shows no active lock occupancy; dispatch is held while the reaper runs, and
+locally owned container names are excluded and rechecked before removal. If
+remote lock inspection fails, the container is preserved. The lock-wait allowance can
 extend a run past 25 minutes, so age alone is never enough to reap it. Every
 removal is logged. Safe GC of abandoned workdirs (age-bound,
 mount-aware) is deliberately future work; until then, rely on per-run EXIT

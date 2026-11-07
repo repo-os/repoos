@@ -2,14 +2,18 @@
 id: 1051
 title: "Fix depends_on dropping task ids from 1000 up (written unquoted, parsed as number)"
 type: bug
-status: inbox
+status: done
 priority: p1
 area: core
-assigned_to: ""
+merged_commit: e74d0fa1ee5d6b37e1fa8ff2f1f57b531d4e9fea
+assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/fix-depends-on-dropping-task-ids-from-10
 created_at: "2026-11-07T07:23:45Z"
-updated_at: "2026-11-07T07:23:45Z"
+updated_at: "2026-11-07T15:39:10Z"
+last_close_out_gate_ms: 260362
+last_close_out_gate_at: "2026-11-07T15:36:14.882Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -38,3 +42,14 @@ Cause (read from the code): `repoos update --depends-on` writes the frontmatter 
 ## Activity
 
 - 2026-11-07T07:23:45Z · created · njachowski@gmail.com
+- 2026-11-07T13:57:25Z · status inbox→ready
+- 2026-11-07T14:48:21Z · status ready→active, branch
+- 2026-11-07T15:13:45Z · body
+- 2026-11-07T15:18:41Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T15:25:40Z · status active→review
+- 2026-11-07T15:25:40Z · message_queued at 2026-11-07T15:25:40.767Z
+- 2026-11-07T15:25:41Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-07T15:27:59Z · note: review pass 1: good to go
+- 2026-11-07T15:36:14Z · close-out gate completed in 260s
+- 2026-11-07T15:38:36Z · status done→done, release:success
+- 2026-11-07T15:39:10Z · message_dropped: 1 queued message(s) discarded — task is done

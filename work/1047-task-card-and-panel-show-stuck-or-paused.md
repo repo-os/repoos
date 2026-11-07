@@ -2,24 +2,23 @@
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
-status: active
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 149afdc18334e08153ff9b0a88d96c32db2dd7f8
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-card-and-panel-show-running-checks-
 cli_override: codex
 model_override: gpt-6-luna
-review_cli_override: muse
-review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T09:07:10Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-07T09:05:59.485Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer showing live check progress, attempt and machine (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work?task=1047&tab=changes (http://127.0.0.1:52490/work?shotState=closeOut:checkProgress)"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 5d7d4bce to a86da372) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 5d7d4bcef77cfb7c522edb86626c494cc66396a8
-review_passes: 3
+updated_at: "2026-11-07T12:43:14Z"
+last_close_out_gate_ms: 279972
+last_close_out_gate_at: "2026-11-07T12:37:11.120Z"
+review_passes: 4
+last_check_failure: "repoos check at 2026-11-07T10:47:14.656Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65527/api/tasks/1047/integration-job (http://127.0.0.1:65527/api/tasks/1047/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65527/api/tasks/1047/integration-job)"
 review_rounds: 2
+incomplete_review_retries: 1
 ---
 ## Problem
 
@@ -62,11 +61,11 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 ```json
 [
 {
-  "label": "Task drawer showing live check progress, attempt and machine",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": "[data-test-id=\"close-out-check-progress\"]",
-  "state": "closeOut:checkProgress"
+"label": "Task drawer showing live check progress, attempt and machine",
+"target": "default",
+"route": "/work?task=1047&tab=changes",
+"highlight": "[data-test-id=\"close-out-check-progress\"]",
+"state": "closeOut:checkProgress"
 }
 ]
 ```
@@ -170,3 +169,38 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T09:06:38Z · message_queued at 2026-11-07T09:06:38.487Z
 - 2026-11-07T09:06:44Z · message_queued at 2026-11-07T09:06:44.324Z
 - 2026-11-07T09:07:10Z · body
+- 2026-11-07T09:11:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T09:23:39Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-07T09:23:39Z · message_queued at 2026-11-07T09:23:39.523Z
+- 2026-11-07T09:23:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: `repoos check` finished green: all 680 test files passed, UI smoke passed, and the remaining docs/landing/Telegram checks passed. I’ve corrected the screenshot to use the fixture’s `9999` task route, so I’m re-requesting review now. · stderr: (empty)
+- 2026-11-07T09:23:39Z · message_delivered: 3 message(s)
+- 2026-11-07T09:26:20Z · message_queued at 2026-11-07T09:26:20.237Z
+- 2026-11-07T09:26:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-07T09:30:18Z · body
+- 2026-11-07T09:30:45Z · body
+- 2026-11-07T09:31:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T10:26:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-07T10:27:38Z · queued message undelivered for 61m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-07T10:27:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: I found the two failures: the only named failing case was an existing timing-sensitive handoff test (“ignores a marker left behind by an earlier turn”), which failed in the full suite and then passed on retry in the focused run; the focuse… · stderr: 2026-11-07T09:50:51.105241Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T09:55:26.122075Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T10:00:01.136568Z ERROR codex_models_manager::manager: failed to refres…
+- 2026-11-07T10:27:39Z · message_delivered: 1 message(s)
+- 2026-11-07T10:31:20Z · message_queued at 2026-11-07T10:31:20.905Z
+- 2026-11-07T10:31:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-07T10:36:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T10:37:22Z · body
+- 2026-11-07T10:46:20Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T10:47:11Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65527/api/tasks/1047/integration-job (http://127.0.0.1:65527/api/tasks/1047/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65527/api/tasks/1047/integration-job)
+- 2026-11-07T10:47:11Z · message_queued at 2026-11-07T10:47:11.290Z
+- 2026-11-07T10:47:14Z · message_delivered: 1 message(s)
+- 2026-11-07T10:57:42Z · body
+- 2026-11-07T11:06:20Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T11:24:28Z · status active→review
+- 2026-11-07T11:24:28Z · message_queued at 2026-11-07T11:24:28.834Z
+- 2026-11-07T11:25:56Z · note: review pass 4: incomplete — no verdict in report
+- 2026-11-07T11:27:31Z · note: review pass 5: incomplete — no verdict in report
+- 2026-11-07T11:44:13Z · review_cli_override, review_model_override
+- 2026-11-07T11:44:16Z · review_model_override
+- 2026-11-07T11:44:30Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c4e74523b) during finalization (#0734)
+- 2026-11-07T11:47:25Z · note: review pass 6: good to go
+- 2026-11-07T12:37:11Z · close-out gate completed in 280s
+- 2026-11-07T12:38:41Z · status done→done, release:success
+- 2026-11-07T12:43:14Z · message_dropped: 1 queued message(s) discarded — task is done

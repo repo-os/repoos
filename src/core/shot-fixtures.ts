@@ -49,6 +49,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:reviewWithBranch",
   // #1003 — review report and pass history for latest/older pass screenshots.
   "drawer:reviewPasses",
+  // #1045 — drawer task with engineering report history for report captures.
   "drawer:engineeringReports",
   // #0867 — review task whose landing pre-checks show one failing merge,
   // so a capture can show the checklist next to Move to done.
@@ -102,6 +103,13 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // can show the card's "re-reviewing checkpoint…" hint. Board-only: no
   // drawer, so no fake-id task fetch.
   "card:checkpointRecovery",
+  // #1054 — active board card with a real check fraction and a single status line.
+  "card:checksProgress",
+  // #1054 — active board card while handoff reuses an earlier clean check (no bar).
+  "card:checksReuse",
+  "drawer:checksProgress",
+  "drawer:checksReuse",
+  "pipeline:checksProgress",
   // #0776/#0795 — a multi-area, human-assigned card with seeded diff stats, so
   // a capture can show the combined area chip, the human chip and the
   // file-count chip.

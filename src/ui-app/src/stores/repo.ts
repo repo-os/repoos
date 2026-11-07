@@ -26,6 +26,7 @@ import {
   shotFixturePinnedTaskRemoteActivity,
   shotFixtureSchedules,
   shotPreviewSkipsRemoteEventsFetch,
+  shotFixtureSeedsLiveTaskChecks,
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
@@ -797,6 +798,56 @@ export const useRepoStore = defineStore("repo", () => {
   const resourceQueueMarkers = ref<
     import("../../../core/local-queue-marker.js").LocalQueueMarker[]
   >([]);
+  /** Active local check slots, including holders whose task-check row is absent. */
+  const localCheckSlotHolders = ref<
+    {
+      slot: number;
+      pid?: number;
+      ageMs: number;
+      heartbeatAgeMs: number;
+      dead: boolean;
+      wedged: boolean;
+      meta?: Record<string, unknown>;
+    }[]
+  >([]);
+  let localCheckSlotsFetchedAt = 0;
+  let localCheckSlotsRequest: Promise<void> | null = null;
+  async function refreshLocalCheckSlots(force = false): Promise<void> {
+    if (localCheckSlotsRequest) return localCheckSlotsRequest;
+    if (!force && Date.now() - localCheckSlotsFetchedAt < 4_000) return;
+    localCheckSlotsRequest = (async () => {
+      try {
+        const result = await api<{ holders: typeof localCheckSlotHolders.value }>(
+          "/api/local-check-slots",
+        );
+        localCheckSlotHolders.value = Array.isArray(result.holders) ? result.holders : [];
+        localCheckSlotsFetchedAt = Date.now();
+      } catch {
+        /* slot ownership is best-effort; check history and handoff status remain */
+      } finally {
+        localCheckSlotsRequest = null;
+      }
+    })();
+    return localCheckSlotsRequest;
+  }
+  function localCheckSlotForTask(
+    taskId: string,
+    nowMs = Date.now(),
+  ): { ageMs: number; heartbeatAgeMs: number } | null {
+    const holder = localCheckSlotHolders.value.find(
+      (item) =>
+        item.pid &&
+        !item.dead &&
+        item.meta?.kind === "local-check" &&
+        String(item.meta.taskId ?? "") === taskId,
+    );
+    if (!holder) return null;
+    const elapsedSinceFetch = Math.max(0, nowMs - localCheckSlotsFetchedAt);
+    return {
+      ageMs: holder.ageMs + elapsedSinceFetch,
+      heartbeatAgeMs: holder.heartbeatAgeMs + elapsedSinceFetch,
+    };
+  }
   /**
    * Messages waiting to be read when a busy task/chat's turn ends (#0821),
    * keyed by task id or chat session key. Hydrated from `/api/agents/queued` so
@@ -860,6 +911,49 @@ export const useRepoStore = defineStore("repo", () => {
    * through the close-out map's "Merging branch…" default.
    */
   const handoffSteps = ref<Record<string, string>>({});
+  const handoffStatuses = ref<
+    Record<
+      string,
+      {
+        state: string;
+        step: string | null;
+        updatedAt: string | null;
+        startedAt?: string | null;
+        attempt: number;
+        progress: TaskCheckRun | null;
+        machine: string | null;
+      }
+    >
+  >({});
+  async function refreshHandoffStatus(id: string): Promise<void> {
+    // Shot fixtures are client-only tasks. Keep their seeded handoff state
+    // intact instead of polling an id that does not exist on the preview API.
+    if (isSeededShotFixtureTask(id)) return;
+    try {
+      const status = await api<{
+        state: string;
+        step: string | null;
+        updatedAt: string | null;
+        startedAt?: string | null;
+        attempt: number;
+        progress?: TaskCheckRun | null;
+        machine?: string | null;
+      }>(`/api/tasks/${id}/handoff-status`);
+      handoffStatuses.value = {
+        ...handoffStatuses.value,
+        [id]: { ...status, progress: status.progress ?? null, machine: status.machine ?? null },
+      };
+      if (status.state === "running" && status.step)
+        handoffSteps.value = { ...handoffSteps.value, [id]: status.step };
+      else if (["passed", "failed", "deferred"].includes(status.state)) {
+        const steps = { ...handoffSteps.value };
+        delete steps[id];
+        handoffSteps.value = steps;
+      }
+    } catch {
+      /* status polling is best effort; live SSE remains available */
+    }
+  }
   /** Why a handoff finalization failed, per task id. Cleared on the next ask. */
   const handoffErrors = ref<Record<string, string>>({});
   /** Uncommitted files blocking a move-to-done, per task id (0204, extended to
@@ -1406,6 +1500,9 @@ export const useRepoStore = defineStore("repo", () => {
    * `status: review`. This is the "running checks…" state the task card shows.
    */
   function handoffInFlight(id: string): boolean {
+    if (handoffStatuses.value[id]?.state === "running") return true;
+    if (["passed", "failed", "deferred"].includes(handoffStatuses.value[id]?.state ?? ""))
+      return false;
     const step = handoffSteps.value[id];
     if (step) return step !== "done" && step !== "failed";
     // After a reload SSE has not replayed `handoff:*`, but the hydrated check
@@ -2224,6 +2321,9 @@ export const useRepoStore = defineStore("repo", () => {
    *  `taskChecks` from that poll would overwrite the in-memory SSE run with a
    *  server copy that may not include it yet (#0897 review). */
   async function refreshTaskChecks(taskId: string, opts?: { remoteOnly?: boolean }): Promise<void> {
+    // The checks progress fixture seeds its own live run; the fixture task is
+    // not present in the preview server's task index (#1047).
+    if (isSeededShotFixtureTask(taskId)) return;
     try {
       const r = await api<{
         ok: boolean;
@@ -2234,7 +2334,7 @@ export const useRepoStore = defineStore("repo", () => {
         taskId === SHOT_PREVIEW_FIXTURE_TASK_ID &&
         typeof window !== "undefined" &&
         isShotPreviewCaptureActive(window.location) &&
-        readShotPreviewFixtureFromLocation(window.location) === "checks:progress";
+        shotFixtureSeedsLiveTaskChecks(readShotPreviewFixtureFromLocation(window.location));
       if (!opts?.remoteOnly && !keepProgressShot) {
         taskChecks.value[taskId] = mergeTaskCheckRuns(taskChecks.value[taskId], r.runs);
       }
@@ -4362,6 +4462,9 @@ export const useRepoStore = defineStore("repo", () => {
     queuedIds,
     queuedAgentMeta,
     resourceQueueMarkers,
+    localCheckSlotHolders,
+    refreshLocalCheckSlots,
+    localCheckSlotForTask,
     queuedMessages,
     runningSince,
     agentActivityAt,
@@ -4375,6 +4478,8 @@ export const useRepoStore = defineStore("repo", () => {
     checkpointRecoveryFor,
     setCheckpointRecovery,
     handoffSteps,
+    handoffStatuses,
+    refreshHandoffStatus,
     handoffErrors,
     handoffErrorFor,
     handoffInFlight,
