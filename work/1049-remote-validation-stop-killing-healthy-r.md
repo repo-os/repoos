@@ -259,3 +259,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T16:35:17Z · message_delivered: 2 message(s)
 - 2026-11-07T16:38:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T16:42:30Z · message_queued at 2026-11-07T16:42:30.338Z
+- 2026-11-07T16:42:30Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — timed out — timed out after 300s
