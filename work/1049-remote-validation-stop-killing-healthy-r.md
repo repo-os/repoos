@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T17:13:17Z"
+updated_at: "2026-11-07T17:13:18Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — timed out — timed out after 300s"
 last_handoff_failure_sha: 453fa67fa2c7129affef76ca423352fbb5461210
 check_retry_count: 1
@@ -69,7 +69,7 @@ Findings from the investigation (no single root cause proven):
 "highlight": ".debug-event[data-debug-event^=remote-]",
 "steps": [
 {
-  "click": ".debug-event[data-debug-event^=remote-]"
+"click": ".debug-event[data-debug-event^=remote-]"
 }
 ],
 "state": "drawer:debugLogs"
@@ -279,3 +279,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T16:44:04Z · body
 - 2026-11-07T17:09:21Z · body
 - 2026-11-07T17:13:17Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T17:13:18Z · message_queued at 2026-11-07T17:13:18.244Z
