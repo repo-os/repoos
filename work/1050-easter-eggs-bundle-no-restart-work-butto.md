@@ -121,3 +121,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T17:43:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T18:09:26Z · message_queued at 2026-11-07T18:09:26.417Z
 - 2026-11-07T18:10:09Z · status active→review
+- 2026-11-07T18:10:09Z · note: Task body is underspecified: E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI
