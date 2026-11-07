@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T08:16:20Z"
+updated_at: "2026-11-07T08:32:21Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 5d7d4bce to a86da372) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 5d7d4bcef77cfb7c522edb86626c494cc66396a8
 review_passes: 3
@@ -154,3 +154,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T08:15:44Z · message_queued at 2026-11-07T08:15:44.688Z
 - 2026-11-07T08:15:44Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 5d7d4bce to a86da372) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-07T08:16:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T08:32:21Z · body
