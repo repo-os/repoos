@@ -1,5 +1,5 @@
 ---
-id: "1049"
+id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: active
@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T21:52:36Z"
+updated_at: "2026-11-07T21:52:53Z"
 review_passes: 8
 last_check_failure: "repoos check at 2026-11-07T15:55:08.194Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -369,3 +369,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T21:51:57Z · message_delivered: 1 message(s)
 - 2026-11-07T21:51:57Z · needs_input
 - 2026-11-07T21:51:58Z · message_queued at 2026-11-07T21:51:58.735Z
+- 2026-11-07T21:52:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’m blocked from editing the reaper fix while task #1049 is in `review`. The provided finding confirms a real cross-process ownership race, but RepoOS rules require the task to be returned to `active` before its branch is edited. I attempt… · stderr: Reading additional input from stdin...
