@@ -244,9 +244,12 @@ describe("TaskCard stuck-agent detection", () => {
     repo.taskChecks["0001"]![0]!.lastProgressAt = new Date(Date.now() - 15_000).toISOString();
     await flush();
 
-    const hint = wrapper.find(".tc-hint");
-    expect(hint.text()).toContain("running checks · check");
-    expect(hint.text()).toContain("109/645");
-    expect(hint.classes()).not.toContain("tc-stuck");
+    expect(wrapper.find('[data-test-id="task-card-check-status-line"]').text()).toMatch(
+      /^Checks · step 5 of 12/,
+    );
+    expect(wrapper.find('[data-test-id="task-card-check-status-line"]').text()).toContain(
+      "109/645",
+    );
+    expect(wrapper.find(".tc-hint").exists()).toBe(false);
   });
 });

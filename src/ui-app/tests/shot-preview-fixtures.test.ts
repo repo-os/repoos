@@ -304,6 +304,22 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(hint.label).toContain("109/645");
   });
 
+  it("seeds pipeline:checksProgress on the checks lane without handoff state", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "pipeline:checksProgress");
+    expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]).toMatchObject({
+      kind: "merge-gate",
+      testsDone: 3,
+      testsTotal: 680,
+      stepsDone: 3,
+      stepsTotal: 9,
+    });
+    expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBeUndefined();
+    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+  });
+
   it("seeds close-out progress on the deep-linked task without creating a fake task", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();
