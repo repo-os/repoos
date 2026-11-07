@@ -348,10 +348,11 @@ describe("task drawer status summary (#0952)", () => {
     ];
     const wrapper = await mountDrawer(pinia, task);
     const summary = wrapper.find(".drawer-status-summary");
-    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
-    expect(summary.find(".drawer-status-l2").text()).toContain("Full check");
-    expect(summary.find(".drawer-status-l2").text()).toContain("on thinkpad");
-    expect(summary.find(".drawer-status-l3").text()).toBe("Starting…");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
+    expect(summary.find(".drawer-status-l1").text()).toMatch(/^Checks · starting…/);
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+      "on thinkpad",
+    );
     expect(summary.text()).not.toContain("step —");
   });
 
