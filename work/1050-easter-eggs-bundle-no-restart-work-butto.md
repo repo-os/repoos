@@ -5,11 +5,12 @@ type: chore
 status: inbox
 priority: p3
 area: web
-assigned_to: ""
+depends_on: [1047]
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T07:03:41Z"
+updated_at: "2026-11-07T07:03:45Z"
 ---
 ## Items
 
@@ -40,3 +41,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 ## Activity
 
 - 2026-11-07T07:03:41Z · created · njachowski@gmail.com
+- 2026-11-07T07:03:45Z · depends_on
