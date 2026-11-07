@@ -17,6 +17,7 @@ import {
   readHandoffStatus,
   truncateHandoffReason,
   updateHandoffStatusStep,
+  updateHandoffStatusProgress,
   HANDOFF_STATUS_REASON_LIMIT,
 } from "../../server/handoff-status";
 
@@ -116,6 +117,31 @@ describe("handoff status store (#1028)", () => {
     expect(failed.reason).toContain("(truncated)");
     expect(failed.reason?.length).toBeLessThan(longReason.length);
     expect(readHandoffStatus(config, "1")).toEqual(failed);
+  });
+
+  it("persists check progress so a reloaded client can restore a CLI handoff", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1047", {
+      attemptKey: "review-cli-1",
+      origin: "cli",
+      step: "check",
+    });
+    updateHandoffStatusProgress(config, "1047", "review-cli-1", {
+      stepsDone: 5,
+      stepsTotal: 12,
+      currentStep: 6,
+      stepName: "tests",
+      testsDone: 140,
+      testsTotal: 289,
+      attempt: 2,
+    });
+    expect(readHandoffStatus(config, "1047")).toMatchObject({
+      state: "running",
+      step: "check",
+      origin: "cli",
+      attempt: 1,
+      progress: { stepsDone: 5, stepsTotal: 12, currentStep: 6, testsDone: 140, testsTotal: 289 },
+    });
   });
 
   it("keeps the same record for a replayed attempt key and starts a new attempt otherwise", () => {
