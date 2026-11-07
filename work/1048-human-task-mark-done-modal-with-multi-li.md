@@ -13,7 +13,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T20:29:40Z"
+updated_at: "2026-11-07T20:29:41Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -89,7 +89,7 @@ right before writing new CSS.
 "highlight": ".human-done-modal",
 "steps": [
 {
-  "click": "[data-task-id=\"9999\"] .drawer-human-task button"
+"click": "[data-task-id=\"9999\"] .drawer-human-task button"
 }
 ],
 "state": "card:humanStep"
@@ -170,3 +170,4 @@ right before writing new CSS.
 - 2026-11-07T20:03:37Z · body
 - 2026-11-07T20:22:06Z · body
 - 2026-11-07T20:29:40Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T20:29:41Z · message_queued at 2026-11-07T20:29:41.198Z
