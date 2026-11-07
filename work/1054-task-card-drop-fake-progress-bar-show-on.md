@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 327f82caba15ce9de2c59142031bfa31fec8684c
 id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
@@ -15,7 +13,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T16:40:55Z"
+updated_at: "2026-11-07T16:41:16Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 327f82caba15ce9de2c59142031bfa31fec8684c
 last_check_failure: "repoos check at 2026-11-07T15:39:14.366Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
@@ -121,4 +121,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T16:22:49Z · body
 - 2026-11-07T16:40:54Z · message_queued at 2026-11-07T16:40:54.859Z
 - 2026-11-07T16:40:55Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-07T16:41:16Z · handoff_deferred: 2 queued message(s) must be read before review
