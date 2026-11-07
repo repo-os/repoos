@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
-updated_at: "2026-11-07T03:23:58Z"
+updated_at: "2026-11-07T03:24:05Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T03:09:08.714Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -86,3 +86,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T03:19:03Z · message_queued at 2026-11-07T03:19:03.553Z
 - 2026-11-07T03:19:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T03:23:58Z · body
+- 2026-11-07T03:24:05Z · CTO nudge: held — an undelivered message is already queued
