@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T13:16:21Z"
+updated_at: "2026-11-07T13:43:43Z"
 last_check_failure: "repoos check at 2026-11-07T08:53:19.245Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Task debug events with expanded remote details (target \"default\"): state \"drawer:debugLogs\" did not render on target \"default\" — /work has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:50620/work?shotState=drawer%3AdebugLogs); [missing-target] Task debug events with expanded remote details (target \"default\"): highlight .debug-event matched nothing on /work (htt… (truncated)"
 review_rounds: 1
 review_passes: 1
@@ -204,3 +204,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T12:47:40Z · body
 - 2026-11-07T12:51:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T13:16:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T13:43:43Z · message_queued at 2026-11-07T13:43:43.787Z
