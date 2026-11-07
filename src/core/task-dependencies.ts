@@ -14,6 +14,17 @@ import {
 
 export class DependencyValidationError extends Error {}
 
+const TASK_ID_WIDTH = 4;
+
+function dependencyId(value: unknown): string | undefined {
+  if (typeof value !== "string" && typeof value !== "number") return undefined;
+  const id = String(value).trim();
+  if (!id) return undefined;
+  // Quoted IDs are already authoritative strings (including unusual short
+  // synthetic IDs); only bare YAML numbers need canonical task-width padding.
+  return typeof value === "number" && /^\d+$/.test(id) ? id.padStart(TASK_ID_WIDTH, "0") : id;
+}
+
 /** Parse task-id lists while tolerating future object-shaped dependency entries. */
 export function parseTaskDependencies(raw: unknown): string[] {
   if (typeof raw === "string") {
@@ -25,15 +36,18 @@ export function parseTaskDependencies(raw: unknown): string[] {
   if (!Array.isArray(raw)) return [];
   const ids: string[] = [];
   for (const entry of raw) {
-    const id =
+    const rawId =
       typeof entry === "string"
         ? entry
-        : entry && typeof entry === "object"
-          ? ((entry as Record<string, unknown>).id ??
-            (entry as Record<string, unknown>).task_id ??
-            (entry as Record<string, unknown>).taskId)
-          : undefined;
-    if (typeof id === "string" && id.trim()) ids.push(id.trim());
+        : typeof entry === "number"
+          ? entry
+          : entry && typeof entry === "object"
+            ? ((entry as Record<string, unknown>).id ??
+              (entry as Record<string, unknown>).task_id ??
+              (entry as Record<string, unknown>).taskId)
+            : undefined;
+    const id = dependencyId(rawId);
+    if (id) ids.push(id);
   }
   return ids;
 }
