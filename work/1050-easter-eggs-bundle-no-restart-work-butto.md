@@ -173,3 +173,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T21:03:36Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T21:16:56Z · message_queued at 2026-11-07T21:16:56.883Z
 - 2026-11-07T21:16:57Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-07T21:16:57Z · message_delivered: 2 message(s)
