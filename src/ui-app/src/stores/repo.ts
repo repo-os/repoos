@@ -796,6 +796,56 @@ export const useRepoStore = defineStore("repo", () => {
   const resourceQueueMarkers = ref<
     import("../../../core/local-queue-marker.js").LocalQueueMarker[]
   >([]);
+  /** Active local check slots, including holders whose task-check row is absent. */
+  const localCheckSlotHolders = ref<
+    {
+      slot: number;
+      pid?: number;
+      ageMs: number;
+      heartbeatAgeMs: number;
+      dead: boolean;
+      wedged: boolean;
+      meta?: Record<string, unknown>;
+    }[]
+  >([]);
+  let localCheckSlotsFetchedAt = 0;
+  let localCheckSlotsRequest: Promise<void> | null = null;
+  async function refreshLocalCheckSlots(force = false): Promise<void> {
+    if (localCheckSlotsRequest) return localCheckSlotsRequest;
+    if (!force && Date.now() - localCheckSlotsFetchedAt < 4_000) return;
+    localCheckSlotsRequest = (async () => {
+      try {
+        const result = await api<{ holders: typeof localCheckSlotHolders.value }>(
+          "/api/local-check-slots",
+        );
+        localCheckSlotHolders.value = Array.isArray(result.holders) ? result.holders : [];
+        localCheckSlotsFetchedAt = Date.now();
+      } catch {
+        /* slot ownership is best-effort; check history and handoff status remain */
+      } finally {
+        localCheckSlotsRequest = null;
+      }
+    })();
+    return localCheckSlotsRequest;
+  }
+  function localCheckSlotForTask(
+    taskId: string,
+    nowMs = Date.now(),
+  ): { ageMs: number; heartbeatAgeMs: number } | null {
+    const holder = localCheckSlotHolders.value.find(
+      (item) =>
+        item.pid &&
+        !item.dead &&
+        item.meta?.kind === "local-check" &&
+        String(item.meta.taskId ?? "") === taskId,
+    );
+    if (!holder) return null;
+    const elapsedSinceFetch = Math.max(0, nowMs - localCheckSlotsFetchedAt);
+    return {
+      ageMs: holder.ageMs + elapsedSinceFetch,
+      heartbeatAgeMs: holder.heartbeatAgeMs + elapsedSinceFetch,
+    };
+  }
   /**
    * Messages waiting to be read when a busy task/chat's turn ends (#0821),
    * keyed by task id or chat session key. Hydrated from `/api/agents/queued` so
@@ -4389,6 +4439,9 @@ export const useRepoStore = defineStore("repo", () => {
     queuedIds,
     queuedAgentMeta,
     resourceQueueMarkers,
+    localCheckSlotHolders,
+    refreshLocalCheckSlots,
+    localCheckSlotForTask,
     queuedMessages,
     runningSince,
     agentActivityAt,

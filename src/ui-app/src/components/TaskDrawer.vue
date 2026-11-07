@@ -489,11 +489,13 @@ function startCheckLoops(taskId: string): void {
   void refreshCheckRows(taskId);
   void repo.refreshTaskChecks(taskId, { remoteOnly: true });
   void repo.refreshHandoffStatus(taskId);
+  void repo.refreshLocalCheckSlots();
   checkNow.value = Date.now();
   checkTick = setInterval(() => (checkNow.value = Date.now()), 1000);
   checkRowsTimer = setInterval(() => {
     void refreshCheckRows(taskId);
     void repo.refreshHandoffStatus(taskId);
+    void repo.refreshLocalCheckSlots();
     // Remote phase + pool queue position for the drawer (#0897) — refreshed
     // with the same cadence so a queued validation shows a live wait time.
     // Remote-only: the in-memory SSE run must not be replaced by a poll.
@@ -570,6 +572,10 @@ const localCheckWait = computed(() => {
   return taskId
     ? localQueueHintForTask(repo.resourceQueueMarkers, taskId, new Date(checkNow.value))
     : null;
+});
+const localCheckSlot = computed(() => {
+  const taskId = ui.active?.id;
+  return taskId ? repo.localCheckSlotForTask(taskId, checkNow.value) : null;
 });
 
 const checkChip = computed(() => {
@@ -750,7 +756,7 @@ const cardWorkHint = computed(() => {
   const nowMs = Math.max(now.value, checkNow.value, Date.now());
   const lastActivityAt = repo.agentActivityAt[task.id] ?? repo.runningSince[task.id];
   return (
-    (repo.handoffInFlight(task.id)
+    (repo.handoffInFlight(task.id) || localCheckSlot.value
       ? null
       : autoRepairHint({
           task,
@@ -799,6 +805,9 @@ const cardChecksHeading = computed(() => {
   if (!task) return runningChecksLabel(false);
   const wait = localCheckWait.value;
   if (wait) return wait.label;
+  if (localCheckSlot.value) {
+    return `running checks · check · ${formatDuration(localCheckSlot.value.ageMs)}`;
+  }
   if (repo.handoffInFlight(task.id)) {
     const pool = remotePoolQueueHintForTaskChecks(repo.taskChecks[task.id]);
     const status = repo.handoffStatuses[task.id];
@@ -859,7 +868,7 @@ const drawerStatusSummary = computed(() => {
       (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed"),
     notLandable: task.status === "review" && Boolean(landable.value && !landable.value.landable),
     handoffFailed: Boolean(handoffError.value || repo.doneErrorFor(task.id)),
-    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value),
+    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value || localCheckSlot.value),
     integrating: inPipeline.value && Boolean(integrationCardLabel.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
@@ -920,7 +929,9 @@ const drawerStatusSummary = computed(() => {
     checksFailedAfterRetries: checkChip.value?.title ?? "Checks failed after retries.",
     checksRunning: localCheckWait.value
       ? `${localCheckWait.value.title}. Queued checks are normal; keep waiting.`
-      : "The check gate is running — open the Debug tab for live output.",
+      : localCheckSlot.value
+        ? `A local check slot is held for this task. Running for ${formatDuration(localCheckSlot.value.ageMs)}.`
+        : "The check gate is running — open the Debug tab for live output.",
     integrating: "Move to done is running. Open Status details for the live step.",
     confirmingHandoff:
       "RepoOS is finalizing the handoff. The task stays active until the checks pass.",
@@ -956,6 +967,9 @@ const drawerStatusSummary = computed(() => {
       localCheckWait.value.title,
       "Queued checks are normal — keep waiting.",
     );
+  } else if (key === "checksRunning" && localCheckSlot.value) {
+    motion = "reviewing";
+    lines = compactStatusLines(cardChecksHeading.value);
   } else if (key === "integrating") {
     motion = "reviewing";
     lines = compactStatusLines(integrationCardLabel.value ?? "integrating");
@@ -5508,25 +5522,6 @@ watch(
               >
                 Last successful close-out gate: {{ lastCloseOutGateLabel }}
               </p>
-              <div
-                v-if="false && inPipeline && activeCheckRun"
-                class="check-progress close-out-check-progress"
-                role="status"
-                data-test-id="close-out-check-progress"
-              >
-                <progress
-                  v-if="checkProgressPercent(activeCheckRun) !== null"
-                  :value="checkProgressPercent(activeCheckRun) ?? 0"
-                  max="100"
-                />
-                <span>{{ checkProgressLabel(activeCheckRun) }}</span>
-                <span v-if="activeCheckRun.attempt && activeCheckRun.attempt > 1">
-                  attempt {{ activeCheckRun.attempt
-                  }}<template v-if="activeCheckRun.attemptReason">
-                    · {{ activeCheckRun.attemptReason }}</template
-                  >
-                </span>
-              </div>
               <Button
                 v-if="!isHumanTask && ui.active.status === 'review' && !inPipeline"
                 variant="status"

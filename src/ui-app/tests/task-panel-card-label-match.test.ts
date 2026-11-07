@@ -162,6 +162,36 @@ describe("task panel status label matches the board card (#1023)", () => {
     drawer.unmount();
   });
 
+  it("treats a held local check slot as running when check history is empty", async () => {
+    const task = activeTask();
+    stubApi(task);
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [];
+
+    const card = await mountCard(pinia, task);
+    const drawer = await mountDrawer(pinia, task);
+    repo.localCheckSlotHolders = [
+      {
+        slot: 0,
+        pid: 1234,
+        ageMs: 8 * 60_000,
+        heartbeatAgeMs: 2_000,
+        dead: false,
+        wedged: false,
+        meta: { kind: "local-check", taskId: task.id },
+      },
+    ];
+    await flush();
+
+    const expected = cardLabel(card);
+    expect(expected).toMatch(/^running checks · check · /);
+    expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
+    expect(drawer.text()).not.toContain("Quiet — may be stalled");
+    expect(drawer.text()).not.toContain("stuck · silent");
+    card.unmount();
+    drawer.unmount();
+  });
+
   it("names confirming handoff exactly as the card does, with at most two rows", async () => {
     const task = activeTask();
     stubApi(task);
