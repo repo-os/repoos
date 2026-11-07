@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T07:33:01Z"
+updated_at: "2026-11-07T07:38:18Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-07T05:19:38.063Z: repoos check failed: tests — Test Files 2 failed | 145 passed (147)"
@@ -55,6 +55,19 @@ Findings from the investigation (no single root cause proven):
 - Look at where the "marked unavailable: degraded" message is built and why the captured stream text ends up in it.
 - Do not pick new numeric thresholds for memory or swap; this is only about hang detection and cleanup (see the resource-pressure rule in AGENTS.md).
 - Evidence: `.repoos/logs/system.log` (warn lines "looks hung", link probe failures) and `repoos api GET /api/tasks/1046/remote-validation/events`.
+
+## Shots
+```json
+[
+{
+  "label": "Task debug events with expanded remote hang evidence",
+  "target": "default",
+  "route": "/work?task=1049&tab=debug",
+  "highlight": ".debug-event",
+  "state": "drawer:debugLogs"
+}
+]
+```
 
 ## Activity
 
@@ -120,3 +133,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T07:33:01Z · note: review pass 1: needs some work
 - 2026-11-07T07:33:01Z · message_delivered: 1 message(s)
 - 2026-11-07T07:33:01Z · status review→active
+- 2026-11-07T07:38:18Z · body
