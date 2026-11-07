@@ -1,5 +1,5 @@
 ---
-id: 1050
+id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: active
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-no-restart-work-butto
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T18:14:00Z"
+updated_at: "2026-11-07T18:21:50Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-07T18:09:29.477Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -124,3 +124,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T18:10:09Z · note: Task body is underspecified: E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI
 - 2026-11-07T18:10:09Z · note: handoff requested (cli)
 - 2026-11-07T18:14:00Z · message_delivered: 1 message(s)
+- 2026-11-07T18:21:50Z · body
