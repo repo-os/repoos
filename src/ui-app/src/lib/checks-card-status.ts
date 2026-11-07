@@ -51,7 +51,7 @@ export function formatChecksCardLine(opts: {
       parts.push("starting…");
     }
   } else if (opts.handoffStep) {
-    parts.push(`checking ${opts.handoffStep}`);
+    parts.push(opts.handoffStep === "check" ? "check" : `checking ${opts.handoffStep}`);
   } else if (opts.slotAgeMs != null) {
     parts.push("check");
   } else {

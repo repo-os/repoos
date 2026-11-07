@@ -173,7 +173,7 @@ describe("task drawer check chip (#0564)", () => {
 
     const wrapper = await mountDrawer(pinia, makeTask());
     expect(wrapper.find(".drawer-status-l1").text()).toMatch(/^Checks · step 5 of 12/);
-    expect(wrapper.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
       "on macbook",
     );
 
@@ -250,7 +250,7 @@ describe("task drawer check chip (#0564)", () => {
 
     const wrapper = await mountDrawer(pinia, makeTask());
     expect(wrapper.find(".drawer-status-l1").text()).toMatch(/^Checks ·/);
-    expect(wrapper.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
       "on macbook",
     );
   });
