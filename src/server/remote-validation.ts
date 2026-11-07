@@ -823,6 +823,13 @@ function tail(output: string, lines = 20, maxChars = 1200): string {
   return out || "no output";
 }
 
+/** Keep the newest captured lines when one Docker log line is unusually large. */
+function newestHangLogOutput(output: string, maxChars = 20_000): string {
+  return output.length > maxChars
+    ? `[earlier output omitted; showing newest output]\n${output.slice(-maxChars)}`
+    : output;
+}
+
 /** Human-readable byte count for run logs (e.g. "812 B", "1.1 MB"). */
 function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "unknown";
@@ -867,7 +874,7 @@ export interface RemoteValidationEvent {
   fix?: string;
   /** Evidence captured before killing a hung container (#1049). */
   hangEvidence?: {
-    condition: "stream-silent" | "host-idle" | "container-inactive";
+    condition: "stream-silent" | "host-idle" | "container-inactive" | "manual-kill";
     containerLogs?: string;
     containerState?: string;
   };
@@ -4279,7 +4286,10 @@ export class TailscaleHostPool {
    * what happened so the action can report it. `docker rm -f` is scoped to the
    * recorded container name — never a blanket kill of the host.
    */
-  async killHungRun(taskId: string): Promise<{ ok: boolean; detail: string; container?: string }> {
+  async killHungRun(
+    taskId: string,
+    beforeRemove?: (host: RemoteHost, container: string) => Promise<void>,
+  ): Promise<{ ok: boolean; detail: string; container?: string }> {
     for (const s of this.hosts) {
       const run = [...s.activeRuns].reverse().find((r) => r.taskId === taskId);
       if (!run) continue;
@@ -4292,6 +4302,15 @@ export class TailscaleHostPool {
       const container = run.container;
       const releaseSlot = run.releaseSlot;
       this.markHung(s.spec.host, `killed on request (#${taskId})`, { taskId });
+      // The operator/CTO kill path removes the same evidence-bearing run as
+      // the watchdog path. Capture before `docker rm -f` while the container
+      // still exists; evidence collection is fail-soft so a broken SSH link
+      // never prevents an explicit kill.
+      try {
+        await beforeRemove?.(s.ssh, container);
+      } catch {
+        /* best effort — the requested removal must still proceed */
+      }
       let killTimedOut = false;
       let killErr: string | undefined;
       try {
@@ -5473,7 +5492,24 @@ export class TailscaleRunner implements RemoteValidator {
   async killHungValidation(taskId: string): Promise<{ ok: boolean; detail: string }> {
     this.uploadAbortByTask.get(taskId)?.();
     this.uploadAbortByTask.delete(taskId);
-    const result = await this.pool.killHungRun(taskId);
+    const result = await this.pool.killHungRun(taskId, async (host, container) => {
+      const evidence = await this.captureHangEvidence(host, container).catch(() => ({
+        logs: "(capture failed)",
+        state: "(capture failed)",
+      }));
+      appendRemoteValidationEvent(this.config.root, taskId, {
+        level: "warn",
+        phase: "run",
+        message: `operator requested removal of hung container ${container} on ${host.ip}`,
+        host: host.ip,
+        infra: true,
+        hangEvidence: {
+          condition: "manual-kill",
+          containerLogs: newestHangLogOutput(evidence.logs),
+          containerState: evidence.state,
+        },
+      });
+    });
     if (result.container) {
       const container = result.container;
       this.activeRunAbort.get(container)?.abort();
@@ -5495,7 +5531,9 @@ export class TailscaleRunner implements RemoteValidator {
     containerName: string,
   ): Promise<{ logs: string; state: string }> {
     const logsCmd = `docker logs --tail 100 ${shellQuote(containerName)} 2>&1 || echo "(logs unavailable)"`;
-    const stateCmd = `docker inspect ${shellQuote(containerName)} 2>&1 || echo "(state unavailable)"`;
+    // State-only output keeps the evidence legible and bounded without
+    // truncating the JSON header that explains the fields.
+    const stateCmd = `docker inspect --format '{{json .State}}' ${shellQuote(containerName)} 2>&1 || echo "(state unavailable)"`;
 
     const logsRes = await execRemoteWithHardDeadline(
       this.exec,
@@ -5572,8 +5610,11 @@ export class TailscaleRunner implements RemoteValidator {
       infra: true,
       hangEvidence: {
         condition,
-        containerLogs: evidence.logs.slice(0, 2000), // limit output
-        containerState: evidence.state.slice(0, 2000),
+        // `docker logs --tail 100` already bounds the captured lines. Keep its
+        // end so a long line cannot hide the most recent output; State is
+        // formatted to a compact object above and kept intact.
+        containerLogs: newestHangLogOutput(evidence.logs),
+        containerState: evidence.state,
       },
     });
 
@@ -6090,6 +6131,7 @@ export class TailscaleRunner implements RemoteValidator {
         let gateFinished = false;
         let streamBuf = "";
         let abortMainRemote: (() => void) | undefined;
+        let hangCondition: "stream-silent" | "host-idle" | "container-inactive" = "stream-silent";
         let runAbortGen: number | undefined;
         let hangRecovery: Promise<void> | undefined;
         let endedByHangRecovery = false;
@@ -6125,9 +6167,17 @@ export class TailscaleRunner implements RemoteValidator {
             .then((stats) => {
               if (stats.code === 0 && !stats.timedOut) {
                 const parsed = parseRemoteServerStats(stats.output);
-                loadNow = loadPerCpu(parsed.loadAverage, parsed.cpuCount);
-                lastKnownLoadPerCpu = loadNow;
-                loadUnknownSince = undefined;
+                const sampledLoad = loadPerCpu(parsed.loadAverage, parsed.cpuCount);
+                loadNow = sampledLoad;
+                if (Number.isFinite(sampledLoad)) {
+                  lastKnownLoadPerCpu = sampledLoad;
+                  loadUnknownSince = undefined;
+                } else if (loadUnknownSince === undefined) {
+                  // A successful SSH command can still omit a parseable load
+                  // average. Keep the prior finite sample, if any; Infinity
+                  // means unknown and must not masquerade as a busy host.
+                  loadUnknownSince = Date.now();
+                }
                 const cpuMarker = stats.output.split("__CONTAINER_CPU__").at(-1) ?? "";
                 containerCpuActive = parseContainerCpuActive(cpuMarker);
               } else if (loadUnknownSince === undefined) {
@@ -6153,13 +6203,15 @@ export class TailscaleRunner implements RemoteValidator {
           loadUnknownSince: () => loadUnknownSince,
           containerCpuActive: () => containerCpuActive,
           onHung: () => {
-            const condition =
+            hangCondition =
               Number.isFinite(loadNow) && loadNow < HANG_IDLE_LOAD_THRESHOLD
                 ? "host-idle"
                 : "container-inactive";
+            const conditionLabel =
+              hangCondition === "host-idle" ? "host idle" : "container inactive";
             this.logger?.system(
               "warn",
-              `remote validation run for #${opts.taskId} looks hung on ${host.ip} — killing ${containerName}`,
+              `remote validation run for #${opts.taskId} looks hung (${conditionLabel}) on ${host.ip} — killing ${containerName}`,
             );
             this.pool.markHung(host.ip, `killing container ${containerName} (#${opts.taskId})`, {
               history: false,
@@ -6170,7 +6222,7 @@ export class TailscaleRunner implements RemoteValidator {
               containerName,
               paths,
               taskId: opts.taskId,
-              hangCondition: condition,
+              hangCondition,
               abortMain: () => abortMainRemote?.(),
               releaseSlot: () => slot.release(),
               settleMain: () => {
@@ -6279,9 +6331,19 @@ export class TailscaleRunner implements RemoteValidator {
             `\n[remote validation HUNG on ${host.ip} — container ${containerName} killed; ` +
               "retrying on another host]\n",
           );
+          const detectedCondition = hangCondition as
+            | "stream-silent"
+            | "host-idle"
+            | "container-inactive";
+          const conditionDescription =
+            detectedCondition === "host-idle"
+              ? "the host was idle"
+              : detectedCondition === "container-inactive"
+                ? "the container was inactive"
+                : "the output stream was silent";
           const detail =
             `remote validation hung on ${host.ip} — no output for ` +
-            `${hangIdleMinutes}m while the host was idle; the run's container ` +
+            `${hangIdleMinutes}m while ${conditionDescription}; the run's container ` +
             `(${containerName}) was removed and the run retried on another host`;
           this.record(
             { taskId: opts.taskId, host: host.ip, phase: "result" },

@@ -105,9 +105,40 @@ describe("DebugPanel expanded rows (#0829)", () => {
     await row.trigger("click");
     await nextTick();
     const detail = wrapper.get(".debug-log-inline");
-    expect(detail.text()).toContain("Hang condition: host-idle");
+    expect(detail.text()).toContain("Hang condition: host idle");
     expect(detail.text()).toContain("last container output");
     expect(detail.text()).toContain("container inspect state");
+    wrapper.unmount();
+  });
+
+  it("labels an operator-requested container kill in plain words (#1049)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.taskRemoteEvents[TASK.id] = [
+      {
+        at: "2026-11-07T00:00:00Z",
+        level: "warn",
+        phase: "run",
+        message: "operator requested removal of a hung container",
+        hangEvidence: {
+          condition: "manual-kill",
+          containerLogs: "last container output",
+          containerState: "container inspect state",
+        },
+      },
+    ];
+    const wrapper = mount(DebugPanel, {
+      props: { task: TASK },
+      global: { plugins: [pinia], stubs: { teleport: true } },
+      attachTo: document.body,
+    });
+    await nextTick();
+    await wrapper.get(".debug-event").trigger("click");
+    await nextTick();
+    expect(wrapper.get(".debug-log-inline").text()).toContain(
+      "Hang condition: operator requested kill",
+    );
     wrapper.unmount();
   });
 

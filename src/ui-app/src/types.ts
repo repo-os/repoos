@@ -1236,7 +1236,7 @@ export interface RemoteValidationEvent {
   fix?: string;
   /** Logs and inspect state captured before a hung container was removed (#1049). */
   hangEvidence?: {
-    condition: "stream-silent" | "host-idle" | "container-inactive";
+    condition: "stream-silent" | "host-idle" | "container-inactive" | "manual-kill";
     containerLogs?: string;
     containerState?: string;
   };

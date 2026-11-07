@@ -159,6 +159,21 @@ function checkLabel(kind: TaskCheckRun["kind"]): string {
   return kind === "handoff-finalize" ? "handoff-finalize check" : "MTD merge-gate check";
 }
 
+function hangConditionLabel(
+  condition: NonNullable<RemoteValidationEvent["hangEvidence"]>["condition"],
+): string {
+  switch (condition) {
+    case "host-idle":
+      return "host idle";
+    case "container-inactive":
+      return "container inactive";
+    case "manual-kill":
+      return "operator requested kill";
+    case "stream-silent":
+      return "stream silent";
+  }
+}
+
 function fmtDuration(ms: number | null): string {
   if (ms === null) return "";
   if (ms < 1000) return `${ms}ms`;
@@ -237,7 +252,7 @@ const events = computed<DebugEvent[]>(() => {
     const evidence = r.hangEvidence;
     const evidenceDetail = evidence
       ? [
-          `Hang condition: ${evidence.condition}`,
+          `Hang condition: ${hangConditionLabel(evidence.condition)}`,
           evidence.containerLogs ? `Container logs (last lines):\n${evidence.containerLogs}` : "",
           evidence.containerState ? `Container inspect state:\n${evidence.containerState}` : "",
         ]
