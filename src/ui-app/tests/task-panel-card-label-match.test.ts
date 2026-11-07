@@ -131,6 +131,8 @@ async function mountDrawer(pinia: Pinia, task: Task) {
 }
 
 function cardLabel(wrapper: Awaited<ReturnType<typeof mountCard>>): string {
+  const progress = wrapper.find('[data-test-id="task-card-check-status-line"]');
+  if (progress.exists()) return progress.text().trim();
   return wrapper.get('[data-test-id="task-card-agent-hint"]').text().trim();
 }
 
@@ -213,48 +215,41 @@ describe("task panel status label matches the board card (#1023)", () => {
     }
     await flush();
 
+    expect(card.find('[data-test-id="task-card-check-progress"]').exists()).toBe(true);
+    expect(drawer.find('[data-test-id="close-out-check-progress"]').exists()).toBe(true);
     const cardProgress = card.find('[data-test-id="task-card-check-progress"] progress');
     const drawerProgress = drawer.find('[data-test-id="close-out-check-progress"] progress');
-    expect(cardProgress.exists()).toBe(true);
-    expect(drawerProgress.exists()).toBe(true);
     if (source === "run" || source === "status-run") {
       expect(cardProgress.attributes("value")).toBe("33");
       expect(drawerProgress.attributes("value")).toBe("33");
-      expect(cardLabel(card)).toContain(
-        `running checks · ${source === "status-run" ? "verify" : "tests"} ·`,
-      );
-      expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain(
-        "attempt 3 · on check-host",
-      );
+      expect(cardLabel(card)).toMatch(/^Checks · step 4 of 8/);
       expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
         "attempt 3 · on check-host",
       );
     } else {
-      expect(cardProgress.attributes("value")).toBeUndefined();
-      expect(drawerProgress.attributes("value")).toBeUndefined();
+      expect(cardProgress.exists()).toBe(false);
+      expect(drawerProgress.exists()).toBe(false);
       expect(
         card
           .find('[data-test-id="task-card-check-progress"] .check-progress-indeterminate')
           .exists(),
-      ).toBe(true);
+      ).toBe(false);
       expect(
         drawer
           .find('[data-test-id="close-out-check-progress"] .check-progress-indeterminate')
           .exists(),
-      ).toBe(true);
+      ).toBe(false);
     }
     if (source === "status" || source === "reload") {
-      expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain(
-        "attempt 2 · on runner-host",
-      );
       expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
         "attempt 2 · on runner-host",
       );
+      expect(cardLabel(card)).toMatch(/^Checks ·/);
     }
     expect(drawer.text()).not.toContain("Quiet — may be stalled");
     expect(drawer.text()).not.toContain("stuck · silent");
     if (source === "reload") {
-      expect(cardLabel(card)).toMatch(/^running checks · verify · /);
+      expect(cardLabel(card)).toMatch(/^Checks · checking verify/);
       expect(
         vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes("/handoff-status")),
       ).toBe(true);
@@ -274,7 +269,7 @@ describe("task panel status label matches the board card (#1023)", () => {
     const drawer = await mountDrawer(pinia, task);
 
     const expected = cardLabel(card);
-    expect(expected).toMatch(/^running checks · check · /);
+    expect(expected).toMatch(/^Checks · step 4 of 8/);
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     // A running state carries the Settings-selected activity animation.
     expect(drawer.find(".drawer-status-l1 .ai").exists()).toBe(true);
@@ -305,13 +300,12 @@ describe("task panel status label matches the board card (#1023)", () => {
     await flush();
 
     const expected = cardLabel(card);
-    expect(expected).toMatch(/^running checks · check · /);
+    expect(expected).toMatch(/^Checks · check · /);
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     expect(drawer.text()).not.toContain("Quiet — may be stalled");
     expect(drawer.text()).not.toContain("stuck · silent");
     const progress = drawer.find('[data-test-id="close-out-check-progress"] progress');
-    expect(progress.exists()).toBe(true);
-    expect(progress.attributes("value")).toBeUndefined();
+    expect(progress.exists()).toBe(false);
     card.unmount();
     drawer.unmount();
   });
@@ -336,26 +330,42 @@ describe("task panel status label matches the board card (#1023)", () => {
     await flush();
 
     const expected = cardLabel(card);
-    expect(expected).toMatch(/^running checks · verify · /);
+    expect(expected).toMatch(/^Checks · checking verify/);
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     expect(drawer.text()).not.toContain("Quiet — may be stalled");
     expect(drawer.text()).not.toContain("stuck · silent");
-    expect(card.find('[data-test-id="task-card-check-progress"] progress').exists()).toBe(true);
-    expect(
-      card.find('[data-test-id="task-card-check-progress"] progress').attributes("value"),
-    ).toBeUndefined();
-    expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain("attempt 1");
-    expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain(
-      "on fixture host",
-    );
+    expect(card.find('[data-test-id="task-card-check-progress"] progress').exists()).toBe(false);
     expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain("attempt 1");
     expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
       "on fixture host",
     );
     const progress = drawer.find('[data-test-id="close-out-check-progress"] progress');
-    expect(progress.exists()).toBe(true);
-    expect(progress.attributes("value")).toBeUndefined();
+    expect(progress.exists()).toBe(false);
     card.unmount();
+    drawer.unmount();
+  });
+
+  it("shows checks running, not checks failed, while a new check is in flight after retries", async () => {
+    const task = activeTask({ extra: { check_retry_count: 2 } });
+    stubApi(task);
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [
+      {
+        ...runningCheck(),
+        id: "0001-failed",
+        running: false,
+        passed: false,
+        finishedAt: new Date().toISOString(),
+      },
+      runningCheck({ id: "0001-retry" }),
+    ];
+    repo.handoffSteps[task.id] = "check";
+
+    const drawer = await mountDrawer(pinia, task);
+    const summary = drawer.find(".drawer-status-summary");
+    expect(summary.find(".drawer-status-l1").text()).toMatch(/^Checks ·/);
+    expect(summary.text()).not.toMatch(/Checks failed/i);
+    expect(drawer.find(".drawer-status-chip").exists()).toBe(false);
     drawer.unmount();
   });
 
@@ -369,7 +379,7 @@ describe("task panel status label matches the board card (#1023)", () => {
     const drawer = await mountDrawer(pinia, task);
 
     const expected = cardLabel(card);
-    expect(expected).toMatch(/^running checks · check$/);
+    expect(expected).toMatch(/^Checks · checking check/);
     const summary = drawer.find(".drawer-status-summary");
     expect(summary.find(".drawer-status-l1").text()).toBe(expected);
     expect(summary.findAll(".drawer-status-row")).toHaveLength(2);

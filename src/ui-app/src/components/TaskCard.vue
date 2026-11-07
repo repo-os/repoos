@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, onBeforeUnmount, watch, nextTick } from "vue";
-import type { Task } from "../types";
+import type { Task, TaskCheckRun } from "../types";
 import { api, JSON_OPTS } from "../api";
 import { FileText, User } from "lucide-vue-next";
 import { useUiStore } from "../stores/ui";
@@ -47,7 +47,8 @@ import {
   STARTING_LABEL,
   runningChecksLabel,
 } from "../lib/task-status-copy";
-import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
+import { checkProgressPercent, type CheckProgress } from "../lib/check-progress";
+import { formatChecksCardLine } from "../lib/checks-card-status";
 import { formatDuration } from "../lib/time";
 import { useNow } from "../composables/useNow";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
@@ -87,23 +88,37 @@ const showCardCheckProgress = computed(() => {
     !!repo.localCheckSlotForTask(id, Date.now())
   );
 });
-const cardCheckProgressLabel = computed(() => {
-  const progress = handoffProgress.value;
-  if (progress) {
-    if (progress.stepsDone == null && progress.currentStep == null && progress.testsDone == null) {
-      return progress.stepName ? `Checking ${progress.stepName}` : "Starting…";
-    }
-    return checkProgressLabel(progress);
-  }
-  const step = handoffStatus.value?.step ?? repo.handoffSteps[props.task.id];
-  return step ? `Checking ${step}` : "Running checks";
-});
-const cardCheckProgressMetadata = computed(() => {
-  const attempt = handoffProgress.value?.attempt ?? handoffStatus.value?.attempt;
-  const machine = handoffProgress.value?.machine ?? handoffStatus.value?.machine;
-  return [attempt ? `attempt ${attempt}` : "", machine ? `on ${machine}` : ""]
-    .filter(Boolean)
-    .join(" · ");
+const cardCheckRun = computed(
+  () => (repo.taskChecks[props.task.id] ?? []).find((run) => run.running) ?? null,
+);
+function cardCheckProgressFields(run: TaskCheckRun | null): CheckProgress | null {
+  if (!run) return handoffProgress.value;
+  return {
+    stepsDone: run.stepsDone ?? null,
+    stepsTotal: run.stepsTotal ?? null,
+    currentStep: run.currentStep ?? null,
+    stepName: run.stepName ?? null,
+    testsDone: run.testsDone ?? null,
+    testsTotal: run.testsTotal ?? null,
+    testsPass: run.testsPass ?? null,
+  };
+}
+const cardCheckStatusLine = computed(() => {
+  const id = props.task.id;
+  const status = handoffStatus.value;
+  const run = cardCheckRun.value;
+  const slot = repo.localCheckSlotForTask(id, now.value);
+  const startedAt = status?.startedAt ?? run?.startedAt ?? null;
+  const progress = cardCheckProgressFields(run);
+  return formatChecksCardLine({
+    nowMs: now.value,
+    startedAt,
+    progress,
+    handoffStep: status?.step ?? repo.handoffSteps[id] ?? null,
+    checkOutput: run?.output,
+    slow: !!slowCheck.value,
+    slotAgeMs: slot?.ageMs ?? null,
+  });
 });
 
 /**
@@ -1052,39 +1067,7 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
-    if (repo.handoffInFlight(t.id)) {
-      const status = repo.handoffStatuses[t.id];
-      const run = (repo.taskChecks[t.id] ?? []).find((item) => item.running);
-      const startedAt = status?.startedAt ?? run?.startedAt;
-      const elapsed = startedAt
-        ? formatDuration(Math.max(0, now.value - Date.parse(startedAt)))
-        : null;
-      const stage = status?.step ?? repo.handoffSteps[t.id] ?? (run ? "check" : "starting");
-      return {
-        label: `running checks · ${stage}${elapsed ? ` · ${elapsed}` : ""}${run ? ` · ${checkProgressLabel(run)}` : ""}`,
-        title: "RepoOS is finalizing this task and running its checks",
-        cls: "tc-reviewing",
-      };
-    }
-    const localCheckSlot = repo.localCheckSlotForTask(t.id, now.value);
-    if (localCheckSlot) {
-      const elapsed = formatDuration(localCheckSlot.ageMs);
-      return {
-        label: `running checks · check · ${elapsed}`,
-        title: `A local check slot is held for this task · running for ${elapsed}.`,
-        cls: "tc-reviewing",
-      };
-    }
-    const activeCheckRun = (repo.taskChecks[t.id] ?? []).find((run) => run.running);
-    if (activeCheckRun) {
-      const elapsed = formatDuration(Math.max(0, now.value - Date.parse(activeCheckRun.startedAt)));
-      const step = activeCheckRun.stepName ?? "check";
-      return {
-        label: `running checks · ${step} · ${elapsed}`,
-        title: "A check is running for this task",
-        cls: "tc-reviewing",
-      };
-    }
+    if (showCardCheckProgress.value) return null;
     if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
@@ -1680,23 +1663,14 @@ async function openDebuggerFromError(): Promise<void> {
           role="status"
           data-test-id="task-card-check-progress"
         >
-          <span
-            class="check-progress-meter"
-            :class="{ 'is-indeterminate': cardCheckProgressPercent == null }"
-          >
+          <span v-if="cardCheckProgressPercent != null" class="check-progress-meter">
             <progress
-              :value="cardCheckProgressPercent ?? undefined"
+              :value="cardCheckProgressPercent"
               max="100"
               aria-label="Checks running progress"
             />
-            <span
-              v-if="cardCheckProgressPercent == null"
-              class="check-progress-indeterminate"
-              aria-hidden="true"
-            />
           </span>
-          <span>{{ cardCheckProgressLabel }}</span>
-          <span v-if="cardCheckProgressMetadata">{{ cardCheckProgressMetadata }}</span>
+          <span data-test-id="task-card-check-status-line">{{ cardCheckStatusLine }}</span>
         </div>
         <button
           ref="agentTrigger"

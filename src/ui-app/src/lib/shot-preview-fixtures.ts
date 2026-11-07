@@ -2007,6 +2007,43 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "panel:defaultScreenshotPicker":
       useUiStore().openNewTask();
       break;
+    case "card:checksProgress":
+      applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
+      setShotPreviewAppliedAttr("card:checksProgress");
+      break;
+    case "card:checksReuse": {
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      const startedAt = new Date(Date.now() - 41_000).toISOString();
+      repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "check";
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "check",
+        startedAt,
+        updatedAt: new Date().toISOString(),
+        attempt: 2,
+        progress: null,
+        machine: "fixture host",
+      };
+      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
+        {
+          id: "shot-card-check-reuse",
+          taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+          kind: "handoff-finalize",
+          startedAt,
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "reused check 9822 — same clean commit and main base",
+          scope: "changed:main",
+          machine: "fixture host",
+          attempt: 2,
+        },
+      ];
+      setShotPreviewAppliedAttr("card:checksReuse");
+      break;
+    }
     case "card:checkpointRecovery":
       // #0834 — a review task whose branch moved after handoff only by WIP self-
       // check checkpoints, so the card renders "re-reviewing checkpoint…"
