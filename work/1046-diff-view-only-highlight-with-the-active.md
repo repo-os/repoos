@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: 1046
 title: Use the active theme pair for diff highlighting
 type: feature
@@ -14,7 +13,8 @@ model_override: composer-2.5
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-06T23:18:09Z"
-updated_at: "2026-11-07T00:06:19Z"
+updated_at: "2026-11-07T00:17:51Z"
+handoff_signal_retry_count: 1
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T00:01:56.991Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -84,4 +84,4 @@ This task covers theme-family selection, lazy loading, cache behavior, and verif
 - 2026-11-07T00:01:53Z · message_queued at 2026-11-07T00:01:53.913Z
 - 2026-11-07T00:01:56Z · message_delivered: 1 message(s)
 - 2026-11-07T00:06:19Z · note: handoff requested (cli)
-
+- 2026-11-07T00:17:51Z · message_queued at 2026-11-07T00:17:51.084Z
