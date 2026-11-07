@@ -2463,13 +2463,35 @@ describe("hang detector (#0729)", () => {
     const now = 10_000_000;
     const quiet = now - thresholdMs - 1;
     // Idle output + idle host → hung.
-    expect(detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 0.1 })).toBe(true);
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+      }),
+    ).toBe(true);
     // Output advanced recently → not hung, even on an idle host.
-    expect(detectHungRun({ lastOutputAt: now - 1_000, now, thresholdMs, loadPerCpu: 0.1 })).toBe(
-      false,
-    );
+    expect(
+      detectHungRun({
+        lastOutputAt: now - 1_000,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+      }),
+    ).toBe(false);
     // Host busy → not hung (the run may simply be queued behind real work).
-    expect(detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 4 })).toBe(false);
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 4,
+        containerCpuActive: false,
+      }),
+    ).toBe(false);
     // Failed probe is unknown, not proof that the host is idle (#1049).
     expect(
       detectHungRun({
@@ -2513,14 +2535,27 @@ describe("hang detector (#0729)", () => {
     ).toBe(false);
     // Gate already finished — quiet container is not a hang (#0739).
     expect(
-      detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 0.1, gateFinished: true }),
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        gateFinished: true,
+      }),
     ).toBe(false);
   });
 
   it("treats exactly-threshold idle time as hung (inclusive)", () => {
     const now = 1_000_000;
     expect(
-      detectHungRun({ lastOutputAt: now - 300_000, now, thresholdMs: 300_000, loadPerCpu: 0 }),
+      detectHungRun({
+        lastOutputAt: now - 300_000,
+        now,
+        thresholdMs: 300_000,
+        loadPerCpu: 0,
+        containerCpuActive: false,
+      }),
     ).toBe(true);
   });
 
@@ -2529,7 +2564,12 @@ describe("hang detector (#0729)", () => {
     const probeCases = [
       { name: "failed", loadPerCpu: Number.POSITIVE_INFINITY, hung: false },
       { name: "slow", loadPerCpu: Number.POSITIVE_INFINITY, hung: false },
-      { name: "ok and idle", loadPerCpu: 0.1, hung: true },
+      {
+        name: "ok and idle with inactive container",
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        hung: true,
+      },
       {
         name: "ok with container progress",
         loadPerCpu: 0.1,

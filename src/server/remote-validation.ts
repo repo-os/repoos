@@ -1247,7 +1247,7 @@ export function reaperCommand(): string {
     `2>/dev/null | ` +
     `while IFS= read -r id; do ` +
     `created=$(docker inspect -f '{{.Created}}' "$id" 2>/dev/null || true); ` +
-    `ctime=$(date -j -f '%Y-%m-%dT%H:%M:%S' "\${created%%.*}" +%s 2>/dev/null || ` +
+    `ctime=$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "\${created%%.*}" +%s 2>/dev/null || ` +
     `date -d "$created" +%s 2>/dev/null || echo 0); ` +
     `if [ "$ctime" -gt 0 ] && [ "$ctime" -lt "$cutoff" ]; then ` +
     `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
@@ -1346,7 +1346,7 @@ export function detectHungRun(opts: {
   // A live container CPU sample is stronger evidence than a quiet SSH pipe or
   // an otherwise idle host: the workload is still making progress.
   if (opts.containerCpuActive === true) return false;
-  if (opts.loadPerCpu < idleThreshold) return true;
+  if (opts.loadPerCpu < idleThreshold) return opts.containerCpuActive === false;
   if (!Number.isFinite(opts.loadPerCpu)) {
     const last = opts.lastKnownLoadPerCpu;
     if (last !== undefined && last >= idleThreshold) return false;
@@ -3973,10 +3973,16 @@ export class TailscaleHostPool {
       if (s.probed && now - (this.lastReaperAt.get(s.spec.host) ?? now) >= 5 * 60_000) {
         this.lastReaperAt.set(s.spec.host, now);
         void this.exec
-          .runRemote(s.ssh, reaperCommand(), (chunk) => {
-            const message = chunk.trim();
-            if (message) this.logger?.system("info", `remote validation ${message} on ${s.spec.host}`);
-          }, 30_000)
+          .runRemote(
+            s.ssh,
+            reaperCommand(),
+            (chunk) => {
+              const message = chunk.trim();
+              if (message)
+                this.logger?.system("info", `remote validation ${message} on ${s.spec.host}`);
+            },
+            30_000,
+          )
           .catch(() => {
             this.logger?.system("info", `container reaper on ${s.spec.host} failed or timed out`);
           });
@@ -5540,10 +5546,16 @@ export class TailscaleRunner implements RemoteValidator {
 
     // Record hang event with evidence (#1049)
     const condition = opts.hangCondition ?? "stream-silent";
+    const conditionLabel =
+      condition === "host-idle"
+        ? "host idle"
+        : condition === "container-inactive"
+          ? "container inactive"
+          : "stream silent";
     appendRemoteValidationEvent(this.config.root, opts.taskId, {
       level: "warn",
       phase: "run",
-      message: `killed as hung (${condition}) on ${opts.host.ip}`,
+      message: `killed as hung (output stream silent; ${conditionLabel}) on ${opts.host.ip}`,
       host: opts.host.ip,
       infra: true,
       hangEvidence: {
