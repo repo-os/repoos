@@ -1402,6 +1402,8 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       // #0804 / #0909 — needs-human-step: card and drawer show the quoted
       // criterion plus the model's bounded explanation.
       ensureFixtureTask(repo, "ready", {
+        assignee: "human",
+        assignedTo: "Nick",
         needsInput: true,
         needsInputReason: "needs-human-step",
         needsInputDetail:
