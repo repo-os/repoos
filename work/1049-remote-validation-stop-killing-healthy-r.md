@@ -3,6 +3,9 @@ id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p0
 area: server
 assigned_to: ai
@@ -341,3 +344,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T19:51:36Z · message_queued at 2026-11-07T19:51:36.090Z
 - 2026-11-07T19:51:36Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-07T19:55:39Z · note: review pass 7: needs some work
+- 2026-11-07T19:55:39Z · needs_input
