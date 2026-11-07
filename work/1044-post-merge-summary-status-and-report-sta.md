@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-summary-status-and-report-sta
 created_at: "2026-11-06T22:50:03Z"
-updated_at: "2026-11-07T22:51:50Z"
+updated_at: "2026-11-07T22:53:41Z"
 ---
 ## Problem
 
@@ -34,8 +34,23 @@ updated_at: "2026-11-07T22:51:50Z"
 
 Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branch history for the exact lines and the pattern the reviewer flagged. Check first whether #1041's final commit already fixed any of these and only do what is still open. Keep it narrow: one pass, no new failure-path classes; file anything else as a separate task.
 
+## Shots
+```json
+[
+{
+  "label": "Task drawer Report pane with post-merge summary",
+  "target": "default",
+  "route": "/work?task=9999&tab=agent",
+  "selector": "[data-test-id=\"task-summary\"]",
+  "highlight": "[data-test-id=\"task-summary\"]",
+  "state": "drawer:postMergeSummary"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-06T22:50:03Z · created · njachowski@gmail.com
 - 2026-11-07T06:24:31Z · status inbox→ready
 - 2026-11-07T22:51:50Z · status ready→active, branch
+- 2026-11-07T22:53:41Z · body
