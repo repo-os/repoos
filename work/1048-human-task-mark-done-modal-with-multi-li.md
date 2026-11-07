@@ -186,3 +186,4 @@ right before writing new CSS.
 - 2026-11-07T20:47:04Z · body
 - 2026-11-07T20:50:51Z · message_queued at 2026-11-07T20:50:51.562Z
 - 2026-11-07T20:56:16Z · note: click [data-task-id="9999"] .drawer-human-task button: click: Timeout 5000ms exceeded. on /work?task=9999&tab=details
+- 2026-11-07T20:56:16Z · note: highlight .human-done-modal matched nothing on /work?task=9999&tab=details
