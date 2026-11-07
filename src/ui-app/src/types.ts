@@ -1234,6 +1234,12 @@ export interface RemoteValidationEvent {
   configError?: boolean;
   /** Human fix for a memory-pressure skip/failure (#0901). */
   fix?: string;
+  /** Logs and inspect state captured before a hung container was removed (#1049). */
+  hangEvidence?: {
+    condition: "stream-silent" | "host-idle" | "container-inactive";
+    containerLogs?: string;
+    containerState?: string;
+  };
 }
 
 /** Latest auto-engineering reconcile decision (mirrors the server shape). */

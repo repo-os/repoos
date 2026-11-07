@@ -42,6 +42,7 @@ import {
   deleteActiveRunControlEntry,
   detectHungRun,
   containerCpuCommand,
+  containerReaperDue,
   parseContainerCpuActive,
   reaperCommand,
   readRemoteValidationEvents,
@@ -592,6 +593,9 @@ function poolFixture(opts: {
         // dispatch tests are not exercising a real host's pressure.
         if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
           return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
+        }
+        if (cmd.includes("Reaping stale validation container")) {
+          return { code: 0, output: "", timedOut: false };
         }
         if (opts.timeoutRunOn?.includes(host.ip)) {
           (cmds[host.ip] ??= []).push(cmd);
@@ -2587,6 +2591,11 @@ describe("hang detector (#0729)", () => {
     expect(reaperCommand()).toContain("docker rm -f");
     expect(reaperCommand()).toContain("1500");
     expect(reaperCommand()).toContain("older than 25 minutes");
+    expect(reaperCommand()).toContain('case "$name" in repoos-validate-*)');
+    expect(reaperCommand()).toContain("Reaping stale validation container");
+    expect(containerReaperDue(undefined, 1_000_000)).toBe(true);
+    expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000)).toBe(true);
+    expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000 - 1)).toBe(false);
   });
 
   it("HangWatchdog fires onHung exactly once and stops after firing", () => {
@@ -2704,7 +2713,8 @@ describe("hung container cleanup (#0729)", () => {
     const cmd = staleContainerCleanupCommand();
     expect(cmd).toContain("docker ps -aq");
     expect(cmd).toContain("name=repoos-validate-");
-    expect(cmd).toContain("xargs -r docker rm -f");
+    expect(cmd).toContain('case "$name" in repoos-validate-*)');
+    expect(cmd).toContain('docker rm -f "$id"');
     // Never a blanket kill of every container on the host.
     expect(cmd).not.toMatch(/docker ps -aq\s*\|/);
   });
