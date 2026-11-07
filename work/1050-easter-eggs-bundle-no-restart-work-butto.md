@@ -9,15 +9,14 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-no-restart-work-butto
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T16:17:51Z"
+updated_at: "2026-11-07T16:22:33Z"
 ---
+## Items
 ## Items
 
 - [x] **E1 · No Restart work button while checks run** (web) — while a handoff or check is running for an active task, the card and drawer show no primary button (the "running checks" status already says it). Source: human report 2026-11-07 (screenshot of #1047's card).
-- [ ] **E2 · Close the Uncommitted changes panel after a successful commit** (web) — After a successful commit from the Uncommitted changes side panel (RepoDirtyPanel.vue commit()), close the panel. The success toast already reports the commit (files, branch, sha), and the panel otherwise stays open reading 'Uncommitted changes · Working tree is clean.' with the 'Committed 1 file to main (96d818687).' note, which is odd. Remove the now-redundant in-panel committedNote or keep it only if the panel stays open. Keep the panel open on failure (error and hook output stay visible). If the commit leaves other files uncommitted (dirtyCount > 0 after refresh) decide explicitly: close anyway, since the toast reports what happened.. Source: human report 2026-11-07 (screenshot of the panel after a commit).
-- [ ] **E3 · Collapse repeated agent stderr lines in the chat and stop styling them as errors** (web) — In the task drawer's Dev chat, identical consecutive stderr lines from the agent CLI (for example codex's 'ERROR codex_core::util: Custom tool call output is missing for call id: <same id>' repeated about 21 times on #1047 on 2026-11-07, once a minute while a long repoos check ran) are each shown as a red 'Error' card. Collapse runs of identical lines into one entry with a count (x21, and the first and last time), and show agent stderr noise in a neutral style, reserving the red Error style for events that actually end or fail the turn. Keep the full text available on expand.. Source: human report 2026-11-07 (screenshot of #1047's Dev chat full of red Error cards).
-
-Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body. Add related small fixes as `E2`, `E3` before this bundle starts.
+- [x] **E2 · Close the Uncommitted changes panel after a successful commit** (web) — After a successful commit from the Uncommitted changes side panel (RepoDirtyPanel.vue commit()), close the panel. The success toast already reports the commit (files, branch, sha), and the panel otherwise stays open reading "Uncommitted changes · Working tree is clean." with the "Committed 1 file to main (96d818687)." note, which is odd. Remove the now-redundant in-panel committedNote or keep it only if the panel stays open. Keep the panel open on failure (error and hook output stay visible). If the commit leaves other files uncommitted (dirtyCount > 0 after refresh) decide explicitly: close anyway, since the toast reports what happened. Source: human report 2026-11-07 (screenshot of the panel after a commit).
+- [x] **E3 · Collapse repeated agent stderr lines in the chat and stop styling them as errors** (web) — In the task drawer's Dev chat, identical consecutive stderr lines from the agent CLI are collapsed into one neutral expandable entry with a count and first/last time. Source: human report 2026-11-07 (screenshot of #1047's Dev chat full of red Error cards).
 
 ## E1 · No Restart work button while checks run
 
@@ -86,3 +85,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T16:01:51Z · status ready→active, needs_input, branch
 - 2026-11-07T16:14:16Z · body
 - 2026-11-07T16:17:51Z · body
+- 2026-11-07T16:22:33Z · body: Items (added 2, removed 3)
