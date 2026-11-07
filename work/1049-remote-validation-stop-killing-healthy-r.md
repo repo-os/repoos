@@ -2,7 +2,7 @@
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: inbox
+status: ready
 priority: p0
 area: server
 assigned_to: ai
@@ -60,3 +60,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T03:51:12Z · model_override
 - 2026-11-07T03:51:16Z · review_cli_override
 - 2026-11-07T03:51:17Z · review_model_override
+- 2026-11-07T03:51:17Z · status inbox→ready
