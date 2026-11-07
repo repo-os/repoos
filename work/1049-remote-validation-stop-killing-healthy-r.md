@@ -143,3 +143,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T08:22:54Z · body
 - 2026-11-07T08:26:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T08:53:15Z · note: ui verification failed (2 issue(s)): [missing-target] Task debug events with expanded remote details (target "default"): state "drawer:debugLogs" did not render on target "default" — /work has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:50620/work?shotState=drawer%3AdebugLogs); [missing-target] Task debug events with expanded remote details (target "default"): highlight .debug-event matched nothing on /work (http://127.0.0.1:50620/w
+- 2026-11-07T08:53:15Z · message_queued at 2026-11-07T08:53:15.781Z
