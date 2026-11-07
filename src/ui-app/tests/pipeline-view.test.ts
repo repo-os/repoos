@@ -21,8 +21,9 @@ import {
 } from "../src/lib/pipeline-card";
 import { makeTask } from "./component-test-helpers";
 
+const routeQuery = vi.hoisted(() => ({ query: {} as Record<string, string> }));
 vi.mock("vue-router", () => ({
-  useRoute: () => ({ query: {} }),
+  useRoute: () => routeQuery,
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));
 
@@ -35,6 +36,7 @@ function track(w: VueWrapper): VueWrapper {
 beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
+  routeQuery.query = {};
   for (const w of mounted.splice(0)) w.unmount();
 });
 
@@ -291,5 +293,14 @@ describe("WorkView toggle", () => {
     const wrapper = mountWork();
     await wrapper.vm.$nextTick();
     expect(wrapper.find(".stub-pipeline").exists()).toBe(true);
+  });
+
+  it("forces Pipeline on preview captures with pipeline shot routes", async () => {
+    useRepoStore().health = { isPreviewBuild: true } as never;
+    routeQuery.query = { shotState: "pipeline:checksProgress", tab: "pipeline" };
+    const wrapper = mountWork();
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find(".stub-pipeline").exists()).toBe(true);
+    expect(wrapper.find(".stub-board").exists()).toBe(false);
   });
 });
