@@ -189,3 +189,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T10:37:22Z · body
 - 2026-11-07T10:46:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T10:47:11Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65527/api/tasks/1047/integration-job (http://127.0.0.1:65527/api/tasks/1047/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65527/api/tasks/1047/integration-job)
+- 2026-11-07T10:47:11Z · message_queued at 2026-11-07T10:47:11.290Z
