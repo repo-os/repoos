@@ -13668,6 +13668,10 @@
   overflow: hidden;
   animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
+.human-done-report {
+  min-height: 8.5rem;
+  resize: vertical;
+}
 /* Add-shot modal (#0627): declare one ## Shots entry with plain inputs and
  * capture it immediately. Same modal shell as the commit dialog. */
 .add-shot-modal.drawer-wrap.drawer {

@@ -156,6 +156,7 @@ import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
 import DeleteTaskDialog from "./DeleteTaskDialog.vue";
 import ArchiveTaskDialog from "./ArchiveTaskDialog.vue";
 import HoldTaskDialog from "./HoldTaskDialog.vue";
+import HumanTaskDoneDialog from "./HumanTaskDoneDialog.vue";
 import { storyDeepLinkRef, storyOpenLabel } from "../lib/story-deep-link";
 import { normalizeStoryName } from "../../../core/stories.js";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -339,7 +340,7 @@ const currentStatusLabel = computed(() => {
   if (!current) return "";
   return allStatuses.value.find((status) => status.id === current)?.label ?? current;
 });
-const humanCompletionNote = ref("");
+const humanDoneDialogOpen = ref(false);
 
 /**
  * #0507: a handoff finalization is running for this task, so the Review
@@ -1916,8 +1917,12 @@ onUnmounted(() => {
   window.removeEventListener("scroll", onShotHintViewportChange, true);
 });
 
-async function setStatus(status: string): Promise<void> {
+async function setStatus(status: string, completionReport?: string): Promise<void> {
   if (!ui.active || ui.active.status === status) return;
+  if (status === "done" && isHumanTask.value && completionReport === undefined) {
+    humanDoneDialogOpen.value = true;
+    return;
+  }
   // #0507: `review` is a request, not a write — it starts the handoff
   // finalization, so it goes through the confirm modal (run checks / skip
   // checks) instead of a bare PATCH. Every other status is still a plain write.
@@ -1927,8 +1932,7 @@ async function setStatus(status: string): Promise<void> {
   }
   ui.saving = true;
   try {
-    const note =
-      status === "done" && isHumanTask.value ? humanCompletionNote.value.trim() : undefined;
+    const note = status === "done" && isHumanTask.value ? (completionReport ?? "") : undefined;
     await repo.setStatus(ui.active, status, note);
   } catch (err) {
     repo.onError(err);
@@ -5443,12 +5447,6 @@ watch(
             <div v-if="isHumanTask" class="ff-notice drawer-human-task" role="status">
               <strong>Human task: no AI will work on this.</strong>
               <span>Move it between board columns as the human work progresses.</span>
-              <Input
-                v-if="ui.active.status !== 'done'"
-                v-model="humanCompletionNote"
-                aria-label="Completion note (optional)"
-                placeholder="Completion note (optional)"
-              />
               <Button
                 v-if="ui.active.status !== 'done'"
                 variant="status"
@@ -7757,6 +7755,12 @@ watch(
       }
     "
     @started="ui.activeTab = 'agent'"
+  />
+  <HumanTaskDoneDialog
+    :open="humanDoneDialogOpen"
+    :busy="ui.saving"
+    @update:open="(value) => (humanDoneDialogOpen = value)"
+    @confirm="(report) => { humanDoneDialogOpen = false; setStatus('done', report); }"
   />
 
   <DirtyCheckoutDialog
