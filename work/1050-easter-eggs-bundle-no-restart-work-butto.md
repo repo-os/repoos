@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-no-restart-work-butto
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T17:11:52Z"
+updated_at: "2026-11-07T17:31:53Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T17:04:28.346Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Task drawer while checks run (target \"default\"): state \"drawer:statusChecksRunning\" did not render on target \"default\" — /work?task=1050 has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:50591/work?task=1050&shotState=drawer%3AstatusChecksRunning); [missing-target] Task drawer while checks run (target \"default\"): highlight .drawer-quickbar matched nothing on /w… (truncated)"
 ---
