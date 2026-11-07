@@ -75,7 +75,10 @@ import {
 } from "../lib/task-status-copy";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
-import { shotPreviewSkipsEngineeringReportsFetch } from "../lib/shot-preview-fixtures";
+import {
+  isShotPreviewCaptureActive,
+  shotPreviewSkipsEngineeringReportsFetch,
+} from "../lib/shot-preview-fixtures";
 import { effectiveSummaryJobStatus } from "../../../core/task-summary.js";
 import { Clock3 } from "lucide-vue-next";
 import {
@@ -4405,6 +4408,15 @@ let taskSummaryGeneration = 0;
 const TASK_SUMMARY_POLL_MS = 10_000;
 const TASK_SUMMARY_POLL_MAX = 60;
 async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
+  // Shot fixtures seed a client-only task; do not request its summary from the
+  // preview API (which correctly has no record for #9999).
+  if (
+    taskId === SHOT_PREVIEW_FIXTURE_TASK_ID &&
+    typeof window !== "undefined" &&
+    isShotPreviewCaptureActive(window.location)
+  ) {
+    return;
+  }
   const generation = ++taskSummaryGeneration;
   const stillCurrent = () => generation === taskSummaryGeneration && ui.active?.id === taskId;
   try {

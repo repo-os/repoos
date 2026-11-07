@@ -874,6 +874,9 @@ export const useRepoStore = defineStore("repo", () => {
     >
   >({});
   async function refreshHandoffStatus(id: string): Promise<void> {
+    // Shot fixtures are client-only tasks. Keep their seeded handoff state
+    // intact instead of polling an id that does not exist on the preview API.
+    if (isSeededShotFixtureTask(id)) return;
     try {
       const status = await api<{
         state: string;
@@ -2266,6 +2269,9 @@ export const useRepoStore = defineStore("repo", () => {
    *  `taskChecks` from that poll would overwrite the in-memory SSE run with a
    *  server copy that may not include it yet (#0897 review). */
   async function refreshTaskChecks(taskId: string, opts?: { remoteOnly?: boolean }): Promise<void> {
+    // The checks progress fixture seeds its own live run; the fixture task is
+    // not present in the preview server's task index (#1047).
+    if (isSeededShotFixtureTask(taskId)) return;
     try {
       const r = await api<{
         ok: boolean;
