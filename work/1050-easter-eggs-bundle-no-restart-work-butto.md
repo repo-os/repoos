@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T19:18:31Z"
+updated_at: "2026-11-07T19:18:41Z"
 last_check_failure: "repoos check at 2026-11-07T18:55:12.289Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer while checks run (target \"default\"): highlight [data-test-id=\"task-drawer-start-work\"] matched nothing on /work?task=1050&tab=dev (http://127.0.0.1:64307/work?shotState=drawer:statusChecksRunning)"
 ---
 ## Items
@@ -136,3 +136,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T19:01:53Z · review_cli_override, review_model_override
 - 2026-11-07T19:03:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T19:18:31Z · message_queued at 2026-11-07T19:18:31.386Z
+- 2026-11-07T19:18:41Z · CTO nudge: held — an undelivered message is already queued
