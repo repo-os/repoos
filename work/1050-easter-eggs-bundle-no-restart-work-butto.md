@@ -2,7 +2,7 @@
 id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,9 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T19:30:45Z"
+updated_at: "2026-11-07T19:30:46Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-07T18:55:12.289Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer while checks run (target \"default\"): highlight [data-test-id=\"task-drawer-start-work\"] matched nothing on /work?task=1050&tab=dev (http://127.0.0.1:64307/work?shotState=drawer:statusChecksRunning)"
 ---
@@ -143,3 +145,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T19:29:42Z · status active→review
 - 2026-11-07T19:30:43Z · note: review pass 1: needs some work
 - 2026-11-07T19:30:45Z · message_queued at 2026-11-07T19:30:45.933Z
+- 2026-11-07T19:30:46Z · status review→active
