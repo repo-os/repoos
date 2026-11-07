@@ -160,6 +160,17 @@ afterEach(() => {
 });
 
 describe("useBoardKeyboardNav", () => {
+  it("stays on mounted cards when a thousand-task list is windowed", async () => {
+    const ids = Array.from({ length: 1000 }, (_, i) => String(i).padStart(4, "0"));
+    const wrapper = mount(Harness, { props: { columns: cols(["done", ids]) } });
+    wrapper
+      .findAll(".task-card")
+      .slice(40)
+      .forEach((card) => card.element.remove());
+    for (let i = 0; i < 45; i++) await press("j");
+    expect(highlighted(wrapper).attributes("data-task-id")).toBe("0039");
+    wrapper.unmount();
+  });
   it("moves the highlight down with j and up with k", async () => {
     const wrapper = mount(Harness, {
       props: { columns: cols(["a", ["0001", "0002", "0003"]]) },

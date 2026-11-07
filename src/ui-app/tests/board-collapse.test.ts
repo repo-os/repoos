@@ -170,3 +170,25 @@ describe("revealOnArrival / revealArrivals", () => {
     expect(savedIds()).toEqual([]);
   });
 });
+
+describe("Done default", () => {
+  const columns = [{ id: "done", label: "Done", color: "green" }] as const;
+  it.each([
+    { saved: null, defaultValue: true, collapsed: true },
+    { saved: null, defaultValue: false, collapsed: false },
+    { saved: "[]", defaultValue: true, collapsed: false },
+    { saved: '["done"]', defaultValue: false, collapsed: true },
+  ])(
+    "respects saved state and configured default: $saved / $defaultValue",
+    async ({ saved, defaultValue, collapsed }) => {
+      if (saved !== null) localStorage.setItem(COLLAPSE_KEY, saved);
+      const bc = await load();
+      bc.applyCollapseDefaults({
+        byStatus: boardWith({ done: 1000 }),
+        columns,
+        doneCollapsedByDefault: defaultValue,
+      });
+      expect(bc.isColumnCollapsed("done")).toBe(collapsed);
+    },
+  );
+});

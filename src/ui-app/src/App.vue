@@ -89,6 +89,7 @@ onMounted(async () => {
   // The router guard already calls this before the first navigation
   // resolves, so it's normally already loaded by the time we mount.
   if (!auth.loaded) await auth.loadMe();
+  await config.load();
   await repo.init();
   // Board/state fixtures seed client store state only — apply them before the
   // doc/config loads below, which can take seconds. A capture settles (and
@@ -103,7 +104,6 @@ onMounted(async () => {
   notices.start();
   await docs.loadDocs();
   await docs.loadSkills();
-  await config.load();
   applyShotFixturesFromLocation();
   // The per-task pickers in the drawer need the live model list too, not just
   // the Agents page — without this they fall back to the static list and can

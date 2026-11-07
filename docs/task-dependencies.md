@@ -6,6 +6,10 @@ commit is an ancestor of the local `main` (or `master` when that is the repo's
 main branch). Status alone is not proof: a plain `repoos mv <id> done` can
 leave the dependent blocked.
 
+Numeric-looking dependency IDs are written as quoted strings. The parser also
+accepts legacy bare numeric scalars and pads them to the four-digit task ID
+width; no migration is needed because existing files are read tolerantly.
+
 The completed task's `merged_commit` records the branch tip verified at
 close-out. The normal close-out removes the feature branch after publishing;
 recording the commit id before cleanup preserves ancestry proof without

@@ -101,6 +101,26 @@ describe("task dependency parsing and validation", () => {
     }
   });
 
+  it("round-trips leading-zero, four-digit, and five-digit dependency IDs as strings", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-dependency-numeric-ids-"));
+    try {
+      const parsed = task(root, "0001", "ready", "", ["0658", "1047", "12345"]);
+      const written = serializeTask(parsed);
+      expect(written).toContain('depends_on: ["0658", "1047", "12345"]');
+      expect(
+        parseTask({
+          content: written,
+          absPath: join(root, "work", "0001-task.md"),
+          root,
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        }).dependsOn,
+      ).toEqual(["0658", "1047", "12345"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("tolerates object-form entries when reading future-compatible frontmatter", () => {
     expect(parseTaskDependencies([{ task_id: "0002" }, { id: "0003" }, "0004"])).toEqual([
       "0002",
@@ -108,6 +128,15 @@ describe("task dependency parsing and validation", () => {
       "0004",
     ]);
     expect(normalizeTaskDependencies("0002, 0003,0002")).toEqual(["0002", "0003"]);
+  });
+
+  it("normalizes numeric dependency scalars and object IDs to the task ID width", () => {
+    expect(parseTaskDependencies([1047, 658, { id: 12345 }, { taskId: 42 }])).toEqual([
+      "1047",
+      "0658",
+      "12345",
+      "0042",
+    ]);
   });
 
   it("rejects unknown ids, self-references, and cycles", () => {
@@ -169,6 +198,26 @@ describe("task dependency parsing and validation", () => {
 });
 
 describe("Git-verified task dependency state", () => {
+  it("blocks a task whose existing frontmatter has a bare numeric dependency", () => {
+    const { root, clean } = makeRepo();
+    try {
+      const dependent = parseTask({
+        content: `---\nid: "0001"\ntitle: Task 0001\nstatus: ready\ndepends_on: [1047]\n---\n`,
+        absPath: join(root, "work", "0001-task.md"),
+        root,
+        defaultStatus: "inbox",
+        defaultAssignee: "unassigned",
+      });
+      const upstream = task(root, "1047", "active", "feature/upstream");
+      expect(dependent.dependsOn).toEqual(["1047"]);
+      expect(taskDependencyBlockers(root, dependent, [dependent, upstream])).toEqual([
+        { id: "1047", state: "waiting" },
+      ]);
+    } finally {
+      clean();
+    }
+  });
+
   it("blocks unmerged and falsely-done upstream tasks, then unblocks after merge and branch cleanup", () => {
     const { root, clean } = makeRepo();
     try {
