@@ -2,7 +2,7 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -209,4 +209,3 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T23:03:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the scoped RepoOS check passed, but handoff retry requires a new branch tip. RepoOS sync refuses during this active turn, and the task instructions prohibit the manual staging and commit needed to resolve the merge and change … · stderr: 2026-11-07T21:01:35.994797Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 20737 2026-11-07T22:38:27.154292Z ERROR codex_core::tools::router: error=failed to parse function arguments: unknown field `question`, expected `title` or `options` at line 1 column 52
 - 2026-11-07T23:08:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T23:08:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the check passed, but the handoff cache requires a new branch tip. RepoOS sync refuses during this active turn, and the task instructions prohibit manually staging and committing the merge. The repeated CTO check-ins don’t res… · stderr: 2026-11-07T21:01:35.994797Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 20737 2026-11-07T22:38:27.154292Z ERROR codex_core::tools::router: error=failed to parse function arguments: unknown field `question`, expected `title` or `options` at line 1 column 52
-- 2026-11-07T23:08:57Z · status active→review
