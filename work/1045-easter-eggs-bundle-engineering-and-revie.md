@@ -93,3 +93,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T04:05:21Z · body
 - 2026-11-07T04:09:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T04:31:46Z · status active→review
+- 2026-11-07T04:31:46Z · message_queued at 2026-11-07T04:31:46.576Z
