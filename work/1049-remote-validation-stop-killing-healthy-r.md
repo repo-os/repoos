@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T08:53:36Z"
+updated_at: "2026-11-07T08:59:04Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-07T08:53:19.245Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Task debug events with expanded remote details (target \"default\"): state \"drawer:debugLogs\" did not render on target \"default\" — /work has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:50620/work?shotState=drawer%3AdebugLogs); [missing-target] Task debug events with expanded remote details (target \"default\"): highlight .debug-event matched nothing on /work (htt… (truncated)"
 review_rounds: 1
@@ -61,11 +61,11 @@ Findings from the investigation (no single root cause proven):
 ```json
 [
 {
-  "label": "Task debug events with expanded remote details",
-  "target": "default",
-  "route": "/work?task=9999&tab=debug",
-  "highlight": ".debug-event",
-  "state": "drawer:debugLogs"
+"label": "Task debug events with expanded remote details",
+"target": "default",
+"route": "/work?task=9999&tab=debug",
+"highlight": ".debug-event",
+"state": "drawer:debugLogs"
 }
 ]
 ```
@@ -147,3 +147,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T08:53:15Z · message_queued at 2026-11-07T08:53:15.781Z
 - 2026-11-07T08:53:18Z · message_delivered: 1 message(s)
 - 2026-11-07T08:53:36Z · body
+- 2026-11-07T08:59:04Z · body
