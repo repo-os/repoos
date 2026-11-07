@@ -12,12 +12,12 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T09:33:01Z"
+updated_at: "2026-11-07T09:38:04Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-07T08:53:19.245Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Task debug events with expanded remote details (target \"default\"): state \"drawer:debugLogs\" did not render on target \"default\" — /work has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:50620/work?shotState=drawer%3AdebugLogs); [missing-target] Task debug events with expanded remote details (target \"default\"): highlight .debug-event matched nothing on /work (htt… (truncated)"
 review_rounds: 1
 review_passes: 1
-engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T07:19:30.902Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T07:19:30.902Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:38:04.474Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -147,3 +147,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T09:06:37Z · message_delivered: 1 message(s)
 - 2026-11-07T09:07:10Z · body
 - 2026-11-07T09:33:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The earlier handoff’s `ui-smoke` failure is resolved: UI smoke passed on the latest check. However, `repoos check --changed main` still failed two tests in the local fallback: - `remote-validation.test.ts`: one case failed after about 148 … · stderr: (empty)
+- 2026-11-07T09:38:04Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
