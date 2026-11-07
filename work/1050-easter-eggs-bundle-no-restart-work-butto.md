@@ -2,7 +2,7 @@
 id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -12,10 +12,11 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
 updated_at: "2026-11-07T21:03:33Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-07T19:43:41.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 463a9738 to 831c9b03) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 1
 routing_switches: 1
+routing_escalations: 1
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T19:43:41.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 463a9738 to 831c9b03) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T19:51:20.419Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T20:21:05.967Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -169,3 +170,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T21:03:09Z · note: handoff requested (cli)
 - 2026-11-07T21:03:31Z · status active→review
 - 2026-11-07T21:03:33Z · message_queued at 2026-11-07T21:03:33.563Z
+- 2026-11-07T21:03:33Z · status review→active
