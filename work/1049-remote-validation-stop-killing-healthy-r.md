@@ -205,3 +205,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T12:51:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T13:16:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T13:43:43Z · message_queued at 2026-11-07T13:43:43.787Z
+- 2026-11-07T13:43:43Z · handoff failed · handoff recovery attempted · finalization failed
