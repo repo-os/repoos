@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T18:54:01Z"
+updated_at: "2026-11-07T18:54:08Z"
 last_check_failure: "repoos check at 2026-11-07T17:21:16.921Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target \"default\"): highlight [data-test-id=\"pipeline-card-check-progress\"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)"
 ---
 ## Problem
@@ -148,3 +148,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T18:28:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T18:54:01Z · status active→review
 - 2026-11-07T18:54:01Z · message_queued at 2026-11-07T18:54:01.797Z
+- 2026-11-07T18:54:08Z · note: review pass 1: failed — no usable report
