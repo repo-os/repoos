@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T13:50:00.006Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
@@ -78,3 +80,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T13:23:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T13:49:56Z · message_queued at 2026-11-07T13:49:56.588Z
 - 2026-11-07T13:49:59Z · message_delivered: 1 message(s)
+
