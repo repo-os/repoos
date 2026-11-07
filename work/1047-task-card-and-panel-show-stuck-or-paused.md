@@ -2,7 +2,7 @@
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -145,3 +145,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T08:03:32Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-07T08:03:32Z · message_queued at 2026-11-07T08:03:32.980Z
 - 2026-11-07T08:03:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The formatted rerun is now green for build, formatting, lint, all 364 scoped test files (5,007 passed, 1 skipped), and rendered contrast on both the remote and local guard paths. RepoOS is completing its local UI smoke check now. · stderr: Reading additional input from stdin...
+- 2026-11-07T08:03:33Z · status active→review
