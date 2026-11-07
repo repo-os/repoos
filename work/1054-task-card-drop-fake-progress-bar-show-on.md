@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 327f82caba15ce9de2c59142031bfa31fec8684c
 id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
@@ -119,3 +121,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T16:22:49Z · body
 - 2026-11-07T16:40:54Z · message_queued at 2026-11-07T16:40:54.859Z
 - 2026-11-07T16:40:55Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+
