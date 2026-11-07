@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-07T15:03:06Z"
+review_passes: 2
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
@@ -12,10 +14,8 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T15:03:05Z"
 last_check_failure: "repoos check at 2026-11-07T14:21:12.979Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task debug events with expanded remote details (target \"default\"): highlight .debug-event[data-debug-event^=\"remote-\"] matched nothing on /work?task=9999&tab=debug (http://127.0.0.1:50411/work?shotState=drawer:debugLogs)"
 review_rounds: 1
-review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T07:19:30.902Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:38:04.474Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:51:34.771Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
@@ -221,3 +221,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T14:59:12Z · status active→review
 - 2026-11-07T14:59:12Z · message_queued at 2026-11-07T14:59:12.588Z
 - 2026-11-07T15:03:05Z · note: review pass 2: needs some work
+
