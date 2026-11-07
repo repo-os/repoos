@@ -10,8 +10,9 @@ created_by: njachowski@gmail.com
 branch: ""
 cli_override: codex
 model_override: gpt-6-luna
+review_cli_override: claude code
 created_at: "2026-11-06T22:56:38Z"
-updated_at: "2026-11-07T02:11:46Z"
+updated_at: "2026-11-07T02:11:52Z"
 ---
 ## Problem
 
@@ -48,3 +49,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-06T22:56:38Z · screenshots
 - 2026-11-07T02:11:45Z · cli_override
 - 2026-11-07T02:11:46Z · model_override
+- 2026-11-07T02:11:52Z · review_cli_override
