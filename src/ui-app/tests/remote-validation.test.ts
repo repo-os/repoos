@@ -702,7 +702,14 @@ describe("prepareCandidateUpload (#0717)", () => {
 
   /** `main` stays at `baseSha`; the candidate is one commit ahead on `feat`. */
   function makeScopedRepo(): { root: string; baseSha: string; candidateSha: string } {
-    const root = mkdtempSync(join(tmpdir(), "repoos-1001-"));
+    // Keep the synthetic Git repo under this checkout: Vitest's config loader
+    // cannot resolve an external absolute config path from an unrelated /tmp
+    // project root on Bun/Rolldown.
+    const root = mkdtempSync(join(process.cwd(), ".repoos-1001-"));
+    writeFileSync(
+      join(root, "vitest.config.mjs"),
+      'export default { test: { include: ["../tests/**/*.test.ts"] } };\n',
+    );
     const git = (...args: string[]): string =>
       execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
     git("init", "-q", "-b", "main");
@@ -1081,7 +1088,7 @@ describe("prepareCandidateUpload (#0717)", () => {
         const { resolveTestSelection } = await import("../../../scripts/select-test-files.mjs");
         const requireFromRepo = createRequire(join(process.cwd(), "package.json"));
         const vitest = join(requireFromRepo.resolve("vitest/package.json"), "..", "vitest.mjs");
-        const config = join(process.cwd(), "src/ui-app/vite.config.ts");
+        const config = join(root, "vitest.config.mjs");
         const local = resolveTestSelection(process.execPath, vitest, config, "main", [], root);
         const viaBase = resolveTestSelection(
           process.execPath,
@@ -1091,8 +1098,8 @@ describe("prepareCandidateUpload (#0717)", () => {
           [],
           root,
         );
-        expect(local.files).not.toBeNull();
-        expect(viaBase.files).not.toBeNull();
+        expect(local.files, local.warning).not.toBeNull();
+        expect(viaBase.files, viaBase.warning).not.toBeNull();
         expect(new Set(viaBase.files)).toEqual(new Set(local.files));
       } finally {
         rmSync(root, { recursive: true, force: true });
