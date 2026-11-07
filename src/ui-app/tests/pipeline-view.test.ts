@@ -20,6 +20,8 @@ import {
   taskRoundCounts,
 } from "../src/lib/pipeline-card";
 import { makeTask } from "./component-test-helpers";
+import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
+import { applyShotPreviewFixture } from "../src/lib/shot-preview-fixtures";
 
 const routeQuery = vi.hoisted(() => ({ query: {} as Record<string, string> }));
 vi.mock("vue-router", () => ({
@@ -250,6 +252,17 @@ describe("PipelineView", () => {
     const ids = wrapper.findAll(".pipeline-card").map((c) => c.attributes("data-task-id"));
     expect(ids).toEqual(["2003", "2002", "2001"]);
   });
+
+  it("renders the pipeline check bar for the #1054 shot fixture", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "pipeline:checksProgress");
+    const wrapper = track(mount(PipelineView, { attachTo: document.body }));
+    const card = wrapper.find(`[data-task-id="${SHOT_PREVIEW_FIXTURE_TASK_ID}"]`);
+    expect(card.exists()).toBe(true);
+    expect(card.find('[data-test-id="pipeline-card-check-progress"]').exists()).toBe(true);
+    expect(card.find('[data-test-id="pipeline-card-check-progress"] progress').exists()).toBe(true);
+  });
 });
 
 describe("WorkView toggle", () => {
@@ -296,11 +309,12 @@ describe("WorkView toggle", () => {
   });
 
   it("forces Pipeline on preview captures with pipeline shot routes", async () => {
-    useRepoStore().health = { isPreviewBuild: true } as never;
     routeQuery.query = { shotState: "pipeline:checksProgress", tab: "pipeline" };
+    vi.stubGlobal("location", { search: "?shotState=pipeline%3AchecksProgress&tab=pipeline" });
     const wrapper = mountWork();
     await wrapper.vm.$nextTick();
     expect(wrapper.find(".stub-pipeline").exists()).toBe(true);
     expect(wrapper.find(".stub-board").exists()).toBe(false);
+    vi.unstubAllGlobals();
   });
 });

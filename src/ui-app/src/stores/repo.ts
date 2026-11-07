@@ -25,6 +25,7 @@ import {
   shotFixturePinnedSystemStats,
   shotFixturePinnedTaskRemoteActivity,
   shotFixtureSchedules,
+  shotFixtureSeedsLiveTaskChecks,
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
@@ -2332,7 +2333,7 @@ export const useRepoStore = defineStore("repo", () => {
         taskId === SHOT_PREVIEW_FIXTURE_TASK_ID &&
         typeof window !== "undefined" &&
         isShotPreviewCaptureActive(window.location) &&
-        readShotPreviewFixtureFromLocation(window.location) === "checks:progress";
+        shotFixtureSeedsLiveTaskChecks(readShotPreviewFixtureFromLocation(window.location));
       if (!opts?.remoteOnly && !keepProgressShot) {
         taskChecks.value[taskId] = mergeTaskCheckRuns(taskChecks.value[taskId], r.runs);
       }
