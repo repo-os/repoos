@@ -1077,7 +1077,7 @@ const hint = computed<CardHint | null>(() => {
       const elapsed = formatDuration(Math.max(0, now.value - Date.parse(activeCheckRun.startedAt)));
       const step = activeCheckRun.stepName ?? "check";
       return {
-        label: `running checks · ${step} · ${elapsed} · ${checkProgressLabel(activeCheckRun)}`,
+        label: `running checks · ${step} · ${elapsed}`,
         title: "A check is running for this task",
         cls: "tc-reviewing",
       };

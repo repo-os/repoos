@@ -853,7 +853,7 @@ const cardChecksHeading = computed(() => {
   if (activeCheckRun.value) {
     const run = activeCheckRun.value;
     const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
-    return `running checks · ${run.stepName ?? "check"} · ${elapsed} · ${checkProgressLabel(run)}`;
+    return `running checks · ${run.stepName ?? "check"} · ${elapsed}`;
   }
   if (inPipeline.value) {
     return integrationCardLabel.value ?? runningChecksLabel(false);
