@@ -47,6 +47,14 @@ export function shotPreviewSkipsEngineeringReportsFetch(
   return taskId === SHOT_PREVIEW_FIXTURE_TASK_ID;
 }
 
+/** Summary reports are also server-backed; the synthetic drawer task has none. */
+export function shotPreviewSkipsTaskSummaryFetch(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  return isShotPreviewCaptureActive(location) && taskId === SHOT_PREVIEW_FIXTURE_TASK_ID;
+}
+
 /** True when preview capture should keep fixture debug logs instead of fetching. */
 export function shotPreviewSkipsTaskLogsFetch(
   location: Pick<Location, "search">,
