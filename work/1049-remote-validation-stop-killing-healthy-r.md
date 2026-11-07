@@ -3,9 +3,6 @@ id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — evidence leaks secrets, hang/reaper races remain, and the branch conflicts with main."
 priority: p0
 area: server
 assigned_to: ai
@@ -348,3 +345,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T20:02:11Z · status review→active
 - 2026-11-07T20:02:11Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-07T20:02:15Z · message_delivered: 1 message(s)
+- 2026-11-07T20:02:15Z · needs_input
