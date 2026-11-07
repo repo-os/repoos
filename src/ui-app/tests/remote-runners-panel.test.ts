@@ -188,7 +188,9 @@ describe("RemoteRunnersPanel", () => {
                     hungDetail: "killing: host idle",
                   },
                 ],
-                hungRuns: [{ taskId: "0199", at: killedAt, detail: "the output stream was silent" }],
+                hungRuns: [
+                  { taskId: "0199", at: killedAt, detail: "the output stream was silent" },
+                ],
               },
             ],
           });

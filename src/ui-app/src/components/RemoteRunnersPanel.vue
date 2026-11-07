@@ -422,7 +422,7 @@ function fmtAgo(iso: string): string {
                   slow
                 </span>
                 <span v-if="r.hung" class="rr-hung-badge">
-                  hung · {{ r.hungDetail || 'killing' }}
+                  hung · {{ r.hungDetail || "killing" }}
                 </span>
               </span>
             </template>

@@ -2842,7 +2842,7 @@ describe("hang detector (#0729)", () => {
   it.each([false, true])(
     "schedules a reaper and rechecks state/activity before removal (recent=%s)",
     async (recentActivity) => {
-    const staleCreatedAt = new Date(Date.now() - 26 * 60_000).toISOString();
+      const staleCreatedAt = new Date(Date.now() - 26 * 60_000).toISOString();
       const runRemote = vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
