@@ -46,3 +46,4 @@ updated_at: "2026-11-07T12:52:45Z"
 - 2026-11-07T12:43:16Z · status ready→active, branch
 - 2026-11-07T12:47:39Z · body
 - 2026-11-07T12:52:45Z · status active→review
+- 2026-11-07T12:52:45Z · message_queued at 2026-11-07T12:52:45.550Z
