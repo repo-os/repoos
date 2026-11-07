@@ -14,7 +14,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T22:48:46Z"
+updated_at: "2026-11-07T22:51:52Z"
 last_close_out_gate_ms: 678269
 last_close_out_gate_at: "2026-11-07T22:48:30.189Z"
 review_passes: 4
@@ -203,3 +203,4 @@ right before writing new CSS.
 - 2026-11-07T22:48:30Z · close-out gate completed in 678s
 - 2026-11-07T22:48:33Z · message_dropped: 1 queued message(s) discarded — task is done
 - 2026-11-07T22:48:46Z · status done→done, release:success
+- 2026-11-07T22:51:52Z · message_dropped: 1 queued message(s) discarded — task is done
