@@ -96,3 +96,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T06:07:11Z · engineer stopped by request
 - 2026-11-07T06:11:19Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T06:25:00Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails, tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > records a queued event while a job waits for a host slot (#0568), tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > runs two jobs on two hosts and queues a third until one frees on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-07T06:25:00Z · message_queued at 2026-11-07T06:25:00.663Z
