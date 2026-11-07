@@ -2596,6 +2596,7 @@ describe("hang detector (#0729)", () => {
     const wd = new HangWatchdog({
       thresholdMs: 300_000,
       loadPerCpu: () => load,
+      containerCpuActive: () => false,
       onHung: () => {
         killed++;
       },
@@ -2647,6 +2648,7 @@ describe("hang detector (#0729)", () => {
     const wd = new HangWatchdog({
       thresholdMs: 300_000,
       loadPerCpu: () => load,
+      containerCpuActive: () => false,
       onHung: () => {
         killed++;
       },
