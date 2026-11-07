@@ -2,7 +2,7 @@
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
-status: review
+status: active
 human_step_decision: agent
 human_step_decision_key: 26944cd9
 priority: p2
