@@ -3,6 +3,9 @@ id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — explicit container inactivity is ignored whenever the host is known to be busy.
 priority: p0
 area: server
 assigned_to: ai
@@ -287,3 +290,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T17:16:39Z · message_queued at 2026-11-07T17:16:39.415Z
 - 2026-11-07T17:16:39Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-07T17:20:08Z · note: review pass 4: needs some work
+- 2026-11-07T17:20:08Z · needs_input
