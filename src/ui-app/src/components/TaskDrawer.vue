@@ -77,6 +77,7 @@ import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import {
   shotPreviewSkipsEngineeringReportsFetch,
+  shotPreviewSkipsIntegrationJobFetch,
   shotPreviewSkipsTaskSummaryFetch,
 } from "../lib/shot-preview-fixtures";
 import { effectiveSummaryJobStatus } from "../../../core/task-summary.js";
@@ -297,7 +298,7 @@ onMounted(() => {
  *  the drawer falls back to the normal dead-end error + Fix button. */
 const autoRepairRetryHint = computed(() => {
   const t = ui.active;
-  if (!t) return null;
+  if (!t || handoffBusy.value) return null;
   return autoRepairHint({
     task: t,
     running: repo.isRunning(t.id),
@@ -401,6 +402,35 @@ const activeCheckRun = computed(() => {
   if (!id) return null;
   return (repo.taskChecks[id] ?? []).find((r) => r.running) ?? null;
 });
+const statusProgress = computed(() => {
+  const id = ui.active?.id;
+  return id ? (activeCheckRun.value ?? repo.handoffStatuses[id]?.progress ?? null) : null;
+});
+const statusProgressPercent = computed(() =>
+  statusProgress.value ? checkProgressPercent(statusProgress.value) : null,
+);
+const statusProgressLabel = computed(() => {
+  if (statusProgress.value) {
+    if (
+      statusProgress.value.stepsDone == null &&
+      statusProgress.value.currentStep == null &&
+      statusProgress.value.testsDone == null
+    ) {
+      return statusProgress.value.stepName
+        ? `Checking ${statusProgress.value.stepName}`
+        : "Starting…";
+    }
+    return checkProgressLabel(statusProgress.value);
+  }
+  if (localCheckSlot.value) {
+    return `running checks · check · ${formatDuration(localCheckSlot.value.ageMs)}`;
+  }
+  if (handoffBusy.value && ui.active) return cardChecksHeading.value;
+  return "Checks are running";
+});
+const showStatusProgress = computed(() =>
+  Boolean(statusProgress.value || handoffBusy.value || localCheckSlot.value),
+);
 
 const lastCheckRun = computed(() => {
   const id = ui.active?.id;
@@ -484,10 +514,14 @@ function startCheckLoops(taskId: string): void {
   stopCheckLoops();
   void refreshCheckRows(taskId);
   void repo.refreshTaskChecks(taskId, { remoteOnly: true });
+  void repo.refreshHandoffStatus(taskId);
+  void repo.refreshLocalCheckSlots();
   checkNow.value = Date.now();
   checkTick = setInterval(() => (checkNow.value = Date.now()), 1000);
   checkRowsTimer = setInterval(() => {
     void refreshCheckRows(taskId);
+    void repo.refreshHandoffStatus(taskId);
+    void repo.refreshLocalCheckSlots();
     // Remote phase + pool queue position for the drawer (#0897) — refreshed
     // with the same cadence so a queued validation shows a live wait time.
     // Remote-only: the in-memory SSE run must not be replaced by a poll.
@@ -517,11 +551,13 @@ watch(
     if ((repo.taskChecks[taskId as string] ?? []).length === 0) {
       void repo.refreshTaskChecks(taskId as string);
     }
+    if (ui.active?.status === "active") void repo.refreshHandoffStatus(taskId as string);
     // A task in `review` may be in a close-out whose remote gate is queued or
     // running (#0897) even though no local TaskCheckRun exists yet; polling
     // keeps its phase and queue position live in the drawer.
     if (
       activeCheckRun.value ||
+      handoffBusy.value ||
       ui.active?.status === "review" ||
       repo.resourceQueueMarkers.some((marker) => marker.taskId === taskId)
     ) {
@@ -562,6 +598,10 @@ const localCheckWait = computed(() => {
   return taskId
     ? localQueueHintForTask(repo.resourceQueueMarkers, taskId, new Date(checkNow.value))
     : null;
+});
+const localCheckSlot = computed(() => {
+  const taskId = ui.active?.id;
+  return taskId ? repo.localCheckSlotForTask(taskId, checkNow.value) : null;
 });
 
 const checkChip = computed(() => {
@@ -742,12 +782,14 @@ const cardWorkHint = computed(() => {
   const nowMs = Math.max(now.value, checkNow.value, Date.now());
   const lastActivityAt = repo.agentActivityAt[task.id] ?? repo.runningSince[task.id];
   return (
-    autoRepairHint({
-      task,
-      running: repo.isRunning(task.id),
-      lastActivity: lastActivityAt,
-      now: nowMs,
-    }) ??
+    (repo.handoffInFlight(task.id) || localCheckSlot.value
+      ? null
+      : autoRepairHint({
+          task,
+          running: repo.isRunning(task.id),
+          lastActivity: lastActivityAt,
+          now: nowMs,
+        })) ??
     activeEngineerCardHint({
       taskId: task.id,
       nowMs,
@@ -789,9 +831,30 @@ const cardChecksHeading = computed(() => {
   if (!task) return runningChecksLabel(false);
   const wait = localCheckWait.value;
   if (wait) return wait.label;
+  if (localCheckSlot.value) {
+    return `running checks · check · ${formatDuration(localCheckSlot.value.ageMs)}`;
+  }
   if (repo.handoffInFlight(task.id)) {
     const pool = remotePoolQueueHintForTaskChecks(repo.taskChecks[task.id]);
-    return pool?.label ?? runningChecksLabel(!!notices.slowRunByTask[task.id]);
+    const status = repo.handoffStatuses[task.id];
+    const startedAt =
+      status?.startedAt ?? repo.taskChecks[task.id]?.find((run) => run.running)?.startedAt;
+    const elapsed = startedAt
+      ? formatDuration(Math.max(0, checkNow.value - Date.parse(startedAt)))
+      : "";
+    const progress = repo.taskChecks[task.id]?.find(
+      (run) => run.running && run.kind === "handoff-finalize",
+    );
+    const step = status?.step ?? repo.handoffSteps[task.id] ?? "starting";
+    return (
+      pool?.label ??
+      `running checks · ${step}${elapsed ? ` · ${elapsed}` : ""}${progress ? ` · ${checkProgressLabel(progress)}` : ""}`
+    );
+  }
+  if (activeCheckRun.value) {
+    const run = activeCheckRun.value;
+    const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
+    return `running checks · ${run.stepName ?? "check"} · ${elapsed}`;
   }
   if (inPipeline.value) {
     return integrationCardLabel.value ?? runningChecksLabel(false);
@@ -836,7 +899,9 @@ const drawerStatusSummary = computed(() => {
       (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed"),
     notLandable: task.status === "review" && Boolean(landable.value && !landable.value.landable),
     handoffFailed: Boolean(handoffError.value || repo.doneErrorFor(task.id)),
-    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value),
+    checksRunning: Boolean(
+      activeCheckRun.value || localCheckWait.value || localCheckSlot.value || handoffBusy.value,
+    ),
     integrating: inPipeline.value && Boolean(integrationCardLabel.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
@@ -897,7 +962,9 @@ const drawerStatusSummary = computed(() => {
     checksFailedAfterRetries: checkChip.value?.title ?? "Checks failed after retries.",
     checksRunning: localCheckWait.value
       ? `${localCheckWait.value.title}. Queued checks are normal; keep waiting.`
-      : "The check gate is running — open the Debug tab for live output.",
+      : localCheckSlot.value
+        ? `A local check slot is held for this task. Running for ${formatDuration(localCheckSlot.value.ageMs)}.`
+        : "The check gate is running — open the Debug tab for live output.",
     integrating: "Move to done is running. Open Status details for the live step.",
     confirmingHandoff:
       "RepoOS is finalizing the handoff. The task stays active until the checks pass.",
@@ -933,6 +1000,14 @@ const drawerStatusSummary = computed(() => {
       localCheckWait.value.title,
       "Queued checks are normal — keep waiting.",
     );
+  } else if (key === "checksRunning" && localCheckSlot.value) {
+    motion = "reviewing";
+    lines = compactStatusLines(cardChecksHeading.value);
+  } else if (key === "checksRunning" && handoffBusy.value) {
+    motion = "reviewing";
+    lines = activeCheckRun.value
+      ? compactStatusLines(cardChecksHeading.value, where, cardProgressLine(activeCheckRun.value))
+      : compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…");
   } else if (key === "integrating") {
     motion = "reviewing";
     lines = compactStatusLines(integrationCardLabel.value ?? "integrating");
@@ -3379,7 +3454,12 @@ async function loadIntegrationConflictResolution(taskId: string): Promise<void> 
 watch(
   () => [ui.active?.id, inPipeline.value] as const,
   ([id, inPipe]) => {
-    if (!id || !inPipe || id === SHOT_PREVIEW_FIXTURE_TASK_ID) {
+    if (
+      !id ||
+      !inPipe ||
+      id === SHOT_PREVIEW_FIXTURE_TASK_ID ||
+      (typeof window !== "undefined" && shotPreviewSkipsIntegrationJobFetch(window.location, id))
+    ) {
       integrationConflictResolution.value = null;
       return;
     }
@@ -5499,25 +5579,6 @@ watch(
               >
                 Last successful close-out gate: {{ lastCloseOutGateLabel }}
               </p>
-              <div
-                v-if="false && inPipeline && activeCheckRun"
-                class="check-progress close-out-check-progress"
-                role="status"
-                data-test-id="close-out-check-progress"
-              >
-                <progress
-                  v-if="checkProgressPercent(activeCheckRun) !== null"
-                  :value="checkProgressPercent(activeCheckRun) ?? 0"
-                  max="100"
-                />
-                <span>{{ checkProgressLabel(activeCheckRun) }}</span>
-                <span v-if="activeCheckRun.attempt && activeCheckRun.attempt > 1">
-                  attempt {{ activeCheckRun.attempt
-                  }}<template v-if="activeCheckRun.attemptReason">
-                    · {{ activeCheckRun.attemptReason }}</template
-                  >
-                </span>
-              </div>
               <Button
                 v-if="!isHumanTask && ui.active.status === 'review' && !inPipeline"
                 variant="status"
@@ -5847,6 +5908,52 @@ watch(
               :class="index === 0 ? 'drawer-status-l2' : 'drawer-status-l3'"
               >{{ line }}</span
             >
+            <div
+              v-if="showStatusProgress"
+              class="check-progress close-out-check-progress"
+              data-test-id="close-out-check-progress"
+              role="status"
+            >
+              <span
+                class="check-progress-meter"
+                :class="{ 'is-indeterminate': statusProgressPercent == null }"
+              >
+                <progress
+                  :value="statusProgressPercent ?? undefined"
+                  max="100"
+                  aria-label="Checks running progress"
+                />
+                <span
+                  v-if="statusProgressPercent == null"
+                  class="check-progress-indeterminate"
+                  aria-hidden="true"
+                />
+              </span>
+              <span
+                >{{ statusProgressLabel
+                }}<template v-if="handoffBusy"> · {{ handoffStepLabel }}</template></span
+              >
+              <span
+                v-if="
+                  statusProgress?.attempt ||
+                  statusProgress?.machine ||
+                  repo.handoffStatuses[ui.active.id]?.attempt ||
+                  repo.handoffStatuses[ui.active.id]?.machine
+                "
+                >{{
+                  (statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt)
+                    ? `attempt ${statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt}`
+                    : ""
+                }}<template
+                  v-if="statusProgress?.machine ?? repo.handoffStatuses[ui.active.id]?.machine"
+                >
+                  · on
+                  {{
+                    statusProgress?.machine ?? repo.handoffStatuses[ui.active.id]?.machine
+                  }}</template
+                ></span
+              >
+            </div>
           </button>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
@@ -7795,19 +7902,6 @@ watch(
   background: var(--panel);
   border-radius: 8px;
   border: 1px solid var(--border);
-}
-
-.check-progress {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: min(100%, 320px);
-  font-size: 12px;
-}
-
-.check-progress progress {
-  width: 120px;
-  accent-color: var(--accent);
 }
 
 .diff-stat-item {
