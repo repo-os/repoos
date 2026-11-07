@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 609356
-last_close_out_gate_at: "2026-11-07T02:30:35.681Z"
 id: 1046
 title: Use the active theme pair for diff highlighting
 type: feature
-status: review
+status: done
 priority: p2
 area: ui
+merged_commit: 0c0ce8656acf7582efb33215a933f0e3d1feb23e
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/use-the-active-theme-pair-for-diff-highl
@@ -16,6 +15,8 @@ review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-11-06T23:18:09Z"
 updated_at: "2026-11-07T02:30:35Z"
+last_close_out_gate_ms: 609356
+last_close_out_gate_at: "2026-11-07T02:30:35.681Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T00:01:56.991Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
