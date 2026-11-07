@@ -2,7 +2,7 @@
 id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: inbox
+status: ready
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI"
@@ -15,7 +15,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T13:20:01Z"
+updated_at: "2026-11-07T13:57:20Z"
 ---
 ## Items
 
@@ -87,3 +87,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T13:13:42Z · needs_input
 - 2026-11-07T13:20:01Z · body: Items (added 1, removed 1)
 - 2026-11-07T13:20:01Z · note: bundle done E1
+- 2026-11-07T13:57:20Z · status inbox→ready
