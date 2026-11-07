@@ -172,3 +172,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T09:07:10Z · body
 - 2026-11-07T09:11:20Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T09:23:39Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-07T09:23:39Z · message_queued at 2026-11-07T09:23:39.523Z
