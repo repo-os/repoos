@@ -294,7 +294,7 @@ onMounted(() => {
  *  the drawer falls back to the normal dead-end error + Fix button. */
 const autoRepairRetryHint = computed(() => {
   const t = ui.active;
-  if (!t) return null;
+  if (!t || handoffBusy.value) return null;
   return autoRepairHint({
     task: t,
     running: repo.isRunning(t.id),
@@ -398,6 +398,10 @@ const activeCheckRun = computed(() => {
   if (!id) return null;
   return (repo.taskChecks[id] ?? []).find((r) => r.running) ?? null;
 });
+const statusProgress = computed(() => {
+  const id = ui.active?.id;
+  return id ? (activeCheckRun.value ?? repo.handoffStatuses[id]?.progress ?? null) : null;
+});
 
 const lastCheckRun = computed(() => {
   const id = ui.active?.id;
@@ -481,10 +485,12 @@ function startCheckLoops(taskId: string): void {
   stopCheckLoops();
   void refreshCheckRows(taskId);
   void repo.refreshTaskChecks(taskId, { remoteOnly: true });
+  void repo.refreshHandoffStatus(taskId);
   checkNow.value = Date.now();
   checkTick = setInterval(() => (checkNow.value = Date.now()), 1000);
   checkRowsTimer = setInterval(() => {
     void refreshCheckRows(taskId);
+    void repo.refreshHandoffStatus(taskId);
     // Remote phase + pool queue position for the drawer (#0897) — refreshed
     // with the same cadence so a queued validation shows a live wait time.
     // Remote-only: the in-memory SSE run must not be replaced by a poll.
@@ -514,11 +520,13 @@ watch(
     if ((repo.taskChecks[taskId as string] ?? []).length === 0) {
       void repo.refreshTaskChecks(taskId as string);
     }
+    if (ui.active?.status === "active") void repo.refreshHandoffStatus(taskId as string);
     // A task in `review` may be in a close-out whose remote gate is queued or
     // running (#0897) even though no local TaskCheckRun exists yet; polling
     // keeps its phase and queue position live in the drawer.
     if (
       activeCheckRun.value ||
+      handoffBusy.value ||
       ui.active?.status === "review" ||
       repo.resourceQueueMarkers.some((marker) => marker.taskId === taskId)
     ) {
@@ -739,12 +747,14 @@ const cardWorkHint = computed(() => {
   const nowMs = Math.max(now.value, checkNow.value, Date.now());
   const lastActivityAt = repo.agentActivityAt[task.id] ?? repo.runningSince[task.id];
   return (
-    autoRepairHint({
-      task,
-      running: repo.isRunning(task.id),
-      lastActivity: lastActivityAt,
-      now: nowMs,
-    }) ??
+    (repo.handoffInFlight(task.id)
+      ? null
+      : autoRepairHint({
+          task,
+          running: repo.isRunning(task.id),
+          lastActivity: lastActivityAt,
+          now: nowMs,
+        })) ??
     activeEngineerCardHint({
       taskId: task.id,
       nowMs,
@@ -788,7 +798,12 @@ const cardChecksHeading = computed(() => {
   if (wait) return wait.label;
   if (repo.handoffInFlight(task.id)) {
     const pool = remotePoolQueueHintForTaskChecks(repo.taskChecks[task.id]);
-    return pool?.label ?? runningChecksLabel(!!notices.slowRunByTask[task.id]);
+    const status = repo.handoffStatuses[task.id];
+    const elapsed = status?.startedAt
+      ? formatDuration(Math.max(0, checkNow.value - Date.parse(status.startedAt)))
+      : "";
+    const step = status?.step ?? repo.handoffSteps[task.id] ?? "starting";
+    return pool?.label ?? `running checks · ${step}${elapsed ? ` · ${elapsed}` : ""}`;
   }
   if (inPipeline.value) {
     return integrationCardLabel.value ?? runningChecksLabel(false);
@@ -833,7 +848,7 @@ const drawerStatusSummary = computed(() => {
       (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed"),
     notLandable: task.status === "review" && Boolean(landable.value && !landable.value.landable),
     handoffFailed: Boolean(handoffError.value || repo.doneErrorFor(task.id)),
-    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value),
+    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value || handoffBusy.value),
     integrating: inPipeline.value && Boolean(integrationCardLabel.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
@@ -5821,6 +5836,28 @@ watch(
               :class="index === 0 ? 'drawer-status-l2' : 'drawer-status-l3'"
               >{{ line }}</span
             >
+            <div
+              v-if="statusProgress"
+              class="check-progress close-out-check-progress"
+              data-test-id="close-out-check-progress"
+              role="status"
+            >
+              <progress
+                v-if="checkProgressPercent(statusProgress) !== null"
+                :value="checkProgressPercent(statusProgress) ?? 0"
+                max="100"
+              />
+              <span
+                >{{ checkProgressLabel(statusProgress)
+                }}<template v-if="handoffBusy"> · {{ handoffStepLabel }}</template></span
+              >
+              <span v-if="statusProgress.attempt || statusProgress.machine"
+                >{{ statusProgress.attempt ? `attempt ${statusProgress.attempt}` : ""
+                }}<template v-if="statusProgress.machine">
+                  · on {{ statusProgress.machine }}</template
+                ></span
+              >
+            </div>
           </button>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
