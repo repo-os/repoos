@@ -3,6 +3,9 @@ id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the codex agent exited without output: Reading additional input from stdin... error: {\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'terra' model is not supported when using Codex with a ChatGPT account.\",\"code\":\"model_not_found\"}}"
 priority: p2
 area: web
 assigned_to: ai
@@ -149,3 +152,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T18:54:01Z · status active→review
 - 2026-11-07T18:54:01Z · message_queued at 2026-11-07T18:54:01.797Z
 - 2026-11-07T18:54:08Z · note: review pass 1: failed — no usable report
+- 2026-11-07T18:54:08Z · needs_input
