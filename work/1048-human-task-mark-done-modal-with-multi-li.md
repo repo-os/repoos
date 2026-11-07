@@ -3,6 +3,9 @@ id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Acceptance criteria, Notes for AI"
 human_step_decision: agent
 human_step_decision_key: 26944cd9
 priority: p2
@@ -63,3 +66,4 @@ persists and displays intact, and the modal passes the checks above.
 ## Activity
 
 - 2026-11-07T00:56:19Z · created · njachowski@gmail.com
+- 2026-11-07T00:56:21Z · needs_input
