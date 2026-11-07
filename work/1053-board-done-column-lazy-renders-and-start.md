@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T14:45:57.605Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
@@ -14,7 +16,6 @@ updated_at: "2026-11-07T14:45:57Z"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: 4c9226dc08783300b496bbfd319929e2a58aa304
 review_passes: 1
-last_check_failure: "repoos check at 2026-11-07T13:50:00.006Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -103,3 +104,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T14:45:42Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
 - 2026-11-07T14:45:54Z · message_queued at 2026-11-07T14:45:54.158Z
 - 2026-11-07T14:45:57Z · message_delivered: 1 message(s)
+
