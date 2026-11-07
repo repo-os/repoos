@@ -2,7 +2,7 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -237,4 +237,3 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T23:52:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T23:52:57Z · status active→review
 - 2026-11-07T23:52:57Z · message_delivered: 1 message(s)
-- 2026-11-07T23:53:02Z · status active→review
