@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — timed out — timed out after 300s"
-last_handoff_failure_sha: 453fa67fa2c7129affef76ca423352fbb5461210
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
@@ -14,7 +12,9 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T16:42:30Z"
+updated_at: "2026-11-07T16:43:41Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — timed out — timed out after 300s"
+last_handoff_failure_sha: 453fa67fa2c7129affef76ca423352fbb5461210
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T15:55:08.194Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 3
@@ -262,4 +262,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T16:38:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T16:42:30Z · message_queued at 2026-11-07T16:42:30.338Z
 - 2026-11-07T16:42:30Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — timed out — timed out after 300s
-
+- 2026-11-07T16:43:41Z · CTO nudge: held — an undelivered message is already queued
