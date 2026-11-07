@@ -189,7 +189,7 @@ describe("task panel status label matches the board card (#1023)", () => {
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     expect(drawer.text()).not.toContain("Quiet — may be stalled");
     expect(drawer.text()).not.toContain("stuck · silent");
-    const progress = drawer.get('[data-test-id="close-out-check-progress"] progress');
+    const progress = drawer.find('[data-test-id="close-out-check-progress"] progress');
     expect(progress.exists()).toBe(true);
     expect(progress.attributes("value")).toBeUndefined();
     card.unmount();
@@ -220,7 +220,7 @@ describe("task panel status label matches the board card (#1023)", () => {
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     expect(drawer.text()).not.toContain("Quiet — may be stalled");
     expect(drawer.text()).not.toContain("stuck · silent");
-    const progress = drawer.get('[data-test-id="close-out-check-progress"] progress');
+    const progress = drawer.find('[data-test-id="close-out-check-progress"] progress');
     expect(progress.exists()).toBe(true);
     expect(progress.attributes("value")).toBeUndefined();
     card.unmount();
