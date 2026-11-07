@@ -990,6 +990,12 @@ export function cacheVolumeForSlot(base: string, slotIndex: number): string {
 /** Prefix every validation container name carries, so stale ones are findable. */
 export const VALIDATE_CONTAINER_PREFIX = "repoos-validate";
 
+export const CONTAINER_REAPER_INTERVAL_MS = 5 * 60_000;
+
+export function containerReaperDue(lastRunAt: number | undefined, now: number): boolean {
+  return lastRunAt === undefined || now - lastRunAt >= CONTAINER_REAPER_INTERVAL_MS;
+}
+
 /**
  * Name for one run's container, so a hang can `docker rm -f` exactly that run
  * and never a sibling's (#0729). `runId` is unique per run (a random suffix);
@@ -1019,7 +1025,8 @@ export function staleContainerCleanupCommand(): string {
   return (
     `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} ` +
     "--filter status=created --filter status=exited --filter status=dead 2>/dev/null | " +
-    "xargs -r docker rm -f >/dev/null 2>&1 || true"
+    `while IFS= read -r id; do name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
+    `case "$name" in ${VALIDATE_CONTAINER_PREFIX}-*) docker rm -f "$id" >/dev/null 2>&1 || true ;; esac; done`
   );
 }
 
@@ -1246,11 +1253,12 @@ export function reaperCommand(): string {
     `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} ` +
     `2>/dev/null | ` +
     `while IFS= read -r id; do ` +
+    `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
+    `case "$name" in ${VALIDATE_CONTAINER_PREFIX}-*) ;; *) continue ;; esac; ` +
     `created=$(docker inspect -f '{{.Created}}' "$id" 2>/dev/null || true); ` +
     `ctime=$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "\${created%%.*}" +%s 2>/dev/null || ` +
     `date -d "$created" +%s 2>/dev/null || echo 0); ` +
     `if [ "$ctime" -gt 0 ] && [ "$ctime" -lt "$cutoff" ]; then ` +
-    `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
     `echo "Reaping stale validation container $name (older than 25 minutes)"; ` +
     `docker rm -f "$id" >/dev/null 2>&1 || true; fi; done`
   );
@@ -3970,7 +3978,8 @@ export class TailscaleHostPool {
   probeDueHosts(): void {
     const now = Date.now();
     for (const s of this.liveHosts()) {
-      if (s.probed && now - (this.lastReaperAt.get(s.spec.host) ?? now) >= 5 * 60_000) {
+      const lastReaperAt = this.lastReaperAt.get(s.spec.host);
+      if (s.probed && containerReaperDue(lastReaperAt, now)) {
         this.lastReaperAt.set(s.spec.host, now);
         void this.exec
           .runRemote(

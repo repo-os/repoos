@@ -234,13 +234,23 @@ const events = computed<DebugEvent[]>(() => {
   }
 
   for (const r of repo.taskRemoteEvents[props.task.id] ?? []) {
+    const evidence = r.hangEvidence;
+    const evidenceDetail = evidence
+      ? [
+          `Hang condition: ${evidence.condition}`,
+          evidence.containerLogs ? `Container logs (last lines):\n${evidence.containerLogs}` : "",
+          evidence.containerState ? `Container inspect state:\n${evidence.containerState}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+      : "";
     out.push({
       key: `remote-${r.at}-${r.message.slice(0, 24)}`,
       at: r.at,
       kind: "remote",
       level: r.level,
       title: r.message,
-      detail: r.message,
+      detail: [r.message, evidenceDetail].filter(Boolean).join("\n\n"),
       remote: r,
     });
   }
