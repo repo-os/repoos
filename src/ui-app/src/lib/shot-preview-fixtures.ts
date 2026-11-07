@@ -1598,6 +1598,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       break;
     }
+    case "drawer:engineeringReports":
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      break;
     case "drawer:statusReviewFailed":
       ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
       repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID] = {

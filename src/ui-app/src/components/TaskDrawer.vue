@@ -54,7 +54,7 @@ import { useAuthStore } from "../stores/auth";
 import { useNoticesStore } from "../stores/notices";
 import { renderMarkdown } from "../lib/markdown";
 import { annotateAttachmentCloudUploads } from "../lib/attachment-cloud-markdown";
-import { fmtTime, formatDuration, relTime } from "../lib/time";
+import { fmtFullDateTime, fmtShortDateTime, fmtTime, formatDuration, relTime } from "../lib/time";
 import { fmtTokens } from "../lib/format";
 import { api, JSON_OPTS } from "../api";
 import { checkRunSkipped } from "../../../core/check-skip.js";
@@ -4335,6 +4335,9 @@ interface EngineeringReportRow {
 }
 const devPane = ref<"chat" | "report">("chat");
 const engineeringReports = ref<EngineeringReportRow[]>([]);
+const engineeringReportRows = computed(() =>
+  [...engineeringReports.value].sort((a, b) => b.round - a.round),
+);
 const engineeringReportsError = ref("");
 const selectedEngineeringRound = ref<number | null>(null);
 const selectedEngineeringReport = computed(
@@ -4427,6 +4430,23 @@ async function loadEngineeringReports(taskId: string): Promise<void> {
     typeof window !== "undefined" &&
     shotPreviewSkipsEngineeringReportsFetch(window.location, taskId)
   ) {
+    if (
+      new URLSearchParams(window.location.search).get("shotState") === "drawer:engineeringReports"
+    ) {
+      engineeringReports.value = [1, 2, 3, 4, 5, 6].map((round) => ({
+        taskId,
+        round,
+        at: `2026-11-0${Math.min(round, 7)}T12:00:00.000Z`,
+        agent: round % 2 ? "codex" : "claude",
+        model: round % 2 ? "gpt-6" : "sonnet",
+        branch: "feat/shot-fixture",
+        baseSha: "fixture-base",
+        sourceSha: `fixture-${round}`,
+        wordCount: 120,
+        markdown: `## TL;DR\nEngineering report round ${round}.`,
+      }));
+      selectedEngineeringRound.value = 6;
+    }
     return;
   }
   const generation = ++engineeringReportGeneration;
@@ -6475,7 +6495,7 @@ watch(
               </thead>
               <tbody>
                 <tr
-                  v-for="report in engineeringReports"
+                  v-for="report in engineeringReportRows"
                   :key="report.round"
                   class="review-history-row"
                   :class="{
@@ -6490,7 +6510,12 @@ watch(
                   @keydown.space.prevent="selectedEngineeringRound = report.round"
                 >
                   <td>Round {{ report.round }}</td>
-                  <td>{{ fmtTime(report.at) }}</td>
+                  <td>
+                    <details class="report-time">
+                      <summary>{{ fmtShortDateTime(report.at) }}</summary>
+                      <span role="tooltip">{{ fmtFullDateTime(report.at) }}</span>
+                    </details>
+                  </td>
                   <td>{{ report.agent }}</td>
                   <td>{{ report.model }}</td>
                 </tr>
@@ -6745,7 +6770,12 @@ watch(
                     @keydown.space.prevent="selectReviewPass(h.pass)"
                   >
                     <td class="ta-left review-history-pass">#{{ h.pass }}</td>
-                    <td class="ta-left">{{ repo.fmtDate(h.at) }}</td>
+                    <td class="ta-left">
+                      <details class="report-time">
+                        <summary>{{ fmtShortDateTime(h.at) }}</summary>
+                        <span role="tooltip">{{ fmtFullDateTime(h.at) }}</span>
+                      </details>
+                    </td>
                     <td class="ta-left review-history-reviewer">{{ h.reviewer }}</td>
                     <td class="ta-left review-history-model">{{ h.model }}</td>
                     <td class="ta-left">{{ h.verdict }}</td>
