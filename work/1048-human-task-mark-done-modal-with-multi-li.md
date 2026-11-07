@@ -1,0 +1,81 @@
+---
+id: 1048
+title: "Human task Mark done: modal with multi-line completion report"
+type: feature
+status: inbox
+human_step_decision: agent
+human_step_decision_key: 26944cd9
+priority: p2
+area: web
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-11-07T00:56:19Z"
+updated_at: "2026-11-07T00:56:35Z"
+---
+## Problem
+
+On a human-assigned task the drawer's "Mark done" strip has a single-line
+`<Input>` for the optional completion note (`humanCompletionNote` in
+`src/ui-app/src/components/TaskDrawer.vue`, the `drawer-human-task` notice).
+A real human report (what was tested, on what device, what was observed, what
+was *not* verified) does not fit on one line; the text scrolls sideways and is
+unreadable. Found closing out a verification task from the divot repo (a
+lid-close keep-awake test with a multi-paragraph result), but any
+needs-human-step task has the same need.
+
+## Desired UX
+
+- "Mark done" on a human task opens a confirm **modal** instead of using the
+inline note input (remove the inline input).
+- Modal: title "Mark done", short description, an optional **5-6 line
+`<textarea>`** labelled "Completion report (optional)" that keeps newlines,
+and Cancel / Mark done buttons. An empty report is allowed.
+- The report is stored in the same field the single-line note uses today, but
+must round-trip multi-line text and markdown through the task-file
+writer/parser (no frontmatter or body breakage) and display readably in the
+drawer afterwards.
+- If the status dropdown can also move a human task to done via
+`setStatus('done')`, keep both paths consistent.
+- Built from the shared dialog components in
+`src/ui-app/src/components/ui/dialog/` and the global `ff-*`/`field`/
+`btn-row` classes in `style.css`; no bespoke scoped modal CSS, no native
+`confirm()`/`prompt()`.
+
+## Acceptance criteria
+
+Modal quality (a recurring problem, do not skip):
+
+- Correct padding on all sides of content and footer; buttons not flush to the
+edges or to each other.
+- Both buttons have full-size, reliably clickable hit areas (nothing overlaps
+them or sits above them). Cancel, Mark done, the close X and Escape all work;
+clicking the scrim cancels without submitting.
+- Rendered through the dialog portal with `data-overlay-layer`, so it is not
+click-transparent or trapped in the drawer's stacking context.
+- Focus lands in the textarea, Tab reaches both buttons, Cmd/Ctrl+Enter
+submits. Usable at narrow/touch widths.
+- A UI/component test clicks both buttons with real clicks (not by calling the
+handler), and a `## Shots` entry captures the open modal.
+
+Behavior:
+
+- A multi-line report survives save, reload and display intact, with a test
+for the round-trip.
+- Marking done with an empty report still works.
+
+## Notes for AI
+
+- Start from the `drawer-human-task` block around line 5336 of
+`TaskDrawer.vue` and the `humanCompletionNote` / `setStatus` code.
+- Look at an existing dialog built on `components/ui/dialog/` for the layout
+pattern, and check how other dialogs get their padding and footer buttons
+right before writing new CSS.
+- Check the zero-runtime-dependency rule; no new packages.
+
+## Activity
+
+- 2026-11-07T00:56:19Z · created · njachowski@gmail.com
+- 2026-11-07T00:56:21Z · needs_input
+- 2026-11-07T00:56:34Z · body: Problem (added 2, removed 2); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Change (removed); Modal quality bar (recurring problem: do not skip) (removed); Done when (removed)
+- 2026-11-07T00:56:35Z · needs_input
