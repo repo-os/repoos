@@ -1,5 +1,5 @@
 ---
-id: "1048"
+id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
 status: active
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/human-task-mark-done-modal-with-multi-li
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T16:42:19Z"
+updated_at: "2026-11-07T16:42:28Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T16:29:03.114Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
@@ -122,3 +122,4 @@ right before writing new CSS.
 - 2026-11-07T16:31:00Z · message_delivered: 1 message(s)
 - 2026-11-07T16:33:41Z · CTO nudge: held — remote validation is running
 - 2026-11-07T16:42:19Z · body
+- 2026-11-07T16:42:28Z · note: ui verification failed (2 issue(s)): [missing-target] Human task completion report modal (target "default"): click .drawer-human-task button: click: Timeout 5000ms exceeded. on /work?task=1048&tab=changes (http://127.0.0.1:64409/work?task=1048&tab=changes&shotState=card%3AhumanStep); [missing-target] Human task completion report modal (target "default"): highlight .human-done-modal matched nothing on /work?task=1048&tab=changes (http://127.0.0.1:64409/work?task=1048&tab=changes&shotState=card%3A
