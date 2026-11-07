@@ -2,7 +2,7 @@
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
-status: active
+status: review
 human_step_decision: agent
 human_step_decision_key: 26944cd9
 priority: p2
@@ -172,3 +172,4 @@ right before writing new CSS.
 - 2026-11-07T20:29:40Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-07T20:29:41Z · message_queued at 2026-11-07T20:29:41.198Z
 - 2026-11-07T20:29:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The complete check is green. I’m checking the branch-local task copy and shot declaration now; `repoos show` surfaced earlier failed shot attempts in the activity history, so I’m making sure the current shot setup addresses those before ha… · stderr: Reading additional input from stdin...
+- 2026-11-07T20:29:41Z · status active→review
