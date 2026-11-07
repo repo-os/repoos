@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T07:45:25Z"
+updated_at: "2026-11-07T07:51:20Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-07T05:19:38.063Z: repoos check failed: tests — Test Files 2 failed | 145 passed (147)"
@@ -135,3 +135,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T07:33:01Z · status review→active
 - 2026-11-07T07:38:18Z · body
 - 2026-11-07T07:45:25Z · body
+- 2026-11-07T07:51:20Z · CTO nudge: held — handoff gate is running
