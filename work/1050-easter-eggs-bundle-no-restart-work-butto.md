@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-no-restart-work-butto
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T17:04:24Z"
+updated_at: "2026-11-07T17:04:25Z"
 ---
 ## Items
 ## Items
@@ -109,3 +109,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T16:34:16Z · message_delivered: 2 message(s)
 - 2026-11-07T16:38:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T17:04:24Z · note: ui verification failed (2 issue(s)): [missing-target] Task drawer while checks run (target "default"): state "drawer:statusChecksRunning" did not render on target "default" — /work?task=1050 has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:50591/work?task=1050&shotState=drawer%3AstatusChecksRunning); [missing-target] Task drawer while checks run (target "default"): highlight .drawer-quickbar matched nothing on /work?task=1050 (http:/
+- 2026-11-07T17:04:25Z · message_queued at 2026-11-07T17:04:25.003Z
