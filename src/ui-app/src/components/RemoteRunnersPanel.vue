@@ -421,7 +421,9 @@ function fmtAgo(iso: string): string {
                 >
                   slow
                 </span>
-                <span v-if="r.hung" class="rr-hung-badge">hung · killing</span>
+                <span v-if="r.hung" class="rr-hung-badge">
+                  hung · {{ r.hungDetail || 'killing' }}
+                </span>
               </span>
             </template>
             <span v-else class="rr-dim">idle</span>
@@ -437,6 +439,7 @@ function fmtAgo(iso: string): string {
             >
               <span class="mono">#{{ hr.taskId }}</span>
               <span class="rr-dim"> · killed {{ fmtAgo(hr.at) }}</span>
+              <span v-if="hr.detail" class="rr-dim"> · {{ hr.detail }}</span>
             </span>
           </dd>
         </div>
