@@ -104,3 +104,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T16:23:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T16:27:16Z · body
 - 2026-11-07T16:31:01Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T16:31:01Z · message_queued at 2026-11-07T16:31:01.403Z
