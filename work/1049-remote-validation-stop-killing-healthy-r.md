@@ -3,6 +3,9 @@ id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — the reaper can remove a still-active validation run.
 priority: p0
 area: server
 assigned_to: ai
@@ -314,3 +317,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T18:19:32Z · message_queued at 2026-11-07T18:19:32.820Z
 - 2026-11-07T18:24:08Z · message_delivered: 2 message(s)
 - 2026-11-07T18:24:09Z · note: review pass 5: needs some work
+- 2026-11-07T18:24:09Z · needs_input
