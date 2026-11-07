@@ -13,7 +13,7 @@ cli_override: claude code
 model_override: haiku
 review_cli_override: github copilot
 created_at: "2026-11-06T04:37:35Z"
-updated_at: "2026-11-06T23:44:58Z"
+updated_at: "2026-11-07T00:01:53Z"
 last_close_out_gate_ms: 582589
 last_close_out_gate_at: "2026-11-06T23:43:25.671Z"
 review_passes: 13
@@ -341,3 +341,4 @@ What it covers (inputs: the task md, all engineering rounds, all review passes, 
 - 2026-11-06T23:05:16Z · needs_input
 - 2026-11-06T23:43:25Z · close-out gate completed in 583s
 - 2026-11-06T23:44:58Z · status done→done, release:success
+- 2026-11-07T00:01:53Z · message_dropped: 1 queued message(s) discarded — task is done
