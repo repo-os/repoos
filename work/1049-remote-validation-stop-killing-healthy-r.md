@@ -376,3 +376,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T22:07:54Z · body
 - 2026-11-07T22:37:26Z · watchdog: restarting engineer after 30m with no live process
 - 2026-11-07T22:42:10Z · message_queued at 2026-11-07T22:42:10.361Z
+- 2026-11-07T22:42:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
