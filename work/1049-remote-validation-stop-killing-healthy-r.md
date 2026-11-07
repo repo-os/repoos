@@ -392,3 +392,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T23:01:53Z · message_delivered: 1 message(s)
 - 2026-11-07T23:01:53Z · needs_input
 - 2026-11-07T23:01:54Z · message_queued at 2026-11-07T23:01:54.089Z
+- 2026-11-07T23:01:54Z · CTO nudge: held — an undelivered message is already queued
