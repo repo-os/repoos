@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T13:20:06Z"
+updated_at: "2026-11-07T13:21:24Z"
 ---
 ## Problem
 After #1047, the Active task card is too busy while checks run, and the green bar is misleading. `checkProgressPercent()` (src/ui-app/src/lib/check-progress.ts) only returns a number when the server reports step counts or test-file counts. When a handoff reuses an earlier check ("reused check 14098") or is in a handoff stage with no counts (e.g. "Checking review"), the bar falls back to the generic sliding animation, which says nothing the old animation didn't. The same state is also shown three times on the card: the bottom "RUNNING CHECKS · CHECK · 41s" hint, the bar + "Checking review · attempt 13", and (in the drawer) a "Checks failed" box whose badge contradicts its "running checks" line.
@@ -35,6 +35,26 @@ After #1047, the Active task card is too busy while checks run, and the green ba
 ## Notes for AI
 Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt 13, reused check). Keep scope to removing/merging UI; do not change server progress reporting. Follow AGENTS.md conventions (no native title tooltips, global classes in style.css).
 
+## Shots
+```json
+[
+{
+  "label": "Active card with counted check progress bar",
+  "target": "default",
+  "route": "/work?status=active",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
+  "state": "card:checksProgress"
+},
+{
+  "label": "Active card during reused check (text only, no bar)",
+  "target": "default",
+  "route": "/work?status=active",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-status-line\"]",
+  "state": "card:checksReuse"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-07T13:16:10Z · created · njachowski@gmail.com
@@ -44,3 +64,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T13:18:46Z · message_queued at 2026-11-07T13:18:46.576Z
 - 2026-11-07T13:19:14Z · message_queued at 2026-11-07T13:19:14.390Z
 - 2026-11-07T13:20:06Z · message_queued at 2026-11-07T13:20:06.057Z
+- 2026-11-07T13:21:24Z · body
