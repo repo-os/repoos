@@ -77,6 +77,7 @@ import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import {
   shotPreviewSkipsEngineeringReportsFetch,
+  shotPreviewSkipsIntegrationJobFetch,
   shotPreviewSkipsTaskSummaryFetch,
 } from "../lib/shot-preview-fixtures";
 import { effectiveSummaryJobStatus } from "../../../core/task-summary.js";
@@ -3453,7 +3454,12 @@ async function loadIntegrationConflictResolution(taskId: string): Promise<void> 
 watch(
   () => [ui.active?.id, inPipeline.value] as const,
   ([id, inPipe]) => {
-    if (!id || !inPipe || id === SHOT_PREVIEW_FIXTURE_TASK_ID) {
+    if (
+      !id ||
+      !inPipe ||
+      id === SHOT_PREVIEW_FIXTURE_TASK_ID ||
+      (typeof window !== "undefined" && shotPreviewSkipsIntegrationJobFetch(window.location, id))
+    ) {
       integrationConflictResolution.value = null;
       return;
     }

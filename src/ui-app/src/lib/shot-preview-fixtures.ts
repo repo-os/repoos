@@ -55,6 +55,16 @@ export function shotPreviewSkipsTaskSummaryFetch(
   return isShotPreviewCaptureActive(location) && taskId === SHOT_PREVIEW_FIXTURE_TASK_ID;
 }
 
+/** A preview drawer seeds its integration state locally; no job record exists for its task. */
+export function shotPreviewSkipsIntegrationJobFetch(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  return (
+    isShotPreviewCaptureActive(location) && taskId === shotPreviewDrawerTaskIdFromLocation(location)
+  );
+}
+
 /** True when preview capture should keep fixture debug logs instead of fetching. */
 export function shotPreviewSkipsTaskLogsFetch(
   location: Pick<Location, "search">,
