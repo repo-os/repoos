@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T16:29:03.114Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
@@ -117,3 +119,4 @@ right before writing new CSS.
 - 2026-11-07T15:58:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T16:01:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T16:29:00Z · message_queued at 2026-11-07T16:29:00.001Z
+
