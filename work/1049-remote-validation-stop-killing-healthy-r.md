@@ -114,3 +114,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T07:24:46Z · body
 - 2026-11-07T07:30:37Z · status active→review
 - 2026-11-07T07:30:37Z · message_queued at 2026-11-07T07:30:37.743Z
+- 2026-11-07T07:30:37Z · note: shots: skipped — the diff (5 changed paths) touches no capture target's globs — no UI change to capture
