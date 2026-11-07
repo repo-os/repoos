@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T06:31:23Z"
+updated_at: "2026-11-07T06:31:28Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T05:19:38.063Z: repoos check failed: tests — Test Files 2 failed | 145 passed (147)"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"}]"
@@ -99,3 +99,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T06:25:00Z · message_queued at 2026-11-07T06:25:00.663Z
 - 2026-11-07T06:26:19Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T06:31:23Z · message_delivered: 1 message(s)
+- 2026-11-07T06:31:28Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > shows hung · killing on the active run while the kill SSH is still pending (#0735), tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > kills a stalled run's container and retries it on another host, tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > settles validate when hang kill completes but main SSH never resolves and abort is a no-op (#0739) on mini — fix it in the feature branch and re-run the gate
