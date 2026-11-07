@@ -2,16 +2,16 @@
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
-status: ready
+status: active
 human_step_decision: agent
 human_step_decision_key: 26944cd9
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/human-task-mark-done-modal-with-multi-li
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T15:01:49Z"
+updated_at: "2026-11-07T15:01:52Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ right before writing new CSS.
 - 2026-11-07T00:56:34Z · body: Problem (added 2, removed 2); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Change (removed); Modal quality bar (recurring problem: do not skip) (removed); Done when (removed)
 - 2026-11-07T00:56:35Z · needs_input
 - 2026-11-07T14:05:33Z · status inbox→ready
+- 2026-11-07T15:01:52Z · status ready→active, branch
