@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T19:23:26Z"
+updated_at: "2026-11-07T19:30:45Z"
 last_close_out_gate_ms: 616368
 last_close_out_gate_at: "2026-11-07T19:22:06.859Z"
 review_passes: 1
@@ -160,3 +160,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T19:14:04Z · note: shots: skipped — 5 handoff shots already captured for this exact plan (47fe6f2f8) during finalization (#0734)
 - 2026-11-07T19:22:06Z · close-out gate completed in 616s
 - 2026-11-07T19:23:26Z · status done→done, release:success
+- 2026-11-07T19:30:45Z · message_dropped: 1 queued message(s) discarded — task is done
