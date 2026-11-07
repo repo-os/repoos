@@ -1,5 +1,5 @@
 ---
-id: 1044
+id: "1044"
 title: "Post-merge summary: status and report-state edge cases (follow-up to #1041)"
 type: bug
 status: ready
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-06T22:50:03Z"
-updated_at: "2026-11-07T06:24:31Z"
+updated_at: "2026-11-07T22:51:48Z"
 ---
 ## Problem
 
