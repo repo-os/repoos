@@ -539,6 +539,8 @@ export interface RemoteHostStatus {
     phases?: RemoteRunPhaseTiming[];
     /** True while this run is being killed as hung (#0729). */
     hung?: boolean;
+    /** Plain-language condition that triggered the hang kill. */
+    hungDetail?: string;
   }[];
   /** Task ids of the queued runs waiting for THIS host, FIFO order (#0564). */
   queuedTasks?: string[];
@@ -1030,9 +1032,9 @@ export function cacheVolumeForSlot(base: string, slotIndex: number): string {
 export const VALIDATE_CONTAINER_PREFIX = "repoos-validate";
 
 export const CONTAINER_REAPER_INTERVAL_MS = 5 * 60_000;
-/** Backwards-named cap, now covering the entire maximum legitimate run lifetime. */
-export const CONTAINER_REAPER_RUN_CAP_MS = MAX_REMOTE_RUN_LIFETIME_MS;
-/** Extra age beyond every legitimate run deadline before best-effort reaping. */
+/** A container is created after slot acquisition, so only the 25-minute run cap applies. */
+export const CONTAINER_REAPER_RUN_CAP_MS = REMOTE_RUN_TIMEOUT_MS;
+/** Recent-log quiet window used to avoid deleting a container that is still writing. */
 export const CONTAINER_REAPER_SAFETY_MARGIN_MS = 5 * 60_000;
 
 export function containerReaperDue(lastRunAt: number | undefined, now: number): boolean {
@@ -1099,7 +1101,10 @@ export function reaperInspectionIsStale(
   safetyMarginMs = CONTAINER_REAPER_SAFETY_MARGIN_MS,
 ): boolean {
   if (!inspected || inspected.recentOutput) return false;
-  const cutoff = now - maxAgeMs - safetyMarginMs;
+  // Container creation happens only after slot acquisition, so its maximum
+  // legitimate age is the run cap (the host-lock wait is already over).
+  void safetyMarginMs;
+  const cutoff = now - maxAgeMs;
   return inspected.createdAt < cutoff && inspected.lastActivityAt < cutoff;
 }
 
@@ -1107,7 +1112,7 @@ export function reaperInspectionIsStale(
 export function staleReaperCandidates(
   output: string,
   now: number,
-  maxAgeMs = CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS,
+  maxAgeMs = CONTAINER_REAPER_RUN_CAP_MS,
   activeContainerNames: ReadonlySet<string> = new Set(),
 ): ReaperCandidate[] {
   const cutoff = now - maxAgeMs;
@@ -1397,15 +1402,8 @@ export function reaperCommand(): string {
 export function reaperRemoveCommand(id: string): string {
   if (!/^[a-f\d]{12,64}$/i.test(id)) return "false";
   return (
-    `LOCKROOT="$HOME/.repoos-validate-locks"; mkdir -p "$LOCKROOT"; ` +
-    // Serialize the final empty-slot check with hostLockShell's slot creation.
-    // The lease blocks new validations until this inspect/remove transaction ends.
-    `while ! mkdir "$LOCKROOT/.acquire-gate" 2>/dev/null; do sleep 1; done; ` +
-    `if [ -n "$(find "$LOCKROOT" -mindepth 1 -maxdepth 1 -type d -name '[0-9]*' -print -quit)" ]; then ` +
-    `rmdir "$LOCKROOT/.acquire-gate"; exit 75; fi; ` +
-    `_rv_owns_reaper=0; trap '[ "$_rv_owns_reaper" = 1 ] && rmdir "$LOCKROOT/.reaping" 2>/dev/null || true' EXIT HUP INT TERM; ` +
-    `if ! mkdir "$LOCKROOT/.reaping" 2>/dev/null; then rmdir "$LOCKROOT/.acquire-gate"; exit 75; fi; ` +
-    `_rv_owns_reaper=1; rmdir "$LOCKROOT/.acquire-gate"; ` +
+    // Containers are created only after acquiring a slot and are hard-capped
+    // at 25 minutes. A user-scoped lock cannot establish cross-user ownership.
     `name=$(docker inspect -f '{{.Name}}' ${shellQuote(id)} 2>/dev/null || true); ` +
     `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) ;; *) exit 1 ;; esac; ` +
     `state=$(docker inspect --format '{{.Created}}\t{{.State.Status}}\t{{.State.StartedAt}}\t{{.State.FinishedAt}}' ${shellQuote(id)}) || exit 1; ` +
@@ -4219,7 +4217,7 @@ export class TailscaleHostPool {
             const stale = staleReaperCandidates(
               listing.output,
               Date.now(),
-              CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS,
+              CONTAINER_REAPER_RUN_CAP_MS,
               s.liveContainerNames,
             );
             for (const candidate of stale) {
@@ -4250,7 +4248,7 @@ export class TailscaleHostPool {
               if (removed.code === 0 && !removed.timedOut) {
                 this.logger?.system(
                   "info",
-                  `remote validation Reaping stale validation container ${candidate.name} (older than ${Math.ceil((CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS) / 60_000)} minutes with no recent activity) on ${s.spec.host}`,
+                  `remote validation Reaping stale validation container ${candidate.name} (older than ${Math.ceil(CONTAINER_REAPER_RUN_CAP_MS / 60_000)} minutes with no recent activity) on ${s.spec.host}`,
                 );
               } else {
                 this.logger?.system(
@@ -4537,7 +4535,10 @@ export class TailscaleHostPool {
     const at = new Date().toISOString();
     const active = s.activeRuns[s.activeRuns.length - 1];
     const taskId = opts?.taskId ?? active?.taskId ?? "?";
-    if (active) active.hung = true;
+    if (active) {
+      active.hung = true;
+      active.hungDetail = detail;
+    }
     if (opts?.history === false) return;
     s.hungRuns = [{ taskId, at, detail }, ...(s.hungRuns ?? [])].slice(0, 5);
   }
@@ -6517,7 +6518,7 @@ export class TailscaleRunner implements RemoteValidator {
               "warn",
               `remote validation run for #${opts.taskId} looks hung (${conditionLabel}) on ${host.ip} — killing ${containerName}`,
             );
-            this.pool.markHung(host.ip, `killing container ${containerName} (#${opts.taskId})`, {
+            this.pool.markHung(host.ip, `killing: ${conditionLabel}`, {
               history: false,
               taskId: opts.taskId,
             });

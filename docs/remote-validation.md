@@ -435,17 +435,15 @@ anymore. Containers left behind by a killed/hung run are reaped three ways: that
 per-run trap, the host prerequisite probe's **stale-container** sweep
 (`staleContainerCleanupCommand()`) — `repoos-validate-*` name prefix only, and
 **not** `status=running`, so a live sibling run is never removed; and a periodic
-background reaper (`reaperCommand()`) (#1049). The run hard deadline has one
-source of truth: the maximum lock wait plus the run timeout (currently 15 + 25
-minutes). The periodic reaper considers a container only when it is older than
-that complete 40-minute legitimate lifetime plus a 5-minute safety margin. It
-also excludes names currently owned by this server process and rechecks Docker
-creation/state timestamps plus recent logs immediately before removal. The final
-removal transaction takes a host-wide reaper lease under the same atomic
-acquisition gate used by validation slots. It proceeds only when no slot is held;
-new runs wait until the lease is released after inspection and removal. This
-closes the cross-process gap between a cached lock snapshot and `docker rm`.
-Dispatch is held while the reaper runs and every removal is logged. Safe GC of
+background reaper (`reaperCommand()`) (#1049). Containers are created only
+after a host slot is acquired, so the reaper uses the 25-minute run cap rather
+than adding the preceding 15-minute slot-wait allowance. It also excludes names
+currently owned by this server process and rechecks Docker creation/state
+timestamps plus recent logs immediately before removal. Recent logs use a
+five-minute quiet window. Cross-user ownership is not inferred from
+`$HOME/.repoos-validate-locks`; a legitimately active container cannot reach
+the 25-minute age cap because the run deadline has already expired. Dispatch is
+held while the reaper runs and every removal is logged. Safe GC of
 abandoned workdirs (age-bound, mount-aware) is
 deliberately future work; until then, rely on per-run EXIT cleanup, non-running
 container sweeps, and the background reaper.

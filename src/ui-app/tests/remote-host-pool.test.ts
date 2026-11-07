@@ -2770,7 +2770,7 @@ describe("hang detector (#0729)", () => {
     expect(reaperInspectionCommand("0123456789ab")).toContain("docker inspect --format");
     expect(reaperInspectionCommand("0123456789ab")).toContain("docker logs --since 300s");
     expect(reaperRemoveCommand("0123456789ab")).toContain("docker rm -f '0123456789ab'");
-    expect(reaperRemoveCommand("0123456789ab")).toContain('mkdir "$LOCKROOT/.reaping"');
+    expect(reaperRemoveCommand("0123456789ab")).not.toContain(".repoos-validate-locks");
     expect(reaperRemoveCommand("0123456789ab")).toContain("docker inspect --format");
     expect(reaperRemoveCommand("not-an-id")).toBe("false");
     const slotLock = hostLockShell({ slots: 2, waitSecs: 30, inner: "true" });
@@ -2778,12 +2778,12 @@ describe("hang detector (#0729)", () => {
     expect(slotLock).toContain('[ -d "$LOCKROOT/.reaping" ]');
     expect(slotLock).toContain('rmdir "$LOCKROOT/.acquire-gate"');
     const now = Date.parse("2026-11-07T04:00:00Z");
-    const maximumAge = CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS;
+    const maximumAge = CONTAINER_REAPER_RUN_CAP_MS;
     expect(REMOTE_RUN_TIMEOUT_MS).toBe(25 * 60_000);
     expect(MAX_REMOTE_RUN_LIFETIME_MS).toBe(
       REMOTE_RUN_TIMEOUT_MS + DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
     );
-    expect(CONTAINER_REAPER_RUN_CAP_MS).toBe(MAX_REMOTE_RUN_LIFETIME_MS);
+    expect(CONTAINER_REAPER_RUN_CAP_MS).toBe(REMOTE_RUN_TIMEOUT_MS);
     const ownershipIndependentCandidates = staleReaperCandidates(
       [
         `0123456789a1\t/repoos-validate-young\t${new Date(now - maximumAge + 1).toISOString()}`,
@@ -2842,7 +2842,7 @@ describe("hang detector (#0729)", () => {
   it.each([false, true])(
     "schedules a reaper and rechecks state/activity before removal (recent=%s)",
     async (recentActivity) => {
-      const staleCreatedAt = new Date(Date.now() - 46 * 60_000).toISOString();
+    const staleCreatedAt = new Date(Date.now() - 26 * 60_000).toISOString();
       const runRemote = vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
@@ -2902,7 +2902,7 @@ describe("hang detector (#0729)", () => {
       if (!recentActivity) {
         expect(logger.system).toHaveBeenCalledWith(
           "info",
-          "remote validation Reaping stale validation container repoos-validate-old (older than 45 minutes with no recent activity) on runner",
+          "remote validation Reaping stale validation container repoos-validate-old (older than 25 minutes with no recent activity) on runner",
         );
       }
     },

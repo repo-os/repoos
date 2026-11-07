@@ -1102,6 +1102,8 @@ export interface RemoteHostStatusView {
     slowRatio?: number;
     /** True while this run is being killed as hung (#0729). */
     hung?: boolean;
+    /** Plain-language condition that triggered the hang kill. */
+    hungDetail?: string;
   }[];
   queuedTasks?: string[];
   /** Queued runs attributed to this host, with position + blockers (#0897). */
