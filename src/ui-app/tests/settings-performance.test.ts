@@ -52,6 +52,13 @@ describe("Settings — performance controls (#0836)", () => {
     }
   });
 
+  it("exposes the Done default on General settings", () => {
+    const field = getConfigSchema().find((f) => f.key === "board.doneCollapsedByDefault");
+    expect(field).toMatchObject({ type: "boolean", default: true });
+    expect(isGeneralSchemaFieldKey("board.doneCollapsedByDefault")).toBe(true);
+    expect(generalSectionForKey("board.doneCollapsedByDefault")).toBe("general");
+  });
+
   it("maps local caps to the Performance section", () => {
     expect(generalSectionForKey("localChecks.maxConcurrent")).toBe("performance");
     expect(generalSectionForKey("playwright.maxConcurrent")).toBe("performance");

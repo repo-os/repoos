@@ -281,3 +281,56 @@ describe("BoardColumn drop: active -> review", () => {
     expect(err.message).toMatch(/still coding/);
   });
 });
+
+describe("Done rendering", () => {
+  it("expands a collapsed Done column when it contains a fresh unacknowledged task", async () => {
+    const { collapsedColumnIds } = await import("../src/lib/boardCollapse");
+    collapsedColumnIds.value = new Set(["done"]);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.tasks = [
+      makeTask({ id: "fresh-1053", status: "done", updated_at: new Date().toISOString() }),
+    ];
+    const wrapper = mount(BoardColumn, {
+      props: { col: { id: "done", label: "Done", color: "green" } },
+      global: {
+        plugins: [pinia],
+        stubs: { TaskCard: true, RestartTaskDialog: true, ReviewConfirmDialog: true },
+      },
+    });
+    await nextTick();
+    expect(wrapper.findAll("task-card-stub")).toHaveLength(1);
+    wrapper.unmount();
+    collapsedColumnIds.value = new Set();
+  });
+  it("mounts no collapsed cards and only a window when expanded, including at the end", async () => {
+    const { collapsedColumnIds } = await import("../src/lib/boardCollapse");
+    collapsedColumnIds.value = new Set(["done"]);
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.tasks = Array.from({ length: 1000 }, (_, i) =>
+      makeTask({ id: String(i).padStart(4, "0"), status: "done" }),
+    );
+    const wrapper = mount(BoardColumn, {
+      props: { col: { id: "done", label: "Done", color: "green" } },
+      global: {
+        plugins: [pinia],
+        stubs: { TaskCard: true, RestartTaskDialog: true, ReviewConfirmDialog: true },
+      },
+    });
+    expect(wrapper.findAll("task-card-stub")).toHaveLength(0);
+    await wrapper.find(".col-head").trigger("click");
+    expect(wrapper.findAll("task-card-stub")).toHaveLength(40);
+    const body = wrapper.find(".col-body");
+    (body.element as HTMLElement).scrollTop = 1000000;
+    await body.trigger("scroll");
+    expect(wrapper.findAll("task-card-stub")).toHaveLength(40);
+    expect(wrapper.findAll("[data-virtual-task]").at(-1)?.attributes("data-virtual-task")).toBe(
+      "0999",
+    );
+    wrapper.unmount();
+    collapsedColumnIds.value = new Set();
+  });
+});
