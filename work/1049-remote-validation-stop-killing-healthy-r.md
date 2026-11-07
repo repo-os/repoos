@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-07T14:21:12.979Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task debug events with expanded remote details (target \"default\"): highlight .debug-event[data-debug-event^=\"remote-\"] matched nothing on /work?task=9999&tab=debug (http://127.0.0.1:50411/work?shotState=drawer:debugLogs)"
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
@@ -13,7 +15,6 @@ model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
 updated_at: "2026-11-07T14:21:12Z"
-last_check_failure: "repoos check at 2026-11-07T13:43:47.033Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T07:19:30.902Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:38:04.474Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:51:34.771Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -214,3 +215,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T14:21:09Z · note: ui verification failed (1 issue(s)): [missing-target] Task debug events with expanded remote details (target "default"): highlight .debug-event[data-debug-event^="remote-"] matched nothing on /work?task=9999&tab=debug (http://127.0.0.1:50411/work?shotState=drawer:debugLogs)
 - 2026-11-07T14:21:09Z · message_queued at 2026-11-07T14:21:09.547Z
 - 2026-11-07T14:21:12Z · message_delivered: 1 message(s)
+
