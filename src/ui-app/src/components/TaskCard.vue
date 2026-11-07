@@ -71,9 +71,12 @@ const notices = useNoticesStore();
 const slowCheck = computed(() => notices.slowRunByTask[props.task.id]);
 const handoffProgress = computed(
   () =>
-    repo.handoffStatuses[props.task.id]?.progress ??
     (repo.taskChecks[props.task.id] ?? []).find((run) => run.running) ??
+    repo.handoffStatuses[props.task.id]?.progress ??
     null,
+);
+const cardCheckProgressPercent = computed(() =>
+  handoffProgress.value ? checkProgressPercent(handoffProgress.value) : null,
 );
 const handoffStatus = computed(() => repo.handoffStatuses[props.task.id] ?? null);
 const showCardCheckProgress = computed(() => {
@@ -1677,13 +1680,21 @@ async function openDebuggerFromError(): Promise<void> {
           role="status"
           data-test-id="task-card-check-progress"
         >
-          <progress
-            :value="
-              handoffProgress ? (checkProgressPercent(handoffProgress) ?? undefined) : undefined
-            "
-            max="100"
-            aria-label="Checks running progress"
-          />
+          <span
+            class="check-progress-meter"
+            :class="{ 'is-indeterminate': cardCheckProgressPercent == null }"
+          >
+            <progress
+              :value="cardCheckProgressPercent ?? undefined"
+              max="100"
+              aria-label="Checks running progress"
+            />
+            <span
+              v-if="cardCheckProgressPercent == null"
+              class="check-progress-indeterminate"
+              aria-hidden="true"
+            />
+          </span>
           <span>{{ cardCheckProgressLabel }}</span>
           <span v-if="cardCheckProgressMetadata">{{ cardCheckProgressMetadata }}</span>
         </div>

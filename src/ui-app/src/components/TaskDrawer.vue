@@ -5908,11 +5908,21 @@ watch(
               data-test-id="close-out-check-progress"
               role="status"
             >
-              <progress
-                :value="statusProgressPercent ?? undefined"
-                max="100"
-                aria-label="Checks running progress"
-              />
+              <span
+                class="check-progress-meter"
+                :class="{ 'is-indeterminate': statusProgressPercent == null }"
+              >
+                <progress
+                  :value="statusProgressPercent ?? undefined"
+                  max="100"
+                  aria-label="Checks running progress"
+                />
+                <span
+                  v-if="statusProgressPercent == null"
+                  class="check-progress-indeterminate"
+                  aria-hidden="true"
+                />
+              </span>
               <span
                 >{{ statusProgressLabel
                 }}<template v-if="handoffBusy"> · {{ handoffStepLabel }}</template></span

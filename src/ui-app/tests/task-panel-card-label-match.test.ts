@@ -152,6 +152,7 @@ describe("task panel status label matches the board card (#1023)", () => {
   it.each([
     { state: "indeterminate", source: "status" },
     { state: "determinate", source: "run" },
+    { state: "snapshot with richer check-run metadata", source: "status-run" },
     { state: "slot-held with empty run list", source: "slot" },
     { state: "handoff with no SSE after reload", source: "reload" },
   ])("shows card and drawer progress for $state", async ({ source }) => {
@@ -166,10 +167,12 @@ describe("task panel status label matches the board card (#1023)", () => {
       progress: null,
       machine: "runner-host",
     };
-    stubApi(task, { handoffStatus: source === "reload" ? serverStatus : undefined });
+    stubApi(task, {
+      handoffStatus: source === "reload" || source === "status-run" ? serverStatus : undefined,
+    });
     const repo = useRepoStore();
     repo.taskChecks[task.id] = [];
-    if (source === "run") {
+    if (source === "run" || source === "status-run") {
       repo.taskChecks[task.id] = [
         runningCheck({
           kind: "merge-gate",
@@ -193,7 +196,7 @@ describe("task panel status label matches the board card (#1023)", () => {
         },
       ];
     }
-    if (source === "status") {
+    if (source === "status" || source === "status-run") {
       repo.handoffStatuses[task.id] = {
         ...serverStatus,
         progress: runningCheck({
@@ -214,16 +217,29 @@ describe("task panel status label matches the board card (#1023)", () => {
     const drawerProgress = drawer.find('[data-test-id="close-out-check-progress"] progress');
     expect(cardProgress.exists()).toBe(true);
     expect(drawerProgress.exists()).toBe(true);
-    if (source === "run") {
+    if (source === "run" || source === "status-run") {
       expect(cardProgress.attributes("value")).toBe("33");
       expect(drawerProgress.attributes("value")).toBe("33");
-      expect(cardLabel(card)).toContain("running checks · tests ·");
+      expect(cardLabel(card)).toContain(
+        `running checks · ${source === "status-run" ? "verify" : "tests"} ·`,
+      );
       expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain(
+        "attempt 3 · on check-host",
+      );
+      expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
         "attempt 3 · on check-host",
       );
     } else {
       expect(cardProgress.attributes("value")).toBeUndefined();
       expect(drawerProgress.attributes("value")).toBeUndefined();
+      expect(
+        card.find('[data-test-id="task-card-check-progress"] .check-progress-indeterminate').exists(),
+      ).toBe(true);
+      expect(
+        drawer
+          .find('[data-test-id="close-out-check-progress"] .check-progress-indeterminate')
+          .exists(),
+      ).toBe(true);
     }
     if (source === "status" || source === "reload") {
       expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain(

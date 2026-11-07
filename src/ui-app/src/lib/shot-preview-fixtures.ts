@@ -892,13 +892,22 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     case "closeOut:checkProgress":
     case "closeOut:checkProgressUnknown": {
-      ensureFixtureTask(repo, "review");
-      repo.integration = activePipeline(SHOT_PREVIEW_FIXTURE_TASK_ID);
+      const drawerTaskId = shotPreviewDrawerTaskIdFromLocation(window.location);
+      const drawerTask = repo.tasks.find((task) => task.id === drawerTaskId);
+      const taskId = drawerTask ? drawerTaskId : SHOT_PREVIEW_FIXTURE_TASK_ID;
+      if (drawerTask) {
+        // Keep real task details and identity in the drawer shot while making
+        // sure the UI uses the current active-check presentation.
+        drawerTask.status = "active";
+      } else {
+        ensureFixtureTask(repo, "active", {}, taskId);
+      }
+      repo.integration = activePipeline(taskId);
       pinnedIntegration = repo.integration;
       const unknown = fixture === "closeOut:checkProgressUnknown";
       const run: TaskCheckRun = {
         id: "shot-check-progress",
-        taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+        taskId,
         kind: "merge-gate",
         startedAt: new Date(Date.now() - 4 * 60_000 - 10_000).toISOString(),
         finishedAt: null,
@@ -919,7 +928,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         attempt: 2,
         attemptReason: "previous attempt timed out after 420s",
       };
-      repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [run];
+      repo.taskChecks[taskId] = [run];
       break;
     }
     case "checks:timings":
