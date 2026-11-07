@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T17:13:42Z"
+updated_at: "2026-11-07T17:16:38Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — timed out — timed out after 300s"
 last_handoff_failure_sha: 453fa67fa2c7129affef76ca423352fbb5461210
 last_check_failure: "repoos check at 2026-11-07T15:55:08.194Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -284,4 +284,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T17:13:18Z · message_delivered: 2 message(s)
 - 2026-11-07T17:13:19Z · note: handoff requested (cli)
 - 2026-11-07T17:13:42Z · CTO nudge: held — handoff gate is running
-
+- 2026-11-07T17:16:38Z · engineer stopped by request
