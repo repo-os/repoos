@@ -1,5 +1,5 @@
 ---
-id: 1048
+id: "1048"
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
 status: active
@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/human-task-mark-done-modal-with-multi-li
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T18:26:26Z"
+updated_at: "2026-11-07T18:27:11Z"
 last_check_failure: "repoos check at 2026-11-07T17:13:53.063Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Human task completion report modal (target \"default\"): click .drawer-human-task button: click: Timeout 5000ms exceeded. on /work?task=1048&tab=changes (http://127.0.0.1:51741/work?shotState=card:humanStep); [missing-target] Human task completion report modal (target \"default\"): highlight .human-done-modal matched nothing on /work?task=1048&tab=changes (http://127.0.0.1:51741/work?shotState=card:humanStep)"
 ---
 ## Problem
@@ -78,16 +78,16 @@ right before writing new CSS.
 ```json
 [
 {
-"label": "Human task completion report modal",
-"target": "default",
-"route": "/work?task=9999",
-"highlight": ".human-done-modal",
-"steps": [
-{
-"click": ".drawer-human-task button"
-}
-],
-"state": "card:humanStep"
+  "label": "Human task completion report modal",
+  "target": "default",
+  "route": "/work?task=9999&tab=details",
+  "highlight": ".human-done-modal",
+  "steps": [
+    {
+      "click": ".drawer-human-task button"
+    }
+  ],
+  "state": "card:noChanges"
 }
 ]
 ```
@@ -142,3 +142,4 @@ right before writing new CSS.
 - 2026-11-07T18:22:55Z · message_queued at 2026-11-07T18:22:55.894Z
 - 2026-11-07T18:22:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped RepoOS check is green: build, format, lint, CSS guards, rendered contrast, remote changed-path tests, and UI smoke all passed. I’m writing the required report draft now and then checking only this worktree’s status before handin… · stderr: Reading additional input from stdin... 2026-11-07T17:53:49.518005Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/human-task-mark-done-modal-with-multi-li/src/ui-app/tests/task-note.test.ts: "note: Fix the regression\…
 - 2026-11-07T18:26:26Z · message_delivered: 3 message(s)
+- 2026-11-07T18:27:11Z · body
