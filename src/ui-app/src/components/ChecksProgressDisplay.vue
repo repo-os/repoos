@@ -56,8 +56,7 @@ const cardLine = computed(() => {
     parts.push(
       props.handoffStep === "check" && !props.progress ? "check" : `checking ${props.handoffStep}`,
     );
-  }
-  else parts.push("starting…");
+  } else parts.push("starting…");
   if (props.elapsed) parts.push(props.elapsed);
   if (props.slow) parts.push("slow");
   return parts.join(" · ");
