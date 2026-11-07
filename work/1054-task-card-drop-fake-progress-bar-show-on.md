@@ -39,18 +39,18 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 ```json
 [
 {
-  "label": "Active card with counted check progress bar",
-  "target": "default",
-  "route": "/work?status=active",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
-  "state": "card:checksProgress"
+"label": "Active card with counted check progress bar",
+"target": "default",
+"route": "/work?status=active",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
+"state": "card:checksProgress"
 },
 {
-  "label": "Active card during reused check (text only, no bar)",
-  "target": "default",
-  "route": "/work?status=active",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-status-line\"]",
-  "state": "card:checksReuse"
+"label": "Active card during reused check (text only, no bar)",
+"target": "default",
+"route": "/work?status=active",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-status-line\"]",
+"state": "card:checksReuse"
 }
 ]
 ```
@@ -65,3 +65,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T13:19:14Z · message_queued at 2026-11-07T13:19:14.390Z
 - 2026-11-07T13:20:06Z · message_queued at 2026-11-07T13:20:06.057Z
 - 2026-11-07T13:21:24Z · body
+- 2026-11-07T13:21:24Z · message_queued at 2026-11-07T13:21:24.437Z
