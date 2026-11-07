@@ -87,3 +87,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T05:45:15Z · body
 - 2026-11-07T05:45:18Z · message_queued at 2026-11-07T05:45:18.734Z
 - 2026-11-07T05:47:53Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T05:47:53Z · message_queued at 2026-11-07T05:47:53.352Z
