@@ -1,5 +1,5 @@
 ---
-id: 1049
+id: "1049"
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: active
@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T16:22:18Z"
+updated_at: "2026-11-07T16:30:08Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T15:55:08.194Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 3
@@ -251,3 +251,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T16:22:17Z · message_delivered: 1 message(s)
 - 2026-11-07T16:22:17Z · needs_input
 - 2026-11-07T16:22:18Z · message_queued at 2026-11-07T16:22:18.545Z
+- 2026-11-07T16:30:08Z · body
