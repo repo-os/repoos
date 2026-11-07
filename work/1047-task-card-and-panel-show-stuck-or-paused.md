@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 cli_override: codex
-model_override: default
+model_override: gpt-6-luna
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T00:49:51Z"
+updated_at: "2026-11-07T00:49:52Z"
 ---
 ## Problem
 
@@ -61,3 +61,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T00:21:00Z · screenshots
 - 2026-11-07T00:29:44Z · title, body: Progress bar (bring it back) (added)
 - 2026-11-07T00:49:51Z · cli_override, model_override
+- 2026-11-07T00:49:52Z · model_override
