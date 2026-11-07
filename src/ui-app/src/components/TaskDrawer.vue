@@ -799,8 +799,10 @@ const cardChecksHeading = computed(() => {
   if (repo.handoffInFlight(task.id)) {
     const pool = remotePoolQueueHintForTaskChecks(repo.taskChecks[task.id]);
     const status = repo.handoffStatuses[task.id];
-    const elapsed = status?.startedAt
-      ? formatDuration(Math.max(0, checkNow.value - Date.parse(status.startedAt)))
+    const startedAt =
+      status?.startedAt ?? repo.taskChecks[task.id]?.find((run) => run.running)?.startedAt;
+    const elapsed = startedAt
+      ? formatDuration(Math.max(0, checkNow.value - Date.parse(startedAt)))
       : "";
     const step = status?.step ?? repo.handoffSteps[task.id] ?? "starting";
     return pool?.label ?? `running checks · ${step}${elapsed ? ` · ${elapsed}` : ""}`;
@@ -5837,7 +5839,12 @@ watch(
               >{{ line }}</span
             >
             <div
-              v-if="statusProgress && (statusProgress.stepsDone != null || statusProgress.currentStep != null || statusProgress.testsDone != null)"
+              v-if="
+                statusProgress &&
+                (statusProgress.stepsDone != null ||
+                  statusProgress.currentStep != null ||
+                  statusProgress.testsDone != null)
+              "
               class="check-progress close-out-check-progress"
               data-test-id="close-out-check-progress"
               role="status"

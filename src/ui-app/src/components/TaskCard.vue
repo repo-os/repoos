@@ -1012,10 +1012,12 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
-    if (repo.handoffStatuses[t.id]?.state === "running" && !(repo.taskChecks[t.id] ?? []).some((run) => run.running)) {
+    if (repo.handoffInFlight(t.id)) {
       const status = repo.handoffStatuses[t.id];
-      const elapsed = status?.startedAt
-        ? formatDuration(Math.max(0, now.value - Date.parse(status.startedAt)))
+      const run = (repo.taskChecks[t.id] ?? []).find((item) => item.running);
+      const startedAt = status?.startedAt ?? run?.startedAt;
+      const elapsed = startedAt
+        ? formatDuration(Math.max(0, now.value - Date.parse(startedAt)))
         : null;
       const stage = status?.step ?? repo.handoffSteps[t.id] ?? "starting";
       return {

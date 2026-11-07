@@ -154,7 +154,7 @@ describe("task panel status label matches the board card (#1023)", () => {
     const drawer = await mountDrawer(pinia, task);
 
     const expected = cardLabel(card);
-    expect(expected).toBe("running checks");
+    expect(expected).toMatch(/^running checks · check · /);
     expect(drawer.find(".drawer-status-l1").text()).toBe(expected);
     // A running state carries the Settings-selected activity animation.
     expect(drawer.find(".drawer-status-l1 .ai").exists()).toBe(true);
@@ -172,7 +172,7 @@ describe("task panel status label matches the board card (#1023)", () => {
     const drawer = await mountDrawer(pinia, task);
 
     const expected = cardLabel(card);
-    expect(expected).toBe("running checks");
+    expect(expected).toMatch(/^running checks · check$/);
     const summary = drawer.find(".drawer-status-summary");
     expect(summary.find(".drawer-status-l1").text()).toBe(expected);
     expect(summary.findAll(".drawer-status-row")).toHaveLength(2);
