@@ -2,18 +2,18 @@
 id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/task-card-drop-fake-progress-bar-show-on
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: codex
 review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T13:16:19Z"
+updated_at: "2026-11-07T13:16:21Z"
 ---
 ## Problem
 After #1047, the Active task card is too busy while checks run, and the green bar is misleading. `checkProgressPercent()` (src/ui-app/src/lib/check-progress.ts) only returns a number when the server reports step counts or test-file counts. When a handoff reuses an earlier check ("reused check 14098") or is in a handoff stage with no counts (e.g. "Checking review"), the bar falls back to the generic sliding animation, which says nothing the old animation didn't. The same state is also shown three times on the card: the bottom "RUNNING CHECKS · CHECK · 41s" hint, the bar + "Checking review · attempt 13", and (in the drawer) a "Checks failed" box whose badge contradicts its "running checks" line.
@@ -40,3 +40,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T13:16:10Z · created · njachowski@gmail.com
 - 2026-11-07T13:16:13Z · cli_override, model_override, review_cli_override, review_model_override
 - 2026-11-07T13:16:19Z · status inbox→ready
+- 2026-11-07T13:16:21Z · status ready→active, branch
