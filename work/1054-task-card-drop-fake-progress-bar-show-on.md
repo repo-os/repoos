@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T14:18:48Z"
+updated_at: "2026-11-07T14:23:46Z"
 ---
 ## Problem
 After #1047, the Active task card is too busy while checks run, and the green bar is misleading. `checkProgressPercent()` (src/ui-app/src/lib/check-progress.ts) only returns a number when the server reports step counts or test-file counts. When a handoff reuses an earlier check ("reused check 14098") or is in a handoff stage with no counts (e.g. "Checking review"), the bar falls back to the generic sliding animation, which says nothing the old animation didn't. The same state is also shown three times on the card: the bottom "RUNNING CHECKS · CHECK · 41s" hint, the bar + "Checking review · attempt 13", and (in the drawer) a "Checks failed" box whose badge contradicts its "running checks" line.
@@ -39,18 +39,39 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 ```json
 [
 {
-"label": "Active card with counted check progress bar",
-"target": "default",
-"route": "/work?status=active",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
-"state": "card:checksProgress"
+  "label": "Board card: bar + tests 3/680 line, robot in header",
+  "target": "default",
+  "route": "/work?status=active",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
+  "state": "card:checksProgress"
 },
 {
-"label": "Active card during reused check (text only, no bar)",
-"target": "default",
-"route": "/work?status=active",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-status-line\"]",
-"state": "card:checksReuse"
+  "label": "Board card: reused check, text only",
+  "target": "default",
+  "route": "/work?status=active",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-status-line\"]",
+  "state": "card:checksReuse"
+},
+{
+  "label": "Drawer: compact three-line checks box (counted)",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "drawer:checksProgress"
+},
+{
+  "label": "Drawer: reused check, no bar",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "drawer:checksReuse"
+},
+{
+  "label": "Pipeline card: thin bar under step label",
+  "target": "default",
+  "route": "/work?tab=pipeline",
+  "highlight": "[data-test-id=\"pipeline-card-check-progress\"]",
+  "state": "pipeline:checksProgress"
 }
 ]
 ```
@@ -73,3 +94,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T14:18:47Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-07T14:18:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing a shared checks status formatter and updating TaskCard, TaskDrawer, and tests. · stderr: (empty)
 - 2026-11-07T14:18:48Z · message_delivered: 5 message(s)
+- 2026-11-07T14:23:46Z · body
