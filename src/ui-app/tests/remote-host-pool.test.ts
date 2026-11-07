@@ -2493,7 +2493,7 @@ describe("hang detector (#0729)", () => {
         containerCpuActive: false,
       }),
     ).toBe(false);
-    // Host busy → not hung (the run may simply be queued behind real work).
+    // A busy host does not hide an explicit inactive-container sample.
     expect(
       detectHungRun({
         lastOutputAt: quiet,
@@ -2501,6 +2501,15 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: 4,
         containerCpuActive: false,
+      }),
+    ).toBe(true);
+    // Busy host without a container sample remains inconclusive.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 4,
       }),
     ).toBe(false);
     // Failed probe is unknown, not proof that the host is idle (#1049).
@@ -2533,7 +2542,8 @@ describe("hang detector (#0729)", () => {
         containerCpuActive: true,
       }),
     ).toBe(false);
-    // Unknown load but host was busy when last measured → not hung.
+    // Unknown load but host was busy when last measured stays inconclusive
+    // without a container sample.
     expect(
       detectHungRun({
         lastOutputAt: quiet,
@@ -2544,6 +2554,18 @@ describe("hang detector (#0729)", () => {
         loadUnknownSince: quiet,
       }),
     ).toBe(false);
+    // The exact container being inactive overrides stale busy host load.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 4,
+        loadUnknownSince: quiet,
+        containerCpuActive: false,
+      }),
+    ).toBe(true);
     // Gate already finished — quiet container is not a hang (#0739).
     expect(
       detectHungRun({
@@ -2585,6 +2607,24 @@ describe("hang detector (#0729)", () => {
         name: "ok with container progress",
         loadPerCpu: 0.1,
         containerCpuActive: true,
+        hung: false,
+      },
+      {
+        name: "busy host with inactive container",
+        loadPerCpu: 4,
+        containerCpuActive: false,
+        hung: true,
+      },
+      {
+        name: "failed probe after busy sample with inactive container",
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 4,
+        containerCpuActive: false,
+        hung: true,
+      },
+      {
+        name: "busy host with unavailable container sample",
+        loadPerCpu: 4,
         hung: false,
       },
     ];

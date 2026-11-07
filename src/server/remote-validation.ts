@@ -1371,9 +1371,9 @@ export function loadPerCpu(
  *
  * When load is unknown (`Infinity`), a quiet run is NOT called hung just
  * because the load probe failed: unknown load is treated as "we don't know if
- * it's idle" (#1049), not as "it's idle". Only mark hung if the host was
- * **busy** the last time we measured it, which proves the silence is not a
- * probe failure (#0739).
+ * it's idle" (#1049), not as "it's idle". An explicit inactive-container
+ * sample is independent evidence and still identifies a hang, even when the
+ * host is busy or its latest load probe failed (#1049).
  */
 /** Drop a generation-scoped in-flight control entry without touching a newer run (#0739). */
 export function deleteActiveRunControlEntry<T extends { generation: number }>(
@@ -1409,14 +1409,14 @@ export function detectHungRun(opts: {
   // A live container CPU sample is stronger evidence than a quiet SSH pipe or
   // an otherwise idle host: the workload is still making progress.
   if (opts.containerCpuActive === true) return false;
-  if (opts.loadPerCpu < idleThreshold) return opts.containerCpuActive === false;
+  // The host checked this exact container: inactivity remains meaningful even
+  // when unrelated work keeps the host busy or the load probe has gone stale.
+  if (opts.containerCpuActive === false) return true;
+  if (opts.loadPerCpu < idleThreshold) return true;
   if (!Number.isFinite(opts.loadPerCpu)) {
     const last = opts.lastKnownLoadPerCpu;
     if (last !== undefined && last >= idleThreshold) return false;
     // A failed or timed-out load probe never by itself marks a run hung (#1049).
-    // Only call it hung if containerCpuActive is explicitly false (host checked
-    // the container directly and it's not using CPU).
-    if (opts.containerCpuActive === false) return true;
     return false;
   }
   return false;

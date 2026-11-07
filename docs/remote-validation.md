@@ -934,9 +934,11 @@ is the host idle (load per CPU below `0.5`)? Both must hold — a quiet run on a
 **busy** host may simply be queued behind real work. When the load probe fails
 or times out, load is **unknown**, not idle. That result never triggers a kill
 by itself. The runner also samples the container's CPU on the host: observed
-CPU activity protects a quiet SSH stream, while a successful idle-host sample
-plus an explicitly inactive container can confirm a hang. A failed stream or
-second SSH probe alone cannot kill a progressing run.
+CPU activity protects a quiet SSH stream. A successful idle-host sample or an
+explicitly inactive sample for this container can confirm a hang; container
+inactivity remains decisive even if unrelated work keeps the host busy or a
+later load probe fails. A failed stream or second SSH probe alone cannot kill
+a progressing run.
 When both hold the runner removes **that run's** container by name (`docker rm -f
 repoos-validate-<run-id>`, never a blanket `docker kill`), marks the summary
 `hung` (transient, so the caller retries on another host, which the pool
