@@ -179,9 +179,18 @@ describe("RemoteRunnersPanel", () => {
                 probed: true,
                 healthy: true,
                 activeRuns: [
-                  { taskId: "0729", startedAt, phase: "test", label: "#0729", hung: true },
+                  {
+                    taskId: "0729",
+                    startedAt,
+                    phase: "test",
+                    label: "#0729",
+                    hung: true,
+                    hungDetail: "killing: host idle",
+                  },
                 ],
-                hungRuns: [{ taskId: "0199", at: killedAt }],
+                hungRuns: [
+                  { taskId: "0199", at: killedAt, detail: "the output stream was silent" },
+                ],
               },
             ],
           });
@@ -196,7 +205,8 @@ describe("RemoteRunnersPanel", () => {
     });
     await flushPromises();
     expect(wrapper.text()).toContain("Hung runs");
-    expect(wrapper.text()).toContain("hung · killing");
+    expect(wrapper.text()).toContain("hung · killing: host idle");
+    expect(wrapper.text()).toContain("the output stream was silent");
     expect(wrapper.text()).toContain("#0199");
     expect(wrapper.text()).toContain("nick@bee");
     wrapper.unmount();

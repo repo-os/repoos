@@ -1,7 +1,5 @@
 ---
-updated_at: "2026-11-07T23:29:55Z"
-review_passes: 10
-id: "1049"
+id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: review
@@ -14,6 +12,8 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
+updated_at: "2026-11-07T21:40:49Z"
+review_passes: 7
 last_check_failure: "repoos check at 2026-11-07T15:55:08.194Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T07:19:30.902Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:38:04.474Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T09:51:34.771Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -347,63 +347,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T20:02:15Z · message_delivered: 1 message(s)
 - 2026-11-07T20:02:15Z · needs_input
 - 2026-11-07T20:02:16Z · message_queued at 2026-11-07T20:02:16.904Z
-- 2026-11-07T20:03:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T21:02:39Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-07T21:03:55Z · queued message undelivered for 62m and the engineer produced no output — ending the turn so it is delivered
-- 2026-11-07T21:03:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Rendered contrast passed, and the full suite is underway. The changed remote-host-pool tests are passing in this run so far. · stderr: Reading additional input from stdin... 2026-11-07T20:03:57.798989Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/remote-validation-stop-killing-healthy-r/src/server/remote-validation.ts: * An explicit inactive-contai…
-- 2026-11-07T21:03:56Z · message_delivered: 1 message(s)
-- 2026-11-07T21:08:41Z · message_queued at 2026-11-07T21:08:41.968Z
-- 2026-11-07T21:08:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-07T21:13:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T21:35:23Z · body
-- 2026-11-07T21:38:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T21:40:49Z · status active→review
-- 2026-11-07T21:40:49Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-07T21:40:49Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-07T21:40:49Z · message_queued at 2026-11-07T21:40:49.899Z
-- 2026-11-07T21:43:10Z · note: review pass 8: needs some work
-- 2026-11-07T21:43:10Z · needs_input
-- 2026-11-07T21:51:53Z · status review→active
-- 2026-11-07T21:51:53Z · note: send-back — returned to active for engineer follow-up
-- 2026-11-07T21:51:55Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T21:51:57Z · message_delivered: 1 message(s)
-- 2026-11-07T21:51:57Z · needs_input
-- 2026-11-07T21:51:58Z · message_queued at 2026-11-07T21:51:58.735Z
-- 2026-11-07T21:52:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’m blocked from editing the reaper fix while task #1049 is in `review`. The provided finding confirms a real cross-process ownership race, but RepoOS rules require the task to be returned to `active` before its branch is edited. I attempt… · stderr: Reading additional input from stdin...
-- 2026-11-07T21:52:53Z · status active→review
-- 2026-11-07T21:52:53Z · message_delivered: 1 message(s)
-- 2026-11-07T21:52:54Z · note: handoff requested (cli)
-- 2026-11-07T22:07:54Z · body
-- 2026-11-07T22:37:26Z · watchdog: restarting engineer after 30m with no live process
-- 2026-11-07T22:42:10Z · message_queued at 2026-11-07T22:42:10.361Z
-- 2026-11-07T22:42:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-07T22:47:10Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T22:48:47Z · note: adopted orphaned engineer pid 56753
-- 2026-11-07T22:49:06Z · body
-- 2026-11-07T22:51:53Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T22:56:02Z · body
-- 2026-11-07T22:57:03Z · status active→review
-- 2026-11-07T22:57:03Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-07T22:57:33Z · message_queued at 2026-11-07T22:57:33.026Z
-- 2026-11-07T22:59:39Z · note: review pass 9: needs some work
-- 2026-11-07T22:59:39Z · needs_input
-- 2026-11-07T23:01:52Z · status review→active
-- 2026-11-07T23:01:52Z · note: send-back — returned to active for engineer follow-up
-- 2026-11-07T23:01:53Z · message_delivered: 1 message(s)
-- 2026-11-07T23:01:53Z · needs_input
-- 2026-11-07T23:01:54Z · message_queued at 2026-11-07T23:01:54.089Z
-- 2026-11-07T23:01:54Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T23:14:35Z · body
-- 2026-11-07T23:23:47Z · CTO nudge: held — handoff gate is running
-- 2026-11-07T23:23:59Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-07T23:23:59Z · message_queued at 2026-11-07T23:23:59.479Z
-- 2026-11-07T23:23:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required check is green now: local build, formatting and lint, all 276 test files (3,823 passed, 1 skipped), UI smoke, and rendered contrast passed. The final remote attempt could not reach any runner and used the full local fallback. … · stderr: Reading additional input from stdin... 2026-11-07T23:03:45.418680Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/remote-validation-stop-killing-healthy-r/docs/remote-validation.md: per-run trap, the host prerequisite…
-- 2026-11-07T23:23:59Z · status active→review
-- 2026-11-07T23:23:59Z · message_delivered: 2 message(s)
-- 2026-11-07T23:23:59Z · note: handoff requested (cli)
-- 2026-11-07T23:24:43Z · status active→review
-- 2026-11-07T23:24:43Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-07T23:24:43Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-07T23:24:43Z · message_queued at 2026-11-07T23:24:43.401Z
-- 2026-11-07T23:29:55Z · note: review pass 10: good to go
-

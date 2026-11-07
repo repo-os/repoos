@@ -145,4 +145,30 @@ describe("DebugPanel remote validation events (#0568)", () => {
     expect(wrapper.text()).not.toContain("a plain task log line");
     expect(wrapper.text()).toContain("203.0.113.5");
   });
+
+  it("shows captured hang logs and inspect state when a remote event is expanded", async () => {
+    const repo = useRepoStore();
+    repo.taskRemoteEvents[TASK.id] = [
+      remoteEvent({
+        phase: "run",
+        message: "killed as hung (output stream silent; container inactive)",
+        hangEvidence: {
+          condition: "container-inactive",
+          containerLogs: "last test: compiling fixture",
+          containerState: '{"State":{"Status":"running"}}',
+        },
+      }),
+    ];
+
+    const wrapper = render();
+    await nextTick();
+    const row = wrapper.find(".debug-event[data-debug-event^='remote-']");
+    expect(row.classes()).toContain("debug-event-expandable");
+    await row.trigger("click");
+    await nextTick();
+
+    const detail = wrapper.get(".debug-log-inline");
+    expect(detail.text()).toContain("last test: compiling fixture");
+    expect(detail.text()).toContain('"Status":"running"');
+  });
 });
