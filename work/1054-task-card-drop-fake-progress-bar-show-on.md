@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 616368
+last_close_out_gate_at: "2026-11-07T19:22:06.859Z"
 id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
@@ -13,7 +15,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T19:14:04Z"
+updated_at: "2026-11-07T19:22:06Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-07T17:21:16.921Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target \"default\"): highlight [data-test-id=\"pipeline-card-check-progress\"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)"
 ---
@@ -155,3 +157,5 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T19:02:47Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-07T19:03:57Z · note: review pass 2: good to go
 - 2026-11-07T19:14:04Z · note: shots: skipped — 5 handoff shots already captured for this exact plan (47fe6f2f8) during finalization (#0734)
+- 2026-11-07T19:22:06Z · close-out gate completed in 616s
+
