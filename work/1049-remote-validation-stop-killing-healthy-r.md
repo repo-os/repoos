@@ -396,3 +396,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T23:14:35Z · body
 - 2026-11-07T23:23:47Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T23:23:59Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T23:23:59Z · message_queued at 2026-11-07T23:23:59.479Z
