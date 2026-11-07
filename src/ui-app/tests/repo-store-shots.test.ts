@@ -53,6 +53,20 @@ describe("shot-preview fixture task avoids server fetches (#0819)", () => {
     // the handoff UI gate on a failed same-origin request.
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("keeps check progress fixture state client-side (#1047)", async () => {
+    window.history.replaceState({}, "", "/work?task=9999&shotState=closeOut%3AcheckProgress");
+    const fetchMock = vi.fn(async () => json({ ok: true, runs: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+
+    await Promise.all([
+      repo.refreshHandoffStatus("9999"),
+      repo.refreshTaskChecks("9999"),
+    ]);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("repo store addShot/deleteShot (#0627)", () => {
