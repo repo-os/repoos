@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T00:50:03Z"
+updated_at: "2026-11-07T00:57:04Z"
 ---
 ## Problem
 
@@ -52,6 +52,19 @@ Wanted: a progress bar in the task panel status card above the tabs, visible whe
 
 Acceptance: a task whose handoff checks run shows the bar in the panel above the tabs and on the card, advancing as steps and test files complete, after a reload; a test covers percent, unknown totals and the reload case; a declared shot (fixture `shot-check-progress` already exists in `shot-preview-fixtures.ts`) shows the bar.
 
+## Shots
+```json
+[
+{
+  "label": "Task panel check progress bar",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "closeOut:checkProgress"
+}
+]
+```
+
 ## Screenshots
 
 ![11](/api/tasks/1047/attachments/att_d53d06e7-472f-4f22-8ab7-98a6aebeaed6.png)
@@ -68,3 +81,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T00:49:57Z · review_model_override
 - 2026-11-07T00:50:01Z · status inbox→ready
 - 2026-11-07T00:50:03Z · status ready→active, branch
+- 2026-11-07T00:57:04Z · body
