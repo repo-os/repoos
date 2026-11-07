@@ -3,6 +3,9 @@ id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — macOS periodic reaping fails on fractional Docker timestamps.
 priority: p0
 area: server
 assigned_to: ai
@@ -239,3 +242,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T15:51:08Z · message_delivered: 3 message(s)
 - 2026-11-07T15:51:45Z · status active→review
 - 2026-11-07T15:54:54Z · note: review pass 3: needs some work
+- 2026-11-07T15:54:54Z · needs_input
