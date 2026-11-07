@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
+last_handoff_failure_sha: 4c9226dc08783300b496bbfd319929e2a58aa304
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
@@ -99,3 +101,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T14:39:18Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-07T14:41:33Z · note: review pass 1: good to go
 - 2026-11-07T14:45:42Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
+
