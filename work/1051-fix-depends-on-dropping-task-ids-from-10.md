@@ -2,14 +2,14 @@
 id: 1051
 title: "Fix depends_on dropping task ids from 1000 up (written unquoted, parsed as number)"
 type: bug
-status: inbox
+status: ready
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:23:45Z"
-updated_at: "2026-11-07T07:23:45Z"
+updated_at: "2026-11-07T13:57:25Z"
 ---
 ## Problem
 
@@ -38,3 +38,4 @@ Cause (read from the code): `repoos update --depends-on` writes the frontmatter 
 ## Activity
 
 - 2026-11-07T07:23:45Z · created · njachowski@gmail.com
+- 2026-11-07T13:57:25Z · status inbox→ready
