@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-07T11:47:26Z"
+review_passes: 4
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
@@ -11,9 +13,7 @@ branch: feat/task-card-and-panel-show-running-checks-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T11:47:25Z"
 last_check_failure: "repoos check at 2026-11-07T10:47:14.656Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:65527/api/tasks/1047/integration-job (http://127.0.0.1:65527/api/tasks/1047/integration-job); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:65527/api/tasks/1047/integration-job)"
-review_passes: 3
 review_rounds: 2
 incomplete_review_retries: 1
 ---
@@ -198,3 +198,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T11:44:16Z · review_model_override
 - 2026-11-07T11:44:30Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c4e74523b) during finalization (#0734)
 - 2026-11-07T11:47:25Z · note: review pass 6: good to go
+
