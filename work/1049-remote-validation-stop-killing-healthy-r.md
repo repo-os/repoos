@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T18:14:00Z"
+updated_at: "2026-11-07T18:14:01Z"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: 6215d2e31e4e97021e76e20c50a0152ec0df1b60
 review_passes: 4
@@ -307,3 +307,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T17:58:14Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
 - 2026-11-07T18:11:05Z · body
 - 2026-11-07T18:14:00Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T18:14:01Z · message_queued at 2026-11-07T18:14:01.129Z
