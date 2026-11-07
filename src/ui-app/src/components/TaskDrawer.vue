@@ -6668,6 +6668,7 @@ watch(
                   <ChatDiagnosticRow
                     v-if="row.kind === 'line' && row.s === 'err'"
                     :text="row.text"
+                    :detail-text="row.detailText"
                     :at="row.at"
                     :first-at="row.firstAt"
                     :count="row.repeatCount"
@@ -7042,6 +7043,7 @@ watch(
                   <ChatDiagnosticRow
                     v-if="row.kind === 'line' && row.s === 'err'"
                     :text="row.text"
+                    :detail-text="row.detailText"
                     :at="row.at"
                     :first-at="row.firstAt"
                     :count="row.repeatCount"

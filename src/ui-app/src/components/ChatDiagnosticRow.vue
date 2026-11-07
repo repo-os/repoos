@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { fmtTime } from "../lib/time";
-const props = defineProps<{ text: string; at?: string; firstAt?: string; count?: number }>();
+const props = defineProps<{
+  text: string;
+  detailText?: string;
+  at?: string;
+  firstAt?: string;
+  count?: number;
+}>();
 const summary = computed(() => {
   const first = props.text.split("\n").find((line) => line.trim()) ?? "Agent diagnostic";
   if (/apply_patch verification failed/.test(first))
@@ -21,7 +27,9 @@ const summary = computed(() => {
       >
     </summary>
     <pre class="agent-tool-out">{{
-      count && count > 1 ? `${count} identical entries:\n${text}` : text
+      count && count > 1
+        ? `${count} identical entries:\n${detailText ?? text}`
+        : (detailText ?? text)
     }}</pre>
   </details>
 </template>
