@@ -1027,6 +1027,7 @@ export function staleReaperCandidates(
   output: string,
   now: number,
   maxAgeMs = 25 * 60_000,
+  activeContainerNames: ReadonlySet<string> = new Set(),
 ): ReaperCandidate[] {
   const cutoff = now - maxAgeMs;
   const prefix = `${VALIDATE_CONTAINER_PREFIX}-`;
@@ -1038,6 +1039,7 @@ export function staleReaperCandidates(
       !id ||
       !/^[a-f\d]{12,64}$/i.test(id) ||
       !name?.startsWith(prefix) ||
+      activeContainerNames.has(name) ||
       createdAt === undefined ||
       createdAt >= cutoff
     ) {
@@ -3633,6 +3635,8 @@ interface PoolHostState {
   /** Cached from the prerequisite probe (#0725). */
   validateScriptMirrorSupported?: boolean;
   probing?: Promise<void>;
+  /** Temporarily blocks dispatch while the periodic reaper mutates Docker state. */
+  reaping?: boolean;
   retryTimer?: ReturnType<typeof setTimeout>;
   lastRun?: { taskId: string; ok: boolean; at: string; durationMs?: number };
   /**
@@ -4032,16 +4036,32 @@ export class TailscaleHostPool {
     const now = Date.now();
     for (const s of this.liveHosts()) {
       const lastReaperAt = this.lastReaperAt.get(s.spec.host);
-      if (s.probed && containerReaperDue(lastReaperAt, now)) {
+      if (
+        s.probed &&
+        this.effectiveActive(s) === 0 &&
+        !s.reaping &&
+        containerReaperDue(lastReaperAt, now)
+      ) {
         this.lastReaperAt.set(s.spec.host, now);
+        s.reaping = true;
         void this.exec
           .runRemote(s.ssh, reaperCommand(), () => {}, 30_000)
           .then(async (listing) => {
             if (listing.code !== 0 || listing.timedOut) {
               throw new Error("could not list validation containers");
             }
-            const stale = staleReaperCandidates(listing.output, Date.now());
+            const stale = staleReaperCandidates(
+              listing.output,
+              Date.now(),
+              25 * 60_000,
+              new Set(s.activeRuns.flatMap((run) => (run.container ? [run.container] : []))),
+            );
             for (const candidate of stale) {
+              // A run can acquire its container after the listing completes.
+              // Recheck ownership immediately before removal so an in-flight
+              // run can exceed the nominal 25-minute run cap while waiting for
+              // the host lock (up to the additional lock-wait allowance).
+              if (s.activeRuns.some((run) => run.container === candidate.name)) continue;
               const removed = await this.exec.runRemote(
                 s.ssh,
                 reaperRemoveCommand(candidate.id),
@@ -4063,6 +4083,10 @@ export class TailscaleHostPool {
           })
           .catch(() => {
             this.logger?.system("info", `container reaper on ${s.spec.host} failed or timed out`);
+          })
+          .finally(() => {
+            s.reaping = false;
+            this.dispatch();
           });
       }
       if (s.probing) continue;
@@ -4603,7 +4627,7 @@ export class TailscaleHostPool {
   }
 
   private hostHasCapacity(s: PoolHostState): boolean {
-    return s.healthy && !this.isPressured(s) && this.effectiveActive(s) < s.limit;
+    return !s.reaping && s.healthy && !this.isPressured(s) && this.effectiveActive(s) < s.limit;
   }
 
   /** Whether the runner-health check is enabled in the live config (#0901). */

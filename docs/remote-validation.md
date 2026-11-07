@@ -433,8 +433,11 @@ per-run trap, the host prerequisite probe's **stale-container** sweep
 **not** `status=running`, so a live sibling run is never removed; and a periodic
 background reaper that removes leaked containers older than the run cap (25 min)
 (`reaperCommand()`) (#1049). The periodic reaper removes prefixed containers
-older than the 25-minute hard run cap, so an active run cannot own them, and
-logs every removal. Safe GC of abandoned workdirs (age-bound,
+older than the 25-minute run cap, but only while the host has no active lock
+occupancy; dispatch is held while the reaper runs, and locally owned container
+names are excluded and rechecked before removal. The lock-wait allowance can
+extend a run past 25 minutes, so age alone is never enough to reap it. Every
+removal is logged. Safe GC of abandoned workdirs (age-bound,
 mount-aware) is deliberately future work; until then, rely on per-run EXIT
 cleanup, non-running container sweeps, and the background reaper.
 

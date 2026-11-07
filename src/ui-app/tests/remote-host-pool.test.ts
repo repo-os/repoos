@@ -2661,11 +2661,14 @@ describe("hang detector (#0729)", () => {
       staleReaperCandidates(
         [
           `0123456789ab\t/repoos-validate-old\t${createdWithZone}`,
+          `0123456789af\t/repoos-validate-active\t${createdWithZone}`,
           `0123456789ac\t/other-repoos-validate-old\t${createdWithZone}`,
           `0123456789ad\t/repoos-validate-recent\t2026-11-07T03:50:00Z`,
           `0123456789ae\t/repoos-validate-invalid\tnot-a-timestamp`,
         ].join("\n"),
         now,
+        25 * 60_000,
+        new Set(["repoos-validate-active"]),
       ),
     ).toEqual([
       {
