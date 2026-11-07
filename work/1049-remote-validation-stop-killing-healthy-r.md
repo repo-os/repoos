@@ -228,3 +228,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T15:08:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T15:15:08Z · message_delivered: 1 message(s)
 - 2026-11-07T15:21:07Z · message_queued at 2026-11-07T15:21:07.487Z
+- 2026-11-07T15:21:07Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
