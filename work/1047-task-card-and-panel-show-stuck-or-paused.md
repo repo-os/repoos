@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T00:57:04Z"
+updated_at: "2026-11-07T01:34:18Z"
 ---
 ## Problem
 
@@ -56,11 +56,11 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 ```json
 [
 {
-  "label": "Task panel check progress bar",
-  "target": "default",
-  "route": "/work",
-  "highlight": "[data-test-id=\"close-out-check-progress\"]",
-  "state": "closeOut:checkProgress"
+"label": "Task panel check progress bar",
+"target": "default",
+"route": "/work",
+"highlight": "[data-test-id=\"close-out-check-progress\"]",
+"state": "closeOut:checkProgress"
 }
 ]
 ```
@@ -82,3 +82,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T00:50:01Z · status inbox→ready
 - 2026-11-07T00:50:03Z · status ready→active, branch
 - 2026-11-07T00:57:04Z · body
+- 2026-11-07T01:34:18Z · body
