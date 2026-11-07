@@ -11,8 +11,9 @@ branch: feat/use-the-active-theme-pair-for-diff-highl
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: cursor
+review_model_override: composer-2.5
 created_at: "2026-11-06T23:18:09Z"
-updated_at: "2026-11-07T01:20:23Z"
+updated_at: "2026-11-07T01:20:24Z"
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T00:01:56.991Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 incomplete_review_retries: 1
@@ -97,3 +98,4 @@ This task covers theme-family selection, lazy loading, cache behavior, and verif
 - 2026-11-07T01:15:28Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1046 (pid 96382)
 - 2026-11-07T01:15:53Z · note: review pass 2: incomplete — no verdict in report
 - 2026-11-07T01:20:23Z · review_cli_override, review_model_override
+- 2026-11-07T01:20:24Z · review_model_override
