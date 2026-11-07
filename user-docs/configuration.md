@@ -363,6 +363,7 @@ worktreeWarnThreshold = 20
 | `autoEngineering.pmVeto` | boolean | `false` | yes | Off by default: selection is fully deterministic (priority, then critical-path weight, then creation order). When on, a PM pass runs only when there are more eligible ready tasks than open slots **and** two candidates would collide (same area or a declared shared path); it may reorder or defer, never invent work. |
 | `skillSuggestions` | boolean | `false` | yes | When true, a finished task may generate a high-bar, evidence-gated skill suggestion task. Off by default; a single session never creates one. |
 | `worktreeWarnThreshold` | number | `20` | yes | Advisory ceiling on registered git worktrees. Above it the Control page's Codebase card turns amber and the server logs a warning with safe-candidate / retained / external counts. Cleanup itself runs automatically; the warning never blocks a task. Set `0` to disable. |
+| `board.doneCollapsedByDefault` | boolean | `true` | yes | Collapse Done for browsers without a saved board preference. |
 | `board.agentPopoverCloseSeconds` | number | `15` | yes | Seconds before the task-card agent popover fades closed. Hover, focus, or a click inside restarts the timer. `0` leaves the popover open until it is dismissed. |
 
 ### Board column labels
