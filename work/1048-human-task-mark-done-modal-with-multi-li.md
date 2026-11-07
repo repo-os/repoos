@@ -13,7 +13,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T21:40:40Z"
+updated_at: "2026-11-07T21:40:41Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -194,4 +194,4 @@ right before writing new CSS.
 - 2026-11-07T21:14:13Z · body
 - 2026-11-07T21:18:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T21:40:40Z · status active→review
-
+- 2026-11-07T21:40:41Z · message_queued at 2026-11-07T21:40:41.202Z
