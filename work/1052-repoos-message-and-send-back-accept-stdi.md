@@ -2,15 +2,15 @@
 id: 1052
 title: "repoos message and send-back: accept stdin, files and heredocs; never send junk as a message"
 type: bug
-status: ready
+status: active
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/repoos-message-and-send-back-accept-stdi
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T07:57:47Z"
-updated_at: "2026-11-07T12:42:59Z"
+updated_at: "2026-11-07T12:43:16Z"
 ---
 ## Problem
 
@@ -43,3 +43,4 @@ updated_at: "2026-11-07T12:42:59Z"
 - 2026-11-07T07:57:47Z · created · njachowski@gmail.com
 - 2026-11-07T12:42:06Z · status inbox→ready
 - 2026-11-07T12:42:59Z · model_override
+- 2026-11-07T12:43:16Z · status ready→active, branch
