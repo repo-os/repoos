@@ -46,6 +46,12 @@ describe("check progress display", () => {
     expect(checkProgressLabel(progress)).toBe("step — of 12");
   });
 
+  it("omits a decorative step placeholder when only test counts are known (#1054)", () => {
+    const progress = { stepsDone: null, stepsTotal: null, testsDone: 3, testsTotal: 680 };
+    expect(checkProgressLabel(progress)).toBe("tests 3/680 files");
+    expect(checkProgressPercent(progress)).toBe(0);
+  });
+
   it("uses step progress outside the tests step", () => {
     expect(
       checkProgressPercent({

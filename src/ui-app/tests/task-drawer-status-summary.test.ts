@@ -262,11 +262,12 @@ describe("task drawer status summary (#0952)", () => {
       makeTask({ status: "active", branch: "feat/status-summary" }),
     );
 
-    expect(wrapper.find(".drawer-status-summary").text()).toContain("running checks");
-    expect(wrapper.text()).toContain("Running repoos check…");
-    expect(wrapper.text()).not.toContain("Running checks…");
-    // Two lines at most: the shared card label plus the current handoff step.
-    expect(wrapper.find(".drawer-status-summary").findAll(".drawer-status-row")).toHaveLength(2);
+    expect(wrapper.find(".drawer-status-summary").text()).toContain("Checks ·");
+    expect(wrapper.find('[data-test-id="checks-progress-drawer-title"]').text()).toMatch(
+      /^Running checks/,
+    );
+    expect(wrapper.text()).not.toContain("Running repoos check…");
+    expect(wrapper.find(".drawer-status-summary").findAll(".drawer-status-row")).toHaveLength(1);
     expect(wrapper.find('[data-test-id="task-drawer-request-review"]').exists()).toBe(false);
   });
 
@@ -311,11 +312,11 @@ describe("task drawer status summary (#0952)", () => {
     const wrapper = await mountDrawer(pinia, task);
 
     const summary = wrapper.find(".drawer-status-summary");
-    expect(summary.find(".drawer-status-l1").text()).toContain("running checks");
-    expect(summary.find(".drawer-status-l2").text()).toContain("Changed-path vs main");
-    expect(summary.find(".drawer-status-l2").text()).toContain("on macbook");
-    expect(summary.find(".drawer-status-l3").text()).toContain("Step 4 of 8 · tests 24/72 files");
-    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
+    expect(summary.find(".drawer-status-l1").text()).toMatch(/^Checks · step 4 of 8/);
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+      "on macbook",
+    );
     expect(summary.find(".drawer-info-popover").exists()).toBe(false);
 
     await summary.trigger("click");
@@ -348,10 +349,11 @@ describe("task drawer status summary (#0952)", () => {
     ];
     const wrapper = await mountDrawer(pinia, task);
     const summary = wrapper.find(".drawer-status-summary");
-    expect(summary.findAll(".drawer-status-row")).toHaveLength(3);
-    expect(summary.find(".drawer-status-l2").text()).toContain("Full check");
-    expect(summary.find(".drawer-status-l2").text()).toContain("on thinkpad");
-    expect(summary.find(".drawer-status-l3").text()).toBe("Starting…");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
+    expect(summary.find(".drawer-status-l1").text()).toMatch(/^Checks · starting…/);
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+      "on thinkpad",
+    );
     expect(summary.text()).not.toContain("step —");
   });
 

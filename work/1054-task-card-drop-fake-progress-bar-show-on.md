@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 616368
-last_close_out_gate_at: "2026-11-07T19:22:06.859Z"
 id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 47fe6f2f83f45a96ec0853c317e5045669f1b8e8
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/task-card-drop-fake-progress-bar-show-on
@@ -16,6 +15,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T13:16:10Z"
 updated_at: "2026-11-07T19:22:06Z"
+last_close_out_gate_ms: 616368
+last_close_out_gate_at: "2026-11-07T19:22:06.859Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-07T17:21:16.921Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target \"default\"): highlight [data-test-id=\"pipeline-card-check-progress\"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)"
 ---

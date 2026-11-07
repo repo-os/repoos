@@ -33,6 +33,8 @@ import { needsInputStatusLabel, needsInputSurfaces } from "../lib/needs-input-ui
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import type { Task } from "../types";
 import PipelineCard, { type PipelineCardAction } from "./PipelineCard.vue";
+import { activeTaskChecksBusy } from "../lib/checks-card-status";
+import { toCheckProgress, type CheckProgress } from "../lib/check-progress";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -66,6 +68,7 @@ interface Lane {
   models: string;
   host: string;
   action: PipelineCardAction | null;
+  checkProgress: CheckProgress | null;
 }
 
 function lastActivityFor(taskId: string): string | undefined {
@@ -172,13 +175,14 @@ function laneFor(task: Task, nowMs: number): Lane | null {
     "reviewer",
   );
 
+  const checksBusy = activeTaskChecksBusy(repo, task.id, nowMs);
   let action: PipelineCardAction | null = null;
   if (!held) {
     if (model.state === "merged" && repo.needsAck(task)) {
       action = { icon: "check", label: `Acknowledge merge of task ${task.id}` };
-    } else if (task.status === "active" && running) {
+    } else if (task.status === "active" && running && !checksBusy) {
       action = { icon: "pause", label: `Pause work on task ${task.id}` };
-    } else if (task.status === "active") {
+    } else if (task.status === "active" && !checksBusy) {
       action = { icon: "resume", label: `Resume work on task ${task.id}` };
     }
   }
@@ -197,6 +201,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
     models: pipelineModelsLabel(engineer.model, reviewer.model),
     host: pipelineHostLabel(remoteActivity?.run?.host, remoteActivity?.queue?.host),
     action,
+    checkProgress: runningCheck ? toCheckProgress(runningCheck) : null,
   };
 }
 
@@ -297,6 +302,7 @@ function stageCells(stage: PipelineStage): string {
               :models-label="lane.models"
               :host-label="lane.host"
               :action="lane.action"
+              :check-progress="lane.checkProgress"
               @open="openTask"
               @act="runAction"
             />
