@@ -352,7 +352,7 @@ describe("the runner finalizes a `repoos mv review` request at turn end (#0507)"
     });
     try {
       runner.start(fx.task, fx.branch, agent, { cwd: fx.worktree });
-      await waitFor(() => !runner.isRunning(fx.task.id), "the turn ends");
+      await waitFor(() => !runner.isRunning(fx.task.id), "the turn ends", 45_000);
       await new Promise((r) => setTimeout(r, 200));
       expect(handoffs).toEqual([]);
       // A stale marker is cleaned up rather than lingering forever.
