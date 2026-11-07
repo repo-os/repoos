@@ -316,28 +316,33 @@ describe("highlightPair", () => {
   });
 
   /**
-   * Timing sample for PR notes (#1046): `src/core/db.ts`, both panes, GitHub pair,
-   * warm grammar. Re-run after Shiki upgrades; values vary by machine.
+   * Timing sample for PR notes (#1046): `src/core/db.ts`, both panes, GitHub pair.
+   * Opt-in only — full-file highlight can take many seconds and can push server
+   * `repoos check` past its deadline. Run locally:
+   * `REPOOS_SYNTAX_HIGHLIGHT_BENCH=1 bun run test src/ui-app/tests/syntax-highlight.test.ts`
    */
-  it("benchmark: highlightPair on a large TypeScript file (db.ts)", async () => {
-    const path = resolve(__dirname, "../../../src/core/db.ts");
-    const raw = readFileSync(path, "utf8");
-    const lines = raw.split(/\r?\n/);
-    if (lines.at(-1) === "") lines.pop();
-    expect(lines.length).toBeGreaterThan(500);
-    const input = {
-      filename: "db.ts",
-      before: lines,
-      after: lines,
-      themeFamily: "github" as const,
-    };
-    const t0 = performance.now();
-    await highlightPair(input);
-    const ms = Math.round(performance.now() - t0);
-    console.info(
-      `[syntax-highlight bench] db.ts ×2 panes, GitHub pair: ${ms}ms (${lines.length} lines/side, ${highlightPairMetrics.shikiTokenizeRuns} Shiki tokenize runs)`,
-    );
-    expect(highlightPairMetrics.shikiTokenizeRuns).toBe(2);
-    expect(ms).toBeLessThan(300_000);
-  });
+  it.skipIf(!process.env.REPOOS_SYNTAX_HIGHLIGHT_BENCH)(
+    "benchmark: highlightPair on a large TypeScript file (db.ts)",
+    async () => {
+      const path = resolve(__dirname, "../../../src/core/db.ts");
+      const raw = readFileSync(path, "utf8");
+      const lines = raw.split(/\r?\n/);
+      if (lines.at(-1) === "") lines.pop();
+      expect(lines.length).toBeGreaterThan(500);
+      const input = {
+        filename: "db.ts",
+        before: lines,
+        after: lines,
+        themeFamily: "github" as const,
+      };
+      const t0 = performance.now();
+      await highlightPair(input);
+      const ms = Math.round(performance.now() - t0);
+      console.info(
+        `[syntax-highlight bench] db.ts ×2 panes, GitHub pair: ${ms}ms (${lines.length} lines/side, ${highlightPairMetrics.shikiTokenizeRuns} Shiki tokenize runs)`,
+      );
+      expect(highlightPairMetrics.shikiTokenizeRuns).toBe(2);
+      expect(ms).toBeLessThan(300_000);
+    },
+  );
 });
