@@ -2,14 +2,14 @@
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: web
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T08:04:58Z"
-updated_at: "2026-11-07T08:04:58Z"
+updated_at: "2026-11-07T12:41:30Z"
 ---
 ## Problem
 
@@ -42,3 +42,4 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 ## Activity
 
 - 2026-11-07T08:04:58Z · created · njachowski@gmail.com
+- 2026-11-07T12:41:30Z · status inbox→ready
