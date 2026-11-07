@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T19:43:41.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 463a9738 to 831c9b03) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
@@ -15,7 +17,6 @@ updated_at: "2026-11-07T19:43:41Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
-last_check_failure: "repoos check at 2026-11-07T18:55:12.289Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer while checks run (target \"default\"): highlight [data-test-id=\"task-drawer-start-work\"] matched nothing on /work?task=1050&tab=dev (http://127.0.0.1:64307/work?shotState=drawer:statusChecksRunning)"
 ---
 ## Items
 ## Items
@@ -149,3 +150,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T19:30:48Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T19:43:38Z · message_queued at 2026-11-07T19:43:38.358Z
 - 2026-11-07T19:43:41Z · message_delivered: 2 message(s)
+
