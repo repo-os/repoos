@@ -409,7 +409,18 @@ const statusProgressPercent = computed(() =>
   statusProgress.value ? checkProgressPercent(statusProgress.value) : null,
 );
 const statusProgressLabel = computed(() => {
-  if (statusProgress.value) return checkProgressLabel(statusProgress.value);
+  if (statusProgress.value) {
+    if (
+      statusProgress.value.stepsDone == null &&
+      statusProgress.value.currentStep == null &&
+      statusProgress.value.testsDone == null
+    ) {
+      return statusProgress.value.stepName
+        ? `Checking ${statusProgress.value.stepName}`
+        : "Starting…";
+    }
+    return checkProgressLabel(statusProgress.value);
+  }
   if (localCheckSlot.value) {
     return `running checks · check · ${formatDuration(localCheckSlot.value.ageMs)}`;
   }
@@ -986,6 +997,9 @@ const drawerStatusSummary = computed(() => {
   } else if (key === "checksRunning" && localCheckSlot.value) {
     motion = "reviewing";
     lines = compactStatusLines(cardChecksHeading.value);
+  } else if (key === "checksRunning" && handoffBusy.value) {
+    motion = "reviewing";
+    lines = compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…");
   } else if (key === "integrating") {
     motion = "reviewing";
     lines = compactStatusLines(integrationCardLabel.value ?? "integrating");
