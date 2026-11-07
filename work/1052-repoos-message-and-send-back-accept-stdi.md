@@ -2,14 +2,14 @@
 id: 1052
 title: "repoos message and send-back: accept stdin, files and heredocs; never send junk as a message"
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:57:47Z"
-updated_at: "2026-11-07T07:57:47Z"
+updated_at: "2026-11-07T12:42:06Z"
 ---
 ## Problem
 
@@ -40,3 +40,4 @@ updated_at: "2026-11-07T07:57:47Z"
 ## Activity
 
 - 2026-11-07T07:57:47Z · created · njachowski@gmail.com
+- 2026-11-07T12:42:06Z · status inbox→ready
