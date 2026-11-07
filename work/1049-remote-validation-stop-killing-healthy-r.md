@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T06:11:19Z"
+updated_at: "2026-11-07T06:25:00Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T05:19:38.063Z: repoos check failed: tests — Test Files 2 failed | 145 passed (147)"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"}]"
@@ -95,3 +95,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T05:53:26Z · message_delivered: 1 message(s)
 - 2026-11-07T06:07:11Z · engineer stopped by request
 - 2026-11-07T06:11:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T06:25:00Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > skips a host after its SSH bundle upload fails, tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > records a queued event while a job waits for a host slot (#0568), tests/remote-host-pool.test.ts > TailscaleRunner pool dispatch (#0521) > runs two jobs on two hosts and queues a third until one frees on thinkpad — fix it in the feature branch and re-run the gate
