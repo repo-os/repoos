@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T21:03:33Z"
+updated_at: "2026-11-07T21:03:36Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -171,3 +171,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T21:03:31Z · status active→review
 - 2026-11-07T21:03:33Z · message_queued at 2026-11-07T21:03:33.563Z
 - 2026-11-07T21:03:33Z · status review→active
+- 2026-11-07T21:03:36Z · CTO nudge: held — handoff gate is running
