@@ -139,3 +139,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T17:23:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T17:32:18Z · body
 - 2026-11-07T17:35:27Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T17:35:27Z · message_queued at 2026-11-07T17:35:27.398Z
