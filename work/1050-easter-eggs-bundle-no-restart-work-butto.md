@@ -12,12 +12,13 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T07:57:46Z"
+updated_at: "2026-11-07T11:02:36Z"
 ---
 ## Items
 
 - [ ] **E1 · No Restart work button while checks run** (web) — while a handoff or check is running for an active task, the card and drawer show no primary button (the "running checks" status already says it). Source: human report 2026-11-07 (screenshot of #1047's card).
 - [ ] **E2 · Close the Uncommitted changes panel after a successful commit** (web) — After a successful commit from the Uncommitted changes side panel (RepoDirtyPanel.vue commit()), close the panel. The success toast already reports the commit (files, branch, sha), and the panel otherwise stays open reading 'Uncommitted changes · Working tree is clean.' with the 'Committed 1 file to main (96d818687).' note, which is odd. Remove the now-redundant in-panel committedNote or keep it only if the panel stays open. Keep the panel open on failure (error and hook output stay visible). If the commit leaves other files uncommitted (dirtyCount > 0 after refresh) decide explicitly: close anyway, since the toast reports what happened.. Source: human report 2026-11-07 (screenshot of the panel after a commit).
+- [ ] **E3 · Collapse repeated agent stderr lines in the chat and stop styling them as errors** (web) — In the task drawer's Dev chat, identical consecutive stderr lines from the agent CLI (for example codex's 'ERROR codex_core::util: Custom tool call output is missing for call id: <same id>' repeated about 21 times on #1047 on 2026-11-07, once a minute while a long repoos check ran) are each shown as a red 'Error' card. Collapse runs of identical lines into one entry with a count (x21, and the first and last time), and show agent stderr noise in a neutral style, reserving the red Error style for events that actually end or fail the turn. Keep the full text available on expand.. Source: human report 2026-11-07 (screenshot of #1047's Dev chat full of red Error cards).
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body. Add related small fixes as `E2`, `E3` before this bundle starts.
 
@@ -56,6 +57,21 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 
 ### Notes for AI
 
+
+## E3 · Collapse repeated agent stderr lines in the chat and stop styling them as errors
+
+### Problem
+
+
+### Desired UX
+
+
+### Acceptance criteria
+
+- Test: Component test: 21 identical stderr events render as one entry with a x21 count and an expandable detail; a different stderr line breaks the run; a stderr line is not styled as an error while the agent keeps producing normal messages, but a real turn failure still renders as an error; the count updates as new identical lines arrive.
+
+### Notes for AI
+
 ## Activity
 
 - 2026-11-07T07:03:41Z · created · njachowski@gmail.com
@@ -63,3 +79,5 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T07:23:43Z · held, held-reason, held-at
 - 2026-11-07T07:57:46Z · body: Items (added 1); E2 · Close the Uncommitted changes panel after a successful commit (added)
 - 2026-11-07T07:57:46Z · note: bundle add E2
+- 2026-11-07T11:02:36Z · body: Items (added 1); E3 · Collapse repeated agent stderr lines in the chat and stop styling them as errors (added)
+- 2026-11-07T11:02:36Z · note: bundle add E3
