@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
-updated_at: "2026-11-07T02:12:04Z"
+updated_at: "2026-11-07T02:20:26Z"
 ---
 ## Problem
 
@@ -39,6 +39,25 @@ The two report tables in the task drawer disagree with each other. The Dev tab's
 
 Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering one near the `engineering-report-view` pane, `fmtTime(report.at)`; the Review tab has its own pass table). Reuse `src/ui-app/src/lib/time.ts` for formatting and add one shared short and full time helper. Use the shared styled tooltip or popover, never a native `title`. CSS goes in `style.css` or shared classes, not bespoke scoped styles. Shot hygiene: scope selectors to the fixture card `[data-task-id="9999"]` and confirm one match.
 
+## Shots
+```json
+[
+{
+  "label": "Dev engineering report history, newest round first",
+  "target": "default",
+  "route": "/work?task=9999&tab=agent&shotState=drawer%3AengineeringReports",
+  "selector": "[data-task-id=\"9999\"]",
+  "highlight": "[data-task-id=\"9999\"]",
+  "steps": [
+    {
+      "click": "[data-test-id=\"engineering-report-tab\"]"
+    }
+  ],
+  "state": "drawer:engineeringReports"
+}
+]
+```
+
 ## Screenshots
 
 ![9](/api/tasks/1045/attachments/att_3b5690c0-6904-4c9e-be77-c2ac034988bc.png)
@@ -54,3 +73,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T02:11:53Z · review_model_override
 - 2026-11-07T02:11:54Z · status inbox→ready
 - 2026-11-07T02:12:04Z · status ready→active, branch
+- 2026-11-07T02:20:26Z · body
