@@ -2,7 +2,7 @@
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: review
+status: active
 priority: p0
 area: server
 assigned_to: ai
@@ -308,4 +308,3 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T18:11:05Z · body
 - 2026-11-07T18:14:00Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-07T18:14:01Z · message_queued at 2026-11-07T18:14:01.129Z
-- 2026-11-07T18:14:01Z · status active→review
