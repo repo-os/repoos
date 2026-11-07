@@ -2490,6 +2490,23 @@
   font-family: "JetBrains Mono", monospace;
   cursor: help;
 }
+.check-progress {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  width: min(100%, 320px);
+  font-size: 12px;
+}
+.check-progress progress {
+  width: 120px;
+  height: 8px;
+  flex: 0 0 120px;
+  accent-color: var(--accent);
+}
+.task-card-check-progress {
+  margin-top: 8px;
+}
 .tc-hint.tc-hint--progress-clamp {
   display: -webkit-box;
   -webkit-box-orient: vertical;

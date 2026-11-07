@@ -73,7 +73,11 @@ function pipeline(over: Partial<IntegrationPipelineSnapshot> = {}): IntegrationP
 
 function stubApi(
   task: Task,
-  opts: { reviewRunning?: boolean; review?: Record<string, unknown> | null } = {},
+  opts: {
+    reviewRunning?: boolean;
+    review?: Record<string, unknown> | null;
+    handoffStatus?: Record<string, unknown>;
+  } = {},
 ): void {
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal(
@@ -88,6 +92,8 @@ function stubApi(
           taskCount: 1,
         });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
+      if (url.includes("/handoff-status"))
+        return json(opts.handoffStatus ?? { state: "idle", step: null, attempt: 0 });
       if (url.includes("/review"))
         return json({
           ok: true,
@@ -143,6 +149,102 @@ afterEach(() => {
 });
 
 describe("task panel status label matches the board card (#1023)", () => {
+  it.each([
+    { state: "indeterminate", source: "status" },
+    { state: "determinate", source: "run" },
+    { state: "slot-held with empty run list", source: "slot" },
+    { state: "handoff with no SSE after reload", source: "reload" },
+  ])("shows card and drawer progress for $state", async ({ source }) => {
+    const task = activeTask();
+    const startedAt = new Date(Date.now() - 75_000).toISOString();
+    const serverStatus = {
+      state: "running",
+      step: "verify",
+      startedAt,
+      updatedAt: new Date().toISOString(),
+      attempt: 2,
+      progress: null,
+      machine: "runner-host",
+    };
+    stubApi(task, { handoffStatus: source === "reload" ? serverStatus : undefined });
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [];
+    if (source === "run") {
+      repo.taskChecks[task.id] = [
+        runningCheck({
+          kind: "merge-gate",
+          attempt: 3,
+          machine: "check-host",
+        }),
+      ];
+    }
+    const card = await mountCard(pinia, task);
+    const drawer = await mountDrawer(pinia, task);
+    if (source === "slot") {
+      repo.localCheckSlotHolders = [
+        {
+          slot: 0,
+          pid: 1234,
+          ageMs: 8 * 60_000,
+          heartbeatAgeMs: 2_000,
+          dead: false,
+          wedged: false,
+          meta: { kind: "local-check", taskId: task.id },
+        },
+      ];
+    }
+    if (source === "status") {
+      repo.handoffStatuses[task.id] = {
+        ...serverStatus,
+        progress: runningCheck({
+          attempt: null,
+          machine: null as unknown as string,
+          stepsDone: null,
+          stepsTotal: null,
+          currentStep: null,
+          testsDone: null,
+          testsTotal: null,
+          stepName: null,
+        }),
+      };
+    }
+    await flush();
+
+    const cardProgress = card.find('[data-test-id="task-card-check-progress"] progress');
+    const drawerProgress = drawer.find('[data-test-id="close-out-check-progress"] progress');
+    expect(cardProgress.exists()).toBe(true);
+    expect(drawerProgress.exists()).toBe(true);
+    if (source === "run") {
+      expect(cardProgress.attributes("value")).toBe("33");
+      expect(drawerProgress.attributes("value")).toBe("33");
+      expect(cardLabel(card)).toContain("running checks · tests ·");
+      expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain(
+        "attempt 3 · on check-host",
+      );
+    } else {
+      expect(cardProgress.attributes("value")).toBeUndefined();
+      expect(drawerProgress.attributes("value")).toBeUndefined();
+    }
+    if (source === "status" || source === "reload") {
+      expect(card.find('[data-test-id="task-card-check-progress"]').text()).toContain(
+        "attempt 2 · on runner-host",
+      );
+      expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+        "attempt 2 · on runner-host",
+      );
+    }
+    expect(drawer.text()).not.toContain("Quiet — may be stalled");
+    expect(drawer.text()).not.toContain("stuck · silent");
+    if (source === "reload") {
+      expect(cardLabel(card)).toMatch(/^running checks · verify · /);
+      expect(
+        vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes("/handoff-status")),
+      ).toBe(true);
+    }
+    card.unmount();
+    drawer.unmount();
+  });
+
   it("names a running handoff check exactly as the card does", async () => {
     const task = activeTask();
     stubApi(task);
