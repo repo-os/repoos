@@ -8,8 +8,9 @@ area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+model_override: gpt-6.1-terra
 created_at: "2026-11-07T07:57:47Z"
-updated_at: "2026-11-07T12:42:06Z"
+updated_at: "2026-11-07T12:42:59Z"
 ---
 ## Problem
 
@@ -41,3 +42,4 @@ updated_at: "2026-11-07T12:42:06Z"
 
 - 2026-11-07T07:57:47Z · created · njachowski@gmail.com
 - 2026-11-07T12:42:06Z · status inbox→ready
+- 2026-11-07T12:42:59Z · model_override
