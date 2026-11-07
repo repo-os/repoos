@@ -36,6 +36,9 @@ export function debugEventExpandable(
   }
   const detail = e.detail?.trim();
   const title = e.title.trim();
+  // Multiline activity reports need an explicit expanded view even when the
+  // browser has not measured the one-line title as ellipsized yet.
+  if (title.includes("\n")) return true;
   if (detail && detail !== title) return true;
   // Same text in title and detail: expand only when the one-line cell is ellipsized.
   if (detail && detail === title) return Boolean(opts?.titleTruncated);
