@@ -339,3 +339,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T19:51:35Z · status active→review
 - 2026-11-07T19:51:35Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-07T19:51:36Z · message_queued at 2026-11-07T19:51:36.090Z
+- 2026-11-07T19:51:36Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
