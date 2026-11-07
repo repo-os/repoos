@@ -26,6 +26,10 @@ import {
   CACHE_VOLUME_NAME,
   DEFAULT_HANG_IDLE_MINUTES,
   DEFAULT_HOST_LOCK_WAIT_SECS,
+  MAX_REMOTE_RUN_LIFETIME_MS,
+  REMOTE_RUN_TIMEOUT_MS,
+  CONTAINER_REAPER_RUN_CAP_MS,
+  CONTAINER_REAPER_SAFETY_MARGIN_MS,
   HANG_IDLE_LOAD_THRESHOLD,
   HOST_LOCK_HEARTBEAT_SECS,
   HOST_LOCK_STALE_MINUTES,
@@ -2768,6 +2772,20 @@ describe("hang detector (#0729)", () => {
     expect(reaperRemoveCommand("0123456789ab")).toContain("docker rm -f '0123456789ab'");
     expect(reaperRemoveCommand("not-an-id")).toBe("false");
     const now = Date.parse("2026-11-07T04:00:00Z");
+    const maximumAge = CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS;
+    expect(REMOTE_RUN_TIMEOUT_MS).toBe(25 * 60_000);
+    expect(MAX_REMOTE_RUN_LIFETIME_MS).toBe(
+      REMOTE_RUN_TIMEOUT_MS + DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+    );
+    expect(CONTAINER_REAPER_RUN_CAP_MS).toBe(MAX_REMOTE_RUN_LIFETIME_MS);
+    const ownershipIndependentCandidates = staleReaperCandidates(
+      [
+        `0123456789a1\t/repoos-validate-young\t${new Date(now - maximumAge + 1).toISOString()}`,
+        `0123456789a2\t/repoos-validate-old\t${new Date(now - maximumAge - 1).toISOString()}`,
+      ].join("\n"),
+      now,
+    );
+    expect(ownershipIndependentCandidates.map(({ name }) => name)).toEqual(["repoos-validate-old"]);
     const oldCreated = "2026-11-07T03:00:53.123456789Z";
     expect(
       staleReaperCandidates(
@@ -2779,7 +2797,7 @@ describe("hang detector (#0729)", () => {
           `0123456789ae\t/repoos-validate-invalid\tnot-a-timestamp`,
         ].join("\n"),
         now,
-        40 * 60_000,
+        maximumAge,
         new Set(["repoos-validate-active"]),
       ),
     ).toEqual([
@@ -2806,7 +2824,7 @@ describe("hang detector (#0729)", () => {
       staleReaperCandidates(
         `0123456789af\t/repoos-validate-owned\t${oldCreated}`,
         now,
-        40 * 60_000,
+        maximumAge,
         new Set(["repoos-validate-owned"]),
       ),
     ).toEqual([]);
@@ -2878,7 +2896,7 @@ describe("hang detector (#0729)", () => {
       if (!recentActivity) {
         expect(logger.system).toHaveBeenCalledWith(
           "info",
-          "remote validation Reaping stale validation container repoos-validate-old (older than 40 minutes with no recent activity) on runner",
+          "remote validation Reaping stale validation container repoos-validate-old (older than 45 minutes with no recent activity) on runner",
         );
       }
     },
