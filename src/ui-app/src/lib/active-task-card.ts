@@ -75,6 +75,7 @@ export function activeEngineerCardHint(opts: {
   taskChecks: TaskCheckRun[] | undefined;
   remoteActivity: RemoteTaskActivity | null | undefined;
   resourceQueueMarkers: LocalQueueMarker[] | undefined;
+  localCheckSlot?: { ageMs: number; heartbeatAgeMs: number } | null;
   busyChild?: string | null;
 }): ActiveTaskCardHint {
   const localQueued = localQueueHintForTask(
@@ -94,6 +95,7 @@ export function activeEngineerCardHint(opts: {
     localQueueTitle: localQueued?.title ?? null,
     remotePoolQueueLabel: poolQueued?.label ?? null,
     remotePoolQueueTitle: poolQueued?.title ?? null,
+    localCheckSlot: opts.localCheckSlot ?? null,
     busyChild: opts.busyChild ?? null,
   });
 }

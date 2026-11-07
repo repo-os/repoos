@@ -221,8 +221,8 @@ done wait by default in human mode).
 | `repoos hold <id> --reason "…" [--until <date>]` | `POST /api/tasks/:id/hold` — stop any running engineer and make the task inert for ALL automation |
 | `repoos unhold <id> [--start]` | `POST /api/tasks/:id/unhold` — release the hold; `--start` re-launches the engineer on the now-released task |
 | `repoos sync <id>` | `POST /api/tasks/:id/sync` — merge main into the task branch (lists conflicting paths and exits non-zero on conflict) |
-| `repoos message <id> "…" [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
-| `repoos send-back <id> --message "…"` or `--message-file <file|->` | `POST /api/tasks/:id/send-back` — move to active, start the engineer, then queue the message; `-` reads stdin |
+| `repoos message <id> [text \| - \| --message "…" \| --file <path> \| --message-file <path>] [--now]` | `POST /api/tasks/:id/message` (`now: true` interrupts a busy agent) |
+| `repoos send-back <id> [text \| - \| --message "…" \| --file <path> \| --message-file <path>]` | `POST /api/tasks/:id/send-back` — move to active, start the engineer, then queue the message; `-` reads stdin |
 | `repoos review <id> [--wait]` | `PATCH /api/tasks/:id` (`status: review`) |
 | `repoos review cancel <id>` | `PATCH /api/tasks/:id` (`status: active`, cancels an in-flight handoff/review) |
 | `repoos review again <id>` | `POST /api/tasks/:id/review/again` |
@@ -929,3 +929,5 @@ run already applies the safe candidates.
 
 Publishes local apps through Cloudflare Tunnel + Zero Trust:
 `setup`, `create`, `allow`, `deny`, `start`, `install`, `stop`, `list`, `status`.
+
+Both `message` and `send-back` accept one message source: inline words, `--message`, `--file`, `--message-file`, or stdin via `-`. With no text argument, piped stdin is read automatically; file options also accept `-` for stdin. Empty messages and conflicting sources are rejected. Successful non-JSON output shows the character count and first line.

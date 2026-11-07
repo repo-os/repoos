@@ -2,14 +2,19 @@
 id: 1052
 title: "repoos message and send-back: accept stdin, files and heredocs; never send junk as a message"
 type: bug
-status: inbox
+status: done
 priority: p2
 area: core
-assigned_to: ""
+merged_commit: b33072aca9bf2c855a322899274edf143137b3ee
+assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/repoos-message-and-send-back-accept-stdi
+model_override: gpt-6.1-terra
 created_at: "2026-11-07T07:57:47Z"
-updated_at: "2026-11-07T07:57:47Z"
+updated_at: "2026-11-07T13:16:30Z"
+last_close_out_gate_ms: 748617
+last_close_out_gate_at: "2026-11-07T13:10:07.837Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -40,3 +45,14 @@ updated_at: "2026-11-07T07:57:47Z"
 ## Activity
 
 - 2026-11-07T07:57:47Z · created · njachowski@gmail.com
+- 2026-11-07T12:42:06Z · status inbox→ready
+- 2026-11-07T12:42:59Z · model_override
+- 2026-11-07T12:43:16Z · status ready→active, branch
+- 2026-11-07T12:47:39Z · body
+- 2026-11-07T12:52:45Z · status active→review
+- 2026-11-07T12:52:45Z · message_queued at 2026-11-07T12:52:45.550Z
+- 2026-11-07T12:52:45Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-07T12:54:57Z · note: review pass 1: good to go
+- 2026-11-07T13:10:07Z · close-out gate completed in 749s
+- 2026-11-07T13:11:49Z · status done→done, release:success
+- 2026-11-07T13:16:30Z · message_dropped: 1 queued message(s) discarded — task is done

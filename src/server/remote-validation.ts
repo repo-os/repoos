@@ -825,9 +825,10 @@ function tail(output: string, lines = 20, maxChars = 1200): string {
 
 /** Keep the newest captured lines when one Docker log line is unusually large. */
 function newestHangLogOutput(output: string, maxChars = 20_000): string {
-  return output.length > maxChars
-    ? `[earlier output omitted; showing newest output]\n${output.slice(-maxChars)}`
-    : output;
+  const cleaned = redactSecrets(stripAnsi(output));
+  return cleaned.length > maxChars
+    ? `[earlier output omitted; showing newest output]\n${cleaned.slice(-maxChars)}`
+    : cleaned;
 }
 
 /** Human-readable byte count for run logs (e.g. "812 B", "1.1 MB"). */
@@ -1401,17 +1402,20 @@ export function detectHungRun(opts: {
   lastKnownLoadPerCpu?: number;
   /** When load became unknown (failed probe); defaults to `lastOutputAt` (#0739). */
   loadUnknownSince?: number;
-  /** Host's own CPU activity on the container if available (#1049). */
+  /** Duration of consecutive host-side inactive CPU samples (#1049). */
+  containerCpuInactiveForMs?: number;
+  /** Most recent host-side CPU sample; active progress is always conclusive. */
   containerCpuActive?: boolean;
 }): boolean {
   if (opts.gateFinished) return false;
   const idleThreshold = opts.idleLoadThreshold ?? HANG_IDLE_LOAD_THRESHOLD;
   const quietMs = opts.now - opts.lastOutputAt;
   if (quietMs < opts.thresholdMs) return false;
-  // A sample for this exact container is authoritative: explicit activity
-  // protects progress, and explicit inactivity confirms a hang regardless of
-  // host load. Host load only gates the decision when no container sample exists.
-  if (opts.containerCpuActive !== undefined) return !opts.containerCpuActive;
+  // A single zero-CPU sample can be an I/O wait. Require sustained inactivity
+  // for the same duration as stream silence; active CPU protects progress.
+  if (opts.containerCpuActive !== undefined) {
+    return !opts.containerCpuActive && (opts.containerCpuInactiveForMs ?? 0) >= opts.thresholdMs;
+  }
   if (opts.loadPerCpu < idleThreshold) return true;
   if (!Number.isFinite(opts.loadPerCpu)) {
     const last = opts.lastKnownLoadPerCpu;
@@ -1460,6 +1464,7 @@ export class HangWatchdog {
       gateFinished?: () => boolean;
       lastKnownLoadPerCpu?: () => number | undefined;
       loadUnknownSince?: () => number | undefined;
+      containerCpuInactiveForMs?: () => number | undefined;
       containerCpuActive?: () => boolean | undefined;
     },
   ) {
@@ -1494,6 +1499,7 @@ export class HangWatchdog {
         gateFinished: this.opts.gateFinished?.(),
         lastKnownLoadPerCpu: this.opts.lastKnownLoadPerCpu?.(),
         loadUnknownSince: this.opts.loadUnknownSince?.(),
+        containerCpuInactiveForMs: this.opts.containerCpuInactiveForMs?.(),
         containerCpuActive: this.opts.containerCpuActive?.(),
       })
     ) {
@@ -4062,6 +4068,22 @@ export class TailscaleHostPool {
               // run can exceed the nominal 25-minute run cap while waiting for
               // the host lock (up to the additional lock-wait allowance).
               if (s.activeRuns.some((run) => run.container === candidate.name)) continue;
+              // Local state and cached lock snapshots cannot see another
+              // server process. Ask the runner's shared host lock immediately
+              // before removal; if inspection fails, preserve the container.
+              const lockCheck = await this.exec.runRemote(
+                s.ssh,
+                hostLockInspectShell(),
+                () => {},
+                HOST_LOCK_INSPECT_TIMEOUT_MS,
+              );
+              if (
+                lockCheck.code !== 0 ||
+                lockCheck.timedOut ||
+                parseHostLockInspectOutput(lockCheck.output).holders.length > 0
+              ) {
+                continue;
+              }
               const removed = await this.exec.runRemote(
                 s.ssh,
                 reaperRemoveCommand(candidate.id),
@@ -6209,7 +6231,10 @@ export class TailscaleRunner implements RemoteValidator {
         // container CPU protects a progressing run from a stalled SSH stream.
         let loadNow = Number.POSITIVE_INFINITY;
         let lastKnownLoadPerCpu: number | undefined;
+        let containerCpuInactiveSince: number | undefined;
+        let containerCpuLastSampleAt: number | undefined;
         let containerCpuActive: boolean | undefined;
+        let loadProbeInFlight = false;
         let loadUnknownSince: number | undefined = Date.now();
         let gateFinished = false;
         let streamBuf = "";
@@ -6245,6 +6270,13 @@ export class TailscaleRunner implements RemoteValidator {
           gateLingerTimer.unref?.();
         };
         const loadTimer = setInterval(() => {
+          if (loadProbeInFlight) return;
+          // An in-flight probe makes the previous sample stale: don't let it
+          // remain eligible to declare this run idle while SSH is slow.
+          loadProbeInFlight = true;
+          loadNow = Number.POSITIVE_INFINITY;
+          containerCpuActive = undefined;
+          loadUnknownSince = Date.now();
           void this.exec
             .runRemote(host, hostLoadCommand(containerName), () => {}, this.timings.probeTimeoutMs)
             .then((stats) => {
@@ -6262,17 +6294,31 @@ export class TailscaleRunner implements RemoteValidator {
                   loadUnknownSince = Date.now();
                 }
                 const cpuMarker = stats.output.split("__CONTAINER_CPU__").at(-1) ?? "";
-                containerCpuActive = parseContainerCpuActive(cpuMarker);
-              } else if (loadUnknownSince === undefined) {
-                loadNow = Number.POSITIVE_INFINITY;
-                containerCpuActive = undefined;
-                loadUnknownSince = Date.now();
+                const cpuActive = parseContainerCpuActive(cpuMarker);
+                containerCpuActive = cpuActive;
+                if (cpuActive === false) {
+                  const sampledAt = Date.now();
+                  if (
+                    containerCpuLastSampleAt === undefined ||
+                    sampledAt - containerCpuLastSampleAt > this.timings.loadSampleIntervalMs * 2
+                  ) {
+                    containerCpuInactiveSince = sampledAt;
+                  }
+                  containerCpuLastSampleAt = sampledAt;
+                } else {
+                  containerCpuInactiveSince = undefined;
+                  containerCpuLastSampleAt = cpuActive === true ? Date.now() : undefined;
+                }
               }
             })
             .catch(() => {
               loadNow = Number.POSITIVE_INFINITY;
+              containerCpuInactiveSince = undefined;
+              containerCpuLastSampleAt = undefined;
               containerCpuActive = undefined;
-              if (loadUnknownSince === undefined) loadUnknownSince = Date.now();
+            })
+            .finally(() => {
+              loadProbeInFlight = false;
             });
         }, this.timings.loadSampleIntervalMs);
         loadTimer.unref?.();
@@ -6284,12 +6330,17 @@ export class TailscaleRunner implements RemoteValidator {
           gateFinished: () => gateFinished,
           lastKnownLoadPerCpu: () => lastKnownLoadPerCpu,
           loadUnknownSince: () => loadUnknownSince,
+          containerCpuInactiveForMs: () =>
+            containerCpuInactiveSince === undefined
+              ? undefined
+              : Date.now() - containerCpuInactiveSince,
           containerCpuActive: () => containerCpuActive,
           onHung: () => {
-            hangCondition =
-              Number.isFinite(loadNow) && loadNow < HANG_IDLE_LOAD_THRESHOLD
-                ? "host-idle"
-                : "container-inactive";
+            const inactiveLongEnough =
+              containerCpuActive === false &&
+              containerCpuInactiveSince !== undefined &&
+              Date.now() - containerCpuInactiveSince >= hangIdleThresholdMs(hangIdleMinutes);
+            hangCondition = inactiveLongEnough ? "container-inactive" : "host-idle";
             const conditionLabel =
               hangCondition === "host-idle" ? "host idle" : "container inactive";
             this.logger?.system(
