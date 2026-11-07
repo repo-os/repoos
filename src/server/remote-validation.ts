@@ -3836,6 +3836,8 @@ export interface ActiveRemoteRun {
   kind?: RemoteRunKind;
   /** Set while this run is being killed as hung (#0729). */
   hung?: boolean;
+  /** Plain-language condition that triggered the hang kill. */
+  hungDetail?: string;
   /** This run's container name, once known (#0729) — how a hang is killed. */
   container?: string;
   bundle?: string;
