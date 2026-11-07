@@ -60,6 +60,7 @@ import {
   beginHandoffStatus,
   finishHandoffStatus,
   updateHandoffStatusStep,
+  updateHandoffStatusProgress,
 } from "./handoff-status.js";
 import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
@@ -373,6 +374,8 @@ export interface HandoffSink {
 
 /** Options for the non-capability entry point (`finalizeReviewHandoff`). */
 export interface ReviewHandoffOptions extends HandoffSink {
+  /** Persist check marker snapshots for clients that reload during finalization. */
+  onCheckProgress?: (chunk: string) => void;
   /**
    * Human-only override (#0507): run the commit/vacuity gate but NOT
    * `repoos check`. Reached exclusively through the Review button's explicit
@@ -835,7 +838,10 @@ async function runHandoffFinalization(
     const check = await runCheck(
       workdir,
       config,
-      checkHandle?.chunk,
+      (chunk) => {
+        checkHandle?.chunk?.(chunk);
+        opts.onCheckProgress?.(chunk);
+      },
       {
         ...checkEnvAfterRemoteGate(remoteOutcome, config),
         ...(reuseNote
@@ -1205,6 +1211,20 @@ export async function handoffTask(
     updateHandoffStatusStep(config, task.id, attemptKey, step);
     onProgress?.(step);
   };
+  let progressBuffer = "";
+  const onCheckProgress = (chunk: string): void => {
+    progressBuffer = (progressBuffer + chunk).slice(-16_384);
+    const at = progressBuffer.lastIndexOf("::repoos-check-progress::");
+    if (at < 0) return;
+    try {
+      const line = progressBuffer
+        .slice(at + "::repoos-check-progress::".length)
+        .split(/\r?\n/, 1)[0];
+      updateHandoffStatusProgress(config, task.id, attemptKey, JSON.parse(line));
+    } catch {
+      /* incomplete or malformed progress output */
+    }
+  };
   const result = await withHandoffDeadline(async (markSettled) => {
     try {
       trackedProgress("validate");
@@ -1224,6 +1244,7 @@ export async function handoffTask(
         remoteValidator,
         previews,
         onTaskLog,
+        onCheckProgress,
         holdGuard,
       });
     } catch (err) {
@@ -1266,6 +1287,19 @@ export async function finalizeReviewHandoff(
     updateHandoffStatusStep(config, task.id, attemptKey, step);
     opts.onProgress?.(step);
   };
+  let progressBuffer = "";
+  const onCheckProgress = (chunk: string): void => {
+    progressBuffer = (progressBuffer + chunk).slice(-16_384);
+    const marker = "::repoos-check-progress::";
+    const at = progressBuffer.lastIndexOf(marker);
+    if (at < 0) return;
+    try {
+      const line = progressBuffer.slice(at + marker.length).split(/\r?\n/, 1)[0];
+      updateHandoffStatusProgress(config, task.id, attemptKey, JSON.parse(line));
+    } catch {
+      /* incomplete or malformed progress output */
+    }
+  };
   const result = await withHandoffDeadline(async (markSettled) => {
     try {
       trackedProgress("validate");
@@ -1274,6 +1308,7 @@ export async function finalizeReviewHandoff(
       return await runHandoffFinalization(config, task, resolved.resolved, {
         ...opts,
         onProgress: trackedProgress,
+        onCheckProgress,
       });
     } catch (err) {
       markSettled();

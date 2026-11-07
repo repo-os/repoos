@@ -859,6 +859,46 @@ export const useRepoStore = defineStore("repo", () => {
    * through the close-out map's "Merging branch…" default.
    */
   const handoffSteps = ref<Record<string, string>>({});
+  const handoffStatuses = ref<
+    Record<
+      string,
+      {
+        state: string;
+        step: string | null;
+        updatedAt: string | null;
+        startedAt?: string | null;
+        attempt: number;
+        progress: TaskCheckRun | null;
+        machine: string | null;
+      }
+    >
+  >({});
+  async function refreshHandoffStatus(id: string): Promise<void> {
+    try {
+      const status = await api<{
+        state: string;
+        step: string | null;
+        updatedAt: string | null;
+        startedAt?: string | null;
+        attempt: number;
+        progress?: TaskCheckRun | null;
+        machine?: string | null;
+      }>(`/api/tasks/${id}/handoff-status`);
+      handoffStatuses.value = {
+        ...handoffStatuses.value,
+        [id]: { ...status, progress: status.progress ?? null, machine: status.machine ?? null },
+      };
+      if (status.state === "running" && status.step)
+        handoffSteps.value = { ...handoffSteps.value, [id]: status.step };
+      else if (status.state !== "not_requested") {
+        const steps = { ...handoffSteps.value };
+        delete steps[id];
+        handoffSteps.value = steps;
+      }
+    } catch {
+      /* status polling is best effort; live SSE remains available */
+    }
+  }
   /** Why a handoff finalization failed, per task id. Cleared on the next ask. */
   const handoffErrors = ref<Record<string, string>>({});
   /** Uncommitted files blocking a move-to-done, per task id (0204, extended to
@@ -1405,6 +1445,9 @@ export const useRepoStore = defineStore("repo", () => {
    * `status: review`. This is the "running checks…" state the task card shows.
    */
   function handoffInFlight(id: string): boolean {
+    if (handoffStatuses.value[id]?.state === "running") return true;
+    if (["passed", "failed", "deferred"].includes(handoffStatuses.value[id]?.state ?? ""))
+      return false;
     const step = handoffSteps.value[id];
     if (step) return step !== "done" && step !== "failed";
     // After a reload SSE has not replayed `handoff:*`, but the hydrated check
@@ -4353,6 +4396,8 @@ export const useRepoStore = defineStore("repo", () => {
     checkpointRecoveryFor,
     setCheckpointRecovery,
     handoffSteps,
+    handoffStatuses,
+    refreshHandoffStatus,
     handoffErrors,
     handoffErrorFor,
     handoffInFlight,

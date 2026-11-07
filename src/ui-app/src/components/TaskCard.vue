@@ -47,6 +47,8 @@ import {
   STARTING_LABEL,
   runningChecksLabel,
 } from "../lib/task-status-copy";
+import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
+import { formatDuration } from "../lib/time";
 import { useNow } from "../composables/useNow";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { Clock3 } from "lucide-vue-next";
@@ -400,10 +402,27 @@ onMounted(() => {
   // Hydrate check runs so a reload mid-handoff still reads "running checks"
   // instead of "paused" (SSE only delivers events from now on).
   const id = props.task.id;
+  if (props.task.status === "active") void repo.refreshHandoffStatus(id);
   if (props.task.status === "active" && repo.taskChecks[id] === undefined) {
     void repo.refreshTaskChecks(id);
   }
   syncCardRemotePoll(id, props.task.status, repo.isRunning(id));
+});
+
+let handoffStatusPoll: number | undefined;
+watch(
+  () => [props.task.id, props.task.status] as const,
+  ([id, status]) => {
+    if (handoffStatusPoll) window.clearInterval(handoffStatusPoll);
+    handoffStatusPoll = undefined;
+    if (status !== "active") return;
+    void repo.refreshHandoffStatus(id);
+    handoffStatusPoll = window.setInterval(() => void repo.refreshHandoffStatus(id), 3_000);
+  },
+  { immediate: true },
+);
+onUnmounted(() => {
+  if (handoffStatusPoll) window.clearInterval(handoffStatusPoll);
 });
 
 watch(
@@ -994,6 +1013,18 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
+    if (repo.handoffInFlight(t.id)) {
+      const status = repo.handoffStatuses[t.id];
+      const elapsed = status?.startedAt
+        ? formatDuration(Math.max(0, now.value - Date.parse(status.startedAt)))
+        : null;
+      const stage = status?.step ?? repo.handoffSteps[t.id] ?? "starting";
+      return {
+        label: `running checks · ${stage}${elapsed ? ` · ${elapsed}` : ""}`,
+        title: "RepoOS is finalizing this task and running its checks",
+        cls: "tc-reviewing",
+      };
+    }
     if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
@@ -1583,6 +1614,19 @@ async function openDebuggerFromError(): Promise<void> {
             />
           </svg>
         </span>
+        <div
+          v-if="repo.handoffInFlight(task.id) && repo.handoffStatuses[task.id]?.progress"
+          class="check-progress task-card-check-progress"
+          role="status"
+          data-test-id="task-card-check-progress"
+        >
+          <progress
+            v-if="checkProgressPercent(repo.handoffStatuses[task.id]!.progress!) !== null"
+            :value="checkProgressPercent(repo.handoffStatuses[task.id]!.progress!) ?? 0"
+            max="100"
+          />
+          <span>{{ checkProgressLabel(repo.handoffStatuses[task.id]!.progress!) }}</span>
+        </div>
         <button
           ref="agentTrigger"
           type="button"
