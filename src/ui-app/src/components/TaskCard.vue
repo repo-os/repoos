@@ -1644,14 +1644,31 @@ async function openDebuggerFromError(): Promise<void> {
           data-test-id="task-card-check-progress"
         >
           <progress
-            :value="handoffProgress ? (checkProgressPercent(handoffProgress) ?? undefined) : undefined"
+            :value="
+              handoffProgress ? (checkProgressPercent(handoffProgress) ?? undefined) : undefined
+            "
             max="100"
             aria-label="Checks running progress"
           />
-          <span>{{ handoffProgress ? checkProgressLabel(handoffProgress) : "Running checks" }}</span>
-          <span v-if="handoffProgress?.attempt || handoffProgress?.machine || handoffStatus?.attempt || handoffStatus?.machine">
-            {{ (handoffProgress?.attempt ?? handoffStatus?.attempt) ? `attempt ${handoffProgress?.attempt ?? handoffStatus?.attempt}` : "" }}
-            <template v-if="handoffProgress?.machine ?? handoffStatus?.machine"> · on {{ handoffProgress?.machine ?? handoffStatus?.machine }}</template>
+          <span>{{
+            handoffProgress ? checkProgressLabel(handoffProgress) : "Running checks"
+          }}</span>
+          <span
+            v-if="
+              handoffProgress?.attempt ||
+              handoffProgress?.machine ||
+              handoffStatus?.attempt ||
+              handoffStatus?.machine
+            "
+          >
+            {{
+              (handoffProgress?.attempt ?? handoffStatus?.attempt)
+                ? `attempt ${handoffProgress?.attempt ?? handoffStatus?.attempt}`
+                : ""
+            }}
+            <template v-if="handoffProgress?.machine ?? handoffStatus?.machine">
+              · on {{ handoffProgress?.machine ?? handoffStatus?.machine }}</template
+            >
           </span>
         </div>
         <button
