@@ -38,4 +38,13 @@ describe("formatChecksCardLine (#1054)", () => {
     });
     expect(line).toBe("Checks · starting… · 5s");
   });
+
+  it("uses tests-only copy without step —", () => {
+    const line = formatChecksCardLine({
+      nowMs: NOW,
+      startedAt: new Date(NOW - 133_000).toISOString(),
+      progress: { stepsDone: null, stepsTotal: null, testsDone: 3, testsTotal: 680 },
+    });
+    expect(line).toBe("Checks · tests 3/680 · 2m 13s");
+  });
 });

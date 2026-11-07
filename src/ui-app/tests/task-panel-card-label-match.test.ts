@@ -224,7 +224,7 @@ describe("task panel status label matches the board card (#1023)", () => {
       expect(drawerProgress.attributes("value")).toBe("33");
       expect(cardLabel(card)).toMatch(/^Checks · step 4 of 8/);
       expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
-        "attempt 3 · on check-host",
+        "on check-host",
       );
     } else {
       expect(cardProgress.exists()).toBe(false);
@@ -241,8 +241,8 @@ describe("task panel status label matches the board card (#1023)", () => {
       ).toBe(false);
     }
     if (source === "status" || source === "reload") {
-      expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
-        "attempt 2 · on runner-host",
+      expect(drawer.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
+        "on runner-host",
       );
       expect(cardLabel(card)).toMatch(/^Checks ·/);
     }
@@ -335,8 +335,7 @@ describe("task panel status label matches the board card (#1023)", () => {
     expect(drawer.text()).not.toContain("Quiet — may be stalled");
     expect(drawer.text()).not.toContain("stuck · silent");
     expect(card.find('[data-test-id="task-card-check-progress"] progress').exists()).toBe(false);
-    expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain("attempt 1");
-    expect(drawer.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+    expect(drawer.find('[data-test-id="checks-progress-drawer-footer"]').text()).toContain(
       "on fixture host",
     );
     const progress = drawer.find('[data-test-id="close-out-check-progress"] progress');
@@ -379,11 +378,13 @@ describe("task panel status label matches the board card (#1023)", () => {
     const drawer = await mountDrawer(pinia, task);
 
     const expected = cardLabel(card);
-    expect(expected).toMatch(/^Checks · checking check/);
+    expect(expected).toMatch(/^Checks · check/);
     const summary = drawer.find(".drawer-status-summary");
     expect(summary.find(".drawer-status-l1").text()).toBe(expected);
-    expect(summary.findAll(".drawer-status-row")).toHaveLength(2);
-    expect(summary.find(".drawer-status-l2").text()).toBe("Running repoos check…");
+    expect(summary.findAll(".drawer-status-row")).toHaveLength(1);
+    expect(drawer.find('[data-test-id="checks-progress-drawer-title"]').text()).toMatch(
+      /^Running checks/,
+    );
     expect(summary.find(".drawer-status-l1 .ai").exists()).toBe(true);
     // No duplicate or empty row survives the compacting pass.
     const rows = summary.findAll(".drawer-status-row").map((row) => row.text().trim());
