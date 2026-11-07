@@ -10,10 +10,9 @@ created_by: njachowski@gmail.com
 branch: feat/remote-validation-stop-killing-healthy-r
 cli_override: codex
 model_override: gpt-6-luna
-review_cli_override: codex
-review_model_override: gpt-6-luna
+review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T06:40:10Z"
+updated_at: "2026-11-07T06:40:15Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T05:19:38.063Z: repoos check failed: tests — Test Files 2 failed | 145 passed (147)"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"}]"
@@ -102,3 +101,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T06:31:28Z · CTO action: restart-stalled-agent (fresh) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > shows hung · killing on the active run while the kill SSH is still pending (#0735), tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > kills a stalled run's container and retries it on another host, tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > settles validate when hang kill completes but main SSH never resolves and abort is a no-op (#0739) on mini — fix it in the feature branch and re-run the gate
 - 2026-11-07T06:40:00Z · engineer stopped by request
 - 2026-11-07T06:40:02Z · cli_override, model_override
+- 2026-11-07T06:40:15Z · review_cli_override, review_model_override
