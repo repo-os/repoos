@@ -13,7 +13,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T20:30:30Z"
+updated_at: "2026-11-07T20:31:53Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -176,3 +176,4 @@ right before writing new CSS.
 - 2026-11-07T20:29:42Z · message_delivered: 2 message(s)
 - 2026-11-07T20:29:42Z · note: handoff requested (cli)
 - 2026-11-07T20:30:30Z · status active→review
+- 2026-11-07T20:31:53Z · note: review pass 2: needs some work
