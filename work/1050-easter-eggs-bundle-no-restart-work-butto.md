@@ -3,14 +3,16 @@ id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: inbox
+hold: true
+hold_reason: "Waiting for #1047 to land; depends_on cannot hold ids >= 1000 yet (parser drops unquoted numeric ids), so hold stands in until that is fixed"
+hold_at: "2026-11-07T07:23:43.861Z"
 priority: p3
 area: web
-depends_on: [1047]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T07:03:45Z"
+updated_at: "2026-11-07T07:23:43Z"
 ---
 ## Items
 
@@ -42,3 +44,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 
 - 2026-11-07T07:03:41Z · created · njachowski@gmail.com
 - 2026-11-07T07:03:45Z · depends_on
+- 2026-11-07T07:23:43Z · held, held-reason, held-at
