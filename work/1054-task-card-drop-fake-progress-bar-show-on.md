@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T16:53:42Z"
+updated_at: "2026-11-07T17:21:13Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 327f82caba15ce9de2c59142031bfa31fec8684c
 last_check_failure: "repoos check at 2026-11-07T15:39:14.366Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -131,3 +131,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T16:48:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T16:50:00Z · body
 - 2026-11-07T16:53:42Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T17:21:13Z · note: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target "default"): highlight [data-test-id="pipeline-card-check-progress"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)
