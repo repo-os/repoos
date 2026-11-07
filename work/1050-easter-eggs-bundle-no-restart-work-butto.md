@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T23:52:37Z"
+updated_at: "2026-11-07T23:52:56Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 831c9b037a8e4b435aa382d13a7c1bf4a803e1e3
 review_rounds: 1
@@ -233,3 +233,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T23:52:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’ll inspect the merged branch and the two previously conflicted components first, then confirm whether the worktree changed since the last passing check. If it’s clean and the report draft is present, I’ll hand off without rerunning the c… · stderr: 2026-11-07T23:13:52.345681Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:14:09.106117Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:18:52.364442Z ERROR codex_models_manager::manager: failed to refres…
 - 2026-11-07T23:52:37Z · status active→review
 - 2026-11-07T23:52:37Z · message_delivered: 2 message(s)
+- 2026-11-07T23:52:56Z · message_queued at 2026-11-07T23:52:56.805Z
