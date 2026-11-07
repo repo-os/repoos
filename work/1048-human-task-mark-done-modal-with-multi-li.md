@@ -1,5 +1,5 @@
 ---
-id: 1048
+id: "1048"
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
 status: active
@@ -13,7 +13,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T20:02:17Z"
+updated_at: "2026-11-07T20:02:32Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
