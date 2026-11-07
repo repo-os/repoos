@@ -865,6 +865,12 @@ export interface RemoteValidationEvent {
   configError?: boolean;
   /** Human fix for a memory-pressure skip/failure (#0901). */
   fix?: string;
+  /** Evidence captured before killing a hung container (#1049). */
+  hangEvidence?: {
+    condition: "stream-silent" | "host-idle" | "container-inactive";
+    containerLogs?: string;
+    containerState?: string;
+  };
 }
 
 /** `<taskId>.events.ndjson` beside the per-task raw remote log. */
@@ -1225,6 +1231,25 @@ export function staleBundlePruneCommand(): string {
 }
 
 /**
+ * Reap leaked containers older than the run cap (25 min) that no active run owns (#1049).
+ * Run on each host periodically to clean up containers left behind by killed runs.
+ */
+export function reaperCommand(): string {
+  // Remove all validation containers; they are all ephemeral and meant to be short-lived.
+  // If a container is still running after 25 minutes, it's a leak and should be removed.
+  return (
+    `cutoff=$(($(date +%s) - 1500)); ` +
+    `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} --format '{{.Names}} {{.CreatedAt}}' 2>/dev/null | ` +
+    `while IFS= read -r name created; do ` +
+    `if [ -n "$name" ] && [ -n "$created" ]; then ` +
+    `ctime=$(date -d "$created" +%s 2>/dev/null || echo 0); ` +
+    `if [ "$ctime" -lt "$cutoff" ]; then ` +
+    `echo "Reaping old container $name"; docker rm -f "$name" 2>/dev/null || true; ` +
+    `fi; fi; done`
+  );
+}
+
+/**
  * Load average (per CPU) below which the host is "idle" — a run that has gone
  * quiet on a busy host may simply be queued behind real work, but a run quiet
  * while the box does nothing is a hang. 0.5 is deliberately loose: a real
@@ -1261,11 +1286,11 @@ export function loadPerCpu(
  * {@link HANG_IDLE_LOAD_THRESHOLD}). Pure so the detector is unit-testable;
  * the runner calls it on a timer and, when true, kills that run's container.
  *
- * When load is unknown (`Infinity`), a quiet run is still called hung once output
- * has been idle for `thresholdMs` and either we never got a good sample or load
- * has been unknown that long — unless the host was **busy** the last time we
- * measured it (#0739: unreachable stats must not hold a slot until the outer SSH
- * timeout).
+ * When load is unknown (`Infinity`), a quiet run is NOT called hung just
+ * because the load probe failed: unknown load is treated as "we don't know if
+ * it's idle" (#1049), not as "it's idle". Only mark hung if the host was
+ * **busy** the last time we measured it, which proves the silence is not a
+ * probe failure (#0739).
  */
 /** Drop a generation-scoped in-flight control entry without touching a newer run (#0739). */
 export function deleteActiveRunControlEntry<T extends { generation: number }>(
@@ -1287,10 +1312,12 @@ export function detectHungRun(opts: {
   idleLoadThreshold?: number;
   /** Gate already finished — a quiet container is not a hang (#0739). */
   gateFinished?: boolean;
-  /** Last successful per-CPU load sample; used when `loadPerCpu` is unknown (#0739). */
+  /** Last successful per-CPU load sample; used when `loadPerCpu` is unknown (#1049). */
   lastKnownLoadPerCpu?: number;
   /** When load became unknown (failed probe); defaults to `lastOutputAt` (#0739). */
   loadUnknownSince?: number;
+  /** Host's own CPU activity on the container if available (#1049). */
+  containerCpuActive?: boolean;
 }): boolean {
   if (opts.gateFinished) return false;
   const idleThreshold = opts.idleLoadThreshold ?? HANG_IDLE_LOAD_THRESHOLD;
@@ -1300,8 +1327,11 @@ export function detectHungRun(opts: {
   if (!Number.isFinite(opts.loadPerCpu)) {
     const last = opts.lastKnownLoadPerCpu;
     if (last !== undefined && last >= idleThreshold) return false;
-    const unknownSince = opts.loadUnknownSince ?? opts.lastOutputAt;
-    return opts.now - unknownSince >= opts.thresholdMs;
+    // A failed or timed-out load probe never by itself marks a run hung (#1049).
+    // Only call it hung if containerCpuActive is explicitly false (host checked
+    // the container directly and it's not using CPU).
+    if (opts.containerCpuActive === false) return true;
+    return false;
   }
   return false;
 }
@@ -5400,6 +5430,35 @@ export class TailscaleRunner implements RemoteValidator {
    * Bounded hang recovery: kill the container, scrub bundle/artifacts, abort the
    * main SSH, and release the pool slot (#0739).
    */
+  private async captureHangEvidence(
+    host: RemoteHost,
+    containerName: string,
+  ): Promise<{ logs: string; state: string }> {
+    const logsCmd = `docker logs --tail 100 ${shellQuote(containerName)} 2>&1 || echo "(logs unavailable)"`;
+    const stateCmd = `docker inspect ${shellQuote(containerName)} 2>&1 || echo "(state unavailable)"`;
+
+    const logsRes = await execRemoteWithHardDeadline(
+      this.exec,
+      host,
+      logsCmd,
+      () => {},
+      5000, // short deadline for capture
+    ).catch(() => ({ timedOut: false, output: "(logs timed out)" }));
+
+    const stateRes = await execRemoteWithHardDeadline(
+      this.exec,
+      host,
+      stateCmd,
+      () => {},
+      5000, // short deadline for capture
+    ).catch(() => ({ timedOut: false, output: "(state timed out)" }));
+
+    return {
+      logs: logsRes.output || "(no logs)",
+      state: stateRes.output || "(no state)",
+    };
+  }
+
   private async finalizeHungKill(opts: {
     host: RemoteHost;
     containerName: string;
@@ -5408,7 +5467,16 @@ export class TailscaleRunner implements RemoteValidator {
     abortMain: () => void;
     releaseSlot: () => void;
     settleMain: () => void;
+    hangCondition?: "stream-silent" | "host-idle" | "container-inactive";
   }): Promise<void> {
+    // Capture evidence before killing (#1049)
+    const evidence = await this.captureHangEvidence(opts.host, opts.containerName).catch(
+      () => ({
+        logs: "(capture failed)",
+        state: "(capture failed)",
+      }),
+    );
+
     let killTimedOut = false;
     try {
       const killRes = await execRemoteWithHardDeadline(
@@ -5429,6 +5497,26 @@ export class TailscaleRunner implements RemoteValidator {
       () => {},
       this.timings.hangKillTimeoutMs,
     ).catch(() => undefined);
+
+    // Record hang event with evidence (#1049)
+    const condition = opts.hangCondition ?? "stream-silent";
+    appendRemoteValidationEvent(
+      this.config.root,
+      opts.taskId,
+      {
+        level: "warn",
+        phase: "run",
+        message: `killed as hung (${condition}) on ${opts.host.ip}`,
+        host: opts.host.ip,
+        infra: true,
+        hangEvidence: {
+          condition,
+          containerLogs: evidence.logs.slice(0, 2000), // limit output
+          containerState: evidence.state.slice(0, 2000),
+        },
+      },
+    );
+
     opts.abortMain();
     opts.releaseSlot();
     opts.settleMain();
@@ -5991,6 +6079,22 @@ export class TailscaleRunner implements RemoteValidator {
             });
         }, this.timings.loadSampleIntervalMs);
         loadTimer.unref?.();
+
+        // Periodically reap old leaked containers (#1049)
+        let reaperRunCount = 0;
+        const reaperTimer = setInterval(() => {
+          reaperRunCount++;
+          if (reaperRunCount % 7 === 0) { // Every 7 * 45s ≈ 5 min
+            void this.exec
+              .runRemote(host, reaperCommand(), () => {}, 30_000)
+              .catch(() => {
+                // Best effort, log failures for debug
+                this.logger?.system("info", `container reaper on ${host.ip} failed or timed out`);
+              });
+          }
+        }, this.timings.loadSampleIntervalMs);
+        reaperTimer.unref?.();
+
         const watchdog = new HangWatchdog({
           thresholdMs: hangIdleThresholdMs(hangIdleMinutes),
           checkIntervalMs: this.timings.hangCheckIntervalMs,
@@ -6012,6 +6116,7 @@ export class TailscaleRunner implements RemoteValidator {
               containerName,
               paths,
               taskId: opts.taskId,
+              hangCondition: "stream-silent",
               abortMain: () => abortMainRemote?.(),
               releaseSlot: () => slot.release(),
               settleMain: () => {
@@ -6081,6 +6186,7 @@ export class TailscaleRunner implements RemoteValidator {
         } finally {
           watchdog.stop();
           clearInterval(loadTimer);
+          clearInterval(reaperTimer);
           if (gateLingerTimer) clearTimeout(gateLingerTimer);
           if (runAbortGen !== undefined) {
             deleteActiveRunControlEntry(this.activeRunAbort, containerName, runAbortGen);

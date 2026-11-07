@@ -410,21 +410,25 @@ Three changes close that hole:
   and watches the output clock. If the output has not advanced for
   `hangIdleMinutes` (default **5**) *and* the host is idle (1-min load per CPU
   below `HANG_IDLE_LOAD_THRESHOLD`, `0.5`), the run is declared **hung**: the
-  runner removes that run's container, records the outcome as `hung`
-  (check-run history + structured event + the task's remote-validation log), and
-  returns a transient failure so `retryOtherHosts` retries it on another host.
-  Unknown load is never treated as idle. Tune the threshold with
-  `repoos.toml` /
+  runner captures the container's logs and state for inspection, removes that
+  run's container, records the outcome as `hung` (check-run history + structured
+  event with evidence + the task's remote-validation log), and returns a
+  transient failure so `retryOtherHosts` retries it on another host. Unknown load
+  (failed or timed-out probe) is treated as "we don't know if it's idle", not as
+  "it's idle": a stalled SSH pipe alone does not kill a container that is still
+  progressing on the host (#1049). Tune the threshold with `repoos.toml` /
   Settings (`remoteValidation.hangIdleMinutes`).
 
 **Cleanup.** Each run removes **only its own** `$WORK` tree and container in
 `validate.sh`'s `EXIT` trap — there is no global workdir sweep at startup
-anymore. Containers left behind by a killed/hung run are reaped two ways: that
-per-run trap, and the host prerequisite probe's **stale-container** sweep
+anymore. Containers left behind by a killed/hung run are reaped three ways: that
+per-run trap, the host prerequisite probe's **stale-container** sweep
 (`staleContainerCleanupCommand()`) — `repoos-validate-*` name prefix only, and
-**not** `status=running`, so a live sibling run is never removed. Safe GC of
-abandoned workdirs (age-bound, mount-aware) is deliberately future work; until
-then, rely on per-run EXIT cleanup plus non-running container sweeps.
+**not** `status=running`, so a live sibling run is never removed; and a periodic
+background reaper that removes leaked containers older than the run cap (25 min)
+(`reaperCommand()`) (#1049). Safe GC of abandoned workdirs (age-bound,
+mount-aware) is deliberately future work; until then, rely on per-run EXIT
+cleanup, non-running container sweeps, and the background reaper.
 
 **Bounded kill and slot release (#0739).** The hang kill is a separate SSH
 round-trip (30 s cap), raced against a **local** hard deadline so a wedged SSH
