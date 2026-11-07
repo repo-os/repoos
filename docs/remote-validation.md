@@ -435,16 +435,18 @@ anymore. Containers left behind by a killed/hung run are reaped three ways: that
 per-run trap, the host prerequisite probe's **stale-container** sweep
 (`staleContainerCleanupCommand()`) — `repoos-validate-*` name prefix only, and
 **not** `status=running`, so a live sibling run is never removed; and a periodic
-background reaper (`reaperCommand()`) (#1049). The periodic reaper considers
-containers only after the 25-minute run cap plus a 15-minute safety margin,
-excludes names currently owned by this server process, and rechecks Docker
+background reaper (`reaperCommand()`) (#1049). The run hard deadline has one
+source of truth: the maximum lock wait plus the run timeout (currently 15 + 25
+minutes). The periodic reaper considers a container only when it is older than
+that complete 40-minute legitimate lifetime plus a 5-minute safety margin. It
+also excludes names currently owned by this server process and rechecks Docker
 creation/state timestamps plus recent logs immediately before removal. Dispatch
 is held while the reaper runs and every removal is logged. Cross-process
-ownership is best-effort: the reaper does not claim a complete host-wide view of
-other RepoOS server processes, so the age margin and last-activity check are
-deliberately conservative safeguards. Safe GC of abandoned workdirs (age-bound,
-mount-aware) is deliberately future work; until then, rely on per-run EXIT
-cleanup, non-running container sweeps, and the background reaper.
+ownership is best-effort; safety comes from the shared hard-lifetime bound, the
+extra age margin, and the fresh activity check, rather than a complete host-wide
+ownership view. Safe GC of abandoned workdirs (age-bound, mount-aware) is
+deliberately future work; until then, rely on per-run EXIT cleanup, non-running
+container sweeps, and the background reaper.
 
 **Bounded kill and slot release (#0739).** The hang kill is a separate SSH
 round-trip (30 s cap), raced against a **local** hard deadline so a wedged SSH

@@ -794,6 +794,14 @@ export interface RunnerTimings {
 /** Default minutes with no output before a run is called hung (#0729). */
 export const DEFAULT_HANG_IDLE_MINUTES = 5;
 
+/** Default hard run budget; also used to derive the reaper's safe lifetime bound. */
+export const REMOTE_RUN_TIMEOUT_MS = 25 * 60_000;
+/** Default maximum wait for a remote host slot before the run deadline begins. */
+export const DEFAULT_HOST_LOCK_WAIT_SECS = 900;
+/** Longest legitimate container lifetime, including the full host-lock wait cap. */
+export const MAX_REMOTE_RUN_LIFETIME_MS =
+  REMOTE_RUN_TIMEOUT_MS + DEFAULT_HOST_LOCK_WAIT_SECS * 1000;
+
 /** Max wait for the hang-kill SSH before releasing the slot anyway (#0739). */
 export const HANG_KILL_TIMEOUT_MS = 30_000;
 
@@ -802,7 +810,7 @@ const DEFAULT_TIMINGS: RunnerTimings = {
   provisionTimeoutMs: 180_000,
   sshProbeIntervalMs: 3_000,
   sshWaitTimeoutMs: 120_000,
-  remoteRunTimeoutMs: 25 * 60_000,
+  remoteRunTimeoutMs: REMOTE_RUN_TIMEOUT_MS,
   probeTimeoutMs: 20_000,
   healthRetryMs: 30_000,
   backgroundProbeIntervalMs: 60_000,
@@ -1022,9 +1030,10 @@ export function cacheVolumeForSlot(base: string, slotIndex: number): string {
 export const VALIDATE_CONTAINER_PREFIX = "repoos-validate";
 
 export const CONTAINER_REAPER_INTERVAL_MS = 5 * 60_000;
-export const CONTAINER_REAPER_RUN_CAP_MS = 25 * 60_000;
-/** Extra age before an unowned container is eligible for a best-effort reap. */
-export const CONTAINER_REAPER_SAFETY_MARGIN_MS = 15 * 60_000;
+/** Backwards-named cap, now covering the entire maximum legitimate run lifetime. */
+export const CONTAINER_REAPER_RUN_CAP_MS = MAX_REMOTE_RUN_LIFETIME_MS;
+/** Extra age beyond every legitimate run deadline before best-effort reaping. */
+export const CONTAINER_REAPER_SAFETY_MARGIN_MS = 5 * 60_000;
 
 export function containerReaperDue(lastRunAt: number | undefined, now: number): boolean {
   return lastRunAt === undefined || now - lastRunAt >= CONTAINER_REAPER_INTERVAL_MS;
@@ -1098,7 +1107,7 @@ export function reaperInspectionIsStale(
 export function staleReaperCandidates(
   output: string,
   now: number,
-  maxAgeMs = 25 * 60_000,
+  maxAgeMs = CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS,
   activeContainerNames: ReadonlySet<string> = new Set(),
 ): ReaperCandidate[] {
   const cutoff = now - maxAgeMs;
@@ -1610,8 +1619,6 @@ export class HangWatchdog {
 
 /** Exit code a host-lock timeout uses — never a test suite's own exit. */
 export const HOST_LOCK_TIMEOUT_EXIT = 75;
-/** Default a run waits inside the host lock before giving up (15 min). */
-export const DEFAULT_HOST_LOCK_WAIT_SECS = 900;
 /**
  * A lock dir whose heartbeat stopped for this long belongs to a killed run;
  * break it. Deliberately SHORTER than {@link DEFAULT_HOST_LOCK_WAIT_SECS}: a
@@ -4226,7 +4233,7 @@ export class TailscaleHostPool {
               if (removed.code === 0 && !removed.timedOut) {
                 this.logger?.system(
                   "info",
-                  `remote validation Reaping stale validation container ${candidate.name} (older than 40 minutes with no recent activity) on ${s.spec.host}`,
+                  `remote validation Reaping stale validation container ${candidate.name} (older than ${Math.ceil((CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS) / 60_000)} minutes with no recent activity) on ${s.spec.host}`,
                 );
               } else {
                 this.logger?.system(
