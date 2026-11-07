@@ -321,3 +321,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T18:51:02Z · body
 - 2026-11-07T18:54:14Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-07T18:54:14Z · message_queued at 2026-11-07T18:54:14.497Z
+- 2026-11-07T18:54:14Z · message_delivered: 2 message(s)
