@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T21:23:42Z"
+updated_at: "2026-11-07T21:48:54Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -180,3 +180,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T21:18:54Z · note: handoff requested (cli)
 - 2026-11-07T21:23:23Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (831c9b037) during finalization (#0734)
 - 2026-11-07T21:23:42Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T21:48:54Z · message_queued at 2026-11-07T21:48:54.285Z
