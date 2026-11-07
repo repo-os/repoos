@@ -337,3 +337,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T19:48:42Z · message_delivered: 1 message(s)
 - 2026-11-07T19:48:43Z · note: handoff requested (cli)
 - 2026-11-07T19:51:35Z · status active→review
+- 2026-11-07T19:51:35Z · note: shots: skipped — 3 shots already captured — an engineer-made capture pre-empts the automatic one
