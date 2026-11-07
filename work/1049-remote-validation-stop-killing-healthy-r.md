@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
+last_handoff_failure_sha: 6215d2e31e4e97021e76e20c50a0152ec0df1b60
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
@@ -303,3 +305,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T17:55:04Z · note: handoff requested (cli)
 - 2026-11-07T17:58:14Z · message_queued at 2026-11-07T17:58:14.401Z
 - 2026-11-07T17:58:14Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
+
