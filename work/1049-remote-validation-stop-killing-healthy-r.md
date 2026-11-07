@@ -10,8 +10,9 @@ created_by: njachowski@gmail.com
 branch: ""
 cli_override: claude code
 model_override: haiku
+review_cli_override: codex
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T03:51:12Z"
+updated_at: "2026-11-07T03:51:16Z"
 ---
 ## Problem
 
@@ -56,3 +57,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T03:30:53Z · created · njachowski@gmail.com
 - 2026-11-07T03:51:05Z · cli_override, model_override
 - 2026-11-07T03:51:12Z · model_override
+- 2026-11-07T03:51:16Z · review_cli_override
