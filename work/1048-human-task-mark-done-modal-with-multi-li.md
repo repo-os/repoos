@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 678269
+last_close_out_gate_at: "2026-11-07T22:48:30.189Z"
 id: "1048"
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
@@ -13,7 +15,7 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T22:42:10Z"
+updated_at: "2026-11-07T22:48:30Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -197,3 +199,5 @@ right before writing new CSS.
 - 2026-11-07T21:40:41Z · message_queued at 2026-11-07T21:40:41.202Z
 - 2026-11-07T21:41:28Z · note: review pass 4: good to go
 - 2026-11-07T22:42:10Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-07T22:48:30Z · close-out gate completed in 678s
+
