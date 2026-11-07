@@ -749,6 +749,7 @@ export interface RepoOSConfig {
    */
   board?: {
     agentPopoverCloseSeconds?: number;
+    doneCollapsedByDefault?: boolean;
   };
   /**
    * Port `repoos serve` binds by default (overridable with `--port`). Unset
