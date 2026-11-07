@@ -291,6 +291,15 @@ describe("shot preview board fixtures (#0743)", () => {
       testsTotal: 645,
       lastProgressAt: expect.any(String),
     });
+    applyShotPreviewFixture(repo, "pipeline:checksProgress");
+    expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]).toMatchObject({
+      kind: "merge-gate",
+      testsDone: 3,
+      testsTotal: 680,
+      stepsDone: 3,
+      stepsTotal: 9,
+    });
+    expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBeUndefined();
     expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
     const hint = activeEngineerCardHint({
       taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
