@@ -1023,7 +1023,7 @@ const drawerStatusSummary = computed(() => {
   } else if (key === "checksRunning" && handoffBusy.value) {
     motion = "reviewing";
     lines = activeCheckRun.value
-      ? compactStatusLines(cardChecksHeading.value, where, cardProgressLine(activeCheckRun.value))
+      ? compactStatusLines(cardChecksHeading.value)
       : compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…");
   } else if (key === "integrating") {
     motion = "reviewing";
@@ -1031,7 +1031,9 @@ const drawerStatusSummary = computed(() => {
   } else if (key === "checksRunning") {
     motion = "reviewing";
     const heading = cardChecksHeading.value;
-    if (heading.startsWith("checking ·")) {
+    if (heading.startsWith("Checks ·")) {
+      lines = compactStatusLines(heading);
+    } else if (heading.startsWith("checking ·")) {
       // The card's live-check label already carries the step and elapsed time,
       // so only the scope/machine line adds anything.
       lines = compactStatusLines(heading, where);
@@ -5945,7 +5947,7 @@ watch(
               <span
                 v-if="
                   statusProgress?.attempt ||
-                  statusProgress?.machine ||
+                  checkMachine ||
                   repo.handoffStatuses[ui.active.id]?.attempt ||
                   repo.handoffStatuses[ui.active.id]?.machine
                 "
@@ -5954,12 +5956,10 @@ watch(
                     ? `attempt ${statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt}`
                     : ""
                 }}<template
-                  v-if="statusProgress?.machine ?? repo.handoffStatuses[ui.active.id]?.machine"
+                  v-if="checkMachine ?? repo.handoffStatuses[ui.active.id]?.machine"
                 >
                   · on
-                  {{
-                    statusProgress?.machine ?? repo.handoffStatuses[ui.active.id]?.machine
-                  }}</template
+                  {{ checkMachine ?? repo.handoffStatuses[ui.active.id]?.machine }}</template
                 ></span
               >
             </div>
