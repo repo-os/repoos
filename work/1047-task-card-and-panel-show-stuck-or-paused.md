@@ -98,3 +98,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T03:23:25Z · body
 - 2026-11-07T03:29:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T03:51:54Z · note: ui verification failed (14 issue(s)): [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/handoff-status (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/summary (http://127.0.0.1:54780/api/tasks/9999/summary); [request] Failed to load resource: the server responded with a stat
+- 2026-11-07T03:51:54Z · message_queued at 2026-11-07T03:51:54.881Z
