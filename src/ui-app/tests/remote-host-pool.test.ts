@@ -480,7 +480,7 @@ function poolFixture(opts: {
   validateStallNoAbortOn?: string[];
   /** Stream `repoos check` step headings so phase timings split build/tests (#0897). */
   streamStepHeadingsOn?: string[];
-  }): Fixture {
+}): Fixture {
   const root = tmpRoot();
   const config = {
     root,
