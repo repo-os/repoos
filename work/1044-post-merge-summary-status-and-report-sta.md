@@ -2,14 +2,14 @@
 id: 1044
 title: "Post-merge summary: status and report-state edge cases (follow-up to #1041)"
 type: bug
-status: inbox
+status: ready
 priority: p3
 area: [core, web]
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-06T22:50:03Z"
-updated_at: "2026-11-06T22:50:03Z"
+updated_at: "2026-11-07T06:24:31Z"
 ---
 ## Problem
 
@@ -37,3 +37,4 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 ## Activity
 
 - 2026-11-06T22:50:03Z · created · njachowski@gmail.com
+- 2026-11-07T06:24:31Z · status inbox→ready
