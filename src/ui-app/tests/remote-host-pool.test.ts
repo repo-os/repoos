@@ -43,8 +43,11 @@ import {
   detectHungRun,
   containerCpuCommand,
   containerReaperDue,
+  parseDockerCreatedTimestamp,
+  staleReaperCandidates,
   parseContainerCpuActive,
   reaperCommand,
+  reaperRemoveCommand,
   readRemoteValidationEvents,
   execRemoteWithHardDeadline,
   hangIdleThresholdMs,
@@ -2590,28 +2593,46 @@ describe("hang detector (#0729)", () => {
     expect(parseContainerCpuActive("12.4%")).toBe(true);
     expect(parseContainerCpuActive("")).toBeUndefined();
     expect(containerCpuCommand("run-1")).toContain("docker stats --no-stream");
-    expect(reaperCommand()).toContain("docker rm -f");
-    expect(reaperCommand()).toContain("1500");
-    expect(reaperCommand()).toContain("older than 25 minutes");
     expect(reaperCommand()).toContain("name=^/repoos-validate-");
-    expect(reaperCommand()).toContain('case "$name" in repoos-validate-*)');
-    expect(reaperCommand()).toContain("Reaping stale validation container");
-    const created = "2026-11-07T03:30:53.123456789Z";
-    const normalized = execFileSync(
-      "bash",
-      ["-c", `printf '%s' '${created}' | sed 's/\\.[0-9]*Z$/Z/'`],
-      { encoding: "utf8" },
-    );
-    expect(normalized).toBe("2026-11-07T03:30:53Z");
-    expect(Date.parse(normalized)).not.toBeNaN();
-    expect(reaperCommand()).toContain(`sed 's/\\.[0-9]*Z$/Z/'`);
-    expect(reaperCommand()).toContain(`date -j -f '%Y-%m-%dT%H:%M:%SZ' "$normalized"`);
+    expect(reaperCommand()).toContain('case "$name" in /repoos-validate-*)');
+    const createdWithZone = "2026-11-07T03:30:53.123456789Z";
+    const createdWithoutZone = "2026-11-07T03:30:53.123456789";
+    const expectedCreatedAt = Date.parse("2026-11-07T03:30:53.123Z");
+    expect(parseDockerCreatedTimestamp(createdWithZone)).toBe(expectedCreatedAt);
+    expect(parseDockerCreatedTimestamp(createdWithoutZone)).toBe(expectedCreatedAt);
+    expect(parseDockerCreatedTimestamp("not-a-docker-timestamp")).toBeUndefined();
+    expect(reaperCommand()).toContain(`name=^/repoos-validate-`);
+    expect(reaperCommand()).toContain("{{.Created}}");
+    expect(reaperCommand()).toContain("printf '%s\\t%s\\t%s\\n'");
+    expect(reaperCommand()).not.toContain("date -j");
+    expect(reaperCommand()).not.toContain("date -d");
+    expect(reaperRemoveCommand("0123456789ab")).toContain("docker rm -f '0123456789ab'");
+    expect(reaperRemoveCommand("not-an-id")).toBe("false");
+    const now = Date.parse("2026-11-07T04:00:00Z");
+    expect(
+      staleReaperCandidates(
+        [
+          `0123456789ab\t/repoos-validate-old\t${createdWithZone}`,
+          `0123456789ac\t/other-repoos-validate-old\t${createdWithZone}`,
+          `0123456789ad\t/repoos-validate-recent\t2026-11-07T03:50:00Z`,
+          `0123456789ae\t/repoos-validate-invalid\tnot-a-timestamp`,
+        ].join("\n"),
+        now,
+      ),
+    ).toEqual([
+      {
+        id: "0123456789ab",
+        name: "repoos-validate-old",
+        createdAt: expectedCreatedAt,
+      },
+    ]);
     expect(containerReaperDue(undefined, 1_000_000)).toBe(true);
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000)).toBe(true);
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000 - 1)).toBe(false);
   });
 
   it("schedules a reaper after a host becomes available and logs its output", async () => {
+    const staleCreatedAt = new Date(Date.now() - 26 * 60_000).toISOString();
     const runRemote = vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
       if (cmd.includes(PREREQ_OK_TOKEN)) {
         return {
@@ -2626,9 +2647,17 @@ describe("hang detector (#0729)", () => {
       if (cmd.includes("__HOST_LOCK__")) {
         return { code: 0, output: "__HOST_LOCK__\\n", timedOut: false };
       }
-      const output = "Reaping stale validation container repoos-validate-old";
-      onChunk?.(output);
-      return { code: 0, output, timedOut: false };
+      if (cmd === reaperCommand()) {
+        return {
+          code: 0,
+          output: `0123456789ab\t/repoos-validate-old\t${staleCreatedAt}`,
+          timedOut: false,
+        };
+      }
+      if (cmd === reaperRemoveCommand("0123456789ab")) {
+        return { code: 0, output: "", timedOut: false };
+      }
+      return { code: 1, output: "unexpected command", timedOut: false };
     });
     const logger = { system: vi.fn() };
     const pool = new TailscaleHostPool(
@@ -2653,9 +2682,12 @@ describe("hang detector (#0729)", () => {
     await tick(30);
 
     expect(runRemote.mock.calls.some(([, cmd]) => cmd === reaperCommand())).toBe(true);
+    expect(
+      runRemote.mock.calls.some(([, cmd]) => cmd === reaperRemoveCommand("0123456789ab")),
+    ).toBe(true);
     expect(logger.system).toHaveBeenCalledWith(
       "info",
-      "remote validation Reaping stale validation container repoos-validate-old on runner",
+      "remote validation Reaping stale validation container repoos-validate-old (older than 25 minutes) on runner",
     );
   });
 

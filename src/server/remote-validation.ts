@@ -1003,6 +1003,50 @@ export function containerReaperDue(lastRunAt: number | undefined, now: number): 
   return lastRunAt === undefined || now - lastRunAt >= CONTAINER_REAPER_INTERVAL_MS;
 }
 
+/** Parse Docker inspect's RFC3339 Created timestamp without depending on the runner OS date tool. */
+export function parseDockerCreatedTimestamp(created: string): number | undefined {
+  const value = created.trim();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/i.test(value)) {
+    return undefined;
+  }
+  // Docker emits UTC timestamps with Z. Treat an otherwise valid timestamp
+  // without a zone as UTC too, so parsing is stable on macOS and Linux hosts.
+  const normalized = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
+  const parsed = Date.parse(normalized);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+export interface ReaperCandidate {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
+/** Select old, exactly-prefixed containers from the tab-separated remote listing. */
+export function staleReaperCandidates(
+  output: string,
+  now: number,
+  maxAgeMs = 25 * 60_000,
+): ReaperCandidate[] {
+  const cutoff = now - maxAgeMs;
+  const prefix = `${VALIDATE_CONTAINER_PREFIX}-`;
+  return output.split(/\r?\n/).flatMap((line): ReaperCandidate[] => {
+    const [id, rawName, rawCreated] = line.split("\t");
+    const name = rawName?.replace(/^\//, "");
+    const createdAt = rawCreated ? parseDockerCreatedTimestamp(rawCreated) : undefined;
+    if (
+      !id ||
+      !/^[a-f\d]{12,64}$/i.test(id) ||
+      !name?.startsWith(prefix) ||
+      createdAt === undefined ||
+      createdAt >= cutoff
+    ) {
+      return [];
+    }
+    return [{ id, name, createdAt }];
+  });
+}
+
 /**
  * Name for one run's container, so a hang can `docker rm -f` exactly that run
  * and never a sibling's (#0729). `runId` is unique per run (a random suffix);
@@ -1251,27 +1295,27 @@ export function staleBundlePruneCommand(): string {
 }
 
 /**
- * Reap leaked containers older than the run cap (25 min) that no active run owns (#1049).
- * Run on each host periodically to clean up containers left behind by killed runs.
+ * List prefixed containers and their Docker creation timestamps (#1049).
+ * Timestamp comparison happens in TypeScript so the reaper is independent of
+ * GNU/BSD `date` parsing differences.
  */
 export function reaperCommand(): string {
-  // A validation run has a 25-minute hard cap, so a prefixed container older
-  // than that cannot belong to a live run. Docker supplies Created as RFC3339;
-  // accept both GNU and BSD date to support Linux and macOS runner hosts.
   return (
-    `cutoff=$(($(date +%s) - 1500)); ` +
     `docker ps -aq --filter ${shellQuote(`name=^/${VALIDATE_CONTAINER_PREFIX}-`)} ` +
-    `2>/dev/null | ` +
-    `while IFS= read -r id; do ` +
-    `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
-    `case "$name" in ${VALIDATE_CONTAINER_PREFIX}-*) ;; *) continue ;; esac; ` +
+    `2>/dev/null | while IFS= read -r id; do ` +
+    `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null || true); ` +
+    `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) ;; *) continue ;; esac; ` +
     `created=$(docker inspect -f '{{.Created}}' "$id" 2>/dev/null || true); ` +
-    `normalized=$(printf '%s' "$created" | sed 's/\\.[0-9]*Z$/Z/'); ` +
-    `ctime=$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "$normalized" +%s 2>/dev/null || ` +
-    `date -d "$created" +%s 2>/dev/null || echo 0); ` +
-    `if [ "$ctime" -gt 0 ] && [ "$ctime" -lt "$cutoff" ]; then ` +
-    `echo "Reaping stale validation container $name (older than 25 minutes)"; ` +
-    `docker rm -f "$id" >/dev/null 2>&1 || true; fi; done`
+    `printf '%s\\t%s\\t%s\\n' "$id" "$name" "$created"; done`
+  );
+}
+
+/** Remove one stale candidate after rechecking its exact name on the runner. */
+export function reaperRemoveCommand(id: string): string {
+  if (!/^[a-f\d]{12,64}$/i.test(id)) return "false";
+  return (
+    `name=$(docker inspect -f '{{.Name}}' ${shellQuote(id)} 2>/dev/null || true); ` +
+    `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) docker rm -f ${shellQuote(id)} ;; *) exit 1 ;; esac`
   );
 }
 
@@ -3993,16 +4037,32 @@ export class TailscaleHostPool {
       if (s.probed && containerReaperDue(lastReaperAt, now)) {
         this.lastReaperAt.set(s.spec.host, now);
         void this.exec
-          .runRemote(
-            s.ssh,
-            reaperCommand(),
-            (chunk) => {
-              const message = chunk.trim();
-              if (message)
-                this.logger?.system("info", `remote validation ${message} on ${s.spec.host}`);
-            },
-            30_000,
-          )
+          .runRemote(s.ssh, reaperCommand(), () => {}, 30_000)
+          .then(async (listing) => {
+            if (listing.code !== 0 || listing.timedOut) {
+              throw new Error("could not list validation containers");
+            }
+            const stale = staleReaperCandidates(listing.output, Date.now());
+            for (const candidate of stale) {
+              const removed = await this.exec.runRemote(
+                s.ssh,
+                reaperRemoveCommand(candidate.id),
+                () => {},
+                30_000,
+              );
+              if (removed.code === 0 && !removed.timedOut) {
+                this.logger?.system(
+                  "info",
+                  `remote validation Reaping stale validation container ${candidate.name} (older than 25 minutes) on ${s.spec.host}`,
+                );
+              } else {
+                this.logger?.system(
+                  "info",
+                  `container reaper could not remove ${candidate.name} on ${s.spec.host}`,
+                );
+              }
+            }
+          })
           .catch(() => {
             this.logger?.system("info", `container reaper on ${s.spec.host} failed or timed out`);
           });
