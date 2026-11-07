@@ -147,4 +147,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T18:15:54Z · body
 - 2026-11-07T18:28:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T18:54:01Z · status active→review
-
+- 2026-11-07T18:54:01Z · message_queued at 2026-11-07T18:54:01.797Z
