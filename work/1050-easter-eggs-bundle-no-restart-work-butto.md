@@ -2,7 +2,7 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -223,3 +223,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T23:39:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the scoped check passed, but RepoOS needs a new branch tip to retry the cached handoff failure. `repoos sync 1050` is unavailable during this active turn, and the task instructions prohibit manual staging and commits. No hando… · stderr: 2026-11-07T23:13:52.345681Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:14:09.106117Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:18:52.364442Z ERROR codex_models_manager::manager: failed to refres…
 - 2026-11-07T23:42:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T23:42:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the check passed, but RepoOS needs a new branch tip to retry the cached timeout. Sync refuses during this active turn, and the task instructions prohibit manual staging and commits. No handoff requested. · stderr: 2026-11-07T23:13:52.345681Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:14:09.106117Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:18:52.364442Z ERROR codex_models_manager::manager: failed to refres…
+- 2026-11-07T23:42:48Z · status active→review
