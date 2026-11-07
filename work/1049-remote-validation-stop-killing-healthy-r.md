@@ -64,3 +64,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T03:51:19Z · status ready→active, branch
 - 2026-11-07T04:04:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T04:12:50Z · handoff failed · remote validation failed: test failure: tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > shows hung · killing on the active run while the kill SSH is still pending (#0735), tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > kills a stalled run's container and retries it on another host, tests/remote-host-pool.test.ts > hung run recovery end to end (#0729) > settles validate when hang kill completes but main SSH never resolves and abort is a no-op (#0739) on mini — fix it in the feature branch and re-run the gate
+- 2026-11-07T04:12:50Z · message_queued at 2026-11-07T04:12:50.933Z
