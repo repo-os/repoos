@@ -72,3 +72,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T14:13:21Z · body
 - 2026-11-07T14:18:47Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-07T14:18:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: Implementing a shared checks status formatter and updating TaskCard, TaskDrawer, and tests. · stderr: (empty)
+- 2026-11-07T14:18:48Z · message_delivered: 5 message(s)
