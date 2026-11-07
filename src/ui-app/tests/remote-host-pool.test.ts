@@ -2792,7 +2792,7 @@ describe("hang detector (#0729)", () => {
     const wd = new HangWatchdog({
       thresholdMs: 300_000,
       loadPerCpu: () => load,
-      containerCpuActive: () => false,
+      containerCpuActive: () => (load < 0.5 ? false : undefined),
       onHung: () => {
         killed++;
       },
@@ -3442,6 +3442,7 @@ describe("hung run recovery end to end (#0729)", () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
       fixedLoad: 8, // busy: a stalled run may just be queued behind real work
+      containerCpuOutput: "1.0%", // this run is still progressing
       hangIdleMinutes: 0.0005,
       hangCheckIntervalMs: 15,
       loadSampleIntervalMs: 10,
