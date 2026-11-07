@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T10:27:39Z"
+updated_at: "2026-11-07T10:31:20Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T09:05:59.485Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer showing live check progress, attempt and machine (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work?task=1047&tab=changes (http://127.0.0.1:52490/work?shotState=closeOut:checkProgress)"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 5d7d4bce to a86da372) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -184,3 +184,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T10:27:38Z · queued message undelivered for 61m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-07T10:27:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: I found the two failures: the only named failing case was an existing timing-sensitive handoff test (“ignores a marker left behind by an earlier turn”), which failed in the full suite and then passed on retry in the focused run; the focuse… · stderr: 2026-11-07T09:50:51.105241Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T09:55:26.122075Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T10:00:01.136568Z ERROR codex_models_manager::manager: failed to refres…
 - 2026-11-07T10:27:39Z · message_delivered: 1 message(s)
+- 2026-11-07T10:31:20Z · message_queued at 2026-11-07T10:31:20.905Z
