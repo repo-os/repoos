@@ -72,12 +72,36 @@ const slowCheck = computed(() => notices.slowRunByTask[props.task.id]);
 const handoffProgress = computed(
   () =>
     repo.handoffStatuses[props.task.id]?.progress ??
-    (repo.taskChecks[props.task.id] ?? []).find(
-      (run) => run.running && run.kind === "handoff-finalize",
-    ) ??
+    (repo.taskChecks[props.task.id] ?? []).find((run) => run.running) ??
     null,
 );
 const handoffStatus = computed(() => repo.handoffStatuses[props.task.id] ?? null);
+const showCardCheckProgress = computed(() => {
+  const id = props.task.id;
+  return (
+    repo.handoffInFlight(id) ||
+    (repo.taskChecks[id] ?? []).some((run) => run.running) ||
+    !!repo.localCheckSlotForTask(id, Date.now())
+  );
+});
+const cardCheckProgressLabel = computed(() => {
+  const progress = handoffProgress.value;
+  if (progress) {
+    if (progress.stepsDone == null && progress.currentStep == null && progress.testsDone == null) {
+      return progress.stepName ? `Checking ${progress.stepName}` : "Starting…";
+    }
+    return checkProgressLabel(progress);
+  }
+  const step = handoffStatus.value?.step ?? repo.handoffSteps[props.task.id];
+  return step ? `Checking ${step}` : "Running checks";
+});
+const cardCheckProgressMetadata = computed(() => {
+  const attempt = handoffProgress.value?.attempt ?? handoffStatus.value?.attempt;
+  const machine = handoffProgress.value?.machine ?? handoffStatus.value?.machine;
+  return [attempt ? `attempt ${attempt}` : "", machine ? `on ${machine}` : ""]
+    .filter(Boolean)
+    .join(" · ");
+});
 
 /**
  * One chip per area (#0583). The parsed board payload carries `areas`;
@@ -1048,6 +1072,16 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-reviewing",
       };
     }
+    const activeCheckRun = (repo.taskChecks[t.id] ?? []).find((run) => run.running);
+    if (activeCheckRun) {
+      const elapsed = formatDuration(Math.max(0, now.value - Date.parse(activeCheckRun.startedAt)));
+      const step = activeCheckRun.stepName ?? "check";
+      return {
+        label: `running checks · ${step} · ${elapsed} · ${checkProgressLabel(activeCheckRun)}`,
+        title: "A check is running for this task",
+        cls: "tc-reviewing",
+      };
+    }
     if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
@@ -1638,7 +1672,7 @@ async function openDebuggerFromError(): Promise<void> {
           </svg>
         </span>
         <div
-          v-if="repo.handoffInFlight(task.id)"
+          v-if="showCardCheckProgress"
           class="check-progress task-card-check-progress"
           role="status"
           data-test-id="task-card-check-progress"
@@ -1650,26 +1684,8 @@ async function openDebuggerFromError(): Promise<void> {
             max="100"
             aria-label="Checks running progress"
           />
-          <span>{{
-            handoffProgress ? checkProgressLabel(handoffProgress) : "Running checks"
-          }}</span>
-          <span
-            v-if="
-              handoffProgress?.attempt ||
-              handoffProgress?.machine ||
-              handoffStatus?.attempt ||
-              handoffStatus?.machine
-            "
-          >
-            {{
-              (handoffProgress?.attempt ?? handoffStatus?.attempt)
-                ? `attempt ${handoffProgress?.attempt ?? handoffStatus?.attempt}`
-                : ""
-            }}
-            <template v-if="handoffProgress?.machine ?? handoffStatus?.machine">
-              · on {{ handoffProgress?.machine ?? handoffStatus?.machine }}</template
-            >
-          </span>
+          <span>{{ cardCheckProgressLabel }}</span>
+          <span v-if="cardCheckProgressMetadata">{{ cardCheckProgressMetadata }}</span>
         </div>
         <button
           ref="agentTrigger"

@@ -850,6 +850,11 @@ const cardChecksHeading = computed(() => {
       `running checks · ${step}${elapsed ? ` · ${elapsed}` : ""}${progress ? ` · ${checkProgressLabel(progress)}` : ""}`
     );
   }
+  if (activeCheckRun.value) {
+    const run = activeCheckRun.value;
+    const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
+    return `running checks · ${run.stepName ?? "check"} · ${elapsed} · ${checkProgressLabel(run)}`;
+  }
   if (inPipeline.value) {
     return integrationCardLabel.value ?? runningChecksLabel(false);
   }
@@ -7881,19 +7886,6 @@ watch(
   background: var(--panel);
   border-radius: 8px;
   border: 1px solid var(--border);
-}
-
-.check-progress {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: min(100%, 320px);
-  font-size: 12px;
-}
-
-.check-progress progress {
-  width: 120px;
-  accent-color: var(--accent);
 }
 
 .diff-stat-item {
