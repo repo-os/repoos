@@ -223,7 +223,12 @@ function serializeScalar(v: unknown): string {
   // Strings that look like YAML numbers must stay strings on a round trip.
   // This includes task IDs such as "1047", which the scalar parser otherwise
   // converts to a number and downstream ID parsers may discard.
-  if (/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(s) || /[:#\[\]{}",]/.test(s) || s.trim() !== s || s === "") {
+  if (
+    /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/.test(s) ||
+    /[:#\[\]{}",]/.test(s) ||
+    s.trim() !== s ||
+    s === ""
+  ) {
     return `"${s.replace(/"/g, '\\"')}"`;
   }
   return s;
