@@ -150,3 +150,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T08:59:04Z · body
 - 2026-11-07T09:01:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T09:02:47Z · handoff failed · check failed after 2 automatic retries · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+- 2026-11-07T09:02:47Z · message_queued at 2026-11-07T09:02:47.863Z
