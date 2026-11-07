@@ -1406,12 +1406,10 @@ export function detectHungRun(opts: {
   const idleThreshold = opts.idleLoadThreshold ?? HANG_IDLE_LOAD_THRESHOLD;
   const quietMs = opts.now - opts.lastOutputAt;
   if (quietMs < opts.thresholdMs) return false;
-  // A live container CPU sample is stronger evidence than a quiet SSH pipe or
-  // an otherwise idle host: the workload is still making progress.
-  if (opts.containerCpuActive === true) return false;
-  // The host checked this exact container: inactivity remains meaningful even
-  // when unrelated work keeps the host busy or the load probe has gone stale.
-  if (opts.containerCpuActive === false) return true;
+  // A sample for this exact container is authoritative: explicit activity
+  // protects progress, and explicit inactivity confirms a hang regardless of
+  // host load. Host load only gates the decision when no container sample exists.
+  if (opts.containerCpuActive !== undefined) return !opts.containerCpuActive;
   if (opts.loadPerCpu < idleThreshold) return true;
   if (!Number.isFinite(opts.loadPerCpu)) {
     const last = opts.lastKnownLoadPerCpu;
