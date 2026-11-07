@@ -999,7 +999,9 @@ const drawerStatusSummary = computed(() => {
     lines = compactStatusLines(cardChecksHeading.value);
   } else if (key === "checksRunning" && handoffBusy.value) {
     motion = "reviewing";
-    lines = compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…");
+    lines = activeCheckRun.value
+      ? compactStatusLines(cardChecksHeading.value, where, cardProgressLine(activeCheckRun.value))
+      : compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…");
   } else if (key === "integrating") {
     motion = "reviewing";
     lines = compactStatusLines(integrationCardLabel.value ?? "integrating");
