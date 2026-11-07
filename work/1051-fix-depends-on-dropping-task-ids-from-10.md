@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-07T15:28:00Z"
-review_passes: 1
 id: 1051
 title: "Fix depends_on dropping task ids from 1000 up (written unquoted, parsed as number)"
 type: bug
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/fix-depends-on-dropping-task-ids-from-10
 created_at: "2026-11-07T07:23:45Z"
+updated_at: "2026-11-07T15:25:40Z"
 ---
 ## Problem
 
@@ -41,10 +40,4 @@ Cause (read from the code): `repoos update --depends-on` writes the frontmatter 
 - 2026-11-07T07:23:45Z · created · njachowski@gmail.com
 - 2026-11-07T13:57:25Z · status inbox→ready
 - 2026-11-07T14:48:21Z · status ready→active, branch
-- 2026-11-07T15:13:45Z · body
-- 2026-11-07T15:18:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T15:25:40Z · status active→review
-- 2026-11-07T15:25:40Z · message_queued at 2026-11-07T15:25:40.767Z
-- 2026-11-07T15:25:41Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-07T15:27:59Z · note: review pass 1: good to go
-
