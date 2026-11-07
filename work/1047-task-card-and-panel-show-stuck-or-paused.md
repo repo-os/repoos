@@ -159,3 +159,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T08:36:37Z · message_queued at 2026-11-07T08:36:37.066Z
 - 2026-11-07T08:36:37Z · message_delivered: 2 message(s)
 - 2026-11-07T08:41:20Z · message_queued at 2026-11-07T08:41:20.196Z
+- 2026-11-07T08:41:20Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
