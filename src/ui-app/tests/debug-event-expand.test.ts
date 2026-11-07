@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
@@ -109,5 +109,39 @@ describe("DebugPanel expanded rows (#0829)", () => {
     const detail = wrapper.get(".debug-log-inline");
     expect(detail.text()).toContain('"from"');
     wrapper.unmount();
+  });
+
+  it("renders every line of a multiline activity report when expanded", async () => {
+    const report =
+      "note: Tested lid-close behavior.\n\n- **Observed:** the device stayed awake.\n- **Not verified:** battery-only operation.";
+    const activity = `- 2026-11-07T03:00:00Z · ${report.replace(/\n/g, "\n> ")}`;
+    const task = {
+      ...TASK,
+      body: `## Activity\n\n${activity}\n`,
+    } as Task;
+    const scrollWidth = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(300);
+    const clientWidth = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(80);
+    let wrapper: ReturnType<typeof mount> | undefined;
+
+    try {
+      wrapper = mount(DebugPanel, {
+        props: { task },
+        global: { plugins: [createPinia()], stubs: { teleport: true } },
+        attachTo: document.body,
+      });
+      await nextTick();
+      await nextTick();
+
+      const row = wrapper.get('.debug-event[data-debug-event^="activity-"]');
+      expect(row.classes()).toContain("debug-event-expandable");
+      await row.trigger("click");
+      await nextTick();
+
+      expect(wrapper.get(".debug-event-message").text()).toBe(report);
+    } finally {
+      wrapper?.unmount();
+      scrollWidth.mockRestore();
+      clientWidth.mockRestore();
+    }
   });
 });
