@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/human-task-mark-done-modal-with-multi-li
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T15:23:42Z"
+updated_at: "2026-11-07T15:25:45Z"
 ---
 ## Problem
 
@@ -83,7 +83,7 @@ right before writing new CSS.
 "highlight": ".human-done-modal",
 "steps": [
 {
-  "click": ".drawer-human-task button"
+"click": ".drawer-human-task button"
 }
 ],
 "state": "card:humanStep"
@@ -102,3 +102,4 @@ right before writing new CSS.
 - 2026-11-07T15:06:28Z · body
 - 2026-11-07T15:23:41Z · message_queued at 2026-11-07T15:23:41.834Z
 - 2026-11-07T15:23:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-07T15:25:45Z · CTO nudge: held — an undelivered message is already queued
