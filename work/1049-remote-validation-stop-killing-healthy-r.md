@@ -2,7 +2,7 @@
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: review
+status: active
 priority: p0
 area: server
 assigned_to: ai
@@ -255,4 +255,3 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T16:34:16Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-07T16:34:16Z · message_queued at 2026-11-07T16:34:16.704Z
 - 2026-11-07T16:34:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
-- 2026-11-07T16:34:17Z · status active→review
