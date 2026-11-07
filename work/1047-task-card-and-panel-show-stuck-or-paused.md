@@ -150,3 +150,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T08:03:34Z · note: handoff requested (cli)
 - 2026-11-07T08:06:20Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T08:15:44Z · message_queued at 2026-11-07T08:15:44.688Z
+- 2026-11-07T08:15:44Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 5d7d4bce to a86da372) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
