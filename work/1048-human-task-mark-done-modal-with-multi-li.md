@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-07T21:41:28Z"
+review_passes: 4
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
@@ -13,11 +15,9 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T21:41:28Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 3
 last_check_failure: "repoos check at 2026-11-07T20:37:20.985Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
@@ -196,3 +196,4 @@ right before writing new CSS.
 - 2026-11-07T21:40:40Z · status active→review
 - 2026-11-07T21:40:41Z · message_queued at 2026-11-07T21:40:41.202Z
 - 2026-11-07T21:41:28Z · note: review pass 4: good to go
+
