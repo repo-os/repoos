@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T15:39:10Z"
+updated_at: "2026-11-07T15:39:13Z"
 ---
 ## Problem
 After #1047, the Active task card is too busy while checks run, and the green bar is misleading. `checkProgressPercent()` (src/ui-app/src/lib/check-progress.ts) only returns a number when the server reports step counts or test-file counts. When a handoff reuses an earlier check ("reused check 14098") or is in a handoff stage with no counts (e.g. "Checking review"), the bar falls back to the generic sliding animation, which says nothing the old animation didn't. The same state is also shown three times on the card: the bottom "RUNNING CHECKS · CHECK · 41s" hint, the bar + "Checking review · attempt 13", and (in the drawer) a "Checks failed" box whose badge contradicts its "running checks" line.
@@ -106,3 +106,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T15:35:03Z · body
 - 2026-11-07T15:36:23Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T15:39:10Z · message_queued at 2026-11-07T15:39:10.779Z
+- 2026-11-07T15:39:13Z · message_delivered: 1 message(s)
