@@ -50,7 +50,7 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 "highlight": "[data-task-id=\"9999\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"engineering-report-tab\"]"
+"click": "[data-test-id=\"engineering-report-tab\"]"
 }
 ],
 "state": "drawer:engineeringReports"
