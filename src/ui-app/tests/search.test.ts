@@ -90,6 +90,13 @@ const fields: ConfigField[] = [
 ];
 
 describe("searchAll", () => {
+  it("finds an old Done task among 1,000 tasks by id", () => {
+    const many = Array.from({ length: 1000 }, (_, i) =>
+      makeTask({ id: String(i).padStart(4, "0"), status: "done" }),
+    );
+    const hits = searchAll("0000", { tasks: many, docs: [], fields: [] });
+    expect(hits.some((hit) => hit.kind === "task" && hit.task.id === "0000")).toBe(true);
+  });
   it("returns nothing for an empty or whitespace query", () => {
     expect(searchAll("", { tasks, docs, fields })).toEqual([]);
     expect(searchAll("   ", { tasks, docs, fields })).toEqual([]);

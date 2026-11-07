@@ -11,7 +11,7 @@ created_by: njachowski@gmail.com
 branch: feat/repoos-message-and-send-back-accept-stdi
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T07:57:47Z"
-updated_at: "2026-11-07T13:11:49Z"
+updated_at: "2026-11-07T13:16:30Z"
 last_close_out_gate_ms: 748617
 last_close_out_gate_at: "2026-11-07T13:10:07.837Z"
 review_passes: 1
@@ -55,3 +55,4 @@ review_passes: 1
 - 2026-11-07T12:54:57Z · note: review pass 1: good to go
 - 2026-11-07T13:10:07Z · close-out gate completed in 749s
 - 2026-11-07T13:11:49Z · status done→done, release:success
+- 2026-11-07T13:16:30Z · message_dropped: 1 queued message(s) discarded — task is done

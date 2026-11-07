@@ -2,15 +2,23 @@
 id: 1053
 title: "Board: Done column lazy-renders and starts collapsed (measure load before/after with ~1000 done tasks)"
 type: feature
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: c65aed27296622500c64a1374e358f0b1cfc7d6f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/board-done-column-lazy-renders-and-start
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T08:04:58Z"
-updated_at: "2026-11-07T13:13:43Z"
+updated_at: "2026-11-07T14:48:06Z"
+last_close_out_gate_ms: 244918
+last_close_out_gate_at: "2026-11-07T14:45:58.572Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T14:45:57.605Z: repoos check failed: reused check inputs changed during handoff — run the check again"
+last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
+last_handoff_failure_sha: 4c9226dc08783300b496bbfd319929e2a58aa304
+review_passes: 1
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -57,7 +65,7 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 "highlight": "[data-board-column=\"done\"]",
 "steps": [
 {
-  "click": "[data-board-column=\"done\"] .col-head"
+"click": "[data-board-column=\"done\"] .col-head"
 }
 ]
 }
@@ -74,3 +82,30 @@ The work board renders every done task. On 2026-11-07 the board had 997 tasks (9
 - 2026-11-07T12:51:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1053 remains incomplete, so I have not requested handoff. I collected a preliminary three-run baseline with 1,000 synthetic Done tasks: each run rendered 1,000 Done cards and 21,053 board descendant elements. The median navigation-to… · stderr: Reading additional input from stdin...
 - 2026-11-07T13:04:11Z · body
 - 2026-11-07T13:13:43Z · note: adopted orphaned engineer pid 10769
+- 2026-11-07T13:17:07Z · body
+- 2026-11-07T13:23:41Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T13:49:56Z · message_queued at 2026-11-07T13:49:56.588Z
+- 2026-11-07T13:49:59Z · message_delivered: 1 message(s)
+- 2026-11-07T13:51:40Z · note: handoff requested (cli)
+- 2026-11-07T14:14:57Z · message_queued at 2026-11-07T14:14:57.222Z
+- 2026-11-07T14:14:57Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-07T14:14:57Z · message_delivered: 1 message(s)
+- 2026-11-07T14:15:11Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (4c9226dc0) during finalization (#0734)
+- 2026-11-07T14:18:41Z · CTO nudge: held — remote validation is running
+- 2026-11-07T14:21:49Z · message_queued at 2026-11-07T14:21:49.003Z
+- 2026-11-07T14:23:42Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-07T14:32:47Z · body
+- 2026-11-07T14:39:04Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-07T14:39:04Z · message_queued at 2026-11-07T14:39:04.936Z
+- 2026-11-07T14:39:05Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: 2026-11-07T14:15:00.479914Z ERROR codex_core::util: Custom tool call output is missing for call id: call_da9f40304d784958abd88c4a5cfb3dbb 2026-11-07T14:15:08.651965Z ERROR codex_core::util: Custom tool call output is missing for call id: call_da9f40304d784958abd88c4a5cfb3dbb 2026-11-07T14:15:11.093526Z ERROR codex_cor…
+- 2026-11-07T14:39:05Z · status active→review
+- 2026-11-07T14:39:05Z · message_delivered: 2 message(s)
+- 2026-11-07T14:39:06Z · note: handoff requested (cli)
+- 2026-11-07T14:39:18Z · status active→review
+- 2026-11-07T14:39:18Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-07T14:41:33Z · note: review pass 1: good to go
+- 2026-11-07T14:45:42Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
+- 2026-11-07T14:45:54Z · message_queued at 2026-11-07T14:45:54.158Z
+- 2026-11-07T14:45:57Z · message_delivered: 1 message(s)
+- 2026-11-07T14:45:58Z · close-out gate completed in 245s
+- 2026-11-07T14:48:06Z · status done→done, release:success
