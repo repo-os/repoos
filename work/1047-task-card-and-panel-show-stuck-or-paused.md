@@ -1,6 +1,6 @@
 ---
 id: 1047
-title: Task card and panel show stuck or paused while the server is running handoff checks
+title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
 status: inbox
 priority: p2
@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T00:21:00Z"
+updated_at: "2026-11-07T00:29:44Z"
 ---
 ## Problem
 
@@ -35,6 +35,19 @@ Cause found: `handoffInFlight(id)` in `src/ui-app/src/stores/repo.ts` (about lin
 
 Start from `TaskCard.vue` (the active branch of the status hint, about lines 985-1050, and the onMounted hydration), `stores/repo.ts` (`handoffInFlight`, `handoffSteps`, `refreshTaskChecks`) and the auto-repair hint code that produces "stuck · silent". Prefer polling or snapshotting the existing handoff status over adding a new store.
 
+## Progress bar (bring it back)
+The task panel used to show a realtime progress bar for checks and tests. It still exists in code but is switched off: `TaskDrawer.vue` has the block `v-if="false && inPipeline && activeCheckRun"` (data-test-id `close-out-check-progress`, a `<progress>` plus `checkProgressLabel`), disabled by #0952 on 2026-10-25 when the status card was redesigned, and it was only ever placed in the review and close-out button area.
+
+Wanted: a progress bar in the task panel status card above the tabs, visible whenever a handoff, check or close-out gate is running for the task:
+- Percent from steps done over total (`checkProgressPercent`), with the label from `checkProgressLabel` (e.g. "step 5 of 12 · tests 140/289 files") and the current step name; when totals are unknown show the step count without inventing a percent.
+- Test progress (files done over total) while the tests step runs, driven by the `::repoos-check-progress::` markers the check already emits (`stepsDone`, `stepsTotal`, `currentStep`, `stepName`, `testsDone`, `testsTotal`) and parsed in `stores/repo.ts` (~line 2062).
+- It must work after a reload and for CLI-requested and server-side runs, so the progress has to come from the server's handoff status or a snapshot field, not only from the in-memory `repo.taskChecks` list (which was empty for #1046's server-side check). Include progress in the handoff status the card reads.
+- The task card gets a thin version of the same bar.
+- Also show attempt number and which machine runs it, as the old block did.
+- Accessible: `role="progressbar"` with values, or the native `<progress>`, readable and not colour-only.
+
+Acceptance: a task whose handoff checks run shows the bar in the panel above the tabs and on the card, advancing as steps and test files complete, after a reload; a test covers percent, unknown totals and the reload case; a declared shot (fixture `shot-check-progress` already exists in `shot-preview-fixtures.ts`) shows the bar.
+
 ## Screenshots
 
 ![11](/api/tasks/1047/attachments/att_d53d06e7-472f-4f22-8ab7-98a6aebeaed6.png)
@@ -44,3 +57,4 @@ Start from `TaskCard.vue` (the active branch of the status hint, about lines 985
 
 - 2026-11-07T00:21:00Z · created · njachowski@gmail.com
 - 2026-11-07T00:21:00Z · screenshots
+- 2026-11-07T00:29:44Z · title, body: Progress bar (bring it back) (added)
