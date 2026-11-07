@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-07T19:05:31Z"
+review_passes: 1
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
@@ -13,7 +15,6 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T19:05:31Z"
 last_check_failure: "repoos check at 2026-11-07T17:13:53.063Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Human task completion report modal (target \"default\"): click .drawer-human-task button: click: Timeout 5000ms exceeded. on /work?task=1048&tab=changes (http://127.0.0.1:51741/work?shotState=card:humanStep); [missing-target] Human task completion report modal (target \"default\"): highlight .human-done-modal matched nothing on /work?task=1048&tab=changes (http://127.0.0.1:51741/work?shotState=card:humanStep)"
 ---
 ## Problem
@@ -155,3 +156,4 @@ right before writing new CSS.
 - 2026-11-07T19:04:43Z · status active→review
 - 2026-11-07T19:04:44Z · message_queued at 2026-11-07T19:04:44.175Z
 - 2026-11-07T19:05:31Z · note: review pass 1: needs some work
+
