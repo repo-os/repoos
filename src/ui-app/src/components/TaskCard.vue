@@ -47,6 +47,8 @@ import {
   STARTING_LABEL,
   runningChecksLabel,
 } from "../lib/task-status-copy";
+import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
+import { formatDuration } from "../lib/time";
 import { useNow } from "../composables/useNow";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { Clock3 } from "lucide-vue-next";
@@ -67,6 +69,42 @@ const notices = useNoticesStore();
 
 /** Live slow-check flag from the attention feed (#0720). */
 const slowCheck = computed(() => notices.slowRunByTask[props.task.id]);
+const handoffProgress = computed(
+  () =>
+    (repo.taskChecks[props.task.id] ?? []).find((run) => run.running) ??
+    repo.handoffStatuses[props.task.id]?.progress ??
+    null,
+);
+const cardCheckProgressPercent = computed(() =>
+  handoffProgress.value ? checkProgressPercent(handoffProgress.value) : null,
+);
+const handoffStatus = computed(() => repo.handoffStatuses[props.task.id] ?? null);
+const showCardCheckProgress = computed(() => {
+  const id = props.task.id;
+  return (
+    repo.handoffInFlight(id) ||
+    (repo.taskChecks[id] ?? []).some((run) => run.running) ||
+    !!repo.localCheckSlotForTask(id, Date.now())
+  );
+});
+const cardCheckProgressLabel = computed(() => {
+  const progress = handoffProgress.value;
+  if (progress) {
+    if (progress.stepsDone == null && progress.currentStep == null && progress.testsDone == null) {
+      return progress.stepName ? `Checking ${progress.stepName}` : "Starting…";
+    }
+    return checkProgressLabel(progress);
+  }
+  const step = handoffStatus.value?.step ?? repo.handoffSteps[props.task.id];
+  return step ? `Checking ${step}` : "Running checks";
+});
+const cardCheckProgressMetadata = computed(() => {
+  const attempt = handoffProgress.value?.attempt ?? handoffStatus.value?.attempt;
+  const machine = handoffProgress.value?.machine ?? handoffStatus.value?.machine;
+  return [attempt ? `attempt ${attempt}` : "", machine ? `on ${machine}` : ""]
+    .filter(Boolean)
+    .join(" · ");
+});
 
 /**
  * One chip per area (#0583). The parsed board payload carries `areas`;
@@ -400,10 +438,29 @@ onMounted(() => {
   // Hydrate check runs so a reload mid-handoff still reads "running checks"
   // instead of "paused" (SSE only delivers events from now on).
   const id = props.task.id;
+  if (props.task.status === "active") {
+    void repo.refreshHandoffStatus(id);
+    void repo.refreshLocalCheckSlots();
+  }
   if (props.task.status === "active" && repo.taskChecks[id] === undefined) {
     void repo.refreshTaskChecks(id);
   }
   syncCardRemotePoll(id, props.task.status, repo.isRunning(id));
+});
+
+let handoffStatusPoll: number | undefined;
+watch(
+  () => [props.task.id, props.task.status, repo.handoffStatuses[props.task.id]?.state] as const,
+  ([id, status, handoffState]) => {
+    if (handoffStatusPoll) window.clearInterval(handoffStatusPoll);
+    handoffStatusPoll = undefined;
+    if (status !== "active" || handoffState !== "running") return;
+    handoffStatusPoll = window.setInterval(() => void repo.refreshHandoffStatus(id), 3_000);
+  },
+  { immediate: true },
+);
+onUnmounted(() => {
+  if (handoffStatusPoll) window.clearInterval(handoffStatusPoll);
 });
 
 watch(
@@ -690,6 +747,7 @@ const activeEngineerEvidence = computed(() =>
     taskChecks: repo.taskChecks[props.task.id],
     remoteActivity: repo.taskRemoteActivity[props.task.id],
     resourceQueueMarkers: repo.resourceQueueMarkers,
+    localCheckSlot: repo.localCheckSlotForTask(props.task.id, Math.max(now.value, Date.now())),
   }),
 );
 
@@ -994,6 +1052,39 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
+    if (repo.handoffInFlight(t.id)) {
+      const status = repo.handoffStatuses[t.id];
+      const run = (repo.taskChecks[t.id] ?? []).find((item) => item.running);
+      const startedAt = status?.startedAt ?? run?.startedAt;
+      const elapsed = startedAt
+        ? formatDuration(Math.max(0, now.value - Date.parse(startedAt)))
+        : null;
+      const stage = status?.step ?? repo.handoffSteps[t.id] ?? (run ? "check" : "starting");
+      return {
+        label: `running checks · ${stage}${elapsed ? ` · ${elapsed}` : ""}${run ? ` · ${checkProgressLabel(run)}` : ""}`,
+        title: "RepoOS is finalizing this task and running its checks",
+        cls: "tc-reviewing",
+      };
+    }
+    const localCheckSlot = repo.localCheckSlotForTask(t.id, now.value);
+    if (localCheckSlot) {
+      const elapsed = formatDuration(localCheckSlot.ageMs);
+      return {
+        label: `running checks · check · ${elapsed}`,
+        title: `A local check slot is held for this task · running for ${elapsed}.`,
+        cls: "tc-reviewing",
+      };
+    }
+    const activeCheckRun = (repo.taskChecks[t.id] ?? []).find((run) => run.running);
+    if (activeCheckRun) {
+      const elapsed = formatDuration(Math.max(0, now.value - Date.parse(activeCheckRun.startedAt)));
+      const step = activeCheckRun.stepName ?? "check";
+      return {
+        label: `running checks · ${step} · ${elapsed}`,
+        title: "A check is running for this task",
+        cls: "tc-reviewing",
+      };
+    }
     if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
@@ -1583,6 +1674,30 @@ async function openDebuggerFromError(): Promise<void> {
             />
           </svg>
         </span>
+        <div
+          v-if="showCardCheckProgress"
+          class="check-progress task-card-check-progress"
+          role="status"
+          data-test-id="task-card-check-progress"
+        >
+          <span
+            class="check-progress-meter"
+            :class="{ 'is-indeterminate': cardCheckProgressPercent == null }"
+          >
+            <progress
+              :value="cardCheckProgressPercent ?? undefined"
+              max="100"
+              aria-label="Checks running progress"
+            />
+            <span
+              v-if="cardCheckProgressPercent == null"
+              class="check-progress-indeterminate"
+              aria-hidden="true"
+            />
+          </span>
+          <span>{{ cardCheckProgressLabel }}</span>
+          <span v-if="cardCheckProgressMetadata">{{ cardCheckProgressMetadata }}</span>
+        </div>
         <button
           ref="agentTrigger"
           type="button"

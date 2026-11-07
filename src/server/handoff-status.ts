@@ -37,6 +37,20 @@ export interface HandoffStatus {
   outcomeQueued: boolean;
   /** ISO timestamp of the last state change, or null when never requested. */
   updatedAt: string | null;
+  /** Latest progress marker emitted by the active `repoos check`, when available. */
+  progress?: {
+    stepsDone?: number;
+    stepsTotal?: number;
+    currentStep?: number;
+    stepName?: string | null;
+    testsDone?: number;
+    testsTotal?: number;
+    testsPass?: number;
+    attempt?: number;
+    reason?: string;
+  } | null;
+  machine?: string | null;
+  startedAt?: string | null;
 }
 
 /** Maximum characters of a failure reason surfaced in a status read or message. */
@@ -55,6 +69,9 @@ export function emptyHandoffStatus(taskId: string): HandoffStatus {
     attemptKey: null,
     outcomeQueued: false,
     updatedAt: null,
+    progress: null,
+    machine: null,
+    startedAt: null,
   };
 }
 
@@ -102,6 +119,9 @@ export function readHandoffStatus(config: RepoOSConfig, taskId: string): Handoff
       attemptKey: typeof parsed.attemptKey === "string" ? parsed.attemptKey : null,
       outcomeQueued: parsed.outcomeQueued === true,
       updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : null,
+      progress: parsed.progress && typeof parsed.progress === "object" ? parsed.progress : null,
+      machine: typeof parsed.machine === "string" ? parsed.machine : null,
+      startedAt: typeof parsed.startedAt === "string" ? parsed.startedAt : null,
     };
   } catch {
     // A corrupt status file must never break the handoff path.
@@ -150,6 +170,7 @@ export function beginHandoffStatus(
     attemptKey: opts.attemptKey,
     outcomeQueued: false,
     updatedAt: new Date().toISOString(),
+    startedAt: new Date().toISOString(),
   };
   writeHandoffStatus(config, next);
   return next;
@@ -165,6 +186,18 @@ export function updateHandoffStatusStep(
   const current = readHandoffStatus(config, taskId);
   if (current.state !== "running" || current.attemptKey !== attemptKey) return;
   writeHandoffStatus(config, { ...current, step, updatedAt: new Date().toISOString() });
+}
+
+/** Snapshot check progress into the durable handoff status for reloads and other devices. */
+export function updateHandoffStatusProgress(
+  config: RepoOSConfig,
+  taskId: string,
+  attemptKey: string,
+  progress: NonNullable<HandoffStatus["progress"]>,
+): void {
+  const current = readHandoffStatus(config, taskId);
+  if (current.state !== "running" || current.attemptKey !== attemptKey) return;
+  writeHandoffStatus(config, { ...current, progress, updatedAt: new Date().toISOString() });
 }
 
 /** Record the terminal pass/fail result of an attempt. */

@@ -17,6 +17,7 @@ import {
   shotFixturePinnedWorkingDiff,
   shotFixtureSchedules,
   shotPreviewSkipsEngineeringReportsFetch,
+  shotPreviewSkipsIntegrationJobFetch,
   shotPreviewSkipsTaskSummaryFetch,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
@@ -27,6 +28,7 @@ import { integrationMedianChip } from "../src/lib/integration-pipeline-ui";
 import { shotProblems } from "../src/lib/shot-rows";
 import { isDocsShotSkip, shotVerdict } from "../src/lib/handoff-verification";
 import { activeEngineerCardHint } from "../src/lib/active-task-card";
+import { makeTask } from "./component-test-helpers";
 
 describe("shot preview board fixtures (#0743)", () => {
   it.each(["card:held", "drawer:held"] as const)("seeds an intentional hold for %s", (fixture) => {
@@ -300,6 +302,31 @@ describe("shot preview board fixtures (#0743)", () => {
     });
     expect(hint.label).toContain("checking");
     expect(hint.label).toContain("109/645");
+  });
+
+  it("seeds close-out progress on the deep-linked task without creating a fake task", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    const task = makeTask({ id: "1047", status: "active" });
+    repo.tasks.push(task);
+    window.history.replaceState(
+      {},
+      "",
+      "/work?task=1047&tab=changes&shotState=closeOut%3AcheckProgress",
+    );
+
+    applyShotPreviewFixture(repo, "closeOut:checkProgress");
+
+    expect(task.status).toBe("active");
+    expect(repo.taskChecks[task.id]?.[0]).toMatchObject({
+      taskId: "1047",
+      running: true,
+      attempt: 2,
+      machine: "bee",
+    });
+    expect(repo.integration?.active?.taskId).toBe("1047");
+    expect(repo.tasks.some((item) => item.id === SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
+    window.history.replaceState({}, "", "/");
   });
 
   it("seeds an active coding run for board card indicator shots (#0787)", () => {
@@ -850,6 +877,17 @@ describe("shot preview board fixtures (#0743)", () => {
       shotPreviewSkipsEngineeringReportsFetch({ search: "?task=9999&tab=review" }, "9999"),
     ).toBe(false);
     expect(shotPreviewSkipsTaskSummaryFetch({ search: "?task=9999&tab=agent" }, "9999")).toBe(
+      false,
+    );
+  });
+
+  it("skips the integration job read for a client-seeded drawer during capture", () => {
+    const during = {
+      search: "?task=1047&tab=changes&shotState=closeOut:checkProgress",
+    };
+    expect(shotPreviewSkipsIntegrationJobFetch(during, "1047")).toBe(true);
+    expect(shotPreviewSkipsIntegrationJobFetch(during, "1048")).toBe(false);
+    expect(shotPreviewSkipsIntegrationJobFetch({ search: "?task=1047&tab=changes" }, "1047")).toBe(
       false,
     );
   });

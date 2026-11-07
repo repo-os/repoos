@@ -42,6 +42,24 @@ describe("resolveActiveEngineerCardHint (#0994 local check)", () => {
     expect(hint.blocksAgentInterrupt).toBe(true);
   });
 
+  it("treats an alive local slot as running when no check row was recorded", () => {
+    const hint = resolveActiveEngineerCardHint({
+      nowMs: NOW,
+      agentSilentMs: 9 * 60 * 1000,
+      check: null,
+      remote: null,
+      localQueueLabel: null,
+      localQueueTitle: null,
+      remotePoolQueueLabel: null,
+      remotePoolQueueTitle: null,
+      localCheckSlot: { ageMs: 8 * 60_000, heartbeatAgeMs: 2_000 },
+      busyChild: null,
+    });
+    expect(hint.label).toBe("running checks · check · 8m");
+    expect(hint.cls).toBe("tc-reviewing");
+    expect(hint.blocksAgentInterrupt).toBe(true);
+  });
+
   it("labels a wedged check stalled, not agent silent", () => {
     const hint = resolveActiveEngineerCardHint({
       nowMs: NOW,
