@@ -2600,7 +2600,7 @@ describe("hang detector (#0729)", () => {
   });
 
   it("schedules a reaper after a host becomes available and logs its output", async () => {
-    const runRemote = vi.fn(async (_host, cmd): Promise<RemoteExecResult> => {
+    const runRemote = vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
       if (cmd.includes(PREREQ_OK_TOKEN)) {
         return {
           code: 0,
@@ -2614,7 +2614,9 @@ describe("hang detector (#0729)", () => {
       if (cmd.includes("__HOST_LOCK__")) {
         return { code: 0, output: "__HOST_LOCK__\\n", timedOut: false };
       }
-      return { code: 0, output: "Reaping stale validation container repoos-validate-old", timedOut: false };
+      const output = "Reaping stale validation container repoos-validate-old";
+      onChunk?.(output);
+      return { code: 0, output, timedOut: false };
     });
     const logger = { system: vi.fn() };
     const pool = new TailscaleHostPool(
