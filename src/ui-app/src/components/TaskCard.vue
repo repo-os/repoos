@@ -1637,17 +1637,21 @@ async function openDebuggerFromError(): Promise<void> {
           </svg>
         </span>
         <div
-          v-if="repo.handoffInFlight(task.id) && handoffProgress"
+          v-if="repo.handoffInFlight(task.id)"
           class="check-progress task-card-check-progress"
           role="status"
           data-test-id="task-card-check-progress"
         >
           <progress
-            v-if="checkProgressPercent(handoffProgress) !== null"
-            :value="checkProgressPercent(handoffProgress) ?? 0"
+            :value="handoffProgress ? (checkProgressPercent(handoffProgress) ?? undefined) : undefined"
             max="100"
+            aria-label="Checks running progress"
           />
-          <span>{{ checkProgressLabel(handoffProgress) }}</span>
+          <span>{{ handoffProgress ? checkProgressLabel(handoffProgress) : "Running checks" }}</span>
+          <span v-if="handoffProgress?.attempt || handoffProgress?.machine">
+            {{ handoffProgress.attempt ? `attempt ${handoffProgress.attempt}` : "" }}
+            <template v-if="handoffProgress.machine"> · on {{ handoffProgress.machine }}</template>
+          </span>
         </div>
         <button
           ref="agentTrigger"
