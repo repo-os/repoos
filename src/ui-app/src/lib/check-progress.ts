@@ -28,13 +28,52 @@ export function checkProgressPercent(progress: CheckProgress): number | null {
 }
 
 export function checkProgressLabel(progress: CheckProgress): string {
+  return checkProgressDetailLabel(progress, { filesWord: true });
+}
+
+/** Compact label for card/drawer rows (no decorative step placeholder). */
+export function checkProgressDetailLabel(
+  progress: CheckProgress,
+  opts: { filesWord?: boolean } = {},
+): string {
+  const filesWord = opts.filesWord ? " files" : "";
   const stepNumber = progress.currentStep ?? progress.stepsDone;
-  const step =
-    progress.stepsTotal == null
-      ? `step ${stepNumber ?? "—"}`
-      : `step ${stepNumber ?? "—"} of ${progress.stepsTotal}`;
-  if (progress.testsDone == null || progress.testsTotal == null || progress.testsTotal <= 0) {
-    return step;
+  const hasStep = stepNumber != null;
+  const hasStepTotal = progress.stepsTotal != null && progress.stepsTotal > 0;
+  const hasTests =
+    progress.testsDone != null && progress.testsTotal != null && progress.testsTotal > 0;
+
+  if (hasTests && !hasStep && !hasStepTotal) {
+    return `tests ${progress.testsDone}/${progress.testsTotal}${filesWord}`;
   }
-  return `${step} · tests ${progress.testsDone}/${progress.testsTotal} files`;
+  if (!hasStep && !hasStepTotal) {
+    if (hasTests) return `tests ${progress.testsDone}/${progress.testsTotal}${filesWord}`;
+    if (progress.stepName) return `checking ${progress.stepName}`;
+    return "starting…";
+  }
+  const step = hasStepTotal
+    ? `step ${stepNumber ?? "—"} of ${progress.stepsTotal}`
+    : `step ${stepNumber}`;
+  if (!hasTests) return step;
+  return `${step} · tests ${progress.testsDone}/${progress.testsTotal}${filesWord}`;
+}
+
+export function toCheckProgress(run: {
+  stepsDone?: number | null;
+  stepsTotal?: number | null;
+  currentStep?: number | null;
+  stepName?: string | null;
+  testsDone?: number | null;
+  testsTotal?: number | null;
+  testsPass?: number | null;
+}): CheckProgress {
+  return {
+    stepsDone: run.stepsDone ?? null,
+    stepsTotal: run.stepsTotal ?? null,
+    currentStep: run.currentStep ?? null,
+    stepName: run.stepName ?? null,
+    testsDone: run.testsDone ?? null,
+    testsTotal: run.testsTotal ?? null,
+    testsPass: run.testsPass ?? null,
+  };
 }

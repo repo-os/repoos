@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { formatPipelineElapsed, type PipelineCardState } from "../../../core/pipeline-view.js";
+import type { CheckProgress } from "../lib/check-progress";
+import ChecksProgressDisplay from "./ChecksProgressDisplay.vue";
 
 export interface PipelineCardAction {
   icon: "pause" | "resume" | "check";
@@ -25,6 +27,7 @@ const props = defineProps<{
   modelsLabel: string;
   hostLabel: string;
   action: PipelineCardAction | null;
+  checkProgress: CheckProgress | null;
 }>();
 
 const emit = defineEmits<{
@@ -106,6 +109,12 @@ function onKey(e: KeyboardEvent): void {
       <span class="pl-spacer"></span>
       <span class="pl-elapsed">{{ elapsed }}</span>
     </div>
+    <ChecksProgressDisplay
+      v-if="checkProgress"
+      variant="pipeline"
+      test-id="pipeline-card-check-progress"
+      :progress="checkProgress"
+    />
     <!-- Row 4: rounds, models, host -->
     <div class="pl-row pl-row-4">
       <span class="rounds-badge pl-round" :class="reviewerTone ? `tone-${reviewerTone}` : ''">

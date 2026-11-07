@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-07T19:03:57Z"
-review_passes: 1
 id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
@@ -13,9 +11,11 @@ branch: feat/task-card-drop-fake-progress-bar-show-on
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: codex
-review_model_override: gpt-6-luna
+review_model_override: terra
 created_at: "2026-11-07T13:16:10Z"
-last_check_failure: "repoos check at 2026-11-07T17:21:16.921Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target \"default\"): highlight [data-test-id=\"pipeline-card-check-progress\"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)"
+updated_at: "2026-11-07T18:54:01Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T15:39:14.366Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
 After #1047, the Active task card is too busy while checks run, and the green bar is misleading. `checkProgressPercent()` (src/ui-app/src/lib/check-progress.ts) only returns a number when the server reports step counts or test-file counts. When a handoff reuses an earlier check ("reused check 14098") or is in a handoff stage with no counts (e.g. "Checking review"), the bar falls back to the generic sliding animation, which says nothing the old animation didn't. The same state is also shown three times on the card: the bottom "RUNNING CHECKS · CHECK · 41s" hint, the bar + "Checking review · attempt 13", and (in the drawer) a "Checks failed" box whose badge contradicts its "running checks" line.
@@ -113,45 +113,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T15:43:41Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T15:48:42Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T15:49:32Z · body
-- 2026-11-07T16:02:04Z · message_queued at 2026-11-07T16:02:04.126Z
-- 2026-11-07T16:04:50Z · body
-- 2026-11-07T16:10:54Z · note: handoff requested (ui-review)
-- 2026-11-07T16:13:41Z · CTO nudge: held — handoff gate is running
-- 2026-11-07T16:22:49Z · body
-- 2026-11-07T16:40:54Z · message_queued at 2026-11-07T16:40:54.859Z
-- 2026-11-07T16:40:55Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
-- 2026-11-07T16:41:16Z · handoff_deferred: 2 queued message(s) must be read before review
-- 2026-11-07T16:41:17Z · message_queued at 2026-11-07T16:41:17.242Z
-- 2026-11-07T16:41:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Handoff timed out during server finalization; re-requesting review. · stderr: (empty)
-- 2026-11-07T16:41:17Z · message_delivered: 4 message(s)
-- 2026-11-07T16:41:34Z · note: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target "default"): highlight [data-test-id="pipeline-card-check-progress"] matched nothing on /work?tab=pipeline (http://127.0.0.1:64161/work?tab=pipeline&shotState=pipeline%3AchecksProgress)
-- 2026-11-07T16:43:42Z · message_queued at 2026-11-07T16:43:42.129Z
-- 2026-11-07T16:43:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-07T16:48:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T16:50:00Z · body
-- 2026-11-07T16:53:42Z · CTO nudge: held — handoff gate is running
-- 2026-11-07T17:21:13Z · note: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target "default"): highlight [data-test-id="pipeline-card-check-progress"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)
-- 2026-11-07T17:21:13Z · message_queued at 2026-11-07T17:21:13.646Z
-- 2026-11-07T17:21:16Z · message_delivered: 1 message(s)
-- 2026-11-07T17:21:48Z · message_queued at 2026-11-07T17:21:48.934Z
-- 2026-11-07T17:23:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T17:32:18Z · body
-- 2026-11-07T17:35:27Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-07T17:35:27Z · message_queued at 2026-11-07T17:35:27.398Z
-- 2026-11-07T17:35:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Fixing WorkView so pipeline shot captures mount the pipeline track (`?tab=pipeline` wasn't switching the view). · stderr: (empty)
-- 2026-11-07T17:35:27Z · message_delivered: 2 message(s)
-- 2026-11-07T17:38:41Z · message_queued at 2026-11-07T17:38:41.913Z
-- 2026-11-07T17:38:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-07T17:43:41Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T18:00:36Z · body
-- 2026-11-07T18:01:02Z · body
-- 2026-11-07T18:15:54Z · body
-- 2026-11-07T18:28:41Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T18:54:01Z · status active→review
-- 2026-11-07T18:54:01Z · message_queued at 2026-11-07T18:54:01.797Z
-- 2026-11-07T18:54:08Z · note: review pass 1: failed — no usable report
-- 2026-11-07T18:54:08Z · needs_input
-- 2026-11-07T19:01:51Z · review_model_override
-- 2026-11-07T19:02:47Z · needs_input (review-failed) cleared for review again by human
-- 2026-11-07T19:03:57Z · note: review pass 2: good to go
-
