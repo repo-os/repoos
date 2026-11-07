@@ -76,8 +76,8 @@ import {
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import {
-  isShotPreviewCaptureActive,
   shotPreviewSkipsEngineeringReportsFetch,
+  shotPreviewSkipsTaskSummaryFetch,
 } from "../lib/shot-preview-fixtures";
 import { effectiveSummaryJobStatus } from "../../../core/task-summary.js";
 import { Clock3 } from "lucide-vue-next";
@@ -405,6 +405,20 @@ const statusProgress = computed(() => {
   const id = ui.active?.id;
   return id ? (activeCheckRun.value ?? repo.handoffStatuses[id]?.progress ?? null) : null;
 });
+const statusProgressPercent = computed(() =>
+  statusProgress.value ? checkProgressPercent(statusProgress.value) : null,
+);
+const statusProgressLabel = computed(() => {
+  if (statusProgress.value) return checkProgressLabel(statusProgress.value);
+  if (localCheckSlot.value) {
+    return `running checks · check · ${formatDuration(localCheckSlot.value.ageMs)}`;
+  }
+  if (handoffBusy.value && ui.active) return cardChecksHeading.value;
+  return "Checks are running";
+});
+const showStatusProgress = computed(() =>
+  Boolean(statusProgress.value || handoffBusy.value || localCheckSlot.value),
+);
 
 const lastCheckRun = computed(() => {
   const id = ui.active?.id;
@@ -868,7 +882,9 @@ const drawerStatusSummary = computed(() => {
       (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed"),
     notLandable: task.status === "review" && Boolean(landable.value && !landable.value.landable),
     handoffFailed: Boolean(handoffError.value || repo.doneErrorFor(task.id)),
-    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value || localCheckSlot.value),
+    checksRunning: Boolean(
+      activeCheckRun.value || localCheckWait.value || localCheckSlot.value || handoffBusy.value,
+    ),
     integrating: inPipeline.value && Boolean(integrationCardLabel.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
@@ -4422,13 +4438,7 @@ let taskSummaryGeneration = 0;
 const TASK_SUMMARY_POLL_MS = 10_000;
 const TASK_SUMMARY_POLL_MAX = 60;
 async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
-  // Shot fixtures seed a client-only task; do not request its summary from the
-  // preview API (which correctly has no record for #9999).
-  if (
-    taskId === SHOT_PREVIEW_FIXTURE_TASK_ID &&
-    typeof window !== "undefined" &&
-    isShotPreviewCaptureActive(window.location)
-  ) {
+  if (typeof window !== "undefined" && shotPreviewSkipsTaskSummaryFetch(window.location, taskId)) {
     return;
   }
   const generation = ++taskSummaryGeneration;
@@ -5852,26 +5862,21 @@ watch(
               >{{ line }}</span
             >
             <div
-              v-if="
-                statusProgress &&
-                (statusProgress.stepsDone != null ||
-                  statusProgress.currentStep != null ||
-                  statusProgress.testsDone != null)
-              "
+              v-if="showStatusProgress"
               class="check-progress close-out-check-progress"
               data-test-id="close-out-check-progress"
               role="status"
             >
               <progress
-                v-if="checkProgressPercent(statusProgress) !== null"
-                :value="checkProgressPercent(statusProgress) ?? 0"
+                :value="statusProgressPercent ?? undefined"
                 max="100"
+                aria-label="Checks running progress"
               />
               <span
-                >{{ checkProgressLabel(statusProgress)
+                >{{ statusProgressLabel
                 }}<template v-if="handoffBusy"> · {{ handoffStepLabel }}</template></span
               >
-              <span v-if="statusProgress.attempt || statusProgress.machine"
+              <span v-if="statusProgress?.attempt || statusProgress?.machine"
                 >{{ statusProgress.attempt ? `attempt ${statusProgress.attempt}` : ""
                 }}<template v-if="statusProgress.machine">
                   · on {{ statusProgress.machine }}</template
