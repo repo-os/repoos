@@ -132,3 +132,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T16:50:00Z · body
 - 2026-11-07T16:53:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T17:21:13Z · note: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target "default"): highlight [data-test-id="pipeline-card-check-progress"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)
+- 2026-11-07T17:21:13Z · message_queued at 2026-11-07T17:21:13.646Z
