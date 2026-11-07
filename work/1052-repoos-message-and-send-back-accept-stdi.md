@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-07T12:54:58Z"
-review_passes: 1
+last_close_out_gate_ms: 748617
+last_close_out_gate_at: "2026-11-07T13:10:07.837Z"
 id: 1052
 title: "repoos message and send-back: accept stdin, files and heredocs; never send junk as a message"
 type: bug
@@ -12,6 +12,8 @@ created_by: njachowski@gmail.com
 branch: feat/repoos-message-and-send-back-accept-stdi
 model_override: gpt-6.1-terra
 created_at: "2026-11-07T07:57:47Z"
+updated_at: "2026-11-07T13:10:07Z"
+review_passes: 1
 ---
 ## Problem
 
@@ -50,4 +52,5 @@ created_at: "2026-11-07T07:57:47Z"
 - 2026-11-07T12:52:45Z · message_queued at 2026-11-07T12:52:45.550Z
 - 2026-11-07T12:52:45Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-07T12:54:57Z · note: review pass 1: good to go
+- 2026-11-07T13:10:07Z · close-out gate completed in 749s
 
