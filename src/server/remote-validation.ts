@@ -5470,12 +5470,10 @@ export class TailscaleRunner implements RemoteValidator {
     hangCondition?: "stream-silent" | "host-idle" | "container-inactive";
   }): Promise<void> {
     // Capture evidence before killing (#1049)
-    const evidence = await this.captureHangEvidence(opts.host, opts.containerName).catch(
-      () => ({
-        logs: "(capture failed)",
-        state: "(capture failed)",
-      }),
-    );
+    const evidence = await this.captureHangEvidence(opts.host, opts.containerName).catch(() => ({
+      logs: "(capture failed)",
+      state: "(capture failed)",
+    }));
 
     let killTimedOut = false;
     try {
@@ -5500,22 +5498,18 @@ export class TailscaleRunner implements RemoteValidator {
 
     // Record hang event with evidence (#1049)
     const condition = opts.hangCondition ?? "stream-silent";
-    appendRemoteValidationEvent(
-      this.config.root,
-      opts.taskId,
-      {
-        level: "warn",
-        phase: "run",
-        message: `killed as hung (${condition}) on ${opts.host.ip}`,
-        host: opts.host.ip,
-        infra: true,
-        hangEvidence: {
-          condition,
-          containerLogs: evidence.logs.slice(0, 2000), // limit output
-          containerState: evidence.state.slice(0, 2000),
-        },
+    appendRemoteValidationEvent(this.config.root, opts.taskId, {
+      level: "warn",
+      phase: "run",
+      message: `killed as hung (${condition}) on ${opts.host.ip}`,
+      host: opts.host.ip,
+      infra: true,
+      hangEvidence: {
+        condition,
+        containerLogs: evidence.logs.slice(0, 2000), // limit output
+        containerState: evidence.state.slice(0, 2000),
       },
-    );
+    });
 
     opts.abortMain();
     opts.releaseSlot();
@@ -6084,7 +6078,8 @@ export class TailscaleRunner implements RemoteValidator {
         let reaperRunCount = 0;
         const reaperTimer = setInterval(() => {
           reaperRunCount++;
-          if (reaperRunCount % 7 === 0) { // Every 7 * 45s ≈ 5 min
+          if (reaperRunCount % 7 === 0) {
+            // Every 7 * 45s ≈ 5 min
             void this.exec
               .runRemote(host, reaperCommand(), () => {}, 30_000)
               .catch(() => {
