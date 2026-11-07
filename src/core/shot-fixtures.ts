@@ -103,6 +103,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // can show the card's "re-reviewing checkpoint…" hint. Board-only: no
   // drawer, so no fake-id task fetch.
   "card:checkpointRecovery",
+  // #1054 — active board card with a real check fraction and a single status line.
+  "card:checksProgress",
+  // #1054 — active board card while handoff reuses an earlier clean check (no bar).
+  "card:checksReuse",
   // #0776/#0795 — a multi-area, human-assigned card with seeded diff stats, so
   // a capture can show the combined area chip, the human chip and the
   // file-count chip.

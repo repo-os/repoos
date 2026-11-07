@@ -181,6 +181,7 @@ import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { taskInDevPass, taskRoundCounts, taskRoundLabel } from "../lib/pipeline-card";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
+import { formatChecksCardLine } from "../lib/checks-card-status";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -831,30 +832,39 @@ const cardChecksHeading = computed(() => {
   if (!task) return runningChecksLabel(false);
   const wait = localCheckWait.value;
   if (wait) return wait.label;
-  if (localCheckSlot.value) {
-    return `running checks · check · ${formatDuration(localCheckSlot.value.ageMs)}`;
-  }
   if (repo.handoffInFlight(task.id)) {
     const pool = remotePoolQueueHintForTaskChecks(repo.taskChecks[task.id]);
-    const status = repo.handoffStatuses[task.id];
-    const startedAt =
-      status?.startedAt ?? repo.taskChecks[task.id]?.find((run) => run.running)?.startedAt;
-    const elapsed = startedAt
-      ? formatDuration(Math.max(0, checkNow.value - Date.parse(startedAt)))
-      : "";
-    const progress = repo.taskChecks[task.id]?.find(
-      (run) => run.running && run.kind === "handoff-finalize",
-    );
-    const step = status?.step ?? repo.handoffSteps[task.id] ?? "starting";
-    return (
-      pool?.label ??
-      `running checks · ${step}${elapsed ? ` · ${elapsed}` : ""}${progress ? ` · ${checkProgressLabel(progress)}` : ""}`
-    );
+    if (pool) return pool.label;
   }
-  if (activeCheckRun.value) {
+  if (
+    repo.handoffInFlight(task.id) ||
+    activeCheckRun.value ||
+    localCheckSlot.value
+  ) {
+    const status = repo.handoffStatuses[task.id];
     const run = activeCheckRun.value;
-    const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
-    return `running checks · ${run.stepName ?? "check"} · ${elapsed}`;
+    const slow = !!notices.slowRunByTask[task.id];
+    const startedAt = status?.startedAt ?? run?.startedAt ?? null;
+    const progress = run
+      ? {
+          stepsDone: run.stepsDone ?? null,
+          stepsTotal: run.stepsTotal ?? null,
+          currentStep: run.currentStep ?? null,
+          stepName: run.stepName ?? null,
+          testsDone: run.testsDone ?? null,
+          testsTotal: run.testsTotal ?? null,
+          testsPass: run.testsPass ?? null,
+        }
+      : status?.progress ?? null;
+    return formatChecksCardLine({
+      nowMs: checkNow.value,
+      startedAt,
+      progress,
+      handoffStep: status?.step ?? repo.handoffSteps[task.id] ?? null,
+      checkOutput: run?.output,
+      slow,
+      slotAgeMs: localCheckSlot.value?.ageMs ?? null,
+    });
   }
   if (inPipeline.value) {
     return integrationCardLabel.value ?? runningChecksLabel(false);
@@ -905,7 +915,14 @@ const drawerStatusSummary = computed(() => {
     integrating: inPipeline.value && Boolean(integrationCardLabel.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
-      checkChip.value?.state === "fail" && retryCountFrom(task, "check"),
+      checkChip.value?.state === "fail" &&
+        retryCountFrom(task, "check") &&
+        !(
+          activeCheckRun.value ||
+          localCheckWait.value ||
+          localCheckSlot.value ||
+          handoffBusy.value
+        ),
     ),
     reviewerRunning: Boolean(review.value?.running),
     workRunning: repo.isRunning(task.id) || repo.pmWorkingFor(task.id),
@@ -5914,19 +5931,11 @@ watch(
               data-test-id="close-out-check-progress"
               role="status"
             >
-              <span
-                class="check-progress-meter"
-                :class="{ 'is-indeterminate': statusProgressPercent == null }"
-              >
+              <span v-if="statusProgressPercent != null" class="check-progress-meter">
                 <progress
-                  :value="statusProgressPercent ?? undefined"
+                  :value="statusProgressPercent"
                   max="100"
                   aria-label="Checks running progress"
-                />
-                <span
-                  v-if="statusProgressPercent == null"
-                  class="check-progress-indeterminate"
-                  aria-hidden="true"
                 />
               </span>
               <span
