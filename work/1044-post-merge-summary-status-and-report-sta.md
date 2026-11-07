@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-summary-status-and-report-sta
 created_at: "2026-11-06T22:50:03Z"
-updated_at: "2026-11-07T22:53:41Z"
+updated_at: "2026-11-07T23:01:54Z"
 ---
 ## Problem
 
@@ -38,12 +38,12 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 ```json
 [
 {
-  "label": "Task drawer Report pane with post-merge summary",
-  "target": "default",
-  "route": "/work?task=9999&tab=agent",
-  "selector": "[data-test-id=\"task-summary\"]",
-  "highlight": "[data-test-id=\"task-summary\"]",
-  "state": "drawer:postMergeSummary"
+"label": "Task drawer Report pane with post-merge summary",
+"target": "default",
+"route": "/work?task=9999&tab=agent",
+"selector": "[data-test-id=\"task-summary\"]",
+"highlight": "[data-test-id=\"task-summary\"]",
+"state": "drawer:postMergeSummary"
 }
 ]
 ```
@@ -54,3 +54,4 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 - 2026-11-07T06:24:31Z · status inbox→ready
 - 2026-11-07T22:51:50Z · status ready→active, branch
 - 2026-11-07T22:53:41Z · body
+- 2026-11-07T23:01:54Z · message_queued at 2026-11-07T23:01:54.682Z
