@@ -371,3 +371,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T21:51:58Z · message_queued at 2026-11-07T21:51:58.735Z
 - 2026-11-07T21:52:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’m blocked from editing the reaper fix while task #1049 is in `review`. The provided finding confirms a real cross-process ownership race, but RepoOS rules require the task to be returned to `active` before its branch is edited. I attempt… · stderr: Reading additional input from stdin...
 - 2026-11-07T21:52:53Z · status active→review
+- 2026-11-07T21:52:53Z · message_delivered: 1 message(s)
