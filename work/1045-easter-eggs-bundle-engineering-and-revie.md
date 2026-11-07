@@ -2,14 +2,18 @@
 id: 1045
 title: "Easter eggs bundle: engineering and review report tables"
 type: chore
-status: inbox
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/easter-eggs-bundle-engineering-and-revie
+cli_override: codex
+model_override: gpt-6-luna
+review_cli_override: claude code
+review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
-updated_at: "2026-11-06T22:56:38Z"
+updated_at: "2026-11-07T02:12:04Z"
 ---
 ## Problem
 
@@ -44,3 +48,9 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 
 - 2026-11-06T22:56:38Z · created · njachowski@gmail.com
 - 2026-11-06T22:56:38Z · screenshots
+- 2026-11-07T02:11:45Z · cli_override
+- 2026-11-07T02:11:46Z · model_override
+- 2026-11-07T02:11:52Z · review_cli_override
+- 2026-11-07T02:11:53Z · review_model_override
+- 2026-11-07T02:11:54Z · status inbox→ready
+- 2026-11-07T02:12:04Z · status ready→active, branch
