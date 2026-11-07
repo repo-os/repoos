@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
-last_handoff_failure_sha: ec05d12b44136bc03515ff7cdc063c851668741a
 id: 1048
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
@@ -15,7 +13,9 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T20:33:34Z"
+updated_at: "2026-11-07T20:37:17Z"
+last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
+last_handoff_failure_sha: ec05d12b44136bc03515ff7cdc063c851668741a
 review_passes: 2
 review_rounds: 1
 routing_switches: 1
@@ -180,4 +180,4 @@ right before writing new CSS.
 - 2026-11-07T20:30:30Z · status active→review
 - 2026-11-07T20:31:53Z · note: review pass 2: needs some work
 - 2026-11-07T20:33:34Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
-
+- 2026-11-07T20:37:17Z · message_queued at 2026-11-07T20:37:17.179Z
