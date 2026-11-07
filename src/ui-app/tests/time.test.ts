@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { fmtDate, formatDuration, relTime, timestampTip } from "../src/lib/time";
+import {
+  fmtDate,
+  fmtFullDateTime,
+  fmtShortDateTime,
+  fmtTime,
+  formatDuration,
+  relTime,
+  timestampTip,
+} from "../src/lib/time";
 
 const now = new Date("2026-08-07T12:00:00Z");
 
@@ -49,6 +57,34 @@ describe("fmtDate", () => {
     expect(fmtDate(null)).toBe("");
     expect(fmtDate(undefined)).toBe("");
     expect(fmtDate("not-a-date")).toBe("");
+  });
+});
+
+describe("report timestamp formatting", () => {
+  it("uses only the clock today and a short local date on other days", () => {
+    const now = new Date("2026-08-07T12:00:00Z");
+    const today = "2026-08-07T09:05:00Z";
+    const prior = "2026-08-06T09:05:00Z";
+    expect(fmtShortDateTime(today, now)).toBe(fmtTime(today));
+    expect(fmtShortDateTime(prior, now)).toBe(
+      `${new Date(prior).toLocaleDateString(undefined, { month: "numeric", day: "numeric" })}, ${fmtTime(prior)}`,
+    );
+  });
+
+  it("shows the full local date and time and handles invalid input", () => {
+    const iso = "2026-08-07T09:05:06Z";
+    expect(fmtFullDateTime(iso)).toBe(
+      new Date(iso).toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+    );
+    expect(fmtShortDateTime("invalid")).toBe("");
+    expect(fmtFullDateTime(null)).toBe("");
   });
 });
 
