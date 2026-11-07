@@ -127,3 +127,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T16:41:17Z · message_delivered: 4 message(s)
 - 2026-11-07T16:41:34Z · note: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target "default"): highlight [data-test-id="pipeline-card-check-progress"] matched nothing on /work?tab=pipeline (http://127.0.0.1:64161/work?tab=pipeline&shotState=pipeline%3AchecksProgress)
 - 2026-11-07T16:43:42Z · message_queued at 2026-11-07T16:43:42.129Z
+- 2026-11-07T16:43:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
