@@ -5507,7 +5507,7 @@ watch(
                 v-if="
                   !isHumanTask &&
                   (ui.active.status === 'ready' || ui.active.status === 'active') &&
-                  (ui.active.status === 'ready' || !repo.isRunning(ui.active.id))
+                  (ui.active.status === 'ready' || (!repo.isRunning(ui.active.id) && !handoffBusy))
                 "
                 data-test-id="task-drawer-start-work"
                 variant="status"
@@ -6669,6 +6669,8 @@ watch(
                     v-if="row.kind === 'line' && row.s === 'err'"
                     :text="row.text"
                     :at="row.at"
+                    :first-at="row.firstAt"
+                    :count="row.repeatCount"
                   />
                   <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
                     <span class="agent-pfx" :class="row.s">{{
@@ -7041,6 +7043,8 @@ watch(
                     v-if="row.kind === 'line' && row.s === 'err'"
                     :text="row.text"
                     :at="row.at"
+                    :first-at="row.firstAt"
+                    :count="row.repeatCount"
                   />
                   <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
                     <span class="agent-pfx" :class="row.s">{{

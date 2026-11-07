@@ -96,6 +96,9 @@ export interface MessageRow {
   text: string;
   /** Legacy `{s, d}` stream tag, for telling `out` from `err`. */
   s?: "out" | "err" | "sys";
+  /** Count and time bounds for a collapsed run of identical stderr lines. */
+  repeatCount?: number;
+  firstAt?: string;
 }
 
 /** A maximal run of adjacent tool calls, rendered as one expandable row. */
@@ -238,16 +241,16 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
     const text = isAssistantText ? rawText.replace(/\s+$/u, "") : displayPlainText(rawText);
 
     const last = rows[rows.length - 1];
-    // stderr arrives one line at a time. Keep a diagnostic together, but split
-    // timestamped log records so distinct failures do not become one giant card.
+    // Collapse only identical adjacent stderr lines. Keep distinct diagnostics
+    // separate and retain the complete original entries for expansion/export.
     if (
       !("type" in entry) &&
       entry.s === "err" &&
       last?.kind === "line" &&
       last.s === "err" &&
-      !/^\d{4}-\d{2}-\d{2}T\S+\s+(?:ERROR|WARN|INFO|DEBUG)\b/.test(text)
+      last.text === text
     ) {
-      last.text += "\n" + rawText;
+      last.repeatCount = (last.repeatCount ?? 1) + 1;
       last.entries.push(entry);
       last.at = latestAt(last.entries) ?? last.at;
       continue;
@@ -268,6 +271,8 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
       entries: [entry],
       text,
       s: "type" in entry ? undefined : entry.s,
+      repeatCount: !(("type" in entry)) && entry.s === "err" ? 1 : undefined,
+      firstAt: !(("type" in entry)) && entry.s === "err" ? entry.at : undefined,
     });
   }
 

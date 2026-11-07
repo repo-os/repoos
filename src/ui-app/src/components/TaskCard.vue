@@ -1214,7 +1214,10 @@ const action = computed<CardAction | null>(() => {
   // back into the same failure. The task drawer keeps its own Move to done
   // button, so retrying is still one click away, just not from the card.
   if (t.status === "review" && repo.doneErrorFor(t.id)) return null;
-  if (t.status === "active") return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+  if (t.status === "active") {
+    if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null;
+    return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+  }
   return ACTIONS[t.status] ?? null;
 });
 

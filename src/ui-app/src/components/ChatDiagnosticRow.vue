@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { AlertCircle } from "lucide-vue-next";
 import { fmtTime } from "../lib/time";
-const props = defineProps<{ text: string; at?: string }>();
-const failed = computed(() => /\bERROR\b|\berror[: ]|\bfailed\b|Abort trap/i.test(props.text));
+const props = defineProps<{ text: string; at?: string; firstAt?: string; count?: number }>();
 const summary = computed(() => {
   const first = props.text.split("\n").find((line) => line.trim()) ?? "Agent diagnostic";
   if (/apply_patch verification failed/.test(first))
@@ -12,15 +10,14 @@ const summary = computed(() => {
 });
 </script>
 <template>
-  <details class="agent-diagnostic" data-testid="chat-diagnostic-row">
+  <details class="agent-diagnostic agent-diagnostic-neutral" data-testid="chat-diagnostic-row">
     <summary>
-      <AlertCircle class="size-3.5" aria-hidden="true" />
-      <span class="agent-diagnostic-label" :class="{ error: failed }">{{
-        failed ? "Error" : "Diagnostic"
-      }}</span>
+      <span class="agent-diagnostic-label">Agent output</span>
       <span class="agent-diagnostic-summary">{{ summary }}</span>
-      <time v-if="at" class="agent-tool-time">{{ fmtTime(at) }}</time>
+      <span v-if="count && count > 1" class="agent-diagnostic-count">×{{ count }}</span>
+      <time v-if="firstAt || at" class="agent-tool-time">{{ fmtTime(firstAt || at) }}</time>
+      <span v-if="count && count > 1 && at && at !== firstAt" class="agent-tool-time">→ {{ fmtTime(at) }}</span>
     </summary>
-    <pre class="agent-tool-out">{{ text }}</pre>
+    <pre class="agent-tool-out">{{ count && count > 1 ? `${count} identical entries:\n${text}` : text }}</pre>
   </details>
 </template>
