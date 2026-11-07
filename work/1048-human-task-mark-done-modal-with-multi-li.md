@@ -1,7 +1,5 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-07T20:37:20.985Z: repoos check failed: reused check inputs changed during handoff — run the check again"
-id: 1048
+id: "1048"
 title: "Human task Mark done: modal with multi-line completion report"
 type: feature
 status: review
@@ -15,7 +13,9 @@ branch: feat/human-task-mark-done-modal-with-multi-li
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T20:37:20Z"
+updated_at: "2026-11-07T20:47:04Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T20:37:20.985Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: ec05d12b44136bc03515ff7cdc063c851668741a
 review_passes: 2
@@ -183,4 +183,4 @@ right before writing new CSS.
 - 2026-11-07T20:33:34Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
 - 2026-11-07T20:37:17Z · message_queued at 2026-11-07T20:37:17.179Z
 - 2026-11-07T20:37:20Z · message_delivered: 1 message(s)
-
+- 2026-11-07T20:47:04Z · body
