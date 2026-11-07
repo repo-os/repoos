@@ -2,7 +2,7 @@
 id: 1049
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: review
+status: active
 priority: p0
 area: server
 assigned_to: ai
