@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/human-task-mark-done-modal-with-multi-li
 created_at: "2026-11-07T00:56:19Z"
-updated_at: "2026-11-07T15:38:59Z"
+updated_at: "2026-11-07T15:44:22Z"
 ---
 ## Problem
 
@@ -105,3 +105,4 @@ right before writing new CSS.
 - 2026-11-07T15:25:45Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T15:29:03Z · body
 - 2026-11-07T15:38:59Z · body
+- 2026-11-07T15:44:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented the human-task **Mark done** modal, routed both completion paths through it, and preserved multiline Markdown reports in task activity. The UI, writer/parser, and note tests pass. The final `REPOOS_CHECK_CHANGED=main repoos che… · stderr: Reading additional input from stdin... 2026-11-07T15:43:21.607808Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 97564
