@@ -213,3 +213,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T14:29:11Z · body
 - 2026-11-07T14:32:15Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-07T14:32:15Z · message_queued at 2026-11-07T14:32:15.396Z
+- 2026-11-07T14:32:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The rerun passed completely: all 2,869 scoped tests, remote build/browser checks, local formatting and lint, rendered contrast, and UI smoke. I’m requesting review again with the invalid shot removed. · stderr: (empty)
