@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 609356
+last_close_out_gate_at: "2026-11-07T02:30:35.681Z"
 id: 1046
 title: Use the active theme pair for diff highlighting
 type: feature
@@ -13,7 +15,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-11-06T23:18:09Z"
-updated_at: "2026-11-07T01:35:05Z"
+updated_at: "2026-11-07T02:30:35Z"
 review_passes: 1
 handoff_signal_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T00:01:56.991Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -102,3 +104,5 @@ This task covers theme-family selection, lazy loading, cache behavior, and verif
 - 2026-11-07T01:20:24Z · review_model_override
 - 2026-11-07T01:21:33Z · note: review pass 3: good to go
 - 2026-11-07T01:35:05Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (0c0ce8656) during finalization (#0734)
+- 2026-11-07T02:30:35Z · close-out gate completed in 609s
+
