@@ -107,13 +107,15 @@ describe("task dependency parsing and validation", () => {
       const parsed = task(root, "0001", "ready", "", ["0658", "1047", "12345"]);
       const written = serializeTask(parsed);
       expect(written).toContain('depends_on: ["0658", "1047", "12345"]');
-      expect(parseTask({
-        content: written,
-        absPath: join(root, "work", "0001-task.md"),
-        root,
-        defaultStatus: "inbox",
-        defaultAssignee: "unassigned",
-      }).dependsOn).toEqual(["0658", "1047", "12345"]);
+      expect(
+        parseTask({
+          content: written,
+          absPath: join(root, "work", "0001-task.md"),
+          root,
+          defaultStatus: "inbox",
+          defaultAssignee: "unassigned",
+        }).dependsOn,
+      ).toEqual(["0658", "1047", "12345"]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -130,7 +132,10 @@ describe("task dependency parsing and validation", () => {
 
   it("normalizes numeric dependency scalars and object IDs to the task ID width", () => {
     expect(parseTaskDependencies([1047, 658, { id: 12345 }, { taskId: 42 }])).toEqual([
-      "1047", "0658", "12345", "0042",
+      "1047",
+      "0658",
+      "12345",
+      "0042",
     ]);
   });
 

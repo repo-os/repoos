@@ -22,9 +22,7 @@ function dependencyId(value: unknown): string | undefined {
   if (!id) return undefined;
   // Quoted IDs are already authoritative strings (including unusual short
   // synthetic IDs); only bare YAML numbers need canonical task-width padding.
-  return typeof value === "number" && /^\d+$/.test(id)
-    ? id.padStart(TASK_ID_WIDTH, "0")
-    : id;
+  return typeof value === "number" && /^\d+$/.test(id) ? id.padStart(TASK_ID_WIDTH, "0") : id;
 }
 
 /** Parse task-id lists while tolerating future object-shaped dependency entries. */
@@ -43,11 +41,11 @@ export function parseTaskDependencies(raw: unknown): string[] {
         ? entry
         : typeof entry === "number"
           ? entry
-        : entry && typeof entry === "object"
-          ? ((entry as Record<string, unknown>).id ??
-            (entry as Record<string, unknown>).task_id ??
-            (entry as Record<string, unknown>).taskId)
-          : undefined;
+          : entry && typeof entry === "object"
+            ? ((entry as Record<string, unknown>).id ??
+              (entry as Record<string, unknown>).task_id ??
+              (entry as Record<string, unknown>).taskId)
+            : undefined;
     const id = dependencyId(rawId);
     if (id) ids.push(id);
   }
