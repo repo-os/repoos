@@ -4104,7 +4104,9 @@ export const postTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
   // same gate before writing anything.
   const gateError = summaryReleaseGate(readTaskFromDisk(ctx.config, task.id) ?? task);
   if (gateError) return json(res, 409, { error: gateError });
-  queueTaskSummary(ctx.config, task, ctx.index.getTasks());
+  if (!queueTaskSummary(ctx.config, task, ctx.index.getTasks())) {
+    return json(res, 503, { ok: false, error: "Could not persist pending summary status; retry the request." });
+  }
   return json(res, 202, { ok: true, queued: true });
 };
 
