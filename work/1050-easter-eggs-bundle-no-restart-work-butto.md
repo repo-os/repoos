@@ -2,7 +2,7 @@
 id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -177,4 +177,3 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T21:18:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I verified the round 3 issues: the branch is still behind `main`, and merge preflight reports conflicts in `TaskCard.vue` and `TaskDrawer.vue`. The latest UI capture also timed out. I can’t complete the merge under the current instructions… · stderr: 2026-11-07T21:01:35.994797Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 20737
 - 2026-11-07T21:18:42Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T21:18:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The branch is still clean at `831c9b03`, and `repoos sync 1050` still refuses because this agent turn is active. The reported conflicts with `main` remain unresolved, so checks and handoff would not clear review. The blocker is unchanged: … · stderr: 2026-11-07T21:01:35.994797Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 20737
-- 2026-11-07T21:18:53Z · status active→review
