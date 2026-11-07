@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T07:08:40Z"
+updated_at: "2026-11-07T07:13:03Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T05:19:38.063Z: repoos check failed: tests — Test Files 2 failed | 145 passed (147)"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T04:41:31.843Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-07T05:53:23.454Z\",\"reason\":\"handoff-deferred\"}]"
@@ -106,3 +106,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T06:41:19Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-07T06:58:00Z · body
 - 2026-11-07T07:08:40Z · body
+- 2026-11-07T07:13:03Z · handoff_deferred: 1 queued message(s) must be read before review
