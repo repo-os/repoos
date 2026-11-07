@@ -848,7 +848,7 @@ const drawerStatusSummary = computed(() => {
       (review.value?.report?.state === "incomplete" || task.needsInputReason === "review-failed"),
     notLandable: task.status === "review" && Boolean(landable.value && !landable.value.landable),
     handoffFailed: Boolean(handoffError.value || repo.doneErrorFor(task.id)),
-    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value || handoffBusy.value),
+    checksRunning: Boolean(activeCheckRun.value || localCheckWait.value),
     integrating: inPipeline.value && Boolean(integrationCardLabel.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
@@ -5837,7 +5837,7 @@ watch(
               >{{ line }}</span
             >
             <div
-              v-if="statusProgress"
+              v-if="statusProgress && (statusProgress.stepsDone != null || statusProgress.currentStep != null || statusProgress.testsDone != null)"
               class="check-progress close-out-check-progress"
               data-test-id="close-out-check-progress"
               role="status"

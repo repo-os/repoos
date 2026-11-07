@@ -890,7 +890,7 @@ export const useRepoStore = defineStore("repo", () => {
       };
       if (status.state === "running" && status.step)
         handoffSteps.value = { ...handoffSteps.value, [id]: status.step };
-      else if (status.state !== "not_requested") {
+      else if (["passed", "failed", "deferred"].includes(status.state)) {
         const steps = { ...handoffSteps.value };
         delete steps[id];
         handoffSteps.value = steps;

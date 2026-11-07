@@ -411,12 +411,11 @@ onMounted(() => {
 
 let handoffStatusPoll: number | undefined;
 watch(
-  () => [props.task.id, props.task.status] as const,
-  ([id, status]) => {
+  () => [props.task.id, props.task.status, repo.handoffStatuses[props.task.id]?.state] as const,
+  ([id, status, handoffState]) => {
     if (handoffStatusPoll) window.clearInterval(handoffStatusPoll);
     handoffStatusPoll = undefined;
-    if (status !== "active") return;
-    void repo.refreshHandoffStatus(id);
+    if (status !== "active" || handoffState !== "running") return;
     handoffStatusPoll = window.setInterval(() => void repo.refreshHandoffStatus(id), 3_000);
   },
   { immediate: true },
@@ -1013,7 +1012,7 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
-    if (repo.handoffInFlight(t.id)) {
+    if (repo.handoffStatuses[t.id]?.state === "running" && !(repo.taskChecks[t.id] ?? []).some((run) => run.running)) {
       const status = repo.handoffStatuses[t.id];
       const elapsed = status?.startedAt
         ? formatDuration(Math.max(0, now.value - Date.parse(status.startedAt)))
