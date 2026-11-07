@@ -2768,7 +2768,7 @@ describe("hang detector (#0729)", () => {
     expect(reaperCommand()).not.toContain("date -j");
     expect(reaperCommand()).not.toContain("date -d");
     expect(reaperInspectionCommand("0123456789ab")).toContain("docker inspect --format");
-    expect(reaperInspectionCommand("0123456789ab")).toContain("docker logs --since 900s");
+    expect(reaperInspectionCommand("0123456789ab")).toContain("docker logs --since 300s");
     expect(reaperRemoveCommand("0123456789ab")).toContain("docker rm -f '0123456789ab'");
     expect(reaperRemoveCommand("not-an-id")).toBe("false");
     const now = Date.parse("2026-11-07T04:00:00Z");
