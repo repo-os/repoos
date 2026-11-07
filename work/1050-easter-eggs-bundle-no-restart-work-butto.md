@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T21:23:23Z"
+updated_at: "2026-11-07T21:23:42Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -179,3 +179,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T21:18:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The branch is still clean at `831c9b03`, and `repoos sync 1050` still refuses because this agent turn is active. The reported conflicts with `main` remain unresolved, so checks and handoff would not clear review. The blocker is unchanged: … · stderr: 2026-11-07T21:01:35.994797Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 20737
 - 2026-11-07T21:18:54Z · note: handoff requested (cli)
 - 2026-11-07T21:23:23Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (831c9b037) during finalization (#0734)
+- 2026-11-07T21:23:42Z · CTO nudge: held — handoff gate is running
