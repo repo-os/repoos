@@ -17,6 +17,7 @@ import {
   shotFixturePinnedWorkingDiff,
   shotFixtureSchedules,
   shotPreviewSkipsEngineeringReportsFetch,
+  shotPreviewSkipsIntegrationJobFetch,
   shotPreviewSkipsTaskSummaryFetch,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
@@ -876,6 +877,17 @@ describe("shot preview board fixtures (#0743)", () => {
       shotPreviewSkipsEngineeringReportsFetch({ search: "?task=9999&tab=review" }, "9999"),
     ).toBe(false);
     expect(shotPreviewSkipsTaskSummaryFetch({ search: "?task=9999&tab=agent" }, "9999")).toBe(
+      false,
+    );
+  });
+
+  it("skips the integration job read for a client-seeded drawer during capture", () => {
+    const during = {
+      search: "?task=1047&tab=changes&shotState=closeOut:checkProgress",
+    };
+    expect(shotPreviewSkipsIntegrationJobFetch(during, "1047")).toBe(true);
+    expect(shotPreviewSkipsIntegrationJobFetch(during, "1048")).toBe(false);
+    expect(shotPreviewSkipsIntegrationJobFetch({ search: "?task=1047&tab=changes" }, "1047")).toBe(
       false,
     );
   });
