@@ -410,7 +410,10 @@ onMounted(() => {
   // Hydrate check runs so a reload mid-handoff still reads "running checks"
   // instead of "paused" (SSE only delivers events from now on).
   const id = props.task.id;
-  if (props.task.status === "active") void repo.refreshHandoffStatus(id);
+  if (props.task.status === "active") {
+    void repo.refreshHandoffStatus(id);
+    void repo.refreshLocalCheckSlots();
+  }
   if (props.task.status === "active" && repo.taskChecks[id] === undefined) {
     void repo.refreshTaskChecks(id);
   }
@@ -716,6 +719,7 @@ const activeEngineerEvidence = computed(() =>
     taskChecks: repo.taskChecks[props.task.id],
     remoteActivity: repo.taskRemoteActivity[props.task.id],
     resourceQueueMarkers: repo.resourceQueueMarkers,
+    localCheckSlot: repo.localCheckSlotForTask(props.task.id, Math.max(now.value, Date.now())),
   }),
 );
 
@@ -1031,6 +1035,15 @@ const hint = computed<CardHint | null>(() => {
       return {
         label: `running checks · ${stage}${elapsed ? ` · ${elapsed}` : ""}${run ? ` · ${checkProgressLabel(run)}` : ""}`,
         title: "RepoOS is finalizing this task and running its checks",
+        cls: "tc-reviewing",
+      };
+    }
+    const localCheckSlot = repo.localCheckSlotForTask(t.id, now.value);
+    if (localCheckSlot) {
+      const elapsed = formatDuration(localCheckSlot.ageMs);
+      return {
+        label: `running checks · check · ${elapsed}`,
+        title: `A local check slot is held for this task · running for ${elapsed}.`,
         cls: "tc-reviewing",
       };
     }
