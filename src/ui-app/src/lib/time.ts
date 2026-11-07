@@ -43,6 +43,35 @@ export function fmtTime(iso: string | null | undefined): string {
   return t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+/** Short local timestamp for report tables: clock time today, date and time otherwise. */
+export function fmtShortDateTime(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+  if (isToday) return fmtTime(iso);
+  const shortDate = date.toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
+  return `${shortDate}, ${fmtTime(iso)}`;
+}
+
+/** Full local date and clock time for report timestamp popovers. */
+export function fmtFullDateTime(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 /**
  * Local weekday, day and month of an ISO timestamp, e.g. "Wed, 4 Aug". Returns
  * an empty string when the input is missing or unparseable. Locale-aware, so a

@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-07T04:34:19Z"
-review_passes: 1
 id: 1045
 title: "Easter eggs bundle: engineering and review report tables"
 type: chore
@@ -15,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-06T22:56:38Z"
-last_check_failure: "repoos check at 2026-11-07T03:52:16.390Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54844/api/tasks/9999/summary (http://127.0.0.1:54844/api/tasks/9999/summary); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54844/api/tasks/9999/summary)"
+updated_at: "2026-11-07T04:31:46Z"
 ---
 ## Problem
 
@@ -41,25 +39,6 @@ The two report tables in the task drawer disagree with each other. The Dev tab's
 
 Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering one near the `engineering-report-view` pane, `fmtTime(report.at)`; the Review tab has its own pass table). Reuse `src/ui-app/src/lib/time.ts` for formatting and add one shared short and full time helper. Use the shared styled tooltip or popover, never a native `title`. CSS goes in `style.css` or shared classes, not bespoke scoped styles. Shot hygiene: scope selectors to the fixture card `[data-task-id="9999"]` and confirm one match.
 
-## Shots
-```json
-[
-{
-"label": "Dev engineering report history, newest round first",
-"target": "default",
-"route": "/work?task=9999&tab=agent&shotState=drawer%3AengineeringReports",
-"selector": "[data-task-id=\"9999\"]",
-"highlight": "[data-task-id=\"9999\"]",
-"steps": [
-{
-"click": "[data-test-id=\"engineering-report-tab\"]"
-}
-],
-"state": "drawer:engineeringReports"
-}
-]
-```
-
 ## Screenshots
 
 ![9](/api/tasks/1045/attachments/att_3b5690c0-6904-4c9e-be77-c2ac034988bc.png)
@@ -75,25 +54,4 @@ Both tables live in `src/ui-app/src/components/TaskDrawer.vue` (the engineering 
 - 2026-11-07T02:11:53Z · review_model_override
 - 2026-11-07T02:11:54Z · status inbox→ready
 - 2026-11-07T02:12:04Z · status ready→active, branch
-- 2026-11-07T02:20:26Z · body
-- 2026-11-07T02:31:39Z · body
-- 2026-11-07T02:37:50Z · CTO nudge: held — handoff gate is running
-- 2026-11-07T02:44:03Z · CTO nudge: held — handoff gate is running
-- 2026-11-07T03:09:05Z · message_queued at 2026-11-07T03:09:05.440Z
-- 2026-11-07T03:09:05Z · handoff failed · handoff recovery attempted · finalization failed
-- 2026-11-07T03:09:08Z · message_delivered: 1 message(s)
-- 2026-11-07T03:11:10Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:51875/api/tasks/9999/summary (http://127.0.0.1:51875/api/tasks/9999/summary); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:51875/api/tasks/9999/summary)
-- 2026-11-07T03:19:03Z · message_queued at 2026-11-07T03:19:03.553Z
-- 2026-11-07T03:19:03Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-07T03:23:58Z · body
-- 2026-11-07T03:24:05Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-07T03:29:03Z · CTO nudge: held — handoff gate is running
-- 2026-11-07T03:52:12Z · note: ui verification failed (2 issue(s)): [request] HTTP 404 for http://127.0.0.1:54844/api/tasks/9999/summary (http://127.0.0.1:54844/api/tasks/9999/summary); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54844/api/tasks/9999/summary)
-- 2026-11-07T03:52:13Z · message_queued at 2026-11-07T03:52:13.021Z
-- 2026-11-07T03:52:16Z · message_delivered: 1 message(s)
-- 2026-11-07T04:05:21Z · body
-- 2026-11-07T04:09:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T04:31:46Z · status active→review
-- 2026-11-07T04:31:46Z · message_queued at 2026-11-07T04:31:46.576Z
-- 2026-11-07T04:34:18Z · note: review pass 1: good to go
-
