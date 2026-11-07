@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: cursor
 review_model_override: composer-2.5
 created_at: "2026-11-06T23:18:09Z"
-updated_at: "2026-11-07T02:31:51Z"
+updated_at: "2026-11-07T03:09:04Z"
 last_close_out_gate_ms: 609356
 last_close_out_gate_at: "2026-11-07T02:30:35.681Z"
 review_passes: 1
@@ -107,3 +107,4 @@ This task covers theme-family selection, lazy loading, cache behavior, and verif
 - 2026-11-07T01:35:05Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (0c0ce8656) during finalization (#0734)
 - 2026-11-07T02:30:35Z · close-out gate completed in 609s
 - 2026-11-07T02:31:51Z · status done→done, release:success
+- 2026-11-07T03:09:04Z · message_dropped: 1 queued message(s) discarded — task is done
