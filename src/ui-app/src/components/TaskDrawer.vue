@@ -804,8 +804,14 @@ const cardChecksHeading = computed(() => {
     const elapsed = startedAt
       ? formatDuration(Math.max(0, checkNow.value - Date.parse(startedAt)))
       : "";
+    const progress = repo.taskChecks[task.id]?.find(
+      (run) => run.running && run.kind === "handoff-finalize",
+    );
     const step = status?.step ?? repo.handoffSteps[task.id] ?? "starting";
-    return pool?.label ?? `running checks · ${step}${elapsed ? ` · ${elapsed}` : ""}`;
+    return (
+      pool?.label ??
+      `running checks · ${step}${elapsed ? ` · ${elapsed}` : ""}${progress ? ` · ${checkProgressLabel(progress)}` : ""}`
+    );
   }
   if (inPipeline.value) {
     return integrationCardLabel.value ?? runningChecksLabel(false);
