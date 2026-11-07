@@ -123,3 +123,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T16:40:55Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-07T16:41:16Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-07T16:41:17Z · message_queued at 2026-11-07T16:41:17.242Z
+- 2026-11-07T16:41:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Handoff timed out during server finalization; re-requesting review. · stderr: (empty)
