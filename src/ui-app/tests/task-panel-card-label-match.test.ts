@@ -233,7 +233,9 @@ describe("task panel status label matches the board card (#1023)", () => {
       expect(cardProgress.attributes("value")).toBeUndefined();
       expect(drawerProgress.attributes("value")).toBeUndefined();
       expect(
-        card.find('[data-test-id="task-card-check-progress"] .check-progress-indeterminate').exists(),
+        card
+          .find('[data-test-id="task-card-check-progress"] .check-progress-indeterminate')
+          .exists(),
       ).toBe(true);
       expect(
         drawer
