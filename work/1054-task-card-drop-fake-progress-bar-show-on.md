@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-07T15:39:14.366Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
@@ -107,3 +109,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T15:36:23Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T15:39:10Z · message_queued at 2026-11-07T15:39:10.779Z
 - 2026-11-07T15:39:13Z · message_delivered: 1 message(s)
+
