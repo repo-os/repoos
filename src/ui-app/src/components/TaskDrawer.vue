@@ -75,7 +75,10 @@ import {
 } from "../lib/task-status-copy";
 import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
-import { shotPreviewSkipsEngineeringReportsFetch } from "../lib/shot-preview-fixtures";
+import {
+  shotPreviewSkipsEngineeringReportsFetch,
+  shotPreviewSkipsTaskSummaryFetch,
+} from "../lib/shot-preview-fixtures";
 import { effectiveSummaryJobStatus } from "../../../core/task-summary.js";
 import { Clock3 } from "lucide-vue-next";
 import {
@@ -4385,6 +4388,9 @@ let taskSummaryGeneration = 0;
 const TASK_SUMMARY_POLL_MS = 10_000;
 const TASK_SUMMARY_POLL_MAX = 60;
 async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
+  if (typeof window !== "undefined" && shotPreviewSkipsTaskSummaryFetch(window.location, taskId)) {
+    return;
+  }
   const generation = ++taskSummaryGeneration;
   const stillCurrent = () => generation === taskSummaryGeneration && ui.active?.id === taskId;
   try {

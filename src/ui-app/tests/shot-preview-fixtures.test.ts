@@ -17,6 +17,7 @@ import {
   shotFixturePinnedWorkingDiff,
   shotFixtureSchedules,
   shotPreviewSkipsEngineeringReportsFetch,
+  shotPreviewSkipsTaskSummaryFetch,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
 import { useNoticesStore } from "../src/stores/notices";
@@ -839,13 +840,18 @@ describe("shot preview board fixtures (#0743)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("skips engineering-report fetches for the fixture task during capture (#1011)", () => {
-    const during = { search: "?task=9999&tab=review&shotState=drawer:reviewPasses" };
+  it("skips server-backed report fetches for the fixture task during capture (#1011)", () => {
+    const during = { search: "?task=9999&tab=agent&shotState=drawer:engineeringReports" };
     expect(shotPreviewSkipsEngineeringReportsFetch(during, "9999")).toBe(true);
     expect(shotPreviewSkipsEngineeringReportsFetch(during, "1011")).toBe(false);
+    expect(shotPreviewSkipsTaskSummaryFetch(during, "9999")).toBe(true);
+    expect(shotPreviewSkipsTaskSummaryFetch(during, "1011")).toBe(false);
     expect(
       shotPreviewSkipsEngineeringReportsFetch({ search: "?task=9999&tab=review" }, "9999"),
     ).toBe(false);
+    expect(shotPreviewSkipsTaskSummaryFetch({ search: "?task=9999&tab=agent" }, "9999")).toBe(
+      false,
+    );
   });
 
   it("seeds 15 succeeded close-outs for the integration timer tooltip (#0819)", () => {
