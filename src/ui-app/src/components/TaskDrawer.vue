@@ -4536,6 +4536,7 @@ async function loadTaskSummary(taskId: string, attempt = 0): Promise<void> {
     if (
       new URLSearchParams(window.location.search).get("shotState") === "drawer:postMergeSummary"
     ) {
+      devPane.value = "report";
       taskSummary.value = {
         markdown:
           "## TL;DR\n\nThe task landed and its post-merge summary is ready.\n\n## Work and rationale\n\nThe change addresses the reported edge case and preserves the existing release flow.\n\n## Approaches tried\n\nThe final implementation follows the narrowest reliable path.\n\n## Challenges and blockers\n\nNo blockers remained.\n\n## Key learnings\n\nPersisted status and the committed report must agree.",

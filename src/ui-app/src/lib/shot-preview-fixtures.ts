@@ -1642,9 +1642,16 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "drawer:engineeringReports":
       ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
       break;
-    case "drawer:postMergeSummary":
+    case "drawer:postMergeSummary": {
       ensureFixtureTask(repo, "done", { branch: "" });
+      const task = repo.tasks.find((candidate) => candidate.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
+      if (task) {
+        const ui = useUiStore();
+        void ui.openTask(task);
+        ui.activeTab = "agent";
+      }
       break;
+    }
     case "drawer:statusReviewFailed":
       ensureFixtureTask(repo, "review", { branch: "feat/shot-fixture" });
       repo.reviews[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
