@@ -6,16 +6,13 @@ status: ready
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI"
-hold: true
-hold_reason: "Waiting for #1047 to land; depends_on cannot hold ids >= 1000 yet (parser drops unquoted numeric ids), so hold stands in until that is fixed"
-hold_at: "2026-11-07T07:23:43.861Z"
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T13:57:20Z"
+updated_at: "2026-11-07T16:01:49Z"
 ---
 ## Items
 
@@ -88,3 +85,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T13:20:01Z · body: Items (added 1, removed 1)
 - 2026-11-07T13:20:01Z · note: bundle done E1
 - 2026-11-07T13:57:20Z · status inbox→ready
+- 2026-11-07T16:01:49Z · released
