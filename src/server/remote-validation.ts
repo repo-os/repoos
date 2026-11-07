@@ -1266,7 +1266,8 @@ export function reaperCommand(): string {
     `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
     `case "$name" in ${VALIDATE_CONTAINER_PREFIX}-*) ;; *) continue ;; esac; ` +
     `created=$(docker inspect -f '{{.Created}}' "$id" 2>/dev/null || true); ` +
-    `ctime=$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "\${created%%.*}" +%s 2>/dev/null || ` +
+    `normalized=$(printf '%s' "$created" | sed 's/\\.[0-9]*Z$/Z/'); ` +
+    `ctime=$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "$normalized" +%s 2>/dev/null || ` +
     `date -d "$created" +%s 2>/dev/null || echo 0); ` +
     `if [ "$ctime" -gt 0 ] && [ "$ctime" -lt "$cutoff" ]; then ` +
     `echo "Reaping stale validation container $name (older than 25 minutes)"; ` +
