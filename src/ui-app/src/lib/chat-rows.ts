@@ -99,6 +99,8 @@ export interface MessageRow {
   /** Count and time bounds for a collapsed run of identical stderr lines. */
   repeatCount?: number;
   firstAt?: string;
+  /** Unclamped stderr text shown inside the expanded diagnostic. */
+  detailText?: string;
 }
 
 /** A maximal run of adjacent tool calls, rendered as one expandable row. */
@@ -266,6 +268,7 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
       /^\s/.test(text) &&
       !/^\d{4}-\d{2}-\d{2}T\S+\s+(?:ERROR|WARN|INFO|DEBUG)\b/.test(text)
     ) {
+      last.detailText = `${last.detailText ?? last.text}\n${rawText}`;
       last.text += "\n" + rawText;
       last.entries.push(entry);
       last.at = latestAt(last.entries) ?? last.at;
@@ -289,6 +292,7 @@ export function toDisplayRows(entries: readonly AgentOutputEntry[]): DisplayRow[
       s: "type" in entry ? undefined : entry.s,
       repeatCount: !("type" in entry) && entry.s === "err" ? 1 : undefined,
       firstAt: !("type" in entry) && entry.s === "err" ? entry.at : undefined,
+      detailText: !("type" in entry) && entry.s === "err" ? rawText : undefined,
     });
   }
 
