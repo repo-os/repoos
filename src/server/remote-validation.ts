@@ -1115,11 +1115,14 @@ export function classifyRemoteExecFailure(run: {
   const infraPattern =
     /EACCES|ENOSPC|no space left|Cannot connect to the Docker daemon|error:.*(?:install|accessing temporary directory)|Module not found.*node_modules/i;
   if (infraPattern.test(output) && !remoteRunHasGateExit(output)) {
-    const eacces = output.match(/EACCES[^\n]*/)?.[0];
-    const cause = eacces
-      ? `bun install ${eacces.trim()}`
-      : "host environment error before the gate";
-    return { kind: "infra", transient: true, markHostDegraded: true, cause };
+    // Keep captured command output in the run event, not in the host-status
+    // reason. Test output can contain convincing-looking host diagnostics.
+    return {
+      kind: "infra",
+      transient: true,
+      markHostDegraded: true,
+      cause: "host environment error before the gate",
+    };
   }
   if (remoteRunHasGateExit(output)) {
     const gate = parseRemoteGateExitCode(output);
@@ -1235,13 +1238,13 @@ export function staleBundlePruneCommand(): string {
  * Run on each host periodically to clean up containers left behind by killed runs.
  */
 export function reaperCommand(): string {
-  // Docker supplies Created as RFC3339; use its timestamp via `docker inspect`
-  // to avoid host-specific GNU/BSD `date -d` differences. Only stopped
-  // containers can be proven unowned without racing an active run.
+  // A validation run has a 25-minute hard cap, so a prefixed container older
+  // than that cannot belong to a live run. Docker supplies Created as RFC3339;
+  // accept both GNU and BSD date to support Linux and macOS runner hosts.
   return (
     `cutoff=$(($(date +%s) - 1500)); ` +
     `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} ` +
-    "--filter status=created --filter status=exited --filter status=dead 2>/dev/null | " +
+    `2>/dev/null | ` +
     `while IFS= read -r id; do ` +
     `created=$(docker inspect -f '{{.Created}}' "$id" 2>/dev/null || true); ` +
     `ctime=$(date -j -f '%Y-%m-%dT%H:%M:%S' "\${created%%.*}" +%s 2>/dev/null || ` +
@@ -1249,7 +1252,7 @@ export function reaperCommand(): string {
     `if [ "$ctime" -gt 0 ] && [ "$ctime" -lt "$cutoff" ]; then ` +
     `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
     `echo "Reaping stale validation container $name (older than 25 minutes)"; ` +
-    `docker rm "$id" >/dev/null 2>&1 || true; fi; done`
+    `docker rm -f "$id" >/dev/null 2>&1 || true; fi; done`
   );
 }
 
@@ -1357,11 +1360,15 @@ export function detectHungRun(opts: {
 }
 
 /** A cheap `uptime`-only probe for the hang watchdog's idle check (#0729). */
-export function hostLoadCommand(): string {
+export function hostLoadCommand(containerName?: string): string {
+  const containerSample = containerName
+    ? `printf '\\n__CONTAINER_CPU__\\n'; docker stats --no-stream --format '{{.CPUPerc}}' ${shellQuote(containerName)} 2>/dev/null || true; `
+    : "";
   return (
     "printf '__UPTIME__\\n'; uptime 2>/dev/null || true; " +
     "printf '\\n__CPU__\\n'; (getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || " +
-    "sysctl -n hw.ncpu 2>/dev/null) || true"
+    "sysctl -n hw.ncpu 2>/dev/null) || true" +
+    `; ${containerSample}`
   );
 }
 
@@ -3817,6 +3824,7 @@ export class TailscaleHostPool {
   /** Monotonic counter behind the least-recently-used tie-break (#0890). */
   private useSeq = 0;
   private backgroundProbeTimer?: ReturnType<typeof setInterval>;
+  private readonly lastReaperAt = new Map<string, number>();
   /** Default 30s cache for per-host memory pressure (#0901). */
   private readonly pressureCacheMs: number;
   private readonly pressureProbe: HostPressureProbe;
@@ -3960,7 +3968,19 @@ export class TailscaleHostPool {
 
   /** Probe hosts that have never been checked or are due for a health retry. */
   probeDueHosts(): void {
+    const now = Date.now();
     for (const s of this.liveHosts()) {
+      if (s.probed && now - (this.lastReaperAt.get(s.spec.host) ?? now) >= 5 * 60_000) {
+        this.lastReaperAt.set(s.spec.host, now);
+        void this.exec
+          .runRemote(s.ssh, reaperCommand(), (chunk) => {
+            const message = chunk.trim();
+            if (message) this.logger?.system("info", `remote validation ${message} on ${s.spec.host}`);
+          }, 30_000)
+          .catch(() => {
+            this.logger?.system("info", `container reaper on ${s.spec.host} failed or timed out`);
+          });
+      }
       if (s.probing) continue;
       const due =
         !s.probed || (!s.healthy && Date.now() >= s.retryAt && s.healthFails < MAX_HEALTH_RETRIES);
@@ -6036,12 +6056,9 @@ export class TailscaleRunner implements RemoteValidator {
         };
         this.setActiveRunStage(runInfo, opts.taskId);
 
-        // Hang watchdog (#0729): a run whose output stops advancing while the
-        // host sits idle is hung (the 2026-10-06/07 incidents looped
-        // "Module not found …/forks.js" at load 0). We sample the host's own
-        // load and, when both conditions hold, remove exactly this run's
-        // container — which makes the remote `docker run` exit — and mark the
-        // summary `hung` so the caller retries on another host.
+        // Hang watchdog (#0729): require stream silence and evidence that the
+        // host/container is inactive. Failed host probes are unknown, and live
+        // container CPU protects a progressing run from a stalled SSH stream.
         let loadNow = Number.POSITIVE_INFINITY;
         let lastKnownLoadPerCpu: number | undefined;
         let containerCpuActive: boolean | undefined;
@@ -6080,50 +6097,28 @@ export class TailscaleRunner implements RemoteValidator {
         };
         const loadTimer = setInterval(() => {
           void this.exec
-            .runRemote(host, hostLoadCommand(), () => {}, this.timings.probeTimeoutMs)
+            .runRemote(host, hostLoadCommand(containerName), () => {}, this.timings.probeTimeoutMs)
             .then((stats) => {
               if (stats.code === 0 && !stats.timedOut) {
                 const parsed = parseRemoteServerStats(stats.output);
                 loadNow = loadPerCpu(parsed.loadAverage, parsed.cpuCount);
                 lastKnownLoadPerCpu = loadNow;
                 loadUnknownSince = undefined;
+                const cpuMarker = stats.output.split("__CONTAINER_CPU__").at(-1) ?? "";
+                containerCpuActive = parseContainerCpuActive(cpuMarker);
               } else if (loadUnknownSince === undefined) {
+                loadNow = Number.POSITIVE_INFINITY;
+                containerCpuActive = undefined;
                 loadUnknownSince = Date.now();
               }
             })
             .catch(() => {
-              if (loadUnknownSince === undefined) loadUnknownSince = Date.now();
-            });
-          void this.exec
-            .runRemote(host, containerCpuCommand(containerName), () => {}, this.timings.probeTimeoutMs)
-            .then((stats) => {
-              if (stats.code === 0 && !stats.timedOut) {
-                containerCpuActive = parseContainerCpuActive(stats.output);
-              } else {
-                containerCpuActive = undefined;
-              }
-            })
-            .catch(() => {
+              loadNow = Number.POSITIVE_INFINITY;
               containerCpuActive = undefined;
+              if (loadUnknownSince === undefined) loadUnknownSince = Date.now();
             });
         }, this.timings.loadSampleIntervalMs);
         loadTimer.unref?.();
-
-        // Periodically reap old leaked containers (#1049)
-        let reaperRunCount = 0;
-        const reaperTimer = setInterval(() => {
-          reaperRunCount++;
-          if (reaperRunCount % 7 === 0) {
-            // Every 7 * 45s ≈ 5 min
-            void this.exec
-              .runRemote(host, reaperCommand(), () => {}, 30_000)
-              .catch(() => {
-                // Best effort, log failures for debug
-                this.logger?.system("info", `container reaper on ${host.ip} failed or timed out`);
-              });
-          }
-        }, this.timings.loadSampleIntervalMs);
-        reaperTimer.unref?.();
 
         const watchdog = new HangWatchdog({
           thresholdMs: hangIdleThresholdMs(hangIdleMinutes),
@@ -6134,9 +6129,10 @@ export class TailscaleRunner implements RemoteValidator {
           loadUnknownSince: () => loadUnknownSince,
           containerCpuActive: () => containerCpuActive,
           onHung: () => {
-            const condition = Number.isFinite(loadNow) && loadNow < HANG_IDLE_LOAD_THRESHOLD
-              ? "host-idle"
-              : "container-inactive";
+            const condition =
+              Number.isFinite(loadNow) && loadNow < HANG_IDLE_LOAD_THRESHOLD
+                ? "host-idle"
+                : "container-inactive";
             this.logger?.system(
               "warn",
               `remote validation run for #${opts.taskId} looks hung on ${host.ip} — killing ${containerName}`,
@@ -6220,7 +6216,6 @@ export class TailscaleRunner implements RemoteValidator {
         } finally {
           watchdog.stop();
           clearInterval(loadTimer);
-          clearInterval(reaperTimer);
           if (gateLingerTimer) clearTimeout(gateLingerTimer);
           if (runAbortGen !== undefined) {
             deleteActiveRunControlEntry(this.activeRunAbort, containerName, runAbortGen);

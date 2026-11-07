@@ -44,6 +44,7 @@ import {
   containerCpuCommand,
   parseContainerCpuActive,
   reaperCommand,
+  readRemoteValidationEvents,
   execRemoteWithHardDeadline,
   hangIdleThresholdMs,
   hostLoadCommand,
@@ -528,7 +529,7 @@ function poolFixture(opts: {
           }
           return {
             code: 0,
-            output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n`,
+            output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n__CONTAINER_CPU__\n${opts.containerCpuOutput ?? "0.0%"}\n`,
             timedOut: false,
           };
         }
@@ -536,7 +537,13 @@ function poolFixture(opts: {
           return { code: 0, output: opts.containerCpuOutput ?? "0.0%", timedOut: false };
         }
         if (cmd.startsWith("docker logs --tail") || cmd.startsWith("docker inspect ")) {
-          return { code: 0, output: cmd.startsWith("docker logs") ? "container log evidence" : "container state evidence", timedOut: false };
+          return {
+            code: 0,
+            output: cmd.startsWith("docker logs")
+              ? "container log evidence"
+              : "container state evidence",
+            timedOut: false,
+          };
         }
         // The hang kill (#0729): record the named container and let the pending
         // run resolve as if docker rm -f ended it.
@@ -1247,6 +1254,8 @@ describe("infra vs test failure classification (#0745)", () => {
     const mini = f.runner.hostStatus()?.find((h) => h.host === "mini");
     expect(mini?.degraded).toBe(true);
     expect(mini?.healthy).toBe(false);
+    expect(mini?.detail).toContain("install/clone/setup failed");
+    expect(mini?.detail).not.toContain("bun install EACCES accessing temporary directory");
     const rows = getCheckStore(f.root).list({ taskId: "0745" });
     expect(rows.map((r) => [r.machine, r.outcome])).toEqual([
       ["bee", "pass"],
@@ -2472,15 +2481,25 @@ describe("hang detector (#0729)", () => {
       }),
     ).toBe(false);
     // A successful host-side container sample can establish inactivity.
-    expect(detectHungRun({
-      lastOutputAt: quiet, now, thresholdMs, loadPerCpu: Number.POSITIVE_INFINITY,
-      containerCpuActive: false,
-    })).toBe(true);
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        containerCpuActive: false,
+      }),
+    ).toBe(true);
     // A progressing container protects a run from a silent local stream.
-    expect(detectHungRun({
-      lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 0.1,
-      containerCpuActive: true,
-    })).toBe(false);
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: true,
+      }),
+    ).toBe(false);
     // Unknown load but host was busy when last measured → not hung.
     expect(
       detectHungRun({
@@ -2507,14 +2526,26 @@ describe("hang detector (#0729)", () => {
 
   it("classifies load probe outcomes conservatively and reads host container CPU", () => {
     const common = { lastOutputAt: 0, now: 300_000, thresholdMs: 300_000 };
-    expect(detectHungRun({ ...common, loadPerCpu: Number.POSITIVE_INFINITY })).toBe(false);
-    expect(detectHungRun({ ...common, loadPerCpu: 0.1 })).toBe(true);
-    expect(detectHungRun({ ...common, loadPerCpu: 0.1, containerCpuActive: true })).toBe(false);
-    expect(parseContainerCpuActive("0.00%" )).toBe(false);
-    expect(parseContainerCpuActive("12.4%" )).toBe(true);
-    expect(parseContainerCpuActive("" )).toBeUndefined();
+    const probeCases = [
+      { name: "failed", loadPerCpu: Number.POSITIVE_INFINITY, hung: false },
+      { name: "slow", loadPerCpu: Number.POSITIVE_INFINITY, hung: false },
+      { name: "ok and idle", loadPerCpu: 0.1, hung: true },
+      {
+        name: "ok with container progress",
+        loadPerCpu: 0.1,
+        containerCpuActive: true,
+        hung: false,
+      },
+    ];
+    for (const probe of probeCases) {
+      expect(detectHungRun({ ...common, ...probe })).toBe(probe.hung);
+    }
+    expect(parseContainerCpuActive("0.00%")).toBe(false);
+    expect(parseContainerCpuActive("12.4%")).toBe(true);
+    expect(parseContainerCpuActive("")).toBeUndefined();
     expect(containerCpuCommand("run-1")).toContain("docker stats --no-stream");
-    expect(reaperCommand()).toContain("status=exited");
+    expect(reaperCommand()).toContain("docker rm -f");
+    expect(reaperCommand()).toContain("1500");
     expect(reaperCommand()).toContain("older than 25 minutes");
   });
 
@@ -2953,8 +2984,12 @@ describe("hung run recovery end to end (#0729)", () => {
 
   it("does not kill a silent stream while the host reports container CPU progress", async () => {
     const f = poolFixture({
-      hosts: [{ host: "a" }], fixedLoad: 0, containerCpuOutput: "18.2%",
-      hangIdleMinutes: 0.0005, hangCheckIntervalMs: 15, loadSampleIntervalMs: 10,
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      containerCpuOutput: "18.2%",
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
     });
     for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
     const resultPromise = f.runner.validate(opts("1049-progress"));
@@ -3139,8 +3174,11 @@ describe("hung run recovery end to end (#0729)", () => {
 
   it("captures container logs and inspect state before removing a hung container (#1049)", async () => {
     const f = poolFixture({
-      hosts: [{ host: "a" }], fixedLoad: 0, hangIdleMinutes: 0.0005,
-      hangCheckIntervalMs: 15, loadSampleIntervalMs: 10,
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
     });
     for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
     const resultPromise = f.runner.validate(opts("1049-evidence"));
@@ -3148,10 +3186,19 @@ describe("hung run recovery end to end (#0729)", () => {
     while (attempts++ < 200 && f.killed.length === 0) await tick(5);
     const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
     const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
-    const removeAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker rm -f 'repoos-validate-"));
+    const removeAt = f.remoteOrder.findIndex((cmd) =>
+      cmd.startsWith("docker rm -f 'repoos-validate-"),
+    );
     expect(logsAt).toBeGreaterThanOrEqual(0);
     expect(inspectAt).toBeGreaterThan(logsAt);
     expect(removeAt).toBeGreaterThan(inspectAt);
+    const events = readRemoteValidationEvents(f.root, "1049-evidence");
+    const hang = events.find((event) => event.message.includes("killed as hung"));
+    expect(hang?.hangEvidence).toMatchObject({
+      condition: "host-idle",
+      containerLogs: expect.stringContaining("container log evidence"),
+      containerState: expect.stringContaining("container state evidence"),
+    });
     await resultPromise;
   });
 
