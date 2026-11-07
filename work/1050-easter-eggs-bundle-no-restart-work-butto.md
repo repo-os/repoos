@@ -2,7 +2,7 @@
 id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
