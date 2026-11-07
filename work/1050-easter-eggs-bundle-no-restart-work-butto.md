@@ -12,11 +12,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T07:23:43Z"
+updated_at: "2026-11-07T07:57:46Z"
 ---
 ## Items
 
 - [ ] **E1 · No Restart work button while checks run** (web) — while a handoff or check is running for an active task, the card and drawer show no primary button (the "running checks" status already says it). Source: human report 2026-11-07 (screenshot of #1047's card).
+- [ ] **E2 · Close the Uncommitted changes panel after a successful commit** (web) — After a successful commit from the Uncommitted changes side panel (RepoDirtyPanel.vue commit()), close the panel. The success toast already reports the commit (files, branch, sha), and the panel otherwise stays open reading 'Uncommitted changes · Working tree is clean.' with the 'Committed 1 file to main (96d818687).' note, which is odd. Remove the now-redundant in-panel committedNote or keep it only if the panel stays open. Keep the panel open on failure (error and hook output stay visible). If the commit leaves other files uncommitted (dirtyCount > 0 after refresh) decide explicitly: close anyway, since the toast reports what happened.. Source: human report 2026-11-07 (screenshot of the panel after a commit).
 
 Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body. Add related small fixes as `E2`, `E3` before this bundle starts.
 
@@ -40,8 +41,25 @@ An `active` task whose engineer has exited and whose server-side handoff or chec
 ### Notes for AI
 Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (about line 1126, `ACTIVE_PAUSE` / `ACTIVE_RESTART`) and the `task-drawer-start-work` and `task-drawer-request-review` buttons in `src/ui-app/src/components/TaskDrawer.vue` (about line 5430). Depends on #1047 landing first so the handoff-running signal is the server-backed one; do not duplicate its logic. Source: human report 2026-11-07.
 
+
+## E2 · Close the Uncommitted changes panel after a successful commit
+
+### Problem
+
+
+### Desired UX
+
+
+### Acceptance criteria
+
+- Test: Component test: a successful commit closes the panel and shows the success toast; a failed commit keeps it open with the error and hook output; a commit that leaves the tree clean does not leave the 'Working tree is clean' state visible.
+
+### Notes for AI
+
 ## Activity
 
 - 2026-11-07T07:03:41Z · created · njachowski@gmail.com
 - 2026-11-07T07:03:45Z · depends_on
 - 2026-11-07T07:23:43Z · held, held-reason, held-at
+- 2026-11-07T07:57:46Z · body: Items (added 1); E2 · Close the Uncommitted changes panel after a successful commit (added)
+- 2026-11-07T07:57:46Z · note: bundle add E2
