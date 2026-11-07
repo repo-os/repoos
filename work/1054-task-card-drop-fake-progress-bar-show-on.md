@@ -1,5 +1,5 @@
 ---
-id: "1054"
+id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
 status: review
@@ -19,7 +19,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T19:01:51Z"
+updated_at: "2026-11-07T19:01:53Z"
 last_check_failure: "repoos check at 2026-11-07T17:21:16.921Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target \"default\"): highlight [data-test-id=\"pipeline-card-check-progress\"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)"
 ---
 ## Problem
