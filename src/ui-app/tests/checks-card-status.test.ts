@@ -28,7 +28,13 @@ describe("formatChecksCardLine (#1054)", () => {
     const line = formatChecksCardLine({
       nowMs: NOW,
       startedAt: new Date(NOW - 5_000).toISOString(),
-      progress: { stepsDone: null, stepsTotal: null, stepName: null, testsDone: null, testsTotal: null },
+      progress: {
+        stepsDone: null,
+        stepsTotal: null,
+        stepName: null,
+        testsDone: null,
+        testsTotal: null,
+      },
     });
     expect(line).toBe("Checks · starting… · 5s");
   });

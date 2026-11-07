@@ -836,11 +836,7 @@ const cardChecksHeading = computed(() => {
     const pool = remotePoolQueueHintForTaskChecks(repo.taskChecks[task.id]);
     if (pool) return pool.label;
   }
-  if (
-    repo.handoffInFlight(task.id) ||
-    activeCheckRun.value ||
-    localCheckSlot.value
-  ) {
+  if (repo.handoffInFlight(task.id) || activeCheckRun.value || localCheckSlot.value) {
     const status = repo.handoffStatuses[task.id];
     const run = activeCheckRun.value;
     const slow = !!notices.slowRunByTask[task.id];
@@ -855,7 +851,7 @@ const cardChecksHeading = computed(() => {
           testsTotal: run.testsTotal ?? null,
           testsPass: run.testsPass ?? null,
         }
-      : status?.progress ?? null;
+      : (status?.progress ?? null);
     return formatChecksCardLine({
       nowMs: checkNow.value,
       startedAt,
@@ -916,13 +912,8 @@ const drawerStatusSummary = computed(() => {
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
       checkChip.value?.state === "fail" &&
-        retryCountFrom(task, "check") &&
-        !(
-          activeCheckRun.value ||
-          localCheckWait.value ||
-          localCheckSlot.value ||
-          handoffBusy.value
-        ),
+      retryCountFrom(task, "check") &&
+      !(activeCheckRun.value || localCheckWait.value || localCheckSlot.value || handoffBusy.value),
     ),
     reviewerRunning: Boolean(review.value?.running),
     workRunning: repo.isRunning(task.id) || repo.pmWorkingFor(task.id),
@@ -5955,9 +5946,7 @@ watch(
                   (statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt)
                     ? `attempt ${statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt}`
                     : ""
-                }}<template
-                  v-if="checkMachine ?? repo.handoffStatuses[ui.active.id]?.machine"
-                >
+                }}<template v-if="checkMachine ?? repo.handoffStatuses[ui.active.id]?.machine">
                   · on
                   {{ checkMachine ?? repo.handoffStatuses[ui.active.id]?.machine }}</template
                 ></span
