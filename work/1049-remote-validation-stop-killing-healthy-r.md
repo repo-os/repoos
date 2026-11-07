@@ -12,7 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: github copilot
 created_at: "2026-11-07T03:30:53Z"
-updated_at: "2026-11-07T08:15:48Z"
+updated_at: "2026-11-07T08:22:54Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-07T08:13:58.363Z: repoos check failed: ui verification failed (10 issue(s)): [request] HTTP 404 for http://127.0.0.1:63511/api/tasks/1049/diff-stats (http://127.0.0.1:63511/api/tasks/1049/diff-stats); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:63511/api/tasks/1049/diff-stats); [request] HTTP 404 for http://127.0.0.1:63511/api/tasks/1049/engineering-reports (http://127.0.0.1:63511/api/tasks/1049/engineering-reports); [request] Failed to load resource:… (truncated)"
 review_rounds: 1
@@ -61,11 +61,11 @@ Findings from the investigation (no single root cause proven):
 ```json
 [
 {
-  "label": "Task debug events with expanded remote details",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".debug-event",
-  "state": "drawer:debugLogs"
+"label": "Task debug events with expanded remote details",
+"target": "default",
+"route": "/work",
+"highlight": ".debug-event",
+"state": "drawer:debugLogs"
 }
 ]
 ```
@@ -141,3 +141,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T08:13:54Z · message_queued at 2026-11-07T08:13:54.983Z
 - 2026-11-07T08:13:58Z · message_delivered: 1 message(s)
 - 2026-11-07T08:15:48Z · body
+- 2026-11-07T08:22:54Z · body
