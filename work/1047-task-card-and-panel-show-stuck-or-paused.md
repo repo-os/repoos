@@ -2,7 +2,7 @@
 id: 1047
 title: "Task card and panel: show running checks clearly, with a live progress bar"
 type: bug
-status: active
+status: review
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-07T00:21:00Z"
-updated_at: "2026-11-07T06:46:19Z"
+updated_at: "2026-11-07T07:12:03Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-07T03:51:58.074Z: repoos check failed: ui verification failed (14 issue(s)): [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/handoff-status (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:54780/api/tasks/9999/handoff-status); [request] HTTP 404 for http://127.0.0.1:54780/api/tasks/9999/summary (http://127.0.0.1:54780/api/tasks/9999/summary); [request] Failed to load resource: the server … (truncated)"
@@ -125,3 +125,4 @@ Acceptance: a task whose handoff checks run shows the bar in the panel above the
 - 2026-11-07T05:56:56Z · CTO nudge: held — remote validation is running
 - 2026-11-07T06:42:27Z · body
 - 2026-11-07T06:46:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-07T07:12:03Z · status active→review
