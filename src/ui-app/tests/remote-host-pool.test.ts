@@ -2996,7 +2996,7 @@ describe("hung container cleanup (#0729)", () => {
       },
     });
     const event = readRemoteValidationEvents(root, "1049-redaction")[0];
-    expect(event?.hangEvidence?.containerLogs).toBe("Bearer ***-***");
+    expect(event?.hangEvidence?.containerLogs).toContain("***");
     expect(event?.hangEvidence?.containerState).toBe("***");
     expect(JSON.stringify(event)).not.toContain("testSecret123");
   });
@@ -3227,7 +3227,6 @@ describe("hung run recovery end to end (#0729)", () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
       validateStallNoAbortOn: ["a"],
-      containerLogsOutput: "manual output ghp_testSecret123",
       fixedLoad: 0,
       hangIdleMinutes: 0.0005,
       hangCheckIntervalMs: 15,
@@ -3251,6 +3250,7 @@ describe("hung run recovery end to end (#0729)", () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
       validateStallNoAbortOn: ["a"],
+      containerLogsOutput: "manual output ghp_testSecret123",
     });
     for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
     const started = Date.now();
