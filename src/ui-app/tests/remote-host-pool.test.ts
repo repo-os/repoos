@@ -2596,6 +2596,16 @@ describe("hang detector (#0729)", () => {
     expect(reaperCommand()).toContain("name=^/repoos-validate-");
     expect(reaperCommand()).toContain('case "$name" in repoos-validate-*)');
     expect(reaperCommand()).toContain("Reaping stale validation container");
+    const created = "2026-11-07T03:30:53.123456789Z";
+    const normalized = execFileSync(
+      "bash",
+      ["-c", `printf '%s' '${created}' | sed 's/\\.[0-9]*Z$/Z/'`],
+      { encoding: "utf8" },
+    );
+    expect(normalized).toBe("2026-11-07T03:30:53Z");
+    expect(Date.parse(normalized)).not.toBeNaN();
+    expect(reaperCommand()).toContain(`sed 's/\\.[0-9]*Z$/Z/'`);
+    expect(reaperCommand()).toContain(`date -j -f '%Y-%m-%dT%H:%M:%SZ' "$normalized"`);
     expect(containerReaperDue(undefined, 1_000_000)).toBe(true);
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000)).toBe(true);
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000 - 1)).toBe(false);
