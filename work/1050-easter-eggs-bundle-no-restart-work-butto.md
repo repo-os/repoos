@@ -3,6 +3,9 @@ id: 1050
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI"
 hold: true
 hold_reason: "Waiting for #1047 to land; depends_on cannot hold ids >= 1000 yet (parser drops unquoted numeric ids), so hold stands in until that is fixed"
 hold_at: "2026-11-07T07:23:43.861Z"
@@ -12,7 +15,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T11:02:36Z"
+updated_at: "2026-11-07T13:13:42Z"
 ---
 ## Items
 
@@ -81,3 +84,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T07:57:46Z · note: bundle add E2
 - 2026-11-07T11:02:36Z · body: Items (added 1); E3 · Collapse repeated agent stderr lines in the chat and stop styling them as errors (added)
 - 2026-11-07T11:02:36Z · note: bundle add E3
+- 2026-11-07T13:13:42Z · needs_input
