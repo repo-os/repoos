@@ -2,7 +2,7 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-07T23:29:04Z"
+updated_at: "2026-11-07T23:29:05Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 831c9b037a8e4b435aa382d13a7c1bf4a803e1e3
 review_rounds: 1
@@ -217,3 +217,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T23:24:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the check passed on `831c9b03`, but RepoOS requires a new branch tip to retry the cached failure. Sync is refused during this active turn, and the task instructions prohibit manual staging and commits. The branch hasn’t change… · stderr: 2026-11-07T23:23:52.404219Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:23:52.485693Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:24:37.937712Z ERROR codex_models_manager::manager: failed to refres…
 - 2026-11-07T23:28:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-07T23:29:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the scoped check passed, but RepoOS won’t retry the cached timeout until the branch tip changes. `repoos sync 1050` refuses during this active turn, and the task instructions prohibit manual staging and commits. I can’t change… · stderr: 2026-11-07T23:13:52.345681Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:14:09.106117Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-07T23:18:52.364442Z ERROR codex_models_manager::manager: failed to refres…
+- 2026-11-07T23:29:05Z · status active→review
