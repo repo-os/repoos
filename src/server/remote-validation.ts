@@ -1023,7 +1023,10 @@ export function validateContainerName(runId: string): string {
  */
 export function staleContainerCleanupCommand(): string {
   return (
-    `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} ` +
+    // Docker's name filter is a substring search unless anchored. Keep the
+    // daemon-side candidate set restricted to names with this exact prefix;
+    // the inspect/case check below remains a second guard.
+    `docker ps -aq --filter ${shellQuote(`name=^/${VALIDATE_CONTAINER_PREFIX}-`)} ` +
     "--filter status=created --filter status=exited --filter status=dead 2>/dev/null | " +
     `while IFS= read -r id; do name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
     `case "$name" in ${VALIDATE_CONTAINER_PREFIX}-*) docker rm -f "$id" >/dev/null 2>&1 || true ;; esac; done`
@@ -1250,7 +1253,7 @@ export function reaperCommand(): string {
   // accept both GNU and BSD date to support Linux and macOS runner hosts.
   return (
     `cutoff=$(($(date +%s) - 1500)); ` +
-    `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} ` +
+    `docker ps -aq --filter ${shellQuote(`name=^/${VALIDATE_CONTAINER_PREFIX}-`)} ` +
     `2>/dev/null | ` +
     `while IFS= read -r id; do ` +
     `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
