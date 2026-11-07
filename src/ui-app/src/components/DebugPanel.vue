@@ -147,10 +147,19 @@ function parseActivity(body: string): { at: string; text: string }[] {
   if (heading === -1) return [];
   const section = body.slice(heading);
   const entries: { at: string; text: string }[] = [];
-  const re = /^- (\S+) · (.+)$/gmu;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(section))) {
-    entries.push({ at: m[1], text: m[2] });
+  for (const line of section.split("\n")) {
+    const entry = /^- (\S+) · (.+)$/.exec(line);
+    if (entry) {
+      entries.push({ at: entry[1], text: entry[2] });
+      continue;
+    }
+    const previous = entries.at(-1);
+    if (previous && line.startsWith("> ")) {
+      // Multiline notes are encoded as blockquote continuation lines so they
+      // survive task-file body normalization. Restore the report's newlines
+      // and blank lines for the expanded activity entry.
+      previous.text += `\n${line.slice(2)}`;
+    }
   }
   return entries;
 }
