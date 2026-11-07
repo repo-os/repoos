@@ -4,8 +4,8 @@ title: "Remote validation: stop killing healthy runs as hung; keep evidence; rea
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 9 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — reaper ownership, cleanup timing, and Runners-tab cause visibility remain incomplete."
 priority: p0
 area: server
 assigned_to: ai
