@@ -41,6 +41,9 @@ import {
   deadlineLockWaitSecs,
   deleteActiveRunControlEntry,
   detectHungRun,
+  containerCpuCommand,
+  parseContainerCpuActive,
+  reaperCommand,
   execRemoteWithHardDeadline,
   hangIdleThresholdMs,
   hostLoadCommand,
@@ -417,6 +420,7 @@ interface Fixture {
   releaseKill(): void;
   /** Post-kill bundle/artifact cleanup SSH commands (#0739). */
   cleanupCmds: string[];
+  remoteOrder: string[];
 }
 
 function poolFixture(opts: {
@@ -469,6 +473,7 @@ function poolFixture(opts: {
   hangKillNeverResolves?: boolean;
   /** Load idle probes always fail — hang must still be bounded (#0739). */
   loadProbeFails?: boolean;
+  containerCpuOutput?: string;
   /** Validation SSH never resolves and ignores registerAbort (#0739 wedge). */
   validateStallNoAbortOn?: string[];
   /** Stream `repoos check` step headings so phase timings split build/tests (#0897). */
@@ -500,6 +505,7 @@ function poolFixture(opts: {
   const down = new Set<string>();
   const killed: string[] = [];
   const cleanupCmds: string[] = [];
+  const remoteOrder: string[] = [];
   const infraFailedOnce = new Set<string>();
   let killGate: { resolve: () => void } | null = null;
   let inFlight = 0;
@@ -510,6 +516,7 @@ function poolFixture(opts: {
     downloadDir: vi.fn(async () => {}),
     runRemote: vi.fn(
       async (host, cmd, onChunk, timeoutMs, remoteOpts): Promise<RemoteExecResult> => {
+        remoteOrder.push(cmd);
         if (cmd.startsWith("rm -f ") && cmd.includes(".bundle") && cmd.includes("rm -rf")) {
           cleanupCmds.push(cmd);
           return { code: 0, output: "", timedOut: false };
@@ -524,6 +531,12 @@ function poolFixture(opts: {
             output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n`,
             timedOut: false,
           };
+        }
+        if (cmd.includes("docker stats --no-stream")) {
+          return { code: 0, output: opts.containerCpuOutput ?? "0.0%", timedOut: false };
+        }
+        if (cmd.startsWith("docker logs --tail") || cmd.startsWith("docker inspect ")) {
+          return { code: 0, output: cmd.startsWith("docker logs") ? "container log evidence" : "container state evidence", timedOut: false };
         }
         // The hang kill (#0729): record the named container and let the pending
         // run resolve as if docker rm -f ended it.
@@ -699,6 +712,7 @@ function poolFixture(opts: {
     peak: () => peak,
     killed,
     cleanupCmds,
+    remoteOrder,
     releaseKill() {
       killGate?.resolve();
       killGate = null;
@@ -2447,7 +2461,7 @@ describe("hang detector (#0729)", () => {
     );
     // Host busy → not hung (the run may simply be queued behind real work).
     expect(detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 4 })).toBe(false);
-    // Unknown load with no prior busy sample → hung once unknown long enough (#0739).
+    // Failed probe is unknown, not proof that the host is idle (#1049).
     expect(
       detectHungRun({
         lastOutputAt: quiet,
@@ -2456,7 +2470,17 @@ describe("hang detector (#0729)", () => {
         loadPerCpu: Number.POSITIVE_INFINITY,
         loadUnknownSince: quiet,
       }),
-    ).toBe(true);
+    ).toBe(false);
+    // A successful host-side container sample can establish inactivity.
+    expect(detectHungRun({
+      lastOutputAt: quiet, now, thresholdMs, loadPerCpu: Number.POSITIVE_INFINITY,
+      containerCpuActive: false,
+    })).toBe(true);
+    // A progressing container protects a run from a silent local stream.
+    expect(detectHungRun({
+      lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 0.1,
+      containerCpuActive: true,
+    })).toBe(false);
     // Unknown load but host was busy when last measured → not hung.
     expect(
       detectHungRun({
@@ -2479,6 +2503,19 @@ describe("hang detector (#0729)", () => {
     expect(
       detectHungRun({ lastOutputAt: now - 300_000, now, thresholdMs: 300_000, loadPerCpu: 0 }),
     ).toBe(true);
+  });
+
+  it("classifies load probe outcomes conservatively and reads host container CPU", () => {
+    const common = { lastOutputAt: 0, now: 300_000, thresholdMs: 300_000 };
+    expect(detectHungRun({ ...common, loadPerCpu: Number.POSITIVE_INFINITY })).toBe(false);
+    expect(detectHungRun({ ...common, loadPerCpu: 0.1 })).toBe(true);
+    expect(detectHungRun({ ...common, loadPerCpu: 0.1, containerCpuActive: true })).toBe(false);
+    expect(parseContainerCpuActive("0.00%" )).toBe(false);
+    expect(parseContainerCpuActive("12.4%" )).toBe(true);
+    expect(parseContainerCpuActive("" )).toBeUndefined();
+    expect(containerCpuCommand("run-1")).toContain("docker stats --no-stream");
+    expect(reaperCommand()).toContain("status=exited");
+    expect(reaperCommand()).toContain("older than 25 minutes");
   });
 
   it("HangWatchdog fires onHung exactly once and stops after firing", () => {
@@ -2897,7 +2934,7 @@ describe("hung run recovery end to end (#0729)", () => {
     await resultPromise;
   });
 
-  it("kills a stalled run when load probes never succeed (#0739)", async () => {
+  it("does not kill a stalled run when load probes never succeed (#1049)", async () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
       loadProbeFails: true,
@@ -2907,10 +2944,24 @@ describe("hung run recovery end to end (#0729)", () => {
     });
     for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
     const resultPromise = f.runner.validate(opts("0739-load"));
-    let attempts = 0;
-    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
-    expect(f.killed).toHaveLength(1);
+    for (let i = 0; i < 30; i++) await tick(10);
+    expect(f.killed).toHaveLength(0);
+    expect(f.pending()).toHaveLength(1);
+    f.release();
     await resultPromise;
+  });
+
+  it("does not kill a silent stream while the host reports container CPU progress", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }], fixedLoad: 0, containerCpuOutput: "18.2%",
+      hangIdleMinutes: 0.0005, hangCheckIntervalMs: 15, loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("1049-progress"));
+    for (let i = 0; i < 30; i++) await tick(10);
+    expect(f.killed).toHaveLength(0);
+    f.release();
+    expect((await resultPromise).ok).toBe(true);
   });
 
   it("execRemoteWithHardDeadline returns when runRemote ignores timeoutMs (#0739)", async () => {
@@ -3084,6 +3135,24 @@ describe("hung run recovery end to end (#0729)", () => {
     await resultPromise;
     expect(f.cleanupCmds.length).toBeGreaterThan(0);
     expect(f.cleanupCmds.some((c) => c.includes(".bundle"))).toBe(true);
+  });
+
+  it("captures container logs and inspect state before removing a hung container (#1049)", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }], fixedLoad: 0, hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15, loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("1049-evidence"));
+    let attempts = 0;
+    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+    const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
+    const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
+    const removeAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker rm -f 'repoos-validate-"));
+    expect(logsAt).toBeGreaterThanOrEqual(0);
+    expect(inspectAt).toBeGreaterThan(logsAt);
+    expect(removeAt).toBeGreaterThan(inspectAt);
+    await resultPromise;
   });
 
   it("records outcome 'hung' in the check-run history", async () => {

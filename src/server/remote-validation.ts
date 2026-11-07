@@ -1235,18 +1235,35 @@ export function staleBundlePruneCommand(): string {
  * Run on each host periodically to clean up containers left behind by killed runs.
  */
 export function reaperCommand(): string {
-  // Remove all validation containers; they are all ephemeral and meant to be short-lived.
-  // If a container is still running after 25 minutes, it's a leak and should be removed.
+  // Docker supplies Created as RFC3339; use its timestamp via `docker inspect`
+  // to avoid host-specific GNU/BSD `date -d` differences. Only stopped
+  // containers can be proven unowned without racing an active run.
   return (
     `cutoff=$(($(date +%s) - 1500)); ` +
-    `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} --format '{{.Names}} {{.CreatedAt}}' 2>/dev/null | ` +
-    `while IFS= read -r name created; do ` +
-    `if [ -n "$name" ] && [ -n "$created" ]; then ` +
-    `ctime=$(date -d "$created" +%s 2>/dev/null || echo 0); ` +
-    `if [ "$ctime" -lt "$cutoff" ]; then ` +
-    `echo "Reaping old container $name"; docker rm -f "$name" 2>/dev/null || true; ` +
-    `fi; fi; done`
+    `docker ps -aq --filter ${shellQuote(`name=${VALIDATE_CONTAINER_PREFIX}-`)} ` +
+    "--filter status=created --filter status=exited --filter status=dead 2>/dev/null | " +
+    `while IFS= read -r id; do ` +
+    `created=$(docker inspect -f '{{.Created}}' "$id" 2>/dev/null || true); ` +
+    `ctime=$(date -j -f '%Y-%m-%dT%H:%M:%S' "\${created%%.*}" +%s 2>/dev/null || ` +
+    `date -d "$created" +%s 2>/dev/null || echo 0); ` +
+    `if [ "$ctime" -gt 0 ] && [ "$ctime" -lt "$cutoff" ]; then ` +
+    `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
+    `echo "Reaping stale validation container $name (older than 25 minutes)"; ` +
+    `docker rm "$id" >/dev/null 2>&1 || true; fi; done`
   );
+}
+
+/** Read CPU activity from the runner's Docker daemon for one validation container. */
+export function containerCpuCommand(containerName: string): string {
+  const safe = containerName.replace(/[^A-Za-z0-9_.-]/g, "");
+  return `docker stats --no-stream --format '{{.CPUPerc}}' ${shellQuote(safe)} 2>/dev/null || true`;
+}
+
+/** Parse Docker's CPU percentage as active/inactive; malformed or missing is unknown. */
+export function parseContainerCpuActive(output: string): boolean | undefined {
+  const value = output.match(/([0-9]+(?:\.[0-9]+)?)\s*%/);
+  if (!value) return undefined;
+  return Number(value[1]) > 0;
 }
 
 /**
@@ -1323,6 +1340,9 @@ export function detectHungRun(opts: {
   const idleThreshold = opts.idleLoadThreshold ?? HANG_IDLE_LOAD_THRESHOLD;
   const quietMs = opts.now - opts.lastOutputAt;
   if (quietMs < opts.thresholdMs) return false;
+  // A live container CPU sample is stronger evidence than a quiet SSH pipe or
+  // an otherwise idle host: the workload is still making progress.
+  if (opts.containerCpuActive === true) return false;
   if (opts.loadPerCpu < idleThreshold) return true;
   if (!Number.isFinite(opts.loadPerCpu)) {
     const last = opts.lastKnownLoadPerCpu;
@@ -1370,6 +1390,7 @@ export class HangWatchdog {
       gateFinished?: () => boolean;
       lastKnownLoadPerCpu?: () => number | undefined;
       loadUnknownSince?: () => number | undefined;
+      containerCpuActive?: () => boolean | undefined;
     },
   ) {
     this.lastOutputAt = this.now();
@@ -1403,6 +1424,7 @@ export class HangWatchdog {
         gateFinished: this.opts.gateFinished?.(),
         lastKnownLoadPerCpu: this.opts.lastKnownLoadPerCpu?.(),
         loadUnknownSince: this.opts.loadUnknownSince?.(),
+        containerCpuActive: this.opts.containerCpuActive?.(),
       })
     ) {
       return false;
@@ -6022,6 +6044,7 @@ export class TailscaleRunner implements RemoteValidator {
         // summary `hung` so the caller retries on another host.
         let loadNow = Number.POSITIVE_INFINITY;
         let lastKnownLoadPerCpu: number | undefined;
+        let containerCpuActive: boolean | undefined;
         let loadUnknownSince: number | undefined = Date.now();
         let gateFinished = false;
         let streamBuf = "";
@@ -6071,6 +6094,18 @@ export class TailscaleRunner implements RemoteValidator {
             .catch(() => {
               if (loadUnknownSince === undefined) loadUnknownSince = Date.now();
             });
+          void this.exec
+            .runRemote(host, containerCpuCommand(containerName), () => {}, this.timings.probeTimeoutMs)
+            .then((stats) => {
+              if (stats.code === 0 && !stats.timedOut) {
+                containerCpuActive = parseContainerCpuActive(stats.output);
+              } else {
+                containerCpuActive = undefined;
+              }
+            })
+            .catch(() => {
+              containerCpuActive = undefined;
+            });
         }, this.timings.loadSampleIntervalMs);
         loadTimer.unref?.();
 
@@ -6097,7 +6132,11 @@ export class TailscaleRunner implements RemoteValidator {
           gateFinished: () => gateFinished,
           lastKnownLoadPerCpu: () => lastKnownLoadPerCpu,
           loadUnknownSince: () => loadUnknownSince,
+          containerCpuActive: () => containerCpuActive,
           onHung: () => {
+            const condition = Number.isFinite(loadNow) && loadNow < HANG_IDLE_LOAD_THRESHOLD
+              ? "host-idle"
+              : "container-inactive";
             this.logger?.system(
               "warn",
               `remote validation run for #${opts.taskId} looks hung on ${host.ip} — killing ${containerName}`,
@@ -6111,7 +6150,7 @@ export class TailscaleRunner implements RemoteValidator {
               containerName,
               paths,
               taskId: opts.taskId,
-              hangCondition: "stream-silent",
+              hangCondition: condition,
               abortMain: () => abortMainRemote?.(),
               releaseSlot: () => slot.release(),
               settleMain: () => {
