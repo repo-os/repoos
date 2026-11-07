@@ -302,3 +302,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T17:55:03Z · message_delivered: 2 message(s)
 - 2026-11-07T17:55:04Z · note: handoff requested (cli)
 - 2026-11-07T17:58:14Z · message_queued at 2026-11-07T17:58:14.401Z
+- 2026-11-07T17:58:14Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
