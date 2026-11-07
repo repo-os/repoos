@@ -673,14 +673,13 @@ export function patchTaskFile(
   // are appended status-first then note, matching the core `updateStatus` path,
   // so the timeline reads identically regardless of entry path.
   //
-  // Newlines are collapsed to spaces (defense-in-depth): a multi-line note
-  // from the UI textarea must not inject raw line breaks into the `## Activity`
-  // list, which would break the single-line `- ts · entry` structure that
-  // consumers (e.g. DebugPanel.parseActivity) rely on.
-  const note = typeof patch.note === "string" ? patch.note.replace(/\r?\n/g, " ").trim() : "";
+  // Preserve note line breaks as indented continuation lines. The activity
+  // parser treats them as part of the preceding entry, keeping a textarea
+  // report readable without making its markdown look like task sections.
+  const note = typeof patch.note === "string" ? patch.note.trim() : "";
   const entries: string[] = [];
   if (changes.length) entries.push(changes.join(", "));
-  if (note) entries.push(`note: ${note}`);
+  if (note) entries.push(`note: ${note.replace(/\r\n?/g, "\n").replace(/\n/g, "\n  ")}`);
 
   if (entries.length) {
     for (const entry of entries) recordChange(current, entry);

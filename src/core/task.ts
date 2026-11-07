@@ -170,6 +170,9 @@ function collectActivityEntries(body: string): string[] {
       if (trimmed === ACTIVITY_HEADING) break;
       if (/^##\s/.test(trimmed)) break;
       if (trimmed.startsWith("- ")) entries.push(trimmed);
+      else if (entries.length && /^ {2,}\S/.test(lines[j])) {
+        entries[entries.length - 1] += `\n${lines[j].replace(/^ {2}/, "")}`;
+      }
     }
   }
   return entries;

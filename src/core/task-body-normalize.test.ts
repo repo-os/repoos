@@ -62,6 +62,14 @@ Fine.
     expect(normalizeTaskBody(canonical)).toBe(canonical);
   });
 
+  it("round-trips multi-line markdown inside one activity note", () => {
+    const report = "Tested on device A.\n\n- Lid closed\n- Wake observed";
+    const body = `## Problem\n\nTest task.\n\n## Activity\n\n- 2026-10-05T01:00:00Z · status ready→done\n- 2026-10-05T01:00:01Z · note: ${report.replace(/\n/g, "\n  ")}\n`;
+    const normalized = normalizeTaskBody(body);
+    expect(extractSection(normalized, ACTIVITY_HEADING)).toContain(`note: ${report}`);
+    expect(normalizeTaskBody(normalized)).toBe(normalized);
+  });
+
   it("strips uniform two-space indent on the whole body", () => {
     const indented = `  ## Problem
 
