@@ -3,12 +3,6 @@ id: 1054
 title: "Task card: drop fake progress bar, show one checks status line"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the codex agent exited without output: Reading additional input from stdin... error: {\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'terra' model is not supported when using Codex with a ChatGPT account.\",\"code\":\"model_not_found\"}}"
-debug_tldr: The configured terra model is unsupported with the ChatGPT account — select a supported reviewer model and retry the review.
-debug_tldr_at: "2026-11-07T18:54:27Z"
-debug_tldr_key: "review-failed|the codex agent exited without output: Reading additional input from stdin... error: {\"type\":\"error\",\"status\":400,\"error\":{\"type\":\"invalid_request_error\",\"message\":\"The 'terra' model is not supported when using Codex with a ChatGPT account.\",\"code\":\"model_not_found\"}}"
 priority: p2
 area: web
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T13:16:10Z"
-updated_at: "2026-11-07T19:01:53Z"
+updated_at: "2026-11-07T19:02:47Z"
 last_check_failure: "repoos check at 2026-11-07T17:21:16.921Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Pipeline card: thin bar under step label (target \"default\"): highlight [data-test-id=\"pipeline-card-check-progress\"] matched nothing on /work?tab=pipeline (http://127.0.0.1:52702/work?tab=pipeline&shotState=pipeline%3AchecksProgress)"
 ---
 ## Problem
@@ -157,3 +151,4 @@ Context: filed from review of #1047 screenshots (task #1049 mid-handoff, attempt
 - 2026-11-07T18:54:08Z · note: review pass 1: failed — no usable report
 - 2026-11-07T18:54:08Z · needs_input
 - 2026-11-07T19:01:51Z · review_model_override
+- 2026-11-07T19:02:47Z · needs_input (review-failed) cleared for review again by human
