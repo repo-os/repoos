@@ -62,6 +62,8 @@ export interface ActiveTaskCardInput {
   localQueueTitle: string | null;
   remotePoolQueueLabel: string | null;
   remotePoolQueueTitle: string | null;
+  /** A live local check slot can prove a run when no check history row exists. */
+  localCheckSlot?: { ageMs: number; heartbeatAgeMs: number } | null;
   busyChild: string | null;
   stuckSilenceMs?: number;
   checkStallMs?: number;
@@ -178,6 +180,16 @@ export function resolveActiveEngineerCardHint(input: ActiveTaskCardInput): Activ
       label: input.remotePoolQueueLabel,
       title: input.remotePoolQueueTitle ?? input.remotePoolQueueLabel,
       cls: "tc-queued",
+      blocksAgentInterrupt: true,
+    };
+  }
+
+  if (input.localCheckSlot) {
+    const elapsed = formatCardDuration(input.localCheckSlot.ageMs);
+    return {
+      label: `running checks · check · ${elapsed}`,
+      title: `A local check slot is held for this task · running for ${elapsed}.`,
+      cls: "tc-reviewing",
       blocksAgentInterrupt: true,
     };
   }

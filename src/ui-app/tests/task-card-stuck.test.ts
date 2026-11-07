@@ -245,7 +245,7 @@ describe("TaskCard stuck-agent detection", () => {
     await flush();
 
     const hint = wrapper.find(".tc-hint");
-    expect(hint.text()).toContain("checking");
+    expect(hint.text()).toContain("running checks · check");
     expect(hint.text()).toContain("109/645");
     expect(hint.classes()).not.toContain("tc-stuck");
   });
