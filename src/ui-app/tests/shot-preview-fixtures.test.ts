@@ -594,6 +594,7 @@ describe("shot preview board fixtures (#0743)", () => {
   it.each([
     ["drawer:statusReviewFailed", "review"],
     ["drawer:reviewPasses", "review"],
+    ["drawer:engineeringReports", "active"],
     ["drawer:statusHandoffFailed", "active"],
     ["drawer:statusChecksRunning", "active"],
     ["drawer:statusConfirmingHandoff", "active"],
@@ -623,6 +624,8 @@ describe("shot preview board fixtures (#0743)", () => {
       expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]?.running).toBe(true);
     } else if (fixture === "drawer:statusConfirmingHandoff") {
       expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBe("check");
+    } else if (fixture === "drawer:engineeringReports") {
+      expect(task?.status).toBe("active");
     } else {
       expect(task?.path).toBe(
         "work/9999-task-side-panel-status-chip-two-line-header-width-verification.md",

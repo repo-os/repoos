@@ -135,12 +135,18 @@ describe("engineering report history", () => {
     await wrapper.get('[data-test-id="engineering-report-tab"]').trigger("click");
     expect(wrapper.get('[data-test-id="engineering-report-history"]').text()).toContain("Round 1");
 
-    await wrapper.get('[data-test-id="engineering-report-history"] tbody tr').trigger("click");
+    await wrapper
+      .get('[data-test-id="engineering-report-history"] tbody tr:last-child')
+      .trigger("click");
     expect(wrapper.text()).toContain("First round report body.");
     expect(wrapper.text()).not.toContain("Second round report body.");
 
     const rows = wrapper.get('[data-test-id="engineering-report-history"]').findAll("tbody tr");
-    await rows[1]!.trigger("keydown", { key: " " });
+    expect(rows.map((row) => row.text())).toEqual([
+      expect.stringContaining("Round 2"),
+      expect.stringContaining("Round 1"),
+    ]);
+    await rows[0]!.trigger("keydown", { key: " " });
     expect(wrapper.text()).toContain("Second round report body.");
     expect(wrapper.text()).not.toContain("First round report body.");
     wrapper.unmount();
