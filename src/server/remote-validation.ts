@@ -312,7 +312,15 @@ export interface RemoteExecDeps {
     command: string,
     onChunk: (chunk: string) => void,
     timeoutMs: number,
-    opts?: { registerAbort?: (abort: () => void) => void },
+    opts?: {
+      registerAbort?: (abort: () => void) => void;
+      /** Reset the local SSH deadline when the remote host lock is acquired. */
+      lockAwareTimeout?: {
+        acquiredMarker: string;
+        waitBudgetMs: number;
+        runTimeoutMs: number;
+      };
+    },
   ): Promise<RemoteExecResult>;
   /** TCP connect probe (used to wait for sshd to come up). */
   probeTcp(ip: string, port: number, timeoutMs: number): Promise<boolean>;
@@ -895,11 +903,26 @@ export function appendRemoteValidationEvent(
 ): void {
   try {
     mkdirSync(join(root, ".repoos", "logs", "remote-validation"), { recursive: true });
-    const entry: RemoteValidationEvent = { at: new Date().toISOString(), ...event };
+    const entry: RemoteValidationEvent = {
+      at: new Date().toISOString(),
+      ...(redactRemoteEventValue(event) as Omit<RemoteValidationEvent, "at">),
+    };
     appendFileSync(remoteEventsPath(root, taskId), JSON.stringify(entry) + "\n", "utf8");
   } catch {
     /* best effort — observability must never fail a run */
   }
+}
+
+/** Redact credential-shaped text in every event field before it reaches disk. */
+function redactRemoteEventValue(value: unknown): unknown {
+  if (typeof value === "string") return redactSecrets(value);
+  if (Array.isArray(value)) return value.map(redactRemoteEventValue);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nested]) => [key, redactRemoteEventValue(nested)]),
+    );
+  }
+  return value;
 }
 
 /**
@@ -999,6 +1022,9 @@ export function cacheVolumeForSlot(base: string, slotIndex: number): string {
 export const VALIDATE_CONTAINER_PREFIX = "repoos-validate";
 
 export const CONTAINER_REAPER_INTERVAL_MS = 5 * 60_000;
+export const CONTAINER_REAPER_RUN_CAP_MS = 25 * 60_000;
+/** Extra age before an unowned container is eligible for a best-effort reap. */
+export const CONTAINER_REAPER_SAFETY_MARGIN_MS = 15 * 60_000;
 
 export function containerReaperDue(lastRunAt: number | undefined, now: number): boolean {
   return lastRunAt === undefined || now - lastRunAt >= CONTAINER_REAPER_INTERVAL_MS;
@@ -1021,6 +1047,51 @@ export interface ReaperCandidate {
   id: string;
   name: string;
   createdAt: number;
+}
+
+export interface ReaperInspection {
+  createdAt: number;
+  status: string;
+  /** Start time for running containers, finish time for stopped containers. */
+  lastActivityAt: number;
+  recentOutput: boolean;
+}
+
+/** Recheck Docker state and recent output immediately before removing a candidate. */
+export function reaperInspectionCommand(containerId: string): string {
+  if (!/^[a-f\d]{12,64}$/i.test(containerId)) return "false";
+  const safetySeconds = Math.ceil(CONTAINER_REAPER_SAFETY_MARGIN_MS / 1000);
+  return (
+    `state=$(docker inspect --format '{{.Created}}\t{{.State.Status}}\t{{.State.StartedAt}}\t{{.State.FinishedAt}}' ${shellQuote(containerId)}) || exit 1; ` +
+    `recent=$(docker logs --since ${safetySeconds}s --tail 1 ${shellQuote(containerId)} 2>/dev/null || true); ` +
+    `if [ -n "$recent" ]; then printf '%s\\tRECENT\\n' "$state"; else printf '%s\\tQUIET\\n' "$state"; fi`
+  );
+}
+
+export function parseReaperInspection(output: string): ReaperInspection | undefined {
+  const [created, status, started, finished, activity] = output.trim().split("\t");
+  const createdAt = created ? parseDockerCreatedTimestamp(created) : undefined;
+  const lastActivityAt =
+    status === "running"
+      ? started
+        ? parseDockerCreatedTimestamp(started)
+        : undefined
+      : finished
+        ? parseDockerCreatedTimestamp(finished)
+        : undefined;
+  if (!status || createdAt === undefined || lastActivityAt === undefined) return undefined;
+  return { createdAt, status, lastActivityAt, recentOutput: activity === "RECENT" };
+}
+
+export function reaperInspectionIsStale(
+  inspected: ReaperInspection | undefined,
+  now: number,
+  maxAgeMs = CONTAINER_REAPER_RUN_CAP_MS,
+  safetyMarginMs = CONTAINER_REAPER_SAFETY_MARGIN_MS,
+): boolean {
+  if (!inspected || inspected.recentOutput) return false;
+  const cutoff = now - maxAgeMs - safetyMarginMs;
+  return inspected.createdAt < cutoff && inspected.lastActivityAt < cutoff;
 }
 
 /** Select old, exactly-prefixed containers from the tab-separated remote listing. */
@@ -1374,9 +1445,9 @@ export function loadPerCpu(
  *
  * When load is unknown (`Infinity`), a quiet run is NOT called hung just
  * because the load probe failed: unknown load is treated as "we don't know if
- * it's idle" (#1049), not as "it's idle". An explicit inactive-container
- * sample is independent evidence and still identifies a hang, even when the
- * host is busy or its latest load probe failed (#1049).
+ * it's idle" (#1049), not as "it's idle". Two consecutive inactive-container
+ * samples spanning the threshold are independent evidence and still identify
+ * a hang, even when the host is busy or its latest load probe failed (#1049).
  */
 /** Drop a generation-scoped in-flight control entry without touching a newer run (#0739). */
 export function deleteActiveRunControlEntry<T extends { generation: number }>(
@@ -1406,15 +1477,24 @@ export function detectHungRun(opts: {
   containerCpuInactiveForMs?: number;
   /** Most recent host-side CPU sample; active progress is always conclusive. */
   containerCpuActive?: boolean;
+  /** At least two consecutive idle samples are required to establish inactivity. */
+  containerCpuIdleSamples?: number;
+  /** A newer unresolved probe invalidates every previous host/container sample. */
+  loadProbeInFlight?: boolean;
 }): boolean {
   if (opts.gateFinished) return false;
+  if (opts.loadProbeInFlight) return false;
   const idleThreshold = opts.idleLoadThreshold ?? HANG_IDLE_LOAD_THRESHOLD;
   const quietMs = opts.now - opts.lastOutputAt;
   if (quietMs < opts.thresholdMs) return false;
   // A single zero-CPU sample can be an I/O wait. Require sustained inactivity
   // for the same duration as stream silence; active CPU protects progress.
   if (opts.containerCpuActive !== undefined) {
-    return !opts.containerCpuActive && (opts.containerCpuInactiveForMs ?? 0) >= opts.thresholdMs;
+    return (
+      !opts.containerCpuActive &&
+      (opts.containerCpuIdleSamples ?? 0) >= 2 &&
+      (opts.containerCpuInactiveForMs ?? 0) >= opts.thresholdMs
+    );
   }
   if (opts.loadPerCpu < idleThreshold) return true;
   if (!Number.isFinite(opts.loadPerCpu)) {
@@ -1466,6 +1546,8 @@ export class HangWatchdog {
       loadUnknownSince?: () => number | undefined;
       containerCpuInactiveForMs?: () => number | undefined;
       containerCpuActive?: () => boolean | undefined;
+      containerCpuIdleSamples?: () => number;
+      loadProbeInFlight?: () => boolean;
     },
   ) {
     this.lastOutputAt = this.now();
@@ -1501,6 +1583,8 @@ export class HangWatchdog {
         loadUnknownSince: this.opts.loadUnknownSince?.(),
         containerCpuInactiveForMs: this.opts.containerCpuInactiveForMs?.(),
         containerCpuActive: this.opts.containerCpuActive?.(),
+        containerCpuIdleSamples: this.opts.containerCpuIdleSamples?.(),
+        loadProbeInFlight: this.opts.loadProbeInFlight?.(),
       })
     ) {
       return false;
@@ -2149,6 +2233,21 @@ export function deadlineLockWaitSecs(deadlineAt: number, now = Date.now()): numb
   return Math.max(0, Math.min(DEFAULT_HOST_LOCK_WAIT_SECS, 5 * Math.floor(remainSecs / 5)));
 }
 
+/** Remaining SSH budget: lock waiting gets its own allowance; run time starts at acquisition. */
+export function lockAwareRemoteTimeoutRemainingMs(opts: {
+  startedAt: number;
+  lockAcquiredAt?: number;
+  now: number;
+  waitBudgetMs: number;
+  runTimeoutMs: number;
+}): number {
+  const deadline =
+    opts.lockAcquiredAt === undefined
+      ? opts.startedAt + opts.waitBudgetMs + opts.runTimeoutMs
+      : opts.lockAcquiredAt + opts.runTimeoutMs;
+  return Math.max(0, deadline - opts.now);
+}
+
 // ── default IO implementation ────────────────────────────────────────────────
 
 function sshArgs(host: RemoteHost): string[] {
@@ -2169,7 +2268,7 @@ function runLocalWithStdin(
     const done = (code: number | null): void => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       resolve({ code, output, timedOut });
     };
     child.stdout?.on("data", (b: Buffer) => {
@@ -2206,6 +2305,11 @@ function runLocal(
     timeoutMs: number;
     onChunk?: (c: string) => void;
     registerAbort?: (abort: () => void) => void;
+    lockAwareTimeout?: {
+      acquiredMarker: string;
+      waitBudgetMs: number;
+      runTimeoutMs: number;
+    };
   },
 ): Promise<RemoteExecResult> {
   return new Promise((resolve) => {
@@ -2214,6 +2318,35 @@ function runLocal(
     let timedOut = false;
     let settled = false;
     let termination: Promise<void> | undefined;
+    const startedAt = Date.now();
+    let lockAcquiredAt: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stopProcess = (): void => {
+      timedOut = true;
+      if (child.pid && process.platform !== "win32") {
+        termination ??= terminateProcessGroupAndWait(child.pid);
+      } else {
+        child.kill("SIGKILL");
+      }
+    };
+    const armTimer = (durationMs: number): void => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(stopProcess, Math.max(0, durationMs));
+    };
+    const armConfiguredTimer = (): void => {
+      const lockAware = opts.lockAwareTimeout;
+      armTimer(
+        lockAware
+          ? lockAwareRemoteTimeoutRemainingMs({
+              startedAt,
+              lockAcquiredAt,
+              now: Date.now(),
+              waitBudgetMs: lockAware.waitBudgetMs,
+              runTimeoutMs: lockAware.runTimeoutMs,
+            })
+          : opts.timeoutMs,
+      );
+    };
     const done = (code: number | null): void => {
       if (settled) return;
       settled = true;
@@ -2231,6 +2364,11 @@ function runLocal(
     const onData = (b: Buffer): void => {
       const s = b.toString("utf8");
       output += s;
+      const lockAware = opts.lockAwareTimeout;
+      if (lockAware && lockAcquiredAt === undefined && output.includes(lockAware.acquiredMarker)) {
+        lockAcquiredAt = Date.now();
+        armConfiguredTimer();
+      }
       opts.onChunk?.(s);
     };
     child.stdout?.on("data", onData);
@@ -2252,14 +2390,7 @@ function runLocal(
         done(code);
       })();
     });
-    const timer = setTimeout(() => {
-      timedOut = true;
-      if (child.pid && process.platform !== "win32") {
-        termination ??= terminateProcessGroupAndWait(child.pid);
-      } else {
-        child.kill("SIGKILL");
-      }
-    }, opts.timeoutMs);
+    armConfiguredTimer();
   });
 }
 
@@ -2450,6 +2581,7 @@ export function defaultRemoteExec(): RemoteExecDeps {
         timeoutMs,
         onChunk,
         registerAbort: opts?.registerAbort,
+        lockAwareTimeout: opts?.lockAwareTimeout,
       });
     },
     probeTcp(ip, port, timeoutMs) {
@@ -3629,6 +3761,8 @@ interface PoolHostState {
   active: number;
   /** Runs in flight right now, oldest first (#0564) — task id + start time. */
   activeRuns: ActiveRemoteRun[];
+  /** Container names owned by this process, updated at run start and release. */
+  liveContainerNames: Set<string>;
   /** Dropped from config; kept only until in-flight slots release. */
   removed?: boolean;
   probed: boolean;
@@ -3925,6 +4059,7 @@ export class TailscaleHostPool {
         limit: rv ? remoteHostLimit(rv, spec) : 1,
         active: 0,
         activeRuns: [],
+        liveContainerNames: new Set(),
         probed: false,
         healthy: false,
         retryAt: 0,
@@ -3959,6 +4094,7 @@ export class TailscaleHostPool {
           limit: rv ? remoteHostLimit(rv, spec) : 1,
           active: 0,
           activeRuns: [],
+          liveContainerNames: new Set(),
           probed: false,
           healthy: false,
           retryAt: 0,
@@ -4059,28 +4195,25 @@ export class TailscaleHostPool {
             const stale = staleReaperCandidates(
               listing.output,
               Date.now(),
-              25 * 60_000,
-              new Set(s.activeRuns.flatMap((run) => (run.container ? [run.container] : []))),
+              CONTAINER_REAPER_RUN_CAP_MS + CONTAINER_REAPER_SAFETY_MARGIN_MS,
+              s.liveContainerNames,
             );
             for (const candidate of stale) {
               // A run can acquire its container after the listing completes.
-              // Recheck ownership immediately before removal so an in-flight
-              // run can exceed the nominal 25-minute run cap while waiting for
-              // the host lock (up to the additional lock-wait allowance).
-              if (s.activeRuns.some((run) => run.container === candidate.name)) continue;
-              // Local state and cached lock snapshots cannot see another
-              // server process. Ask the runner's shared host lock immediately
-              // before removal; if inspection fails, preserve the container.
-              const lockCheck = await this.exec.runRemote(
+              // Keep the ownership check local and repeat it at the removal
+              // boundary; cross-process ownership is intentionally best-effort.
+              if (s.liveContainerNames.has(candidate.name)) continue;
+              const inspected = await this.exec.runRemote(
                 s.ssh,
-                hostLockInspectShell(),
+                reaperInspectionCommand(candidate.id),
                 () => {},
-                HOST_LOCK_INSPECT_TIMEOUT_MS,
+                30_000,
               );
               if (
-                lockCheck.code !== 0 ||
-                lockCheck.timedOut ||
-                parseHostLockInspectOutput(lockCheck.output).holders.length > 0
+                inspected.code !== 0 ||
+                inspected.timedOut ||
+                !reaperInspectionIsStale(parseReaperInspection(inspected.output), Date.now()) ||
+                s.liveContainerNames.has(candidate.name)
               ) {
                 continue;
               }
@@ -4093,7 +4226,7 @@ export class TailscaleHostPool {
               if (removed.code === 0 && !removed.timedOut) {
                 this.logger?.system(
                   "info",
-                  `remote validation Reaping stale validation container ${candidate.name} (older than 25 minutes) on ${s.spec.host}`,
+                  `remote validation Reaping stale validation container ${candidate.name} (older than 40 minutes with no recent activity) on ${s.spec.host}`,
                 );
               } else {
                 this.logger?.system(
@@ -5047,6 +5180,7 @@ export class TailscaleHostPool {
       s.active = Math.max(0, s.active - 1);
       const i = s.activeRuns.indexOf(run);
       if (i !== -1) s.activeRuns.splice(i, 1);
+      if (run.container) s.liveContainerNames.delete(run.container);
       this.dropIfIdle(s);
       this.dispatch();
     };
@@ -5056,7 +5190,9 @@ export class TailscaleHostPool {
       ssh: s.ssh,
       limit: s.limit,
       setContainer: (name: string) => {
+        if (run.container && run.container !== name) s.liveContainerNames.delete(run.container);
         run.container = name;
+        s.liveContainerNames.add(name);
       },
       setRunPaths: (paths: RemoteRunPaths) => {
         run.bundle = paths.bundle;
@@ -6233,6 +6369,7 @@ export class TailscaleRunner implements RemoteValidator {
         let lastKnownLoadPerCpu: number | undefined;
         let containerCpuInactiveSince: number | undefined;
         let containerCpuLastSampleAt: number | undefined;
+        let containerCpuIdleSamples = 0;
         let containerCpuActive: boolean | undefined;
         let loadProbeInFlight = false;
         let loadUnknownSince: number | undefined = Date.now();
@@ -6299,15 +6436,20 @@ export class TailscaleRunner implements RemoteValidator {
                 if (cpuActive === false) {
                   const sampledAt = Date.now();
                   if (
+                    containerCpuInactiveSince === undefined ||
                     containerCpuLastSampleAt === undefined ||
                     sampledAt - containerCpuLastSampleAt > this.timings.loadSampleIntervalMs * 2
                   ) {
                     containerCpuInactiveSince = sampledAt;
+                    containerCpuIdleSamples = 1;
+                  } else {
+                    containerCpuIdleSamples += 1;
                   }
                   containerCpuLastSampleAt = sampledAt;
                 } else {
                   containerCpuInactiveSince = undefined;
                   containerCpuLastSampleAt = cpuActive === true ? Date.now() : undefined;
+                  containerCpuIdleSamples = 0;
                 }
               }
             })
@@ -6316,6 +6458,7 @@ export class TailscaleRunner implements RemoteValidator {
               containerCpuInactiveSince = undefined;
               containerCpuLastSampleAt = undefined;
               containerCpuActive = undefined;
+              containerCpuIdleSamples = 0;
             })
             .finally(() => {
               loadProbeInFlight = false;
@@ -6330,14 +6473,17 @@ export class TailscaleRunner implements RemoteValidator {
           gateFinished: () => gateFinished,
           lastKnownLoadPerCpu: () => lastKnownLoadPerCpu,
           loadUnknownSince: () => loadUnknownSince,
+          loadProbeInFlight: () => loadProbeInFlight,
           containerCpuInactiveForMs: () =>
-            containerCpuInactiveSince === undefined
+            containerCpuInactiveSince === undefined || containerCpuIdleSamples < 2
               ? undefined
               : Date.now() - containerCpuInactiveSince,
           containerCpuActive: () => containerCpuActive,
+          containerCpuIdleSamples: () => containerCpuIdleSamples,
           onHung: () => {
             const inactiveLongEnough =
               containerCpuActive === false &&
+              containerCpuIdleSamples >= 2 &&
               containerCpuInactiveSince !== undefined &&
               Date.now() - containerCpuInactiveSince >= hangIdleThresholdMs(hangIdleMinutes);
             hangCondition = inactiveLongEnough ? "container-inactive" : "host-idle";
@@ -6395,6 +6541,9 @@ export class TailscaleRunner implements RemoteValidator {
         const emitStream = (s: string): void => {
           this.activeRunRegistry.touch(opts.taskId);
           streamBuf += s;
+          if (streamBuf.includes("[lock] slot ")) {
+            outerTimeoutMs = this.timings.remoteRunTimeoutMs;
+          }
           advanceStepStage();
           if (!gateFinished && remoteRunHasGateExit(streamBuf)) {
             gateFinished = true;
@@ -6407,6 +6556,11 @@ export class TailscaleRunner implements RemoteValidator {
         try {
           run = await Promise.race([
             this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs, {
+              lockAwareTimeout: {
+                acquiredMarker: "[lock] slot ",
+                waitBudgetMs: waitSecs * 1000,
+                runTimeoutMs: this.timings.remoteRunTimeoutMs,
+              },
               registerAbort: (abort) => {
                 abortMainRemote = abort;
                 runAbortGen = ++this.runAbortGeneration;

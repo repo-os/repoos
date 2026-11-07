@@ -435,14 +435,14 @@ anymore. Containers left behind by a killed/hung run are reaped three ways: that
 per-run trap, the host prerequisite probe's **stale-container** sweep
 (`staleContainerCleanupCommand()`) — `repoos-validate-*` name prefix only, and
 **not** `status=running`, so a live sibling run is never removed; and a periodic
-background reaper that removes leaked containers older than the run cap (25 min)
-(`reaperCommand()`) (#1049). The periodic reaper removes prefixed containers
-older than the 25-minute run cap, but only while a fresh host-lock inspection
-shows no active lock occupancy; dispatch is held while the reaper runs, and
-locally owned container names are excluded and rechecked before removal. If
-remote lock inspection fails, the container is preserved. The lock-wait allowance can
-extend a run past 25 minutes, so age alone is never enough to reap it. Every
-removal is logged. Safe GC of abandoned workdirs (age-bound,
+background reaper (`reaperCommand()`) (#1049). The periodic reaper considers
+containers only after the 25-minute run cap plus a 15-minute safety margin,
+excludes names currently owned by this server process, and rechecks Docker
+creation/state timestamps plus recent logs immediately before removal. Dispatch
+is held while the reaper runs and every removal is logged. Cross-process
+ownership is best-effort: the reaper does not claim a complete host-wide view of
+other RepoOS server processes, so the age margin and last-activity check are
+deliberately conservative safeguards. Safe GC of abandoned workdirs (age-bound,
 mount-aware) is deliberately future work; until then, rely on per-run EXIT
 cleanup, non-running container sweeps, and the background reaper.
 

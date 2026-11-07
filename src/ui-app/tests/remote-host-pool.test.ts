@@ -47,7 +47,12 @@ import {
   staleReaperCandidates,
   parseContainerCpuActive,
   reaperCommand,
+  reaperInspectionCommand,
+  parseReaperInspection,
+  reaperInspectionIsStale,
   reaperRemoveCommand,
+  lockAwareRemoteTimeoutRemainingMs,
+  appendRemoteValidationEvent,
   readRemoteValidationEvents,
   execRemoteWithHardDeadline,
   hangIdleThresholdMs,
@@ -1831,7 +1836,7 @@ describe("health-cooldown arrivals and recovery (#0521 review)", () => {
   }, 15_000);
 });
 
-describe("outer SSH timeout covers the lock wait, not just the run (#0521 review)", () => {
+describe("outer SSH timeout starts the run deadline at lock acquisition (#1049)", () => {
   // The outer SSH-level timeout wraps BOTH phases as one process (waiting
   // for a free host slot, then the actual build+test). A fixed
   // remoteRunTimeoutMs regardless of how long the lock was allowed to wait
@@ -1839,10 +1844,16 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
   // then had only the remainder left for a normally-healthy suite — it
   // could be SIGKILLed and reported as an infra failure purely because of
   // how long it queued, never because anything was actually wrong.
-  it("adds the lock wait budget on top of remoteRunTimeoutMs when there is no deadline", async () => {
+  it("keeps the lock-wait allowance separate and resets the run timeout after acquisition", async () => {
     const root = tmpRoot();
     const runRemote = vi.fn(
-      async (_host: unknown, cmd: string, _onChunk?: unknown, _timeoutMs?: number) => {
+      async (
+        _host: unknown,
+        cmd: string,
+        onChunk?: (chunk: string) => void,
+        _timeoutMs?: number,
+        _remoteOpts?: Parameters<RemoteExecDeps["runRemote"]>[4],
+      ) => {
         if (cmd.includes(PREREQ_OK_TOKEN))
           return {
             code: 0,
@@ -1851,6 +1862,7 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
           };
         if (cmd.includes("__HOST_LOCK__"))
           return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        onChunk?.("[lock] slot 0 acquired after 0s\n");
         return { code: 0, output: "ok", timedOut: false };
       },
     );
@@ -1886,6 +1898,39 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
         !String(c[1]).includes(HOST_HEALTH_PROBE_TOKEN),
     );
     expect(runCall?.[3]).toBe(remoteRunTimeoutMs + DEFAULT_HOST_LOCK_WAIT_SECS * 1000);
+    expect(runCall?.[4]?.lockAwareTimeout).toEqual({
+      acquiredMarker: "[lock] slot ",
+      waitBudgetMs: DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+      runTimeoutMs: remoteRunTimeoutMs,
+    });
+    const startedAt = 10_000;
+    const lockAcquiredAt = startedAt + 1_250;
+    expect(
+      lockAwareRemoteTimeoutRemainingMs({
+        startedAt,
+        now: startedAt,
+        waitBudgetMs: DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+        runTimeoutMs: remoteRunTimeoutMs,
+      }),
+    ).toBe(remoteRunTimeoutMs + DEFAULT_HOST_LOCK_WAIT_SECS * 1000);
+    expect(
+      lockAwareRemoteTimeoutRemainingMs({
+        startedAt,
+        lockAcquiredAt,
+        now: lockAcquiredAt,
+        waitBudgetMs: DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+        runTimeoutMs: remoteRunTimeoutMs,
+      }),
+    ).toBe(remoteRunTimeoutMs);
+    expect(
+      lockAwareRemoteTimeoutRemainingMs({
+        startedAt,
+        lockAcquiredAt,
+        now: lockAcquiredAt + 2_000,
+        waitBudgetMs: DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+        runTimeoutMs: remoteRunTimeoutMs,
+      }),
+    ).toBe(remoteRunTimeoutMs - 2_000);
   });
 });
 
@@ -2491,6 +2536,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: 0.1,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: thresholdMs,
       }),
     ).toBe(true);
@@ -2512,6 +2558,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: 4,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: thresholdMs,
       }),
     ).toBe(true);
@@ -2542,6 +2589,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: Number.POSITIVE_INFINITY,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: thresholdMs,
       }),
     ).toBe(true);
@@ -2585,6 +2633,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: 0.1,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: thresholdMs - 1,
       }),
     ).toBe(false);
@@ -2598,6 +2647,7 @@ describe("hang detector (#0729)", () => {
         lastKnownLoadPerCpu: 4,
         loadUnknownSince: quiet,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: thresholdMs,
       }),
     ).toBe(true);
@@ -2609,6 +2659,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs,
         loadPerCpu: 0.1,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         gateFinished: true,
       }),
     ).toBe(false);
@@ -2623,6 +2674,7 @@ describe("hang detector (#0729)", () => {
         thresholdMs: 300_000,
         loadPerCpu: 0,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: 300_000,
       }),
     ).toBe(true);
@@ -2637,8 +2689,24 @@ describe("hang detector (#0729)", () => {
         name: "ok and idle with inactive container",
         loadPerCpu: 0.1,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: 300_000,
         hung: true,
+      },
+      {
+        name: "one old zero-CPU sample is inconclusive",
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 1,
+        containerCpuInactiveForMs: 300_000,
+        hung: false,
+      },
+      {
+        name: "new probe in flight invalidates an older idle load sample",
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 0.1,
+        loadProbeInFlight: true,
+        hung: false,
       },
       {
         name: "ok with container progress",
@@ -2650,6 +2718,7 @@ describe("hang detector (#0729)", () => {
         name: "busy host with inactive container",
         loadPerCpu: 4,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: 300_000,
         hung: true,
       },
@@ -2664,6 +2733,7 @@ describe("hang detector (#0729)", () => {
         loadPerCpu: Number.POSITIVE_INFINITY,
         lastKnownLoadPerCpu: 4,
         containerCpuActive: false,
+        containerCpuIdleSamples: 2,
         containerCpuInactiveForMs: 300_000,
         hung: true,
       },
@@ -2693,38 +2763,62 @@ describe("hang detector (#0729)", () => {
     expect(reaperCommand()).toContain("printf '%s\\t%s\\t%s\\n'");
     expect(reaperCommand()).not.toContain("date -j");
     expect(reaperCommand()).not.toContain("date -d");
+    expect(reaperInspectionCommand("0123456789ab")).toContain("docker inspect --format");
+    expect(reaperInspectionCommand("0123456789ab")).toContain("docker logs --since 900s");
     expect(reaperRemoveCommand("0123456789ab")).toContain("docker rm -f '0123456789ab'");
     expect(reaperRemoveCommand("not-an-id")).toBe("false");
     const now = Date.parse("2026-11-07T04:00:00Z");
+    const oldCreated = "2026-11-07T03:00:53.123456789Z";
     expect(
       staleReaperCandidates(
         [
-          `0123456789ab\t/repoos-validate-old\t${createdWithZone}`,
-          `0123456789af\t/repoos-validate-active\t${createdWithZone}`,
-          `0123456789ac\t/other-repoos-validate-old\t${createdWithZone}`,
+          `0123456789ab\t/repoos-validate-old\t${oldCreated}`,
+          `0123456789af\t/repoos-validate-active\t${oldCreated}`,
+          `0123456789ac\t/other-repoos-validate-old\t${oldCreated}`,
           `0123456789ad\t/repoos-validate-recent\t2026-11-07T03:50:00Z`,
           `0123456789ae\t/repoos-validate-invalid\tnot-a-timestamp`,
         ].join("\n"),
         now,
-        25 * 60_000,
+        40 * 60_000,
         new Set(["repoos-validate-active"]),
       ),
     ).toEqual([
       {
         id: "0123456789ab",
         name: "repoos-validate-old",
-        createdAt: expectedCreatedAt,
+        createdAt: Date.parse("2026-11-07T03:00:53.123Z"),
       },
     ]);
+    const staleInspection = parseReaperInspection(
+      `${oldCreated}\trunning\t${oldCreated}\t0001-01-01T00:00:00Z\tQUIET`,
+    );
+    expect(reaperInspectionIsStale(staleInspection, now)).toBe(true);
+    expect(
+      reaperInspectionIsStale(
+        parseReaperInspection(
+          `${oldCreated}\trunning\t2026-11-07T03:59:00Z\t0001-01-01T00:00:00Z\tRECENT`,
+        ),
+        now,
+      ),
+    ).toBe(false);
+    // An old container owned by a live run is never selected as a reaper candidate.
+    expect(
+      staleReaperCandidates(
+        `0123456789af\t/repoos-validate-owned\t${oldCreated}`,
+        now,
+        40 * 60_000,
+        new Set(["repoos-validate-owned"]),
+      ),
+    ).toEqual([]);
     expect(containerReaperDue(undefined, 1_000_000)).toBe(true);
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000)).toBe(true);
     expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000 - 1)).toBe(false);
   });
 
   it.each([false, true])(
-    "schedules a reaper and preserves stale containers owned by another process (holder=%s)",
-    async (otherProcessOwnsSlot) => {
-      const staleCreatedAt = new Date(Date.now() - 26 * 60_000).toISOString();
+    "schedules a reaper and rechecks state/activity before removal (recent=%s)",
+    async (recentActivity) => {
+      const staleCreatedAt = new Date(Date.now() - 46 * 60_000).toISOString();
       const runRemote = vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
         if (cmd.includes(PREREQ_OK_TOKEN)) {
           return {
@@ -2736,12 +2830,10 @@ describe("hang detector (#0729)", () => {
         if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
           return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
         }
-        if (cmd.includes("__HOST_LOCK__")) {
+        if (cmd === reaperInspectionCommand("0123456789ab")) {
           return {
             code: 0,
-            output: otherProcessOwnsSlot
-              ? '__HOST_LOCK__\nhold\t0\t60\n{"taskId":"1049","phase":"checks"}\n'
-              : "__HOST_LOCK__\n",
+            output: `${staleCreatedAt}\trunning\t${recentActivity ? new Date().toISOString() : staleCreatedAt}\t0001-01-01T00:00:00Z\t${recentActivity ? "RECENT" : "QUIET"}`,
             timedOut: false,
           };
         }
@@ -2782,11 +2874,11 @@ describe("hang detector (#0729)", () => {
       expect(runRemote.mock.calls.some(([, cmd]) => cmd === reaperCommand())).toBe(true);
       expect(
         runRemote.mock.calls.some(([, cmd]) => cmd === reaperRemoveCommand("0123456789ab")),
-      ).toBe(!otherProcessOwnsSlot);
-      if (!otherProcessOwnsSlot) {
+      ).toBe(!recentActivity);
+      if (!recentActivity) {
         expect(logger.system).toHaveBeenCalledWith(
           "info",
-          "remote validation Reaping stale validation container repoos-validate-old (older than 25 minutes) on runner",
+          "remote validation Reaping stale validation container repoos-validate-old (older than 40 minutes with no recent activity) on runner",
         );
       }
     },
@@ -2801,6 +2893,7 @@ describe("hang detector (#0729)", () => {
       loadPerCpu: () => load,
       containerCpuActive: () => false,
       containerCpuInactiveForMs: () => now,
+      containerCpuIdleSamples: () => 2,
       onHung: () => {
         killed++;
       },
@@ -2854,6 +2947,7 @@ describe("hang detector (#0729)", () => {
       loadPerCpu: () => load,
       containerCpuActive: () => (load < 0.5 ? false : undefined),
       containerCpuInactiveForMs: () => (load < 0.5 ? 300_000 : undefined),
+      containerCpuIdleSamples: () => (load < 0.5 ? 2 : 0),
       onHung: () => {
         killed++;
       },
@@ -2889,6 +2983,24 @@ describe("active run control generation (#0739)", () => {
 });
 
 describe("hung container cleanup (#0729)", () => {
+  it("redacts nested log and state evidence before appending remote events", () => {
+    const root = tmpRoot();
+    appendRemoteValidationEvent(root, "1049-redaction", {
+      level: "warn",
+      phase: "run",
+      message: "captured docker evidence",
+      hangEvidence: {
+        condition: "manual-kill",
+        containerLogs: "Bearer abc.def-ghp_testSecret123",
+        containerState: "sk-testSecret123",
+      },
+    });
+    const event = readRemoteValidationEvents(root, "1049-redaction")[0];
+    expect(event?.hangEvidence?.containerLogs).toBe("Bearer ***-***");
+    expect(event?.hangEvidence?.containerState).toBe("***");
+    expect(JSON.stringify(event)).not.toContain("testSecret123");
+  });
+
   it("names one run's container uniquely and safely", () => {
     const name = validateContainerName("0729-ab12cd34");
     expect(name).toBe("repoos-validate-0729-ab12cd34");
@@ -3115,6 +3227,7 @@ describe("hung run recovery end to end (#0729)", () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
       validateStallNoAbortOn: ["a"],
+      containerLogsOutput: "manual output ghp_testSecret123",
       fixedLoad: 0,
       hangIdleMinutes: 0.0005,
       hangCheckIntervalMs: 15,
@@ -3161,9 +3274,10 @@ describe("hung run recovery end to end (#0729)", () => {
     );
     expect(manualEvent?.hangEvidence).toMatchObject({
       condition: "manual-kill",
-      containerLogs: "container log evidence",
+      containerLogs: "manual output ***",
       containerState: "container state evidence",
     });
+    expect(JSON.stringify(manualEvent)).not.toContain("ghp_testSecret123");
     const summary = await Promise.race([
       resultPromise,
       tick(3_000).then(() => {
