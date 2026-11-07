@@ -2,7 +2,7 @@
 id: "1049"
 title: "Remote validation: stop killing healthy runs as hung; keep evidence; reap leaked containers"
 type: bug
-status: active
+status: review
 priority: p0
 area: server
 assigned_to: ai
@@ -398,3 +398,4 @@ Findings from the investigation (no single root cause proven):
 - 2026-11-07T23:23:59Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-07T23:23:59Z · message_queued at 2026-11-07T23:23:59.479Z
 - 2026-11-07T23:23:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required check is green now: local build, formatting and lint, all 276 test files (3,823 passed, 1 skipped), UI smoke, and rendered contrast passed. The final remote attempt could not reach any runner and used the full local fallback. … · stderr: Reading additional input from stdin... 2026-11-07T23:03:45.418680Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/remote-validation-stop-killing-healthy-r/docs/remote-validation.md: per-run trap, the host prerequisite…
+- 2026-11-07T23:23:59Z · status active→review
