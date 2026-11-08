@@ -13,7 +13,7 @@ model_override: gpt-6.1-terra
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T19:04:53Z"
+updated_at: "2026-11-08T19:05:04Z"
 review_passes: 12
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -310,3 +310,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T19:04:43Z · cli_override, model_override
 - 2026-11-08T19:04:43Z · model_override
 - 2026-11-08T19:04:53Z · needs_input
+- 2026-11-08T19:05:04Z · message_delivered: 1 message(s)
