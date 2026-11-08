@@ -175,6 +175,20 @@ describe("TaskCard activity recency (#1058)", () => {
     expect(progress.attributes("data-tip")).toMatch(/Active 1m ago/i);
     expect(progress.attributes("tabindex")).toBe("0");
   });
+
+  it("shows last-activity recency while confirming handoff", async () => {
+    const repo = useRepoStore();
+    repo.agentActivityAt = { "1058": "2026-11-08T02:59:00.000Z" };
+    const wrapper = mount(TaskCard, {
+      props: { task: baseTask({ pendingHandoff: true }), dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    const hint = wrapper.get('[data-test-id="task-card-agent-hint"]');
+    expect(hint.text()).toContain("Confirming handoff");
+    expect(hint.attributes("data-tip")).toMatch(/Active 1m ago/i);
+    expect(hint.attributes("tabindex")).toBe("0");
+  });
 });
 
 describe("PipelineCard activity recency (#1058)", () => {

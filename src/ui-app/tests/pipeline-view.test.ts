@@ -356,6 +356,24 @@ describe("PipelineView", () => {
     expect(openSpy.mock.calls[0][0]).toMatchObject({ id: "1001" });
   });
 
+  it("uses agent last activity for the pipeline tooltip, not task updated_at", async () => {
+    setActivePinia(createPinia());
+    seedBoard();
+    const repo = useRepoStore();
+    const lastActivityAt = new Date(Date.now() - 60_000).toISOString();
+    repo.tasks = repo.tasks.map((task) =>
+      task.id === "1001"
+        ? { ...task, updated_at: new Date(Date.now() - 30 * 60_000).toISOString() }
+        : task,
+    ) as never;
+    repo.agentActivityAt = { "1001": lastActivityAt };
+    const wrapper = track(mount(PipelineView, { attachTo: document.body }));
+    const card = wrapper.get('[data-task-id="1001"]');
+    const tip = card.get(".pl-step").attributes("data-tip") ?? "";
+    expect(tip).toMatch(/Active 1m ago/i);
+    expect(tip).not.toContain("In this state");
+  });
+
   it("orders lanes by priority, then longest in flight", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();
