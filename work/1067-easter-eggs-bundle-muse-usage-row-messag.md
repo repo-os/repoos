@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T17:15:52Z"
+updated_at: "2026-11-08T17:16:07Z"
 handoff_signal_retry_count: 2
 ---
 ## Items
@@ -71,10 +71,10 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 ```json
 [
 {
-  "label": "Muse usage message and docs link",
-  "target": "default",
-  "route": "/agents?tab=model-providers",
-  "highlight": ".mp-row[data-provider-id=\"muse\"]"
+"label": "Muse usage message and docs link",
+"target": "default",
+"route": "/agents?tab=model-providers",
+"highlight": ".mp-row[data-provider-id=\"muse\"]"
 }
 ]
 ```
@@ -94,3 +94,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T17:14:07Z · note: adopted orphaned engineer pid 64467
 - 2026-11-08T17:15:06Z · body
 - 2026-11-08T17:15:52Z · body
+- 2026-11-08T17:16:07Z · handoff_deferred: 2 queued message(s) must be read before review
