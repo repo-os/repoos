@@ -93,3 +93,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T09:21:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T09:23:16Z · message_queued at 2026-11-08T09:23:16.389Z
 - 2026-11-08T09:28:26Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T09:28:26Z · note: handoff requested (cli)
