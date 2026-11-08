@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p3
 area: web
 assigned_to: ai
@@ -13,14 +16,15 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T11:08:39Z"
+updated_at: "2026-11-08T11:18:14Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 review_rounds: 1
 review_passes: 1
-dev_error_count: 12
+dev_error_count: 13
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T11:17:44.938Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -52,38 +56,38 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ```json
 [
 {
-  "label": "Board hint: coding line and hover recency",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".app-tooltip.show",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    },
-    {
-      "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    },
-    {
-      "waitMs": 1200
-    },
-    {
-      "waitFor": ".app-tooltip.show"
-    }
-  ],
-  "state": "board:activeCoding"
+"label": "Board hint: coding line and hover recency",
+"target": "default",
+"route": "/work",
+"highlight": ".app-tooltip.show",
+"steps": [
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "label": "Pipeline ok card hides inline elapsed",
-  "target": "default",
-  "route": "/work?tab=pipeline",
-  "selector": "[data-task-id=\"pipe-coding\"]",
-  "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"pipe-coding\"]"
-    }
-  ],
-  "state": "board:pipeline"
+  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "waitMs": 1200
+},
+{
+  "waitFor": ".app-tooltip.show"
+}
+],
+"state": "board:activeCoding"
+},
+{
+"label": "Pipeline ok card hides inline elapsed",
+"target": "default",
+"route": "/work?tab=pipeline",
+"selector": "[data-task-id=\"pipe-coding\"]",
+"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+"steps": [
+{
+  "waitFor": "[data-task-id=\"pipe-coding\"]"
+}
+],
+"state": "board:pipeline"
 }
 ]
 ```
@@ -190,3 +194,5 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T10:59:11Z · message_queued at 2026-11-08T10:59:11.737Z
 - 2026-11-08T11:07:12Z · message_delivered: 1 message(s)
 - 2026-11-08T11:08:39Z · body
+- 2026-11-08T11:17:44Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-11-08T11:18:14Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
