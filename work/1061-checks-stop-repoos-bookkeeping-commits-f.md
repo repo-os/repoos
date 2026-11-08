@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T22:56:23Z"
+updated_at: "2026-11-08T22:56:24Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -285,3 +285,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T22:56:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The final scoped check has uploaded the formatted, synchronized branch snapshot and is still running its remote build/test suite. Earlier runs showed this repository’s remote suite can take several minutes; no failure has been reported in … · stderr: Reading additional input from stdin... 2026-11-08T21:58:31.050088Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeeping-commits-f/src/server/check-gate-lock.ts: restoreSnapshots(finalSnapshots…
 - 2026-11-08T22:56:23Z · status active→review
 - 2026-11-08T22:56:23Z · message_delivered: 1 message(s)
+- 2026-11-08T22:56:24Z · note: handoff requested (cli)
