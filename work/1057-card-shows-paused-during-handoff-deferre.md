@@ -18,7 +18,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T09:34:09Z"
+updated_at: "2026-11-08T10:03:45Z"
 last_check_failure: "repoos check at 2026-11-08T08:41:54.450Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
 review_passes: 2
@@ -160,4 +160,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T09:20:24Z · body
 - 2026-11-08T09:32:52Z · body
 - 2026-11-08T09:34:09Z · CTO nudge: held — handoff gate is running
-
+- 2026-11-08T10:03:45Z · message_queued at 2026-11-08T10:03:45.706Z
