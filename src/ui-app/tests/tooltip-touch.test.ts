@@ -111,6 +111,49 @@ describe("installTooltips touch (#1058)", () => {
     expect(document.querySelector(".app-tooltip.show")).toBeNull();
   });
 
+  it("starts the new host gesture while dismissing a different pinned tip", () => {
+    const first = document.getElementById("tip-btn")!;
+    const second = document.getElementById("plain-tip-btn")!;
+    second.setAttribute("data-tip-touch", "tap");
+    const card = document.createElement("article");
+    card.setAttribute("role", "button");
+    const cardClick = vi.fn();
+    card.addEventListener("click", cardClick);
+    card.appendChild(second);
+    document.body.appendChild(card);
+
+    touch("pointerdown", first);
+    vi.advanceTimersByTime(500);
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Active 2m ago");
+
+    touch("pointerdown", second);
+    vi.advanceTimersByTime(100);
+    touch("pointerup", second);
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Save settings");
+    second.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    expect(cardClick).not.toHaveBeenCalled();
+  });
+
+  it("lets a second tap dismiss a pinned clickable hint and activate its card", () => {
+    const btn = document.getElementById("tip-btn")!;
+    const card = document.createElement("article");
+    card.setAttribute("role", "button");
+    const cardClick = vi.fn();
+    card.addEventListener("click", cardClick);
+    card.appendChild(btn);
+    document.body.appendChild(card);
+
+    touch("pointerdown", btn);
+    vi.advanceTimersByTime(100);
+    touch("pointerup", btn);
+    expect(document.querySelector(".app-tooltip.show")).not.toBeNull();
+
+    touch("pointerdown", btn);
+    expect(document.querySelector(".app-tooltip.show")).toBeNull();
+    btn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    expect(cardClick).toHaveBeenCalledOnce();
+  });
+
   it("does not open on short tap without data-tip-touch and still allows click", () => {
     const btn = document.getElementById("plain-tip-btn")!;
     const click = vi.fn();

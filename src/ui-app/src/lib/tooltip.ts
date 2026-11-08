@@ -141,14 +141,16 @@ export function installTooltips(): void {
 
     if (touchPinned && target) {
       if (el === target && e.pointerType === "touch") {
-        armClickSuppression(target);
+        // A second tap dismisses the pinned hint and is allowed to activate a
+        // clickable host (for example a task card hint).
+        suppressClickUntil.delete(target);
         hide();
-        e.preventDefault();
         return;
       }
       if (target.contains(e.target as Node) || tip.contains(e.target as Node)) return;
       hide();
-      return;
+      // The same touch both dismisses the old hint and starts the gesture on
+      // the new host. Otherwise its ensuing click can fall through to a card.
     }
 
     if (e.pointerType === "touch" && el && textFor(el)) {
