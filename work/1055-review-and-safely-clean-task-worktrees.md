@@ -9,13 +9,13 @@ assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T00:52:05Z"
+updated_at: "2026-11-08T00:57:13Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
 review_passes: 1
 handoff_signal_retry_count: 2
-engineer_stall_resume_log: "[{\"at\":\"2026-11-08T00:36:58.679Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-08T00:36:58.679Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-08T00:57:13.853Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 
@@ -79,3 +79,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T00:52:03Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-08T00:52:05Z · message_delivered: 2 message(s)
 - 2026-11-08T00:52:05Z · status review→active
+- 2026-11-08T00:57:13Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
