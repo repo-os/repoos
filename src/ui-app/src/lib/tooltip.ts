@@ -7,24 +7,55 @@
  * wiring. On first hover the `title` is moved to `data-tip` so the native bubble
  * can't also appear; a later Vue update that re-sets `title` wins over the stale
  * `data-tip`, so dynamic titles stay correct.
+ *
+ * Touch: a short tap or a long-press on a `data-tip` target shows the tooltip
+ * and keeps it open until the user taps elsewhere (#1058). Mouse hover/focus
+ * behaviour is unchanged.
  */
 const SHOW_DELAY_MS = 350;
+/** Long-press threshold — matches common touch “show hint” timing. */
+const LONG_PRESS_MS = 500;
 const GAP = 8;
 const MARGIN = 8;
+const LONG_PRESS_MOVE_PX = 12;
+
+let installed = false;
+
+function tipHost(node: EventTarget | null): HTMLElement | null {
+  return (node as Element | null)?.closest?.<HTMLElement>("[title], [data-tip]") ?? null;
+}
 
 export function installTooltips(): void {
   if (typeof document === "undefined") return;
+  if (installed) return;
+  installed = true;
+
   const tip = document.createElement("div");
   tip.className = "app-tooltip";
   tip.setAttribute("role", "tooltip");
   document.body.appendChild(tip);
 
   let target: HTMLElement | null = null;
-  let timer: number | undefined;
+  let hoverTimer: number | undefined;
+  let touchPinned = false;
+  let longPressTimer: number | undefined;
+  let longPressEl: HTMLElement | null = null;
+  let longPressOrigin: { x: number; y: number } | null = null;
+  let activeTouchId: number | null = null;
+
+  const clearLongPress = () => {
+    window.clearTimeout(longPressTimer);
+    longPressTimer = undefined;
+    longPressEl = null;
+    longPressOrigin = null;
+  };
 
   const hide = () => {
-    window.clearTimeout(timer);
+    window.clearTimeout(hoverTimer);
+    clearLongPress();
     target = null;
+    touchPinned = false;
+    activeTouchId = null;
     tip.classList.remove("show");
   };
 
@@ -59,26 +90,94 @@ export function installTooltips(): void {
     place(el);
   };
 
-  const enter = (e: Event) => {
-    const el = (e.target as Element | null)?.closest?.<HTMLElement>("[title], [data-tip]");
-    if (!el || el === target || el.closest(".app-tooltip")) return;
+  const openFor = (el: HTMLElement, pinned: boolean) => {
     hide();
     target = el;
-    // Strip the native title right away so its bubble never races ours.
+    touchPinned = pinned;
+    show(el);
+  };
+
+  const enter = (e: Event) => {
+    const el = tipHost(e.target);
+    if (!el || el === target || el.closest(".app-tooltip")) return;
+    if (touchPinned) return;
+    hide();
+    target = el;
     const text = textFor(el);
     if (!text) return;
-    timer = window.setTimeout(() => show(el), e.type === "focusin" ? 0 : SHOW_DELAY_MS);
+    hoverTimer = window.setTimeout(() => show(el), e.type === "focusin" ? 0 : SHOW_DELAY_MS);
   };
 
   const leave = (e: Event) => {
+    if (touchPinned) return;
     if (target && !target.contains((e as MouseEvent).relatedTarget as Node | null)) hide();
+  };
+
+  const onPointerDown = (e: PointerEvent) => {
+    const el = tipHost(e.target);
+
+    if (touchPinned && target) {
+      if (el === target && e.pointerType === "touch") {
+        hide();
+        return;
+      }
+      if (target.contains(e.target as Node) || tip.contains(e.target as Node)) return;
+      hide();
+      return;
+    }
+
+    if (e.pointerType === "touch" && el && textFor(el)) {
+      clearLongPress();
+      longPressEl = el;
+      longPressOrigin = { x: e.clientX, y: e.clientY };
+      activeTouchId = e.pointerId;
+      longPressTimer = window.setTimeout(() => {
+        openFor(el, true);
+        clearLongPress();
+      }, LONG_PRESS_MS);
+      return;
+    }
+
+    if (e.pointerType !== "touch") {
+      if (!el || el !== target) hide();
+    }
+  };
+
+  const onPointerUp = (e: PointerEvent) => {
+    if (activeTouchId !== null && e.pointerId !== activeTouchId) return;
+    const pending = longPressEl;
+    const hadLongPressTimer = longPressTimer !== undefined;
+    clearLongPress();
+    activeTouchId = null;
+
+    if (e.pointerType === "touch" && pending && hadLongPressTimer && !touchPinned) {
+      const upEl = tipHost(e.target);
+      if (upEl === pending && textFor(pending)) {
+        openFor(pending, true);
+      }
+    }
+  };
+
+  const onPointerMove = (e: PointerEvent) => {
+    if (activeTouchId === null || e.pointerId !== activeTouchId || !longPressOrigin) return;
+    const dx = e.clientX - longPressOrigin.x;
+    const dy = e.clientY - longPressOrigin.y;
+    if (dx * dx + dy * dy > LONG_PRESS_MOVE_PX * LONG_PRESS_MOVE_PX) {
+      clearLongPress();
+      activeTouchId = null;
+    }
   };
 
   document.addEventListener("mouseover", enter);
   document.addEventListener("focusin", enter);
   document.addEventListener("mouseout", leave);
-  document.addEventListener("focusout", hide);
-  document.addEventListener("pointerdown", hide, true);
+  document.addEventListener("focusout", () => {
+    if (!touchPinned) hide();
+  });
+  document.addEventListener("pointerdown", onPointerDown, true);
+  document.addEventListener("pointerup", onPointerUp);
+  document.addEventListener("pointercancel", onPointerUp);
+  document.addEventListener("pointermove", onPointerMove, { passive: true });
   document.addEventListener("scroll", hide, true);
   window.addEventListener("blur", hide);
 }
