@@ -68,37 +68,58 @@ docker ps -aq --filter "name=repoos-validate-" \
 # Best-effort: remove still-running capture containers that already published a
 # result and have gone quiet (#1060). Non-running leftovers are swept above; this
 # handles the hang where the runner process never exits after writing result.json.
-set +e
-docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/null \
-  | while IFS= read -r id; do
-  [ -n "$id" ] || continue
-  name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null) || continue
-  case "$name" in /repoos-validate-*) ;; *) continue ;; esac
-  docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null \
-    | grep -q '^REPOOS_BROWSER_CAPTURE_MODE=.' || continue
-  docker logs "$id" 2>&1 \
-    | grep -F '[browser-capture] runner browser capture ' \
-    | grep -Eq '(completed|reported failures)' || continue
-  recent=$(docker logs --since 120s --tail 1 "$id" 2>&1) || continue
-  [ -z "$recent" ] || continue
-  cpu=$(docker stats --no-stream --format '{{.CPUPerc}}' "$id" 2>/dev/null) || continue
-  printf '%s\n' "$cpu" | awk '/^[0-9]+([.][0-9]+)?%$/ { sub(/%$/, ""); if ($1 < 1) ok=1 } END { exit !ok }' \
-    || continue
-  task=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null \
-    | sed -n 's/^REPOOS_BROWSER_CAPTURE_TASK=//p' | head -1 || true)
-  bare=${name#/}
-  task_tag=""
-  [ -n "$task" ] && task_tag=" task=$task"
-  rm_out=$(docker rm -f "$id" 2>&1) && rm_code=0 || rm_code=$?
-  if [ "$rm_code" -eq 0 ] && ! docker inspect "$id" >/dev/null 2>&1; then
-    echo "[reaper] removed $bare$task_tag: no output for two minutes and CPU idle"
-  else
-    rm_reason=$(printf '%s' "$rm_out" | tr '\n' ' ')
-    [ -n "$rm_reason" ] || rm_reason="exit-$rm_code"
-    echo "[reaper] failed to remove $bare$task_tag reason=$rm_reason"
-  fi
-done
-set -e
+_reap_ids=$(docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/null) \
+  && _reap_ps_ok=0 || _reap_ps_ok=$?
+if [ "$_reap_ps_ok" -ne 0 ]; then
+  echo "[reaper] failed to list running capture containers reason=exit-${_reap_ps_ok}"
+else
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    if ! name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null); then
+      echo "[reaper] failed to inspect capture container $id reason=exit-$?"
+      continue
+    fi
+    case "$name" in /repoos-validate-*) ;; *) continue ;; esac
+    bare=${name#/}
+    if ! docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null \
+      | grep -q '^REPOOS_BROWSER_CAPTURE_MODE=.'; then
+      continue
+    fi
+    if ! docker logs "$id" 2>&1 \
+      | grep -F '[browser-capture] runner browser capture ' \
+      | grep -Eq '(completed|reported failures)'; then
+      continue
+    fi
+    if ! recent=$(docker logs --since 120s --tail 1 "$id" 2>&1); then
+      echo "[reaper] failed to read recent logs for $bare reason=exit-$?"
+      continue
+    fi
+    [ -z "$recent" ] || continue
+    if ! cpu=$(docker stats --no-stream --format '{{.CPUPerc}}' "$id" 2>/dev/null); then
+      echo "[reaper] failed to read cpu for $bare reason=exit-$?"
+      continue
+    fi
+    if ! printf '%s\n' "$cpu" | awk '/^[0-9]+([.][0-9]+)?%$/ { sub(/%$/, ""); if ($1 < 1) ok=1 } END { exit !ok }'; then
+      continue
+    fi
+    task=""
+    if _capture_env=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null); then
+      task=$(printf '%s\n' "$_capture_env" | sed -n 's/^REPOOS_BROWSER_CAPTURE_TASK=//p' | head -1 || true)
+    fi
+    task_tag=""
+    [ -n "$task" ] && task_tag=" task=$task"
+    rm_out=$(docker rm -f "$id" 2>&1) && rm_code=0 || rm_code=$?
+    if [ "$rm_code" -eq 0 ] && ! docker inspect "$id" >/dev/null 2>&1; then
+      echo "[reaper] removed $bare$task_tag: no output for two minutes and CPU idle"
+    else
+      rm_reason=$(printf '%s' "$rm_out" | tr '\n' ' ')
+      [ -n "$rm_reason" ] || rm_reason="exit-$rm_code"
+      echo "[reaper] failed to remove $bare$task_tag reason=$rm_reason"
+    fi
+  done <<EOF
+${_reap_ids}
+EOF
+fi
 
 # No global sweep of $HOME/.repoos-validate.* at startup (#0729): it runs before
 # the host lock and before this run's container exists, so a sibling run's work

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -127,17 +127,64 @@ describe("runner worktree layout for browser capture (#0854)", () => {
     expect(validateScript).toMatch(/REPOOS_BROWSER_CAPTURE_TASK=/);
   });
 
-  it("does not abort validate.sh when startup reaper inspection fails (#1060)", () => {
+  it("guards startup reaper docker calls under set -euo pipefail (#1060)", () => {
     const marker =
       "# handles the hang where the runner process never exits after writing result.json.";
     const start = validateScript.indexOf(marker);
     expect(start).toBeGreaterThan(-1);
-    const block = validateScript.slice(start, start + 2200);
-    expect(block).toMatch(/set \+e\n(?:.*\n)*?docker ps -q --filter "name=repoos-validate-"/);
+    const block = validateScript.slice(start, start + 2600);
+    expect(block).not.toMatch(/set \+e/);
     expect(block).toMatch(
-      /recent=\$\(docker logs --since 120s --tail 1 "\$id" 2>&1\) \|\| continue/,
+      /_reap_ids=\$\(docker ps -q --filter "name=repoos-validate-" --filter status=running 2>\/dev\/null\) \\\n  && _reap_ps_ok=0 \|\| _reap_ps_ok=\$\?/,
     );
-    expect(block).toMatch(/\ndone\nset -e\n/);
+    expect(block).toMatch(/failed to list running capture containers reason=exit-/);
+    expect(block).toMatch(/if ! recent=\$\(docker logs --since 120s --tail 1 "\$id" 2>&1\); then/);
+    expect(block).toMatch(/failed to read recent logs for \$bare reason=exit-/);
+    expect(block).toMatch(/<<EOF\n\$\{_reap_ids\}\nEOF/);
+  });
+
+  it("emits reaper failure markers when docker ps or logs fail under set -euo pipefail", () => {
+    const reaperStart = validateScript.indexOf("# Best-effort: remove still-running");
+    const end = validateScript.indexOf("# No global sweep of $HOME/.repoos-validate.*");
+    const reaper = validateScript.slice(reaperStart, end);
+    const root = mkdtempSync(join(tmpdir(), "reaper-startup-guard-"));
+    roots.push(root);
+    const bin = join(root, "bin");
+    mkdirSync(bin);
+    const runReaper = (dockerBody: string) => {
+      writeFileSync(
+        join(bin, "docker"),
+        `#!/bin/sh
+${dockerBody}
+`,
+      );
+      chmodSync(join(bin, "docker"), 0o755);
+      return spawnSync("bash", ["-c", `set -euo pipefail\n${reaper}\necho AFTER_REAPER`], {
+        encoding: "utf8",
+        env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+      });
+    };
+
+    const psFail = runReaper('case "$*" in *"ps -q"*) exit 1;; esac\nexit 0');
+    expect(psFail.status, psFail.stderr).toBe(0);
+    expect(psFail.stdout).toContain("[reaper] failed to list running capture containers");
+    expect(psFail.stdout).toContain("AFTER_REAPER");
+
+    const logsFail = runReaper(
+      `case "$*" in
+*"ps -q"*) echo cid123; exit 0;;
+*"{{.Name}}"*) echo /repoos-validate-1060-abcd; exit 0;;
+*"Config.Env"*) printf '%s\\n' REPOOS_BROWSER_CAPTURE_MODE=shots; exit 0;;
+*"logs --since"*) exit 1;;
+*logs*) echo "[browser-capture] runner browser capture completed"; exit 0;;
+esac
+exit 0`,
+    );
+    expect(logsFail.status, logsFail.stderr).toBe(0);
+    expect(logsFail.stdout).toContain(
+      "[reaper] failed to read recent logs for repoos-validate-1060-abcd",
+    );
+    expect(logsFail.stdout).toContain("AFTER_REAPER");
   });
 
   it("creates and bind-mounts a writable /repo-worktrees for the capture worktree", () => {
