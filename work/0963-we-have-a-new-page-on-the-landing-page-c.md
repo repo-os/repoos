@@ -107,3 +107,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T06:49:00Z · message_delivered: 1 message(s)
 - 2026-11-08T06:49:55Z · body
 - 2026-11-08T06:51:30Z · message_queued at 2026-11-08T06:51:30.049Z
+- 2026-11-08T06:51:30Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router, tests/app-loading-skeleton.test.ts > repo loading skeleton > maps every standard route to an explicit skeleton kind on mini — fix it in the feature branch and re-run the gate
