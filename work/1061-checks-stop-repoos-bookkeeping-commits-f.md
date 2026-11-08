@@ -65,3 +65,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T16:07:48Z · message_delivered: 1 message(s)
 - 2026-11-08T17:01:39Z · body
 - 2026-11-08T17:01:53Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-08T17:01:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
