@@ -4,8 +4,8 @@ title: "Remote browser capture: runner never exits after completing; reap and fo
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 9 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — startup-reaper Docker inspection failures can abort validation.
 needs_merge: true
 priority: p1
 area: server
@@ -17,7 +17,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T15:57:53Z"
+updated_at: "2026-11-08T15:57:54Z"
 review_passes: 8
 review_rounds: 2
 handoff_signal_retry_count: 2
