@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T12:53:02Z"
+updated_at: "2026-11-08T12:53:04Z"
 review_passes: 6
 review_rounds: 2
 handoff_signal_retry_count: 2
