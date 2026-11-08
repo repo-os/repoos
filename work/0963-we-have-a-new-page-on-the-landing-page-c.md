@@ -16,7 +16,6 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
 updated_at: "2026-11-08T07:53:00Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T07:52:53.443Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -123,3 +122,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T07:52:53Z · message_delivered: 1 message(s)
 - 2026-11-08T07:53:00Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-08T07:53:00Z · note: handoff requested (cli)
+
