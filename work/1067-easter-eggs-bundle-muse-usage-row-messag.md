@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T18:09:06Z"
+updated_at: "2026-11-08T18:10:48Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T17:56:21.770Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Muse usage message and docs link (target \"default\"): highlight .mp-row[data-provider-id=\"muse\"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:41839/agents?tab=model-providers)"
 handoff_signal_retry_count: 2
@@ -111,3 +111,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:04:08Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-08T18:04:08Z · note: handoff requested (cli)
 - 2026-11-08T18:09:06Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T18:10:48Z · message_delivered: 1 message(s)
