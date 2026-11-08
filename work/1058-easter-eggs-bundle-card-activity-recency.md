@@ -47,36 +47,36 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ```json
 [
 {
-  "label": "Board card coding without inline active recency",
-  "target": "default",
-  "route": "/",
-  "selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-  "state": "board:activeCoding"
+"label": "Board card coding without inline active recency",
+"target": "default",
+"route": "/",
+"selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"state": "board:activeCoding"
 },
 {
-  "label": "Board hint popover shows last activity on hover",
-  "target": "default",
-  "route": "/",
-  "selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-  "highlight": "[data-overlay-layer=\"floating\"]",
-  "steps": [
-    {
-      "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    },
-    {
-      "waitMs": 400
-    }
-  ],
-  "state": "board:activeCoding"
+"label": "Board hint popover shows last activity on hover",
+"target": "default",
+"route": "/",
+"selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"highlight": "[data-overlay-layer=\"floating\"]",
+"steps": [
+  {
+    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  },
+  {
+    "waitMs": 400
+  }
+],
+"state": "board:activeCoding"
 },
 {
-  "label": "Pipeline ok card hides inline elapsed",
-  "target": "default",
-  "route": "/",
-  "selector": ".pipeline-card.is-ok .pl-step",
-  "highlight": ".pipeline-card.is-ok .pl-step",
-  "state": "board:pipeline"
+"label": "Pipeline ok card hides inline elapsed",
+"target": "default",
+"route": "/",
+"selector": ".pipeline-card.is-ok .pl-step",
+"highlight": ".pipeline-card.is-ok .pl-step",
+"state": "board:pipeline"
 }
 ]
 ```
