@@ -265,3 +265,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T15:55:26Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T15:57:55Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-08T15:57:55Z · message_queued at 2026-11-08T15:57:55.438Z
+- 2026-11-08T15:57:55Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1058.md
