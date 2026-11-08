@@ -2,7 +2,7 @@
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
@@ -169,4 +169,3 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T11:28:43Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-08T11:38:57Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-08T11:39:01Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T11:39:01Z · status active→review
