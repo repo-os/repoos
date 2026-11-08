@@ -74,6 +74,8 @@ export const getModelProviderUsage: RouteHandler = async (ctx, _req, res, params
           tier: null,
           windows: [],
           unrecognized: false,
+          reason: "usage_unavailable",
+          hint: message,
           message,
           at: new Date().toISOString(),
         });

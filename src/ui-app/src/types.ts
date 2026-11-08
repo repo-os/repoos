@@ -1899,6 +1899,8 @@ export interface MuseUsage {
   /** Rolling allowance windows, in the opencode Go window shape (no dollars). */
   windows: ModelProviderUsageWindow[];
   unrecognized: boolean;
+  reason?: string | null;
+  hint?: string | null;
   message?: string | null;
 }
 

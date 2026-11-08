@@ -745,6 +745,10 @@ export interface MuseUsage {
   windows: OpenCodeGoWindow[];
   /** True when the response parsed but no allowance window was recognized. */
   unrecognized: boolean;
+  /** Provider refusal classification when no allowance is available. */
+  reason?: string | null;
+  /** Provider-provided explanation for an unavailable allowance. */
+  hint?: string | null;
   /** Provider explanation when a successful response contains no windows. */
   message: string | null;
 }
@@ -781,7 +785,14 @@ export function parseMuseUsage(body: unknown): MuseUsage {
       typeof reason === "string" && reason.trim() && typeof hint === "string" && hint.trim()
         ? hint.trim()
         : refusal;
-    return { tier: null, windows: [], unrecognized: !message, message };
+    return {
+      tier: null,
+      windows: [],
+      unrecognized: !message,
+      reason: typeof reason === "string" ? reason : null,
+      hint: typeof hint === "string" ? hint : null,
+      message,
+    };
   }
   const rec = allowance as Record<string, unknown>;
   const windows: OpenCodeGoWindow[] = [];

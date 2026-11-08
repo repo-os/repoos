@@ -395,6 +395,8 @@ describe("GET /api/model-providers/:id/usage", () => {
       tier: null,
       windows: [],
       unrecognized: false,
+      reason: "usage_unavailable",
+      hint: "muse usage: not logged in: run `muse login` first",
       message: "muse usage: not logged in: run `muse login` first",
     });
   });
