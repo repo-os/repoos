@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
-updated_at: "2026-11-08T15:57:02Z"
+updated_at: "2026-11-08T15:58:50Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -54,3 +54,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T15:17:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T15:19:23Z · body
 - 2026-11-08T15:57:02Z · body
+- 2026-11-08T15:58:50Z · handoff_deferred: 1 queued message(s) must be read before review
