@@ -14,8 +14,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T14:48:22Z"
-review_passes: 7
+updated_at: "2026-11-08T18:50:01Z"
+review_passes: 12
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 8
@@ -240,3 +240,70 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T14:44:07Z · note: handoff requested (cli)
 - 2026-11-08T14:47:04Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T14:48:22Z · message_delivered: 3 message(s)
+- 2026-11-08T14:58:13Z · body
+- 2026-11-08T14:59:12Z · status active→review
+- 2026-11-08T14:59:12Z · message_queued at 2026-11-08T14:59:12.208Z
+- 2026-11-08T14:59:12Z · note: shots: skipped — the diff (30 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-08T14:59:52Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 3e338391 to 734d5a95) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-08T15:01:38Z · note: review pass 9: needs some work
+- 2026-11-08T15:01:38Z · needs_input
+- 2026-11-08T15:30:05Z · status review→active
+- 2026-11-08T15:30:05Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T15:30:07Z · needs_input
+- 2026-11-08T15:30:07Z · message_queued at 2026-11-08T15:30:07.795Z
+- 2026-11-08T15:30:07Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:34:54Z · message_delivered: 1 message(s)
+- 2026-11-08T15:46:01Z · body
+- 2026-11-08T15:53:30Z · body
+- 2026-11-08T15:54:49Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T15:54:50Z · message_queued at 2026-11-08T15:54:50.028Z
+- 2026-11-08T15:54:50Z · ↻ resuming engineer to read queued message
+- 2026-11-08T15:54:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T15:54:50Z · note: handoff requested (cli)
+- 2026-11-08T15:55:24Z · status active→review
+- 2026-11-08T15:55:24Z · message_queued at 2026-11-08T15:55:24.308Z
+- 2026-11-08T15:55:24Z · note: shots: skipped — the diff (32 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-08T15:57:53Z · note: review pass 10: needs some work
+- 2026-11-08T15:57:53Z · needs_input
+- 2026-11-08T15:58:50Z · message_delivered: 2 message(s)
+- 2026-11-08T16:07:11Z · body
+- 2026-11-08T16:07:48Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T16:07:48Z · message_queued at 2026-11-08T16:07:48.570Z
+- 2026-11-08T16:07:48Z · ↻ resuming engineer to read queued message
+- 2026-11-08T16:28:30Z · message_delivered: 2 message(s)
+- 2026-11-08T16:29:56Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-08T16:32:03Z · note: review pass 11: needs some work
+- 2026-11-08T16:32:03Z · needs_input
+- 2026-11-08T16:49:54Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-08T16:52:17Z · note: review pass 12: needs some work
+- 2026-11-08T16:52:17Z · needs_input
+- 2026-11-08T17:29:54Z · status review→active
+- 2026-11-08T17:29:54Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T17:29:56Z · needs_input
+- 2026-11-08T17:29:56Z · message_queued at 2026-11-08T17:29:56.817Z
+- 2026-11-08T17:29:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T17:37:47Z · body
+- 2026-11-08T17:47:30Z · body
+- 2026-11-08T18:08:39Z · body
+- 2026-11-08T18:09:12Z · body
+- 2026-11-08T18:10:48Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T18:10:48Z · message_queued at 2026-11-08T18:10:48.294Z
+- 2026-11-08T18:10:48Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:10:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **#1060** is in good shape after review pass 12. The startup capture reaper in `validate.sh` no longer aborts the whole script when `docker ps` or `docker logs --since` fails: the loop runs under `set +e` / `set -e`, and the idle-log probe… · stderr: (empty)
+- 2026-11-08T18:10:49Z · note: handoff requested (cli)
+- 2026-11-08T18:13:33Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-08T18:13:34Z · status active→review
+- 2026-11-08T18:13:34Z · message_queued at 2026-11-08T18:13:34.286Z
+- 2026-11-08T18:18:26Z · note: review pass 13: needs some work
+- 2026-11-08T18:18:26Z · needs_input
+- 2026-11-08T18:21:49Z · message_delivered: 2 message(s)
+- 2026-11-08T18:30:11Z · needs_input
+- 2026-11-08T18:33:46Z · body
+- 2026-11-08T18:35:33Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T18:35:33Z · message_queued at 2026-11-08T18:35:33.840Z
+- 2026-11-08T18:35:34Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:35:34Z · message_delivered: 2 message(s)
+- 2026-11-08T18:49:53Z · status review→active
+- 2026-11-08T18:49:53Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T18:49:55Z · message_queued at 2026-11-08T18:49:55.797Z
+- 2026-11-08T18:50:01Z · CTO nudge: held — an undelivered message is already queued

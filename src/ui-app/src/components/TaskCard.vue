@@ -132,6 +132,63 @@ const held = computed(() =>
   taskIsHeld(props.task) && isHoldActive(props.task, holdNow.value) ? props.task : null,
 );
 
+/** Keep the board on the same server landability result as the task drawer. */
+const landable = computed(() => repo.landableFor(props.task.id));
+const reviewChecksRunning = computed(
+  () =>
+    (repo.taskChecks[props.task.id] ?? []).some((run) => run.running) ||
+    repo.handoffStatuses[props.task.id]?.state === "running",
+);
+const landableBlocker = computed(() =>
+  landable.value?.checks.find((check) => check.status === "fail"),
+);
+const landableReason = computed(() => {
+  if (reviewChecksRunning.value) return "Checks are still running.";
+  if (!landable.value) return "Checking merge readiness…";
+  if (landable.value.landable) return "";
+  return landableBlocker.value
+    ? `${landableBlocker.value.label}: ${landableBlocker.value.detail}${landableBlocker.value.nextStep ? ` — ${landableBlocker.value.nextStep}` : ""}`
+    : "Merge readiness checks have not passed.";
+});
+let landablePoll: ReturnType<typeof setInterval> | undefined;
+function syncLandablePoll(id: string, status: Task["status"]): void {
+  if (landablePoll) clearInterval(landablePoll);
+  landablePoll = undefined;
+  if (
+    status !== "review" ||
+    (typeof document !== "undefined" && document.visibilityState === "hidden")
+  )
+    return;
+  if (landable.value?.landable && !reviewChecksRunning.value) return;
+  void repo.loadLandable(id);
+  landablePoll = setInterval(() => {
+    if (
+      (!repo.landableFor(id)?.landable || reviewChecksRunning.value) &&
+      (typeof document === "undefined" || document.visibilityState !== "hidden")
+    )
+      void repo.loadLandable(id);
+  }, 5_000);
+}
+watch(
+  () =>
+    [
+      props.task.id,
+      props.task.status,
+      landable.value?.landable,
+      reviewChecksRunning.value,
+    ] as const,
+  ([id, status]) => syncLandablePoll(id, status),
+  { immediate: true },
+);
+function onLandableVisibilityChange(): void {
+  syncLandablePoll(props.task.id, props.task.status);
+}
+onMounted(() => document.addEventListener("visibilitychange", onLandableVisibilityChange));
+onUnmounted(() => {
+  if (landablePoll) clearInterval(landablePoll);
+  document.removeEventListener("visibilitychange", onLandableVisibilityChange);
+});
+
 /**
  * Effective per-task agent/model assignments shown by the card's robot toggle.
  * The compact board snapshot carries the lightweight overrides so this need
@@ -1106,6 +1163,20 @@ const hint = computed<CardHint | null>(() => {
       };
     }
     if (v?.tone === "green") {
+      if (!landable.value || !landable.value.landable || reviewChecksRunning.value) {
+        const blocker = landableBlocker.value;
+        const running =
+          reviewChecksRunning.value ||
+          /running|in progress/i.test(`${blocker?.label ?? ""} ${blocker?.detail ?? ""}`);
+        return {
+          label:
+            !landable.value || running
+              ? "review passed · checks running"
+              : "review passed · checks failed",
+          title: landableReason.value,
+          cls: "tc-review-warn",
+        };
+      }
       return {
         label: "review passed · ready to finish",
         title: "review passed — approve and move to done to finish",
@@ -1292,7 +1363,9 @@ const reviewReady = computed(() => {
     !repo.isRunning(props.task.id) &&
     !awaitingFreshReview.value &&
     report?.state !== "incomplete" &&
-    reviewVerdict.value?.tone === "green"
+    reviewVerdict.value?.tone === "green" &&
+    landable.value?.landable === true &&
+    !reviewChecksRunning.value
   );
 });
 
@@ -1316,10 +1389,11 @@ const actionFooterClass = computed(() => {
         inert
       );
     case "done":
-      return (
-        "border-[var(--green-border-tint)] bg-[var(--green-tint)] text-[var(--green)] hover:brightness-110" +
-        inert
-      );
+      return reviewReady.value
+        ? "border-[var(--green-border-tint)] bg-[var(--green-tint)] text-[var(--green)] hover:brightness-110" +
+            inert
+        : "border-border bg-[var(--panel)] text-[var(--txt-dim)] hover:border-[var(--border-bright)] hover:text-foreground" +
+            inert;
     default:
       return (
         "border-border bg-[var(--panel)] text-[var(--txt-dim)] hover:border-[var(--border-bright)] hover:text-foreground" +
@@ -1960,7 +2034,10 @@ async function openDebuggerFromError(): Promise<void> {
               inPipeline ||
               agentInterruptBlocked ||
               (task.status === 'review' &&
-                (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))))
+                (repo.reviewFor(task.id)?.running ||
+                  repo.isRunning(task.id) ||
+                  !landable?.landable ||
+                  reviewChecksRunning))))
         "
         :title="
           held
@@ -1973,7 +2050,11 @@ async function openDebuggerFromError(): Promise<void> {
                   ? 'Waiting for automatic review to finish.'
                   : task.status === 'review' && repo.isRunning(task.id)
                     ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
-                    : action.title
+                    : task.status === 'review' && !landable?.landable
+                      ? landableReason
+                      : task.status === 'review' && reviewChecksRunning
+                        ? 'Checks are still running.'
+                        : action.title
         "
         @click.stop="runAction"
       >

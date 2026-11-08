@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -13,13 +13,10 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T15:19:03Z"
-check_retry_count: 2
+updated_at: "2026-11-08T18:50:01Z"
+review_passes: 4
+review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
-review_rounds: 1
-review_passes: 1
 dev_error_count: 17
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
 ---
@@ -234,9 +231,82 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T14:53:52Z · note: handoff requested (cli)
 - 2026-11-08T14:53:56Z · message_queued at 2026-11-08T14:53:56.318Z
 - 2026-11-08T14:53:56Z · handoff failed · task-file handoff failed at commit · stray repoos.toml on task branch: repoos.toml differs from main
-+paused = true
-+pausedUntil = "2026-11-10T01:00:00.000Z"
-+pausedReason = "Cursor reset"
-+pausedModels = [{ model = "gpt-6.1-terra" }]. Revert it with: git checkout main -- repoos.toml
 - 2026-11-08T14:54:02Z · message_delivered: 1 message(s)
+- 2026-11-08T15:05:07Z · body
+- 2026-11-08T15:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T15:05:50Z · message_queued at 2026-11-08T15:05:50.848Z
+- 2026-11-08T15:05:50Z · ↻ resuming engineer to read queued message
+- 2026-11-08T15:05:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Merged `main` (resolved `work/*.md` conflicts with main’s copies, including `work/1058-*.md`), left `repoos.toml` alone — still matches `main` on the branch (`git diff main HEAD -- repoos.toml` empty). `REPOOS_CHECK_CHANGED=main repoos che… · stderr: (empty)
+- 2026-11-08T15:05:51Z · message_delivered: 2 message(s)
+- 2026-11-08T15:07:04Z · message_queued at 2026-11-08T15:07:04.982Z
+- 2026-11-08T15:07:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T15:10:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:16:13Z · body
+- 2026-11-08T15:17:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T15:19:02Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-08T15:19:03Z · status active→review
+- 2026-11-08T15:19:03Z · message_queued at 2026-11-08T15:19:03.448Z
+- 2026-11-08T15:20:52Z · note: review pass 2: needs some work
+- 2026-11-08T15:20:52Z · message_delivered: 1 message(s)
+- 2026-11-08T15:20:53Z · status review→active
+- 2026-11-08T15:33:50Z · body
+- 2026-11-08T15:37:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T15:37:19Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T15:37:20Z · message_queued at 2026-11-08T15:37:20.035Z
+- 2026-11-08T15:42:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:47:06Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-08T15:49:50Z · message_queued at 2026-11-08T15:49:50.506Z
+- 2026-11-08T15:54:53Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T15:54:53Z · note: handoff requested (cli)
+- 2026-11-08T15:55:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T15:57:55Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T15:57:55Z · message_queued at 2026-11-08T15:57:55.438Z
+- 2026-11-08T15:57:55Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1058.md
+- 2026-11-08T15:57:59Z · message_delivered: 1 message(s)
+- 2026-11-08T16:02:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T16:12:00Z · body
+- 2026-11-08T16:14:43Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T16:14:43Z · message_queued at 2026-11-08T16:14:43.962Z
+- 2026-11-08T16:14:44Z · ↻ resuming engineer to read queued message
+- 2026-11-08T16:14:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T16:14:44Z · note: handoff requested (cli)
+- 2026-11-08T16:17:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T16:17:37Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T16:17:37Z · status active→review
+- 2026-11-08T16:17:37Z · message_queued at 2026-11-08T16:17:37.782Z
+- 2026-11-08T16:20:56Z · note: review pass 3: needs some work
+- 2026-11-08T16:20:56Z · needs_input
+- 2026-11-08T16:28:42Z · message_delivered: 3 message(s)
+- 2026-11-08T16:53:04Z · body
+- 2026-11-08T16:53:41Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T16:53:41Z · message_queued at 2026-11-08T16:53:41.412Z
+- 2026-11-08T16:53:41Z · ↻ resuming engineer to read queued message
+- 2026-11-08T16:53:41Z · message_delivered: 2 message(s)
+- 2026-11-08T17:29:57Z · status review→active
+- 2026-11-08T17:29:57Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T17:29:59Z · needs_input
+- 2026-11-08T17:29:59Z · message_queued at 2026-11-08T17:29:59.811Z
+- 2026-11-08T17:30:00Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T17:45:29Z · body
+- 2026-11-08T18:00:44Z · body
+- 2026-11-08T18:07:26Z · body
+- 2026-11-08T18:19:52Z · body
+- 2026-11-08T18:23:39Z · body
+- 2026-11-08T18:25:01Z · body
+- 2026-11-08T18:26:25Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T18:26:26Z · message_queued at 2026-11-08T18:26:26.055Z
+- 2026-11-08T18:26:26Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:26:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **#1058 — Card activity recency on hover** Healthy running board and pipeline cards no longer show inline “active N ago” / elapsed text; recency is in the shared `data-tip` tooltip (hover, focus, long-press, and short tap on card hints onl… · stderr: (empty)
+- 2026-11-08T18:26:26Z · note: handoff requested (cli)
+- 2026-11-08T18:27:48Z · message_delivered: 2 message(s)
+- 2026-11-08T18:28:26Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T18:28:26Z · status active→review
+- 2026-11-08T18:28:26Z · message_queued at 2026-11-08T18:28:26.746Z
+- 2026-11-08T18:29:58Z · note: review pass 4: needs some work
+- 2026-11-08T18:29:58Z · needs_input
+- 2026-11-08T18:49:59Z · status review→active
+- 2026-11-08T18:49:59Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T18:50:00Z · message_delivered: 1 message(s)
+- 2026-11-08T18:50:00Z · needs_input
+- 2026-11-08T18:50:01Z · message_queued at 2026-11-08T18:50:01.082Z
+- 2026-11-08T18:50:01Z · CTO nudge: held — an undelivered message is already queued

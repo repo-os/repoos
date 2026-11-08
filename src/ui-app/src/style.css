@@ -13270,7 +13270,7 @@
   align-items: center;
   gap: 7px;
   margin: 10px 0 12px;
-  color: var(--muted);
+  color: var(--txt-dim);
   font-size: 12px;
 }
 
@@ -13294,7 +13294,7 @@
   color: var(--amber);
 }
 .model-test-not_testable {
-  color: var(--muted);
+  color: var(--txt-dim);
 }
 .model-test-warning {
   color: var(--amber);
