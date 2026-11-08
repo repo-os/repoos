@@ -339,6 +339,22 @@ describe("PipelineView", () => {
     expect(pipelineCard.find(".pl-action").attributes("aria-label")).toContain("Restart work");
   });
 
+  it("shows a quiet running agent as Stuck in Pipeline, like the Board", async () => {
+    setActivePinia(createPinia());
+    seedBoard();
+    const repo = useRepoStore();
+    const silentAt = new Date(Date.now() - 6 * 60_000).toISOString();
+    repo.agentActivityAt = { "1001": silentAt };
+    repo.runningSince = { "1001": silentAt };
+    repo.tasks = repo.tasks.map((task) =>
+      task.id === "1001" ? { ...task, updated_at: silentAt } : task,
+    ) as never;
+    const wrapper = track(mount(PipelineView, { attachTo: document.body }));
+    const card = wrapper.get('[data-task-id="1001"]');
+    expect(card.find(".pl-status-chip").text()).toBe("Stuck");
+    expect(card.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("6m");
+  });
+
   it("places active and review tasks on the track and opens the panel on click", async () => {
     setActivePinia(createPinia());
     seedBoard();
