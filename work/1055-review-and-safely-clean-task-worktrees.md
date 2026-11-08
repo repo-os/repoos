@@ -2,14 +2,14 @@
 id: "1055"
 title: Review and safely clean task worktrees
 type: chore
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T02:19:18Z"
+updated_at: "2026-11-08T02:24:32Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -144,3 +144,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T02:19:16Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-08T02:19:18Z · message_delivered: 1 message(s)
 - 2026-11-08T02:19:18Z · status review→active
+- 2026-11-08T02:24:32Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
