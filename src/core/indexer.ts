@@ -17,9 +17,7 @@ import {
   type Task,
   type Status,
 } from "./types.js";
-import { parseTask } from "./task.js";
-import { parseDocument } from "./frontmatter.js";
-import { reportsRootRelPath } from "./report-paths.js";
+import { isIndexableTaskFile, parseTask } from "./task.js";
 import {
   isGitRepo,
   localBranches,
@@ -64,7 +62,10 @@ function walkFiles(
  * frontmatter, so indexing them would trip the "no `id`" warning on every run.
  */
 function nonTaskDirs(config: RepoOSConfig): ReadonlySet<string> {
-  return new Set([join(config.root, reportsRootRelPath(config))]);
+  return new Set([
+    join(config.root, config.workDir, "reports"),
+    join(config.root, config.workDir, "engineering-reports"),
+  ]);
 }
 
 function priorityRank(p: string): number {
@@ -101,8 +102,7 @@ export function buildIndex(config: RepoOSConfig, opts: { skipGit?: boolean } = {
     // Reject files with no explicit `id` in frontmatter — the API always sets
     // it, so a missing id means a human or AI agent hand-wrote the file. These
     // get an opaque derived id and would silently pollute the task list.
-    const { data } = parseDocument(content);
-    if (!("id" in data)) {
+    if (!isIndexableTaskFile(config, absPath, content)) {
       skippedTaskFiles++;
       return [];
     }
@@ -202,8 +202,7 @@ export async function buildIndexDetailedAsync(
   const tasks: Task[] = [];
   for (const absPath of files) {
     const content = readFileSync(absPath, "utf8");
-    const { data } = parseDocument(content);
-    if (!("id" in data)) {
+    if (!isIndexableTaskFile(config, absPath, content)) {
       skippedTaskFiles++;
       continue;
     }
