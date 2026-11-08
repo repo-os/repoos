@@ -3,9 +3,6 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (4 in 30m): a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1058 --fresh`."
 priority: p3
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T11:22:30Z"
+updated_at: "2026-11-08T12:23:46Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
@@ -206,3 +203,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T11:22:30Z · needs_input
 - 2026-11-08T11:22:30Z · agent exited with an error (cursor) · Error: [internal]
 - 2026-11-08T11:22:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
+- 2026-11-08T12:23:46Z · needs_input
