@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p3
 area: web
 assigned_to: ai
@@ -13,9 +16,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T03:24:00Z"
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T03:23:29.277Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-08T03:25:00Z"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T03:23:29.277Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T03:24:00.776Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -81,3 +84,5 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T03:23:29Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-11-08T03:23:59Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
 - 2026-11-08T03:24:00Z · needs_input
+- 2026-11-08T03:24:00Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T03:25:00Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
