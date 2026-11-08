@@ -2396,7 +2396,8 @@ export function commitFiles(root: string, absPaths: string[], message: string): 
   if (rels.length === 0 || rels.some((rel) => rel.startsWith("..") || isAbsolute(rel))) {
     return false;
   }
-  const boardRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim() || root;
+  const boardRoot =
+    process.env.REPOOS_BOARD_ROOT?.trim() || process.env.REPOOS_CHECK_STORE_ROOT?.trim() || root;
   const cacheDir = process.env.REPOOS_CACHE_DIR?.trim() || ".repoos";
   if (checkGateCommitHook) {
     const verdict = checkGateCommitHook({
