@@ -1281,8 +1281,12 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         ];
       };
       const runAgent = (taskId: string, activeMinAgo: number): void => {
-        if (!repo.runningIds.includes(taskId)) repo.runningIds.push(taskId);
-        repo.agentActivityAt = { ...repo.agentActivityAt, [taskId]: agoMin(activeMinAgo) };
+        const at = agoMin(activeMinAgo);
+        if (!repo.runningIds.includes(taskId)) {
+          repo.runningIds = [...repo.runningIds, taskId];
+        }
+        repo.runningSince = { ...repo.runningSince, [taskId]: at };
+        repo.agentActivityAt = { ...repo.agentActivityAt, [taskId]: at };
       };
       ensureFixtureTask(
         repo,
@@ -2053,7 +2057,18 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "drawer:checksProgress":
     case "card:checksProgress": {
       applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
+      // #1057: engineer already exited; server-side handoff still running.
+      repo.runningIds = repo.runningIds.filter((id) => id !== SHOT_PREVIEW_FIXTURE_TASK_ID);
       const startedAt = new Date(Date.now() - 133_000).toISOString();
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "verify",
+        startedAt,
+        updatedAt: new Date().toISOString(),
+        attempt: 1,
+        progress: null,
+        machine: "remote host",
+      };
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
         {
           id: "shot-checks-progress-1054",

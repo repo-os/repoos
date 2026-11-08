@@ -315,6 +315,19 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(hint.label).toContain("109/645");
   });
 
+  it("seeds card:checksProgress with handoff running and no live engineer (#1057)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "card:checksProgress");
+    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
+    expect(repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID]).toMatchObject({
+      state: "running",
+      step: "verify",
+    });
+    expect(repo.handoffInFlight(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+  });
+
   it("seeds pipeline:checksProgress on the checks lane without handoff state", () => {
     const pinia = createPinia();
     setActivePinia(pinia);

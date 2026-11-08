@@ -468,10 +468,8 @@ const drawerChecksDisplay = computed(() => {
       : null;
   const scopeWhereLine = run
     ? (() => {
-        const where = scopeWhere(run.scope, checkMachine.value ?? run.machine);
-        if (where === "Full check") return null;
-        const machine = checkMachine.value ?? run.machine;
-        return machine ? `${where} · ${machine}` : where;
+        const line = scopeWhere(run.scope, checkMachine.value ?? run.machine);
+        return line === "Full check" ? null : line;
       })()
     : null;
   return {
@@ -6711,7 +6709,10 @@ watch(
                   <ChatDiagnosticRow
                     v-if="row.kind === 'line' && row.s === 'err'"
                     :text="row.text"
+                    :detail-text="row.detailText"
                     :at="row.at"
+                    :first-at="row.firstAt"
+                    :count="row.repeatCount"
                   />
                   <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
                     <span class="agent-pfx" :class="row.s">{{
@@ -7083,7 +7084,10 @@ watch(
                   <ChatDiagnosticRow
                     v-if="row.kind === 'line' && row.s === 'err'"
                     :text="row.text"
+                    :detail-text="row.detailText"
                     :at="row.at"
+                    :first-at="row.firstAt"
+                    :count="row.repeatCount"
                   />
                   <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
                     <span class="agent-pfx" :class="row.s">{{
