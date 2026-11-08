@@ -166,7 +166,8 @@ describe("uncommitted-changes panel (#1030)", () => {
     expect(document.querySelector(".diff-section")).toBeNull();
     expect(textarea.value).toBe("");
     expect(textarea.disabled).toBe(true);
-    expect(panel()!.textContent).toContain("Committed 2 files to main (abc1234).");
+    expect(panel()).toBeNull();
+    expect(useRepoStore().toasts[0]?.message).toContain("Committed 2 files to main (abc1234)");
   });
 
   it("commits with a blank message (the server applies its default)", async () => {
@@ -194,8 +195,7 @@ describe("uncommitted-changes panel (#1030)", () => {
     release();
     await flushPromises();
     // Committed, so the panel is now clean and the control stays disabled.
-    expect(button.disabled).toBe(true);
-    expect(panel()!.textContent).toContain("Committed 2 files to main (abc1234).");
+    expect(panel()).toBeNull();
   });
 
   it("shows a 409 refusal inline instead of failing silently", async () => {

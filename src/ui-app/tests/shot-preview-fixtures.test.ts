@@ -31,6 +31,17 @@ import { activeEngineerCardHint } from "../src/lib/active-task-card";
 import { makeTask } from "./component-test-helpers";
 
 describe("shot preview board fixtures (#0743)", () => {
+  it("seeds a done task for the post-merge summary capture (#1044)", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    const ui = useUiStore();
+    applyShotPreviewFixture(repo, "drawer:postMergeSummary");
+    expect(repo.tasks.find((task) => task.id === SHOT_PREVIEW_FIXTURE_TASK_ID)?.status).toBe(
+      "done",
+    );
+    expect(ui.active).toBeNull();
+  });
+
   it.each(["card:held", "drawer:held"] as const)("seeds an intentional hold for %s", (fixture) => {
     setActivePinia(createPinia());
     const repo = useRepoStore();

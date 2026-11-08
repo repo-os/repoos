@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { formatPipelineElapsed, type PipelineCardState } from "../../../core/pipeline-view.js";
-import type { CheckProgress } from "../lib/check-progress";
+import { checkProgressPercent, type CheckProgress } from "../lib/check-progress";
 import {
   resolveSharedTaskCardStatus,
   type SharedTaskCardStatusInput,
@@ -67,6 +67,10 @@ const displayAction = computed<PipelineCardAction | null>(() => {
   }
   return null;
 });
+
+const showInlineCheckBar = computed(
+  () => props.checkProgress != null && checkProgressPercent(props.checkProgress) != null,
+);
 
 function open(): void {
   emit("open", props.taskId);
@@ -138,6 +142,14 @@ function onKey(e: KeyboardEvent): void {
     <!-- Row 3: status -->
     <div class="pl-row pl-row-3">
       <span v-if="displayChipText" class="pl-status-chip">{{ displayChipText }}</span>
+      <ChecksProgressDisplay
+        v-else-if="showInlineCheckBar"
+        class="pl-check-progress"
+        variant="pipeline"
+        test-id="pipeline-card-check-progress"
+        :progress="checkProgress"
+        :pipeline-status-text="displayStepLabel"
+      />
       <template v-else>
         <span class="pl-dot" aria-hidden="true"></span>
         <span class="pl-step">{{ displayStepLabel }}</span>
@@ -145,12 +157,6 @@ function onKey(e: KeyboardEvent): void {
       <span class="pl-spacer"></span>
       <span class="pl-elapsed">{{ elapsed }}</span>
     </div>
-    <ChecksProgressDisplay
-      v-if="checkProgress"
-      variant="pipeline"
-      test-id="pipeline-card-check-progress"
-      :progress="checkProgress"
-    />
     <!-- Row 4: rounds, models, host -->
     <div class="pl-row pl-row-4">
       <span class="rounds-badge pl-round" :class="reviewerTone ? `tone-${reviewerTone}` : ''">
@@ -208,126 +214,110 @@ function onKey(e: KeyboardEvent): void {
 }
 .pl-spacer {
   flex: 1 1 auto;
+  min-width: 4px;
 }
 .pl-id {
-  font-size: 11px;
-  color: var(--txt-dim);
+  font-weight: 700;
+  color: var(--muted);
 }
 .pl-chip {
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 600;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--chip-bg);
-  color: var(--txt-dim);
-  font-size: 10px;
-  line-height: 1.5;
-  padding: 0 6px;
-  white-space: nowrap;
+  color: var(--muted);
 }
 .pl-title {
+  font-weight: 600;
   font-size: 12px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pl-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  flex: 0 0 auto;
+}
+.pipeline-card.is-paused .pl-dot {
+  background: var(--amber);
+}
+.pipeline-card.is-stuck .pl-dot,
+.pipeline-card.is-needs-input .pl-dot {
+  background: var(--red);
+}
+.pl-step {
   font-weight: 600;
   color: var(--txt);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pl-dot {
-  flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--green);
-}
-.is-stuck .pl-dot {
-  background: var(--red);
-}
-.is-needs-input .pl-dot {
-  background: var(--amber);
-}
-.is-paused .pl-dot,
-.is-held .pl-dot {
-  background: var(--txt-faint);
-}
-.pl-step {
-  color: var(--txt-dim);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.pl-elapsed {
-  flex: 0 0 auto;
-  color: var(--txt-faint);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-}
 .pl-status-chip {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--chip-bg);
-  font-size: 10px;
   font-weight: 600;
-  line-height: 1.5;
-  padding: 0 6px;
-  white-space: nowrap;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
 }
-.is-stuck .pl-status-chip {
-  border-color: var(--red-border-tint);
-  background: var(--red-tint);
+.pipeline-card.is-stuck .pl-status-chip {
   color: var(--red);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
 }
-.is-needs-input .pl-status-chip {
-  border-color: var(--amber-border-tint);
-  background: var(--amber-tint);
+.pipeline-card.is-needs-input .pl-status-chip {
+  color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 12%, transparent);
+}
+.pipeline-card.is-paused .pl-status-chip {
   color: var(--amber);
 }
-.is-merged .pl-status-chip {
-  border-color: var(--green-border-tint);
-  background: var(--green-tint);
-  color: var(--green);
-}
-.pl-models {
-  color: var(--txt-faint);
-  font-size: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.pl-host {
-  flex: 0 0 auto;
-  color: var(--txt-dim);
+.pl-elapsed {
+  color: var(--muted);
   font-size: 10px;
   white-space: nowrap;
 }
 .pl-action {
-  flex: 0 0 auto;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: transparent;
-  color: var(--txt-dim);
+  background: var(--panel);
+  color: var(--txt);
   cursor: pointer;
   padding: 0;
 }
 .pl-action:hover {
-  color: var(--txt);
   border-color: var(--border-bright);
 }
-.pl-action:focus-visible {
-  outline: 2px solid var(--cyan);
-  outline-offset: 1px;
-}
 .pl-action svg {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
 }
-.is-merged .pl-action {
-  border-color: var(--green-border-tint);
-  background: var(--green-tint);
-  color: var(--green);
+.pl-row-4 {
+  color: var(--muted);
+  font-size: 10px;
+}
+.pl-round {
+  font-size: 9px;
+}
+.pl-models {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pl-host {
+  white-space: nowrap;
+}
+.pl-check-progress {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 </style>

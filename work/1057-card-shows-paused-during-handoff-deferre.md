@@ -2,7 +2,12 @@
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
-status: review
+status: active
+needs_input: true
+needs_input_reason: check-failed-after-retries
+debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
+debug_tldr_at: "2026-11-08T02:59:35Z"
+debug_tldr_key: check-failed-after-retries|
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -11,9 +16,17 @@ branch: feat/card-shows-paused-during-handoff-deferre
 cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: codex
-review_model_override: gpt-6.1-terra
+review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T03:04:56Z"
+updated_at: "2026-11-08T08:42:21Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T08:41:54.450Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+review_rounds: 1
+review_passes: 2
+handoff_signal_retry_count: 1
+dev_error_count: 5
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T08:42:08.800Z\",\"kind\":\"usage-limit\"}]"
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -34,6 +47,19 @@ Two related lifecycle bugs seen on 2026-11-08:
 ## Notes for AI
 Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), stores/repo.ts (`handoffInFlight`, `handoffStatuses`), src/server/handoff.ts (the "queued message(s) must be read before review" deferral) and the existing automatic-resume machinery (`MAX_CHECK_RETRY_ATTEMPTS`, `MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS`) which should be reused for the retry cap. Do not change AGENTS.md rules about who moves tasks out of active.
 
+## Shots
+```json
+[
+{
+"label": "Task card during handoff checks",
+"target": "default",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"]",
+"state": "card:checksProgress"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-08T00:26:09Z · created · njachowski@gmail.com
@@ -41,4 +67,89 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T00:26:14Z · status inbox→ready
 - 2026-11-08T00:27:23Z · review_model_override
 - 2026-11-08T00:31:19Z · status ready→active, branch
-- 2026-11-08T03:04:56Z · status active→review
+- 2026-11-08T00:41:56Z · message_queued at 2026-11-08T00:41:56.754Z
+- 2026-11-08T00:41:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:42:56Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T00:51:05Z · body
+- 2026-11-08T01:00:16Z · body
+- 2026-11-08T01:02:01Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T01:31:44Z · message_queued at 2026-11-08T01:31:44.081Z
+- 2026-11-08T01:31:47Z · message_delivered: 1 message(s)
+- 2026-11-08T01:31:47Z · message_queued at 2026-11-08T01:31:47.273Z
+- 2026-11-08T01:32:56Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T01:38:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T01:40:16Z · body
+- 2026-11-08T01:41:01Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T01:41:01Z · message_queued at 2026-11-08T01:41:01.137Z
+- 2026-11-08T01:41:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: The rerun passed: remote validation completed the changed-path tests, and the local formatting, lint, build, rendered contrast, and UI smoke steps also passed. The handoff timeout did not reproduce, so I’m requesting handoff again with the… · stderr: (empty)
+- 2026-11-08T01:41:01Z · message_delivered: 2 message(s)
+- 2026-11-08T01:43:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T02:03:10Z · message_queued at 2026-11-08T02:03:10.054Z
+- 2026-11-08T02:03:13Z · message_delivered: 1 message(s)
+- 2026-11-08T02:03:14Z · message_queued at 2026-11-08T02:03:14.908Z
+- 2026-11-08T02:03:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T02:03:29Z · agent exited with an error (codex) · 2026-11-08T02:03:18.737057Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T02:03:29Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-08T02:03:18.737057Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T02:03:29Z · needs_input
+- 2026-11-08T02:03:30Z · message_delivered: 1 message(s)
+- 2026-11-08T02:03:45Z · agent exited with an error (codex) · 2026-11-08T02:03:35.530915Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T02:03:45Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-11-08T02:03:35.530915Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T02:03:46Z · needs_input
+- 2026-11-08T02:04:02Z · agent exited with an error (codex) · 2026-11-08T02:03:52.160885Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T02:04:02Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6-luna) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-08T02:06:16Z · needs_input
+- 2026-11-08T02:22:40Z · body
+- 2026-11-08T02:28:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T02:48:57Z · message_queued at 2026-11-08T02:48:57.240Z
+- 2026-11-08T02:52:23Z · review_model_override
+- 2026-11-08T02:53:29Z · handoff failed · check failed after 2 automatic retries · server-side finalization timed out (deadline exceeded)
+- 2026-11-08T02:53:29Z · message_queued at 2026-11-08T02:53:29.730Z
+- 2026-11-08T02:54:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T02:59:17Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · server-side finalization timed out (deadline exceeded) · next step: resume the session manually from the task's worktree and check for uncommitted work
+- 2026-11-08T03:04:56Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-08T03:04:56Z · note: handoff requested (cli)
+- 2026-11-08T03:08:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T03:16:08Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (62f0e7e97) during finalization (#0734)
+- 2026-11-08T03:23:20Z · message_queued at 2026-11-08T03:23:20.083Z
+- 2026-11-08T03:23:20Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+- 2026-11-08T03:23:20Z · message_delivered: 3 message(s)
+- 2026-11-08T06:05:34Z · body
+- 2026-11-08T06:14:58Z · message_queued at 2026-11-08T06:14:58.799Z
+- 2026-11-08T06:14:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T06:17:50Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T06:17:54Z · body
+- 2026-11-08T06:18:14Z · note: adopted orphaned engineer pid 95736
+- 2026-11-08T06:19:37Z · body
+- 2026-11-08T06:20:30Z · status active→review
+- 2026-11-08T06:21:31Z · note: review pass 1: needs some work
+- 2026-11-08T06:29:28Z · message_queued at 2026-11-08T06:29:28.887Z
+- 2026-11-08T06:29:31Z · message_delivered: 1 message(s)
+- 2026-11-08T06:31:01Z · status review→active
+- 2026-11-08T06:31:01Z · note: Resuming #1057 for requested shared Board/Pipeline status derivation, check failure investigation, and fresh card evidence.
+- 2026-11-08T06:48:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T07:23:14Z · message_queued at 2026-11-08T07:23:14.221Z
+- 2026-11-08T07:23:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T07:23:41Z · body
+- 2026-11-08T07:24:39Z · body
+- 2026-11-08T07:28:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T07:55:02Z · message_queued at 2026-11-08T07:55:02.003Z
+- 2026-11-08T07:55:05Z · message_delivered: 1 message(s)
+- 2026-11-08T07:58:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T08:03:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-08T08:03:12Z · note: handoff requested (cli)
+- 2026-11-08T08:03:12Z · body
+- 2026-11-08T08:03:13Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:22:23Z · message_queued at 2026-11-08T08:22:23.045Z
+- 2026-11-08T08:22:23Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T08:22:36Z · message_delivered: 1 message(s)
+- 2026-11-08T08:33:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T08:38:20Z · body
+- 2026-11-08T08:39:22Z · status active→review
+- 2026-11-08T08:40:24Z · note: review pass 2: needs some work
+- 2026-11-08T08:40:24Z · message_queued at 2026-11-08T08:40:24.458Z
+- 2026-11-08T08:40:24Z · status review→active
+- 2026-11-08T08:40:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:41:51Z · message_queued at 2026-11-08T08:41:51.292Z
+- 2026-11-08T08:41:54Z · message_delivered: 2 message(s)
+- 2026-11-08T08:42:08Z · engineer crash recovery: switched codex + gpt-6-luna → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 6:04 PM.
+- 2026-11-08T08:42:21Z · CTO nudge: held — remote validation is running

@@ -1,0 +1,83 @@
+---
+id: "1060"
+title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
+type: bug
+status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found"
+debug_tldr: The agent hit its usage limit during the build — retry after credits reset to finish validation.
+debug_tldr_at: "2026-11-08T08:42:29Z"
+debug_tldr_key: "dev-error|2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found"
+priority: p1
+area: server
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: feat/remote-browser-capture-runner-never-exit
+cli_override: codex
+model_override: gpt-6.1-terra
+review_cli_override: codex
+review_model_override: gpt-6-luna
+created_at: "2026-11-08T07:43:30Z"
+updated_at: "2026-11-08T08:42:29Z"
+review_rounds: 1
+review_passes: 1
+handoff_signal_retry_count: 2
+dev_error_count: 1
+---
+## Problem
+Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
+
+Evidence: `docker logs -t` on the runner shows the completed line at, for example, 07:26:32Z while the container was still "Up 16 minutes" at 0.3% CPU; `docker rm -f` of such a container immediately lets the task move on. The #1049 hang watchdog does not reap these because they are shot runs, not validation runs.
+
+Likely root cause: `scripts/remote-runner/capture-browser.ts` (`if (import.meta.main)` block) ends by setting `process.exitCode` and relies on natural process exit. After writing `result.json`, something (a lingering WebKit/Playwright browser child, a preview server handle, or an open socket) keeps the Bun process alive, so the container's entrypoint never exits and the Mac never sees the run finish.
+
+## Desired behavior
+1. The runner exits as soon as it has written `result.json` and logged the completion line: call `process.exit(process.exitCode ?? 0)` after logging (and in the catch path), after best-effort cleanup (close browsers, stop previews) with a short bounded timeout so cleanup cannot itself hang.
+2. Belt and braces on the Mac side: when collecting a remote capture, treat the presence of `result.json` (or the completion log line) as completion, collect the artifacts and tear the container down, instead of waiting for the container to exit.
+3. Extend the hang watchdog / leaked-container reaper (from #1049) to shot-capture runs: a capture container that logged its completion line and has been idle (CPU ~0) for more than a short grace period (for example 2 minutes) is collected and removed.
+4. A failed or timed-out handoff cancels or reaps its own outstanding capture jobs so retries do not queue behind stale duplicates for the same task.
+
+## Acceptance criteria
+- Test: capture-browser's entry exits the process after writing result.json even when a handle is left open (simulate with a pending timer/server) within a bounded time.
+- Test: the Mac-side collector finishes when `result.json` exists though the container is still running, and removes the container.
+- Test: the reaper/watchdog removes a shot-capture container that logged completion and has been idle past the grace period, and does not touch a capture still producing output.
+- Test: a failed handoff cancels that task's queued/running captures.
+- Debug UI / events show when a capture was force-collected or reaped and why.
+- `repoos check --changed main` passes; docs/remote-validation.md updated.
+
+## Notes for AI
+Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/server/remote-validation.ts (remote capture collection, watchdog, reaper from #1049), src/server/ui-handoff-gate.ts ("timed out waiting for the task's browser capture"). Do NOT edit repoos.toml. Do not widen scope beyond capture lifecycle. Context: filed from live diagnosis on thinkpad/bee/mini containers.
+
+## Activity
+
+- 2026-11-08T07:43:30Z · created · njachowski@gmail.com
+- 2026-11-08T07:43:34Z · cli_override, model_override, review_cli_override, review_model_override
+- 2026-11-08T07:43:36Z · status inbox→ready
+- 2026-11-08T07:43:37Z · status ready→active, branch
+- 2026-11-08T07:45:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1060 is **not ready for handoff**. The runner now writes `result.json` atomically, bounds preview cleanup to three seconds, and explicitly exits after logging. A subprocess test with a live timer passes; the focused test file passed … · stderr: Reading additional input from stdin...
+- 2026-11-08T07:52:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1060 remains **incomplete**, so I have not emitted the handoff signal. The runner now exits explicitly after bounded preview cleanup and publishes its result atomically. I also added a first Tailscale collector implementation and a s… · stderr: Reading additional input from stdin...
+- 2026-11-08T08:04:25Z · message_queued at 2026-11-08T08:04:25.156Z
+- 2026-11-08T08:08:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T08:08:36Z · body
+- 2026-11-08T08:21:28Z · body
+- 2026-11-08T08:22:14Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T08:22:14Z · message_queued at 2026-11-08T08:22:14.156Z
+- 2026-11-08T08:22:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T08:22:14Z · message_delivered: 2 message(s)
+- 2026-11-08T08:23:05Z · status active→review
+- 2026-11-08T08:23:05Z · message_queued at 2026-11-08T08:23:05.818Z
+- 2026-11-08T08:23:05Z · note: shots: skipped — the diff (13 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-08T08:24:42Z · note: review pass 1: needs some work
+- 2026-11-08T08:24:42Z · status review→active
+- 2026-11-08T08:24:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T08:29:13Z · message_delivered: 1 message(s)
+- 2026-11-08T08:33:02Z · message_queued at 2026-11-08T08:33:02.422Z
+- 2026-11-08T08:38:28Z · body
+- 2026-11-08T08:38:31Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder 3793 is dead for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-08T08:39:01Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-08T08:39:15Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T08:39:15Z · message_queued at 2026-11-08T08:39:15.451Z
+- 2026-11-08T08:39:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T08:39:15Z · message_delivered: 2 message(s)
+- 2026-11-08T08:42:12Z · agent exited with an error (codex) · 2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found
