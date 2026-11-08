@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1065"
 title: Review card says 'ready to finish' while checks are still running or failing
 type: bug
@@ -38,3 +39,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T14:29:08Z · status inbox→ready
 - 2026-11-08T15:10:07Z · status ready→active, branch
 - 2026-11-08T15:15:10Z · message_queued at 2026-11-08T15:15:10.896Z
+
