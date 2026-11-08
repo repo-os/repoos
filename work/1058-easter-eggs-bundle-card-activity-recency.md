@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T15:49:50Z"
+updated_at: "2026-11-08T16:02:05Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -260,3 +260,11 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T15:42:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T15:47:06Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-08T15:49:50Z · message_queued at 2026-11-08T15:49:50.506Z
+- 2026-11-08T15:54:53Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T15:54:53Z · note: handoff requested (cli)
+- 2026-11-08T15:55:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T15:57:55Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T15:57:55Z · message_queued at 2026-11-08T15:57:55.438Z
+- 2026-11-08T15:57:55Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1058.md
+- 2026-11-08T15:57:59Z · message_delivered: 1 message(s)
+- 2026-11-08T16:02:05Z · CTO nudge: held — an undelivered message is already queued

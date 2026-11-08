@@ -13,7 +13,10 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T15:47:58Z"
+updated_at: "2026-11-08T16:07:48Z"
+handoff_signal_retry_count: 2
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 A task's check (build, tests, UI smoke, remote validation) is refused with "the worktree changed while the gate was running (HEAD moved from X to Y) — the check result no longer describes what is committed" whenever the branch tip moves while the check runs. On 2026-11-08 this repeatedly failed handoffs and forced full re-runs (each 10-60 minutes). The tip moved because of:
@@ -51,3 +54,12 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T15:29:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T15:31:49Z · body
 - 2026-11-08T15:47:58Z · body
+- 2026-11-08T15:54:00Z · status active→review
+- 2026-11-08T15:54:00Z · message_queued at 2026-11-08T15:54:00.592Z
+- 2026-11-08T15:54:00Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-08T15:56:32Z · note: review pass 1: needs some work
+- 2026-11-08T15:56:32Z · status review→active
+- 2026-11-08T15:56:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T16:01:41Z · message_queued at 2026-11-08T16:01:41.493Z
+- 2026-11-08T16:06:56Z · message_queued at 2026-11-08T16:06:56.535Z
+- 2026-11-08T16:07:48Z · message_delivered: 1 message(s)

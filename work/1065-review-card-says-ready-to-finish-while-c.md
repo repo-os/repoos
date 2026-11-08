@@ -10,8 +10,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
-updated_at: "2026-11-08T15:19:23Z"
-handoff_signal_retry_count: 1
+updated_at: "2026-11-08T16:09:08Z"
+handoff_signal_retry_count: 2
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 On the Work board, a task in Review whose reviewer said "good to go" shows the green "Review passed · ready to finish" label, a glowing card and an active "Move to done" button. The task drawer for the same task can say "Not ready to merge: Running checks · 7m 21s, step 10 of 11" at the same moment (seen on #1063). The two disagree.
@@ -37,10 +38,10 @@ Confirm first whether Move to done is already rejected server-side while checks 
 ```json
 [
 {
-  "label": "Review card with checks running",
-  "target": "default",
-  "route": "/work?shotState=card:reviewChecksRunning",
-  "highlight": "[data-task-id=\"9999\"] .tc-card-footer-action"
+"label": "Review card with checks running",
+"target": "default",
+"route": "/work?shotState=card:reviewChecksRunning",
+"highlight": "[data-task-id=\"9999\"] .tc-card-footer-action"
 }
 ]
 ```
@@ -53,3 +54,11 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T15:15:10Z · message_queued at 2026-11-08T15:15:10.896Z
 - 2026-11-08T15:17:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T15:19:23Z · body
+- 2026-11-08T15:57:02Z · body
+- 2026-11-08T15:58:50Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T15:58:50Z · message_queued at 2026-11-08T15:58:50.499Z
+- 2026-11-08T15:58:50Z · ↻ resuming engineer to read queued message
+- 2026-11-08T15:58:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The requested scoped check passed on the final tree: build, lint/format, rendered contrast, UI smoke, and the remote changed-path test suite all passed. I’m writing the engineer-authored report draft now, then I’ll make the handoff request… · stderr: Reading additional input from stdin... 2026-11-08T15:29:05.975891Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/review-card-says-ready-to-finish-while-c/src/ui-app/src/components/TaskCard.vue: if (landable.value?.la…
+- 2026-11-08T16:03:56Z · message_queued at 2026-11-08T16:03:56.504Z
+- 2026-11-08T16:09:08Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T16:09:08Z · note: handoff requested (cli)
