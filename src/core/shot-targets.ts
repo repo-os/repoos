@@ -35,6 +35,7 @@ export const DEFAULT_PREVIEW_TARGET = "default";
 export const APP_ROUTE_PREFIXES = [
   "/login",
   "/work",
+  "/client-board",
   "/stories",
   "/checks",
   "/dev",

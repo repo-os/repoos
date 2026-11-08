@@ -2,9 +2,10 @@
 id: "0963"
 title: Build the simplified client project board
 type: feature
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: fdec662c84aa26528051ec018f00087776eb9e5b
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/build-the-simplified-client-project-boar
@@ -15,7 +16,12 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T06:05:04Z"
+updated_at: "2026-11-08T08:42:57Z"
+last_close_out_gate_ms: 124316
+last_close_out_gate_at: "2026-11-08T08:42:18.732Z"
+review_passes: 2
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T08:15:08.792Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
 
@@ -63,6 +69,18 @@ Out: changes to the For Clients page, client login or invites, sprints, and any 
 
 - #0849 — For Clients landing page, including the illustrative board this task builds for real.
 
+## Shots
+```json
+[
+{
+"label": "Simplified client project board",
+"target": "default",
+"route": "/client-board",
+"highlight": ".client-board"
+}
+]
+```
+
 ## Original prompt
 
 We have a new page on the landing page called "For Clients" which explains the RepoOS managed services and shows a screenshot of what it looks like, but we haven't built it yet. It's essentially a simplified board that's client-level. Let's build it.
@@ -81,3 +99,45 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-06T05:05:53Z · status inbox→ready
 - 2026-11-08T06:05:03Z · cli_override, model_override, review_cli_override, review_model_override
 - 2026-11-08T06:05:04Z · status ready→active, branch
+- 2026-11-08T06:07:03Z · body
+- 2026-11-08T06:18:15Z · note: adopted orphaned engineer pid 36650
+- 2026-11-08T06:18:45Z · body
+- 2026-11-08T06:20:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T06:32:57Z · handoff failed · remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > maps every standard route to an explicit skeleton kind, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-08T06:32:57Z · message_queued at 2026-11-08T06:32:57.989Z
+- 2026-11-08T06:33:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T06:38:15Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > maps every standard route to an explicit skeleton kind, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-08T06:43:15Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > maps every standard route to an explicit skeleton kind, tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router on thinkpad — fix it in the feature branch and re-run the gate · next step: the agent turn was interrupted — open the task and resume the session in its worktree to finish and hand off
+- 2026-11-08T06:43:15Z · note: handoff requested (cli)
+- 2026-11-08T06:48:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T06:49:00Z · message_delivered: 1 message(s)
+- 2026-11-08T06:49:55Z · body
+- 2026-11-08T06:51:30Z · message_queued at 2026-11-08T06:51:30.049Z
+- 2026-11-08T06:51:30Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router, tests/app-loading-skeleton.test.ts > repo loading skeleton > maps every standard route to an explicit skeleton kind on mini — fix it in the feature branch and re-run the gate
+- 2026-11-08T06:53:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T06:56:44Z · body
+- 2026-11-08T07:11:37Z · body
+- 2026-11-08T07:12:16Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T07:12:16Z · message_queued at 2026-11-08T07:12:16.403Z
+- 2026-11-08T07:12:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
+- 2026-11-08T07:12:16Z · message_delivered: 2 message(s)
+- 2026-11-08T07:22:17Z · body
+- 2026-11-08T07:23:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T07:52:50Z · message_queued at 2026-11-08T07:52:50.301Z
+- 2026-11-08T07:52:53Z · message_delivered: 1 message(s)
+- 2026-11-08T07:53:00Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T07:53:00Z · note: handoff requested (cli)
+- 2026-11-08T08:05:24Z · message_queued at 2026-11-08T08:05:24.841Z
+- 2026-11-08T08:05:24Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T08:05:25Z · message_delivered: 1 message(s)
+- 2026-11-08T08:13:58Z · body
+- 2026-11-08T08:14:32Z · status active→review
+- 2026-11-08T08:15:05Z · note: review pass 1: good to go
+- 2026-11-08T08:15:05Z · message_queued at 2026-11-08T08:15:05.733Z
+- 2026-11-08T08:22:04Z · message_delivered: 1 message(s)
+- 2026-11-08T08:28:41Z · body
+- 2026-11-08T08:29:13Z · message_queued at 2026-11-08T08:29:13.934Z
+- 2026-11-08T08:33:22Z · note: review pass 2: good to go
+- 2026-11-08T08:42:18Z · close-out gate completed in 124s
+- 2026-11-08T08:42:35Z · status done→done, release:success
+- 2026-11-08T08:42:57Z · message_dropped: 1 queued message(s) discarded — task is done

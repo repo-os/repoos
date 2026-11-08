@@ -468,10 +468,8 @@ const drawerChecksDisplay = computed(() => {
       : null;
   const scopeWhereLine = run
     ? (() => {
-        const where = scopeWhere(run.scope, checkMachine.value ?? run.machine);
-        if (where === "Full check") return null;
-        const machine = checkMachine.value ?? run.machine;
-        return machine ? `${where} · ${machine}` : where;
+        const line = scopeWhere(run.scope, checkMachine.value ?? run.machine);
+        return line === "Full check" ? null : line;
       })()
     : null;
   return {

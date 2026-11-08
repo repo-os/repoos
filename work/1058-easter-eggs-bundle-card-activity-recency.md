@@ -10,12 +10,15 @@ created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-activity-recency
 cli_override: cursor
 model_override: composer-2.5
-review_cli_override: codex
-review_model_override: gpt-6-luna
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T06:01:25Z"
-dev_error_count: 12
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T05:57:17.343Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-08T15:49:50Z"
+review_rounds: 2
+review_passes: 2
+last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+dev_error_count: 17
+engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Items
 
@@ -47,35 +50,37 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ```json
 [
 {
-"label": "Board card coding without inline active recency",
+"label": "Board hint: coding line and hover recency",
 "target": "default",
-"route": "/",
-"selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"state": "board:activeCoding"
+"route": "/work",
+"highlight": ".app-tooltip.show",
+"steps": [
+{
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-"label": "Board hint popover shows last activity on hover",
-"target": "default",
-"route": "/",
-"selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"highlight": "[data-overlay-layer=\"floating\"]",
-"steps": [
-  {
-    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "waitMs": 400
-  }
+"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+"waitMs": 700
+}
 ],
 "state": "board:activeCoding"
 },
 {
-"label": "Pipeline ok card hides inline elapsed",
+"label": "Pipeline coding card hides inline elapsed",
 "target": "default",
-"route": "/",
-"selector": ".pipeline-card.is-ok .pl-step",
-"highlight": ".pipeline-card.is-ok .pl-step",
+"route": "/work?tab=pipeline",
+"selector": "[data-task-id=\"pipe-coding\"]",
+"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+"steps": [
+{
+"waitFor": "[data-task-id=\"pipe-coding\"]"
+},
+{
+"waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+}
+],
 "state": "board:pipeline"
 }
 ]
@@ -133,3 +138,125 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T06:00:21Z · needs_input
 - 2026-11-08T06:00:21Z · message_delivered: 1 message(s)
 - 2026-11-08T06:01:25Z · body
+- 2026-11-08T06:18:14Z · note: adopted orphaned engineer pid 26761
+- 2026-11-08T06:36:46Z · body
+- 2026-11-08T06:48:05Z · body
+- 2026-11-08T06:53:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T07:13:04Z · note: ui verification failed: ui verification failed (10 issue(s)): [missing-target] Board card coding without inline active recency (target "default"): state "board:activeCoding" did not render on target "default" — / shows no task card (http://127.0.0.1:42935/?shotState=board%3AactiveCoding); [missing-target] Board card coding without inline active recency (target "default"): highlight [data-task-id="9999"] [data-test-id="task-card-agent-hint"] matched nothing on / (http://127.0.0.1:42935/?shotState
+- 2026-11-08T07:13:04Z · message_queued at 2026-11-08T07:13:04.395Z
+- 2026-11-08T07:13:07Z · message_delivered: 1 message(s)
+- 2026-11-08T07:13:47Z · body
+- 2026-11-08T07:23:14Z · message_queued at 2026-11-08T07:23:14.412Z
+- 2026-11-08T07:23:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T07:28:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T07:35:29Z · body
+- 2026-11-08T07:38:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:03:10Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-08T08:03:11Z · status active→review
+- 2026-11-08T08:03:11Z · message_queued at 2026-11-08T08:03:11.708Z
+- 2026-11-08T08:04:18Z · note: review pass 1: needs some work
+- 2026-11-08T08:04:18Z · message_delivered: 1 message(s)
+- 2026-11-08T08:04:19Z · status review→active
+- 2026-11-08T08:04:21Z · CTO nudge: held — remote validation is running
+- 2026-11-08T08:21:20Z · body
+- 2026-11-08T08:23:07Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:42:56Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-08T08:42:57Z · status active→review
+- 2026-11-08T08:42:57Z · message_queued at 2026-11-08T08:42:57.341Z
+- 2026-11-08T08:45:22Z · review_cli_override, review_model_override
+- 2026-11-08T09:22:56Z · status review→active
+- 2026-11-08T09:22:59Z · CTO nudge: held — review is running
+- 2026-11-08T09:23:05Z · note: handoff requested (cli)
+- 2026-11-08T09:24:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T09:51:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-08T09:53:05Z · message_queued at 2026-11-08T09:53:05.247Z
+- 2026-11-08T09:53:05Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-08T09:53:05Z · message_delivered: 2 message(s)
+- 2026-11-08T09:53:13Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-08T09:53:18Z · CTO nudge: held — review is running
+- 2026-11-08T10:03:00Z · body
+- 2026-11-08T10:04:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T10:33:41Z · message_queued at 2026-11-08T10:33:41.849Z
+- 2026-11-08T10:34:09Z · CTO nudge: held — review is running
+- 2026-11-08T10:35:52Z · message_delivered: 1 message(s)
+- 2026-11-08T10:46:38Z · body
+- 2026-11-08T10:50:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T10:53:16Z · message_queued at 2026-11-08T10:53:16.598Z
+- 2026-11-08T10:53:22Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-08T10:54:09Z · CTO nudge: held — review is running
+- 2026-11-08T10:59:11Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-11-08T10:59:11Z · message_queued at 2026-11-08T10:59:11.737Z
+- 2026-11-08T11:07:12Z · message_delivered: 1 message(s)
+- 2026-11-08T11:08:39Z · body
+- 2026-11-08T11:17:44Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-11-08T11:18:14Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
+- 2026-11-08T11:18:15Z · needs_input
+- 2026-11-08T11:18:15Z · message_delivered: 1 message(s)
+- 2026-11-08T11:18:29Z · agent exited with an error (cursor) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-08T11:19:29Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-08T11:19:30Z · needs_input
+- 2026-11-08T11:20:59Z · agent exited with an error (cursor) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-08T11:22:29Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-08T11:22:30Z · needs_input
+- 2026-11-08T11:22:30Z · agent exited with an error (cursor) · Error: [internal]
+- 2026-11-08T11:22:30Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
+- 2026-11-08T12:23:46Z · needs_input
+- 2026-11-08T12:26:39Z · body
+- 2026-11-08T12:37:00Z · message_queued at 2026-11-08T12:37:00.436Z
+- 2026-11-08T12:38:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T12:43:03Z · message_delivered: 1 message(s)
+- 2026-11-08T12:50:27Z · message_queued at 2026-11-08T12:50:27.847Z
+- 2026-11-08T12:50:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T12:53:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T13:30:43Z · message_queued at 2026-11-08T13:30:43.628Z
+- 2026-11-08T13:35:54Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-08T13:35:55Z · message_delivered: 1 message(s)
+- 2026-11-08T13:37:40Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T13:37:40Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (1/12 crashes in 30m)
+- 2026-11-08T13:40:11Z · needs_input
+- 2026-11-08T13:51:18Z · body
+- 2026-11-08T13:51:55Z · message_queued at 2026-11-08T13:51:55.680Z
+- 2026-11-08T13:53:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T13:58:19Z · message_delivered: 1 message(s)
+- 2026-11-08T13:58:19Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-08T14:06:20Z · message_queued at 2026-11-08T14:06:20.967Z
+- 2026-11-08T14:06:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T14:08:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T14:13:02Z · body
+- 2026-11-08T14:27:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T14:31:07Z · body
+- 2026-11-08T14:46:05Z · body
+- 2026-11-08T14:48:39Z · message_queued at 2026-11-08T14:48:39.787Z
+- 2026-11-08T14:53:52Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T14:53:52Z · note: handoff requested (cli)
+- 2026-11-08T14:53:56Z · message_queued at 2026-11-08T14:53:56.318Z
+- 2026-11-08T14:53:56Z · handoff failed · task-file handoff failed at commit · stray repoos.toml on task branch: repoos.toml differs from main
++paused = true
++pausedUntil = "2026-11-10T01:00:00.000Z"
++pausedReason = "Cursor reset"
++pausedModels = [{ model = "gpt-6.1-terra" }]. Revert it with: git checkout main -- repoos.toml
+- 2026-11-08T14:54:02Z · message_delivered: 1 message(s)
+- 2026-11-08T15:05:07Z · body
+- 2026-11-08T15:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T15:05:50Z · message_queued at 2026-11-08T15:05:50.848Z
+- 2026-11-08T15:05:50Z · ↻ resuming engineer to read queued message
+- 2026-11-08T15:05:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Merged `main` (resolved `work/*.md` conflicts with main’s copies, including `work/1058-*.md`), left `repoos.toml` alone — still matches `main` on the branch (`git diff main HEAD -- repoos.toml` empty). `REPOOS_CHECK_CHANGED=main repoos che… · stderr: (empty)
+- 2026-11-08T15:05:51Z · message_delivered: 2 message(s)
+- 2026-11-08T15:07:04Z · message_queued at 2026-11-08T15:07:04.982Z
+- 2026-11-08T15:07:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T15:10:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:16:13Z · body
+- 2026-11-08T15:17:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T15:19:02Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T15:19:03Z · status active→review
+- 2026-11-08T15:19:03Z · message_queued at 2026-11-08T15:19:03.448Z
+- 2026-11-08T15:20:52Z · note: review pass 2: needs some work
+- 2026-11-08T15:20:52Z · message_delivered: 1 message(s)
+- 2026-11-08T15:20:53Z · status review→active
+- 2026-11-08T15:33:50Z · body
+- 2026-11-08T15:37:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T15:37:19Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T15:37:20Z · message_queued at 2026-11-08T15:37:20.035Z
+- 2026-11-08T15:42:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:47:06Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-08T15:49:50Z · message_queued at 2026-11-08T15:49:50.506Z

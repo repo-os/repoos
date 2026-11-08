@@ -13,6 +13,7 @@ export type LoadingSkeletonKind =
 export const LOADING_SKELETON_ROUTES = [
   "/",
   "/work",
+  "/client-board",
   "/inputs",
   "/stories",
   "/checks",
@@ -32,7 +33,7 @@ export const LOADING_SKELETON_ROUTES = [
 export function loadingSkeletonKind(path: string): LoadingSkeletonKind {
   const route = path.split("?")[0] ?? "/";
   if (route === "/work" || route.startsWith("/work/")) return "board";
-  if (route === "/inputs") return "inputBoard";
+  if (route === "/inputs" || route === "/client-board") return "inputBoard";
   if (route === "/") return "dashboard";
   if (route === "/checks" || route === "/secrets") return "table";
   if (route === "/agents" || route === "/releases") return "cards";
@@ -61,6 +62,8 @@ export function loadingPageHeader(path: string): LoadingPageHeader | null {
   if (route === "/work" || route.startsWith("/work/")) {
     return { title: "Work Queue", desc: "Repo-native tasks" };
   }
+  if (route === "/client-board")
+    return { title: "Project board", desc: "Work planned and in progress for this project." };
   if (route === "/inputs") return { title: "Inputs", desc: "Raw requests and source material" };
   if (route === "/stories") return { title: "Stories", desc: "Cross-area delivery slices" };
   if (route === "/checks") return { title: "Checks", desc: "The check plan and recent runs" };
