@@ -62,7 +62,8 @@ export function loadingPageHeader(path: string): LoadingPageHeader | null {
   if (route === "/work" || route.startsWith("/work/")) {
     return { title: "Work Queue", desc: "Repo-native tasks" };
   }
-  if (route === "/client-board") return { title: "Project board", desc: "Work planned and in progress for this project." };
+  if (route === "/client-board")
+    return { title: "Project board", desc: "Work planned and in progress for this project." };
   if (route === "/inputs") return { title: "Inputs", desc: "Raw requests and source material" };
   if (route === "/stories") return { title: "Stories", desc: "Cross-area delivery slices" };
   if (route === "/checks") return { title: "Checks", desc: "The check plan and recent runs" };
