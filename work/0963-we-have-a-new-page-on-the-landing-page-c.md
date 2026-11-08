@@ -15,7 +15,7 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T06:18:15Z"
+updated_at: "2026-11-08T06:18:45Z"
 ---
 ## Problem
 
@@ -96,3 +96,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T06:05:04Z · status ready→active, branch
 - 2026-11-08T06:07:03Z · body
 - 2026-11-08T06:18:15Z · note: adopted orphaned engineer pid 36650
+- 2026-11-08T06:18:45Z · body
