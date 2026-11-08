@@ -56,7 +56,7 @@ export interface DeferredBranchCommit {
   message: string;
   enqueuedAt: string;
   /** File contents captured when queued so later edits do not collapse commits. */
-  fileSnapshots: Record<string, string>;
+  fileSnapshots: Record<string, string | null>;
 }
 
 export type CheckGateAcquireResult =
@@ -409,10 +409,10 @@ export function readDeferredBranchCommits(
           typeof o?.message === "string" &&
           typeof o?.enqueuedAt === "string"
         ) {
-          const fileSnapshots: Record<string, string> = {};
+          const fileSnapshots: Record<string, string | null> = {};
           if (o.fileSnapshots && typeof o.fileSnapshots === "object") {
             for (const [k, v] of Object.entries(o.fileSnapshots as Record<string, unknown>)) {
-              if (typeof v === "string") fileSnapshots[k] = v;
+              if (typeof v === "string" || v === null) fileSnapshots[k] = v;
             }
           }
           out.push({
@@ -446,14 +446,14 @@ function writeDeferredBranchCommits(
   atomicWriteJson(deferredPath(boardRoot, cacheDir, taskId), items);
 }
 
-function snapshotAbsPaths(absPaths: string[]): Record<string, string> {
-  const fileSnapshots: Record<string, string> = {};
+function snapshotAbsPaths(absPaths: string[]): Record<string, string | null> {
+  const fileSnapshots: Record<string, string | null> = {};
   for (const abs of absPaths) {
     try {
       if (existsSync(abs)) {
         fileSnapshots[abs] = readFileSync(abs, "utf8");
       } else {
-        fileSnapshots[abs] = "";
+        fileSnapshots[abs] = null;
       }
     } catch {
       /* skip unreadable; commit may still fail */
@@ -462,10 +462,18 @@ function snapshotAbsPaths(absPaths: string[]): Record<string, string> {
   return fileSnapshots;
 }
 
-function restoreSnapshots(snapshots: Record<string, string>): void {
+function restoreSnapshots(snapshots: Record<string, string | null>): void {
   for (const [path, content] of Object.entries(snapshots)) {
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, content, "utf8");
+    if (content === null) {
+      try {
+        unlinkSync(path);
+      } catch {
+        /* already absent */
+      }
+    } else {
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, content, "utf8");
+    }
   }
 }
 
@@ -521,6 +529,15 @@ export async function flushDeferredBranchCommits(
     writeDeferredBranchCommits(boardRoot, cacheDir, taskId, remaining);
     return { ok: remaining.length === 0, remaining: remaining.length };
   } finally {
+    // If replay throws, restore the latest queued snapshot so no intermediate
+    // commit contents are left visible. The durable queue remains for retry.
+    try {
+      const finalSnapshots: Record<string, string | null> = {};
+      for (const item of queue) Object.assign(finalSnapshots, item.fileSnapshots);
+      restoreSnapshots(finalSnapshots);
+    } catch {
+      // Boot recovery will retry the persisted queue.
+    }
     if (prev === undefined) delete process.env.REPOOS_CHECK_GATE_INTERNAL;
     else process.env.REPOOS_CHECK_GATE_INTERNAL = prev;
     checkGateFlushInProgress = false;

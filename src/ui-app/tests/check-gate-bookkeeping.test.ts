@@ -134,6 +134,24 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     }
   });
 
+  it("rejects source commits even when a later commit restores the original tree", async () => {
+    const { wt } = initRepo();
+    const before = git(wt, ["rev-parse", "HEAD"]);
+    writeFileSync(join(wt, "src", "app.ts"), "intermediate\n");
+    git(wt, ["add", "src/app.ts"]);
+    git(wt, ["commit", "-qm", "feat: temporary source change"]);
+    writeFileSync(join(wt, "src", "app.ts"), "v1\n");
+    git(wt, ["add", "src/app.ts"]);
+    git(wt, ["commit", "-qm", "revert: restore source"]);
+    const after = git(wt, ["rev-parse", "HEAD"]);
+    const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toContain("feat: temporary source change");
+      expect(result.reason).toContain("src/app.ts");
+    }
+  });
+
   it("fails closed when path diff is unavailable", async () => {
     const { wt } = initRepo();
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", "notasha", "alsobad");
@@ -220,6 +238,22 @@ describe("check gate lock and deferred commits (#1061)", () => {
       "docs(0001): first",
     ]);
     expect(readFileSync(taskFile, "utf8")).toBe(`${original}\nfirst\nsecond`);
+  });
+
+  it("restores queued deletions as absent files", async () => {
+    const { root, wt } = initRepo();
+    const taskFile = join(wt, "work", "0001-task.md");
+    const original = readFileSync(taskFile, "utf8");
+    writeFileSync(taskFile, `${original}\nfirst`);
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): first");
+    rmSync(taskFile);
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): delete");
+    await flushDeferredBranchCommits(root, ".repoos", "0001");
+    expect(() => readFileSync(taskFile, "utf8")).toThrow();
+    expect(git(wt, ["log", "-2", "--format=%s"]).split("\n")).toEqual([
+      "docs(0001): delete",
+      "docs(0001): first",
+    ]);
   });
 
   it("exposes the engineer refusal string", () => {
