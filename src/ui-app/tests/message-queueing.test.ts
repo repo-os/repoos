@@ -661,7 +661,13 @@ describe("handoff deferral while messages are queued (#0865)", () => {
     process.env.REPOOS_FAKEBIN_LOG = fx.log;
     const id = "defer-cap-test";
     const absPath = setupTaskFile(fx.root, id, "active");
-    writeFileSync(absPath, readFileSync(absPath, "utf8").replace("assigned_to: ai", "assigned_to: ai\ndeferred_handoff_resume_count: 2"));
+    writeFileSync(
+      absPath,
+      readFileSync(absPath, "utf8").replace(
+        "assigned_to: ai",
+        "assigned_to: ai\ndeferred_handoff_resume_count: 2",
+      ),
+    );
     const runner = new AgentRunner(config(fx.root), () => {}, {
       getTask: () => parseFile(fx.root, absPath),
     });
