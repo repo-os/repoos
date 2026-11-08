@@ -416,29 +416,6 @@ function refuseCheckGateGit(cwd: string, args: string[]): GitRun | null {
   return { status: 1, stdout: "", stderr: `${refusal}\n`, timedOut: false };
 }
 
-/** Refuse worktree source writes while a check gate is active (#1061). */
-export type CheckGateWorktreeWriteRefusal = (
-  worktree: string,
-  absPath: string,
-) => string | undefined;
-
-let checkGateWorktreeWriteRefusal: CheckGateWorktreeWriteRefusal | null = null;
-
-export function setCheckGateWorktreeWriteRefusal(hook: CheckGateWorktreeWriteRefusal | null): void {
-  checkGateWorktreeWriteRefusal = hook;
-}
-
-/** Write a file in a task worktree, honoring the check-gate source write fence. */
-export function writeWorktreeSourceFile(
-  worktree: string,
-  absPath: string,
-  content: string | NodeJS.ArrayBufferView,
-): void {
-  const refusal = checkGateWorktreeWriteRefusal?.(worktree, absPath);
-  if (refusal) throw new Error(refusal);
-  writeFileSync(absPath, content);
-}
-
 /** `retryOnGitLock` predicate for a raw `runGit` result: the lock text, or null. */
 export function gitRunLockContention(r: { status: number | null; stderr: string }): string | null {
   return r.status !== 0 && isGitLockContention(r.stderr) ? r.stderr : null;

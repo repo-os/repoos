@@ -6,8 +6,10 @@ The server holds a per-task worktree lock during gated validation. RepoOS
 bookkeeping commits under `work/**` and `.repoos/**` are deferred until the gate
 releases that lock; queued writes retain individual file snapshots so repeated
 updates are replayed as separate commits in enqueue order. Server restart
-reconciles dead holders and drains their durable queues. Source writes are
-rejected with `A check is running; wait for it to finish.`
+reconciles dead holders and drains their durable queues. RepoOS refuses to
+start another managed engineer turn with `A check is running; wait for it to
+finish.` and rejects source commits. Edits that bypass those managed paths are
+detected by the post-check drift comparison.
 
 After validation, HEAD drift is evaluated from the exact commit range. Changes
 under those bookkeeping roots are allowed; all other paths invalidate the

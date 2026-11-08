@@ -20,6 +20,7 @@ import { ensureWorktree } from "../../core/git.js";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
 import { CloseOutOrchestrator } from "../../server/integration-orchestrator.js";
+import { readCheckGateLock } from "../../server/check-gate-lock.js";
 import type { RepoOSConfig } from "../../core/types";
 
 function git(root: string, args: string[]): string {
@@ -100,9 +101,11 @@ describe("close-out remote scoped failure → full retry (#0724)", () => {
       // Fail the SCOPED runner call (changedRef set) as a real red suite; pass
       // the FULL retry (no changedRef). Local tests are skipped on the pass.
       const validatorCalls: Record<string, unknown>[] = [];
+      const locksDuringRemote: unknown[] = [];
       const remoteValidator = {
         validate: vi.fn(async (opts: Record<string, unknown>) => {
           validatorCalls.push(opts);
+          locksDuringRemote.push(readCheckGateLock(root, ".repoos", taskId));
           if (opts["changedRef"]) {
             return { ok: false, transient: false, detail: "1 scoped test failed" };
           }
@@ -142,6 +145,11 @@ describe("close-out remote scoped failure → full retry (#0724)", () => {
       ).validateCandidate(coordinator.getJob(taskId));
 
       expect(validatorCalls).toHaveLength(2);
+      expect(locksDuringRemote).toHaveLength(2);
+      expect(
+        locksDuringRemote.every((lock) => (lock as { taskId?: string } | null)?.taskId === taskId),
+      ).toBe(true);
+      expect(readCheckGateLock(root, ".repoos", taskId)).toBeNull();
       expect(validatorCalls[0]!["changedRef"]).toBe(mainSha);
       expect(validatorCalls[1]!["changedRef"]).toBeUndefined();
       // The retry ran the whole suite and passed, so the close-out is not
