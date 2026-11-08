@@ -8,10 +8,14 @@ area: web
 assigned_to: ai
 created_by: hello@repoos.org
 branch: ""
+cli_override: codex
+model_override: gpt-6.1-terra
 pm_cli_override: cursor
 pm_model_override: grok-4.7-medium
+review_cli_override: codex
+review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-06T05:05:53Z"
+updated_at: "2026-11-08T06:05:03Z"
 ---
 ## Problem
 
@@ -75,3 +79,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-10-26T19:47:47Z · status draft→inbox, title, area, body: Problem (added); Desired UX (added); Acceptance criteria (added); Notes for AI (added); Scope (added); Related (added)
 - 2026-10-26T19:47:47Z · needs_input
 - 2026-11-06T05:05:53Z · status inbox→ready
+- 2026-11-08T06:05:03Z · cli_override, model_override, review_cli_override, review_model_override
