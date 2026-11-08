@@ -243,7 +243,7 @@ describe("RemoteValidationRunner", () => {
           return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1`, timedOut: false };
         if (cmd.includes("/browser-capture/result.json"))
           return { code: 1, output: "", timedOut: false };
-        if (cmd.startsWith("docker rm -f")) return { code: 0, output: "", timedOut: false };
+        if (cmd.startsWith("out=$(docker rm -f")) return { code: 0, output: "", timedOut: false };
         if (!cmd.includes("REPOOS_CONTAINER=")) return { code: 0, output: "ok", timedOut: false };
         started = true;
         return new Promise<RemoteExecResult>((resolve) =>
@@ -275,7 +275,7 @@ describe("RemoteValidationRunner", () => {
       expect((await running).cancelled).toBe(true);
       expect((await queued).cancelled).toBe(true);
       expect((await other).ok).toBe(true);
-      expect(commands.filter((cmd) => cmd.startsWith("docker rm -f"))).toHaveLength(1);
+      expect(commands.filter((cmd) => cmd.startsWith("out=$(docker rm -f"))).toHaveLength(1);
       expect(commands.filter((cmd) => cmd.includes("REPOOS_CONTAINER="))).toHaveLength(1);
     } finally {
       await runner.dispose();
@@ -333,7 +333,7 @@ describe("RemoteValidationRunner", () => {
       runRemote: vi.fn(async (_host, cmd, _out, _timeout, options) => {
         if (isValidateScriptMirrorProbe(cmd))
           return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1`, timedOut: false };
-        if (cmd.startsWith("docker rm -f"))
+        if (cmd.startsWith("out=$(docker rm -f"))
           return { code: 1, output: "ssh broken", timedOut: false };
         if (cmd.includes("/browser-capture/result.json"))
           return { code: 1, output: "", timedOut: false };

@@ -1093,7 +1093,7 @@ export function reaperInspectionCommand(containerId: string): string {
   const safetySeconds = Math.ceil(CONTAINER_REAPER_SAFETY_MARGIN_MS / 1000);
   return (
     `state=$(docker inspect --format '{{.Created}}\t{{.State.Status}}\t{{.State.StartedAt}}\t{{.State.FinishedAt}}' ${shellQuote(containerId)}) || exit 1; ` +
-    `recent=$(docker logs --since ${safetySeconds}s --tail 1 ${shellQuote(containerId)} 2>/dev/null || true); ` +
+    `recent=$(docker logs --since ${safetySeconds}s --tail 1 ${shellQuote(containerId)} 2>/dev/null) || exit 1; ` +
     `if [ -n "$recent" ]; then printf '%s\\tRECENT\\n' "$state"; else printf '%s\\tQUIET\\n' "$state"; fi`
   );
 }
@@ -1209,7 +1209,11 @@ export function staleContainerCleanupCommand(): string {
  */
 export function killContainerCommand(containerName: string): string {
   const safe = containerName.replace(/[^A-Za-z0-9_.-]/g, "");
-  return `docker rm -f ${shellQuote(safe)} >/dev/null 2>&1`;
+  return (
+    `out=$(docker rm -f ${shellQuote(safe)} 2>&1) && exit 0; code=$?; ` +
+    `case "$out" in "Error response from daemon: No such container: "*) exit 0 ;; esac; ` +
+    `printf '%s\\n' "$out" >&2; exit "$code"`
+  );
 }
 
 /** True once validate.sh has printed its gate result — not a hang (#0739). */
@@ -1543,8 +1547,8 @@ export function staleBundlePruneCommand(): string {
  */
 export function reaperCommand(): string {
   return (
-    `docker ps -aq --filter ${shellQuote(`name=^/${VALIDATE_CONTAINER_PREFIX}-`)} ` +
-    `2>/dev/null | while IFS= read -r id; do ` +
+    `ids=$(docker ps -aq --filter ${shellQuote(`name=^/${VALIDATE_CONTAINER_PREFIX}-`)}) || exit 1; ` +
+    `printf '%s\\n' "$ids" | while IFS= read -r id; do [ -n "$id" ] || continue; ` +
     `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null || true); ` +
     `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) ;; *) continue ;; esac; ` +
     `created=$(docker inspect -f '{{.Created}}' "$id" 2>/dev/null || true); ` +
@@ -1561,7 +1565,7 @@ export function reaperRemoveCommand(id: string): string {
     `name=$(docker inspect -f '{{.Name}}' ${shellQuote(id)} 2>/dev/null || true); ` +
     `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) ;; *) exit 1 ;; esac; ` +
     `state=$(docker inspect --format '{{.Created}}\t{{.State.Status}}\t{{.State.StartedAt}}\t{{.State.FinishedAt}}' ${shellQuote(id)}) || exit 1; ` +
-    `recent=$(docker logs --since ${Math.ceil(CONTAINER_REAPER_SAFETY_MARGIN_MS / 1000)}s --tail 1 ${shellQuote(id)} 2>/dev/null || true); ` +
+    `recent=$(docker logs --since ${Math.ceil(CONTAINER_REAPER_SAFETY_MARGIN_MS / 1000)}s --tail 1 ${shellQuote(id)} 2>/dev/null) || exit 1; ` +
     `if [ -n "$recent" ]; then exit 75; fi; ` +
     `docker rm -f ${shellQuote(id)}`
   );
@@ -1649,7 +1653,7 @@ export function completedCaptureReaperCommand(id: string): string {
     `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) ;; *) exit 1 ;; esac; ` +
     `docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' ${target} | grep -q '^REPOOS_BROWSER_CAPTURE_MODE=.' || exit 1; ` +
     `docker logs ${target} 2>&1 | grep -F '[browser-capture] runner browser capture ' | grep -Eq '(completed|reported failures)' || exit 1; ` +
-    `recent=$(docker logs --since 120s --tail 1 ${target} 2>&1); [ -z "$recent" ] || exit 1; ` +
+    `recent=$(docker logs --since 120s --tail 1 ${target} 2>&1) || exit 1; [ -z "$recent" ] || exit 1; ` +
     `cpu=$(docker stats --no-stream --format '{{.CPUPerc}}' ${target} 2>/dev/null) || exit 1; ` +
     `printf '%s\n' "$cpu" | awk '/^[0-9]+([.][0-9]+)?%$/ { sub(/%$/, ""); if ($1 < 1) ok=1 } END { exit !ok }' || exit 1; ` +
     `docker rm -f ${target}`
@@ -6420,7 +6424,7 @@ export class TailscaleRunner implements RemoteValidator {
     }));
 
     let killTimedOut = false;
-    let killCode: number | null = 0;
+    let killCode: number | null = null;
     try {
       const killRes = await execRemoteWithHardDeadline(
         this.exec,
@@ -6432,7 +6436,8 @@ export class TailscaleRunner implements RemoteValidator {
       killTimedOut = killRes.timedOut;
       killCode = killRes.code;
     } catch {
-      /* best effort — still release the slot */
+      // A failed SSH call is not evidence that Docker removed the container.
+      killCode = null;
     }
     void execRemoteWithHardDeadline(
       this.exec,
@@ -6453,7 +6458,7 @@ export class TailscaleRunner implements RemoteValidator {
     appendRemoteValidationEvent(this.config.root, opts.taskId, {
       level: "warn",
       phase: "run",
-      message: `killed as hung (output stream silent; ${conditionLabel}) on ${opts.host.ip}`,
+      message: `${killTimedOut || killCode !== 0 ? "failed to kill" : "killed"} as hung (output stream silent; ${conditionLabel}) on ${opts.host.ip}`,
       host: opts.host.ip,
       infra: true,
       hangEvidence: {
