@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +18,32 @@ afterEach(() => {
 });
 
 describe("remote browser capture result artifact", () => {
+  it("exits after publishing a result even with a live timer", () => {
+    const output = mkdtempSync(join(tmpdir(), "repoos-browser-exit-"));
+    roots.push(output);
+    const preload = join(output, "preload.ts");
+    writeFileSync(preload, "setInterval(() => {}, 1000);\n");
+    const run = spawnSync(
+      "bun",
+      [
+        "--preload",
+        preload,
+        join(repoRoot, "scripts/remote-runner/capture-browser.ts"),
+        "0854",
+        "shots",
+        output,
+      ],
+      {
+        env: { ...process.env, REPOOS_ROOT: join(output, "missing-repo") },
+        encoding: "utf8",
+        timeout: 10_000,
+      },
+    );
+    expect(run.error).toBeUndefined();
+    expect(run.status).toBe(2);
+    expect(JSON.parse(readFileSync(join(output, "result.json"), "utf8")).ok).toBe(false);
+  });
+
   it("writes the actual setup error to result.json when capture cannot start", async () => {
     const output = mkdtempSync(join(tmpdir(), "repoos-browser-result-"));
     roots.push(output);

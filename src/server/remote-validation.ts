@@ -600,6 +600,7 @@ export interface RemoteServerStats {
 
 export interface RemoteValidator {
   validate(opts: ValidateOptions): Promise<CheckSummary>;
+  cancelBrowserCaptures?(taskId: string): Promise<void>;
   /** Delete leaked runner VMs. Call at server boot (nothing is validating then). */
   reconcile(): Promise<void>;
   /** Tear down any warm VM and cancel timers. Call on server shutdown. */
@@ -1410,6 +1411,34 @@ export function reaperRemoveCommand(id: string): string {
     `recent=$(docker logs --since ${Math.ceil(CONTAINER_REAPER_SAFETY_MARGIN_MS / 1000)}s --tail 1 ${shellQuote(id)} 2>/dev/null || true); ` +
     `if [ -n "$recent" ]; then exit 75; fi; ` +
     `docker rm -f ${shellQuote(id)}`
+  );
+}
+
+/** Force a completed capture to release its exact container; its artifact directory survives. */
+export function finishedCaptureCollectionCommand(paths: RemoteRunPaths, container: string): string {
+  return (
+    `file=${remotePathShellWord(`${paths.artifacts}/browser-capture/result.json`)}; ` +
+    `test -s "$file" || exit 1; before=$(cksum < "$file") || exit 1; sleep 1; ` +
+    `after=$(cksum < "$file") || exit 1; [ "$before" = "$after" ] || exit 1; ` +
+    `docker inspect ${shellQuote(container)} >/dev/null 2>&1 || exit 1; ` +
+    `docker exec ${shellQuote(container)} bun -e ${shellQuote('const r = await Bun.file("/artifacts/browser-capture/result.json").json(); if (r.version !== 1 || typeof r.ok !== "boolean" || typeof r.taskId !== "string" || !Array.isArray(r.files)) process.exit(1)')} >/dev/null 2>&1 || exit 1; ` +
+    `docker rm -f ${shellQuote(container)} >/dev/null`
+  );
+}
+
+/** Recheck completion, silence and low CPU at the removal boundary. */
+export function completedCaptureReaperCommand(id: string): string {
+  if (!/^[a-f\d]{12,64}$/i.test(id)) return "false";
+  const target = shellQuote(id);
+  return (
+    `name=$(docker inspect -f '{{.Name}}' ${target} 2>/dev/null) || exit 1; ` +
+    `case "$name" in /${VALIDATE_CONTAINER_PREFIX}-*) ;; *) exit 1 ;; esac; ` +
+    `docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' ${target} | grep -q '^REPOOS_BROWSER_CAPTURE_MODE=.' || exit 1; ` +
+    `docker logs ${target} 2>&1 | grep -F '[browser-capture] runner browser capture ' | grep -Eq '(completed|reported failures)' || exit 1; ` +
+    `recent=$(docker logs --since 120s --tail 1 ${target} 2>&1); [ -z "$recent" ] || exit 1; ` +
+    `cpu=$(docker stats --no-stream --format '{{.CPUPerc}}' ${target} 2>/dev/null) || exit 1; ` +
+    `printf '%s\n' "$cpu" | awk '/^[0-9]+([.][0-9]+)?%$/ { sub(/%$/, ""); if ($1 < 1) ok=1 } END { exit !ok }' || exit 1; ` +
+    `docker rm -f ${target}`
   );
 }
 
@@ -4216,6 +4245,27 @@ export class TailscaleHostPool {
             if (listing.code !== 0 || listing.timedOut) {
               throw new Error("could not list validation containers");
             }
+            const completed = staleReaperCandidates(
+              listing.output,
+              Date.now(),
+              120_000,
+              s.liveContainerNames,
+            );
+            for (const candidate of completed) {
+              if (s.liveContainerNames.has(candidate.name)) continue;
+              const removed = await this.exec.runRemote(
+                s.ssh,
+                completedCaptureReaperCommand(candidate.id),
+                () => {},
+                30_000,
+              );
+              if (removed.code === 0 && !removed.timedOut) {
+                this.logger?.system(
+                  "info",
+                  `reaped completed browser capture ${candidate.name} on ${s.spec.host}: no output for two minutes and CPU idle`,
+                );
+              }
+            }
             const stale = staleReaperCandidates(
               listing.output,
               Date.now(),
@@ -4279,6 +4329,20 @@ export class TailscaleHostPool {
     return this.hosts.filter((s) => !s.removed).length;
   }
 
+  /** Cancel only this task's capture waiters and return its leased capture runs. */
+  cancelCaptureRuns(taskId: string): { host: RemoteHost; run: ActiveRemoteRun }[] {
+    for (const waiter of [...this.waiters]) {
+      if (waiter.taskId === taskId && waiter.kind === "shot" && this.settle(waiter)) {
+        waiter.reject(new QueueDeadlineError("browser capture cancelled after handoff failure"));
+      }
+    }
+    return this.hosts.flatMap((host) =>
+      host.activeRuns
+        .filter((run) => run.taskId === taskId && run.kind === "shot")
+        .map((run) => ({ host: host.ssh, run })),
+    );
+  }
+
   /** Queued runs, for the status endpoint. */
   get queuedCount(): number {
     return this.waiters.length;
@@ -4297,6 +4361,7 @@ export class TailscaleHostPool {
       /** Fired once this run joins the FIFO queue (#0706: host + position too). */
       onQueue?: (info: { ahead: number; host: string; reason?: string }) => void;
       deadlineAt?: number;
+      isCancelled?: () => boolean;
       taskId?: string;
       /** What the job belongs to — handoff/close-out/self-check/… (#0897). */
       kind?: RemoteRunKind;
@@ -4419,6 +4484,8 @@ export class TailscaleHostPool {
       }
     }
     await Promise.all(dispatchable.map((s) => this.refreshHostLockFor(s)));
+    if (opts.isCancelled?.())
+      throw new QueueDeadlineError("browser capture cancelled after handoff failure");
     const free = dispatchable.filter((s) => this.hostHasCapacity(s));
     if (free.length > 0) {
       // Somebody already queued may be ahead of this arrival for that slot
@@ -5540,6 +5607,32 @@ function recordRemoteRunHistory(
  * at the caller's deadline rather than holding its slot.
  */
 export class TailscaleRunner implements RemoteValidator {
+  private readonly captureCancelGeneration = new Map<string, number>();
+
+  async cancelBrowserCaptures(taskId: string): Promise<void> {
+    this.captureCancelGeneration.set(taskId, (this.captureCancelGeneration.get(taskId) ?? 0) + 1);
+    const runs = this.pool.cancelCaptureRuns(taskId);
+    for (const { host, run } of runs) {
+      this.uploadAbortByTask.get(taskId)?.();
+      if (!run.container) continue;
+      const container = run.container;
+      this.activeRunAbort.get(container)?.abort();
+      this.activeRunSettle.get(container)?.settle({ code: null, output: "", timedOut: false });
+      await execRemoteWithHardDeadline(
+        this.exec,
+        host,
+        killContainerCommand(container),
+        () => {},
+        HANG_KILL_TIMEOUT_MS,
+      ).catch(() => undefined);
+    }
+    appendRemoteValidationEvent(this.config.root, taskId, {
+      level: "warn",
+      phase: "run",
+      message: "cancelled outstanding browser captures after handoff failure",
+    });
+  }
+
   private readonly exec: RemoteExecDeps;
   private readonly timings: RunnerTimings;
   private readonly keyPath: string;
@@ -5911,6 +6004,16 @@ export class TailscaleRunner implements RemoteValidator {
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
+    const generation = this.captureCancelGeneration.get(opts.taskId) ?? 0;
+    const captureCancelled = (): boolean =>
+      !!opts.browserCapture && (this.captureCancelGeneration.get(opts.taskId) ?? 0) !== generation;
+    const cancelled = (): CheckSummary => ({
+      ...this.infraFail("browser capture cancelled after handoff failure", {
+        taskId: opts.taskId,
+        phase: "dispatch",
+      }),
+      cancelled: true,
+    });
     const rv = this.config.remoteValidation ?? {};
     const startedAt = Date.now();
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
@@ -5981,6 +6084,7 @@ export class TailscaleRunner implements RemoteValidator {
           taskId: opts.taskId,
           kind: opts.kind ?? remoteRunKindForPhase(opts.phase),
           deadlineAt: opts.deadlineAt,
+          isCancelled: captureCancelled,
           // Failover guarantee: the pool never hands back a host this run
           // already tried, so a retry cannot re-run the failed host.
           excludeHosts: [...triedHosts],
@@ -6029,9 +6133,17 @@ export class TailscaleRunner implements RemoteValidator {
       }
 
       try {
+        if (captureCancelled()) return cancelled();
         // The pool's exclusion guarantees a host this run has not tried yet.
         triedHosts.add(slot.host.host);
-        let summary = await this.runValidation(opts, slot, capabilities, startedAt);
+        let summary = await this.runValidation(
+          opts,
+          slot,
+          capabilities,
+          startedAt,
+          captureCancelled,
+        );
+        if (captureCancelled()) return cancelled();
         // A gate failure while the host was thrashing is infra, not a branch
         // test failure (#0901): re-sample pressure and, when it matches the
         // signature, mark the run transient so it retries on another healthy
@@ -6111,6 +6223,7 @@ export class TailscaleRunner implements RemoteValidator {
     slot: HostSlot,
     capabilities: string[],
     queueStartedAt?: number,
+    captureCancelled: () => boolean = () => false,
   ): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     const host = slot.ssh;
@@ -6319,6 +6432,14 @@ export class TailscaleRunner implements RemoteValidator {
           opts.taskId,
         );
 
+        if (captureCancelled())
+          return withScope({
+            ...this.infraFail("browser capture cancelled after handoff failure", {
+              taskId: opts.taskId,
+              host: host.ip,
+            }),
+            cancelled: true,
+          });
         if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
           return withScope({
             ...this.infraFail(
@@ -6580,8 +6701,46 @@ export class TailscaleRunner implements RemoteValidator {
           watchdog.noteOutput();
           emit(s);
         };
+        let capturePoll: ReturnType<typeof setInterval> | undefined;
+        let captureProbe: Promise<void> | undefined;
+        let stoppedCapturePoll = false;
+        let captureCollected = false;
+        let captureResolve: ((result: RemoteExecResult) => void) | undefined;
+        const captureFinished = new Promise<RemoteExecResult>((resolve) => {
+          captureResolve = resolve;
+        });
+        if (opts.browserCapture && slot.host.runner !== "native") {
+          capturePoll = setInterval(() => {
+            if (captureProbe || stoppedCapturePoll) return;
+            captureProbe = this.exec
+              .runRemote(
+                host,
+                finishedCaptureCollectionCommand(paths, containerName),
+                () => {},
+                10_000,
+              )
+              .then((result) => {
+                if (stoppedCapturePoll || result.code !== 0 || result.timedOut) return;
+                captureCollected = true;
+                const message = `force-collected completed browser capture ${containerName} on ${host.ip}: result.json was present`;
+                emit(`\n[${message}]\n`);
+                this.record(
+                  { taskId: opts.taskId, host: host.ip, phase: "run" },
+                  { level: "info", phase: "run", message, host: host.ip },
+                );
+                abortMainRemote?.();
+                captureResolve?.({ code: 0, output: streamBuf, timedOut: false });
+              })
+              .catch(() => {})
+              .finally(() => {
+                captureProbe = undefined;
+              });
+          }, 5_000);
+          capturePoll.unref?.();
+        }
         try {
           run = await Promise.race([
+            captureFinished,
             this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs, {
               lockAwareTimeout: {
                 acquiredMarker: "[lock] slot ",
@@ -6605,6 +6764,10 @@ export class TailscaleRunner implements RemoteValidator {
             hangRecoveryPromise,
           ]);
         } finally {
+          if (capturePoll) clearInterval(capturePoll);
+          if (captureProbe) await captureProbe;
+          stoppedCapturePoll = true;
+          if (captureCollected) run = { code: 0, output: streamBuf, timedOut: false };
           watchdog.stop();
           clearInterval(loadTimer);
           if (gateLingerTimer) clearTimeout(gateLingerTimer);
@@ -6628,7 +6791,15 @@ export class TailscaleRunner implements RemoteValidator {
               });
           }
         }
-        if (gateFinished) {
+        if (captureCancelled())
+          return withScope({
+            ...this.infraFail("browser capture cancelled after handoff failure", {
+              taskId: opts.taskId,
+              host: host.ip,
+            }),
+            cancelled: true,
+          });
+        if (gateFinished && !captureCollected) {
           const gateCode = parseRemoteGateExitCode(streamBuf);
           if (gateCode !== null) {
             run = {
