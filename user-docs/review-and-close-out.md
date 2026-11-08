@@ -311,10 +311,12 @@ discarded on purpose: the confirmation lists the uncommitted files it is about
 to throw away, so you can commit them first (or resume the worktree) instead of
 discovering later that they were gone.
 
-A **docs-only fast path** skips the build and check when the merged diff touches
-nothing but documentation: every changed path under your configured docs directory,
-or ending in `.md`. There is no "mostly docs" scoring; any other path runs the
-full set of checks.
+A **docs/bookkeeping-only fast path** skips build, tests, browser checks, and
+remote validation when the merged diff is classified as non-behavioral (see
+[Documentation and bookkeeping-only changes](./check.md#documentation-and-bookkeeping-only-changes)
+in the check guide). Only repository guards still run. There is no "mostly docs"
+scoring; a single disallowed path runs the full gate. Set `check.docsOnlySkip =
+false` in Settings → Advanced to disable the shortcut.
 
 ### Stopping a close-out
 

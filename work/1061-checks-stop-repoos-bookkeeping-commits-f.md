@@ -2,18 +2,22 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: ready
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/checks-stop-repoos-bookkeeping-commits-f
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T14:28:51Z"
+updated_at: "2026-11-08T18:50:04Z"
+review_passes: 3
+last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+review_rounds: 2
+handoff_signal_retry_count: 2
 ---
 ## Problem
 A task's check (build, tests, UI smoke, remote validation) is refused with "the worktree changed while the gate was running (HEAD moved from X to Y) — the check result no longer describes what is committed" whenever the branch tip moves while the check runs. On 2026-11-08 this repeatedly failed handoffs and forced full re-runs (each 10-60 minutes). The tip moved because of:
@@ -45,3 +49,61 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T08:45:19Z · cli_override, model_override
 - 2026-11-08T08:45:25Z · review_cli_override, review_model_override
 - 2026-11-08T14:28:51Z · status inbox→ready
+- 2026-11-08T15:10:02Z · status ready→active, branch
+- 2026-11-08T15:27:05Z · message_queued at 2026-11-08T15:27:05.003Z
+- 2026-11-08T15:27:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T15:29:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:31:49Z · body
+- 2026-11-08T15:47:58Z · body
+- 2026-11-08T15:54:00Z · status active→review
+- 2026-11-08T15:54:00Z · message_queued at 2026-11-08T15:54:00.592Z
+- 2026-11-08T15:54:00Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-08T15:56:32Z · note: review pass 1: needs some work
+- 2026-11-08T15:56:32Z · status review→active
+- 2026-11-08T15:56:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T16:01:41Z · message_queued at 2026-11-08T16:01:41.493Z
+- 2026-11-08T16:06:56Z · message_queued at 2026-11-08T16:06:56.535Z
+- 2026-11-08T16:07:48Z · message_delivered: 1 message(s)
+- 2026-11-08T17:01:39Z · body
+- 2026-11-08T17:01:53Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-08T17:01:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T17:01:54Z · message_delivered: 2 message(s)
+- 2026-11-08T17:02:05Z · message_queued at 2026-11-08T17:02:05.066Z
+- 2026-11-08T17:02:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T17:07:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T17:08:27Z · body
+- 2026-11-08T17:14:07Z · note: adopted orphaned engineer pid 77995
+- 2026-11-08T17:19:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T17:24:13Z · body
+- 2026-11-08T17:25:52Z · status active→review
+- 2026-11-08T17:25:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-08T17:29:16Z · note: review pass 2: needs some work
+- 2026-11-08T17:29:16Z · message_queued at 2026-11-08T17:29:16.580Z
+- 2026-11-08T17:29:16Z · status review→active
+- 2026-11-08T17:29:18Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T17:34:46Z · message_queued at 2026-11-08T17:34:46.773Z
+- 2026-11-08T17:35:41Z · message_delivered: 2 message(s)
+- 2026-11-08T17:49:52Z · message_queued at 2026-11-08T17:49:52.519Z
+- 2026-11-08T17:54:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T18:01:41Z · body
+- 2026-11-08T18:13:56Z · body
+- 2026-11-08T18:21:07Z · body
+- 2026-11-08T18:21:49Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T18:21:49Z · message_queued at 2026-11-08T18:21:49.371Z
+- 2026-11-08T18:21:49Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:21:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementing git/write hooks, fixing WIP drift logic, and ensuring handoff check children install the gate hook without re-acquiring the lock. · stderr: (empty)
+- 2026-11-08T18:25:10Z · message_delivered: 2 message(s)
+- 2026-11-08T18:28:28Z · message_queued at 2026-11-08T18:28:28.950Z
+- 2026-11-08T18:28:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T18:29:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T18:41:07Z · body
+- 2026-11-08T18:41:59Z · status active→review
+- 2026-11-08T18:44:04Z · note: review pass 3: needs some work
+- 2026-11-08T18:44:04Z · needs_input
+- 2026-11-08T18:44:37Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T18:44:37Z · message_queued at 2026-11-08T18:44:37.562Z
+- 2026-11-08T18:50:01Z · status review→active
+- 2026-11-08T18:50:01Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T18:50:04Z · needs_input
+- 2026-11-08T18:50:04Z · message_queued at 2026-11-08T18:50:04.374Z
+- 2026-11-08T18:50:04Z · CTO nudge: held — an undelivered message is already queued
