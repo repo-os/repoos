@@ -99,3 +99,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T03:23:20Z · message_delivered: 3 message(s)
 - 2026-11-08T06:05:34Z · body
 - 2026-11-08T06:14:58Z · message_queued at 2026-11-08T06:14:58.799Z
+- 2026-11-08T06:14:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
