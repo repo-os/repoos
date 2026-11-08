@@ -11,13 +11,9 @@ branch: feat/checks-progress-bar-polish-full-width-ro
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: codex
-review_model_override: gpt-6-luna
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T06:02:54Z"
-review_rounds: 1
-review_passes: 1
-last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-dev_error_count: 10
+updated_at: "2026-11-08T02:57:57Z"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -45,24 +41,24 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 ```json
 [
 {
-"label": "Board card: full-width rounded check bar",
 "target": "default",
 "route": "/work?status=active",
+"label": "Board card: full-width rounded check bar",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
 "state": "card:checksProgress"
 },
 {
-"label": "Drawer: half-width bar, detail on same row",
 "target": "default",
 "route": "/work?task=9999&tab=changes",
+"label": "Drawer: half-width bar, detail on same row",
 "highlight": "[data-test-id=\"close-out-check-progress\"]",
 "state": "drawer:checksProgress"
 },
 {
-"label": "Pipeline: bar and status on one row",
 "target": "default",
 "route": "/work?tab=pipeline",
-"highlight": ".pl-row-3 [data-test-id=\"pipeline-card-check-progress\"]",
+"label": "Pipeline: bar inline in status row",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"pipeline-card-check-progress\"]",
 "state": "pipeline:checksProgress"
 }
 ]
@@ -76,67 +72,5 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T00:27:22Z · cli_override, model_override
 - 2026-11-08T00:30:28Z · cli_override, model_override, review_model_override
 - 2026-11-08T01:38:36Z · status ready→active, branch
-- 2026-11-08T01:41:56Z · body
-- 2026-11-08T01:45:00Z · body
-- 2026-11-08T01:50:13Z · body
-- 2026-11-08T01:50:19Z · body
-- 2026-11-08T01:58:23Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
-- 2026-11-08T01:58:23Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
-- 2026-11-08T01:58:24Z · needs_input
-- 2026-11-08T01:58:24Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T01:59:24Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T01:59:25Z · needs_input
-- 2026-11-08T01:59:25Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T02:00:55Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T02:00:57Z · needs_input
-- 2026-11-08T02:00:58Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T02:02:58Z · engineer crash recovery: resuming cursor + composer-2.5 (4/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T02:03:00Z · needs_input
-- 2026-11-08T02:03:01Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T02:05:31Z · engineer crash recovery: resuming cursor + composer-2.5 (5/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T02:05:32Z · needs_input
-- 2026-11-08T02:07:49Z · body
-- 2026-11-08T02:08:19Z · body
-- 2026-11-08T02:08:35Z · body
-- 2026-11-08T02:13:14Z · CTO nudge: held — handoff gate is running
-- 2026-11-08T02:38:40Z · message_queued at 2026-11-08T02:38:40.452Z
-- 2026-11-08T02:38:43Z · message_delivered: 1 message(s)
-- 2026-11-08T02:43:14Z · CTO nudge: held — remote validation is running
-- 2026-11-08T02:44:50Z · body
-- 2026-11-08T02:49:04Z · body
-- 2026-11-08T02:51:29Z · CTO nudge: held — handoff gate is running
-- 2026-11-08T02:52:04Z · message_queued at 2026-11-08T02:52:04.602Z
-- 2026-11-08T02:52:07Z · message_delivered: 1 message(s)
-- 2026-11-08T02:52:19Z · CTO nudge: held — remote validation is running
-- 2026-11-08T02:52:22Z · review_model_override
-- 2026-11-08T02:57:57Z · note: ui verification passed: 3 of 3 shots captured with clean console
-- 2026-11-08T02:57:58Z · note: handoff requested (cli)
-- 2026-11-08T02:58:15Z · CTO nudge: held — handoff gate is running
-- 2026-11-08T03:08:58Z · message_queued at 2026-11-08T03:08:58.475Z
-- 2026-11-08T03:08:58Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
-- 2026-11-08T03:08:58Z · message_delivered: 1 message(s)
-- 2026-11-08T03:23:47Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
-- 2026-11-08T03:53:11Z · watchdog: restarting engineer after 13m with no live process
-- 2026-11-08T03:53:13Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T04:25:39Z · watchdog: restarting engineer after 17m with no live process
-- 2026-11-08T04:25:41Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T05:00:04Z · watchdog: restarting engineer after 19m with no live process
-- 2026-11-08T05:00:06Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T05:34:23Z · watchdog: restarting engineer after 34m with no live process
-- 2026-11-08T05:38:08Z · body
-- 2026-11-08T05:39:20Z · body
-- 2026-11-08T05:49:55Z · body
-- 2026-11-08T05:51:34Z · status active→review
-- 2026-11-08T05:51:34Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-08T05:52:05Z · message_queued at 2026-11-08T05:52:05.990Z
-- 2026-11-08T05:53:09Z · note: review pass 1: needs some work
-- 2026-11-08T05:53:10Z · message_delivered: 1 message(s)
-- 2026-11-08T05:53:10Z · status review→active
-- 2026-11-08T05:56:41Z · agent exited with an error (cursor) · Cannot use this model: composer-2.5. Available models:
-- 2026-11-08T05:56:41Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · Cannot use this model: composer-2.5. Available models:
-- 2026-11-08T05:57:17Z · needs_input
-- 2026-11-08T06:01:11Z · body
-- 2026-11-08T06:01:53Z · status active→review
-- 2026-11-08T06:01:53Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-08T06:02:26Z · message_queued at 2026-11-08T06:02:26.090Z
-- 2026-11-08T06:02:54Z · note: review pass 2: good to go
+- 2026-11-08T02:45:53Z · body
+- 2026-11-08T02:57:57Z · status active→review

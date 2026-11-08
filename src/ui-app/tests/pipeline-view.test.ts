@@ -123,9 +123,11 @@ describe("PipelineCard", () => {
         }),
       }),
     );
-    expect(wrapper.find('[data-test-id="pipeline-card-check-progress"] progress').exists()).toBe(
-      true,
-    );
+    const barRow = wrapper.find(".pl-row-3 [data-test-id='pipeline-card-check-progress']");
+    expect(barRow.exists()).toBe(true);
+    expect(barRow.find("progress").exists()).toBe(true);
+    expect(barRow.find(".checks-progress-pipeline-status").text()).toContain("Running checks");
+    expect(wrapper.findAll(".pl-row")).toHaveLength(4);
   });
 
   it("renders four rows with rounds, models and host", () => {
@@ -261,7 +263,9 @@ describe("PipelineView", () => {
     const card = wrapper.find(`[data-task-id="${SHOT_PREVIEW_FIXTURE_TASK_ID}"]`);
     expect(card.exists()).toBe(true);
     expect(card.find('[data-test-id="pipeline-card-check-progress"]').exists()).toBe(true);
-    expect(card.find('[data-test-id="pipeline-card-check-progress"] progress').exists()).toBe(true);
+    const bar = card.find(".pl-row-3 [data-test-id='pipeline-card-check-progress']");
+    expect(bar.exists()).toBe(true);
+    expect(bar.find("progress").exists()).toBe(true);
   });
 });
 
