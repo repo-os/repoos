@@ -451,9 +451,9 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(integrationPipelineStalled(repo.integration, now)).toBe(false);
     const copy = integrationActiveCopy(repo.integration!, now);
     expect(copy.stalled).toBe(false);
-    expect(copy.label).toContain("remote tests");
-    // A non-zero elapsed since the job started.
-    expect(copy.label).toMatch(/remote tests · \dm/);
+    expect(copy.label).toBe("integrating · remote tests");
+    // Elapsed close-out time moved to the hover popover (#1058).
+    expect(copy.elapsedTip).toMatch(/Close-out running \d+m/);
   });
 
   it("pins the runner pool and drawer remote activity for a queued validation (#0897)", () => {
