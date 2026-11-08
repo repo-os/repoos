@@ -18,8 +18,6 @@ created_at: "2026-10-26T19:44:54Z"
 updated_at: "2026-11-08T07:53:00Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T07:52:53.443Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router, tests/app-loading-skeleton.test.ts > repo loading skeleton > maps every standard route to an explicit skeleton kind on mini — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 79b62477efe1e44cc9044f51de0013ba7fd90ffe
 ---
 ## Problem
 
@@ -125,3 +123,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T07:52:53Z · message_delivered: 1 message(s)
 - 2026-11-08T07:53:00Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-08T07:53:00Z · status active→review
+
