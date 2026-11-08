@@ -1,5 +1,6 @@
 import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
 import { buildIndex } from "../core/indexer.js";
+import { runGit } from "../core/git.js";
 import {
   checkSnapshot,
   compatibleCheckSnapshots,
@@ -104,6 +105,7 @@ import {
   isManagedEngineerCheck,
   runEngineerRemoteSelfCheckGate,
 } from "../server/engineer-remote-self-check.js";
+import { acquireCheckGateLock } from "../server/check-gate-lock.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
   runRemotePreReviewGate,
@@ -2590,6 +2592,24 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   const completedSteps: CheckStepTiming[] = [];
   let results: StepRunResult[];
   let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
+  let selfCheckLock: Awaited<ReturnType<typeof acquireCheckGateLock>> | null = null;
+  if (isManagedEngineerCheck(process.env) && runContext.taskId) {
+    const branch = await runGit(repoRoot, ["branch", "--show-current"], 10_000);
+    if (branch.status !== 0 || !branch.stdout.trim()) {
+      throw new Error("could not resolve task branch for check-gate lock");
+    }
+    const boardRoot = boardRootForEngineerRemote(repoRoot);
+    const gateConfig = loadConfig(boardRoot);
+    selfCheckLock = await acquireCheckGateLock({
+      boardRoot,
+      cacheDir: gateConfig.cacheDir ?? ".repoos",
+      taskId: runContext.taskId,
+      branch: branch.stdout.trim(),
+      worktree: repoRoot,
+      kind: "engineer-self-check",
+    });
+    if (!selfCheckLock.ok) throw new Error(selfCheckLock.reason);
+  }
   try {
     if (process.env.REPOOS_AGENT === "1") {
       applyEngineerResourceEnv(checkEnv, cfg);
@@ -2658,6 +2678,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   } finally {
     if (process.env.REPOOS_AGENT === "1") delete process.env.REPOOS_LOCAL_CHECK_SLOT_HELD;
     releaseLocalCheck?.();
+    if (selfCheckLock?.ok) await selfCheckLock.release();
   }
 
   // ── Summary ─────────────────────────────────────────────────────────

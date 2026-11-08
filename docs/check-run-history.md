@@ -81,3 +81,13 @@ projects with different layouts (root cache vs nested `repoos/.repoos`), runs
 from one project's linked worktree with the other project's
 `REPOOS_CHECK_STORE_ROOT` / `REPOOS_TASK_ID` / `REPOOS_ROOT` set, and asserts
 that only the owning project's cache gains rows.
+# Check-gate worktree protection
+
+During handoff, close-out, and managed self-check gates, RepoOS holds a task
+worktree lock. RepoOS bookkeeping in `work/` and the configured cache directory
+is queued and replayed in order after the last gate holder exits. Source changes
+remain gate-invalidating: the handoff reports the commit subject and changed
+paths. If Git cannot determine the paths or commit ancestry, the gate fails
+closed. Engineer attempts to write source while the lock is active should be
+refused with “A check is running; wait for it to finish.” Dead holders are
+reconciled on server startup and their durable bookkeeping queue is replayed.

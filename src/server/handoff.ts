@@ -24,7 +24,7 @@ import {
  * funnels through it; the shared body below is what both entry points run.
  */
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
@@ -462,7 +462,7 @@ function fail(step: HandoffStep, detail: string): HandoffResult {
  *  changes still sitting on top of it (a task's own uncommitted work). */
 interface WorktreeState {
   head: string;
-  files: string[];
+  files: Record<string, string>;
 }
 
 /**
@@ -479,10 +479,16 @@ async function worktreeState(workdir: string, config: RepoOSConfig): Promise<Wor
   if (head.status !== 0) {
     throw new Error(`could not resolve HEAD (${concise(head)})`);
   }
-  return {
-    head: head.stdout.trim(),
-    files: await uncommittedWorkFiles(workdir, workFileFilter(config)),
-  };
+  const paths = await uncommittedWorkFiles(workdir, workFileFilter(config));
+  const files: Record<string, string> = {};
+  for (const path of paths) {
+    try {
+      files[path] = createHash("sha256").update(readFileSync(join(workdir, path))).digest("hex");
+    } catch {
+      files[path] = "<unreadable>";
+    }
+  }
+  return { head: head.stdout.trim(), files };
 }
 
 /**
@@ -505,10 +511,14 @@ async function describeStateDrift(
     const drift = await checkGateHeadDriftAllowed(workdir, config, taskId, before.head, after.head);
     if (!drift.ok) parts.push(drift.reason);
   }
-  const added = after.files.filter((f) => !before.files.includes(f));
-  const removed = before.files.filter((f) => !after.files.includes(f));
+  const added = Object.keys(after.files).filter((f) => !(f in before.files));
+  const removed = Object.keys(before.files).filter((f) => !(f in after.files));
+  const changed = Object.keys(before.files).filter(
+    (f) => f in after.files && before.files[f] !== after.files[f],
+  );
   if (added.length > 0) parts.push(`appeared: ${added.join(", ")}`);
   if (removed.length > 0) parts.push(`disappeared: ${removed.join(", ")}`);
+  if (changed.length > 0) parts.push(`content changed: ${changed.join(", ")}`);
   if (parts.length === 0) return null;
   return (
     `the worktree changed while the gate was running (${parts.join("; ")}) — the check result no ` +

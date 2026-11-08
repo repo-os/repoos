@@ -593,18 +593,29 @@ export function enqueueDeferredBranchCommit(
 ): void {
   const releaseState = acquireStateMutex(boardRoot, cacheDir, taskId);
   try {
-    const existing = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
-    existing.push({
-      commitRoot,
-      absPaths: [...absPaths],
-      message,
-      enqueuedAt: new Date().toISOString(),
-      fileSnapshots: snapshotAbsPaths(absPaths),
-    });
-    writeDeferredBranchCommits(boardRoot, cacheDir, taskId, existing);
+    enqueueDeferredBranchCommitLocked(boardRoot, cacheDir, taskId, commitRoot, absPaths, message);
   } finally {
     releaseState();
   }
+}
+
+function enqueueDeferredBranchCommitLocked(
+  boardRoot: string,
+  cacheDir: string,
+  taskId: string,
+  commitRoot: string,
+  absPaths: string[],
+  message: string,
+): void {
+  const existing = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
+  existing.push({
+    commitRoot,
+    absPaths: [...absPaths],
+    message,
+    enqueuedAt: new Date().toISOString(),
+    fileSnapshots: snapshotAbsPaths(absPaths),
+  });
+  writeDeferredBranchCommits(boardRoot, cacheDir, taskId, existing);
 }
 
 function flushDeferredBranchCommitsLocked(
@@ -846,13 +857,24 @@ function resolveCommitHook(
   config: Pick<RepoOSConfig, "workDir" | "cacheDir">,
 ): CheckGateCommitVerdict {
   if (checkGateFlushInProgress || process.env.REPOOS_CHECK_GATE_INTERNAL === "1") return "proceed";
-  const lock = activeCheckGateForCommitRoot(boardRoot, cacheDir, commitRoot);
-  if (!lock) return "proceed";
-  if (!relPaths.every((p) => isBookkeepingPath(p, config))) {
-    return "refuse";
+  // Check the holder and enqueue under the same mutex as release/flush. This
+  // closes the race where release cleared the lock after lookup but before the
+  // queue write, leaving a late bookkeeping entry stranded out of order.
+  for (const name of listLockFiles(boardRoot, cacheDir)) {
+    const lock = readLockFile(boardRoot, cacheDir, name);
+    if (!lock || !samePath(lock.worktree, commitRoot)) continue;
+    const releaseState = acquireStateMutex(boardRoot, cacheDir, lock.taskId);
+    try {
+      const current = readCheckGateLock(boardRoot, cacheDir, lock.taskId);
+      if (!current || !lockHasLiveHolder(current)) continue;
+      if (!relPaths.every((p) => isBookkeepingPath(p, config))) return "refuse";
+      enqueueDeferredBranchCommitLocked(boardRoot, cacheDir, current.taskId, commitRoot, absPaths, message);
+      return "defer";
+    } finally {
+      releaseState();
+    }
   }
-  enqueueDeferredBranchCommit(boardRoot, cacheDir, lock.taskId, commitRoot, absPaths, message);
-  return "defer";
+  return "proceed";
 }
 
 /** Register commit and git-command guards for check-gate bookkeeping (#1061). */
