@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T16:14:43Z"
+updated_at: "2026-11-08T16:14:44Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -272,3 +272,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T16:12:00Z · body
 - 2026-11-08T16:14:43Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-08T16:14:43Z · message_queued at 2026-11-08T16:14:43.962Z
+- 2026-11-08T16:14:44Z · ↻ resuming engineer to read queued message
