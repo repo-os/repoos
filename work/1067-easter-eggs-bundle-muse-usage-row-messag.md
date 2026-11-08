@@ -120,3 +120,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:24:40Z · body
 - 2026-11-08T18:25:10Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T18:25:11Z · message_queued at 2026-11-08T18:25:11.157Z
+- 2026-11-08T18:25:11Z · ↻ resuming engineer to read queued message
