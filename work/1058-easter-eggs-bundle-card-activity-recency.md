@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-08T18:29:58Z"
-review_passes: 4
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — `PipelineCard.vue` conflicts with `main`, blocking a clean merge."
@@ -18,6 +16,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
+updated_at: "2026-11-08T18:49:59Z"
+review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 17
@@ -307,4 +307,5 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T18:28:26Z · message_queued at 2026-11-08T18:28:26.746Z
 - 2026-11-08T18:29:58Z · note: review pass 4: needs some work
 - 2026-11-08T18:29:58Z · needs_input
-
+- 2026-11-08T18:49:59Z · status review→active
+- 2026-11-08T18:49:59Z · note: send-back — returned to active for engineer follow-up
