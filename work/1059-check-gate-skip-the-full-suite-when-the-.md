@@ -3,6 +3,9 @@ id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `src/server/integration-orchestrator.ts` conflicts with `main`, blocking a clean landing."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -218,3 +221,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T14:59:16Z · status active→review
 - 2026-11-08T14:59:16Z · message_queued at 2026-11-08T14:59:16.880Z
 - 2026-11-08T15:01:02Z · note: review pass 5: needs some work
+- 2026-11-08T15:01:02Z · needs_input
