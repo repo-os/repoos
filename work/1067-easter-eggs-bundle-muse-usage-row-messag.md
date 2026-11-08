@@ -121,3 +121,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:25:10Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T18:25:11Z · message_queued at 2026-11-08T18:25:11.157Z
 - 2026-11-08T18:25:11Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:25:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
