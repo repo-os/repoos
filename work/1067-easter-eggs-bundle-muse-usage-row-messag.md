@@ -125,3 +125,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:27:26Z · body
 - 2026-11-08T18:28:29Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T18:29:28Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 502 for http://127.0.0.1:36953/api/model-providers/muse/usage (http://127.0.0.1:36953/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 502 (Bad Gateway) (http://127.0.0.1:36953/api/model-providers/muse/usage)
+- 2026-11-08T18:29:28Z · message_queued at 2026-11-08T18:29:28.437Z
