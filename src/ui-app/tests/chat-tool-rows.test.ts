@@ -1069,6 +1069,21 @@ describe("CLI diagnostic presentation", () => {
     expect(wrapper.find(".agent-diagnostic-label").text()).toBe("Agent output");
     expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
   });
+
+  it("renders a collapsed run of identical stderr lines with a count and expandable detail", () => {
+    const line = "ERROR codex_core: missing tool output";
+    const wrapper = mount(ChatDiagnosticRow, {
+      props: { text: line, detailText: line, at: AT_1, firstAt: AT_0, count: 21 },
+    });
+    const summary = wrapper.find("summary").text();
+    expect(summary).toContain("×21");
+    // First and last occurrence times are both visible on the collapsed row.
+    expect(wrapper.find("summary time").exists()).toBe(true);
+    expect(summary).toContain("→");
+    expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
+    expect(wrapper.find("details").attributes("open")).toBeUndefined();
+    expect(wrapper.find("pre").text()).toBe(`21 identical entries:\n${line}`);
+  });
 });
 
 describe("toDisplayRows — assistant text trailing whitespace", () => {
