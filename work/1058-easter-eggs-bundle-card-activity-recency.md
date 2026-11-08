@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T18:26:26Z"
+updated_at: "2026-11-08T18:27:48Z"
 review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -299,3 +299,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T18:26:26Z · ↻ resuming engineer to read queued message
 - 2026-11-08T18:26:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **#1058 — Card activity recency on hover** Healthy running board and pipeline cards no longer show inline “active N ago” / elapsed text; recency is in the shared `data-tip` tooltip (hover, focus, long-press, and short tap on card hints onl… · stderr: (empty)
 - 2026-11-08T18:26:26Z · note: handoff requested (cli)
+- 2026-11-08T18:27:48Z · message_delivered: 2 message(s)
