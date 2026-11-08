@@ -6711,7 +6711,10 @@ watch(
                   <ChatDiagnosticRow
                     v-if="row.kind === 'line' && row.s === 'err'"
                     :text="row.text"
+                    :detail-text="row.detailText"
                     :at="row.at"
+                    :first-at="row.firstAt"
+                    :count="row.repeatCount"
                   />
                   <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
                     <span class="agent-pfx" :class="row.s">{{
@@ -7083,7 +7086,10 @@ watch(
                   <ChatDiagnosticRow
                     v-if="row.kind === 'line' && row.s === 'err'"
                     :text="row.text"
+                    :detail-text="row.detailText"
                     :at="row.at"
+                    :first-at="row.firstAt"
+                    :count="row.repeatCount"
                   />
                   <div v-else-if="row.kind === 'line'" class="agent-line" :class="row.s">
                     <span class="agent-pfx" :class="row.s">{{

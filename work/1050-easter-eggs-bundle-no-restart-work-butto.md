@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 106594
-last_close_out_gate_at: "2026-11-08T06:04:39.842Z"
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: review
+status: done
 needs_merge: true
 priority: p3
 area: web
+merged_commit: b3888b646954f1334eddc1782359180d3363547f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-no-restart-work-butto
@@ -17,6 +16,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
 updated_at: "2026-11-08T06:04:39Z"
+last_close_out_gate_ms: 106594
+last_close_out_gate_at: "2026-11-08T06:04:39.842Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T02:42:36.012Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
