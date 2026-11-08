@@ -13,7 +13,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T06:26:19Z"
+updated_at: "2026-11-08T06:30:46Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -25,7 +25,7 @@ engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"c
 - "Cannot affect behavior" is a conservative allowlist: `work/**`, `docs/**`, `user-docs/**`, `inputs/**`, `*.md` at any depth, `schedules/**`. Anything else (src, scripts, package.json, lockfiles, repoos.toml, `.githooks`, config, assets, tests) forces the normal full path. If the changed-path list cannot be computed, fall back to the full path (fail closed).
 - Guards that protect the repo still run in the skipped mode: format check on touched files that the formatter covers, the task-asset guard (no binaries under `work/` or `inputs/`), the lockfile/zero-runtime-dependency guard, and the task-file parser check (parser reads every file in `work/`).
 - Close-out's gate behaves the same way for such diffs (it already scopes tests to changed paths); make sure a bookkeeping-only task does not trigger the full suite or remote validation there either.
-- The allowlist and the skip are configured through `repoos.toml` `[[check.steps]]` / check settings per AGENTS.md ("change the gate by editing the plan in repoos.toml, not src/commands/check.ts"); if a Settings control is needed per AGENTS.md for a user-facing feature setting, add it with a test.
+- IMPORTANT: do NOT edit `repoos.toml` in this task (a diff touching `repoos.toml` blocks landing, and runner rules forbid it). Implement the skip in code (`src/commands/check.ts` and the handoff/close-out gate) with the allowlist as a built-in default constant. Make it overridable by an OPTIONAL setting read from `repoos.toml` (for example `[check] docsOnlySkipGlobs` / `docsOnlySkip = true|false`), defaulting to the built-in behaviour when the key is absent, so no change to `repoos.toml` is needed to ship it. If this is a user-facing feature setting, add it to `getConfigSchema()` and the right Settings tab with a test (per AGENTS.md); do not hand-edit `repoos.toml`.
 
 ## Acceptance criteria
 - Test: a diff touching only `work/reports/9999/x.md` runs no build/test/smoke/audit/remote-validation step and prints the skip reason; the cheap guards still ran.
@@ -51,3 +51,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T06:20:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1059 is still active and has no implementation changes on its branch. The worktree is clean, and no handoff has been requested. I have not implemented the gate or run `repoos check`, so I cannot truthfully emit the handoff signal. · stderr: (empty)
 - 2026-11-08T06:26:00Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-08T06:26:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1059 is blocked by conflicting instructions: its specification requires configuring the skip in `repoos.toml`, while the runner instructions explicitly say never to edit that file. The existing check steps are defined there, so the r… · stderr: Reading additional input from stdin...
+- 2026-11-08T06:30:46Z · body: Desired behavior (added 1, removed 1)
