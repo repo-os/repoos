@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T18:25:10Z"
+updated_at: "2026-11-08T18:28:28Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -94,3 +94,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T18:21:49Z · ↻ resuming engineer to read queued message
 - 2026-11-08T18:21:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementing git/write hooks, fixing WIP drift logic, and ensuring handoff check children install the gate hook without re-acquiring the lock. · stderr: (empty)
 - 2026-11-08T18:25:10Z · message_delivered: 2 message(s)
+- 2026-11-08T18:28:28Z · message_queued at 2026-11-08T18:28:28.950Z
