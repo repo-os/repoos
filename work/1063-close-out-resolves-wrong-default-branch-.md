@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-resolves-wrong-default-branch-
 created_at: "2026-11-08T12:38:05Z"
-updated_at: "2026-11-08T13:48:59Z"
+updated_at: "2026-11-08T13:50:41Z"
 last_close_out_gate_ms: 559631
 last_close_out_gate_at: "2026-11-08T13:48:42.577Z"
 review_passes: 1
@@ -46,3 +46,4 @@ Verified resolver already exists in `src/core/repo-log.ts` (`resolveDefaultBranc
 - 2026-11-08T13:04:21Z · note: review pass 1: good to go
 - 2026-11-08T13:48:42Z · close-out gate completed in 560s
 - 2026-11-08T13:48:59Z · status done→done, release:success
+- 2026-11-08T13:50:41Z · message_dropped: 1 queued message(s) discarded — task is done
