@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-08T15:01:38Z"
-review_passes: 8
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — a failed startup container removal aborts validation before it can report the failure.
@@ -19,6 +17,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
+updated_at: "2026-11-08T15:30:05Z"
+review_passes: 8
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 3e338391 to 734d5a95) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 3e338391a4a54b4df78d2732b7673fae3ed7d705
 review_rounds: 2
@@ -252,4 +252,5 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T14:59:52Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 3e338391 to 734d5a95) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-08T15:01:38Z · note: review pass 9: needs some work
 - 2026-11-08T15:01:38Z · needs_input
-
+- 2026-11-08T15:30:05Z · status review→active
+- 2026-11-08T15:30:05Z · note: send-back — returned to active for engineer follow-up
