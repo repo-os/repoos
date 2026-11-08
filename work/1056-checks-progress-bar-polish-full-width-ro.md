@@ -109,3 +109,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:52:19Z · CTO nudge: held — remote validation is running
 - 2026-11-08T02:52:22Z · review_model_override
 - 2026-11-08T02:57:57Z · note: ui verification passed: 3 of 3 shots captured with clean console
+- 2026-11-08T02:57:57Z · engineer stopped by request
