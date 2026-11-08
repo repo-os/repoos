@@ -15,7 +15,6 @@ review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
 updated_at: "2026-11-08T06:48:05Z"
 dev_error_count: 12
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T05:57:17.343Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
