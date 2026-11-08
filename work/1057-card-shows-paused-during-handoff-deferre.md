@@ -58,3 +58,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T01:40:16Z · body
 - 2026-11-08T01:41:01Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T01:41:01Z · message_queued at 2026-11-08T01:41:01.137Z
+- 2026-11-08T01:41:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: The rerun passed: remote validation completed the changed-path tests, and the local formatting, lint, build, rendered contrast, and UI smoke steps also passed. The handoff timeout did not reproduce, so I’m requesting handoff again with the… · stderr: (empty)
