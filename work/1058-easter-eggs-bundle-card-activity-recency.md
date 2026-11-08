@@ -8,10 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-activity-recency
-review_cli_override: github copilot
-review_model_override: default
+review_cli_override: codex
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T19:07:56Z"
+updated_at: "2026-11-08T19:09:03Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -427,3 +427,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T19:05:50Z · cli_override, model_override
 - 2026-11-08T19:05:52Z · model_override
 - 2026-11-08T19:05:58Z · needs_input
+- 2026-11-08T19:09:03Z · review_cli_override, review_model_override
