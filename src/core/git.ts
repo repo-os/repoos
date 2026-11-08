@@ -2015,12 +2015,13 @@ export async function getChangedFilePaths(
   baseBranch: string,
   timeout = 10_000,
 ): Promise<string[] | null> {
-  const run = await runGit(worktree, ["diff", "--name-only", baseBranch, "HEAD"], timeout);
+  const run = await runGit(
+    worktree,
+    ["diff", "--no-renames", "--name-only", "-z", baseBranch, "HEAD"],
+    timeout,
+  );
   if (run.status !== 0 || run.timedOut) return null;
-  return run.stdout
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return run.stdout.split("\0").filter(Boolean);
 }
 
 /**

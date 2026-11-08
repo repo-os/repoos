@@ -332,16 +332,7 @@ otherwise never close anything out (`neung` canary report). The skip is recorded
 `errors` in the plan keep failing exactly as before. See `src/core/check-skip.ts` and
 `user-docs/check.md`.
 
-**Docs-only fast path (#0355):** when the merged diff touches nothing but documentation, both
-steps are skipped. The predicate is literal and mechanical — every changed path must live under
-`docs/` or `user-docs/`, or end in `.md` (the task's own `work/<id>-*.md` is the common `.md`
-case). Any other path (`src/`, `scripts/`, `.github/`, `repoos.toml`, `package.json`, …) runs the
-full gate unchanged; there is no "mostly docs" scoring, and a git error fails safe to the full
-gate. Rationale: build/typecheck/tests/ui-smoke cannot fail differently for a markdown-only diff
-than they already did on main, so they are pure cost. The gate logs the qualifying paths when it
-takes the fast path. The merge, conflict-marker scan, dropped-merge guard, and
-`resetForeignWorkFiles` still run unconditionally. This affects ONLY the close-out gate — standalone
-`repoos check` and human review are untouched.
+**Docs/bookkeeping fast path (#1059):** the CLI, handoff and close-out classify the diff against the base. For the conservative paths listed in `user-docs/check.md`, they skip the build, tests, browser checks and remote validation while retaining the local repository guards. A Git error falls back to the normal gate. `check.docsOnlySkip = false` disables the shortcut, and release checks always run the full suite. The merge, conflict-marker scan, dropped-merge guard, and `resetForeignWorkFiles` still run unconditionally.
 
 **Remote Validation Runner (2026-08-28):** when `[remoteValidation] enabled` (see
 `docs/remote-validation.md`), the expensive half — `bun install` + `bun run build` +

@@ -140,6 +140,16 @@ describe("resolveSettingLocation", () => {
     ).toEqual({ tab: "advanced", hasUiRow: true });
   });
 
+  it("routes the docs-only check switch to Advanced", () => {
+    expect(
+      resolveSettingLocation(
+        "check.docsOnlySkip",
+        field({ key: "check.docsOnlySkip", type: "boolean", tier: "guarded" }),
+        ctx,
+      ),
+    ).toEqual({ tab: "advanced", hasUiRow: true });
+  });
+
   it("mirrors generalFields exclusions via isGeneralSchemaFieldKey", () => {
     expect(isGeneralSchemaFieldKey("maxActiveTasks")).toBe(true);
     expect(isGeneralSchemaFieldKey("remoteValidation.tailscaleHost")).toBe(false);
