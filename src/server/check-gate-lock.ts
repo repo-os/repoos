@@ -279,15 +279,15 @@ async function releaseCheckGateHolder(
   if (remaining.length > 0) {
     const live = remaining.filter((h) => isPidAlive(h.pid));
     if (live.length === 0) {
-      clearCheckGateLock(boardRoot, cacheDir, taskId);
-      await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+      const flushed = await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+      if (flushed.ok) clearCheckGateLock(boardRoot, cacheDir, taskId);
       return;
     }
     atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), { ...existing, holders: live });
     return;
   }
-  clearCheckGateLock(boardRoot, cacheDir, taskId);
-  await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+  const flushed = await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+  if (flushed.ok) clearCheckGateLock(boardRoot, cacheDir, taskId);
 }
 
 /**
@@ -307,8 +307,8 @@ export async function releaseCheckGateLock(
   const mine = existing.holders.filter((h) => h.pid === process.pid);
   if (mine.length === 0) {
     if (!lockHasLiveHolder(existing)) {
-      clearCheckGateLock(boardRoot, cacheDir, taskId);
-      await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+      const flushed = await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+      if (flushed.ok) clearCheckGateLock(boardRoot, cacheDir, taskId);
     }
     return;
   }
@@ -351,8 +351,8 @@ export async function reconcileDeadCheckGateLock(
     }
     return;
   }
-  clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
-  await flushDeferredBranchCommits(boardRoot, cacheDir, lock.taskId);
+  const flushed = await flushDeferredBranchCommits(boardRoot, cacheDir, lock.taskId);
+  if (flushed.ok) clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
 }
 
 /** Live lock for `worktree`, reconciling dead holders first. */
@@ -490,20 +490,8 @@ export async function flushDeferredBranchCommits(
         remaining.push(item);
         continue;
       }
-      for (const abs of item.absPaths) {
-        const snap = item.fileSnapshots[abs];
-        if (snap === undefined) continue;
-        mkdirSync(dirname(abs), { recursive: true });
-        if (snap === "") {
-          try {
-            unlinkSync(abs);
-          } catch {
-            /* absent */
-          }
-        } else {
-          writeFileSync(abs, snap, "utf8");
-        }
-      }
+      // The current file is the authoritative latest bookkeeping state. Never
+      // restore an older snapshot here: a later write may have updated it.
       const committed = commitFiles(item.commitRoot, item.absPaths, item.message);
       if (!committed) {
         remaining.push(item);
@@ -683,6 +671,7 @@ export function installCheckGateCommitHook(config: RepoOSConfig): void {
   const boardRoot = config.root;
   const cacheDir = config.cacheDir ?? ".repoos";
   if (!process.env.REPOOS_CACHE_DIR) process.env.REPOOS_CACHE_DIR = cacheDir;
+  if (!process.env.REPOOS_BOARD_ROOT) process.env.REPOOS_BOARD_ROOT = boardRoot;
   const scope = config;
   setCheckGateCommitHook((args) =>
     resolveCommitHook(

@@ -68,6 +68,8 @@ import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { guardStrayRepoosTomlOnTaskBranch } from "../core/repoos-toml-branch-guard.js";
+import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
+import { acquireCheckGateLock } from "./check-gate-lock.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
@@ -322,20 +324,41 @@ async function runCheck(
     ...extraEnv,
   };
   let last: RunResult = { status: null, stdout: "", stderr: "check command unavailable" };
-  for (const candidate of candidates) {
-    last = await runHandoffCommand(
-      candidate[0],
-      [...candidate.slice(1)],
+  let gate: Awaited<ReturnType<typeof acquireCheckGateLock>> | null = null;
+  if (taskId) {
+    const branch = await runGit(worktree, ["branch", "--show-current"], 10_000);
+    if (branch.status !== 0) {
+      return { status: 1, stdout: "", stderr: "could not resolve task branch for check-gate lock" };
+    }
+    gate = await acquireCheckGateLock({
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      taskId,
+      branch: branch.stdout.trim(),
       worktree,
-      LOCAL_CHECK_TIMEOUT_MS,
-      env,
-      onChunk,
-      registerCancel,
-    );
-    if (last.status === 0) return last;
-    if (!last.error || (last.error.code !== "ENOENT" && last.error.code !== "EACCES")) return last;
+      kind: "handoff-finalize",
+    });
+    if (!gate.ok) return { status: 1, stdout: "", stderr: gate.reason };
   }
-  return last;
+  try {
+    for (const candidate of candidates) {
+      last = await runHandoffCommand(
+        candidate[0],
+        [...candidate.slice(1)],
+        worktree,
+        LOCAL_CHECK_TIMEOUT_MS,
+        env,
+        onChunk,
+        registerCancel,
+      );
+      if (last.status === 0) return last;
+      if (!last.error || (last.error.code !== "ENOENT" && last.error.code !== "EACCES"))
+        return last;
+    }
+    return last;
+  } finally {
+    if (gate?.ok) await gate.release();
+  }
 }
 
 /** Hard cap on an entire finalization, whatever route asked for it. */
@@ -479,15 +502,8 @@ async function describeStateDrift(
 ): Promise<string | null> {
   const parts: string[] = [];
   if (before.head !== after.head) {
-    const changed = await pathsChangedBetweenCommits(workdir, before.head, after.head);
-    const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${taskId}-`;
-    const bookkeepingOnly =
-      changed !== null &&
-      changed.length > 0 &&
-      changed.every((path) => path.startsWith(ownTaskPath) && path.endsWith(".md"));
-    if (!bookkeepingOnly) {
-      parts.push(`HEAD moved from ${before.head.slice(0, 8)} to ${after.head.slice(0, 8)}`);
-    }
+    const drift = await checkGateHeadDriftAllowed(workdir, config, taskId, before.head, after.head);
+    if (!drift.ok) parts.push(drift.reason);
   }
   const added = after.files.filter((f) => !before.files.includes(f));
   const removed = before.files.filter((f) => !after.files.includes(f));
