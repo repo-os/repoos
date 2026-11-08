@@ -287,3 +287,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T18:08:39Z · body
 - 2026-11-08T18:09:12Z · body
 - 2026-11-08T18:10:48Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T18:10:48Z · message_queued at 2026-11-08T18:10:48.294Z
