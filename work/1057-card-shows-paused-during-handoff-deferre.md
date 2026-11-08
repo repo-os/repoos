@@ -133,3 +133,5 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T07:55:05Z · message_delivered: 1 message(s)
 - 2026-11-08T07:58:14Z · CTO nudge: held — remote validation is running
 - 2026-11-08T08:03:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-08T08:03:12Z · note: handoff requested (cli)
+- 2026-11-08T08:03:12Z · body
