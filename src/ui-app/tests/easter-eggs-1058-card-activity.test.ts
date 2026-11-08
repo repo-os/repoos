@@ -70,6 +70,18 @@ function baseTask(over: Partial<Task> = {}): Task {
 
 let pinia: Pinia;
 
+const healthyPipelineSignals = {
+  handoffInFlight: false,
+  checkInFlight: false,
+  remoteValidationInFlight: false,
+  queued: false,
+  running: true,
+  paused: false,
+  stuckSignal: false,
+  quietForMs: 60_000,
+  nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+};
+
 beforeAll(() => {
   installTooltips();
 });
@@ -200,17 +212,7 @@ describe("PipelineCard activity recency (#1058)", () => {
         priority: "p3",
         title: "Fixture",
         state: "ok",
-        statusSignals: {
-          handoffInFlight: false,
-          checkInFlight: false,
-          remoteValidationInFlight: false,
-          queued: false,
-          running: true,
-          paused: false,
-          stuckSignal: false,
-          quietForMs: 60_000,
-          nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
-        },
+        statusSignals: healthyPipelineSignals,
         stepLabel: "Coding",
         chipText: null,
         stateSince: "2026-11-08T02:48:00.000Z",
@@ -240,7 +242,7 @@ describe("PipelineCard activity recency (#1058)", () => {
         priority: "p3",
         title: "Fixture",
         state: "ok",
-        statusSignals: null,
+        statusSignals: healthyPipelineSignals,
         stepLabel: "Coding",
         chipText: null,
         stateSince: "2026-11-08T02:48:00.000Z",
@@ -294,18 +296,33 @@ describe("PipelineCard activity recency (#1058)", () => {
   it("shows stuck and elapsed time for a silent agent that still reports running", () => {
     const wrapper = mount(PipelineCard, {
       props: {
-        taskId: "1058", type: "chore", priority: "p3", title: "Fixture",
+        taskId: "1058",
+        type: "chore",
+        priority: "p3",
+        title: "Fixture",
         state: "ok",
         statusSignals: {
-          handoffInFlight: false, checkInFlight: false, remoteValidationInFlight: false,
-          queued: false, running: true, paused: false, stuckSignal: true,
-          quietForMs: 4 * 60_000, nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+          handoffInFlight: false,
+          checkInFlight: false,
+          remoteValidationInFlight: false,
+          queued: false,
+          running: true,
+          paused: false,
+          stuckSignal: true,
+          quietForMs: 4 * 60_000,
+          nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
         },
-        stepLabel: "Coding", chipText: null,
-        stateSince: "2026-11-08T02:48:00.000Z", lastActivityAt: "2026-11-08T02:56:00.000Z",
-        nowMs: Date.parse("2026-11-08T03:00:00.000Z"), roundsLabel: "D0 · R0",
-        reviewerTone: null, modelsLabel: "eng / rev", hostLabel: "local",
-        action: null, checkProgress: null,
+        stepLabel: "Coding",
+        chipText: null,
+        stateSince: "2026-11-08T02:48:00.000Z",
+        lastActivityAt: "2026-11-08T02:56:00.000Z",
+        nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+        roundsLabel: "D0 · R0",
+        reviewerTone: null,
+        modelsLabel: "eng / rev",
+        hostLabel: "local",
+        action: null,
+        checkProgress: null,
       },
     });
     expect(wrapper.get(".pl-status-chip").text()).toBe("Stuck");
@@ -315,12 +332,23 @@ describe("PipelineCard activity recency (#1058)", () => {
   it.each(["review", "close-out"])("keeps elapsed inline on idle %s rows", (kind) => {
     const wrapper = mount(PipelineCard, {
       props: {
-        taskId: "1058", type: "chore", priority: "p3", title: "Fixture",
-        state: "ok", statusSignals: null, stepLabel: kind === "review" ? "In review" : "Closing out",
-        chipText: null, stateSince: "2026-11-08T02:48:00.000Z", lastActivityAt: null,
-        nowMs: Date.parse("2026-11-08T03:00:00.000Z"), roundsLabel: "D0 · R0",
-        reviewerTone: null, modelsLabel: "eng / rev", hostLabel: "local",
-        action: null, checkProgress: null,
+        taskId: "1058",
+        type: "chore",
+        priority: "p3",
+        title: "Fixture",
+        state: "ok",
+        statusSignals: null,
+        stepLabel: kind === "review" ? "In review" : "Closing out",
+        chipText: null,
+        stateSince: "2026-11-08T02:48:00.000Z",
+        lastActivityAt: null,
+        nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+        roundsLabel: "D0 · R0",
+        reviewerTone: null,
+        modelsLabel: "eng / rev",
+        hostLabel: "local",
+        action: null,
+        checkProgress: null,
       },
     });
     expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
@@ -334,7 +362,7 @@ describe("PipelineCard activity recency (#1058)", () => {
         priority: "p3",
         title: "Fixture",
         state: "ok",
-        statusSignals: null,
+        statusSignals: healthyPipelineSignals,
         stepLabel: "Running checks",
         chipText: null,
         stateSince: "2026-11-08T02:48:00.000Z",
