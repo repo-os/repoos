@@ -112,3 +112,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:58:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T03:08:58Z · message_queued at 2026-11-08T03:08:58.475Z
 - 2026-11-08T03:08:58Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T03:08:58Z · message_delivered: 1 message(s)
