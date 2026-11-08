@@ -20,7 +20,6 @@ last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check fail
 dev_error_count: 56
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
-deferred_handoff_resume_count: 1
 ---
 ## Items
 
