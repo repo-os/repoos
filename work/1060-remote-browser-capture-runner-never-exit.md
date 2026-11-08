@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T13:21:43Z"
+updated_at: "2026-11-08T13:22:30Z"
 last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
 last_handoff_failure_sha: b010fc784b71be782b588bd1e70ed38672c1f21f
 review_passes: 6
@@ -205,3 +205,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T13:10:27Z · message_queued at 2026-11-08T13:10:27.589Z
 - 2026-11-08T13:10:27Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
 - 2026-11-08T13:21:43Z · body
+- 2026-11-08T13:22:30Z · handoff_deferred: 1 queued message(s) must be read before review
