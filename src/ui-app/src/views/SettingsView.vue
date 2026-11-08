@@ -2252,6 +2252,12 @@ onUnmounted(() => {
                     :disabled="config.saving"
                     @update:model-value="(v) => (form[f.key] = v === '' ? f.default : Number(v))"
                   />
+                  <Switch
+                    v-else-if="f.type === 'boolean'"
+                    :checked="!!form[f.key]"
+                    :disabled="config.saving"
+                    @update:checked="(v: boolean) => (form[f.key] = v)"
+                  />
                 </div>
               </div>
             </div>

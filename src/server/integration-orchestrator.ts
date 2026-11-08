@@ -672,28 +672,6 @@ function withDirSlash(dir: string): string {
 }
 
 /**
- * Whether a candidate's merged diff is documentation-only, so the expensive
- * build + check gate in `validateCandidate` can be skipped (#0355).
- *
- * Deliberately literal and mechanical: a path qualifies only if it lives under
- * the configured docs directory, or ends in `.md`. The closing task's own
- * task file is the common `.md` case — it always changes, and
- * `resetForeignWorkFiles` has already restored every OTHER task's task file to
- * main's copy before this runs, so no foreign task file reaches this check.
- * Anything else — `repoos.toml`, `package.json`, `src/`, `scripts/`,
- * `.github/`, … — disqualifies the fast path. No scoring, no "mostly docs".
- *
- * An empty path list is vacuously docs-only: a legitimate no-op merge (the
- * branch was already fully integrated) leaves nothing for build/test to
- * examine, and the dropped-merge guard in `validateCandidate` runs earlier and
- * already rejects an empty merge that actually swallowed real branch work.
- */
-export function isDocsOnlyChange(paths: string[], docsDir = "docs"): boolean {
-  const docsPrefix = `${docsDir.replace(/\/+$/, "")}/`;
-  return paths.every((p) => p.startsWith(docsPrefix) || p.endsWith(".md"));
-}
-
-/**
  * Resolve the repository's actual default branch name.
  * Tries (in order):
  * 1. git symbolic-ref refs/remotes/origin/HEAD (when remote exists)
