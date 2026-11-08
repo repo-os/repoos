@@ -44,3 +44,4 @@ Failure mode to avoid: the cards offer "Delete task", which would delete the sto
 - 2026-11-08T13:49:13Z · body
 - 2026-11-08T13:50:41Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T13:50:41Z · message_queued at 2026-11-08T13:50:41.343Z
+- 2026-11-08T13:50:41Z · ↻ resuming engineer to read queued message
