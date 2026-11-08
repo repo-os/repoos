@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-08T10:37:51Z"
+review_passes: 3
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -18,10 +20,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T10:37:50Z"
 last_check_failure: "repoos check at 2026-11-08T10:03:48.795Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
-review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
@@ -174,3 +174,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T10:35:20Z · body
 - 2026-11-08T10:35:52Z · status active→review
 - 2026-11-08T10:37:50Z · note: review pass 3: needs some work
+
