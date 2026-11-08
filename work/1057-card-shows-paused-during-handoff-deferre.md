@@ -18,7 +18,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T08:54:24Z"
+updated_at: "2026-11-08T08:54:54Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T08:41:54.450Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
@@ -26,6 +26,7 @@ review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T08:54:24.591Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -157,3 +158,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T08:45:21Z · review_cli_override, review_model_override
 - 2026-11-08T08:49:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Implementing counter reset when blocking queued messages are cleared: · stderr: RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-08T08:54:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T08:54:54Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [unavailable] read ETIMEDOUT
