@@ -90,3 +90,4 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 - 2026-11-08T00:52:15Z · note: handoff requested (cli)
 - 2026-11-08T00:52:56Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T01:04:41Z · message_queued at 2026-11-08T01:04:41.625Z
+- 2026-11-08T01:04:41Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
