@@ -96,3 +96,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T08:45:23Z · review_cli_override, review_model_override
 - 2026-11-08T08:49:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T09:00:46Z · message_queued at 2026-11-08T09:00:46.811Z
+- 2026-11-08T09:00:46Z · handoff failed · handoff recovery attempted · finalization failed
