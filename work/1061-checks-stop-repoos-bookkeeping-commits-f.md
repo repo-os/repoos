@@ -3,6 +3,9 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — source edits can bypass the fence, lock/queue races remain, and three source files conflict with main."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -99,3 +102,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T18:41:07Z · body
 - 2026-11-08T18:41:59Z · status active→review
 - 2026-11-08T18:44:04Z · note: review pass 3: needs some work
+- 2026-11-08T18:44:04Z · needs_input
