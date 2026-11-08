@@ -153,7 +153,7 @@ describe("cmdCheck — the skipped outcome (#0592)", () => {
     expect(rec).toBeNull();
   });
 
-  it("falls back to the full plan when the changed ref cannot be resolved", async () => {
+  it("warns when the changed ref cannot be resolved on a planless repo", async () => {
     const root = fixture();
     const code = await runCheck(["--changed", "nosuchref"], root);
     expect(code).toBe(0);
