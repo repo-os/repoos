@@ -3,9 +3,6 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: [unavailable] read ETIMEDOUT"
 priority: p3
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T11:19:29Z"
+updated_at: "2026-11-08T11:19:30Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
@@ -200,3 +197,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T11:18:15Z · message_delivered: 1 message(s)
 - 2026-11-08T11:18:29Z · agent exited with an error (cursor) · Error: [unavailable] read ETIMEDOUT
 - 2026-11-08T11:19:29Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-08T11:19:30Z · needs_input
