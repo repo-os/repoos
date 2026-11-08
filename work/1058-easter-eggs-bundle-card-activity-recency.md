@@ -221,3 +221,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T13:51:55Z · message_queued at 2026-11-08T13:51:55.680Z
 - 2026-11-08T13:53:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T13:58:19Z · message_delivered: 1 message(s)
+- 2026-11-08T13:58:19Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
