@@ -160,7 +160,6 @@ function onKey(e: KeyboardEvent): void {
         :progress="checkProgress"
         :pipeline-status-text="displayStepLabel"
         :data-tip="!showElapsedInline && elapsedTip ? elapsedTip : undefined"
-        :data-tip-touch="!showElapsedInline && elapsedTip ? 'tap' : undefined"
         :tabindex="!showElapsedInline && elapsedTip ? 0 : undefined"
       />
       <template v-else>
@@ -170,7 +169,6 @@ function onKey(e: KeyboardEvent): void {
           :class="{ 'pl-step--recency-tip': !showElapsedInline && elapsedTip }"
           :tabindex="!showElapsedInline && elapsedTip ? 0 : undefined"
           :data-tip="!showElapsedInline && elapsedTip ? elapsedTip : undefined"
-          :data-tip-touch="!showElapsedInline && elapsedTip ? 'tap' : undefined"
         >
           {{ displayStepLabel }}
         </span>
