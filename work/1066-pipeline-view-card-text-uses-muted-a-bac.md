@@ -2,15 +2,15 @@
 id: "1066"
 title: "Pipeline view: card text uses --muted (a background token), unreadable in every theme"
 type: bug
-status: ready
+status: active
 paths: [src/ui-app/src/components/PipelineCard.vue, src/ui-app/src/style.css]
 priority: p1
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T13:40:06Z"
+updated_at: "2026-11-08T14:16:58Z"
 ---
 ## Problem
 On the Work > Pipeline view, the task id, type/priority chips, elapsed time, model/agent line and host label on every card are almost invisible, in every theme (light and dark). The Board view is fine.
@@ -36,3 +36,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T13:13:55Z · needs_input
 - 2026-11-08T13:15:51Z · body: Problem (added 1, removed 2); Desired UX (added); Acceptance criteria (added 1, removed 1)
 - 2026-11-08T13:40:06Z · status inbox→ready
+- 2026-11-08T14:16:58Z · status ready→active, branch
