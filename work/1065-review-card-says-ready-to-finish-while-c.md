@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1065"
 title: Review card says 'ready to finish' while checks are still running or failing
 type: bug
@@ -11,7 +12,6 @@ created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
 updated_at: "2026-11-08T16:03:56Z"
-handoff_signal_retry_count: 1
 deferred_handoff_resume_count: 1
 ---
 ## Problem
@@ -60,3 +60,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T15:58:50Z · ↻ resuming engineer to read queued message
 - 2026-11-08T15:58:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The requested scoped check passed on the final tree: build, lint/format, rendered contrast, UI smoke, and the remote changed-path test suite all passed. I’m writing the engineer-authored report draft now, then I’ll make the handoff request… · stderr: Reading additional input from stdin... 2026-11-08T15:29:05.975891Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/review-card-says-ready-to-finish-while-c/src/ui-app/src/components/TaskCard.vue: if (landable.value?.la…
 - 2026-11-08T16:03:56Z · message_queued at 2026-11-08T16:03:56.504Z
+
