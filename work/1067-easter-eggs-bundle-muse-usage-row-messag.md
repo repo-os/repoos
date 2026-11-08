@@ -109,3 +109,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T17:56:18Z · message_queued at 2026-11-08T17:56:18.728Z
 - 2026-11-08T17:59:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T18:04:08Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T18:04:08Z · note: handoff requested (cli)
