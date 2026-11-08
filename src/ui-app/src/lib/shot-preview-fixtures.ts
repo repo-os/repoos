@@ -1247,6 +1247,41 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "board:withReviewTask":
       ensureFixtureTask(repo, "review");
       break;
+    case "card:reviewChecksRunning":
+      ensureFixtureTask(repo, "review", { title: "Review passed · merge checks still running" });
+      repo.reviews = {
+        ...repo.reviews,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            at: new Date().toISOString(),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "feat/shot-fixture",
+            state: "ok",
+            markdown: "## Verdict\ngood to go — nothing blocks sign-off.",
+          },
+        },
+      };
+      repo.seedLandable(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+        branch: "feat/shot-fixture",
+        headSha: "a".repeat(40),
+        lockSha: "a".repeat(40),
+        landable: false,
+        checks: [{
+          id: "merge-conflicts",
+          label: "Checks running",
+          status: "fail",
+          detail: "Post-review checks are running",
+        }],
+        summary: { pass: 5, warn: 0, fail: 1 },
+      });
+      break;
     case "board:pipeline": {
       // #1035 — one lane per stage plus the special states, so the Pipeline
       // capture shows the whole track. Empty branches keep every card clear
