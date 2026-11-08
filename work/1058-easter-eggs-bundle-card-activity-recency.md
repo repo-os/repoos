@@ -12,8 +12,6 @@ review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
 updated_at: "2026-11-08T21:51:12Z"
-last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
-last_handoff_failure_sha: 4285447c6214f9cf946e1912f687225ca6339642
 review_passes: 7
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -502,3 +500,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:49:12Z · note: handoff requested (cli)
 - 2026-11-08T21:51:11Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-08T21:51:12Z · status active→review
+
