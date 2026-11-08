@@ -38,3 +38,4 @@ Failure mode to avoid: the cards offer "Delete task", which would delete the sto
 - 2026-11-08T12:50:25Z · status inbox→ready
 - 2026-11-08T13:10:53Z · status ready→active, branch
 - 2026-11-08T13:15:50Z · body: Desired UX (added)
+- 2026-11-08T13:15:50Z · message_queued at 2026-11-08T13:15:50.344Z
