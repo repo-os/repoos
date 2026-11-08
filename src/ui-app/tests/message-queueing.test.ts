@@ -633,6 +633,11 @@ describe("handoff deferral while messages are queued (#0865)", () => {
         const status = readHandoffStatus(config(fx.root), id);
         expect(status.state).toBe("deferred");
         expect(status.outcomeQueued).toBe(true);
+        await waitFor(() => readFileSync(absPath, "utf8").includes("message_delivered"));
+        expect(readFileSync(absPath, "utf8")).toContain(
+          "resuming engineer to read queued message",
+        );
+        expect(readFileSync(fx.log, "utf8").trim().split("\n")).toHaveLength(2);
       } else {
         expect(activity).not.toContain("handoff_deferred");
         expect(onHandoff).toHaveBeenCalledOnce();
