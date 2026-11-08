@@ -5,6 +5,43 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.78] - 2026-11-08
+
+### Reviewed work now lands on repos with no remote
+
+Move to done failed with "could not get main SHA" on a local-only repo when the machine's git `init.defaultBranch` named a branch that didn't exist (for example `master` on a repo whose branch is `main`). RepoOS now only trusts a default branch that really exists, and falls back to `main`, then `master`, then the branch that is checked out. If it still can't read the branch, the error now says which branch it tried and why.
+
+### Review reports no longer appear as Inbox tasks
+
+While the server was running, each review report written under `work/reports/` could show up on the board as a task named `review-1`, `review-2` and so on. Reports are now ignored by the live board the same way they are on startup.
+
+### Clearer task cards and a faster board
+
+- Cards and the task panel show running checks with a single status line and a live progress bar. The old fake progress bar is gone.
+- A task no longer shows PAUSED during handoff, and a deferred handoff now wakes the engineer.
+- The Done column loads lazily and starts collapsed, so boards with many finished tasks open faster.
+- Pipeline cards show the review round and a "sent back" note.
+- There is a simplified client project board for sharing progress.
+
+### Smarter project work
+
+- When a task lands, the PM agent now writes a summary report of what changed.
+- Human tasks have a Mark done dialog with a multi-line completion report.
+- Diff highlighting follows your active theme pair.
+- Muse appears on the Model providers tab, with a row of provider shortcuts at the top.
+
+### Fixes
+
+- Task ids from 1000 up are no longer dropped from `depends_on`.
+- `repoos message` and send-back accept stdin, files and heredocs, and never send junk as a message.
+- Remote validation no longer kills healthy runs as hung, keeps its evidence, and cleans up leaked containers.
+
+### Known issue
+
+On the Work Pipeline view, the task id, type chips, elapsed time and model line on each card are hard to read in every theme. The next release fixes this.
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.78)
+
 ## [v0.5.77] - 2026-11-06
 
 ### More reliable Muse engineering runs

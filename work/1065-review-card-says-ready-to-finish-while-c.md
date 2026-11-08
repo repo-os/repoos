@@ -2,7 +2,7 @@
 id: "1065"
 title: Review card says 'ready to finish' while checks are still running or failing
 type: bug
-status: inbox
+status: ready
 paths: [src/ui-app/src/components/TaskCard.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p2
 area: web
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-08T13:12:26Z"
-updated_at: "2026-11-08T13:12:31Z"
+updated_at: "2026-11-08T14:29:08Z"
 ---
 ## Problem
 On the Work board, a task in Review whose reviewer said "good to go" shows the green "Review passed · ready to finish" label, a glowing card and an active "Move to done" button. The task drawer for the same task can say "Not ready to merge: Running checks · 7m 21s, step 10 of 11" at the same moment (seen on #1063). The two disagree.
@@ -35,3 +35,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 ## Activity
 
 - 2026-11-08T13:12:26Z · created · njachowski@gmail.com
+- 2026-11-08T14:29:08Z · status inbox→ready
