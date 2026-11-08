@@ -718,16 +718,6 @@ async function runHandoffFinalization(
   // still fail an unformatted committed tree. Skipped under `skipChecks` so a
   // deliberate no-gate override does not rewrite the tree under the human.
   if (!opts.skipChecks) {
-    const branchForGate = task.branch;
-    const outerGate = await acquireCheckGateLock({
-      boardRoot: config.root,
-      cacheDir: config.cacheDir ?? ".repoos",
-      taskId: task.id,
-      branch: branchForGate,
-      worktree: workdir,
-      kind: "handoff-finalize",
-    });
-    if (!outerGate.ok) return fail("check", outerGate.reason);
     try {
       const fixes = await runFormatFixes(workdir, config);
       for (const command of fixes.commands) {
@@ -785,6 +775,15 @@ async function runHandoffFinalization(
   }
 
   if (!opts.skipChecks) {
+    const outerGate = await acquireCheckGateLock({
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      taskId: task.id,
+      branch: task.branch,
+      worktree: workdir,
+      kind: "handoff-finalize",
+    });
+    if (!outerGate.ok) return fail("check", outerGate.reason);
     // The state the gate is about to test, captured BEFORE it runs so the
     // comparison afterwards is against what was committed (#0512).
     let before: WorktreeState;
