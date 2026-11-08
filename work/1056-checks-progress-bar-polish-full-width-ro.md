@@ -3,9 +3,6 @@ id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection failed repeatedly"
 priority: p3
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T03:23:47Z"
+updated_at: "2026-11-08T03:53:11Z"
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 6
 ---
@@ -117,3 +114,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T03:08:58Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-08T03:08:58Z · message_delivered: 1 message(s)
 - 2026-11-08T03:23:47Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-08T03:53:11Z · watchdog: restarting engineer after 13m with no live process
