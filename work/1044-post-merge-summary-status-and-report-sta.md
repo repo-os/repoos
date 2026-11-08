@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 305673
-last_close_out_gate_at: "2026-11-08T01:37:57.807Z"
 id: "1044"
 title: "Post-merge summary: status and report-state edge cases (follow-up to #1041)"
 type: bug
-status: review
+status: done
 priority: p3
 area: [core, web]
+merged_commit: 4238174fb11920d50db695831edd95a86b1e3d75
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-summary-status-and-report-sta
 created_at: "2026-11-06T22:50:03Z"
 updated_at: "2026-11-08T01:37:57Z"
+last_close_out_gate_ms: 305673
+last_close_out_gate_at: "2026-11-08T01:37:57.807Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T01:31:53.519Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 1

@@ -1837,8 +1837,24 @@ export function isSummaryPollTerminal(
     TaskSummaryState,
     "status" | "exists" | "statusAt" | "pendingSince" | "reportMtimeMs"
   >,
+  expectedRunAt?: string | null,
 ): boolean {
-  if (state.status === "done" || state.status === "failed") return true;
+  if (state.status === "failed") return true;
+  // A successful POST starts a specific run. Do not let an unchanged idle/done
+  // record and its previous report satisfy that run's poll.
+  if (expectedRunAt) {
+    const runAt = Date.parse(expectedRunAt);
+    if (!Number.isFinite(runAt)) return false;
+    if (state.status === "pending") {
+      const pendingAt = Date.parse(state.pendingSince ?? state.statusAt ?? "");
+      if (!Number.isFinite(pendingAt) || pendingAt < runAt) return false;
+    } else {
+      const stateAt = Date.parse(state.statusAt ?? "");
+      if (!Number.isFinite(stateAt) || stateAt < runAt) return false;
+      if (state.exists && state.reportMtimeMs !== null && state.reportMtimeMs < runAt) return false;
+    }
+  }
+  if (state.status === "done") return true;
   const eff = effectiveSummaryJobStatus(
     state.status,
     state.statusAt ?? "",
@@ -1867,6 +1883,7 @@ export async function pollSummaryState(
     timeoutMs?: number;
     intervalMs?: number;
     maxConsecutiveErrors?: number;
+    expectedRunAt?: string | null;
   } = {},
 ): Promise<TaskSummaryState> {
   const maxConsecutiveErrors = opts.maxConsecutiveErrors ?? SUMMARY_MAX_GET_ERRORS;
@@ -1887,7 +1904,7 @@ export async function pollSummaryState(
         return null;
       }
       consecutiveGetErrors = 0;
-      return isSummaryPollTerminal(state) ? state : null;
+      return isSummaryPollTerminal(state, opts.expectedRunAt) ? state : null;
     },
     { label, timeoutMs: opts.timeoutMs ?? 900_000, intervalMs: opts.intervalMs ?? 2_000 },
   );
@@ -1922,10 +1939,12 @@ export async function cmdSummary(args: string[]): Promise<number> {
         queued.body,
       );
     if (!opts.json) console.log(c.dim(`  … generating post-merge summary for #${id}`));
+    const expectedRunAt =
+      typeof queued.body.pendingSince === "string" ? queued.body.pendingSince : null;
     const final = await pollSummaryState(
       async () =>
         (await api.requestOk("GET", `/api/tasks/${id}/summary`)) as unknown as TaskSummaryState,
-      { label: `summary for #${id}` },
+      { label: `summary for #${id}`, expectedRunAt },
     );
     const eff = effectiveSummaryJobStatus(
       final.status,
