@@ -1,15 +1,11 @@
 ---
-updated_at: "2026-11-08T15:01:02Z"
-review_passes: 5
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `src/server/integration-orchestrator.ts` conflicts with `main`, blocking a clean landing."
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 5dccf854f904fb2c64a6afafc5d1e40b415406e2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-gate-skip-the-full-suite-when-the-
@@ -18,6 +14,10 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
+updated_at: "2026-11-08T17:34:46Z"
+last_close_out_gate_ms: 537455
+last_close_out_gate_at: "2026-11-08T17:31:35.712Z"
+review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
@@ -222,4 +222,36 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T14:59:16Z · message_queued at 2026-11-08T14:59:16.880Z
 - 2026-11-08T15:01:02Z · note: review pass 5: needs some work
 - 2026-11-08T15:01:02Z · needs_input
-
+- 2026-11-08T15:30:08Z · status review→active
+- 2026-11-08T15:30:08Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T15:30:09Z · needs_input
+- 2026-11-08T15:30:10Z · message_queued at 2026-11-08T15:30:10.034Z
+- 2026-11-08T15:30:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:35:23Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T15:35:23Z · note: handoff requested (cli)
+- 2026-11-08T15:37:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T15:46:16Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T15:46:16Z · message_queued at 2026-11-08T15:46:16.513Z
+- 2026-11-08T15:46:16Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1059.md
+- 2026-11-08T15:47:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:49:51Z · message_queued at 2026-11-08T15:49:51.170Z
+- 2026-11-08T15:53:25Z · message_delivered: 1 message(s)
+- 2026-11-08T16:08:49Z · body
+- 2026-11-08T16:26:03Z · body
+- 2026-11-08T16:28:30Z · handoff_deferred: 3 queued message(s) must be read before review
+- 2026-11-08T16:28:30Z · message_queued at 2026-11-08T16:28:30.384Z
+- 2026-11-08T16:28:30Z · ↻ resuming engineer to read queued message
+- 2026-11-08T16:28:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T16:29:50Z · message_delivered: 4 message(s)
+- 2026-11-08T16:29:56Z · message_queued at 2026-11-08T16:29:56.320Z
+- 2026-11-08T16:29:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T16:32:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T16:47:05Z · body
+- 2026-11-08T16:52:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T16:54:26Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T16:54:27Z · status active→review
+- 2026-11-08T16:54:27Z · message_queued at 2026-11-08T16:54:27.381Z
+- 2026-11-08T16:58:02Z · note: review pass 6: good to go
+- 2026-11-08T17:31:35Z · close-out gate completed in 537s
+- 2026-11-08T17:31:56Z · status done→done, release:success
+- 2026-11-08T17:34:46Z · message_dropped: 1 queued message(s) discarded — task is done

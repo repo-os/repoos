@@ -13,7 +13,10 @@ import {
   renameSync,
   unlinkSync,
   writeFileSync,
+  appendFileSync,
+  copyFileSync,
 } from "node:fs";
+import * as nodeFs from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import {
@@ -30,14 +33,21 @@ export const CHECK_GATE_WRITE_REFUSAL = "A check is running; wait for it to fini
 
 export type CheckGateKind = "handoff-finalize" | "merge-gate" | "engineer-self-check";
 
+export interface CheckGateHolder {
+  token: string;
+  kind: CheckGateKind;
+  pid: number;
+  at: string;
+}
+
+/** On-disk lock state for a task worktree while one or more gates run (#1061). */
 export interface CheckGateLock {
   taskId: string;
   branch: string;
   worktree: string;
   headAtStart: string;
-  kind: CheckGateKind;
   at: string;
-  pid: number;
+  holders: CheckGateHolder[];
 }
 
 export interface DeferredBranchCommit {
@@ -45,7 +55,13 @@ export interface DeferredBranchCommit {
   absPaths: string[];
   message: string;
   enqueuedAt: string;
+  /** File contents captured when queued so later edits do not collapse commits. */
+  fileSnapshots: Record<string, string>;
 }
+
+export type CheckGateAcquireResult =
+  | { ok: true; release: () => Promise<void> }
+  | { ok: false; reason: string };
 
 let checkGateFlushInProgress = false;
 
@@ -94,30 +110,71 @@ function readJsonFile<T>(path: string, parse: (v: unknown) => T | null): T | nul
   }
 }
 
-function parseLock(parsed: unknown): CheckGateLock | null {
-  const o = parsed as Partial<CheckGateLock>;
+function parseHolder(item: unknown): CheckGateHolder | null {
+  const o = item as Partial<CheckGateHolder & { kind?: string }>;
   if (
-    typeof o?.taskId === "string" &&
-    typeof o?.branch === "string" &&
-    typeof o?.worktree === "string" &&
-    typeof o?.headAtStart === "string" &&
+    typeof o?.token === "string" &&
     (o?.kind === "handoff-finalize" ||
       o?.kind === "merge-gate" ||
       o?.kind === "engineer-self-check") &&
-    typeof o?.at === "string" &&
-    typeof o?.pid === "number"
+    typeof o?.pid === "number" &&
+    typeof o?.at === "string"
   ) {
-    return {
-      taskId: o.taskId,
-      branch: o.branch,
-      worktree: o.worktree,
-      headAtStart: o.headAtStart,
-      kind: o.kind,
-      at: o.at,
-      pid: o.pid,
-    };
+    return { token: o.token, kind: o.kind, pid: o.pid, at: o.at };
   }
   return null;
+}
+
+function parseLock(parsed: unknown): CheckGateLock | null {
+  const o = parsed as Partial<CheckGateLock & { kind?: CheckGateKind; pid?: number }>;
+  if (
+    typeof o?.taskId !== "string" ||
+    typeof o?.branch !== "string" ||
+    typeof o?.worktree !== "string" ||
+    typeof o?.headAtStart !== "string" ||
+    typeof o?.at !== "string"
+  ) {
+    return null;
+  }
+  let holders: CheckGateHolder[] = [];
+  if (Array.isArray(o.holders)) {
+    holders = o.holders.map(parseHolder).filter((h): h is CheckGateHolder => h !== null);
+  } else if (
+    (o.kind === "handoff-finalize" ||
+      o.kind === "merge-gate" ||
+      o.kind === "engineer-self-check") &&
+    typeof o.pid === "number"
+  ) {
+    holders = [
+      {
+        token: "legacy",
+        kind: o.kind,
+        pid: o.pid,
+        at: o.at ?? new Date().toISOString(),
+      },
+    ];
+  }
+  if (holders.length === 0) return null;
+  return {
+    taskId: o.taskId,
+    branch: o.branch,
+    worktree: o.worktree,
+    headAtStart: o.headAtStart,
+    at: o.at,
+    holders,
+  };
+}
+
+function aliveHolders(lock: CheckGateLock): CheckGateHolder[] {
+  return lock.holders.filter((h) => isPidAlive(h.pid));
+}
+
+function lockHasLiveHolder(lock: CheckGateLock): boolean {
+  return aliveHolders(lock).length > 0;
+}
+
+function newHolderToken(): string {
+  return `${process.pid}.${Date.now().toString(36)}.${Math.random().toString(16).slice(2)}`;
 }
 
 export function readCheckGateLock(
@@ -153,33 +210,111 @@ export async function acquireCheckGateLock(args: {
   branch: string;
   worktree: string;
   kind: CheckGateKind;
-}): Promise<CheckGateLock | null> {
+}): Promise<CheckGateAcquireResult> {
   const head = await runGit(args.worktree, ["rev-parse", "HEAD"], 10_000);
-  if (head.status !== 0) return null;
-  const lock: CheckGateLock = {
-    taskId: args.taskId,
-    branch: args.branch,
-    worktree: args.worktree,
-    headAtStart: head.stdout.trim(),
+  if (head.status !== 0) {
+    return { ok: false, reason: `could not read HEAD for check-gate lock (${head.stderr.trim()})` };
+  }
+  const headAtStart = head.stdout.trim();
+  const token = newHolderToken();
+  const holder: CheckGateHolder = {
+    token,
     kind: args.kind,
-    at: new Date().toISOString(),
     pid: process.pid,
+    at: new Date().toISOString(),
   };
-  atomicWriteJson(lockPath(args.boardRoot, args.cacheDir, args.taskId), lock);
-  return lock;
+  const path = lockPath(args.boardRoot, args.cacheDir, args.taskId);
+  const existing = readCheckGateLock(args.boardRoot, args.cacheDir, args.taskId);
+  if (existing) {
+  if (!samePath(existing.worktree, args.worktree)) {
+    return {
+      ok: false,
+      reason: `check-gate lock for #${args.taskId} is held on a different worktree`,
+    };
+  }
+    const live = aliveHolders(existing);
+    if (live.length > 0 || existing.holders.some((h) => !isPidAlive(h.pid))) {
+      const merged: CheckGateLock = {
+        ...existing,
+        holders: [...live, holder],
+      };
+      atomicWriteJson(path, merged);
+    } else {
+      const fresh: CheckGateLock = {
+        taskId: args.taskId,
+        branch: args.branch,
+        worktree: args.worktree,
+        headAtStart,
+        at: holder.at,
+        holders: [holder],
+      };
+      atomicWriteJson(path, fresh);
+    }
+  } else {
+    const lock: CheckGateLock = {
+      taskId: args.taskId,
+      branch: args.branch,
+      worktree: args.worktree,
+      headAtStart,
+      at: holder.at,
+      holders: [holder],
+    };
+    atomicWriteJson(path, lock);
+  }
+  const release = async (): Promise<void> => {
+    await releaseCheckGateHolder(args.boardRoot, args.cacheDir, args.taskId, token);
+  };
+  return { ok: true, release };
+}
+
+async function releaseCheckGateHolder(
+  boardRoot: string,
+  cacheDir: string,
+  taskId: string,
+  token: string,
+): Promise<void> {
+  const existing = readCheckGateLock(boardRoot, cacheDir, taskId);
+  if (!existing) return;
+  const remaining = existing.holders.filter((h) => h.token !== token);
+  if (remaining.length > 0) {
+    const live = remaining.filter((h) => isPidAlive(h.pid));
+    if (live.length === 0) {
+      clearCheckGateLock(boardRoot, cacheDir, taskId);
+      await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+      return;
+    }
+    atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), { ...existing, holders: live });
+    return;
+  }
+  clearCheckGateLock(boardRoot, cacheDir, taskId);
+  await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
 }
 
 /**
- * Release the lock and apply any queued bookkeeping commits in order.
- * `boardRoot` is the main checkout that owns `.repoos/` bookkeeping paths.
+ * Release every holder owned by this process (best-effort migration helper).
+ * Prefer the `release` function returned from {@link acquireCheckGateLock}.
  */
 export async function releaseCheckGateLock(
   boardRoot: string,
   cacheDir: string,
   taskId: string,
 ): Promise<void> {
-  clearCheckGateLock(boardRoot, cacheDir, taskId);
-  await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+  const existing = readCheckGateLock(boardRoot, cacheDir, taskId);
+  if (!existing) {
+    await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+    return;
+  }
+  const mine = existing.holders.filter((h) => h.pid === process.pid);
+  if (mine.length === 0) {
+    if (!lockHasLiveHolder(existing)) {
+      clearCheckGateLock(boardRoot, cacheDir, taskId);
+      await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+    }
+    return;
+  }
+  for (const h of mine) {
+    await releaseCheckGateHolder(boardRoot, cacheDir, taskId, h.token);
+  }
 }
 
 function samePath(a: string, b: string): boolean {
@@ -209,7 +344,13 @@ export async function reconcileDeadCheckGateLock(
   cacheDir: string,
   lock: CheckGateLock,
 ): Promise<void> {
-  if (isPidAlive(lock.pid)) return;
+  const live = aliveHolders(lock);
+  if (live.length > 0) {
+    if (live.length !== lock.holders.length) {
+      atomicWriteJson(lockPath(boardRoot, cacheDir, lock.taskId), { ...lock, holders: live });
+    }
+    return;
+  }
   clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
   await flushDeferredBranchCommits(boardRoot, cacheDir, lock.taskId);
 }
@@ -223,7 +364,7 @@ export function aliveCheckGateLockForWorktree(
   for (const name of listLockFiles(boardRoot, cacheDir)) {
     const lock = readLockFile(boardRoot, cacheDir, name);
     if (!lock || !samePath(lock.worktree, worktree)) continue;
-    if (!isPidAlive(lock.pid)) {
+    if (!lockHasLiveHolder(lock)) {
       void reconcileDeadCheckGateLock(boardRoot, cacheDir, lock);
       return null;
     }
@@ -259,11 +400,18 @@ export function readDeferredBranchCommits(
           typeof o?.message === "string" &&
           typeof o?.enqueuedAt === "string"
         ) {
+          const fileSnapshots: Record<string, string> = {};
+          if (o.fileSnapshots && typeof o.fileSnapshots === "object") {
+            for (const [k, v] of Object.entries(o.fileSnapshots as Record<string, unknown>)) {
+              if (typeof v === "string") fileSnapshots[k] = v;
+            }
+          }
           out.push({
             commitRoot: o.commitRoot,
             absPaths: o.absPaths,
             message: o.message,
             enqueuedAt: o.enqueuedAt,
+            fileSnapshots,
           });
         }
       }
@@ -289,6 +437,22 @@ function writeDeferredBranchCommits(
   atomicWriteJson(deferredPath(boardRoot, cacheDir, taskId), items);
 }
 
+function snapshotAbsPaths(absPaths: string[]): Record<string, string> {
+  const fileSnapshots: Record<string, string> = {};
+  for (const abs of absPaths) {
+    try {
+      if (existsSync(abs)) {
+        fileSnapshots[abs] = readFileSync(abs, "utf8");
+      } else {
+        fileSnapshots[abs] = "";
+      }
+    } catch {
+      /* skip unreadable; commit may still fail */
+    }
+  }
+  return fileSnapshots;
+}
+
 export function enqueueDeferredBranchCommit(
   boardRoot: string,
   cacheDir: string,
@@ -303,6 +467,7 @@ export function enqueueDeferredBranchCommit(
     absPaths: [...absPaths],
     message,
     enqueuedAt: new Date().toISOString(),
+    fileSnapshots: snapshotAbsPaths(absPaths),
   });
   writeDeferredBranchCommits(boardRoot, cacheDir, taskId, existing);
 }
@@ -324,6 +489,20 @@ export async function flushDeferredBranchCommits(
       if (failed) {
         remaining.push(item);
         continue;
+      }
+      for (const abs of item.absPaths) {
+        const snap = item.fileSnapshots[abs];
+        if (snap === undefined) continue;
+        mkdirSync(dirname(abs), { recursive: true });
+        if (snap === "") {
+          try {
+            unlinkSync(abs);
+          } catch {
+            /* absent */
+          }
+        } else {
+          writeFileSync(abs, snap, "utf8");
+        }
       }
       const committed = commitFiles(item.commitRoot, item.absPaths, item.message);
       if (!committed) {

@@ -5,6 +5,7 @@ import { nextTick } from "vue";
 import TaskCard from "../src/components/TaskCard.vue";
 import { useRepoStore } from "../src/stores/repo";
 import type { Task } from "../src/types";
+import type { LandableResult } from "../../core/landable.js";
 
 const EMPTY_COUNTS = { draft: 0, inbox: 0, ready: 0, active: 0, review: 0, done: 0 };
 
@@ -95,7 +96,27 @@ const GOOD_REPORT = {
   markdown: "## Verdict\ngood to go — nothing blocks sign-off.",
 };
 
-async function setupRepo(task: Task) {
+const LANDABLE_GREEN: LandableResult = {
+  taskId: "0001",
+  branch: "feat/test",
+  headSha: "abc",
+  lockSha: "abc",
+  landable: true,
+  checks: [],
+  summary: { pass: 6, warn: 0, fail: 0 },
+};
+const landability = (
+  status: "pass" | "fail",
+  label = "Checks",
+  detail = "Checks are running",
+): LandableResult => ({
+  ...LANDABLE_GREEN,
+  landable: status !== "fail",
+  checks: [{ id: "review-verdict", label, status, detail }],
+  summary: { pass: 5, warn: 0, fail: status === "fail" ? 1 : 0 },
+});
+
+async function setupRepo(task: Task, result: LandableResult = LANDABLE_GREEN) {
   FakeEventSource.instances = [];
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal(
@@ -107,6 +128,7 @@ async function setupRepo(task: Task) {
         return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
       if (url.includes("/api/agents/running")) return json({ tasks: [] });
       if (url.includes("/api/integration/pipeline")) return json({ ok: true, pipeline: null });
+      if (url.endsWith("/landable")) return json(result);
       if (url.includes("/diff-stats")) return json({ filesChanged: 0, additions: 0, deletions: 0 });
       if (url.includes("/review"))
         return json({
@@ -126,6 +148,7 @@ async function setupRepo(task: Task) {
   repo.reviews = {
     [task.id]: { running: false, enabled: true, report: GOOD_REPORT, lines: [] },
   };
+  repo.seedLandable(task.id, result);
   return { pinia, repo };
 }
 
@@ -227,5 +250,31 @@ describe("TaskCard review-ready highlight (0270)", () => {
     const btn = doneButton(wrapper);
     expect(btn.classes()).not.toContain("review-ready");
     expect(btn.attributes("disabled")).toBeDefined();
+  });
+
+  it.each([
+    ["checks running", "Checks", "Checks are running", "review passed · checks running"],
+    ["checks failed", "Checks", "Checks failed", "review passed · checks failed"],
+  ] as const)("mirrors landability for %s", async (_name, label, detail, expected) => {
+    const task = makeReviewTask();
+    const { pinia } = await setupRepo(task, landability("fail", label, detail));
+    const wrapper = await mountCard(pinia, task);
+    expect(wrapper.find(".tc-hint").text()).toContain(expected);
+    expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
+    expect(doneButton(wrapper).attributes("disabled")).toBeDefined();
+    expect(doneButton(wrapper).attributes("title")).toContain(detail);
+  });
+
+  it.each(["amber", "red"] as const)("does not promote a %s verdict", async (tone) => {
+    const task = makeReviewTask();
+    const { pinia, repo } = await setupRepo(task);
+    repo.reviews[task.id]!.report = {
+      ...GOOD_REPORT,
+      markdown:
+        tone === "amber" ? "## Verdict\nneeds some work" : "## Verdict\nback to the drawing board",
+    };
+    const wrapper = await mountCard(pinia, task);
+    expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
+    expect(doneButton(wrapper).classes()).not.toContain("review-ready");
   });
 });
