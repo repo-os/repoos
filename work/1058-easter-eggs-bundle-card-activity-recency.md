@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T21:32:22Z"
+updated_at: "2026-11-08T21:32:23Z"
 review_passes: 7
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -488,3 +488,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:32:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required check has now passed end to end: remote build and scoped suite, rendered contrast, UI smoke, and local format/lint/build guards are green. I’m adding the requested engineer-authored report draft and doing a final worktree stat… · stderr: Reading additional input from stdin...
 - 2026-11-08T21:32:21Z · status active→review
 - 2026-11-08T21:32:21Z · message_delivered: 2 message(s)
+- 2026-11-08T21:32:23Z · note: handoff requested (cli)
