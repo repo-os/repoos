@@ -2,9 +2,10 @@
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
-status: active
+status: done
 priority: p3
 area: web
+merged_commit: 6f835206acd0dfef03730eb9bf1ea0872cceb7cb
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/checks-progress-bar-polish-full-width-ro
@@ -13,10 +14,13 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T02:58:15Z"
-check_retry_count: 2
+updated_at: "2026-11-08T06:20:03Z"
+last_close_out_gate_ms: 601385
+last_close_out_gate_at: "2026-11-08T06:17:47.338Z"
+review_rounds: 1
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-dev_error_count: 5
+dev_error_count: 10
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -111,3 +115,34 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:57:57Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-08T02:57:58Z · note: handoff requested (cli)
 - 2026-11-08T02:58:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T03:08:58Z · message_queued at 2026-11-08T03:08:58.475Z
+- 2026-11-08T03:08:58Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T03:08:58Z · message_delivered: 1 message(s)
+- 2026-11-08T03:23:47Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-08T03:53:11Z · watchdog: restarting engineer after 13m with no live process
+- 2026-11-08T03:53:13Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T04:25:39Z · watchdog: restarting engineer after 17m with no live process
+- 2026-11-08T04:25:41Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T05:00:04Z · watchdog: restarting engineer after 19m with no live process
+- 2026-11-08T05:00:06Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T05:34:23Z · watchdog: restarting engineer after 34m with no live process
+- 2026-11-08T05:38:08Z · body
+- 2026-11-08T05:39:20Z · body
+- 2026-11-08T05:49:55Z · body
+- 2026-11-08T05:51:34Z · status active→review
+- 2026-11-08T05:51:34Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-08T05:52:05Z · message_queued at 2026-11-08T05:52:05.990Z
+- 2026-11-08T05:53:09Z · note: review pass 1: needs some work
+- 2026-11-08T05:53:10Z · message_delivered: 1 message(s)
+- 2026-11-08T05:53:10Z · status review→active
+- 2026-11-08T05:56:41Z · agent exited with an error (cursor) · Cannot use this model: composer-2.5. Available models:
+- 2026-11-08T05:56:41Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · Cannot use this model: composer-2.5. Available models:
+- 2026-11-08T05:57:17Z · needs_input
+- 2026-11-08T06:01:11Z · body
+- 2026-11-08T06:01:53Z · status active→review
+- 2026-11-08T06:01:53Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-08T06:02:26Z · message_queued at 2026-11-08T06:02:26.090Z
+- 2026-11-08T06:02:54Z · note: review pass 2: good to go
+- 2026-11-08T06:17:47Z · close-out gate completed in 601s
+- 2026-11-08T06:18:12Z · status done→done, release:success
+- 2026-11-08T06:20:03Z · message_dropped: 1 queued message(s) discarded — task is done
