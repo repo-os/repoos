@@ -13,7 +13,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T08:38:28Z"
+updated_at: "2026-11-08T08:39:15Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -67,3 +67,6 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T08:29:13Z · message_delivered: 1 message(s)
 - 2026-11-08T08:33:02Z · message_queued at 2026-11-08T08:33:02.422Z
 - 2026-11-08T08:38:28Z · body
+- 2026-11-08T08:38:31Z · watchdog: check wait escalated · waiting: waiting for a Playwright slot — position 2 (1 ahead); slot holder 3793 is dead for 0s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-08T08:39:01Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-08T08:39:15Z · handoff_deferred: 1 queued message(s) must be read before review
