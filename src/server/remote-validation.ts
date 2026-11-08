@@ -1432,6 +1432,57 @@ export function reaperRemoveCommand(id: string): string {
   );
 }
 
+/** Poll for a stable result.json and tear down a hung capture container (#1060). */
+export function scheduleBrowserCaptureResultPoll(
+  exec: RemoteExecDeps,
+  args: {
+    host: RemoteHost;
+    paths: RemoteRunPaths;
+    containerName: string;
+    pollIntervalMs: number;
+    onForceCollected: (message: string) => void;
+    abortMainRemote: () => void;
+    getStreamOutput: () => string;
+    captureFinishedResolve: (result: RemoteExecResult) => void;
+  },
+): { stop: () => Promise<void> } {
+  let captureProbe: Promise<void> | undefined;
+  let stoppedCapturePoll = false;
+  const capturePoll = setInterval(() => {
+    if (captureProbe || stoppedCapturePoll) return;
+    captureProbe = exec
+      .runRemote(
+        args.host,
+        finishedCaptureCollectionCommand(args.paths, args.containerName),
+        () => {},
+        10_000,
+      )
+      .then((result) => {
+        if (stoppedCapturePoll || result.code !== 0 || result.timedOut) return;
+        const message = `force-collected completed browser capture ${args.containerName} on ${args.host.ip}: result.json was present`;
+        args.onForceCollected(message);
+        args.abortMainRemote();
+        args.captureFinishedResolve({
+          code: 0,
+          output: args.getStreamOutput(),
+          timedOut: false,
+        });
+      })
+      .catch(() => {})
+      .finally(() => {
+        captureProbe = undefined;
+      });
+  }, args.pollIntervalMs);
+  capturePoll.unref?.();
+  return {
+    async stop() {
+      clearInterval(capturePoll);
+      stoppedCapturePoll = true;
+      if (captureProbe) await captureProbe;
+    },
+  };
+}
+
 /** Force a completed capture to release its exact container; its artifact directory survives. */
 export function finishedCaptureCollectionCommand(paths: RemoteRunPaths, container: string): string {
   return (
@@ -3157,7 +3208,7 @@ export class RemoteValidationRunner implements RemoteValidator {
 
   async cancelBrowserCaptures(taskId: string): Promise<void> {
     const controls = [...(this.captureControls.get(taskId) ?? [])];
-    let killFailed = false;
+    const killFailures: string[] = [];
     await Promise.all(
       controls.map(async (control) => {
         control.controller.abort();
@@ -3171,17 +3222,26 @@ export class RemoteValidationRunner implements RemoteValidator {
           () => {},
           HANG_KILL_TIMEOUT_MS,
         ).catch(() => ({ code: null, output: "", timedOut: true }));
-        if (killRes.timedOut || killRes.code !== 0) killFailed = true;
+        if (killRes.timedOut || killRes.code !== 0) {
+          const why = killRes.timedOut
+            ? "remote kill ssh timed out"
+            : tail(killRes.output, 1, 200) || `exit ${killRes.code}`;
+          killFailures.push(`${control.container} on ${control.host.ip}: ${why}`);
+        }
       }),
     );
     if (controls.length === 0) return;
+    const killFailed = killFailures.length > 0;
+    const message = killFailed
+      ? `browser capture cancellation failed after handoff failure — ${killFailures.join("; ")}`
+      : "cancelled outstanding Hetzner browser captures after handoff failure";
     appendRemoteValidationEvent(this.config.root, taskId, {
       level: "warn",
       phase: "run",
-      message: killFailed
-        ? "could not kill one or more Hetzner browser capture containers after handoff failure — a stale capture may still block retries"
-        : "cancelled outstanding Hetzner browser captures after handoff failure",
+      message,
+      ...(killFailed ? { infra: true } : {}),
     });
+    this.logger?.integration(taskId, "warn", message, killFailed ? { transient: true } : undefined);
   }
 
   private readonly hetzner: HetznerClient;
@@ -3747,41 +3807,28 @@ export class RemoteValidationRunner implements RemoteValidator {
             if (signal.aborted) finish();
             else signal.addEventListener("abort", finish, { once: true });
           });
-          let capturePoll: ReturnType<typeof setInterval> | undefined;
-          let captureProbe: Promise<void> | undefined;
-          let stoppedCapturePoll = false;
           let captureCollected = false;
           let captureResolve: ((result: RemoteExecResult) => void) | undefined;
           const captureFinished = new Promise<RemoteExecResult>((resolve) => {
             captureResolve = resolve;
           });
-          capturePoll = setInterval(() => {
-            if (captureProbe || stoppedCapturePoll) return;
-            captureProbe = this.exec
-              .runRemote(
-                host,
-                finishedCaptureCollectionCommand(paths, containerName),
-                () => {},
-                10_000,
-              )
-              .then((result) => {
-                if (stoppedCapturePoll || result.code !== 0 || result.timedOut) return;
-                captureCollected = true;
-                const message = `force-collected completed browser capture ${containerName} on ${host.ip}: result.json was present`;
-                emit(`\n[${message}]\n`);
-                this.record(
-                  { taskId: opts.taskId, host: host.ip, phase: "run" },
-                  { level: "info", phase: "run", message, host: host.ip },
-                );
-                control.abortRun?.();
-                captureResolve?.({ code: 0, output: streamBuf, timedOut: false });
-              })
-              .catch(() => {})
-              .finally(() => {
-                captureProbe = undefined;
-              });
-          }, this.timings.capturePollIntervalMs);
-          capturePoll.unref?.();
+          const capturePoll = scheduleBrowserCaptureResultPoll(this.exec, {
+            host,
+            paths,
+            containerName,
+            pollIntervalMs: this.timings.capturePollIntervalMs,
+            getStreamOutput: () => streamBuf,
+            captureFinishedResolve: (result) => captureResolve?.(result),
+            abortMainRemote: () => control.abortRun?.(),
+            onForceCollected: (message) => {
+              captureCollected = true;
+              emit(`\n[${message}]\n`);
+              this.record(
+                { taskId: opts.taskId, host: host.ip, phase: "run" },
+                { level: "info", phase: "run", message, host: host.ip },
+              );
+            },
+          });
           try {
             run = await Promise.race([
               captureFinished,
@@ -3794,9 +3841,7 @@ export class RemoteValidationRunner implements RemoteValidator {
               cancelledRun,
             ]);
           } finally {
-            if (capturePoll) clearInterval(capturePoll);
-            if (captureProbe) await captureProbe;
-            stoppedCapturePoll = true;
+            await capturePoll.stop();
             if (captureCollected) run = { code: 0, output: streamBuf, timedOut: false };
           }
           if (signal.aborted)
@@ -5856,7 +5901,7 @@ export class TailscaleRunner implements RemoteValidator {
   async cancelBrowserCaptures(taskId: string): Promise<void> {
     this.captureCancelGeneration.set(taskId, (this.captureCancelGeneration.get(taskId) ?? 0) + 1);
     const runs = this.pool.cancelCaptureRuns(taskId);
-    let killFailed = false;
+    const killFailures: string[] = [];
     for (const { host, run } of runs) {
       if (!run.container) continue;
       const container = run.container;
@@ -5870,16 +5915,25 @@ export class TailscaleRunner implements RemoteValidator {
         () => {},
         HANG_KILL_TIMEOUT_MS,
       ).catch(() => ({ code: null, output: "", timedOut: true }));
-      if (killRes.timedOut || killRes.code !== 0) killFailed = true;
+      if (killRes.timedOut || killRes.code !== 0) {
+        const why = killRes.timedOut
+          ? "remote kill ssh timed out"
+          : tail(killRes.output, 1, 200) || `exit ${killRes.code}`;
+        killFailures.push(`${container} on ${host.ip}: ${why}`);
+      }
     }
     if (runs.length === 0) return;
+    const killFailed = killFailures.length > 0;
+    const message = killFailed
+      ? `browser capture cancellation failed after handoff failure — ${killFailures.join("; ")}`
+      : "cancelled outstanding browser captures after handoff failure";
     appendRemoteValidationEvent(this.config.root, taskId, {
       level: "warn",
       phase: "run",
-      message: killFailed
-        ? "could not kill one or more browser capture containers after handoff failure — a stale capture may still block retries"
-        : "cancelled outstanding browser captures after handoff failure",
+      message,
+      ...(killFailed ? { infra: true } : {}),
     });
+    this.logger?.integration(taskId, "warn", message, killFailed ? { transient: true } : undefined);
   }
 
   private readonly exec: RemoteExecDeps;
@@ -6958,43 +7012,31 @@ export class TailscaleRunner implements RemoteValidator {
           watchdog.noteOutput();
           emit(s);
         };
-        let capturePoll: ReturnType<typeof setInterval> | undefined;
-        let captureProbe: Promise<void> | undefined;
-        let stoppedCapturePoll = false;
         let captureCollected = false;
         let captureResolve: ((result: RemoteExecResult) => void) | undefined;
         const captureFinished = new Promise<RemoteExecResult>((resolve) => {
           captureResolve = resolve;
         });
-        if (opts.browserCapture && slot.host.runner !== "native") {
-          capturePoll = setInterval(() => {
-            if (captureProbe || stoppedCapturePoll) return;
-            captureProbe = this.exec
-              .runRemote(
+        const capturePoll =
+          opts.browserCapture && slot.host.runner !== "native"
+            ? scheduleBrowserCaptureResultPoll(this.exec, {
                 host,
-                finishedCaptureCollectionCommand(paths, containerName),
-                () => {},
-                10_000,
-              )
-              .then((result) => {
-                if (stoppedCapturePoll || result.code !== 0 || result.timedOut) return;
-                captureCollected = true;
-                const message = `force-collected completed browser capture ${containerName} on ${host.ip}: result.json was present`;
-                emit(`\n[${message}]\n`);
-                this.record(
-                  { taskId: opts.taskId, host: host.ip, phase: "run" },
-                  { level: "info", phase: "run", message, host: host.ip },
-                );
-                abortMainRemote?.();
-                captureResolve?.({ code: 0, output: streamBuf, timedOut: false });
+                paths,
+                containerName,
+                pollIntervalMs: this.timings.capturePollIntervalMs,
+                getStreamOutput: () => streamBuf,
+                captureFinishedResolve: (result) => captureResolve?.(result),
+                abortMainRemote: () => abortMainRemote?.(),
+                onForceCollected: (message) => {
+                  captureCollected = true;
+                  emit(`\n[${message}]\n`);
+                  this.record(
+                    { taskId: opts.taskId, host: host.ip, phase: "run" },
+                    { level: "info", phase: "run", message, host: host.ip },
+                  );
+                },
               })
-              .catch(() => {})
-              .finally(() => {
-                captureProbe = undefined;
-              });
-          }, this.timings.capturePollIntervalMs);
-          capturePoll.unref?.();
-        }
+            : null;
         try {
           run = await Promise.race([
             captureFinished,
@@ -7021,9 +7063,7 @@ export class TailscaleRunner implements RemoteValidator {
             hangRecoveryPromise,
           ]);
         } finally {
-          if (capturePoll) clearInterval(capturePoll);
-          if (captureProbe) await captureProbe;
-          stoppedCapturePoll = true;
+          if (capturePoll) await capturePoll.stop();
           if (captureCollected) run = { code: 0, output: streamBuf, timedOut: false };
           watchdog.stop();
           clearInterval(loadTimer);
