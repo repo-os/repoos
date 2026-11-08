@@ -2,15 +2,20 @@
 id: "1044"
 title: "Post-merge summary: status and report-state edge cases (follow-up to #1041)"
 type: bug
-status: active
+status: done
 priority: p3
 area: [core, web]
+merged_commit: 4238174fb11920d50db695831edd95a86b1e3d75
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/post-merge-summary-status-and-report-sta
 created_at: "2026-11-06T22:50:03Z"
-updated_at: "2026-11-08T00:52:56Z"
-last_check_failure: "repoos check at 2026-11-08T00:24:39.979Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+updated_at: "2026-11-08T01:38:13Z"
+last_close_out_gate_ms: 305673
+last_close_out_gate_at: "2026-11-08T01:37:57.807Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T01:31:53.519Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+review_passes: 1
 ---
 ## Problem
 
@@ -89,3 +94,34 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 - 2026-11-08T00:52:15Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-08T00:52:15Z · note: handoff requested (cli)
 - 2026-11-08T00:52:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T01:04:41Z · message_queued at 2026-11-08T01:04:41.625Z
+- 2026-11-08T01:04:41Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T01:04:41Z · message_delivered: 1 message(s)
+- 2026-11-08T01:16:16Z · body
+- 2026-11-08T01:17:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: `REPOOS_CHECK_CHANGED=main repoos check` passed on `e7bc254b08d6e8c0ec53763bedf15a683b9b09f8`. The declared shot still reports “a capture is already in flight,” and handoff status still shows the previous browser-capture timeout. I couldn’… · stderr: (empty)
+- 2026-11-08T01:17:22Z · note: handoff requested (cli)
+- 2026-11-08T01:17:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T01:19:49Z · message_queued at 2026-11-08T01:19:49.063Z
+- 2026-11-08T01:19:49Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T01:19:49Z · message_delivered: 1 message(s)
+- 2026-11-08T01:20:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped `repoos check` passed on the current tree. The shot still fails with “a capture is already in flight,” even though the remote runner process has ended. The managed server’s capture reservation appears stuck. I haven’t requested … · stderr: (empty)
+- 2026-11-08T01:20:41Z · note: handoff requested (cli)
+- 2026-11-08T01:23:10Z · message_queued at 2026-11-08T01:23:10.503Z
+- 2026-11-08T01:23:10Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T01:23:10Z · message_delivered: 1 message(s)
+- 2026-11-08T01:23:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check is green, but I’m blocked on the managed RepoOS server: its browser capture reservation remains stuck after the runner exited. The registered service reports stopped, so I can’t safely clear the lock from this worktree without af… · stderr: 2026-11-08T01:23:28.955899Z ERROR codex_core::tools::router: error=failed to parse function arguments: unknown field `question`, expected `title` or `options` at line 1 column 125
+- 2026-11-08T01:23:37Z · note: handoff requested (cli)
+- 2026-11-08T01:26:04Z · message_queued at 2026-11-08T01:26:04.421Z
+- 2026-11-08T01:26:04Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T01:26:04Z · message_delivered: 1 message(s)
+- 2026-11-08T01:26:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The worktree is clean, and the last `REPOOS_CHECK_CHANGED=main repoos check` passed. The shot still reports that a capture is in flight, and the registered RepoOS service reports stopped. I can’t clear that process-local reservation from t… · stderr: 2026-11-08T01:23:28.955899Z ERROR codex_core::tools::router: error=failed to parse function arguments: unknown field `question`, expected `title` or `options` at line 1 column 125
+- 2026-11-08T01:26:34Z · note: handoff requested (cli)
+- 2026-11-08T01:29:01Z · message_queued at 2026-11-08T01:29:01.431Z
+- 2026-11-08T01:29:01Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T01:29:01Z · message_delivered: 1 message(s)
+- 2026-11-08T01:29:22Z · status active→review
+- 2026-11-08T01:31:50Z · note: review pass 1: good to go
+- 2026-11-08T01:31:50Z · message_queued at 2026-11-08T01:31:50.417Z
+- 2026-11-08T01:31:53Z · message_delivered: 1 message(s)
+- 2026-11-08T01:37:57Z · close-out gate completed in 306s
+- 2026-11-08T01:38:13Z · status done→done, release:success

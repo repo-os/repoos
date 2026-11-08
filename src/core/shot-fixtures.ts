@@ -51,6 +51,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:reviewPasses",
   // #1045 — drawer task with engineering report history for report captures.
   "drawer:engineeringReports",
+  // #1044 — rendered post-merge summary in the task drawer Report pane.
+  "drawer:postMergeSummary",
   // #0867 — review task whose landing pre-checks show one failing merge,
   // so a capture can show the checklist next to Move to done.
   "drawer:landable",
