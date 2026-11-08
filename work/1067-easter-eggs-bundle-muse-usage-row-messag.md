@@ -2,7 +2,7 @@
 id: "1067"
 title: "Easter eggs bundle: Muse usage row messages and dashboard link, needs-input flag after body fix"
 type: chore
-status: review
+status: active
 priority: p3
 area: [web, server]
 assigned_to: ai
