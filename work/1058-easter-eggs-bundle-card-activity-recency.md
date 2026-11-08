@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `PipelineCard.vue` conflicts with `main`, blocking a clean merge."
 priority: p3
 area: web
 assigned_to: ai
@@ -303,3 +306,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T18:28:26Z · status active→review
 - 2026-11-08T18:28:26Z · message_queued at 2026-11-08T18:28:26.746Z
 - 2026-11-08T18:29:58Z · note: review pass 4: needs some work
+- 2026-11-08T18:29:58Z · needs_input
