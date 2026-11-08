@@ -199,7 +199,11 @@ export async function resolveDefaultBranch(root: string): Promise<string> {
 
   for (const candidate of [...new Set(candidates)]) {
     if (!BRANCH_RE.test(candidate)) continue;
-    const ref = await runGit(root, ["show-ref", "--verify", "--quiet", `refs/heads/${candidate}`], 4000);
+    const ref = await runGit(
+      root,
+      ["show-ref", "--verify", "--quiet", `refs/heads/${candidate}`],
+      4000,
+    );
     if (ref.status === 0 && !ref.timedOut) return candidate;
   }
   return current && current !== "HEAD" ? current : "HEAD";
