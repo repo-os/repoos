@@ -18,7 +18,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T08:42:21Z"
+updated_at: "2026-11-08T08:44:09Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T08:41:54.450Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
@@ -153,3 +153,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T08:41:54Z · message_delivered: 2 message(s)
 - 2026-11-08T08:42:08Z · engineer crash recovery: switched codex + gpt-6-luna → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 6:04 PM.
 - 2026-11-08T08:42:21Z · CTO nudge: held — remote validation is running
+- 2026-11-08T08:44:09Z · note: adopted orphaned engineer pid 11702
