@@ -206,6 +206,22 @@ describe("check gate lock and deferred commits (#1061)", () => {
     expect(git(wt, ["log", "--oneline", "-1"])).toMatch(/docs\(0001\)/);
   });
 
+  it("replays repeated writes to one bookkeeping file as ordered commits", async () => {
+    const { root, wt } = initRepo();
+    const taskFile = join(wt, "work", "0001-task.md");
+    const original = readFileSync(taskFile, "utf8");
+    writeFileSync(taskFile, `${original}\nfirst`);
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): first");
+    writeFileSync(taskFile, `${original}\nfirst\nsecond`);
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): second");
+    await flushDeferredBranchCommits(root, ".repoos", "0001");
+    expect(git(wt, ["log", "-2", "--format=%s"]).split("\n")).toEqual([
+      "docs(0001): second",
+      "docs(0001): first",
+    ]);
+    expect(readFileSync(taskFile, "utf8")).toBe(`${original}\nfirst\nsecond`);
+  });
+
   it("exposes the engineer refusal string", () => {
     expect(CHECK_GATE_WRITE_REFUSAL).toMatch(/check is running/i);
   });

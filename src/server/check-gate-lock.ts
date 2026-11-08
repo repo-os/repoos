@@ -279,15 +279,24 @@ async function releaseCheckGateHolder(
   if (remaining.length > 0) {
     const live = remaining.filter((h) => isPidAlive(h.pid));
     if (live.length === 0) {
-      clearCheckGateLock(boardRoot, cacheDir, taskId);
       await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+      clearCheckGateLock(boardRoot, cacheDir, taskId);
       return;
     }
     atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), { ...existing, holders: live });
     return;
   }
-  clearCheckGateLock(boardRoot, cacheDir, taskId);
+  // Keep the lock visible during the flush: otherwise another gate could
+  // start between release and the final queued bookkeeping commit.
   await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
+  const latest = readCheckGateLock(boardRoot, cacheDir, taskId);
+  if (!latest) return;
+  const liveAfterFlush = latest.holders.filter((h) => h.token !== token && isPidAlive(h.pid));
+  if (liveAfterFlush.length > 0) {
+    atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), { ...latest, holders: liveAfterFlush });
+    return;
+  }
+  clearCheckGateLock(boardRoot, cacheDir, taskId);
 }
 
 /**
@@ -453,6 +462,13 @@ function snapshotAbsPaths(absPaths: string[]): Record<string, string> {
   return fileSnapshots;
 }
 
+function restoreSnapshots(snapshots: Record<string, string>): void {
+  for (const [path, content] of Object.entries(snapshots)) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, content, "utf8");
+  }
+}
+
 export function enqueueDeferredBranchCommit(
   boardRoot: string,
   cacheDir: string,
@@ -484,20 +500,24 @@ export async function flushDeferredBranchCommits(
   process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
   const remaining: DeferredBranchCommit[] = [];
   try {
+    // Preserve the final visible contents while replaying each captured write
+    // as its own ordered commit. Without this, repeated writes to one file
+    // collapse into the first queued commit.
+    const finalSnapshots = snapshotAbsPaths([...new Set(queue.flatMap((q) => q.absPaths))]);
     let failed = false;
     for (const item of queue) {
       if (failed) {
         remaining.push(item);
         continue;
       }
-      // The current file is the authoritative latest bookkeeping state. Never
-      // restore an older snapshot here: a later write may have updated it.
+      restoreSnapshots(item.fileSnapshots);
       const committed = commitFiles(item.commitRoot, item.absPaths, item.message);
       if (!committed) {
         remaining.push(item);
         failed = true;
       }
     }
+    restoreSnapshots(finalSnapshots);
     writeDeferredBranchCommits(boardRoot, cacheDir, taskId, remaining);
     return { ok: remaining.length === 0, remaining: remaining.length };
   } finally {
@@ -657,6 +677,7 @@ function resolveCommitHook(
   message: string,
   config: Pick<RepoOSConfig, "workDir" | "cacheDir">,
 ): CheckGateCommitVerdict {
+  if (checkGateFlushInProgress || process.env.REPOOS_CHECK_GATE_INTERNAL === "1") return "proceed";
   const lock = activeCheckGateForCommitRoot(boardRoot, cacheDir, commitRoot);
   if (!lock) return "proceed";
   if (!relPaths.every((p) => isBookkeepingPath(p, config))) {
