@@ -12,6 +12,7 @@ branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
 updated_at: "2026-11-08T14:54:02Z"
 handoff_signal_retry_count: 2
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 On the Work > Pipeline view, the task id, type/priority chips, elapsed time, model/agent line and host label on every card are almost invisible, in every theme (light and dark). The Board view is fine.
