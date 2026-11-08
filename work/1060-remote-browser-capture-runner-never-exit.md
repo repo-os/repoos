@@ -2,7 +2,10 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — startup-reaper Docker inspection failures can abort validation.
 needs_merge: true
 priority: p1
 area: server
@@ -14,13 +17,12 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T15:53:30Z"
-review_passes: 8
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 3e338391 to 734d5a95) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 3e338391a4a54b4df78d2732b7673fae3ed7d705
+updated_at: "2026-11-08T16:07:48Z"
+review_passes: 9
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 8
+deferred_handoff_resume_count: 2
 ---
 ## Problem
 Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
@@ -257,3 +259,18 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T15:34:54Z · message_delivered: 1 message(s)
 - 2026-11-08T15:46:01Z · body
 - 2026-11-08T15:53:30Z · body
+- 2026-11-08T15:54:49Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T15:54:50Z · message_queued at 2026-11-08T15:54:50.028Z
+- 2026-11-08T15:54:50Z · ↻ resuming engineer to read queued message
+- 2026-11-08T15:54:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T15:54:50Z · note: handoff requested (cli)
+- 2026-11-08T15:55:24Z · status active→review
+- 2026-11-08T15:55:24Z · message_queued at 2026-11-08T15:55:24.308Z
+- 2026-11-08T15:55:24Z · note: shots: skipped — the diff (32 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-08T15:57:53Z · note: review pass 10: needs some work
+- 2026-11-08T15:57:53Z · needs_input
+- 2026-11-08T15:58:50Z · message_delivered: 2 message(s)
+- 2026-11-08T16:07:11Z · body
+- 2026-11-08T16:07:48Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T16:07:48Z · message_queued at 2026-11-08T16:07:48.570Z
+- 2026-11-08T16:07:48Z · ↻ resuming engineer to read queued message
