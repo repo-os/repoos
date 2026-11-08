@@ -1644,12 +1644,6 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     case "drawer:postMergeSummary": {
       ensureFixtureTask(repo, "done", { branch: "" });
-      const task = repo.tasks.find((candidate) => candidate.id === SHOT_PREVIEW_FIXTURE_TASK_ID);
-      if (task) {
-        const ui = useUiStore();
-        void ui.openTask(task);
-        ui.activeTab = "agent";
-      }
       break;
     }
     case "drawer:statusReviewFailed":
