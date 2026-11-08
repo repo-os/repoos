@@ -20,8 +20,7 @@ import { commitFiles, setCheckGateCommitHook, type CheckGateCommitVerdict } from
 import { isCheckGateBookkeepingPath as isBookkeepingPath } from "../core/check-gate-bookkeeping.js";
 import { runGit } from "../core/git.js";
 
-export const CHECK_GATE_WRITE_REFUSAL =
-  "A check is running; wait for it to finish.";
+export const CHECK_GATE_WRITE_REFUSAL = "A check is running; wait for it to finish.";
 
 export type CheckGateKind = "handoff-finalize" | "merge-gate" | "engineer-self-check";
 
