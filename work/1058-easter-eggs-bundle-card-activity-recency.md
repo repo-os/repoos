@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T09:22:56Z"
+updated_at: "2026-11-08T09:22:59Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T07:13:07.485Z: repoos check failed: ui verification failed (10 issue(s)): [missing-target] Board card coding without inline active recency (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:42935/?shotState=board%3AactiveCoding); [missing-target] Board card coding without inline active recency (target \"default\"): highlight [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"] matched nothing on / (http://127.0.0.1:42935/?shotState=bo… (truncated)"
@@ -173,3 +173,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T08:42:57Z · message_queued at 2026-11-08T08:42:57.341Z
 - 2026-11-08T08:45:22Z · review_cli_override, review_model_override
 - 2026-11-08T09:22:56Z · status review→active
+- 2026-11-08T09:22:59Z · CTO nudge: held — review is running
