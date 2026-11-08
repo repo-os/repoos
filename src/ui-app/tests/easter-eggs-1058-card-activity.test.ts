@@ -1,7 +1,7 @@
 /**
  * #1058 — running card hints drop inline "active …" recency; popover carries it.
  */
-import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
+import { describe, expect, it, vi, afterEach, beforeAll, beforeEach } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import { nextTick } from "vue";
@@ -10,6 +10,25 @@ import PipelineCard from "../src/components/PipelineCard.vue";
 import { useRepoStore } from "../src/stores/repo";
 import type { Task } from "../src/types";
 import { STUCK_SILENCE_MS } from "../src/lib/retryHints";
+import { installTooltips } from "../src/lib/tooltip";
+
+function touchTip(
+  type: "pointerdown" | "pointerup",
+  el: Element,
+  over: Partial<PointerEventInit> = {},
+): void {
+  el.dispatchEvent(
+    new PointerEvent(type, {
+      bubbles: true,
+      cancelable: true,
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 20,
+      clientY: 20,
+      ...over,
+    }),
+  );
+}
 
 function baseTask(over: Partial<Task> = {}): Task {
   return {
@@ -51,6 +70,10 @@ function baseTask(over: Partial<Task> = {}): Task {
 
 let pinia: Pinia;
 
+beforeAll(() => {
+  installTooltips();
+});
+
 beforeEach(() => {
   pinia = createPinia();
   setActivePinia(pinia);
@@ -58,6 +81,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  document.dispatchEvent(new Event("scroll", { bubbles: true }));
   vi.useRealTimers();
 });
 
@@ -78,6 +102,30 @@ describe("TaskCard activity recency (#1058)", () => {
     const tip = hint.attributes("data-tip") ?? "";
     expect(tip).toMatch(/Active .*ago/i);
     expect(tip).toContain("Agent is making code changes");
+  });
+
+  it("does not open the agent drawer when a touch tap only reveals recency", async () => {
+    const repo = useRepoStore();
+    repo.runningIds = ["1058"];
+    repo.runningSince = { "1058": "2026-11-08T02:59:00.000Z" };
+    repo.agentActivityAt = { "1058": "2026-11-08T02:59:00.000Z" };
+    const wrapper = mount(TaskCard, {
+      props: { task: baseTask(), dragEnabled: false },
+      attachTo: document.body,
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    const hint = wrapper.get('[data-test-id="task-card-agent-hint"]').element;
+    expect(hint.getAttribute("data-tip")).toBeTruthy();
+    touchTip("pointerdown", hint);
+    vi.advanceTimersByTime(100);
+    touchTip("pointerup", hint);
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toMatch(/Active .*ago/i);
+    hint.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    await nextTick();
+    expect(wrapper.find(".tc-agent-panel").exists()).toBe(false);
+    wrapper.unmount();
+    document.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
 
   it("keeps stuck · silent on the line", async () => {
@@ -122,6 +170,40 @@ describe("PipelineCard activity recency (#1058)", () => {
     const step = wrapper.get(".pl-step");
     const tip = step.attributes("data-tip") ?? "";
     expect(tip).toContain("In this state for 12m");
+  });
+
+  it("does not open the task when a touch tap only reveals step recency", async () => {
+    const wrapper = mount(PipelineCard, {
+      attachTo: document.body,
+      props: {
+        taskId: "1058",
+        type: "chore",
+        priority: "p3",
+        title: "Fixture",
+        state: "ok",
+        statusSignals: null,
+        stepLabel: "Coding",
+        chipText: null,
+        stateSince: "2026-11-08T02:48:00.000Z",
+        nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+        roundsLabel: "D0 · R0",
+        reviewerTone: null,
+        modelsLabel: "eng / rev",
+        hostLabel: "local",
+        action: null,
+        checkProgress: null,
+      },
+    });
+    const step = wrapper.get(".pl-step").element;
+    expect(step.getAttribute("data-tip")).toBeTruthy();
+    touchTip("pointerdown", step);
+    vi.advanceTimersByTime(100);
+    touchTip("pointerup", step);
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toContain("In this state");
+    step.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    expect(wrapper.emitted("open")).toBeUndefined();
+    wrapper.unmount();
+    document.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
 
   it("keeps elapsed visible for stuck state", () => {

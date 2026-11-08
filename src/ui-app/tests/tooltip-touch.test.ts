@@ -59,6 +59,18 @@ describe("installTooltips touch (#1058)", () => {
     expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Active 2m ago");
   });
 
+  it("does not fire a click after long-press release", () => {
+    const btn = document.getElementById("tip-btn")!;
+    const click = vi.fn();
+    btn.addEventListener("click", click);
+    touch("pointerdown", btn);
+    vi.advanceTimersByTime(500);
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Active 2m ago");
+    touch("pointerup", btn);
+    btn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    expect(click).not.toHaveBeenCalled();
+  });
+
   it("opens on a short tap when the press ends before the long-press threshold", () => {
     const btn = document.getElementById("tip-btn")!;
     touch("pointerdown", btn);
