@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-08T09:13:53Z"
+updated_at: "2026-11-08T09:14:00Z"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -39,3 +39,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 
 - 2026-11-08T09:13:53Z · created · njachowski@gmail.com
 - 2026-11-08T09:13:53Z · needs_input
+- 2026-11-08T09:14:00Z · body
