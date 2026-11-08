@@ -90,7 +90,7 @@ afterEach(() => {
 });
 
 describe("TaskCard stuck-agent detection", () => {
-  it("shows 'coding' while output keeps arriving, then flips to 'stuck' after 5 minutes of silence", async () => {
+  it("keeps a live engineer out of Stuck even after 5 minutes of silence", async () => {
     vi.useFakeTimers();
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -133,9 +133,9 @@ describe("TaskCard stuck-agent detection", () => {
 
     hint = wrapper.find(".tc-hint");
     expect(hint.exists()).toBe(true);
-    expect(hint.classes()).toContain("tc-stuck");
-    expect(hint.text()).toContain("stuck");
-    expect(hint.classes()).not.toContain("tc-coding");
+    expect(hint.classes()).toContain("tc-coding");
+    expect(hint.text()).toContain("Coding");
+    expect(hint.classes()).not.toContain("tc-stuck");
   });
 
   it("stays 'coding' when output keeps arriving past the 5-minute mark", async () => {

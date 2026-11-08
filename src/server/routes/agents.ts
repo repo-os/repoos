@@ -6,7 +6,7 @@ import { checkAgentUpdates } from "../../core/agent-updates.js";
 
 export const runningAgents: RouteHandler = (ctx, _req, res) => {
   const { runner } = ctx;
-  return json(res, 200, { tasks: runner.running() });
+  return json(res, 200, { tasks: runner.running(), pausedTasks: runner.pausedTaskIds() });
 };
 
 /** Tasks/chats waiting for a free maxConcurrentAgents slot — reconciliation source alongside the agent.queued/agent.dequeued SSE events. Also carries messages queued while an agent was busy (#0821), so the UI can flag them. */
