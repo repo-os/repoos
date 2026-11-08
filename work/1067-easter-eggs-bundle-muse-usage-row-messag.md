@@ -2,14 +2,14 @@
 id: "1067"
 title: "Easter eggs bundle: Muse usage row messages and dashboard link, needs-input flag after body fix"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T14:01:07Z"
+updated_at: "2026-11-08T14:28:43Z"
 ---
 ## Items
 
@@ -69,3 +69,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 ## Activity
 
 - 2026-11-08T14:01:07Z · created · njachowski@gmail.com
+- 2026-11-08T14:28:43Z · status inbox→ready
