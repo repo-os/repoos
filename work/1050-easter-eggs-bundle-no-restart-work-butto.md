@@ -1,10 +1,11 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-11-08T01:53:16.701Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-08T01:53:22.580391Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 needs_merge: true
 priority: p3
 area: web
@@ -14,7 +15,9 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T01:53:16Z"
+updated_at: "2026-11-08T01:53:33Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-08T01:53:16.701Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 2b311db0cbbbab67ef96af59606a4805ac3b9c2b
 review_rounds: 1
@@ -22,6 +25,8 @@ routing_switches: 1
 routing_escalations: 1
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T19:51:20.419Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T20:21:05.967Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T01:53:33.147Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 ## Items
@@ -295,4 +300,5 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T01:53:13Z · message_queued at 2026-11-08T01:53:13.587Z
 - 2026-11-08T01:53:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T01:53:16Z · message_delivered: 1 message(s)
-
+- 2026-11-08T01:53:33Z · agent exited with an error (codex) · 2026-11-08T01:53:22.580391Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T01:53:33Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-08T01:53:22.580391Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
