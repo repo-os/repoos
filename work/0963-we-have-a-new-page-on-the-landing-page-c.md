@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T07:52:53.443Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "0963"
 title: Build the simplified client project board
 type: feature
@@ -121,3 +123,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T07:23:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T07:52:50Z · message_queued at 2026-11-08T07:52:50.301Z
 - 2026-11-08T07:52:53Z · message_delivered: 1 message(s)
+
