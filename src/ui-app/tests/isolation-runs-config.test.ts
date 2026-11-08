@@ -50,3 +50,15 @@ describe("check.isolationRuns config (#0655)", () => {
     expect(field?.description).toMatch(/never turns a failed gate green|informational/i);
   });
 });
+
+describe("check.docsOnlySkip", () => {
+  it("defaults on, accepts false, and exposes the Settings control", () => {
+    expect(loadConfig(repo("[check]\n")).check?.docsOnlySkip).toBe(true);
+    expect(loadConfig(repo("[check]\ndocsOnlySkip = false\n")).check?.docsOnlySkip).toBe(false);
+    expect(getConfigSchema().find((f) => f.key === "check.docsOnlySkip")).toMatchObject({
+      type: "boolean",
+      tier: "guarded",
+      default: true,
+    });
+  });
+});

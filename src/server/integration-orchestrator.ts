@@ -1,3 +1,4 @@
+import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
 /**
  * Orchestrates individual close-out jobs through their lifecycle. Each job:
  *   1. Validates the candidate away from live main (temporary worktree/branch)
@@ -2935,7 +2936,10 @@ export class CloseOutOrchestrator {
     // zero errors — so the close-out skips on exactly the state the CLI's own
     // `repoos check` skips on.
     const bootstrapWithoutPlan = planGateSkips(candidateCheckPlan);
-    const docsOnly = changedPaths !== null && isDocsOnlyChange(changedPaths, this.config.docsDir);
+    const docsOnly = isDocsOnlyCheck(
+      changedPaths,
+      loadConfig(wtPath).check?.docsOnlySkip !== false,
+    );
     // #0724: how much of the suite the merged candidate needs. The same commit
     // already passed the full gate at handoff; only main's real advance can
     // make that stale, so most close-outs reuse it or scope to the changes.
@@ -2950,13 +2954,9 @@ export class CloseOutOrchestrator {
       );
     }
     if (docsOnly) {
-      this.logger?.integration(
-        job.taskId,
-        "info",
-        "docs-only candidate — skipping the full build + check gate (no code/source paths changed)",
-        { paths: changedPaths },
-      );
-    } else {
+      this.logger?.integration(job.taskId, "info", DOCS_ONLY_SKIP_REASON, { paths: changedPaths });
+    }
+    {
       // Reuse main's install when configured; package-input merges and candidates
       // with no usable node_modules get a private install (#0449, #0674, #0712).
       if (resolveCloseOutCandidateMode(this.config) === "own-install") {
@@ -3004,7 +3004,7 @@ export class CloseOutOrchestrator {
       // yet. The declared check plan is the contract. Prebuild only when it
       // actually includes the built-in build step; raw commands remain owned
       // by their plan and run below through `repoos check`.
-      if (hasBuildStep) {
+      if (hasBuildStep && !docsOnly) {
         this.onProgress?.("build");
         // A long build reports nothing between the "build" stage events; the
         // heartbeat keeps the card live instead of reading as a hang (#0799).
@@ -3067,7 +3067,7 @@ export class CloseOutOrchestrator {
       // so the runner exercises just the affected tests.
       const reuseRemoteTests = gatePlan?.reuseTests === true;
       const remoteGateEnabled =
-        hasBuildStep && this.remoteValidator && this.config.remoteValidation?.enabled;
+        !docsOnly && hasBuildStep && this.remoteValidator && this.config.remoteValidation?.enabled;
       // Set when a scoped remote run failed and its full-suite retry succeeded:
       // the local cheap checks must then also run unscoped, or they would
       // disagree with what the runner actually verified.
@@ -3276,9 +3276,11 @@ export class CloseOutOrchestrator {
           // caught here even when the test step is scoped. When a scoped remote
           // run already fell back to the full suite, run the local checks
           // unscoped too so both halves describe the same scope (#0724 review).
-          ...(gatePlan?.scoped && gatePlan.changedRef && !remoteScopedFellBackToFull
-            ? { REPOOS_CHECK_CHANGED: gatePlan.changedRef }
-            : {}),
+          ...(docsOnly
+            ? { REPOOS_CHECK_CHANGED: mainBranch }
+            : gatePlan?.scoped && gatePlan.changedRef && !remoteScopedFellBackToFull
+              ? { REPOOS_CHECK_CHANGED: gatePlan.changedRef }
+              : {}),
           // #0724: record which gate mode ran and why in the run history.
           ...(gatePlan
             ? {

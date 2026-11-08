@@ -1139,3 +1139,7 @@ wedged after `localChecks.staleAfterMs`; after
 SIGKILL if needed. The Checks page and `repoos checks slots` show slot owners
 and queued checks. A wedged managed holder can be released explicitly after
 confirming its displayed PID.
+
+## Documentation and bookkeeping checks
+
+Docs/bookkeeping-only candidate diffs skip the build, tests, browser checks and remote validation, while the local check still runs formatting, lockfile, runtime-dependency, task-asset and task-parser guards. Git diff failures fall back to the normal gate. Set `check.docsOnlySkip = false` to disable this shortcut; release checks remain full. See `user-docs/check.md`.
