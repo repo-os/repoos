@@ -91,11 +91,17 @@ esac
   },
 );
 
+it("parses task ids from repoos-validate-<taskId>-<suffix> container names", async () => {
+  const { parseTaskIdFromValidateContainerName } = await import("../remote-validation.js");
+  expect(parseTaskIdFromValidateContainerName("repoos-validate-1060-deadbeef")).toBe("1060");
+  expect(parseTaskIdFromValidateContainerName("/repoos-validate-0999-abc")).toBe("0999");
+  expect(parseTaskIdFromValidateContainerName("repoos-validate-pre-review-abc")).toBeUndefined();
+});
+
 it("reaps a completed capture even when the Mac still tracks it as live", async () => {
   const oldCreated = new Date(Date.now() - 3 * 60_000).toISOString();
   const containerId = "0123456789ab";
-  const containerName = "repoos-validate-hung";
-  const { completedCaptureTaskIdCommand } = await import("../remote-validation.js");
+  const containerName = "repoos-validate-1060-deadbeef";
   const runRemote = vi.fn(async (_host, cmd) => {
     if (cmd === reaperCommand()) {
       return {
@@ -103,9 +109,6 @@ it("reaps a completed capture even when the Mac still tracks it as live", async 
         output: `${containerId}\t/${containerName}\t${oldCreated}`,
         timedOut: false,
       };
-    }
-    if (cmd === completedCaptureTaskIdCommand(containerId)) {
-      return { code: 0, output: "1060\n", timedOut: false };
     }
     if (cmd === completedCaptureReaperCommand(containerId)) {
       return { code: 0, output: "", timedOut: false };
@@ -129,10 +132,18 @@ it("reaps a completed capture even when the Mac still tracks it as live", async 
     );
     expect(logger.system).toHaveBeenCalledWith(
       "info",
-      `reaped completed browser capture ${containerName} on runner: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
+      expect.stringContaining(
+        `reaped completed browser capture ${containerName} on runner: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
+      ),
+    );
+    expect(logger.system).toHaveBeenCalledWith(
+      "info",
+      expect.stringContaining("reason=completed-capture-idle"),
     );
     expect(existsSync(remoteEventsPath(root, "1060"))).toBe(true);
-    expect(readFileSync(remoteEventsPath(root, "1060"), "utf8")).toContain(containerName);
+    const events = readFileSync(remoteEventsPath(root, "1060"), "utf8");
+    expect(events).toContain(containerName);
+    expect(events).toContain("reason=completed-capture-idle");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
