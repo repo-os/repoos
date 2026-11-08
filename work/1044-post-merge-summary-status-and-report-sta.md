@@ -2,7 +2,7 @@
 id: "1044"
 title: "Post-merge summary: status and report-state edge cases (follow-up to #1041)"
 type: bug
-status: review
+status: active
 priority: p3
 area: [core, web]
 assigned_to: ai
@@ -105,4 +105,3 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 - 2026-11-08T01:23:10Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-08T01:23:10Z · message_delivered: 1 message(s)
 - 2026-11-08T01:23:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check is green, but I’m blocked on the managed RepoOS server: its browser capture reservation remains stuck after the runner exited. The registered service reports stopped, so I can’t safely clear the lock from this worktree without af… · stderr: 2026-11-08T01:23:28.955899Z ERROR codex_core::tools::router: error=failed to parse function arguments: unknown field `question`, expected `title` or `options` at line 1 column 125
-- 2026-11-08T01:23:37Z · status active→review
