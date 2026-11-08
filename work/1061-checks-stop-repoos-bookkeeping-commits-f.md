@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -283,3 +283,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T22:39:27Z · body
 - 2026-11-08T22:56:23Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-08T22:56:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The final scoped check has uploaded the formatted, synchronized branch snapshot and is still running its remote build/test suite. Earlier runs showed this repository’s remote suite can take several minutes; no failure has been reported in … · stderr: Reading additional input from stdin... 2026-11-08T21:58:31.050088Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeeping-commits-f/src/server/check-gate-lock.ts: restoreSnapshots(finalSnapshots…
+- 2026-11-08T22:56:23Z · status active→review
