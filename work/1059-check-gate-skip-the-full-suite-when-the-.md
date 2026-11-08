@@ -225,3 +225,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T15:30:10Z · message_queued at 2026-11-08T15:30:10.034Z
 - 2026-11-08T15:30:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T15:35:23Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T15:35:23Z · note: handoff requested (cli)
