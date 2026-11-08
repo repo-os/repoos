@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -60,3 +61,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T15:56:32Z · status review→active
 - 2026-11-08T15:56:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T16:01:41Z · message_queued at 2026-11-08T16:01:41.493Z
+
