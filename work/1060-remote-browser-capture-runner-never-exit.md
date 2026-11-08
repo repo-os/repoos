@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T09:58:33Z"
+updated_at: "2026-11-08T09:59:02Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 3828f398be804233c4fb388f9b7633a244f12d72
 review_rounds: 2
@@ -111,3 +111,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T09:53:18Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T09:54:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T09:58:33Z · body
+- 2026-11-08T09:59:02Z · status active→review
