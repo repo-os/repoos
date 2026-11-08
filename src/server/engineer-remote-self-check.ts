@@ -169,7 +169,11 @@ export async function runEngineerRemoteSelfCheckGate(params: {
     if (prevStore === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
     else process.env.REPOOS_CHECK_STORE_ROOT = prevStore;
     await remoteValidator.dispose().catch(() => {});
-    return { kind: "fail", retryable: false, detail: "could not resolve task branch for check-gate lock" };
+    return {
+      kind: "fail",
+      retryable: false,
+      detail: "could not resolve task branch for check-gate lock",
+    };
   }
   const gateLock = await acquireCheckGateLock({
     boardRoot,
