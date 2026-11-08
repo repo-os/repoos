@@ -26,6 +26,8 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import {
   RemoteValidationRunner,
+  cancelRemoteBrowserCaptures,
+  readRemoteValidationEvents,
   classifyRemoteExecFailure,
   EMPTY_REMOTE_MIRROR,
   prepareCandidateUpload,
@@ -47,10 +49,6 @@ import {
   type RemoteHost,
   type UploadProgressInfo,
 } from "../../server/remote-validation.js";
-import {
-  remoteBrowserEvidenceTransport,
-  runBrowserCaptureWithPolicy,
-} from "../../server/browser-capture-policy.js";
 import type { HetznerClient, HetznerServer } from "../../server/hetzner.js";
 
 interface FakeHetznerOpts {
@@ -233,68 +231,63 @@ describe("RemoteValidationRunner", () => {
   });
   const opts = () => mkOpts();
 
-  it.each(["shots", "verify", "both", "single-shot"] as const)(
-    "rejects Hetzner %s browser captures before queueing or provisioning",
-    async (operation) => {
-      const h = fakeHetzner();
-      const exec = fakeExec();
-      const runner = new RemoteValidationRunner(config, undefined, {
-        hetzner: h.client,
-        exec,
-        timings: FAST,
-      });
-      const result = await runner.validate({
-        ...opts(),
-        kind: "shot",
-        browserCapture: { taskId: "0999", branch: "feat/test", operation },
-      });
-      expect(result.ok).toBe(false);
-      expect(result.detail).toContain("Hetzner browser capture is unavailable");
-      expect(h.calls).toHaveLength(0);
-      expect(exec.bundleRepo).not.toHaveBeenCalled();
-      expect(exec.runRemote).not.toHaveBeenCalled();
+  it("cancels queued and running Hetzner captures without stopping other tasks", async () => {
+    const h = fakeHetzner();
+    let started = false;
+    const commands: string[] = [];
+    const exec = fakeExec({
+      runRemote: vi.fn(async (_host, cmd, _out, _timeout, options) => {
+        commands.push(cmd);
+        if (isValidateScriptMirrorProbe(cmd))
+          return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1`, timedOut: false };
+        if (cmd.startsWith("docker rm -f")) return { code: 0, output: "", timedOut: false };
+        if (!cmd.includes("REPOOS_CONTAINER=")) return { code: 0, output: "ok", timedOut: false };
+        started = true;
+        return new Promise<RemoteExecResult>((resolve) =>
+          options?.registerAbort?.(() => resolve({ code: null, output: "", timedOut: false })),
+        );
+      }),
+    });
+    const runner = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    const capture = {
+      kind: "shot" as const,
+      browserCapture: { taskId: "0999", branch: "feat/test", operation: "shots" as const },
+    };
+    try {
+      const running = runner.validate({ ...opts(), ...capture });
+      await vi.waitFor(() => expect(started).toBe(true));
+      const queued = runner.validate({ ...opts(), ...capture });
+      await vi.waitFor(() =>
+        expect(readFileSync(runner.logPath("0999"), "utf8")).toContain("queued behind"),
+      );
+      const other = runner.validate(mkOpts("1001"));
+      await vi.waitFor(() =>
+        expect(readFileSync(runner.logPath("1001"), "utf8")).toContain("queued behind"),
+      );
+      await runner.cancelBrowserCaptures("0999");
+      expect((await running).cancelled).toBe(true);
+      expect((await queued).cancelled).toBe(true);
+      expect((await other).ok).toBe(true);
+      expect(commands.filter((cmd) => cmd.startsWith("docker rm -f"))).toHaveLength(1);
+      expect(commands.filter((cmd) => cmd.includes("REPOOS_CONTAINER="))).toHaveLength(1);
+    } finally {
       await runner.dispose();
-    },
-  );
+    }
+  });
 
-  it.each(["runner-available", "runner-only"] as const)(
-    "handles unavailable Hetzner capture in %s mode without dispatching",
-    async (mode) => {
-      const h = fakeHetzner();
-      const exec = fakeExec();
-      const runner = new RemoteValidationRunner(config, undefined, {
-        hetzner: h.client,
-        exec,
-        timings: FAST,
-      });
-      config.remoteValidation!.browserCaptureMode = mode;
-      const local = vi.fn(async () => "local");
-      const result = runBrowserCaptureWithPolicy({
-        config,
-        request: {
-          taskId: "0999",
-          worktreePath: root,
-          branch: "feat/test",
-          candidateSha: headSha,
-          operation: "shots",
-        },
-        transport: remoteBrowserEvidenceTransport(config, runner),
-        local,
-        useArtifacts: vi.fn(async () => "remote"),
-        note: vi.fn(),
-      });
-      if (mode === "runner-available") {
-        await expect(result).resolves.toBe("local");
-        expect(local).toHaveBeenCalledOnce();
-      } else {
-        await expect(result).rejects.toThrow("Hetzner browser capture is unavailable");
-        expect(local).not.toHaveBeenCalled();
-      }
-      expect(h.calls).toHaveLength(0);
-      expect(exec.runRemote).not.toHaveBeenCalled();
-      await runner.dispose();
-    },
-  );
+  it("records a debug event when a provider lacks capture cancellation", async () => {
+    const validator = { validate: vi.fn(), reconcile: vi.fn(), dispose: vi.fn(), logPath: vi.fn() };
+    await cancelRemoteBrowserCaptures(config, validator, "0999");
+    expect(
+      readRemoteValidationEvents(root, "0999").some((event) =>
+        event.message.includes("does not implement browser capture cancellation"),
+      ),
+    ).toBe(true);
+  });
 
   it("passes when the remote gate exits 0, and writes a per-task log", async () => {
     const h = fakeHetzner();

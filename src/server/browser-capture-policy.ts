@@ -2,7 +2,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import type { CanonicalCaptureContext } from "../core/remote-capture.js";
-import type { RemoteValidator } from "./remote-validation.js";
+import { cancelRemoteBrowserCaptures, type RemoteValidator } from "./remote-validation.js";
 
 export type BrowserCaptureMode = "local" | "runner-available" | "runner-only";
 export type BrowserEvidenceOperation = "shots" | "verify" | "both" | "single-shot";
@@ -69,7 +69,7 @@ export function remoteBrowserEvidenceTransport(
 ): BrowserEvidenceTransport | undefined {
   if (!validator || config.remoteValidation?.enabled !== true) return undefined;
   return {
-    cancel: (taskId) => validator.cancelBrowserCaptures?.(taskId) ?? Promise.resolve(),
+    cancel: (taskId) => cancelRemoteBrowserCaptures(config, validator, taskId),
     async capture(request) {
       const artifactRoot = join(
         config.root,

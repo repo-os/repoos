@@ -969,6 +969,21 @@ export function readRemoteValidationEvents(
 }
 
 /** Fields a failure path supplies so its event is complete. */
+/** Surface a missing provider cancellation hook in the task's Debug events. */
+export async function cancelRemoteBrowserCaptures(
+  config: RepoOSConfig,
+  validator: RemoteValidator | undefined,
+  taskId: string,
+): Promise<void> {
+  if (!validator) return;
+  if (validator.cancelBrowserCaptures) return validator.cancelBrowserCaptures(taskId);
+  appendRemoteValidationEvent(config.root, taskId, {
+    level: "warn",
+    phase: "run",
+    message: "remote provider does not implement browser capture cancellation",
+  });
+}
+
 interface RemoteEventContext {
   taskId?: string;
   host?: string;
@@ -3048,7 +3063,42 @@ function logUploadedBundle(
 
 // ── the runner ──────────────────────────────────────────────────────────────
 
+interface HetznerCaptureControl {
+  controller: AbortController;
+  host?: RemoteHost;
+  container: string;
+  abortRun?: () => void;
+  abortUpload?: () => void;
+}
+
 export class RemoteValidationRunner implements RemoteValidator {
+  private readonly captureControls = new Map<string, Set<HetznerCaptureControl>>();
+
+  async cancelBrowserCaptures(taskId: string): Promise<void> {
+    const controls = [...(this.captureControls.get(taskId) ?? [])];
+    await Promise.all(
+      controls.map(async (control) => {
+        control.controller.abort();
+        control.abortUpload?.();
+        control.abortRun?.();
+        if (control.host) {
+          await execRemoteWithHardDeadline(
+            this.exec,
+            control.host,
+            killContainerCommand(control.container),
+            () => {},
+            HANG_KILL_TIMEOUT_MS,
+          ).catch(() => undefined);
+        }
+      }),
+    );
+    appendRemoteValidationEvent(this.config.root, taskId, {
+      level: "warn",
+      phase: "run",
+      message: "cancelled outstanding Hetzner browser captures after handoff failure",
+    });
+  }
+
   private readonly hetzner: HetznerClient;
   private readonly exec: RemoteExecDeps;
   private readonly timings: RunnerTimings;
@@ -3227,15 +3277,36 @@ export class RemoteValidationRunner implements RemoteValidator {
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
-    // This provider cannot cancel queued or running capture jobs. Refuse them
-    // before acquiring the shared gate or provisioning a VM; callers can use
-    // the configured local fallback or report runner-only unavailability.
-    if (opts.browserCapture) {
-      return this.configFail(
-        "Hetzner browser capture is unavailable: this provider cannot cancel captures after handoff failure; use a Tailscale runner or local capture",
-        { taskId: opts.taskId, phase: "dispatch" },
-      );
+    if (!opts.browserCapture) return this.validateWithCaptureControl(opts);
+    const control: HetznerCaptureControl = {
+      controller: new AbortController(),
+      container: validateContainerName(
+        remoteRunPaths(opts.taskId).artifacts.split("/").pop() ?? opts.taskId,
+      ),
+    };
+    const controls = this.captureControls.get(opts.taskId) ?? new Set<HetznerCaptureControl>();
+    controls.add(control);
+    this.captureControls.set(opts.taskId, controls);
+    try {
+      return await this.validateWithCaptureControl(opts, control);
+    } finally {
+      controls.delete(control);
+      if (controls.size === 0 && this.captureControls.get(opts.taskId) === controls)
+        this.captureControls.delete(opts.taskId);
     }
+  }
+
+  private async validateWithCaptureControl(
+    opts: ValidateOptions,
+    control?: HetznerCaptureControl,
+  ): Promise<CheckSummary> {
+    const cancelled = (): CheckSummary => ({
+      ...this.infraFail("browser capture cancelled after handoff failure", {
+        taskId: opts.taskId,
+        phase: "dispatch",
+      }),
+      cancelled: true,
+    });
     // Routing (#0521): the Hetzner runner is always one Linux/docker VM. A job
     // requiring anything else must fail here, clearly, not run in the wrong OS
     // — and as a CONFIG error, never as transient infra a caller could retry
@@ -3271,9 +3342,10 @@ export class RemoteValidationRunner implements RemoteValidator {
             message: note.trim(),
           });
         },
-        { deadlineAt: opts.deadlineAt },
+        { deadlineAt: opts.deadlineAt, signal: control?.controller.signal },
       );
     } catch (e) {
+      if (control?.controller.signal.aborted) return cancelled();
       const detail = e instanceof QueueDeadlineError ? e.message : `remote slot wait failed: ${e}`;
       const note = `[remote validation not started: ${detail}]\n`;
       this.appendLog(opts.taskId, note);
@@ -3295,6 +3367,7 @@ export class RemoteValidationRunner implements RemoteValidator {
       remoteTestRef: null,
     };
     try {
+      if (control?.controller.signal.aborted) return cancelled();
       // Dispatch can hand over a free slot in the same tick the deadline
       // passes — cancel here rather than start a suite nobody waits for.
       if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
@@ -3312,7 +3385,8 @@ export class RemoteValidationRunner implements RemoteValidator {
           { taskId: opts.taskId, phase: "dispatch" },
         );
       }
-      const summary = await this.runValidation(opts, remoteRunPaths(opts.taskId), runMeta);
+      const summary = await this.runValidation(opts, remoteRunPaths(opts.taskId), runMeta, control);
+      if (control?.controller.signal.aborted) return cancelled();
       recordRemoteRunHistory(
         this.config,
         opts,
@@ -3333,6 +3407,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     paths: RemoteRunPaths,
     /** Set once a runner VM is actually chosen — the history row's machine (#0564). */
     runMeta: { machine: string | null; remoteTestRef?: string | null },
+    control?: HetznerCaptureControl,
   ): Promise<CheckSummary> {
     const rv = this.config.remoteValidation ?? {};
     const dispatch = { taskId: opts.taskId, phase: "dispatch" as const };
@@ -3377,6 +3452,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     try {
       const host = await this.ensureRunner();
       runMeta.machine = host.ip;
+      if (control) control.host = host;
       emit(`[runner ${host.ip} ready in ${Math.round((Date.now() - startedAt) / 1000)}s]\n`);
       this.record(
         { taskId: opts.taskId, host: host.ip, phase: "run" },
@@ -3449,6 +3525,14 @@ export class RemoteValidationRunner implements RemoteValidator {
           mirrorPath: remoteMirrorPath(this.config.root),
           incrementalUpload,
           emit,
+          ...(control
+            ? {
+                registerUploadAbort: (abort: () => void) => {
+                  control.abortUpload = abort;
+                  if (control.controller.signal.aborted) abort();
+                },
+              }
+            : {}),
           ...(opts.onUploadProgress ? { onUploadProgress: opts.onUploadProgress } : {}),
           ...(opts.uploadProgressIntervalMs !== undefined
             ? { uploadProgressIntervalMs: opts.uploadProgressIntervalMs }
@@ -3484,6 +3568,14 @@ export class RemoteValidationRunner implements RemoteValidator {
           opts.taskId,
         );
 
+        if (control?.controller.signal.aborted)
+          return withScope({
+            ...this.infraFail("browser capture cancelled after handoff failure", {
+              taskId: opts.taskId,
+            }),
+            cancelled: true,
+          });
+
         // Provisioning + bundling can outlast the caller's deadline (#0521 spec
         // item 5) — never start a suite for a caller that already gave up.
         if (opts.deadlineAt !== undefined && Date.now() >= opts.deadlineAt) {
@@ -3506,15 +3598,42 @@ export class RemoteValidationRunner implements RemoteValidator {
             message: `running build + test on ${host.ip}${changedNote}`,
           },
         );
-        const cmd = validateScriptArgs(
-          remoteBundle,
-          opts.candidateSha,
-          paths.artifacts,
-          remoteTestRef ?? undefined,
-          upload.mirrorPath || undefined,
-          opts.browserCapture,
-        );
-        run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
+        const cmd =
+          (control ? `REPOOS_CONTAINER=${shellQuote(control.container)} ` : "") +
+          validateScriptArgs(
+            remoteBundle,
+            opts.candidateSha,
+            paths.artifacts,
+            remoteTestRef ?? undefined,
+            upload.mirrorPath || undefined,
+            opts.browserCapture,
+          );
+        if (control) {
+          const signal = control.controller.signal;
+          const cancelledRun = new Promise<RemoteExecResult>((resolve) => {
+            const finish = (): void => resolve({ code: null, output: "", timedOut: false });
+            if (signal.aborted) finish();
+            else signal.addEventListener("abort", finish, { once: true });
+          });
+          run = await Promise.race([
+            this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs, {
+              registerAbort: (abort) => {
+                control.abortRun = abort;
+                if (signal.aborted) abort();
+              },
+            }),
+            cancelledRun,
+          ]);
+          if (signal.aborted)
+            return withScope({
+              ...this.infraFail("browser capture cancelled after handoff failure", {
+                taskId: opts.taskId,
+              }),
+              cancelled: true,
+            });
+        } else {
+          run = await this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs);
+        }
         if (
           incrementalUpload &&
           transportAttempt === 0 &&
