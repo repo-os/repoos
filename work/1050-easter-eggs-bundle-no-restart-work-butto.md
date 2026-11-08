@@ -2,7 +2,7 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -239,3 +239,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-07T23:52:57Z · message_delivered: 1 message(s)
 - 2026-11-08T00:02:58Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-08T00:04:08Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’m blocked before handoff. `repoos sync 1050` refuses while this engineer turn is active, and the task instructions also prohibit the `git add` and `git commit` needed to complete a manual merge. The review’s two component conflicts there… · stderr: Reading additional input from stdin...
+- 2026-11-08T00:04:08Z · status active→review
