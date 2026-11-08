@@ -507,7 +507,10 @@ export class LiveIndex {
 
   private isTaskFile(absPath: string): boolean {
     const repoRel = relative(this.config.root, absPath).replace(/\\/g, "/");
-    const workDir = this.config.workDir.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "");
+    const workDir = this.config.workDir
+      .replace(/\\/g, "/")
+      .replace(/^\.\//, "")
+      .replace(/\/+$/, "");
     return (
       repoRel.startsWith(`${workDir}/`) &&
       this.config.taskExtensions.some((ext) => repoRel.toLowerCase().endsWith(ext.toLowerCase()))
