@@ -21,6 +21,10 @@ const props = withDefaults(
     /** Drawer line 3 — e.g. auto-retry 2 of 3. */
     retryLine?: string | null;
     handoffStep?: string | null;
+    /** The shared Board/Pipeline status line for active handoff work. */
+    statusLine?: string | null;
+    /** Canonical Board/Pipeline status line for an active task. */
+    statusLine?: string | null;
     variant: "card" | "drawer" | "pipeline";
     testId?: string;
     /** When false, drawer renders only bar row + footer (title lives in l1). */
@@ -35,6 +39,8 @@ const props = withDefaults(
     machineLine: null,
     retryLine: null,
     handoffStep: null,
+    statusLine: null,
+    statusLine: null,
     testId: undefined,
     showTitle: true,
   },
@@ -49,6 +55,8 @@ const detailLabel = computed(() => {
 });
 
 const cardLine = computed(() => {
+  if (props.statusLine) return props.statusLine;
+  if (props.statusLine) return props.statusLine;
   const parts = ["Checks"];
   if (props.reused) parts.push("reused earlier check");
   else if (detailLabel.value && detailLabel.value !== "starting…") parts.push(detailLabel.value);

@@ -40,12 +40,12 @@ import {
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { activeEngineerCardHint, activeEngineerCardBlocksInterrupt } from "../lib/active-task-card";
+import { resolveSharedTaskCardStatus } from "../lib/task-card-status.js";
 import {
   AWAITING_FRESH_REVIEW_LABEL,
   PM_WORKING_LABEL,
   REVIEWER_RUNNING_LABEL,
   STARTING_LABEL,
-  runningChecksLabel,
 } from "../lib/task-status-copy";
 import { toCheckProgress, type CheckProgress } from "../lib/check-progress";
 import { activeTaskChecksBusy, isReusedCheckOutput } from "../lib/checks-card-status";
@@ -751,6 +751,59 @@ const activeEngineerEvidence = computed(() =>
   }),
 );
 
+const sharedActiveStatus = computed(() => {
+  const taskId = props.task.id;
+  const evidence = activeEngineerEvidence.value;
+  const remoteRun = repo.taskRemoteActivity[taskId]?.run ?? null;
+  const quietAt = remoteRun?.lastProgressAt ?? lastActivityFor(taskId);
+  const quietAtMs = quietAt ? Date.parse(quietAt) : Number.NaN;
+  const checkRun = cardCheckRun.value;
+  const checkSlot = repo.localCheckSlotForTask(taskId, Math.max(now.value, Date.now()));
+  const status = repo.handoffStatuses[taskId];
+  const handoffError = repo.handoffErrorFor(taskId);
+  const needsInput = needsInputSurfaces(props.task) || !!handoffError;
+
+  return resolveSharedTaskCardStatus({
+    handoffInFlight: repo.handoffInFlight(taskId),
+    handoffState: status?.state,
+    handoffStep: status?.step ?? repo.handoffSteps[taskId],
+    handoffRequested: props.task.pendingHandoff === true,
+    checkInFlight: !!checkRun || !!checkSlot,
+    remoteValidationInFlight: !!remoteRun && evidence.cls !== "tc-stuck",
+    checkProgress: cardCheckProgressFields(checkRun),
+    checkStartedAt: status?.startedAt ?? checkRun?.startedAt,
+    checkSlotAgeMs: checkSlot?.ageMs,
+    checkOutput: checkRun?.output,
+    slowCheck: !!slowCheck.value,
+    queued: repo.isQueued(taskId) || evidence.cls === "tc-queued",
+    queuedLabel:
+      evidence.cls === "tc-queued"
+        ? evidence.label
+        : repo.isQueued(taskId)
+          ? agentQueuedHint(taskId).label
+          : null,
+    running: repo.isRunning(taskId),
+    paused: repo.isPaused(taskId),
+    needsInput,
+    needsInputLabel: handoffError
+      ? "checks failed"
+      : needsInput
+        ? needsInputStatusLabel(
+            props.task.needsInputReason,
+            (props.task.questions?.length ?? 0) > 0,
+          )
+        : null,
+    pmWorking: repo.pmWorkingFor(taskId),
+    stuckSignal: evidence.cls === "tc-stuck",
+    quietForMs: Number.isFinite(quietAtMs)
+      ? Math.max(0, Math.max(now.value, Date.now()) - quietAtMs)
+      : null,
+    nowMs: Math.max(now.value, Date.now()),
+    remoteActivityLabel: evidence.label,
+    codingLabel: evidence.cls === "tc-stuck" ? "Coding" : evidence.label,
+  });
+});
+
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. Check progress,
  *  remote validation, and queue waits suppress a false stuck label (#1000). */
@@ -937,7 +990,7 @@ const hint = computed<CardHint | null>(() => {
       cls: "tc-pm-working",
     };
   }
-  if ((t.status === "active" || t.status === "review") && !t.needsInput) {
+  if (t.status === "review" && !t.needsInput) {
     const wait = localQueueHintForTask(repo.resourceQueueMarkers, t.id, new Date(now.value));
     if (wait) return { ...wait, cls: "tc-queued" };
   }
@@ -1053,39 +1106,39 @@ const hint = computed<CardHint | null>(() => {
   }
   if (t.status === "active") {
     if (showCardCheckProgress.value) return null;
-    // The server handoff state covers verify and remote capture too, where
-    // there may be no running check row or engineer process.
-    if (repo.handoffInFlight(t.id)) {
-      const queued = remotePoolQueueHintForTaskChecks(repo.taskChecks[t.id]);
-      if (queued) return { label: queued.label, title: queued.title, cls: "tc-queued" };
-      const slow = slowCheck.value;
+    const lifecycle = sharedActiveStatus.value;
+    if (lifecycle.kind === "checks") {
       return {
-        label: runningChecksLabel(!!slow),
-        title: slow
-          ? "Handoff checks are running slower than usual — focus the slow badge for timing details"
-          : "RepoOS is committing and running the checks before moving this to review",
+        label: lifecycle.label,
+        title: "RepoOS is committing and running checks before moving this to review",
         cls: "tc-reviewing",
       };
     }
-    if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
-    if (repo.isRunning(t.id)) {
-      return (
-        autoRepairHint({
-          task: t,
-          running: true,
-          lastActivity: lastActivityFor(t.id),
-          now: now.value,
-          suppressAgentStuck: suppressAgentStuckHint.value,
-        }) ?? codingOrStuckHint(t.id)
-      );
+    if (lifecycle.kind === "queued") {
+      return { label: lifecycle.label, title: lifecycle.label, cls: "tc-queued" };
     }
-    if (t.needsInput) return needsInputHint(t);
+    if (lifecycle.kind === "needs-input") {
+      const error = repo.handoffErrorFor(t.id);
+      if (error) return { label: "checks failed", title: error, cls: "tc-needs-input" };
+      return needsInputHint(t);
+    }
+    if (lifecycle.kind === "stuck") {
+      return {
+        label: lifecycle.label,
+        title: activeEngineerEvidence.value.title,
+        cls: "tc-stuck",
+      };
+    }
+    if (lifecycle.kind === "coding") {
+      return {
+        label: lifecycle.label,
+        title: activeEngineerEvidence.value.title,
+        cls: "tc-coding",
+      };
+    }
     // 0381: the engineer is idle (paused) but the PM is chatting about this
     // task right now — that is the live thing happening.
     if (pmWorking) return PM_WORKING_HINT;
-    // #0507: the handoff finalization is in flight — the task is still
-    // `active` on purpose, so say what is actually happening rather than
-    // falling through to "paused", which would read as a stopped agent.
     if (repo.handoffErrorFor(t.id)) {
       return {
         label: "checks failed",
@@ -1100,11 +1153,13 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-human",
       };
     }
-    return {
-      label: "paused",
-      title: "agent stopped — click Restart work to resume",
-      cls: "tc-stalled",
-    };
+    if (lifecycle.kind === "paused") {
+      return {
+        label: lifecycle.label,
+        title: "agent stopped — click Restart work to resume",
+        cls: "tc-stalled",
+      };
+    }
   }
   // #0804: a ready/inbox task the start check (keyword or decision model)
   // flagged must show that on the card — the board otherwise looks idle and
@@ -1180,9 +1235,10 @@ const action = computed<CardAction | null>(() => {
   // button, so retrying is still one click away, just not from the card.
   if (t.status === "review" && repo.doneErrorFor(t.id)) return null;
   if (t.status === "active") {
-    if (repo.handoffInFlight(t.id)) return null;
-    if (showCardCheckProgress.value) return null;
-    return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+    const lifecycle = sharedActiveStatus.value;
+    if (lifecycle.action === "pause") return ACTIVE_PAUSE;
+    if (lifecycle.action === "restart") return ACTIVE_RESTART;
+    return null;
   }
   return ACTIONS[t.status] ?? null;
 });
@@ -1695,6 +1751,7 @@ async function openDebuggerFromError(): Promise<void> {
           :reused="cardChecksDisplay.reused"
           :slow="cardChecksDisplay.slow"
           :handoff-step="cardChecksDisplay.handoffStep"
+          :status-line="props.task.status === 'active' ? sharedActiveStatus.label : null"
         />
         <Teleport to="body">
           <div
