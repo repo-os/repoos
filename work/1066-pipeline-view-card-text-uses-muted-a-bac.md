@@ -2,7 +2,7 @@
 id: "1066"
 title: "Pipeline view: card text uses --muted (a background token), unreadable in every theme"
 type: bug
-status: review
+status: active
 paths: [src/ui-app/src/components/PipelineCard.vue, src/ui-app/src/style.css]
 priority: p1
 area: web
