@@ -123,3 +123,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T07:53:00Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-08T07:53:00Z · note: handoff requested (cli)
 - 2026-11-08T08:05:24Z · message_queued at 2026-11-08T08:05:24.841Z
+- 2026-11-08T08:05:24Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
