@@ -70,6 +70,14 @@ describe("remote browser capture result artifact", () => {
   });
 });
 
+describe("runner browser capture process lifecycle (#1060)", () => {
+  it("exits explicitly after the CLI entry finishes", () => {
+    const src = readFileSync(join(repoRoot, "scripts/remote-runner/capture-browser.ts"), "utf8");
+    expect(src).toMatch(/process\.exit\(result\.ok \? 0 : 2\)/);
+    expect(src).toMatch(/PREVIEW_STOP_TIMEOUT_MS/);
+  });
+});
+
 describe("runner worktree layout for browser capture (#0854)", () => {
   it("still parses as bash", () => {
     expect(() => execFileSync("bash", ["-n", validatePath], { stdio: "ignore" })).not.toThrow();
