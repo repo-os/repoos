@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T14:32:07Z"
+updated_at: "2026-11-08T14:40:44Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -30,6 +30,48 @@ Every piece of text on a Pipeline card is readable in every theme, light and dar
 ## Notes for AI
 Reported with a screenshot from the tiao project; titles are readable but id, chips, elapsed time and the "model · host" row are not. Do not change `--muted` itself (it is correct as a surface token and used elsewhere); change the text color tokens at the call sites. Check the other pipeline components (PipelineView, stage panes) for the same pattern.
 
+## Shots
+```json
+[
+{
+  "label": "Pipeline card secondary text (dark theme)",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".pipeline-card",
+  "assert": [
+    {
+      "selector": ".pl-id",
+      "label": "task id is visible"
+    },
+    {
+      "selector": ".pl-row-4",
+      "label": "model and host row is visible"
+    }
+  ],
+  "state": "pipeline:checksProgress",
+  "theme": "dark"
+},
+{
+  "label": "Pipeline card secondary text (light theme)",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".pipeline-card",
+  "assert": [
+    {
+      "selector": ".pl-id",
+      "label": "task id is visible"
+    },
+    {
+      "selector": ".pl-row-4",
+      "label": "model and host row is visible"
+    }
+  ],
+  "state": "pipeline:checksProgress",
+  "theme": "light"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-08T13:13:52Z · created · njachowski@gmail.com
@@ -41,3 +83,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T14:22:39Z · message_queued at 2026-11-08T14:22:39.911Z
 - 2026-11-08T14:27:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T14:32:07Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T14:40:44Z · body
