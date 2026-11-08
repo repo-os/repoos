@@ -449,3 +449,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T20:26:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required scoped check is green: the remote changed-path suite passed after the fixture fix, and local format, lint, build, CSS/theme checks, rendered contrast, and UI smoke all passed. I’m writing the engineer-authored report draft now… · stderr: Reading additional input from stdin... 2026-11-08T20:26:18.890974Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 68844
 - 2026-11-08T20:26:59Z · status active→review
 - 2026-11-08T20:26:59Z · message_delivered: 2 message(s)
+- 2026-11-08T20:27:00Z · note: handoff requested (cli)
