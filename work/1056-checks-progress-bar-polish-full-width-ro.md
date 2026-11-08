@@ -14,7 +14,6 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
 updated_at: "2026-11-08T02:58:15Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 5
 ---
@@ -111,3 +110,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:57:57Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-08T02:57:58Z · note: handoff requested (cli)
 - 2026-11-08T02:58:15Z · CTO nudge: held — handoff gate is running
+
