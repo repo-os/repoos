@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
@@ -44,3 +45,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T02:54:06Z · status inbox→ready
 - 2026-11-08T06:05:22Z · status ready→active, branch
 - 2026-11-08T06:10:32Z · message_queued at 2026-11-08T06:10:32.950Z
+
