@@ -70,3 +70,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T16:14:43Z · message_delivered: 2 message(s)
 - 2026-11-08T16:29:16Z · body
 - 2026-11-08T16:29:50Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T16:29:50Z · message_queued at 2026-11-08T16:29:50.304Z
