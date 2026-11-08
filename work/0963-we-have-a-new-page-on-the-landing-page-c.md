@@ -15,7 +15,7 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T07:12:16Z"
+updated_at: "2026-11-08T07:22:17Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router, tests/app-loading-skeleton.test.ts > repo loading skeleton > maps every standard route to an explicit skeleton kind on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 79b62477efe1e44cc9044f51de0013ba7fd90ffe
 ---
@@ -117,3 +117,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T07:12:16Z · message_queued at 2026-11-08T07:12:16.403Z
 - 2026-11-08T07:12:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
 - 2026-11-08T07:12:16Z · message_delivered: 2 message(s)
+- 2026-11-08T07:22:17Z · body
