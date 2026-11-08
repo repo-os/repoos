@@ -216,4 +216,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T14:48:37Z · message_delivered: 2 message(s)
 - 2026-11-08T14:59:16Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-08T14:59:16Z · status active→review
-
+- 2026-11-08T14:59:16Z · message_queued at 2026-11-08T14:59:16.880Z
