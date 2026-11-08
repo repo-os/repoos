@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-08T01:31:47.207Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -16,6 +14,8 @@ review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:26:09Z"
 updated_at: "2026-11-08T01:31:47Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T01:31:47.207Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -51,4 +51,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T01:02:01Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T01:31:44Z · message_queued at 2026-11-08T01:31:44.081Z
 - 2026-11-08T01:31:47Z · message_delivered: 1 message(s)
-
+- 2026-11-08T01:31:47Z · message_queued at 2026-11-08T01:31:47.273Z
