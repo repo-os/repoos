@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
-last_handoff_failure_sha: b4f87d328cd27875d9284c01c8ecbe1df0ca150c
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
@@ -15,7 +13,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T11:05:31Z"
+updated_at: "2026-11-08T11:05:32Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
+last_handoff_failure_sha: b4f87d328cd27875d9284c01c8ecbe1df0ca150c
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
