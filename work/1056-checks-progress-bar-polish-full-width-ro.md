@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T01:50:19Z"
+updated_at: "2026-11-08T01:50:48Z"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -41,25 +41,25 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 ```json
 [
 {
-  "label": "Board card: full-width rounded check bar",
-  "target": "default",
-  "route": "/work?status=active",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
-  "state": "card:checksProgress"
+"label": "Board card: full-width rounded check bar",
+"target": "default",
+"route": "/work?status=active",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
+"state": "card:checksProgress"
 },
 {
-  "label": "Drawer: half-width bar, detail on same row",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": "[data-test-id=\"close-out-check-progress\"]",
-  "state": "drawer:checksProgress"
+"label": "Drawer: half-width bar, detail on same row",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": "[data-test-id=\"close-out-check-progress\"]",
+"state": "drawer:checksProgress"
 },
 {
-  "label": "Pipeline: bar inline in status row",
-  "target": "default",
-  "route": "/work?tab=pipeline",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"pipeline-card-check-progress\"]",
-  "state": "pipeline:checksProgress"
+"label": "Pipeline: bar inline in status row",
+"target": "default",
+"route": "/work?tab=pipeline",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"pipeline-card-check-progress\"]",
+"state": "pipeline:checksProgress"
 }
 ]
 ```
