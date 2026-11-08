@@ -3,6 +3,9 @@ id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 8 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 needs_merge: true
 priority: p1
 area: server
@@ -248,3 +251,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T14:59:12Z · note: shots: skipped — the diff (30 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-08T14:59:52Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 3e338391 to 734d5a95) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-08T15:01:38Z · note: review pass 9: needs some work
+- 2026-11-08T15:01:38Z · needs_input
