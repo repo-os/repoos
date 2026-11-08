@@ -15,7 +15,7 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T06:18:45Z"
+updated_at: "2026-11-08T06:20:32Z"
 ---
 ## Problem
 
@@ -97,3 +97,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T06:07:03Z · body
 - 2026-11-08T06:18:15Z · note: adopted orphaned engineer pid 36650
 - 2026-11-08T06:18:45Z · body
+- 2026-11-08T06:20:32Z · CTO nudge: held — handoff gate is running
