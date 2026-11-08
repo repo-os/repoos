@@ -38,3 +38,4 @@ Verified resolver already exists in `src/core/repo-log.ts` (`resolveDefaultBranc
 - 2026-11-08T13:00:43Z · body
 - 2026-11-08T13:02:16Z · status active→review
 - 2026-11-08T13:02:17Z · message_queued at 2026-11-08T13:02:17.040Z
+- 2026-11-08T13:02:17Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
