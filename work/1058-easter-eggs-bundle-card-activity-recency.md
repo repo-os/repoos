@@ -13,14 +13,15 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T12:42:59Z"
+updated_at: "2026-11-08T14:54:02Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 review_rounds: 1
 review_passes: 1
-dev_error_count: 16
+dev_error_count: 17
+engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Items
 
@@ -206,3 +207,35 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T12:26:39Z · body
 - 2026-11-08T12:37:00Z · message_queued at 2026-11-08T12:37:00.436Z
 - 2026-11-08T12:38:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T12:43:03Z · message_delivered: 1 message(s)
+- 2026-11-08T12:50:27Z · message_queued at 2026-11-08T12:50:27.847Z
+- 2026-11-08T12:50:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T12:53:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T13:30:43Z · message_queued at 2026-11-08T13:30:43.628Z
+- 2026-11-08T13:35:54Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-08T13:35:55Z · message_delivered: 1 message(s)
+- 2026-11-08T13:37:40Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T13:37:40Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (1/12 crashes in 30m)
+- 2026-11-08T13:40:11Z · needs_input
+- 2026-11-08T13:51:18Z · body
+- 2026-11-08T13:51:55Z · message_queued at 2026-11-08T13:51:55.680Z
+- 2026-11-08T13:53:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T13:58:19Z · message_delivered: 1 message(s)
+- 2026-11-08T13:58:19Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-08T14:06:20Z · message_queued at 2026-11-08T14:06:20.967Z
+- 2026-11-08T14:06:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T14:08:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T14:13:02Z · body
+- 2026-11-08T14:27:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T14:31:07Z · body
+- 2026-11-08T14:46:05Z · body
+- 2026-11-08T14:48:39Z · message_queued at 2026-11-08T14:48:39.787Z
+- 2026-11-08T14:53:52Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T14:53:52Z · note: handoff requested (cli)
+- 2026-11-08T14:53:56Z · message_queued at 2026-11-08T14:53:56.318Z
+- 2026-11-08T14:53:56Z · handoff failed · task-file handoff failed at commit · stray repoos.toml on task branch: repoos.toml differs from main
++paused = true
++pausedUntil = "2026-11-10T01:00:00.000Z"
++pausedReason = "Cursor reset"
++pausedModels = [{ model = "gpt-6.1-terra" }]. Revert it with: git checkout main -- repoos.toml
+- 2026-11-08T14:54:02Z · message_delivered: 1 message(s)
