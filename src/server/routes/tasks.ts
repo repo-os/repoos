@@ -121,6 +121,7 @@ import { loadEngineeringReports } from "../engineering-reports.js";
 import {
   getTaskSummaryJobPayload,
   queueTaskSummary,
+  readSummaryStatus,
   readTaskFromDisk,
   summaryReleaseGate,
 } from "../task-summary.js";
@@ -4110,7 +4111,12 @@ export const postTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
       error: "Could not persist pending summary status; retry the request.",
     });
   }
-  return json(res, 202, { ok: true, queued: true });
+  const queuedState = readSummaryStatus(ctx.config, task.id);
+  return json(res, 202, {
+    ok: true,
+    queued: true,
+    pendingSince: queuedState.pendingSince ?? queuedState.at,
+  });
 };
 
 export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => {
