@@ -200,7 +200,17 @@ describe("PipelineCard activity recency (#1058)", () => {
         priority: "p3",
         title: "Fixture",
         state: "ok",
-        statusSignals: null,
+        statusSignals: {
+          handoffInFlight: false,
+          checkInFlight: false,
+          remoteValidationInFlight: false,
+          queued: false,
+          running: true,
+          paused: false,
+          stuckSignal: false,
+          quietForMs: 60_000,
+          nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+        },
         stepLabel: "Coding",
         chipText: null,
         stateSince: "2026-11-08T02:48:00.000Z",
@@ -276,6 +286,41 @@ describe("PipelineCard activity recency (#1058)", () => {
         hostLabel: "local",
         action: null,
         checkProgress: null,
+      },
+    });
+    expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
+  });
+
+  it("shows stuck and elapsed time for a silent agent that still reports running", () => {
+    const wrapper = mount(PipelineCard, {
+      props: {
+        taskId: "1058", type: "chore", priority: "p3", title: "Fixture",
+        state: "ok",
+        statusSignals: {
+          handoffInFlight: false, checkInFlight: false, remoteValidationInFlight: false,
+          queued: false, running: true, paused: false, stuckSignal: true,
+          quietForMs: 4 * 60_000, nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+        },
+        stepLabel: "Coding", chipText: null,
+        stateSince: "2026-11-08T02:48:00.000Z", lastActivityAt: "2026-11-08T02:56:00.000Z",
+        nowMs: Date.parse("2026-11-08T03:00:00.000Z"), roundsLabel: "D0 · R0",
+        reviewerTone: null, modelsLabel: "eng / rev", hostLabel: "local",
+        action: null, checkProgress: null,
+      },
+    });
+    expect(wrapper.get(".pl-status-chip").text()).toBe("Stuck");
+    expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
+  });
+
+  it.each(["review", "close-out"])("keeps elapsed inline on idle %s rows", (kind) => {
+    const wrapper = mount(PipelineCard, {
+      props: {
+        taskId: "1058", type: "chore", priority: "p3", title: "Fixture",
+        state: "ok", statusSignals: null, stepLabel: kind === "review" ? "In review" : "Closing out",
+        chipText: null, stateSince: "2026-11-08T02:48:00.000Z", lastActivityAt: null,
+        nowMs: Date.parse("2026-11-08T03:00:00.000Z"), roundsLabel: "D0 · R0",
+        reviewerTone: null, modelsLabel: "eng / rev", hostLabel: "local",
+        action: null, checkProgress: null,
       },
     });
     expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
