@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T01:38:38Z"
+updated_at: "2026-11-08T01:40:50Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -45,7 +45,6 @@ Runbook:
 Do not edit product code, push, or start unrelated tasks as part of this run.
 
 Context: `repoos gc` is the only sanctioned way to remove worktrees and branches; it decides what is safe. Worktrees outside RepoOS's managed task-worktree directory (for example other tools' worktrees) are not this task's to remove. This task comes from the "Safe worktree cleanup" schedule in `schedules/`; a normal run has an empty code diff, so there is nothing for the scoped check to test beyond the task's own files. Once #1004 lands and changes what `repoos gc` collects, update this runbook and the schedule template to match.
-
 
 ## Activity
 
@@ -119,3 +118,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:35:09Z · message_queued at 2026-11-08T01:35:09.338Z
 - 2026-11-08T01:37:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T01:38:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T01:40:50Z · body
