@@ -7562,7 +7562,11 @@ export class AgentRunner {
       if (current.extra.deferred_handoff_resume_count == null) return;
       delete current.extra.deferred_handoff_resume_count;
       writeFileSync(task.absPath, serializeTask(current));
-      commitTaskFile(this.config.root, task.absPath, `docs(${taskId}): clear deferred-handoff resume count`);
+      commitTaskFile(
+        this.config.root,
+        task.absPath,
+        `docs(${taskId}): clear deferred-handoff resume count`,
+      );
     } catch (err) {
       this.logger?.agent(
         taskId,
