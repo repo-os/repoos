@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
 needs_merge: true
 priority: p1
 area: server
@@ -262,3 +262,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T15:54:50Z · message_queued at 2026-11-08T15:54:50.028Z
 - 2026-11-08T15:54:50Z · ↻ resuming engineer to read queued message
 - 2026-11-08T15:54:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T15:54:50Z · status active→review
