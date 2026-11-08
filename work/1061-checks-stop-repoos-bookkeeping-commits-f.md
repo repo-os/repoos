@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T17:35:41Z"
+updated_at: "2026-11-08T17:49:52Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -84,3 +84,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T17:29:18Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T17:34:46Z · message_queued at 2026-11-08T17:34:46.773Z
 - 2026-11-08T17:35:41Z · message_delivered: 2 message(s)
+- 2026-11-08T17:49:52Z · message_queued at 2026-11-08T17:49:52.519Z
