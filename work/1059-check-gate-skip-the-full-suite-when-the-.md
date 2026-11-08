@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-08T10:50:55Z"
-review_passes: 2
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -15,7 +13,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-review_rounds: 1
+updated_at: "2026-11-08T10:50:55Z"
+review_rounds: 2
+review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -143,4 +143,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T10:50:25Z · message_queued at 2026-11-08T10:50:25.582Z
 - 2026-11-08T10:50:28Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1059 (pid 31725)
 - 2026-11-08T10:50:55Z · note: review pass 2: needs some work
-
+- 2026-11-08T10:50:55Z · status review→active
