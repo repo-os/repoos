@@ -2,7 +2,7 @@
 id: "1065"
 title: Review card says 'ready to finish' while checks are still running or failing
 type: bug
-status: active
+status: review
 paths: [src/ui-app/src/components/TaskCard.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p2
 area: web
@@ -10,9 +10,10 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
-updated_at: "2026-11-08T16:09:08Z"
+updated_at: "2026-11-08T16:29:50Z"
+review_passes: 1
 handoff_signal_retry_count: 2
-deferred_handoff_resume_count: 1
+deferred_handoff_resume_count: 2
 ---
 ## Problem
 On the Work board, a task in Review whose reviewer said "good to go" shows the green "Review passed · ready to finish" label, a glowing card and an active "Move to done" button. The task drawer for the same task can say "Not ready to merge: Running checks · 7m 21s, step 10 of 11" at the same moment (seen on #1063). The two disagree.
@@ -62,3 +63,12 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T16:03:56Z · message_queued at 2026-11-08T16:03:56.504Z
 - 2026-11-08T16:09:08Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-08T16:09:08Z · note: handoff requested (cli)
+- 2026-11-08T16:12:03Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-08T16:12:04Z · status active→review
+- 2026-11-08T16:12:04Z · message_queued at 2026-11-08T16:12:04.161Z
+- 2026-11-08T16:14:03Z · note: review pass 1: good to go
+- 2026-11-08T16:14:43Z · message_delivered: 2 message(s)
+- 2026-11-08T16:29:16Z · body
+- 2026-11-08T16:29:50Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T16:29:50Z · message_queued at 2026-11-08T16:29:50.304Z
+- 2026-11-08T16:29:50Z · ↻ resuming engineer to read queued message

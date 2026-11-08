@@ -3,9 +3,6 @@ id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — startup-reaper Docker inspection failures can abort validation.
 needs_merge: true
 priority: p1
 area: server
@@ -17,12 +14,11 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T16:07:48Z"
+updated_at: "2026-11-08T16:29:56Z"
 review_passes: 9
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 8
-deferred_handoff_resume_count: 2
 ---
 ## Problem
 Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
@@ -274,3 +270,5 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T16:07:48Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T16:07:48Z · message_queued at 2026-11-08T16:07:48.570Z
 - 2026-11-08T16:07:48Z · ↻ resuming engineer to read queued message
+- 2026-11-08T16:28:30Z · message_delivered: 2 message(s)
+- 2026-11-08T16:29:56Z · needs_input (review-rounds-exhausted) cleared for review again by human

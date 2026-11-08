@@ -2,7 +2,10 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Global touch handling breaks unrelated controls, and cancelled gestures can open tooltips."
 priority: p3
 area: web
 assigned_to: ai
@@ -13,12 +16,13 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T16:02:05Z"
+updated_at: "2026-11-08T16:28:42Z"
+review_passes: 3
 review_rounds: 2
-review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 17
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
+deferred_handoff_resume_count: 1
 ---
 ## Items
 
@@ -231,10 +235,6 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T14:53:52Z · note: handoff requested (cli)
 - 2026-11-08T14:53:56Z · message_queued at 2026-11-08T14:53:56.318Z
 - 2026-11-08T14:53:56Z · handoff failed · task-file handoff failed at commit · stray repoos.toml on task branch: repoos.toml differs from main
-+paused = true
-+pausedUntil = "2026-11-10T01:00:00.000Z"
-+pausedReason = "Cursor reset"
-+pausedModels = [{ model = "gpt-6.1-terra" }]. Revert it with: git checkout main -- repoos.toml
 - 2026-11-08T14:54:02Z · message_delivered: 1 message(s)
 - 2026-11-08T15:05:07Z · body
 - 2026-11-08T15:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
@@ -268,3 +268,16 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T15:57:55Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1058.md
 - 2026-11-08T15:57:59Z · message_delivered: 1 message(s)
 - 2026-11-08T16:02:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T16:12:00Z · body
+- 2026-11-08T16:14:43Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T16:14:43Z · message_queued at 2026-11-08T16:14:43.962Z
+- 2026-11-08T16:14:44Z · ↻ resuming engineer to read queued message
+- 2026-11-08T16:14:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T16:14:44Z · note: handoff requested (cli)
+- 2026-11-08T16:17:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T16:17:37Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T16:17:37Z · status active→review
+- 2026-11-08T16:17:37Z · message_queued at 2026-11-08T16:17:37.782Z
+- 2026-11-08T16:20:56Z · note: review pass 3: needs some work
+- 2026-11-08T16:20:56Z · needs_input
+- 2026-11-08T16:28:42Z · message_delivered: 3 message(s)
