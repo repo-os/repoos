@@ -53,9 +53,9 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+}
 ],
 "state": "board:activeCoding"
 },
@@ -65,15 +65,15 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "route": "/work",
 "highlight": ".app-tooltip.show",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "waitMs": 700
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "waitMs": 700
+}
 ],
 "state": "board:activeCoding"
 },
@@ -84,9 +84,9 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "selector": "[data-task-id=\"pipe-coding\"]",
 "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"pipe-coding\"]"
-  }
+{
+  "waitFor": "[data-task-id=\"pipe-coding\"]"
+}
 ],
 "state": "board:pipeline"
 }
@@ -154,3 +154,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T07:13:07Z · message_delivered: 1 message(s)
 - 2026-11-08T07:13:47Z · body
 - 2026-11-08T07:23:14Z · message_queued at 2026-11-08T07:23:14.412Z
+- 2026-11-08T07:23:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
