@@ -3,6 +3,9 @@ id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — profile-excluded steps still push docs-only progress past its total; required fallback coverage is missing.
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -183,3 +186,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T12:58:54Z · message_queued at 2026-11-08T12:58:54.867Z
 - 2026-11-08T13:13:13Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-08T13:16:53Z · note: review pass 4: needs some work
+- 2026-11-08T13:16:53Z · needs_input
