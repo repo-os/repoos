@@ -3,9 +3,6 @@ id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 needs_merge: true
 priority: p3
 area: web
@@ -17,7 +14,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T01:55:33Z"
+updated_at: "2026-11-08T01:55:34Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T01:53:16.701Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -314,3 +311,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T01:54:07Z · needs_input
 - 2026-11-08T01:55:33Z · agent exited with an error (opencode) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
 - 2026-11-08T01:55:33Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T01:55:34Z · needs_input
