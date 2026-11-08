@@ -335,3 +335,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T02:16:03Z · body
 - 2026-11-08T02:18:14Z · CTO nudge: held — remote validation is running
 - 2026-11-08T02:26:46Z · handoff failed · check failed after 2 automatic retries · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T02:26:46Z · message_queued at 2026-11-08T02:26:46.842Z
