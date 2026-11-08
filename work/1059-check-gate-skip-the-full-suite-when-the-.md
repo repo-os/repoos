@@ -13,7 +13,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T06:40:30Z"
+updated_at: "2026-11-08T07:05:07Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -43,9 +43,9 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 ```json
 [
 {
-  "label": "Docs-only check setting",
-  "target": "default",
-  "route": "/settings?tab=advanced&setting=check.docsOnlySkip"
+"label": "Docs-only check setting",
+"target": "default",
+"route": "/settings?tab=advanced&setting=check.docsOnlySkip"
 }
 ]
 ```
@@ -66,3 +66,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T06:30:47Z · message_queued at 2026-11-08T06:30:47.343Z
 - 2026-11-08T06:31:03Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T06:40:30Z · body
+- 2026-11-08T07:05:07Z · body
