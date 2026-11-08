@@ -12,6 +12,7 @@ import {
   readFileSync,
   renameSync,
   unlinkSync,
+  rmSync,
   writeFileSync,
   appendFileSync,
   copyFileSync,
@@ -83,6 +84,39 @@ function deferredPath(root: string, cacheDir: string, taskId: string): string {
     "check-gate-deferred",
     `${encodeURIComponent(taskId)}.json`,
   );
+}
+
+function stateMutexPath(root: string, cacheDir: string, taskId: string): string {
+  return join(cacheRoot(root, cacheDir), "check-gate-state", encodeURIComponent(taskId));
+}
+
+/** Cross-process serialization for holder and deferred-queue read/modify/write. */
+function acquireStateMutex(root: string, cacheDir: string, taskId: string): () => void {
+  const path = stateMutexPath(root, cacheDir, taskId);
+  mkdirSync(dirname(path), { recursive: true });
+  const waitCell = new Int32Array(new SharedArrayBuffer(4));
+  const deadline = Date.now() + 120_000;
+  while (true) {
+    try {
+      mkdirSync(path);
+      writeFileSync(join(path, "pid"), String(process.pid), "utf8");
+      return () => rmSync(path, { recursive: true, force: true });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      try {
+        const owner = Number(readFileSync(join(path, "pid"), "utf8"));
+        if (Number.isFinite(owner) && !isPidAlive(owner)) {
+          rmSync(path, { recursive: true, force: true });
+          continue;
+        }
+      } catch {
+        // The directory may have been created just before its owner file.
+      }
+      if (Date.now() >= deadline)
+        throw new Error(`timed out waiting for check-gate state lock: ${taskId}`);
+      Atomics.wait(waitCell, 0, 0, 10);
+    }
+  }
 }
 
 function atomicWriteJson(path: string, value: unknown): void {
@@ -224,23 +258,36 @@ export async function acquireCheckGateLock(args: {
     at: new Date().toISOString(),
   };
   const path = lockPath(args.boardRoot, args.cacheDir, args.taskId);
-  const existing = readCheckGateLock(args.boardRoot, args.cacheDir, args.taskId);
-  if (existing) {
-    if (!samePath(existing.worktree, args.worktree)) {
-      return {
-        ok: false,
-        reason: `check-gate lock for #${args.taskId} is held on a different worktree`,
-      };
-    }
-    const live = aliveHolders(existing);
-    if (live.length > 0 || existing.holders.some((h) => !isPidAlive(h.pid))) {
-      const merged: CheckGateLock = {
-        ...existing,
-        holders: [...live, holder],
-      };
-      atomicWriteJson(path, merged);
+  const releaseState = acquireStateMutex(args.boardRoot, args.cacheDir, args.taskId);
+  try {
+    const existing = readCheckGateLock(args.boardRoot, args.cacheDir, args.taskId);
+    if (existing) {
+      if (!samePath(existing.worktree, args.worktree)) {
+        return {
+          ok: false,
+          reason: `check-gate lock for #${args.taskId} is held on a different worktree`,
+        };
+      }
+      const live = aliveHolders(existing);
+      if (live.length > 0 || existing.holders.some((h) => !isPidAlive(h.pid))) {
+        const merged: CheckGateLock = {
+          ...existing,
+          holders: [...live, holder],
+        };
+        atomicWriteJson(path, merged);
+      } else {
+        const fresh: CheckGateLock = {
+          taskId: args.taskId,
+          branch: args.branch,
+          worktree: args.worktree,
+          headAtStart,
+          at: holder.at,
+          holders: [holder],
+        };
+        atomicWriteJson(path, fresh);
+      }
     } else {
-      const fresh: CheckGateLock = {
+      const lock: CheckGateLock = {
         taskId: args.taskId,
         branch: args.branch,
         worktree: args.worktree,
@@ -248,18 +295,10 @@ export async function acquireCheckGateLock(args: {
         at: holder.at,
         holders: [holder],
       };
-      atomicWriteJson(path, fresh);
+      atomicWriteJson(path, lock);
     }
-  } else {
-    const lock: CheckGateLock = {
-      taskId: args.taskId,
-      branch: args.branch,
-      worktree: args.worktree,
-      headAtStart,
-      at: holder.at,
-      holders: [holder],
-    };
-    atomicWriteJson(path, lock);
+  } finally {
+    releaseState();
   }
   const release = async (): Promise<void> => {
     await releaseCheckGateHolder(args.boardRoot, args.cacheDir, args.taskId, token);
@@ -289,14 +328,22 @@ async function releaseCheckGateHolder(
   // Keep the lock visible during the flush: otherwise another gate could
   // start between release and the final queued bookkeeping commit.
   await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
-  const latest = readCheckGateLock(boardRoot, cacheDir, taskId);
-  if (!latest) return;
-  const liveAfterFlush = latest.holders.filter((h) => h.token !== token && isPidAlive(h.pid));
-  if (liveAfterFlush.length > 0) {
-    atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), { ...latest, holders: liveAfterFlush });
-    return;
+  const releaseState = acquireStateMutex(boardRoot, cacheDir, taskId);
+  try {
+    const latest = readCheckGateLock(boardRoot, cacheDir, taskId);
+    if (!latest) return;
+    const liveAfterFlush = latest.holders.filter((h) => h.token !== token && isPidAlive(h.pid));
+    if (liveAfterFlush.length > 0) {
+      atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), {
+        ...latest,
+        holders: liveAfterFlush,
+      });
+      return;
+    }
+    clearCheckGateLock(boardRoot, cacheDir, taskId);
+  } finally {
+    releaseState();
   }
-  clearCheckGateLock(boardRoot, cacheDir, taskId);
 }
 
 /**
@@ -360,8 +407,15 @@ export async function reconcileDeadCheckGateLock(
     }
     return;
   }
-  clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
   await flushDeferredBranchCommits(boardRoot, cacheDir, lock.taskId);
+  const releaseState = acquireStateMutex(boardRoot, cacheDir, lock.taskId);
+  try {
+    const current = readCheckGateLock(boardRoot, cacheDir, lock.taskId);
+    if (current && aliveHolders(current).length === 0)
+      clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
+  } finally {
+    releaseState();
+  }
 }
 
 /** Live lock for `worktree`, reconciling dead holders first. */
@@ -485,15 +539,20 @@ export function enqueueDeferredBranchCommit(
   absPaths: string[],
   message: string,
 ): void {
-  const existing = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
-  existing.push({
-    commitRoot,
-    absPaths: [...absPaths],
-    message,
-    enqueuedAt: new Date().toISOString(),
-    fileSnapshots: snapshotAbsPaths(absPaths),
-  });
-  writeDeferredBranchCommits(boardRoot, cacheDir, taskId, existing);
+  const releaseState = acquireStateMutex(boardRoot, cacheDir, taskId);
+  try {
+    const existing = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
+    existing.push({
+      commitRoot,
+      absPaths: [...absPaths],
+      message,
+      enqueuedAt: new Date().toISOString(),
+      fileSnapshots: snapshotAbsPaths(absPaths),
+    });
+    writeDeferredBranchCommits(boardRoot, cacheDir, taskId, existing);
+  } finally {
+    releaseState();
+  }
 }
 
 export async function flushDeferredBranchCommits(
@@ -501,46 +560,51 @@ export async function flushDeferredBranchCommits(
   cacheDir: string,
   taskId: string,
 ): Promise<{ ok: boolean; remaining: number }> {
-  const queue = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
-  if (queue.length === 0) return { ok: true, remaining: 0 };
-  checkGateFlushInProgress = true;
-  const prev = process.env.REPOOS_CHECK_GATE_INTERNAL;
-  process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
-  const remaining: DeferredBranchCommit[] = [];
+  const releaseState = acquireStateMutex(boardRoot, cacheDir, taskId);
   try {
-    // Preserve the final visible contents while replaying each captured write
-    // as its own ordered commit. Without this, repeated writes to one file
-    // collapse into the first queued commit.
-    const finalSnapshots = snapshotAbsPaths([...new Set(queue.flatMap((q) => q.absPaths))]);
-    let failed = false;
-    for (const item of queue) {
-      if (failed) {
-        remaining.push(item);
-        continue;
-      }
-      restoreSnapshots(item.fileSnapshots);
-      const committed = commitFiles(item.commitRoot, item.absPaths, item.message);
-      if (!committed) {
-        remaining.push(item);
-        failed = true;
-      }
-    }
-    restoreSnapshots(finalSnapshots);
-    writeDeferredBranchCommits(boardRoot, cacheDir, taskId, remaining);
-    return { ok: remaining.length === 0, remaining: remaining.length };
-  } finally {
-    // If replay throws, restore the latest queued snapshot so no intermediate
-    // commit contents are left visible. The durable queue remains for retry.
+    const queue = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
+    if (queue.length === 0) return { ok: true, remaining: 0 };
+    checkGateFlushInProgress = true;
+    const prev = process.env.REPOOS_CHECK_GATE_INTERNAL;
+    process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
+    const remaining: DeferredBranchCommit[] = [];
     try {
-      const finalSnapshots: Record<string, string | null> = {};
-      for (const item of queue) Object.assign(finalSnapshots, item.fileSnapshots);
+      // Preserve the final visible contents while replaying each captured write
+      // as its own ordered commit. Without this, repeated writes to one file
+      // collapse into the first queued commit.
+      const finalSnapshots = snapshotAbsPaths([...new Set(queue.flatMap((q) => q.absPaths))]);
+      let failed = false;
+      for (const item of queue) {
+        if (failed) {
+          remaining.push(item);
+          continue;
+        }
+        restoreSnapshots(item.fileSnapshots);
+        const committed = commitFiles(item.commitRoot, item.absPaths, item.message);
+        if (!committed) {
+          remaining.push(item);
+          failed = true;
+        }
+      }
       restoreSnapshots(finalSnapshots);
-    } catch {
-      // Boot recovery will retry the persisted queue.
+      writeDeferredBranchCommits(boardRoot, cacheDir, taskId, remaining);
+      return { ok: remaining.length === 0, remaining: remaining.length };
+    } finally {
+      // If replay throws, restore the latest queued snapshot so no intermediate
+      // commit contents are left visible. The durable queue remains for retry.
+      try {
+        const finalSnapshots: Record<string, string | null> = {};
+        for (const item of queue) Object.assign(finalSnapshots, item.fileSnapshots);
+        restoreSnapshots(finalSnapshots);
+      } catch {
+        // Boot recovery will retry the persisted queue.
+      }
+      if (prev === undefined) delete process.env.REPOOS_CHECK_GATE_INTERNAL;
+      else process.env.REPOOS_CHECK_GATE_INTERNAL = prev;
+      checkGateFlushInProgress = false;
     }
-    if (prev === undefined) delete process.env.REPOOS_CHECK_GATE_INTERNAL;
-    else process.env.REPOOS_CHECK_GATE_INTERNAL = prev;
-    checkGateFlushInProgress = false;
+  } finally {
+    releaseState();
   }
 }
 

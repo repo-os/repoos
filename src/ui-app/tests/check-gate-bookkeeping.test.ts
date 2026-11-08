@@ -188,6 +188,27 @@ describe("check gate lock and deferred commits (#1061)", () => {
     expect(activeCheckGateForCommitRoot(root, ".repoos", wt)).toBeNull();
   });
 
+  it("keeps concurrent gate holders when they acquire from separate calls", async () => {
+    const { root, wt, branch } = initRepo();
+    const args = {
+      boardRoot: root,
+      cacheDir: ".repoos",
+      taskId: "0001",
+      branch,
+      worktree: wt,
+      kind: "handoff-finalize" as const,
+    };
+    const [first, second] = await Promise.all([
+      acquireCheckGateLock(args),
+      acquireCheckGateLock({ ...args, kind: "merge-gate" }),
+    ]);
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    expect(aliveCheckGateLockForWorktree(root, ".repoos", wt)?.holders).toHaveLength(2);
+    if (first.ok) await first.release();
+    if (second.ok) await second.release();
+  });
+
   it("refuses non-bookkeeping commits during the gate", async () => {
     const { root, wt, branch } = initRepo();
     const config = cfg(root);
