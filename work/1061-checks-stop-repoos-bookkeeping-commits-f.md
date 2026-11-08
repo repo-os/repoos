@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -14,7 +13,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T16:06:56Z"
+updated_at: "2026-11-08T16:07:48Z"
+handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
 ---
@@ -62,4 +62,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T15:56:34Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T16:01:41Z · message_queued at 2026-11-08T16:01:41.493Z
 - 2026-11-08T16:06:56Z · message_queued at 2026-11-08T16:06:56.535Z
-
+- 2026-11-08T16:07:48Z · message_delivered: 1 message(s)
