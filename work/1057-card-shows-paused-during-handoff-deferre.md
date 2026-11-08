@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T01:41:01Z"
+updated_at: "2026-11-08T01:43:14Z"
 handoff_signal_retry_count: 1
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T01:31:47.207Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -60,3 +60,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T01:41:01Z · message_queued at 2026-11-08T01:41:01.137Z
 - 2026-11-08T01:41:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: The rerun passed: remote validation completed the changed-path tests, and the local formatting, lint, build, rendered contrast, and UI smoke steps also passed. The handoff timeout did not reproduce, so I’m requesting handoff again with the… · stderr: (empty)
 - 2026-11-08T01:41:01Z · message_delivered: 2 message(s)
+- 2026-11-08T01:43:14Z · CTO nudge: held — handoff gate is running
