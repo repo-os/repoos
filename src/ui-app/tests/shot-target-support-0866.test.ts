@@ -48,7 +48,9 @@ const DRAWER_ROUTE = "/work?task=9999&tab=changes";
 describe("app target resolution (#0866)", () => {
   it("treats the default command as the app target and its routes as app routes", () => {
     expect(appPreviewTargetName(PREVIEW)).toBe(DEFAULT_PREVIEW_TARGET);
-    expect(isAppRoute("/settings?tab=general")).toBe(true);
+    for (const route of ["/settings?tab=general", "/client-board"]) {
+      expect(isAppRoute(route)).toBe(true);
+    }
     expect(isAppRoute("/work?task=9999&tab=changes")).toBe(true);
     expect(isAppRoute("/configuration")).toBe(false);
     // `/` is ambiguous (dashboard vs docs/landing home) — never app-only.
