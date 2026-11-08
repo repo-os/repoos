@@ -20,7 +20,6 @@ last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check fail
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 9
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 `repoos check` runs the full plan (build, format/lint, full test suite, WebKit UI smoke, contrast audit) even when a task's diff contains only task bookkeeping under `work/` (task file, `work/reports/<id>/*`) or other non-code files. Example: #1055 (the weekly worktree cleanup) changed 11 files, all under `work/`, and still waited for a remote-validation slot and ran the full 680-file suite on every handoff attempt, repeating after each outage or capture timeout. That is minutes to hours of wasted time and runner load for a change that cannot affect behavior. The recurring weekly cleanup will hit this every run.
