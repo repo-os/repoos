@@ -94,6 +94,10 @@ consistent. Use `repoos mv`, `repoos update`, `repoos note`, or the UI.
 | `review` | Implementation finished and checks pass. Waiting on a human. |
 | `done` | Approved and merged. |
 
+## Client board
+
+Open **Client board** from the Work Queue for a read-only view of the project. Planned includes inbox and ready work, Building shows active work, and Reviewed shows work awaiting review. Completed, draft and archived tasks are omitted. The board uses the same sign-in as the rest of the app; it does not create a client account or change permissions.
+
 ## Pipeline view
 
 The Work Queue page has two views, switched with the **Pipeline | Board**
