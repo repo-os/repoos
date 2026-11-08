@@ -196,3 +196,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T10:53:22Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-08T10:54:09Z · CTO nudge: held — review is running
 - 2026-11-08T10:59:11Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-11-08T10:59:11Z · message_queued at 2026-11-08T10:59:11.737Z
