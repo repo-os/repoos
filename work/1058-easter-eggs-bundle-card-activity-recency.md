@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Global touch handling breaks unrelated controls, and cancelled gestures can open tooltips."
 priority: p3
 area: web
 assigned_to: ai
@@ -276,3 +279,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T16:17:37Z · status active→review
 - 2026-11-08T16:17:37Z · message_queued at 2026-11-08T16:17:37.782Z
 - 2026-11-08T16:20:56Z · note: review pass 3: needs some work
+- 2026-11-08T16:20:56Z · needs_input
