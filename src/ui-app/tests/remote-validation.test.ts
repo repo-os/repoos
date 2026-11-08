@@ -241,7 +241,8 @@ describe("RemoteValidationRunner", () => {
         commands.push(cmd);
         if (isValidateScriptMirrorProbe(cmd))
           return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1`, timedOut: false };
-        if (cmd.includes("/browser-capture/result.json")) return { code: 1, output: "", timedOut: false };
+        if (cmd.includes("/browser-capture/result.json"))
+          return { code: 1, output: "", timedOut: false };
         if (cmd.startsWith("docker rm -f")) return { code: 0, output: "", timedOut: false };
         if (!cmd.includes("REPOOS_CONTAINER=")) return { code: 0, output: "ok", timedOut: false };
         started = true;
@@ -332,8 +333,10 @@ describe("RemoteValidationRunner", () => {
       runRemote: vi.fn(async (_host, cmd, _out, _timeout, options) => {
         if (isValidateScriptMirrorProbe(cmd))
           return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1`, timedOut: false };
-        if (cmd.startsWith("docker rm -f")) return { code: 1, output: "ssh broken", timedOut: false };
-        if (cmd.includes("/browser-capture/result.json")) return { code: 1, output: "", timedOut: false };
+        if (cmd.startsWith("docker rm -f"))
+          return { code: 1, output: "ssh broken", timedOut: false };
+        if (cmd.includes("/browser-capture/result.json"))
+          return { code: 1, output: "", timedOut: false };
         if (!cmd.includes("REPOOS_CONTAINER=")) return { code: 0, output: "ok", timedOut: false };
         started = true;
         return new Promise<RemoteExecResult>((resolve) =>
