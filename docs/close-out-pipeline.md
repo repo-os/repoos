@@ -1100,7 +1100,7 @@ the deadline still reaches `runRemotePreReviewGate` in
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `could not create candidate worktree` | Candidate branch prefix regressed to a dot-prefix | Check `CANDIDATE_BRANCH_PREFIX` in `integration-orchestrator.ts` |
-| `could not get main SHA` | Stale job from before the prefix fix, or genuinely broken git state | Retry `POST .../done` — jobs re-enqueue cleanly now (commit `d66c7877`) |
+| `could not get main SHA (branch: …; root: …; exit status: …; timedOut: …; stderr: …)` | The resolved local default branch could not be read as a commit, often because refs changed during close-out or the repository is in a broken git state | Check the reported branch and root, then inspect the reported git stderr/status. Restore the branch ref or repair the repository before retrying `POST .../done`. |
 | `merge conflict in dist/...` or `merge conflict in work/<id>-*.md` | Should not happen post-`e34485c7` — if it does, `autoResolve` regressed | Check `validateCandidate()`'s `autoResolve` array still includes `dist/` and the task's own path |
 | `dist/` dirty on `main` after a plain `bun run build` | Build determinism regressed — a timestamp/random value is back in `dist/.build-info.json` | Check `scripts/copy-assets.mjs`: the marker holds `{ hash, version }` only; `generatedAt` belongs in the gitignored `dist/.build-stamp.json` |
 | `merge conflict in <any other file>` | Real source conflict between the feature branch and main | If the conflict is provably-safe and the task already passed review it is resolved in the candidate (see #0692 above); otherwise fix it in the feature branch's own worktree, not the candidate |

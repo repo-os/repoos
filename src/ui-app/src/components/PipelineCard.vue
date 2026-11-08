@@ -74,7 +74,7 @@ const showInlineCheckBar = computed(
 );
 
 /** Healthy pipeline rows hide elapsed on the line; recency lives on the step tooltip (#1058). */
-const showElapsedInline = computed(() => props.state !== "ok");
+const showElapsedInline = computed(() => displayState.value !== "ok");
 const elapsedTip = computed(() => stateElapsedTip("In this state", props.stateSince, props.nowMs));
 
 function open(): void {

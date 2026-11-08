@@ -13,16 +13,15 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T12:35:15Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
-last_handoff_failure_sha: b4f87d328cd27875d9284c01c8ecbe1df0ca150c
+updated_at: "2026-11-08T13:53:26Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — _shallow: true"
+last_handoff_failure_sha: f3fc1a0951e0f4dc8e6b1de1bcfeeb1f5168c68a
+review_passes: 4
 review_rounds: 2
-review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 8
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T11:17:47.264Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 9
 ---
 ## Problem
 `repoos check` runs the full plan (build, format/lint, full test suite, WebKit UI smoke, contrast audit) even when a task's diff contains only task bookkeeping under `work/` (task file, `work/reports/<id>/*`) or other non-code files. Example: #1055 (the weekly worktree cleanup) changed 11 files, all under `work/`, and still waited for a remote-validation slot and ran the full 680-file suite on every handoff attempt, repeating after each outage or capture timeout. That is minutes to hours of wasted time and runner load for a change that cannot affect behavior. The recurring weekly cleanup will hit this every run.
@@ -175,3 +174,34 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T12:19:57Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-08T12:23:20Z · note: adopted orphaned engineer pid 15502
 - 2026-11-08T12:35:15Z · body
+- 2026-11-08T12:44:59Z · message_queued at 2026-11-08T12:44:59.965Z
+- 2026-11-08T12:45:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T12:45:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T12:52:30Z · body
+- 2026-11-08T12:54:33Z · status active→review
+- 2026-11-08T12:57:32Z · note: review pass 3: needs some work
+- 2026-11-08T12:57:32Z · needs_input
+- 2026-11-08T12:58:54Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T12:58:54Z · message_queued at 2026-11-08T12:58:54.867Z
+- 2026-11-08T13:13:13Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-08T13:16:53Z · note: review pass 4: needs some work
+- 2026-11-08T13:16:53Z · needs_input
+- 2026-11-08T13:23:19Z · status review→active
+- 2026-11-08T13:23:19Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T13:23:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T13:23:27Z · needs_input
+- 2026-11-08T13:23:28Z · message_queued at 2026-11-08T13:23:28.643Z
+- 2026-11-08T13:28:39Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T13:28:40Z · note: handoff requested (cli)
+- 2026-11-08T13:30:51Z · message_delivered: 1 message(s)
+- 2026-11-08T13:30:59Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T13:36:44Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
+- 2026-11-08T13:36:44Z · status active→review
+- 2026-11-08T13:42:36Z · message_queued at 2026-11-08T13:42:36.348Z
+- 2026-11-08T13:42:36Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — _shallow: true
+- 2026-11-08T13:53:24Z · status review→active
+- 2026-11-08T13:53:24Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T13:53:25Z · needs_input
+- 2026-11-08T13:53:26Z · message_delivered: 2 message(s)
+- 2026-11-08T13:53:26Z · message_queued at 2026-11-08T13:53:26.147Z
+- 2026-11-08T13:53:26Z · CTO nudge: held — an undelivered message is already queued

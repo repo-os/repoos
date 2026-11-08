@@ -2,7 +2,8 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: active
+needs_merge: true
 priority: p1
 area: server
 assigned_to: ai
@@ -13,8 +14,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T12:42:58Z"
-review_passes: 5
+updated_at: "2026-11-08T13:53:24Z"
+review_passes: 7
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 8
@@ -183,3 +184,46 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T12:42:48Z · note: review pass 5: needs some work
 - 2026-11-08T12:42:48Z · needs_input
 - 2026-11-08T12:42:58Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-08T12:47:57Z · note: review pass 6: needs some work
+- 2026-11-08T12:47:57Z · needs_input
+- 2026-11-08T12:53:02Z · status review→active
+- 2026-11-08T12:53:02Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T12:53:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T12:53:10Z · needs_input
+- 2026-11-08T12:53:11Z · message_queued at 2026-11-08T12:53:11.440Z
+- 2026-11-08T12:54:33Z · message_delivered: 1 message(s)
+- 2026-11-08T13:02:33Z · body
+- 2026-11-08T13:08:34Z · body
+- 2026-11-08T13:09:24Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T13:09:25Z · message_queued at 2026-11-08T13:09:25.035Z
+- 2026-11-08T13:09:25Z · ↻ resuming engineer to read queued message
+- 2026-11-08T13:09:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T13:09:26Z · status active→review
+- 2026-11-08T13:09:26Z · message_delivered: 2 message(s)
+- 2026-11-08T13:09:28Z · note: handoff requested (cli)
+- 2026-11-08T13:10:27Z · message_queued at 2026-11-08T13:10:27.589Z
+- 2026-11-08T13:10:27Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
+- 2026-11-08T13:21:43Z · body
+- 2026-11-08T13:22:30Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T13:22:30Z · message_queued at 2026-11-08T13:22:30.369Z
+- 2026-11-08T13:22:30Z · ↻ resuming engineer to read queued message
+- 2026-11-08T13:22:30Z · status active→review
+- 2026-11-08T13:22:31Z · message_delivered: 2 message(s)
+- 2026-11-08T13:22:32Z · note: handoff requested (cli)
+- 2026-11-08T13:23:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T13:30:55Z · status active→review
+- 2026-11-08T13:30:57Z · message_queued at 2026-11-08T13:30:57.190Z
+- 2026-11-08T13:30:57Z · body
+- 2026-11-08T13:30:58Z · note: shots: skipped — the diff (27 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-08T13:33:58Z · note: review pass 7: failed — no usable report
+- 2026-11-08T13:33:58Z · needs_input
+- 2026-11-08T13:40:10Z · needs_input (review-failed) cleared for review again by human
+- 2026-11-08T13:45:01Z · note: review pass 8: needs some work
+- 2026-11-08T13:45:01Z · needs_input
+- 2026-11-08T13:53:12Z · needs_merge
+- 2026-11-08T13:53:22Z · status review→active
+- 2026-11-08T13:53:22Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T13:53:23Z · message_delivered: 1 message(s)
+- 2026-11-08T13:53:23Z · needs_input
+- 2026-11-08T13:53:23Z · message_queued at 2026-11-08T13:53:23.948Z
+- 2026-11-08T13:53:24Z · CTO nudge: held — an undelivered message is already queued
