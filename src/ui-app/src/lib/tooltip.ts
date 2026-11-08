@@ -18,6 +18,8 @@ const LONG_PRESS_MS = 500;
 const GAP = 8;
 const MARGIN = 8;
 const LONG_PRESS_MOVE_PX = 12;
+/** After a touch opens or dismisses a tooltip, block the follow-up click (drawer/open). */
+const CLICK_SUPPRESS_MS = 450;
 
 let installed = false;
 
@@ -42,6 +44,11 @@ export function installTooltips(): void {
   let longPressEl: HTMLElement | null = null;
   let longPressOrigin: { x: number; y: number } | null = null;
   let activeTouchId: number | null = null;
+  const suppressClickUntil = new WeakMap<HTMLElement, number>();
+
+  const armClickSuppression = (el: HTMLElement) => {
+    suppressClickUntil.set(el, Date.now() + CLICK_SUPPRESS_MS);
+  };
 
   const clearLongPress = () => {
     window.clearTimeout(longPressTimer);
@@ -95,6 +102,7 @@ export function installTooltips(): void {
     target = el;
     touchPinned = pinned;
     show(el);
+    if (pinned) armClickSuppression(el);
   };
 
   const enter = (e: Event) => {
@@ -118,6 +126,7 @@ export function installTooltips(): void {
 
     if (touchPinned && target) {
       if (el === target && e.pointerType === "touch") {
+        armClickSuppression(target);
         hide();
         return;
       }
@@ -174,10 +183,21 @@ export function installTooltips(): void {
   document.addEventListener("focusout", () => {
     if (!touchPinned) hide();
   });
+  const onClickCapture = (e: MouseEvent) => {
+    const el = tipHost(e.target);
+    if (!el) return;
+    if ((suppressClickUntil.get(el) ?? 0) > Date.now()) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  };
+
   document.addEventListener("pointerdown", onPointerDown, true);
   document.addEventListener("pointerup", onPointerUp);
   document.addEventListener("pointercancel", onPointerUp);
   document.addEventListener("pointermove", onPointerMove, { passive: true });
+  document.addEventListener("click", onClickCapture, true);
   document.addEventListener("scroll", hide, true);
   window.addEventListener("blur", hide);
 }

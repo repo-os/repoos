@@ -67,6 +67,26 @@ describe("installTooltips touch (#1058)", () => {
     expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Active 2m ago");
   });
 
+  it("does not fire a click on the trigger after a short tap opens the tooltip", () => {
+    const btn = document.getElementById("tip-btn")!;
+    const click = vi.fn();
+    btn.addEventListener("click", click);
+    const card = document.createElement("article");
+    card.setAttribute("role", "button");
+    const outerClick = vi.fn();
+    card.addEventListener("click", outerClick);
+    card.appendChild(btn);
+    document.body.appendChild(card);
+
+    touch("pointerdown", btn);
+    vi.advanceTimersByTime(100);
+    touch("pointerup", btn);
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toBe("Active 2m ago");
+    btn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    expect(click).not.toHaveBeenCalled();
+    expect(outerClick).not.toHaveBeenCalled();
+  });
+
   it("dismisses a touch-pinned tip when the user taps elsewhere", () => {
     const btn = document.getElementById("tip-btn")!;
     const other = document.getElementById("elsewhere")!;
