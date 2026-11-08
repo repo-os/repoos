@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T10:50:28Z"
+updated_at: "2026-11-08T10:50:55Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -142,3 +142,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T10:47:53Z · status active→review
 - 2026-11-08T10:50:25Z · message_queued at 2026-11-08T10:50:25.582Z
 - 2026-11-08T10:50:28Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1059 (pid 31725)
+- 2026-11-08T10:50:55Z · note: review pass 2: needs some work
