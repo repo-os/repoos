@@ -11,9 +11,9 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 review_cli_override: codex
-review_model_override: gpt-6-luna
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T00:26:14Z"
+updated_at: "2026-11-08T00:27:23Z"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -39,3 +39,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T00:26:09Z · created · njachowski@gmail.com
 - 2026-11-08T00:26:12Z · cli_override, model_override, review_cli_override, review_model_override
 - 2026-11-08T00:26:14Z · status inbox→ready
+- 2026-11-08T00:27:23Z · review_model_override
