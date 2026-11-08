@@ -178,3 +178,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T09:24:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T09:51:26Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-08T09:53:05Z · message_queued at 2026-11-08T09:53:05.247Z
+- 2026-11-08T09:53:05Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
