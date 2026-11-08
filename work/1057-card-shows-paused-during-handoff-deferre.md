@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 403418
-last_close_out_gate_at: "2026-11-08T12:22:30.511Z"
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
-status: review
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 78f6ef2352ff150341b4a7e67d1287a4f313cc0d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/card-shows-paused-during-handoff-deferre
@@ -16,6 +15,8 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
 updated_at: "2026-11-08T12:22:30Z"
+last_close_out_gate_ms: 403418
+last_close_out_gate_at: "2026-11-08T12:22:30.511Z"
 review_passes: 4
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T10:38:23.988Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"

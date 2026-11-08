@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRepoStore } from "../stores/repo";
 import { useUiStore } from "../stores/ui";
 import { useConfigStore } from "../stores/config";
+import { useNoticesStore } from "../stores/notices";
 import {
   PIPELINE_STAGES,
   PIPELINE_STAGE_LABELS,
@@ -34,11 +35,13 @@ import { isHoldActive, taskIsHeld } from "../../../core/task-selection.js";
 import type { Task } from "../types";
 import PipelineCard, { type PipelineCardAction } from "./PipelineCard.vue";
 import { activeTaskChecksBusy } from "../lib/checks-card-status";
+import type { SharedTaskCardStatusInput } from "../lib/task-card-status.js";
 import { toCheckProgress, type CheckProgress } from "../lib/check-progress";
 
 const repo = useRepoStore();
 const ui = useUiStore();
 const config = useConfigStore();
+const notices = useNoticesStore();
 
 /**
  * One tick for every "time in this state" label on the track. Thirty seconds
@@ -61,6 +64,7 @@ interface Lane {
   task: Task;
   input: PipelineTaskInput;
   model: PipelineCardModel;
+  statusSignals: SharedTaskCardStatusInput | null;
   chipText: string | null;
   stateSince: string | null;
   roundsLabel: string;
@@ -80,6 +84,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
   const checks = repo.taskChecks[task.id] ?? [];
   const runningCheck = checks.find((r) => r.running) ?? null;
   const remoteActivity = repo.taskRemoteActivity[task.id] ?? null;
+  const handoffStatus = repo.handoffStatuses[task.id] ?? null;
   const reviewState = repo.reviewFor(task.id);
   const reviewRunning = reviewState?.running ?? task.automaticReview?.running ?? false;
   const role = integrationPipelineRole(repo.integration, task.id);
@@ -96,10 +101,55 @@ function laneFor(task: Task, nowMs: number): Lane | null {
     remoteActivity,
     resourceQueueMarkers: repo.resourceQueueMarkers,
   });
-  const stuck =
-    engineerHint.cls === "tc-stuck" || closeoutStalled || repo.doneErrorFor(task.id) !== null;
-  const surfacesNeedsInput = needsInputSurfaces(task);
+  const localCheckSlot = repo.localCheckSlotForTask(task.id, nowMs);
+  const quietAt = remoteActivity?.run?.lastProgressAt ?? lastActivityFor(task.id);
+  const quietAtMs = quietAt ? Date.parse(quietAt) : Number.NaN;
+  const handoffError = repo.handoffErrorFor(task.id);
+  const surfacesNeedsInput = task.needsInput || !!handoffError;
   const held = taskIsHeld(task) && isHoldActive(task, new Date(nowMs));
+  const statusSignals: SharedTaskCardStatusInput | null =
+    task.status === "active" && !held
+      ? {
+          handoffInFlight: repo.handoffInFlight(task.id),
+          handoffState: handoffStatus?.state,
+          handoffStep: handoffStatus?.step ?? repo.handoffSteps[task.id],
+          handoffRequested: task.pendingHandoff === true,
+          checkInFlight: runningCheck !== null || !!localCheckSlot,
+          remoteValidationInFlight: !!remoteActivity?.run && engineerHint.cls !== "tc-stuck",
+          checkProgress: runningCheck ? toCheckProgress(runningCheck) : handoffStatus?.progress,
+          checkStartedAt: handoffStatus?.startedAt ?? runningCheck?.startedAt,
+          checkSlotAgeMs: localCheckSlot?.ageMs,
+          checkOutput: runningCheck?.output,
+          slowCheck: !!notices.slowRunByTask[task.id],
+          queued: repo.isQueued(task.id) || engineerHint.cls === "tc-queued",
+          queuedLabel:
+            engineerHint.cls === "tc-queued"
+              ? engineerHint.label
+              : repo.isQueued(task.id)
+                ? repo.queuedAgentMeta[task.id]?.reason === "pressure"
+                  ? "queued · pressure"
+                  : repo.queuedAgentMeta[task.id]?.reason === "slot"
+                    ? "queued · agent slot"
+                    : "queued"
+                : null,
+          running,
+          paused: repo.isPaused(task.id),
+          needsInput: surfacesNeedsInput,
+          needsInputLabel: handoffError
+            ? "checks failed"
+            : needsInputStatusLabel(task.needsInputReason, (task.questions?.length ?? 0) > 0),
+          pmWorking: repo.pmWorkingFor(task.id),
+          stuckSignal: engineerHint.cls === "tc-stuck",
+          quietForMs: Number.isFinite(quietAtMs)
+            ? Math.max(0, Math.max(nowMs, Date.now()) - quietAtMs)
+            : null,
+          nowMs: Math.max(nowMs, Date.now()),
+          remoteActivityLabel: engineerHint.label,
+          codingLabel: engineerHint.cls === "tc-stuck" ? "Coding" : engineerHint.label,
+        }
+      : null;
+  const stuck =
+    task.status === "active" ? false : closeoutStalled || repo.doneErrorFor(task.id) !== null;
   const reviewPassesRaw = task.extra?.review_passes;
   const reviewPasses =
     typeof reviewPassesRaw === "number" && Number.isFinite(reviewPassesRaw)
@@ -191,6 +241,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
     task,
     input,
     model,
+    statusSignals,
     chipText,
     stateSince: model.state === "merged" ? (task.releasedAt ?? task.updated_at) : task.updated_at,
     roundsLabel: pipelineRoundLabel(rounds, {
@@ -293,6 +344,7 @@ function stageCells(stage: PipelineStage): string {
               :priority="lane.task.priority"
               :title="lane.task.title"
               :state="lane.model.state"
+              :status-signals="lane.statusSignals"
               :step-label="lane.model.stepLabel"
               :chip-text="lane.chipText"
               :state-since="lane.stateSince"
