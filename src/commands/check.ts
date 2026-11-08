@@ -2238,7 +2238,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     changedRef = undefined;
   }
   const docsOnly =
-    profile !== "release" && isDocsOnlyCheck(changedPaths, cfg.check?.docsOnlySkip !== false);
+    profile !== "release" &&
+    !opts.steps?.length &&
+    !opts.localTestsOnly &&
+    isDocsOnlyCheck(changedPaths, cfg.check?.docsOnlySkip !== false);
   if (docsOnly) console.log(`  · ${DOCS_ONLY_SKIP_REASON}`);
   if (changedRef) {
     console.log(
@@ -2278,8 +2281,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // an early planning-phase repo used to block on this forever. The gate is
   // still never green: the run records outcome `skipped` (not `passed`) and
   // the summary says plainly that nothing was verified. A repo WITH a plan
-  // that resolves to nothing usable errors instead (handled above), and a
-  // An unresolved changed ref falls back to the unscoped plan.
+  // that resolves to nothing usable errors instead (handled above). An
+  // unresolved changed ref falls back to the unscoped plan.
   if (planGateSkips(plan)) {
     const startedAt = new Date();
     console.log(c.yellow(`\n  ⚠ ${NO_CHECK_PLAN_NOTICE}\n`));

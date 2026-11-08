@@ -3391,7 +3391,9 @@ export class CloseOutOrchestrator {
             // missing one is expected, not a regression; labelling it as one on
             // every such MTD (#0345) buried the real failure reason behind a false
             // lead.
-            const cliExpected = expectsOwnCli(wtPath);
+            // A docs-only candidate deliberately has no build; the installed
+            // CLI evaluates the same source without requiring candidate dist/.
+            const cliExpected = !docsOnly && expectsOwnCli(wtPath);
             checkRes = await rawCheck("repoos", ["check", ...args], env);
             outcome = cliExpected ? "local-missing" : "no-cli-expected";
             if (cliExpected) {
