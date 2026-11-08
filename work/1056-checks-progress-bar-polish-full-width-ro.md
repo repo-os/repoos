@@ -2,7 +2,7 @@
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T06:01:11Z"
+updated_at: "2026-11-08T06:01:53Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -137,3 +137,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T05:56:41Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · Cannot use this model: composer-2.5. Available models:
 - 2026-11-08T05:57:17Z · needs_input
 - 2026-11-08T06:01:11Z · body
+- 2026-11-08T06:01:53Z · status active→review
