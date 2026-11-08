@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T01:38:36Z"
+updated_at: "2026-11-08T01:41:56Z"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -37,6 +37,33 @@ The checks progress bar added by #1054 works, but its styling and layout need po
 ## Notes for AI
 Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer.vue (running-checks box), PipelineCard.vue plus the shared styles in src/ui-app/src/style.css (check-progress-meter / progress). Use global classes in style.css, no native title tooltips. Reuse one shared meter class. Mind padding and hit areas.
 
+## Shots
+```json
+[
+{
+  "label": "Board card: full-width rounded check bar",
+  "target": "default",
+  "route": "/work?status=active",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
+  "state": "card:checksProgress"
+},
+{
+  "label": "Drawer: half-width bar, detail on same row",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "drawer:checksProgress"
+},
+{
+  "label": "Pipeline: bar inline in status row",
+  "target": "default",
+  "route": "/work?tab=pipeline",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"pipeline-card-check-progress\"]",
+  "state": "pipeline:checksProgress"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-08T00:15:51Z · created · njachowski@gmail.com
@@ -45,3 +72,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T00:27:22Z · cli_override, model_override
 - 2026-11-08T00:30:28Z · cli_override, model_override, review_model_override
 - 2026-11-08T01:38:36Z · status ready→active, branch
+- 2026-11-08T01:41:56Z · body
