@@ -1,0 +1,42 @@
+---
+id: "1058"
+title: "Easter eggs bundle: card activity recency on hover"
+type: chore
+status: inbox
+priority: p3
+area: web
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-11-08T02:51:17Z"
+updated_at: "2026-11-08T02:51:17Z"
+---
+## Items
+
+- [ ] **E1 · Don't show "active just now / active N minutes ago" on running cards; show it on hover** (web) — The card status line (e.g. "CONFIRMING HANDOFF · ACTIVE JUST NOW", "CODING · ACTIVE 1M AGO") repeats a recency that is almost always "recent" and adds noise. Drop the "active …" suffix from the line; keep the state label only. Show the last-activity time in a styled hover/focus popup (and long-press on touch). Only surface recency in the line when the task is silent or stuck past the existing threshold ("SILENT 6M", "STUCK"). Source: human report 2026-11-08 (screenshot of #1057 and #1055 cards).
+
+Each item below has the same parts: Problem, Desired UX, Acceptance criteria, Notes for AI. Edit one item at a time with `--section`; never resend the whole body. Add related small fixes as `E2`, `E3` before this bundle starts.
+
+## E1 · Don't show "active just now / active N minutes ago" on running cards; show it on hover
+
+### Problem
+Board cards show a running state with a recency suffix, for example "CONFIRMING HANDOFF · ACTIVE JUST NOW" or "CODING · ACTIVE 1M AGO". For a task that is making progress the suffix is noise: it is nearly always "just now" or a few minutes, it lengthens the line so it wraps onto two lines (as on #1057 and #1055), and it hides the real signal, which is when a task has gone quiet.
+
+### Desired UX
+- For a running task that is not silent or stuck, the status line shows only the state ("Confirming handoff", "Coding", "Running checks · verify"), with no "active …" text.
+- The last-activity time ("Active 3m ago", plus the timestamp) appears in a styled popover on hover and keyboard focus (and on tap or long-press on touch). No native `title` tooltip.
+- When the task is silent or stuck past the existing thresholds, the line keeps showing the recency ("SILENT 6M", "STUCK · SILENT 6M"), as today, because there it is the useful signal.
+- Same behaviour on the Pipeline card elapsed text where it shows the same recency suffix.
+
+### Acceptance criteria
+- Test: a running, recently active task's card line contains no "active" recency text and fits on one line at the normal card width.
+- Test: hovering or focusing the status line shows the last-activity time in the popover.
+- Test: a silent or stuck task still shows its "SILENT n" or "STUCK" recency in the line.
+- Popover is keyboard- and touch-usable and uses the shared tooltip/popover component.
+
+### Notes for AI
+Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder in `src/ui-app/src/components/TaskCard.vue`, around the hint/`cardHintUsesLineClamp` code) and reuse the shared styled tooltip/popover (AGENTS.md: no native `title`, use a styled keyboard- and touch-usable tooltip). Coordinate with #1057, which is rewriting the card status derivation; if #1057 has landed, build on its shared status function. Source: human report 2026-11-08.
+
+## Activity
+
+- 2026-11-08T02:51:17Z · created · njachowski@gmail.com
