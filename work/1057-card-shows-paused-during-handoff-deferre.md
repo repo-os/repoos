@@ -22,8 +22,6 @@ updated_at: "2026-11-08T08:03:11Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T07:55:05.134Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 1
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
-last_handoff_failure_sha: 62f0e7e9781363e0a9ec705ef09315f5fb9cb291
 handoff_signal_retry_count: 1
 dev_error_count: 4
 ---
@@ -136,3 +134,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T07:58:14Z · CTO nudge: held — remote validation is running
 - 2026-11-08T08:03:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-08T08:03:11Z · status active→review
+
