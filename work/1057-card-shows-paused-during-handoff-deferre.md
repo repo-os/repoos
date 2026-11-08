@@ -18,7 +18,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T06:18:14Z"
+updated_at: "2026-11-08T06:19:37Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
 last_handoff_failure_sha: 62f0e7e9781363e0a9ec705ef09315f5fb9cb291
 last_check_failure: "repoos check at 2026-11-08T02:03:13.154Z: repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯"
@@ -43,6 +43,19 @@ Two related lifecycle bugs seen on 2026-11-08:
 
 ## Notes for AI
 Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), stores/repo.ts (`handoffInFlight`, `handoffStatuses`), src/server/handoff.ts (the "queued message(s) must be read before review" deferral) and the existing automatic-resume machinery (`MAX_CHECK_RETRY_ATTEMPTS`, `MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS`) which should be reused for the retry cap. Do not change AGENTS.md rules about who moves tasks out of active.
+
+## Shots
+```json
+[
+{
+  "label": "Task card during handoff checks",
+  "target": "default",
+  "route": "/work",
+  "highlight": "[data-task-id=\"9999\"]",
+  "state": "card:checksProgress"
+}
+]
+```
 
 ## Activity
 
@@ -103,3 +116,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T06:17:50Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T06:17:54Z · body
 - 2026-11-08T06:18:14Z · note: adopted orphaned engineer pid 95736
+- 2026-11-08T06:19:37Z · body
