@@ -9,7 +9,7 @@
  * and always correct.
  */
 import { readFileSync, existsSync, realpathSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join, relative } from "node:path";
 import type {
   AgentOutputEntry,
   AgentSessionStats,
@@ -29,7 +29,7 @@ import type { IntegrationSnapshot } from "./integration-status.js";
 import type { RepoStatus } from "./repo-status.js";
 import type { Input } from "../core/input.js";
 import { STATUSES, PRIORITIES } from "../core/types.js";
-import { parseTask } from "../core/task.js";
+import { isIndexableTaskFile, parseTask } from "../core/task.js";
 import { isGitRepo, localBranches, emptyGitInfo, resolveWorktreeStatuses } from "../core/git.js";
 import {
   buildIndex,
@@ -506,9 +506,12 @@ export class LiveIndex {
   }
 
   private isTaskFile(absPath: string): boolean {
-    const workRoot = join(this.config.root, this.config.workDir);
-    if (!absPath.startsWith(workRoot)) return false;
-    return this.config.taskExtensions.includes(extname(absPath));
+    const repoRel = relative(this.config.root, absPath).replace(/\\/g, "/");
+    const workDir = this.config.workDir.replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "");
+    return (
+      repoRel.startsWith(`${workDir}/`) &&
+      this.config.taskExtensions.some((ext) => repoRel.toLowerCase().endsWith(ext.toLowerCase()))
+    );
   }
 
   /**
@@ -533,6 +536,10 @@ export class LiveIndex {
       content = readFileSync(absPath, "utf8");
     } catch {
       return; // transient read error (editor mid-write); next event will catch it
+    }
+    if (!isIndexableTaskFile(this.config, absPath, content)) {
+      this.applyFileDelete(absPath);
+      return;
     }
     const task = parseTask({
       content,
