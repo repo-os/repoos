@@ -634,6 +634,8 @@ describe("handoff deferral while messages are queued (#0865)", () => {
         expect(status.state).toBe("deferred");
         expect(status.outcomeQueued).toBe(true);
         await waitFor(() => readFileSync(absPath, "utf8").includes("message_delivered"));
+        const resumedTask = parseFile(fx.root, absPath);
+        expect(resumedTask.extra?.deferred_handoff_resume_count).toBe(1);
         expect(readFileSync(absPath, "utf8")).toContain("resuming engineer to read queued message");
         expect(
           readFileSync(fx.log, "utf8")

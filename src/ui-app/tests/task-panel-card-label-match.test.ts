@@ -151,6 +151,41 @@ afterEach(() => {
 });
 
 describe("task panel status label matches the board card (#1023)", () => {
+  it.each(["check", "verify", "review", "capture"])(
+    "shows a running handoff at %s without a paused action when no engineer is running",
+    async (step) => {
+      const task = activeTask();
+      stubApi(task, {
+        handoffStatus: {
+          state: "running",
+          step,
+          startedAt: new Date(Date.now() - 75_000).toISOString(),
+          updatedAt: new Date().toISOString(),
+          attempt: 1,
+          progress: null,
+          machine: "runner-host",
+        },
+      });
+      const card = await mountCard(pinia, task);
+      await flush();
+      expect(cardLabel(card)).toMatch(/^Checks ·/);
+      expect(card.text()).not.toMatch(/paused/i);
+      expect(card.text()).not.toContain("Restart work");
+      expect(card.text()).not.toContain("Pause work");
+      card.unmount();
+    },
+  );
+
+  it("keeps explicitly paused active tasks restartable", async () => {
+    const task = activeTask();
+    stubApi(task);
+    const card = await mountCard(pinia, task);
+    await flush();
+    expect(cardLabel(card)).toMatch(/paused/i);
+    expect(card.text()).toContain("Restart work");
+    card.unmount();
+  });
+
   it.each([
     { state: "indeterminate", source: "status" },
     { state: "determinate", source: "run" },
