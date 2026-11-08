@@ -2,7 +2,7 @@
 id: "0963"
 title: Build the simplified client project board
 type: feature
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
