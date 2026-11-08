@@ -499,3 +499,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:49:11Z · ↻ resuming engineer to read queued message
 - 2026-11-08T21:49:11Z · status active→review
 - 2026-11-08T21:49:12Z · message_delivered: 2 message(s)
+- 2026-11-08T21:49:12Z · note: handoff requested (cli)
