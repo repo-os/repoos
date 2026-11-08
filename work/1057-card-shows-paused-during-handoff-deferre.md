@@ -57,3 +57,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T01:38:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T01:40:16Z · body
 - 2026-11-08T01:41:01Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T01:41:01Z · message_queued at 2026-11-08T01:41:01.137Z
