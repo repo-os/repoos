@@ -548,7 +548,7 @@ export async function recoverStaleCheckGateLocks(
   for (const name of listLockFiles(boardRoot, cacheDir)) {
     const lock = readLockFile(boardRoot, cacheDir, name);
     if (!lock) continue;
-    if (isPidAlive(lock.pid)) continue;
+    if (aliveHolders(lock).length > 0) continue;
     await reconcileDeadCheckGateLock(boardRoot, cacheDir, lock);
   }
   const deferDir = join(cacheRoot(boardRoot, cacheDir), "check-gate-deferred");
