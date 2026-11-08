@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T05:38:08Z"
+updated_at: "2026-11-08T05:39:20Z"
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 9
 ---
@@ -43,25 +43,25 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 ```json
 [
 {
-"label": "Board card: full-width rounded check bar",
-"target": "default",
-"route": "/work?status=active",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
-"state": "card:checksProgress"
+  "label": "Board card: full-width rounded check bar",
+  "target": "default",
+  "route": "/work?status=active",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
+  "state": "card:checksProgress"
 },
 {
-"label": "Drawer: half-width bar, detail on same row",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": "[data-test-id=\"close-out-check-progress\"]",
-"state": "drawer:checksProgress"
+  "label": "Drawer: half-width bar, detail on same row",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": "[data-test-id=\"close-out-check-progress\"]",
+  "state": "drawer:checksProgress"
 },
 {
-"label": "Pipeline: bar and status on one row",
-"target": "default",
-"route": "/work?tab=pipeline",
-"highlight": ".pl-row-3 [data-test-id=\"pipeline-card-check-progress\"]",
-"state": "pipeline:checksProgress"
+  "label": "Pipeline: bar and status on one row",
+  "target": "default",
+  "route": "/work?tab=pipeline",
+  "highlight": ".pl-row-3 [data-test-id=\"pipeline-card-check-progress\"]",
+  "state": "pipeline:checksProgress"
 }
 ]
 ```
@@ -122,3 +122,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T05:00:06Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-08T05:34:23Z · watchdog: restarting engineer after 34m with no live process
 - 2026-11-08T05:38:08Z · body
+- 2026-11-08T05:39:20Z · body
