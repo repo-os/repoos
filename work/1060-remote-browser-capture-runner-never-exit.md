@@ -130,3 +130,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T10:24:41Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from d40a1def to e46993f3) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-08T10:26:49Z · body
 - 2026-11-08T10:28:16Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T10:28:16Z · message_queued at 2026-11-08T10:28:16.232Z
