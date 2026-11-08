@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T21:05:16Z"
+updated_at: "2026-11-08T21:05:17Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -466,3 +466,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:03:48Z · body
 - 2026-11-08T21:05:16Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T21:05:16Z · message_queued at 2026-11-08T21:05:16.827Z
+- 2026-11-08T21:05:17Z · ↻ resuming engineer to read queued message
