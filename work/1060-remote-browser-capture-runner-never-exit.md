@@ -9,16 +9,15 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-browser-capture-runner-never-exit
-cli_override: cursor
-model_override: composer-2.5
-review_cli_override: github copilot
-review_model_override: default
+model_override: gpt-6.1-terra
+review_cli_override: codex
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T18:50:01Z"
+updated_at: "2026-11-08T19:09:02Z"
 review_passes: 12
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 8
+dev_error_count: 9
 ---
 ## Problem
 Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
@@ -307,3 +306,9 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T18:49:53Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T18:49:55Z · message_queued at 2026-11-08T18:49:55.797Z
 - 2026-11-08T18:50:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T18:55:35Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:43Z · cli_override, model_override
+- 2026-11-08T19:04:43Z · model_override
+- 2026-11-08T19:04:53Z · needs_input
+- 2026-11-08T19:05:04Z · message_delivered: 1 message(s)
+- 2026-11-08T19:09:02Z · review_cli_override, review_model_override
