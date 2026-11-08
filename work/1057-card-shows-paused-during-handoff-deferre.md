@@ -42,3 +42,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T00:27:23Z · review_model_override
 - 2026-11-08T00:31:19Z · status ready→active, branch
 - 2026-11-08T00:41:56Z · message_queued at 2026-11-08T00:41:56.754Z
+- 2026-11-08T00:41:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
