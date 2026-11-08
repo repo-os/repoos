@@ -14,7 +14,6 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
 updated_at: "2026-11-08T09:45:33Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -108,3 +107,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T09:22:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T09:24:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T09:45:33Z · body
+
