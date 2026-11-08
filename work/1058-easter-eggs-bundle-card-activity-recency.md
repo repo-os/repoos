@@ -490,3 +490,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:32:21Z · message_delivered: 2 message(s)
 - 2026-11-08T21:32:23Z · note: handoff requested (cli)
 - 2026-11-08T21:33:05Z · message_queued at 2026-11-08T21:33:05.292Z
+- 2026-11-08T21:33:05Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
