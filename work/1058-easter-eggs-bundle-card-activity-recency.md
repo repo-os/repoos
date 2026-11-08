@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T10:04:09Z"
+updated_at: "2026-11-08T10:33:41Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 review_rounds: 1
@@ -186,3 +186,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T09:53:18Z · CTO nudge: held — review is running
 - 2026-11-08T10:03:00Z · body
 - 2026-11-08T10:04:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T10:33:41Z · message_queued at 2026-11-08T10:33:41.849Z
