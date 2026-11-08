@@ -105,7 +105,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
   const quietAt = remoteActivity?.run?.lastProgressAt ?? lastActivityFor(task.id);
   const quietAtMs = quietAt ? Date.parse(quietAt) : Number.NaN;
   const handoffError = repo.handoffErrorFor(task.id);
-  const surfacesNeedsInput = needsInputSurfaces(task) || !!handoffError;
+  const surfacesNeedsInput = task.needsInput || !!handoffError;
   const held = taskIsHeld(task) && isHoldActive(task, new Date(nowMs));
   const statusSignals: SharedTaskCardStatusInput | null =
     task.status === "active" && !held

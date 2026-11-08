@@ -761,7 +761,7 @@ const sharedActiveStatus = computed(() => {
   const checkSlot = repo.localCheckSlotForTask(taskId, Math.max(now.value, Date.now()));
   const status = repo.handoffStatuses[taskId];
   const handoffError = repo.handoffErrorFor(taskId);
-  const needsInput = needsInputSurfaces(props.task) || !!handoffError;
+  const needsInput = props.task.needsInput || !!handoffError;
 
   return resolveSharedTaskCardStatus({
     handoffInFlight: repo.handoffInFlight(taskId),

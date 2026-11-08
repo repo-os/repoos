@@ -91,6 +91,16 @@ export function resolveSharedTaskCardStatus(
     };
   }
 
+  if (input.running) {
+    return {
+      kind: "coding",
+      label: input.codingLabel ?? "Coding",
+      inFlight: true,
+      stuck: false,
+      action: "pause",
+    };
+  }
+
   if (input.needsInput) {
     return {
       kind: "needs-input",
@@ -108,16 +118,6 @@ export function resolveSharedTaskCardStatus(
       inFlight: true,
       stuck: false,
       action: null,
-    };
-  }
-
-  if (input.running) {
-    return {
-      kind: "coding",
-      label: input.codingLabel ?? "Coding",
-      inFlight: true,
-      stuck: false,
-      action: "pause",
     };
   }
 
