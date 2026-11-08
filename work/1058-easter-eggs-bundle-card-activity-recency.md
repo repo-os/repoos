@@ -231,3 +231,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T14:46:05Z · body
 - 2026-11-08T14:48:39Z · message_queued at 2026-11-08T14:48:39.787Z
 - 2026-11-08T14:53:52Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T14:53:52Z · note: handoff requested (cli)
