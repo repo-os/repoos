@@ -2,7 +2,7 @@
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Error: [unavailable] read ETIMEDOUT"
@@ -165,4 +165,3 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T11:18:18Z · needs_input
 - 2026-11-08T11:18:18Z · message_delivered: 2 message(s)
 - 2026-11-08T11:18:35Z · agent exited with an error (cursor) · Error: [unavailable] read ETIMEDOUT
-- 2026-11-08T11:18:35Z · status active→review
