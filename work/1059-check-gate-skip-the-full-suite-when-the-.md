@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
+last_handoff_failure_sha: b4f87d328cd27875d9284c01c8ecbe1df0ca150c
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
@@ -151,3 +153,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T11:04:30Z · message_delivered: 1 message(s)
 - 2026-11-08T11:05:31Z · message_queued at 2026-11-08T11:05:31.738Z
 - 2026-11-08T11:05:31Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
+
