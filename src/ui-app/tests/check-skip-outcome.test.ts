@@ -153,11 +153,11 @@ describe("cmdCheck — the skipped outcome (#0592)", () => {
     expect(rec).toBeNull();
   });
 
-  it("still fails on an unresolvable --changed ref, even with an empty plan", async () => {
+  it("falls back to the full plan when the changed ref cannot be resolved", async () => {
     const root = fixture();
     const code = await runCheck(["--changed", "nosuchref"], root);
-    expect(code).not.toBe(0);
-    expect(logs.join("\n")).toMatch(/Changed-path mode needs a git ref/);
+    expect(code).toBe(0);
+    expect(logs.join("\n")).toMatch(/Could not compute changed paths/);
   });
 
   it("exits 0 (skip) for a resolvable --changed ref on a planless repo", async () => {

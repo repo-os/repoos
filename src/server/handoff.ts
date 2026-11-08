@@ -1,3 +1,4 @@
+import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
 import {
   checkSnapshot,
   compatibleCheckSnapshots,
@@ -46,6 +47,7 @@ import {
   workFileFilter,
   commitTaskFile,
   pathsChangedBetweenCommits,
+  getChangedFilePaths,
 } from "../core/git.js";
 import { getGitWorker } from "./git-worker.js";
 import { parseTask } from "../core/task.js";
@@ -780,7 +782,7 @@ async function runHandoffFinalization(
     // child env agree without a second resolution.
     let checkScope = "full";
     let changedBase: string | undefined;
-    if (opts.taskChecks && opts.onTaskCheckEvent) {
+    {
       const { base } = await getGitWorker(config.root).branchChangesSinceBase(
         workdir,
         (await getGitWorker(config.root).currentBranch()) ?? "main",
@@ -813,8 +815,16 @@ async function runHandoffFinalization(
       opts.onTaskLog?.(task.id, "info", reuseNote);
       checkHandle?.chunk?.(`\n[${reuseNote}]\n`);
     }
+    const docsOnly = isDocsOnlyCheck(
+      changedBase ? await getChangedFilePaths(workdir, changedBase) : null,
+      config.check?.docsOnlySkip !== false,
+    );
+    if (docsOnly) {
+      opts.onTaskLog?.(task.id, "info", DOCS_ONLY_SKIP_REASON);
+      checkHandle?.chunk?.(`\n[${DOCS_ONLY_SKIP_REASON}]\n`);
+    }
     let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
-    if (!reusedCheck && opts.remoteValidator && remotePreReviewEnabled(config)) {
+    if (!docsOnly && !reusedCheck && opts.remoteValidator && remotePreReviewEnabled(config)) {
       remoteOutcome = await runRemotePreReviewGate({
         config,
         remoteValidator: opts.remoteValidator,
