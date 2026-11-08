@@ -10,7 +10,6 @@ created_by: njachowski@gmail.com
 branch: feat/post-merge-summary-status-and-report-sta
 created_at: "2026-11-06T22:50:03Z"
 updated_at: "2026-11-08T00:38:34Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T00:24:39.979Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 ---
 ## Problem
@@ -79,3 +78,4 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 - 2026-11-08T00:26:16Z · CTO nudge: held — remote validation is running
 - 2026-11-08T00:34:25Z · body
 - 2026-11-08T00:38:34Z · body
+
