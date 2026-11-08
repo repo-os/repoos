@@ -4,8 +4,8 @@ title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Touch tooltip arbitration prevents expected navigation and switching between cards.
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T21:09:24Z"
+updated_at: "2026-11-08T21:09:25Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
