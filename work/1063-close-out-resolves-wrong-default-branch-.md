@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-08T13:04:21Z"
+review_passes: 1
 id: "1063"
 title: Close-out resolves wrong default branch when init.defaultBranch names a missing branch
 type: bug
@@ -10,7 +12,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-resolves-wrong-default-branch-
 created_at: "2026-11-08T12:38:05Z"
-updated_at: "2026-11-08T13:04:21Z"
 ---
 ## Problem
 Reported from the "tiao" project (local-only repo, no remote): `repoos done` fails every time with `could not get main SHA` (integration-orchestrator.ts, sync phase). Confirmed cause: `git config --get init.defaultBranch` is `master` on that host, but the repo's branch is `main`.
@@ -40,3 +41,4 @@ Verified resolver already exists in `src/core/repo-log.ts` (`resolveDefaultBranc
 - 2026-11-08T13:02:17Z · message_queued at 2026-11-08T13:02:17.040Z
 - 2026-11-08T13:02:17Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-08T13:04:21Z · note: review pass 1: good to go
+
