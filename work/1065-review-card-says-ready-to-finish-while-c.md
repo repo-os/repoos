@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
-updated_at: "2026-11-08T17:22:27Z"
+updated_at: "2026-11-08T17:29:16Z"
 last_close_out_gate_ms: 471309
 last_close_out_gate_at: "2026-11-08T17:22:05.044Z"
 review_passes: 1
@@ -78,3 +78,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T16:52:45Z · message_queued at 2026-11-08T16:52:45.260Z
 - 2026-11-08T17:22:05Z · close-out gate completed in 471s
 - 2026-11-08T17:22:27Z · status done→done, release:success
+- 2026-11-08T17:29:16Z · message_dropped: 1 queued message(s) discarded — task is done
