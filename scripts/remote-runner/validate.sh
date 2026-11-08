@@ -86,18 +86,16 @@ docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/nul
   task=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null \
     | sed -n 's/^REPOOS_BROWSER_CAPTURE_TASK=//p' | head -1 || true)
   bare=${name#/}
-  if docker rm -f "$id" >/dev/null 2>&1; then
-    if [ -n "$task" ]; then
-      echo "[validate] reaped completed browser capture $bare task=$task: no output for two minutes and CPU idle"
-    else
-      echo "[validate] reaped completed browser capture $bare: no output for two minutes and CPU idle"
-    fi
+  task_tag=""
+  [ -n "$task" ] && task_tag=" task=$task"
+  rm_out=$(docker rm -f "$id" 2>&1)
+  rm_code=$?
+  if [ "$rm_code" -eq 0 ] && ! docker inspect "$id" >/dev/null 2>&1; then
+    echo "[reaper] removed $bare$task_tag: no output for two minutes and CPU idle"
   else
-    if [ -n "$task" ]; then
-      echo "[validate] failed to reap completed browser capture $bare task=$task: docker rm -f" >&2
-    else
-      echo "[validate] failed to reap completed browser capture $bare: docker rm -f" >&2
-    fi
+    rm_reason=$(printf '%s' "$rm_out" | tr '\n' ' ')
+    [ -n "$rm_reason" ] || rm_reason="exit-$rm_code"
+    echo "[reaper] failed to remove $bare$task_tag reason=$rm_reason"
   fi
 done
 

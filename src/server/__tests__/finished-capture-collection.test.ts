@@ -16,6 +16,7 @@ import {
   completedCaptureReaperCommand,
   formatValidateFailedReapCaptureMarker,
   formatValidateReapedCaptureMarker,
+  newlySeenValidateFailedReapCaptures,
   finishedCaptureCollectionCommand,
   reaperCommand,
   recordValidateStartupReapedCaptures,
@@ -146,6 +147,23 @@ it("records validate.sh startup reaper markers on the capture task", () => {
   }
 });
 
+it("parses validate.sh startup reaper failure markers with the removal reason", () => {
+  const marker = formatValidateFailedReapCaptureMarker(
+    "repoos-validate-hung",
+    "1048",
+    "Cannot kill container",
+  );
+  const seen = new Set<string>();
+  expect(newlySeenValidateFailedReapCaptures(`${marker}\n`, seen)).toEqual([
+    {
+      line: marker,
+      containerName: "repoos-validate-hung",
+      taskId: "1048",
+      reason: "Cannot kill container",
+    },
+  ]);
+});
+
 it("records failed validate.sh startup reaper markers separately", () => {
   const root = mkdtempSync(join(tmpdir(), "capture-startup-reap-fail-"));
   try {
@@ -158,7 +176,7 @@ it("records failed validate.sh startup reaper markers separately", () => {
     });
     expect(logger.system).toHaveBeenCalledWith(
       "warn",
-      "failed to reap completed browser capture repoos-validate-hung on 100.0.0.2: docker rm -f",
+      "failed to reap completed browser capture repoos-validate-hung on 100.0.0.2: exit-1",
     );
     expect(existsSync(remoteEventsPath(root, "1048"))).toBe(true);
     expect(readFileSync(remoteEventsPath(root, "1048"), "utf8")).toContain("failed to reap");

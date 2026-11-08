@@ -101,15 +101,15 @@ describe("runner worktree layout for browser capture (#0854)", () => {
     expect(() => execFileSync("bash", ["-n", validatePath], { stdio: "ignore" })).not.toThrow();
   });
 
-  it("logs a structured line only after removing a quiet completed capture at startup (#1060)", () => {
+  it("logs reaper markers only after docker rm outcome is known (#1060)", () => {
     expect(validateScript).toMatch(
-      /\[validate\] reaped completed browser capture \$bare task=\$task: no output for two minutes and CPU idle/,
+      /\[reaper\] removed \$bare\$task_tag: no output for two minutes and CPU idle/,
     );
     expect(validateScript).toMatch(
-      /\[validate\] failed to reap completed browser capture \$bare task=\$task: docker rm -f/,
+      /\[reaper\] failed to remove \$bare\$task_tag reason=\$rm_reason/,
     );
-    const rmAt = validateScript.indexOf('docker rm -f "$id"');
-    const successAt = validateScript.indexOf("[validate] reaped completed browser capture $bare");
+    const rmAt = validateScript.indexOf('rm_out=$(docker rm -f "$id" 2>&1)');
+    const successAt = validateScript.indexOf("[reaper] removed $bare$task_tag");
     expect(rmAt).toBeGreaterThan(-1);
     expect(successAt).toBeGreaterThan(rmAt);
     expect(validateScript).toMatch(/REPOOS_BROWSER_CAPTURE_TASK=/);
