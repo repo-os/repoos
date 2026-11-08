@@ -3,6 +3,9 @@ id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — docs-only progress can exceed its total, and the handoff capture is stale."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -180,3 +183,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T12:52:30Z · body
 - 2026-11-08T12:54:33Z · status active→review
 - 2026-11-08T12:57:32Z · note: review pass 3: needs some work
+- 2026-11-08T12:57:32Z · needs_input
