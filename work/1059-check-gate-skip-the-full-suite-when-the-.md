@@ -1,10 +1,11 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (1 in 30m): a human-set task override (codex + gpt-6.1-terra) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1059 --fresh`."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -15,9 +16,13 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T09:00:49Z"
+updated_at: "2026-11-08T09:01:24Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6.1-terra\",\"at\":\"2026-11-08T09:01:24.210Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 `repoos check` runs the full plan (build, format/lint, full test suite, WebKit UI smoke, contrast audit) even when a task's diff contains only task bookkeeping under `work/` (task file, `work/reports/<id>/*`) or other non-code files. Example: #1055 (the weekly worktree cleanup) changed 11 files, all under `work/`, and still waited for a remote-validation slot and ran the full 680-file suite on every handoff attempt, repeating after each outage or capture timeout. That is minutes to hours of wasted time and runner load for a change that cannot affect behavior. The recurring weekly cleanup will hit this every run.
@@ -99,4 +104,5 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T09:00:46Z · message_queued at 2026-11-08T09:00:46.811Z
 - 2026-11-08T09:00:46Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-08T09:00:49Z · message_delivered: 1 message(s)
-
+- 2026-11-08T09:01:24Z · agent exited with an error (codex) · 2026-11-08T09:00:54.961520Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-08T09:01:24Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-terra) is pinned, so RepoOS did not replace it (1/12 crashes in 30m)
