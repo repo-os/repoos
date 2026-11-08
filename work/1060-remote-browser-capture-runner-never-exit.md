@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
@@ -46,3 +47,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T07:43:36Z · status inbox→ready
 - 2026-11-08T07:43:37Z · status ready→active, branch
 - 2026-11-08T07:45:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1060 is **not ready for handoff**. The runner now writes `result.json` atomically, bounds preview cleanup to three seconds, and explicitly exits after logging. A subprocess test with a live timer passes; the focused test file passed … · stderr: Reading additional input from stdin...
+
