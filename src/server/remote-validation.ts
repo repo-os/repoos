@@ -1224,7 +1224,10 @@ export function formatValidateReapedCaptureMarker(containerName: string, taskId?
 }
 
 /** Marker line `validate.sh` prints when startup completed-capture removal fails. */
-export function formatValidateFailedReapCaptureMarker(containerName: string, taskId?: string): string {
+export function formatValidateFailedReapCaptureMarker(
+  containerName: string,
+  taskId?: string,
+): string {
   const bare = containerName.replace(/^\//, "");
   const task = taskId?.trim() ? ` task=${taskId.trim()}` : "";
   return `[validate] failed to reap completed browser capture ${bare}${task}: docker rm -f`;
