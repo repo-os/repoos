@@ -486,3 +486,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:32:20Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T21:32:21Z · message_queued at 2026-11-08T21:32:21.010Z
 - 2026-11-08T21:32:21Z · ↻ resuming engineer to read queued message
+- 2026-11-08T21:32:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required check has now passed end to end: remote build and scoped suite, rendered contrast, UI smoke, and local format/lint/build guards are green. I’m adding the requested engineer-authored report draft and doing a final worktree stat… · stderr: Reading additional input from stdin...
