@@ -2,7 +2,7 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -256,3 +256,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T00:26:16Z · message_queued at 2026-11-08T00:26:16.942Z
 - 2026-11-08T00:26:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T00:26:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I’m blocked before handoff. `repoos sync 1050` refused because RepoOS reports an agent turn already in progress. I inspected the two conflicts and confirmed the combined fix: keep the shared checks-busy gate, while preserving Pause work fo… · stderr: Reading additional input from stdin... 2026-11-08T00:25:55.515698Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-no-restart-work-butto/src/ui-app/src/components/TaskCard.vue: if (repo.doneErrorFor(…
+- 2026-11-08T00:26:33Z · status active→review
