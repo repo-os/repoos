@@ -18,7 +18,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T06:31:01Z"
+updated_at: "2026-11-08T06:48:14Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T06:29:32.049Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 9c89e82a to 747e9d3d) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 1
@@ -125,3 +125,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T06:29:31Z · message_delivered: 1 message(s)
 - 2026-11-08T06:31:01Z · status review→active
 - 2026-11-08T06:31:01Z · note: Resuming #1057 for requested shared Board/Pipeline status derivation, check failure investigation, and fresh card evidence.
+- 2026-11-08T06:48:14Z · CTO nudge: held — remote validation is running
