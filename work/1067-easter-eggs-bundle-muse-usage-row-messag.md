@@ -113,3 +113,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:10:48Z · message_delivered: 1 message(s)
 - 2026-11-08T18:11:01Z · body
 - 2026-11-08T18:15:45Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Muse usage message and docs link (target "default"): highlight .mp-row[data-provider-id="muse"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:46107/agents?tab=model-providers)
+- 2026-11-08T18:15:45Z · message_queued at 2026-11-08T18:15:45.768Z
