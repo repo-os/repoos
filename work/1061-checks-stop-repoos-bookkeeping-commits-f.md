@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
