@@ -2,24 +2,31 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: active
+status: done
+needs_merge: true
 priority: p3
 area: web
+merged_commit: b3888b646954f1334eddc1782359180d3363547f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-no-restart-work-butto
+cli_override: opencode
+model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T00:28:02Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 831c9b037a8e4b435aa382d13a7c1bf4a803e1e3
+updated_at: "2026-11-08T06:05:19Z"
+last_close_out_gate_ms: 106594
+last_close_out_gate_at: "2026-11-08T06:04:39.842Z"
+review_passes: 2
+last_check_failure: "repoos check at 2026-11-08T02:42:36.012Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
-last_check_failure: "repoos check at 2026-11-07T19:43:41.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 463a9738 to 831c9b03) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T19:51:20.419Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T20:21:05.967Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 9
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T03:18:29.073Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T03:20:20.632Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T03:22:46.673Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 ## Items
@@ -82,11 +89,26 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 ```json
 [
 {
-"label": "Task drawer while checks run",
+"label": "Running checks: drawer quickbar shows no Restart work button",
 "target": "default",
-"route": "/work?task=1050&tab=dev",
+"route": "/work?task=9999",
 "highlight": ".drawer-quickbar",
 "state": "drawer:statusChecksRunning"
+},
+{
+"label": "Uncommitted changes panel (E2 closes it after a successful commit)",
+"target": "default",
+"route": "/",
+"highlight": "[data-testid=\"repo-dirty-panel\"]",
+"steps": [
+{
+"click": "[data-test-id=\"side-git-dirty\"]"
+},
+{
+"waitMs": 600
+}
+],
+"state": "repo:dirtyMain"
 }
 ]
 ```
@@ -260,3 +282,93 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T00:26:33Z · message_delivered: 1 message(s)
 - 2026-11-08T00:27:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T00:28:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the required `main` sync can’t run through RepoOS while this agent turn is active. The task prohibits manual staging and commits, so E1 remains and I can’t hand off a valid branch. No handoff requested. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:31:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:31:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the worktree is clean at `831c9b03`, and `repoos sync 1050` still refuses because this agent turn is active. The required sync to drop E1 can’t be completed under the no-manual-stage/commit instruction. No handoff requested. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:31:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:33:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** `repoos sync 1050` still refuses during this active turn. Without syncing `main`, E1 remains on the branch; manual staging and commits are prohibited. No handoff requested. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:37:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:40:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** `repoos sync 1050` refuses while this turn is active. The branch still contains E1, and the task instructions prohibit manual staging and commits. I can’t complete the sync or hand off. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:41:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:42:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** RepoOS sync still refuses during this active turn. Without syncing `main`, E1 remains on the branch, and manual staging/committing is prohibited by the task instructions. No handoff requested. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:42:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:43:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** `repoos sync 1050` refuses during this active turn. E1 remains on the branch, and task instructions prohibit manual staging and commits. No handoff requested. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:47:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:48:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the worktree needs a `main` sync to remove E1, but `repoos sync 1050` refuses while this agent turn is active. Manual staging and commits are prohibited, so I can’t complete the sync or hand off. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:52:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:52:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the branch still needs `main` synced to drop E1. `repoos sync 1050` refuses during this active turn, and manual staging/committing is prohibited. I can’t complete the required sync or hand off. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:52:52Z · needs_merge
+- 2026-11-08T00:52:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T00:53:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** `repoos sync 1050` refuses during this active turn, and manual staging/committing is prohibited. E1 remains on the branch; handoff would not resolve the review finding. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:53:02Z · note: handoff requested (cli)
+- 2026-11-08T00:53:28Z · message_queued at 2026-11-08T00:53:28.175Z
+- 2026-11-08T00:57:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T01:02:06Z · message_queued at 2026-11-08T01:02:06.597Z
+- 2026-11-08T01:02:06Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-08T01:02:10Z · message_delivered: 2 message(s)
+- 2026-11-08T01:04:45Z · body
+- 2026-11-08T01:07:56Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T01:36:30Z · message_queued at 2026-11-08T01:36:30.168Z
+- 2026-11-08T01:36:33Z · message_delivered: 1 message(s)
+- 2026-11-08T01:37:57Z · CTO nudge: held — remote validation is running
+- 2026-11-08T01:39:18Z · body
+- 2026-11-08T01:43:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T01:53:13Z · message_queued at 2026-11-08T01:53:13.587Z
+- 2026-11-08T01:53:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T01:53:16Z · message_delivered: 1 message(s)
+- 2026-11-08T01:53:33Z · agent exited with an error (codex) · 2026-11-08T01:53:22.580391Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T01:53:33Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-08T01:53:22.580391Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T01:53:34Z · needs_input
+- 2026-11-08T01:53:50Z · agent exited with an error (codex) · 2026-11-08T01:53:40.199967Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T01:53:50Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-11-08T01:53:40.199967Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T01:53:51Z · needs_input
+- 2026-11-08T01:54:07Z · agent exited with an error (codex) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T01:54:07Z · engineer crash recovery: switched codex + gpt-6-luna → opencode + opencode-go/deepseek-v4.1-flash after 3/3 crashes in 30m · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T01:54:07Z · needs_input
+- 2026-11-08T01:55:33Z · agent exited with an error (opencode) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T01:55:33Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/3 crashes in 30m) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T01:55:34Z · needs_input
+- 2026-11-08T01:57:01Z · agent exited with an error (opencode) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T01:57:01Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/3 crashes in 30m) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T01:57:02Z · needs_input
+- 2026-11-08T01:58:24Z · agent exited with an error (opencode) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T01:58:24Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/deepseek-v4.1-flash); it will not chain another automatic switch (3/3 crashes in 30m)
+- 2026-11-08T02:06:18Z · needs_input
+- 2026-11-08T02:12:56Z · body
+- 2026-11-08T02:16:03Z · body
+- 2026-11-08T02:18:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T02:26:46Z · handoff failed · check failed after 2 automatic retries · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T02:26:46Z · message_queued at 2026-11-08T02:26:46.842Z
+- 2026-11-08T02:28:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T02:33:15Z · message_delivered: 1 message(s)
+- 2026-11-08T02:33:16Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T02:36:13Z · body
+- 2026-11-08T02:38:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T02:38:19Z · body
+- 2026-11-08T02:42:32Z · message_queued at 2026-11-08T02:42:32.864Z
+- 2026-11-08T02:42:35Z · message_delivered: 1 message(s)
+- 2026-11-08T03:13:14Z · message_queued at 2026-11-08T03:13:14.909Z
+- 2026-11-08T03:13:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T03:18:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T03:18:29Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
+- 2026-11-08T03:18:59Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/12 crashes in 30m) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
+- 2026-11-08T03:18:59Z · needs_input
+- 2026-11-08T03:18:59Z · message_delivered: 1 message(s)
+- 2026-11-08T03:20:20Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
+- 2026-11-08T03:21:20Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/12 crashes in 30m) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
+- 2026-11-08T03:21:21Z · needs_input
+- 2026-11-08T03:22:46Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
+- 2026-11-08T03:24:16Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (3/12 crashes in 30m) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
+- 2026-11-08T03:24:17Z · needs_input
+- 2026-11-08T03:25:17Z · engineer stopped by request
+- 2026-11-08T05:34:25Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T05:34:25Z · note: handoff requested (cli)
+- 2026-11-08T05:35:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T05:53:35Z · status active→review
+- 2026-11-08T05:53:35Z · note: Task body is underspecified: E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI
+- 2026-11-08T05:53:35Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-08T05:53:36Z · message_queued at 2026-11-08T05:53:36.140Z
+- 2026-11-08T05:53:36Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+- 2026-11-08T06:00:21Z · note: review pass 2: good to go
+- 2026-11-08T06:04:39Z · close-out gate completed in 107s
+- 2026-11-08T06:04:57Z · status done→done, release:success
+- 2026-11-08T06:05:19Z · message_dropped: 1 queued message(s) discarded — task is done

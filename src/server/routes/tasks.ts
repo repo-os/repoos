@@ -121,6 +121,7 @@ import { loadEngineeringReports } from "../engineering-reports.js";
 import {
   getTaskSummaryJobPayload,
   queueTaskSummary,
+  readSummaryStatus,
   readTaskFromDisk,
   summaryReleaseGate,
 } from "../task-summary.js";
@@ -4104,8 +4105,18 @@ export const postTaskSummary: RouteHandler = async (ctx, _req, res, params) => {
   // same gate before writing anything.
   const gateError = summaryReleaseGate(readTaskFromDisk(ctx.config, task.id) ?? task);
   if (gateError) return json(res, 409, { error: gateError });
-  queueTaskSummary(ctx.config, task, ctx.index.getTasks());
-  return json(res, 202, { ok: true, queued: true });
+  if (!queueTaskSummary(ctx.config, task, ctx.index.getTasks())) {
+    return json(res, 503, {
+      ok: false,
+      error: "Could not persist pending summary status; retry the request.",
+    });
+  }
+  const queuedState = readSummaryStatus(ctx.config, task.id);
+  return json(res, 202, {
+    ok: true,
+    queued: true,
+    pendingSince: queuedState.pendingSince ?? queuedState.at,
+  });
 };
 
 export const dismissNeedsInput: RouteHandler = async (ctx, req, res, params) => {

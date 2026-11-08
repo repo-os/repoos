@@ -37,6 +37,7 @@ import {
   isShotPreviewCaptureActive,
   readShotPreviewFixtureFromLocation,
 } from "../lib/shot-preview-fixtures.js";
+import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import type { Task } from "../types";
 
 const DRAFT_BAR = "#3a4055";
@@ -82,6 +83,23 @@ function tabFromQuery(raw: unknown): typeof ui.activeTab | null {
 }
 
 const router = useRouter();
+watch(
+  () => {
+    const shot =
+      typeof window !== "undefined" ? readShotPreviewFixtureFromLocation(window.location) : null;
+    return shot === "drawer:postMergeSummary"
+      ? repo.tasks.find((task) => task.id === SHOT_PREVIEW_FIXTURE_TASK_ID)
+      : undefined;
+  },
+  (task) => {
+    // App.vue applies shot fixtures in its parent mounted hook, after this
+    // view's own hook. Watch for the seeded task so the drawer opens reliably.
+    if (!task || ui.active) return;
+    void ui.openTask(task);
+    ui.activeTab = "agent";
+  },
+  { immediate: true },
+);
 watch(
   () => route.query.task,
   (v) => {
@@ -355,6 +373,7 @@ function openHeld(task: Task): void {
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 10px">
+        <RouterLink to="/client-board" class="client-board-link">Client board</RouterLink>
         <Button
           v-if="!statusFilter && effectiveView === 'board'"
           variant="outline"
@@ -624,5 +643,17 @@ function openHeld(task: Task): void {
    integration status bar never covers the last board rows. */
 .ibar-spacer {
   height: 150px;
+}
+</style>
+
+<style scoped>
+.client-board-link {
+  color: var(--cyan);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.client-board-link:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
 }
 </style>

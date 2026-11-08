@@ -1,7 +1,7 @@
 ---
 id: "0012"
 title: Weekly safe worktree cleanup
-enabled: true
+enabled: false
 cadence: weekly
 timezone: Asia/Singapore
 time_of_day: "06:00"
@@ -20,7 +20,7 @@ last_task_id: "1055"
 last_error: ""
 last_occurrence_key: "weekly:2026-11-08"
 created_at: "2026-11-01T15:58:12.727Z"
-updated_at: "2026-11-07T22:37:11.559Z"
+updated_at: "2026-11-08T02:58:15.485Z"
 ---
 ## Problem
 

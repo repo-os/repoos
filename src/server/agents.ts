@@ -7104,6 +7104,7 @@ export class AgentRunner {
         this.schedulePersist(id);
         this.persistQueuedMessages();
         this.recordTaskActivity(id, `message_delivered: ${delivered.length} message(s)`);
+        this.maybeClearDeferredHandoffResumeCount(id);
       },
     };
   }
@@ -7537,6 +7538,38 @@ export class AgentRunner {
 
   private hasBlockingQueuedMessages(taskId: string): boolean {
     return this.blockingQueuedMessages(taskId).length > 0;
+  }
+
+  /**
+   * The deferred-handoff auto-resume counter is scoped to one deferral episode:
+   * it caps how many times we re-launch after deferring while messages are still
+   * unread. Once blocking messages are delivered, reset it so a later deferral
+   * gets a fresh budget (#1057).
+   */
+  private maybeClearDeferredHandoffResumeCount(taskId: string): void {
+    if (this.hasBlockingQueuedMessages(taskId)) return;
+    if (!this.getTask) return;
+    try {
+      const task = this.getTask(taskId);
+      if (!task) return;
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      if (current.extra.deferred_handoff_resume_count == null) return;
+      delete current.extra.deferred_handoff_resume_count;
+      writeFileSync(task.absPath, serializeTask(current));
+      commitTaskFile(this.config.root, task.absPath, `docs(${taskId}): clear deferred-handoff resume count`);
+    } catch (err) {
+      this.logger?.agent(
+        taskId,
+        "warn",
+        `Could not clear deferred-handoff resume count: ${(err as Error).message}`,
+      );
+    }
   }
 
   /** Drop automatic advisory messages once a handoff owns the turn. */

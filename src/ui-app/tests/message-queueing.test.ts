@@ -635,7 +635,7 @@ describe("handoff deferral while messages are queued (#0865)", () => {
         expect(status.outcomeQueued).toBe(true);
         await waitFor(() => readFileSync(absPath, "utf8").includes("message_delivered"));
         const resumedTask = parseFile(fx.root, absPath);
-        expect(resumedTask.extra?.deferred_handoff_resume_count).toBe(1);
+        expect(resumedTask.extra?.deferred_handoff_resume_count).toBeUndefined();
         expect(readFileSync(absPath, "utf8")).toContain("resuming engineer to read queued message");
         expect(
           readFileSync(fx.log, "utf8")
@@ -647,6 +647,37 @@ describe("handoff deferral while messages are queued (#0865)", () => {
         expect(activity).not.toContain("handoff_deferred");
         expect(onHandoff).toHaveBeenCalledOnce();
       }
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
+  it("clears the deferred-handoff resume budget once blocking messages are delivered (#1057)", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const id = "defer-reset-test";
+    const absPath = setupTaskFile(fx.root, id, "active");
+    writeFileSync(
+      absPath,
+      readFileSync(absPath, "utf8").replace(
+        "assigned_to: ai",
+        "assigned_to: ai\ndeferred_handoff_resume_count: 2",
+      ),
+    );
+    const runner = new AgentRunner(config(fx.root), () => {}, {
+      getTask: () => parseFile(fx.root, absPath),
+    });
+    try {
+      const t = task(id);
+      expect(runner.start(t, `feat/${id}`, agent, { cwd: fx.bin }).ok).toBe(true);
+      expect(runner.send(id, "read this on the next turn", agent).queued).toBe(true);
+      await waitFor(() => !runner.isRunning(id), 8000);
+      await waitFor(() => readFileSync(absPath, "utf8").includes("message_delivered"), 8000);
+      expect(parseFile(fx.root, absPath).extra?.deferred_handoff_resume_count).toBeUndefined();
     } finally {
       runner.dispose();
       process.env.PATH = oldPath;
