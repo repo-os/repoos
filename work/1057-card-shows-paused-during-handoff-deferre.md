@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T01:40:16Z"
+updated_at: "2026-11-08T01:41:01Z"
 handoff_signal_retry_count: 1
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T01:31:47.207Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -56,3 +56,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T01:32:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T01:38:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T01:40:16Z · body
+- 2026-11-08T01:41:01Z · handoff_deferred: 1 queued message(s) must be read before review
