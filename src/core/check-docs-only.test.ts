@@ -19,5 +19,7 @@ describe("docs/bookkeeping check classification", () => {
   it("fails closed on missing paths or when disabled", () => {
     expect(isDocsOnlyCheck(null)).toBe(false);
     expect(isDocsOnlyCheck(["work/x.md"], false)).toBe(false);
+    expect(isDocsOnlyCheck([])).toBe(false);
+    expect(isDocsOnlyCheck([], true, { allowEmpty: true })).toBe(true);
   });
 });

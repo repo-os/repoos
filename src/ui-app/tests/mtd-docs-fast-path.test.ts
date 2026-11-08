@@ -94,8 +94,9 @@ describe("isDocsOnlyCheck close-out classification (#0355, #1059)", () => {
     expect(isDocsOnlyCheck(["scripts/note.md"])).toBe(false);
   });
 
-  it("treats an empty diff as docs-only (a legitimate no-op merge has nothing to gate)", () => {
-    expect(isDocsOnlyCheck([])).toBe(true);
+  it("treats an empty merge diff as docs-only only for close-out", () => {
+    expect(isDocsOnlyCheck([])).toBe(false);
+    expect(isDocsOnlyCheck([], true, { allowEmpty: true })).toBe(true);
   });
 });
 
