@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-08T07:55:05.134Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -19,7 +21,6 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
 updated_at: "2026-11-08T07:55:05Z"
-last_check_failure: "repoos check at 2026-11-08T06:29:32.049Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 9c89e82a to 747e9d3d) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 1
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
 last_handoff_failure_sha: 62f0e7e9781363e0a9ec705ef09315f5fb9cb291
@@ -132,3 +133,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T07:28:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T07:55:02Z · message_queued at 2026-11-08T07:55:02.003Z
 - 2026-11-08T07:55:05Z · message_delivered: 1 message(s)
+
