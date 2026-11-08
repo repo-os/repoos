@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T15:07:05Z"
+updated_at: "2026-11-08T15:10:02Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
@@ -247,3 +247,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T15:05:51Z · message_delivered: 2 message(s)
 - 2026-11-08T15:07:04Z · message_queued at 2026-11-08T15:07:04.982Z
 - 2026-11-08T15:07:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T15:10:02Z · CTO nudge: held — an undelivered message is already queued
