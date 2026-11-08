@@ -131,6 +131,31 @@ const held = computed(() =>
   taskIsHeld(props.task) && isHoldActive(props.task, holdNow.value) ? props.task : null,
 );
 
+/** Keep the board on the same server landability result as the task drawer. */
+const landable = computed(() => repo.landableFor(props.task.id));
+const landableBlocker = computed(() =>
+  landable.value?.checks.find((check) => check.status === "fail"),
+);
+const landableReason = computed(() => {
+  if (!landable.value) return "Checking merge readiness…";
+  if (landable.value.landable) return "";
+  return landableBlocker.value
+    ? `${landableBlocker.value.label}: ${landableBlocker.value.detail}${landableBlocker.value.nextStep ? ` — ${landableBlocker.value.nextStep}` : ""}`
+    : "Merge readiness checks have not passed.";
+});
+let landablePoll: ReturnType<typeof setInterval> | undefined;
+function syncLandablePoll(id: string, status: Task["status"]): void {
+  if (landablePoll) clearInterval(landablePoll);
+  landablePoll = undefined;
+  if (status !== "review" || typeof document !== "undefined" && document.visibilityState === "hidden") return;
+  void repo.loadLandable(id);
+  landablePoll = setInterval(() => {
+    if (typeof document === "undefined" || document.visibilityState !== "hidden") void repo.loadLandable(id);
+  }, 5_000);
+}
+watch(() => [props.task.id, props.task.status] as const, ([id, status]) => syncLandablePoll(id, status), { immediate: true });
+onUnmounted(() => { if (landablePoll) clearInterval(landablePoll); });
+
 /**
  * Effective per-task agent/model assignments shown by the card's robot toggle.
  * The compact board snapshot carries the lightweight overrides so this need
@@ -1096,6 +1121,15 @@ const hint = computed<CardHint | null>(() => {
       };
     }
     if (v?.tone === "green") {
+      if (!landable.value || !landable.value.landable) {
+        const blocker = landableBlocker.value;
+        const running = /running|in progress/i.test(`${blocker?.label ?? ""} ${blocker?.detail ?? ""}`);
+        return {
+          label: !landable.value || running ? "review passed · checks running" : "review passed · checks failed",
+          title: landableReason.value,
+          cls: "tc-review-warn",
+        };
+      }
       return {
         label: "review passed · ready to finish",
         title: "review passed — approve and move to done to finish",
@@ -1262,7 +1296,8 @@ const reviewReady = computed(() => {
     !repo.isRunning(props.task.id) &&
     !awaitingFreshReview.value &&
     report?.state !== "incomplete" &&
-    reviewVerdict.value?.tone === "green"
+    reviewVerdict.value?.tone === "green" &&
+    landable.value?.landable === true
   );
 });
 
@@ -1286,10 +1321,10 @@ const actionFooterClass = computed(() => {
         inert
       );
     case "done":
-      return (
+      return reviewReady.value ? (
         "border-[var(--green-border-tint)] bg-[var(--green-tint)] text-[var(--green)] hover:brightness-110" +
         inert
-      );
+      ) : ("border-border bg-[var(--panel)] text-[var(--txt-dim)] hover:border-[var(--border-bright)] hover:text-foreground" + inert);
     default:
       return (
         "border-border bg-[var(--panel)] text-[var(--txt-dim)] hover:border-[var(--border-bright)] hover:text-foreground" +
@@ -1929,7 +1964,7 @@ async function openDebuggerFromError(): Promise<void> {
               inPipeline ||
               agentInterruptBlocked ||
               (task.status === 'review' &&
-                (repo.reviewFor(task.id)?.running || repo.isRunning(task.id)))))
+                (repo.reviewFor(task.id)?.running || repo.isRunning(task.id) || !landable?.landable))))
         "
         :title="
           held
@@ -1940,8 +1975,10 @@ async function openDebuggerFromError(): Promise<void> {
                 ? action.title
                 : task.status === 'review' && repo.reviewFor(task.id)?.running
                   ? 'Waiting for automatic review to finish.'
-                  : task.status === 'review' && repo.isRunning(task.id)
+                    : task.status === 'review' && repo.isRunning(task.id)
                     ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
+                    : task.status === 'review' && !landable?.landable
+                      ? landableReason
                     : action.title
         "
         @click.stop="runAction"
