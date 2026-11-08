@@ -115,7 +115,13 @@ const drawerFooter = computed(() => {
           >
             <span class="check-progress-meter__fill" :style="{ width: `${fillPercent}%` }" />
           </span>
-          <progress class="check-progress-meter__native" :value="percent" max="100" tabindex="-1" />
+          <progress
+            class="check-progress-meter__native"
+            :value="percent"
+            max="100"
+            tabindex="-1"
+            aria-hidden="true"
+          />
         </span>
         <span class="checks-progress-drawer-detail">{{ detailLabel }}</span>
       </div>
@@ -140,7 +146,13 @@ const drawerFooter = computed(() => {
           >
             <span class="check-progress-meter__fill" :style="{ width: `${fillPercent}%` }" />
           </span>
-          <progress class="check-progress-meter__native" :value="percent" max="100" tabindex="-1" />
+          <progress
+            class="check-progress-meter__native"
+            :value="percent"
+            max="100"
+            tabindex="-1"
+            aria-hidden="true"
+          />
         </span>
         <span v-if="pipelineStatusText" class="checks-progress-pipeline-status">{{
           pipelineStatusText
@@ -159,7 +171,13 @@ const drawerFooter = computed(() => {
         >
           <span class="check-progress-meter__fill" :style="{ width: `${fillPercent}%` }" />
         </span>
-        <progress class="check-progress-meter__native" :value="percent" max="100" tabindex="-1" />
+        <progress
+          class="check-progress-meter__native"
+          :value="percent"
+          max="100"
+          tabindex="-1"
+          aria-hidden="true"
+        />
       </span>
       <span data-test-id="task-card-check-status-line">{{ cardLine }}</span>
     </template>
