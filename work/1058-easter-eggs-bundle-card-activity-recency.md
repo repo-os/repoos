@@ -285,3 +285,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T17:29:57Z · status review→active
 - 2026-11-08T17:29:57Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T17:29:59Z · needs_input
+- 2026-11-08T17:29:59Z · message_queued at 2026-11-08T17:29:59.811Z
