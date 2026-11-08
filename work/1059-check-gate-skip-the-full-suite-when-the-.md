@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T13:23:27Z"
+updated_at: "2026-11-08T13:23:28Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -188,3 +188,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T13:23:19Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T13:23:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T13:23:27Z · needs_input
+- 2026-11-08T13:23:28Z · message_queued at 2026-11-08T13:23:28.643Z
