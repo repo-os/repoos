@@ -138,7 +138,7 @@ describe("runner worktree layout for browser capture (#0854)", () => {
       /_reap_ids=\$\(docker ps -q --filter "name=repoos-validate-" --filter status=running 2>\/dev\/null\) \\\n  && _reap_ps_ok=0 \|\| _reap_ps_ok=\$\?/,
     );
     expect(block).toMatch(/failed to list running capture containers reason=exit-/);
-    expect(block).toMatch(/if ! recent=\$\(docker logs --since 120s --tail 1 "\$id" 2>&1\); then/);
+    expect(block).toMatch(/if recent=\$\(docker logs --since 120s --tail 1 "\$id" 2>&1\); then :; else/);
     expect(block).toMatch(/failed to read recent logs for \$bare reason=exit-/);
     expect(block).toMatch(/<<EOF\n\$\{_reap_ids\}\nEOF/);
   });
