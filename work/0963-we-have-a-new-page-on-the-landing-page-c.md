@@ -15,7 +15,7 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T06:05:04Z"
+updated_at: "2026-11-08T06:07:03Z"
 ---
 ## Problem
 
@@ -63,6 +63,19 @@ Out: changes to the For Clients page, client login or invites, sprints, and any 
 
 - #0849 — For Clients landing page, including the illustrative board this task builds for real.
 
+## Shots
+```json
+[
+{
+  "label": "Read-only client project board",
+  "target": "default",
+  "route": "/client-board",
+  "highlight": ".client-board",
+  "state": "board:pipeline"
+}
+]
+```
+
 ## Original prompt
 
 We have a new page on the landing page called "For Clients" which explains the RepoOS managed services and shows a screenshot of what it looks like, but we haven't built it yet. It's essentially a simplified board that's client-level. Let's build it.
@@ -81,3 +94,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-06T05:05:53Z · status inbox→ready
 - 2026-11-08T06:05:03Z · cli_override, model_override, review_cli_override, review_model_override
 - 2026-11-08T06:05:04Z · status ready→active, branch
+- 2026-11-08T06:07:03Z · body
