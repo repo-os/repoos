@@ -16,8 +16,6 @@ review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
 updated_at: "2026-11-08T05:53:35Z"
 last_check_failure: "repoos check at 2026-11-08T02:42:36.012Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 2b311db0cbbbab67ef96af59606a4805ac3b9c2b
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -365,3 +363,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T05:53:35Z · status active→review
 - 2026-11-08T05:53:35Z · note: Task body is underspecified: E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI
 - 2026-11-08T05:53:35Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
+
