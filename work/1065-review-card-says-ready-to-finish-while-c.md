@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
-updated_at: "2026-11-08T16:29:16Z"
+updated_at: "2026-11-08T16:29:50Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 deferred_handoff_resume_count: 1
@@ -69,3 +69,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T16:14:03Z · note: review pass 1: good to go
 - 2026-11-08T16:14:43Z · message_delivered: 2 message(s)
 - 2026-11-08T16:29:16Z · body
+- 2026-11-08T16:29:50Z · handoff_deferred: 2 queued message(s) must be read before review
