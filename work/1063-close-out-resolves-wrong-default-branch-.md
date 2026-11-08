@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-resolves-wrong-default-branch-
 created_at: "2026-11-08T12:38:05Z"
-updated_at: "2026-11-08T12:45:03Z"
+updated_at: "2026-11-08T13:00:43Z"
 ---
 ## Problem
 Reported from the "tiao" project (local-only repo, no remote): `repoos done` fails every time with `could not get main SHA` (integration-orchestrator.ts, sync phase). Confirmed cause: `git config --get init.defaultBranch` is `master` on that host, but the repo's branch is `main`.
@@ -35,3 +35,4 @@ Verified resolver already exists in `src/core/repo-log.ts` (`resolveDefaultBranc
 - 2026-11-08T12:43:39Z · needs_input
 - 2026-11-08T12:44:57Z · status inbox→ready
 - 2026-11-08T12:45:03Z · status ready→active, branch
+- 2026-11-08T13:00:43Z · body
