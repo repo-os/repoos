@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-08T08:15:05Z"
-review_passes: 1
 id: "0963"
 title: Build the simplified client project board
 type: feature
@@ -17,6 +15,8 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
+updated_at: "2026-11-08T08:15:05Z"
+review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T07:52:53.443Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 ---
 ## Problem
@@ -129,4 +129,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T08:13:58Z · body
 - 2026-11-08T08:14:32Z · status active→review
 - 2026-11-08T08:15:05Z · note: review pass 1: good to go
-
+- 2026-11-08T08:15:05Z · message_queued at 2026-11-08T08:15:05.733Z
