@@ -239,3 +239,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T16:28:30Z · handoff_deferred: 3 queued message(s) must be read before review
 - 2026-11-08T16:28:30Z · message_queued at 2026-11-08T16:28:30.384Z
 - 2026-11-08T16:28:30Z · ↻ resuming engineer to read queued message
+- 2026-11-08T16:28:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
