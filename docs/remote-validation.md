@@ -21,7 +21,10 @@ collection records its reason in the task's remote validation events. On an idle
 host, the periodic orphan sweep also removes completed capture containers after
 two minutes without output when their CPU is below one percent. The system log
 records those removals. A failed handoff cancels that task's queued and active
-Tailscale captures; other tasks' runs are left alone.
+Tailscale captures; other tasks' runs are left alone. Hetzner does not dispatch
+browser captures because it cannot yet cancel them: `runner-available` falls
+back to local capture, while `runner-only` reports that the runner is unavailable.
+Hetzner validation jobs that do not capture a browser are unaffected.
 
 ## Local caps when remote is off or falls back (#0836)
 

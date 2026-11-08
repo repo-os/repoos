@@ -47,6 +47,10 @@ import {
   type RemoteHost,
   type UploadProgressInfo,
 } from "../../server/remote-validation.js";
+import {
+  remoteBrowserEvidenceTransport,
+  runBrowserCaptureWithPolicy,
+} from "../../server/browser-capture-policy.js";
 import type { HetznerClient, HetznerServer } from "../../server/hetzner.js";
 
 interface FakeHetznerOpts {
@@ -228,6 +232,69 @@ describe("RemoteValidationRunner", () => {
     candidateSha: headSha,
   });
   const opts = () => mkOpts();
+
+  it.each(["shots", "verify", "both", "single-shot"] as const)(
+    "rejects Hetzner %s browser captures before queueing or provisioning",
+    async (operation) => {
+      const h = fakeHetzner();
+      const exec = fakeExec();
+      const runner = new RemoteValidationRunner(config, undefined, {
+        hetzner: h.client,
+        exec,
+        timings: FAST,
+      });
+      const result = await runner.validate({
+        ...opts(),
+        kind: "shot",
+        browserCapture: { taskId: "0999", branch: "feat/test", operation },
+      });
+      expect(result.ok).toBe(false);
+      expect(result.detail).toContain("Hetzner browser capture is unavailable");
+      expect(h.calls).toHaveLength(0);
+      expect(exec.bundleRepo).not.toHaveBeenCalled();
+      expect(exec.runRemote).not.toHaveBeenCalled();
+      await runner.dispose();
+    },
+  );
+
+  it.each(["runner-available", "runner-only"] as const)(
+    "handles unavailable Hetzner capture in %s mode without dispatching",
+    async (mode) => {
+      const h = fakeHetzner();
+      const exec = fakeExec();
+      const runner = new RemoteValidationRunner(config, undefined, {
+        hetzner: h.client,
+        exec,
+        timings: FAST,
+      });
+      config.remoteValidation!.browserCaptureMode = mode;
+      const local = vi.fn(async () => "local");
+      const result = runBrowserCaptureWithPolicy({
+        config,
+        request: {
+          taskId: "0999",
+          worktreePath: root,
+          branch: "feat/test",
+          candidateSha: headSha,
+          operation: "shots",
+        },
+        transport: remoteBrowserEvidenceTransport(config, runner),
+        local,
+        useArtifacts: vi.fn(async () => "remote"),
+        note: vi.fn(),
+      });
+      if (mode === "runner-available") {
+        await expect(result).resolves.toBe("local");
+        expect(local).toHaveBeenCalledOnce();
+      } else {
+        await expect(result).rejects.toThrow("Hetzner browser capture is unavailable");
+        expect(local).not.toHaveBeenCalled();
+      }
+      expect(h.calls).toHaveLength(0);
+      expect(exec.runRemote).not.toHaveBeenCalled();
+      await runner.dispose();
+    },
+  );
 
   it("passes when the remote gate exits 0, and writes a per-task log", async () => {
     const h = fakeHetzner();
