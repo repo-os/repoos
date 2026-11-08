@@ -68,3 +68,4 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 - 2026-11-07T23:42:42Z · CTO nudge: held — handoff gate is running
 - 2026-11-07T23:47:56Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T00:13:05Z · message_queued at 2026-11-08T00:13:05.660Z
+- 2026-11-08T00:13:05Z · handoff failed · handoff recovery attempted · finalization failed
