@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-08T16:20:56Z"
-review_passes: 3
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
@@ -18,6 +16,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
+updated_at: "2026-11-08T16:28:42Z"
+review_passes: 3
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 17
@@ -280,4 +280,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T16:17:37Z · message_queued at 2026-11-08T16:17:37.782Z
 - 2026-11-08T16:20:56Z · note: review pass 3: needs some work
 - 2026-11-08T16:20:56Z · needs_input
-
+- 2026-11-08T16:28:42Z · message_delivered: 3 message(s)
