@@ -18,7 +18,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T09:32:52Z"
+updated_at: "2026-11-08T09:33:45Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T08:41:54.450Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
