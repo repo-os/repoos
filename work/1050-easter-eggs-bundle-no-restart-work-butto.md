@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T01:36:33.337Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
@@ -18,7 +20,6 @@ last_handoff_failure_sha: 2b311db0cbbbab67ef96af59606a4805ac3b9c2b
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
-last_check_failure: "repoos check at 2026-11-07T19:43:41.770Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 463a9738 to 831c9b03) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T19:51:20.419Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T20:21:05.967Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -288,3 +289,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T01:07:56Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T01:36:30Z · message_queued at 2026-11-08T01:36:30.168Z
 - 2026-11-08T01:36:33Z · message_delivered: 1 message(s)
+
