@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
+debug_tldr: "The agent hit the weekly usage limit — buy credits or wait for the reset, then retry the run."
+debug_tldr_at: "2026-11-08T19:02:51Z"
+debug_tldr_key: "dev-error|ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 priority: p3
 area: web
 assigned_to: ai
