@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T18:29:53Z"
+updated_at: "2026-11-08T18:29:57Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T18:29:31.454Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 502 for http://127.0.0.1:36953/api/model-providers/muse/usage (http://127.0.0.1:36953/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 502 (Bad Gateway) (http://127.0.0.1:36953/api/model-providers/muse/usage)"
 handoff_signal_retry_count: 2
@@ -127,4 +127,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:28:29Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T18:29:28Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 502 for http://127.0.0.1:36953/api/model-providers/muse/usage (http://127.0.0.1:36953/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 502 (Bad Gateway) (http://127.0.0.1:36953/api/model-providers/muse/usage)
 - 2026-11-08T18:29:28Z · message_queued at 2026-11-08T18:29:28.437Z
-
+- 2026-11-08T18:29:57Z · message_delivered: 1 message(s)
