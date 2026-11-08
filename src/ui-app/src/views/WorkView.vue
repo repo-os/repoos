@@ -373,6 +373,7 @@ function openHeld(task: Task): void {
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 10px">
+        <RouterLink to="/client-board" class="client-board-link">Client board</RouterLink>
         <Button
           v-if="!statusFilter && effectiveView === 'board'"
           variant="outline"
@@ -642,5 +643,17 @@ function openHeld(task: Task): void {
    integration status bar never covers the last board rows. */
 .ibar-spacer {
   height: 150px;
+}
+</style>
+
+<style scoped>
+.client-board-link {
+  color: var(--cyan);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.client-board-link:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
 }
 </style>
