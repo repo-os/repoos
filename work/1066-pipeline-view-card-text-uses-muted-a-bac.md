@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T15:10:01Z"
+updated_at: "2026-11-08T15:10:35Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -34,40 +34,40 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 ```json
 [
 {
-"label": "Pipeline card secondary text (dark theme)",
-"target": "default",
-"route": "/work",
-"highlight": ".pipeline-card",
-"assert": [
-{
-"selector": ".pl-id",
-"label": "task id is visible"
+  "label": "Pipeline card secondary text (dark theme)",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".pipeline-card",
+  "assert": [
+    {
+      "selector": ".pl-id",
+      "label": "task id is visible"
+    },
+    {
+      "selector": ".pl-row-4",
+      "label": "model and host row is visible"
+    }
+  ],
+  "state": "pipeline:checksProgress",
+  "theme": "dark"
 },
 {
-"selector": ".pl-row-4",
-"label": "model and host row is visible"
-}
-],
-"state": "pipeline:checksProgress",
-"theme": "dark"
-},
-{
-"label": "Pipeline card secondary text (light theme)",
-"target": "default",
-"route": "/work",
-"highlight": ".pipeline-card",
-"assert": [
-{
-"selector": ".pl-id",
-"label": "task id is visible"
-},
-{
-"selector": ".pl-row-4",
-"label": "model and host row is visible"
-}
-],
-"state": "pipeline:checksProgress",
-"theme": "light"
+  "label": "Pipeline card secondary text (light theme)",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".pipeline-card",
+  "assert": [
+    {
+      "selector": ".pl-id",
+      "label": "task id is visible"
+    },
+    {
+      "selector": ".pl-row-4",
+      "label": "model and host row is visible"
+    }
+  ],
+  "state": "pipeline:checksProgress",
+  "theme": "light"
 }
 ]
 ```
@@ -93,3 +93,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T14:58:57Z · message_queued at 2026-11-08T14:58:57.151Z
 - 2026-11-08T15:09:59Z · status ready→active
 - 2026-11-08T15:10:01Z · message_delivered: 1 message(s)
+- 2026-11-08T15:10:35Z · body
