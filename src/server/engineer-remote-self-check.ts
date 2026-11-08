@@ -23,6 +23,7 @@ import type { RemotePreReviewOutcome } from "./pre-review-remote-gate.js";
 import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import { createRemoteValidator } from "./remote-validation.js";
+import { aliveCheckGateLockForWorktree } from "./check-gate-lock.js";
 import { Logger } from "../core/logger.js";
 import { checkSnapshot } from "../core/check-reuse.js";
 
@@ -83,6 +84,11 @@ export async function commitWipCheckpointForRemoteGate(
   config: RepoOSConfig,
   taskId: string,
 ): Promise<string | null> {
+  const boardRoot = boardRootForEngineerRemote(worktreePath);
+  const cacheDir = config.cacheDir ?? ".repoos";
+  if (aliveCheckGateLockForWorktree(boardRoot, cacheDir, worktreePath)) {
+    return "a check is running; wait for it to finish before committing a WIP checkpoint";
+  }
   let dirty: string[];
   try {
     dirty = await uncommittedWorkFiles(worktreePath, workFileFilter(config));

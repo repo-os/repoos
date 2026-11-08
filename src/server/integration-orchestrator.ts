@@ -43,6 +43,7 @@ import {
   publishStashDiff,
   PUBLISH_STASH_MESSAGE,
   commitFiles,
+  writeWorktreeSourceFile,
   dirtyFiles,
   uncommittedWorkFiles,
   workFileFilter,
@@ -2125,7 +2126,7 @@ export class CloseOutOrchestrator {
           const content = readFileSync(join(wtPath, p), "utf8");
           const taskRes = resolveTaskFileByTakingMain(content);
           if (taskRes.ok) {
-            writeFileSync(join(wtPath, p), taskRes.content);
+            writeWorktreeSourceFile(wtPath, join(wtPath, p), taskRes.content);
             resolvedOk = true;
           }
         } catch {
@@ -2193,7 +2194,7 @@ export class CloseOutOrchestrator {
         await runGit(wtPath, ["merge", "--abort"], 10_000);
         return { ok: false };
       }
-      writeFileSync(join(wtPath, file), union.content);
+      writeWorktreeSourceFile(wtPath, join(wtPath, file), union.content);
       resolvedByUnion = true;
     }
     const add = await runGit(wtPath, ["add", "-A", "--", ...remaining], 10_000);

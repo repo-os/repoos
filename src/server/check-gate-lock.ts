@@ -14,9 +14,15 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
-import { commitFiles, setCheckGateCommitHook, type CheckGateCommitVerdict } from "../core/git.js";
+import {
+  commitFiles,
+  setCheckGateCommitHook,
+  setCheckGateGitRefusal,
+  setCheckGateWorktreeWriteRefusal,
+  type CheckGateCommitVerdict,
+} from "../core/git.js";
 import { isCheckGateBookkeepingPath as isBookkeepingPath } from "../core/check-gate-bookkeeping.js";
 import { runGit } from "../core/git.js";
 
@@ -439,6 +445,42 @@ export function relPathsUnderRoot(commitRoot: string, absPaths: string[]): strin
   return absPaths.map((p) => relative(commitRoot, p).replace(/\\/g, "/"));
 }
 
+/** Repo-relative path spec segments from a git argv (after `--` when present). */
+export function gitArgvPathspec(args: readonly string[]): string[] {
+  const dash = args.indexOf("--");
+  const tail = dash >= 0 ? args.slice(dash + 1) : args.slice(1);
+  return tail.filter((p) => p && !p.startsWith("-"));
+}
+
+function gateEnvBoardRoot(config: RepoOSConfig): string {
+  return process.env.REPOOS_CHECK_STORE_ROOT?.trim() || config.root;
+}
+
+function gateEnvCacheDir(config: RepoOSConfig): string {
+  return process.env.REPOOS_CACHE_DIR?.trim() || config.cacheDir || ".repoos";
+}
+
+function checkGateGitCommandRefusal(
+  cwd: string,
+  args: readonly string[],
+  config: RepoOSConfig,
+): string | undefined {
+  if (process.env.REPOOS_CHECK_GATE_INTERNAL === "1") return undefined;
+  const verb = args[0];
+  if (!verb || !["add", "commit", "restore", "checkout", "switch"].includes(verb)) {
+    return undefined;
+  }
+  const boardRoot = gateEnvBoardRoot(config);
+  const cacheDir = gateEnvCacheDir(config);
+  if (!aliveCheckGateLockForWorktree(boardRoot, cacheDir, cwd)) return undefined;
+  if (verb === "commit") return CHECK_GATE_WRITE_REFUSAL;
+  const paths = gitArgvPathspec(args);
+  if (paths.length === 0 && (verb === "checkout" || verb === "switch" || verb === "restore")) {
+    return CHECK_GATE_WRITE_REFUSAL;
+  }
+  return refuseCheckGateSourcePaths(boardRoot, cacheDir, cwd, paths, config);
+}
+
 function resolveCommitHook(
   boardRoot: string,
   cacheDir: string,
@@ -457,11 +499,12 @@ function resolveCommitHook(
   return "defer";
 }
 
-/** Register the shared hook used by `commitFiles` during server lifetime. */
+/** Register commit/git/write guards for check-gate bookkeeping (#1061). */
 export function installCheckGateCommitHook(config: RepoOSConfig): void {
   const boardRoot = config.root;
   const cacheDir = config.cacheDir ?? ".repoos";
   if (!process.env.REPOOS_CACHE_DIR) process.env.REPOOS_CACHE_DIR = cacheDir;
+  const scope = config;
   setCheckGateCommitHook((args) =>
     resolveCommitHook(
       args.boardRoot.trim() || boardRoot,
@@ -470,7 +513,18 @@ export function installCheckGateCommitHook(config: RepoOSConfig): void {
       args.relPaths,
       args.absPaths,
       args.message,
-      config,
+      scope,
     ),
   );
+  setCheckGateGitRefusal((cwd, args) => checkGateGitCommandRefusal(cwd, args, scope));
+  setCheckGateWorktreeWriteRefusal((worktree, absPath) => {
+    let rel: string;
+    try {
+      rel = relative(resolve(worktree), resolve(absPath)).replace(/\\/g, "/");
+    } catch {
+      return undefined;
+    }
+    if (rel.startsWith("..") || isAbsolute(rel)) return undefined;
+    return checkGateSourceWriteRefusal(boardRoot, cacheDir, worktree, rel, scope);
+  });
 }
