@@ -208,3 +208,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T12:38:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T12:43:03Z · message_delivered: 1 message(s)
 - 2026-11-08T12:50:27Z · message_queued at 2026-11-08T12:50:27.847Z
+- 2026-11-08T12:50:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
