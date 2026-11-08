@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T01:22:33Z"
+updated_at: "2026-11-08T01:22:34Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -105,3 +105,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:17:58Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-11-08T01:21:36Z · body
 - 2026-11-08T01:22:33Z · status active→review
+- 2026-11-08T01:22:34Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
