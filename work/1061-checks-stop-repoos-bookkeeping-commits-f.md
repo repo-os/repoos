@@ -267,3 +267,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T21:37:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I did **not** request handoff. The review findings are still open: managed self-check and close-out lifecycle coverage, protection against direct source-file writes, and process-safe lock and queue updates. The scoped check passed on the c… · stderr: Reading additional input from stdin... 2026-11-08T21:36:30.916306Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 17448
 - 2026-11-08T21:37:04Z · status active→review
 - 2026-11-08T21:37:05Z · message_delivered: 1 message(s)
+- 2026-11-08T21:37:05Z · note: handoff requested (cli)
