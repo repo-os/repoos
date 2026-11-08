@@ -18,7 +18,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T06:14:58Z"
+updated_at: "2026-11-08T06:17:50Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
 last_handoff_failure_sha: 62f0e7e9781363e0a9ec705ef09315f5fb9cb291
 last_check_failure: "repoos check at 2026-11-08T02:03:13.154Z: repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯"
@@ -100,3 +100,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T06:05:34Z · body
 - 2026-11-08T06:14:58Z · message_queued at 2026-11-08T06:14:58.799Z
 - 2026-11-08T06:14:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T06:17:50Z · CTO nudge: held — an undelivered message is already queued
