@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T16:50:02Z"
+updated_at: "2026-11-08T17:09:47Z"
 handoff_signal_retry_count: 2
 ---
 ## Items
@@ -78,3 +78,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T16:47:24Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-08T16:49:59Z · status ready→active
 - 2026-11-08T16:50:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T17:09:47Z · body
