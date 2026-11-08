@@ -199,3 +199,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T13:36:44Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
 - 2026-11-08T13:36:44Z · status active→review
 - 2026-11-08T13:42:36Z · message_queued at 2026-11-08T13:42:36.348Z
+- 2026-11-08T13:42:36Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — _shallow: true
