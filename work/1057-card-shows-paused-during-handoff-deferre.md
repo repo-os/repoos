@@ -18,7 +18,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T08:33:14Z"
+updated_at: "2026-11-08T08:38:20Z"
 last_check_failure: "repoos check at 2026-11-08T07:55:05.134Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -139,3 +139,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T08:22:23Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-08T08:22:36Z · message_delivered: 1 message(s)
 - 2026-11-08T08:33:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T08:38:20Z · body
