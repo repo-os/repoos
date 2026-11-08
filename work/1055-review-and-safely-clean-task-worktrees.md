@@ -3,13 +3,16 @@ id: "1055"
 title: Review and safely clean task worktrees
 type: chore
 status: active
+hold: true
+hold_reason: "Rework as a server-side scheduled gc report; no agent/worktree needed (Nick, 2026-11-08). To be deleted."
+hold_at: "2026-11-08T02:58:11.434Z"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T02:53:14Z"
+updated_at: "2026-11-08T02:58:11Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -165,3 +168,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T02:52:19Z · message_delivered: 1 message(s)
 - 2026-11-08T02:52:19Z · status review→active
 - 2026-11-08T02:53:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T02:58:11Z · held, held-reason, held-at
