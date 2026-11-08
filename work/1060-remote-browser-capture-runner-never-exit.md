@@ -303,3 +303,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T18:35:33Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T18:35:33Z · message_queued at 2026-11-08T18:35:33.840Z
 - 2026-11-08T18:35:34Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:35:34Z · message_delivered: 2 message(s)
