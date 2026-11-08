@@ -464,3 +464,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T20:36:01Z · message_queued at 2026-11-08T20:36:01.473Z
 - 2026-11-08T21:03:48Z · body
 - 2026-11-08T21:05:16Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T21:05:16Z · message_queued at 2026-11-08T21:05:16.827Z
