@@ -39,6 +39,7 @@ export const getModelProviders: RouteHandler = async (ctx, _req, res) => {
     label: p.label,
     kind: p.kind,
     dashboardUrl: p.dashboardUrl,
+    dashboardLabel: p.dashboardLabel,
     note: p.note,
     hasKey: readProviderKey(ctx.config, p).length > 0,
     // A live row with no key variable reads the coding agent's own login on

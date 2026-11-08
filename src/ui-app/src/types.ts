@@ -1659,6 +1659,7 @@ export interface ModelProviderRow {
   label: string;
   kind: ModelProviderKind;
   dashboardUrl: string;
+  dashboardLabel?: string;
   note: string;
   /** Whether an API key is saved — never the key itself. */
   hasKey: boolean;
@@ -1898,6 +1899,7 @@ export interface MuseUsage {
   /** Rolling allowance windows, in the opencode Go window shape (no dollars). */
   windows: ModelProviderUsageWindow[];
   unrecognized: boolean;
+  message?: string | null;
 }
 
 /** GitHub Copilot's usage lives in its web settings — no public API for personal accounts. */

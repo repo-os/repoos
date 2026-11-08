@@ -291,7 +291,7 @@ onMounted(() => {
           </span>
         </div>
         <a class="mp-dash-link" :href="row.dashboardUrl" target="_blank" rel="noopener noreferrer">
-          Open dashboard ↗
+          {{ row.dashboardLabel || "Open dashboard" }} ↗
         </a>
       </div>
       <div class="mp-note">{{ row.note }}</div>
@@ -437,6 +437,10 @@ onMounted(() => {
                 </div>
               </div>
             </template>
+            <div v-if="museUsage(rowState(row.id).usage)?.message" class="mp-part-error">
+              {{ museUsage(rowState(row.id).usage)!.message }}
+              <button class="mp-retry" @click="loadUsage(row.id)">Retry</button>
+            </div>
             <div
               v-else-if="windowedUsage(rowState(row.id).usage)!.unrecognized"
               class="mp-part-error"
