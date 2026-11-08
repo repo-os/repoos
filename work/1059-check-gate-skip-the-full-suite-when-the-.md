@@ -204,3 +204,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T13:53:25Z · needs_input
 - 2026-11-08T13:53:26Z · message_delivered: 2 message(s)
 - 2026-11-08T13:53:26Z · message_queued at 2026-11-08T13:53:26.147Z
+- 2026-11-08T13:53:26Z · CTO nudge: held — an undelivered message is already queued
