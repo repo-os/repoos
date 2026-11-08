@@ -2,7 +2,7 @@
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -109,4 +109,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:52:19Z · CTO nudge: held — remote validation is running
 - 2026-11-08T02:52:22Z · review_model_override
 - 2026-11-08T02:57:57Z · note: ui verification passed: 3 of 3 shots captured with clean console
-- 2026-11-08T02:57:57Z · engineer stopped by request
+- 2026-11-08T02:57:57Z · status active→review
