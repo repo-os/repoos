@@ -1460,6 +1460,81 @@ export function completedCaptureReaperCommand(id: string): string {
   );
 }
 
+const COMPLETED_CAPTURE_REAPER_GRACE_MS = 120_000;
+
+/** Completed-capture and stale-container sweep shared by Tailscale and Hetzner runners. */
+export async function runValidationContainerReaper(
+  exec: RemoteExecDeps,
+  host: RemoteHost,
+  opts: {
+    liveContainerNames: ReadonlySet<string>;
+    logger?: Logger;
+    hostLabel: string;
+  },
+): Promise<void> {
+  const listing = await exec.runRemote(host, reaperCommand(), () => {}, 30_000);
+  if (listing.code !== 0 || listing.timedOut) {
+    throw new Error("could not list validation containers");
+  }
+  const now = Date.now();
+  const completed = staleReaperCandidates(
+    listing.output,
+    now,
+    COMPLETED_CAPTURE_REAPER_GRACE_MS,
+    opts.liveContainerNames,
+  );
+  for (const candidate of completed) {
+    if (opts.liveContainerNames.has(candidate.name)) continue;
+    const removed = await exec.runRemote(
+      host,
+      completedCaptureReaperCommand(candidate.id),
+      () => {},
+      30_000,
+    );
+    if (removed.code === 0 && !removed.timedOut) {
+      opts.logger?.system(
+        "info",
+        `reaped completed browser capture ${candidate.name} on ${opts.hostLabel}: no output for two minutes and CPU idle`,
+      );
+    }
+  }
+  const stale = staleReaperCandidates(
+    listing.output,
+    now,
+    CONTAINER_REAPER_RUN_CAP_MS,
+    opts.liveContainerNames,
+  );
+  for (const candidate of stale) {
+    if (opts.liveContainerNames.has(candidate.name)) continue;
+    const inspected = await exec.runRemote(
+      host,
+      reaperInspectionCommand(candidate.id),
+      () => {},
+      30_000,
+    );
+    if (
+      inspected.code !== 0 ||
+      inspected.timedOut ||
+      !reaperInspectionIsStale(parseReaperInspection(inspected.output), now) ||
+      opts.liveContainerNames.has(candidate.name)
+    ) {
+      continue;
+    }
+    const removed = await exec.runRemote(host, reaperRemoveCommand(candidate.id), () => {}, 30_000);
+    if (removed.code === 0 && !removed.timedOut) {
+      opts.logger?.system(
+        "info",
+        `remote validation Reaping stale validation container ${candidate.name} (older than ${Math.ceil(CONTAINER_REAPER_RUN_CAP_MS / 60_000)} minutes with no recent activity) on ${opts.hostLabel}`,
+      );
+    } else {
+      opts.logger?.system(
+        "info",
+        `container reaper could not remove ${candidate.name} on ${opts.hostLabel}`,
+      );
+    }
+  }
+}
+
 /** Read CPU activity from the runner's Docker daemon for one validation container. */
 export function containerCpuCommand(containerName: string): string {
   const safe = containerName.replace(/[^A-Za-z0-9_.-]/g, "");
@@ -3073,29 +3148,39 @@ interface HetznerCaptureControl {
 
 export class RemoteValidationRunner implements RemoteValidator {
   private readonly captureControls = new Map<string, Set<HetznerCaptureControl>>();
+  private readonly liveContainerNames = new Set<string>();
+  private lastReaperAt: number | undefined;
+  private reaping = false;
+  private backgroundReaperTimer: ReturnType<typeof setInterval> | null = null;
+  /** Warm VM ssh target; set after provisioning or reuse. */
+  private runnerHost: RemoteHost | null = null;
 
   async cancelBrowserCaptures(taskId: string): Promise<void> {
     const controls = [...(this.captureControls.get(taskId) ?? [])];
+    let killFailed = false;
     await Promise.all(
       controls.map(async (control) => {
         control.controller.abort();
         control.abortUpload?.();
         control.abortRun?.();
-        if (control.host) {
-          await execRemoteWithHardDeadline(
-            this.exec,
-            control.host,
-            killContainerCommand(control.container),
-            () => {},
-            HANG_KILL_TIMEOUT_MS,
-          ).catch(() => undefined);
-        }
+        if (!control.host) return;
+        const killRes = await execRemoteWithHardDeadline(
+          this.exec,
+          control.host,
+          killContainerCommand(control.container),
+          () => {},
+          HANG_KILL_TIMEOUT_MS,
+        ).catch(() => ({ code: null, output: "", timedOut: true }));
+        if (killRes.timedOut || killRes.code !== 0) killFailed = true;
       }),
     );
+    if (controls.length === 0) return;
     appendRemoteValidationEvent(this.config.root, taskId, {
       level: "warn",
       phase: "run",
-      message: "cancelled outstanding Hetzner browser captures after handoff failure",
+      message: killFailed
+        ? "could not kill one or more Hetzner browser capture containers after handoff failure — a stale capture may still block retries"
+        : "cancelled outstanding Hetzner browser captures after handoff failure",
     });
   }
 
@@ -3135,6 +3220,41 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.keyPath = process.env.REPOOS_REMOTE_SSH_KEY ?? "";
     this.gate = new ConcurrencyGate(remoteConcurrencyLimit(config));
     this.loadState();
+    if (config.remoteValidation?.enabled) this.startBackgroundReaper();
+  }
+
+  startBackgroundReaper(): void {
+    if (this.backgroundReaperTimer || this.timings.backgroundProbeIntervalMs <= 0) return;
+    this.backgroundReaperTimer = setInterval(
+      () => this.maybeRunReaper(),
+      this.timings.backgroundProbeIntervalMs,
+    );
+    this.backgroundReaperTimer.unref?.();
+  }
+
+  private maybeRunReaper(): void {
+    const host = this.runnerHost;
+    if (
+      !host ||
+      this.reaping ||
+      this.activeJobs > 0 ||
+      !containerReaperDue(this.lastReaperAt, Date.now())
+    ) {
+      return;
+    }
+    this.lastReaperAt = Date.now();
+    this.reaping = true;
+    void runValidationContainerReaper(this.exec, host, {
+      liveContainerNames: this.liveContainerNames,
+      logger: this.logger,
+      hostLabel: host.ip,
+    })
+      .catch(() => {
+        this.logger?.system("info", `container reaper on Hetzner runner ${host.ip} failed or timed out`);
+      })
+      .finally(() => {
+        this.reaping = false;
+      });
   }
 
   logPath(taskId: string): string {
@@ -3287,9 +3407,11 @@ export class RemoteValidationRunner implements RemoteValidator {
     const controls = this.captureControls.get(opts.taskId) ?? new Set<HetznerCaptureControl>();
     controls.add(control);
     this.captureControls.set(opts.taskId, controls);
+    this.liveContainerNames.add(control.container);
     try {
       return await this.validateWithCaptureControl(opts, control);
     } finally {
+      this.liveContainerNames.delete(control.container);
       controls.delete(control);
       if (controls.size === 0 && this.captureControls.get(opts.taskId) === controls)
         this.captureControls.delete(opts.taskId);
@@ -3451,6 +3573,7 @@ export class RemoteValidationRunner implements RemoteValidator {
     let tmp: string | null = null;
     try {
       const host = await this.ensureRunner();
+      this.runnerHost = host;
       runMeta.machine = host.ip;
       if (control) control.host = host;
       emit(`[runner ${host.ip} ready in ${Math.round((Date.now() - startedAt) / 1000)}s]\n`);
@@ -3608,22 +3731,71 @@ export class RemoteValidationRunner implements RemoteValidator {
             upload.mirrorPath || undefined,
             opts.browserCapture,
           );
-        if (control) {
+        if (opts.browserCapture && control) {
           const signal = control.controller.signal;
+          const containerName = control.container;
+          let streamBuf = "";
+          const emitStream = (s: string): void => {
+            streamBuf += s;
+            emit(s);
+          };
           const cancelledRun = new Promise<RemoteExecResult>((resolve) => {
-            const finish = (): void => resolve({ code: null, output: "", timedOut: false });
+            const finish = (): void => resolve({ code: null, output: streamBuf, timedOut: false });
             if (signal.aborted) finish();
             else signal.addEventListener("abort", finish, { once: true });
           });
-          run = await Promise.race([
-            this.exec.runRemote(host, cmd, emit, this.timings.remoteRunTimeoutMs, {
-              registerAbort: (abort) => {
-                control.abortRun = abort;
-                if (signal.aborted) abort();
-              },
-            }),
-            cancelledRun,
-          ]);
+          let capturePoll: ReturnType<typeof setInterval> | undefined;
+          let captureProbe: Promise<void> | undefined;
+          let stoppedCapturePoll = false;
+          let captureCollected = false;
+          let captureResolve: ((result: RemoteExecResult) => void) | undefined;
+          const captureFinished = new Promise<RemoteExecResult>((resolve) => {
+            captureResolve = resolve;
+          });
+          capturePoll = setInterval(() => {
+            if (captureProbe || stoppedCapturePoll) return;
+            captureProbe = this.exec
+              .runRemote(
+                host,
+                finishedCaptureCollectionCommand(paths, containerName),
+                () => {},
+                10_000,
+              )
+              .then((result) => {
+                if (stoppedCapturePoll || result.code !== 0 || result.timedOut) return;
+                captureCollected = true;
+                const message = `force-collected completed browser capture ${containerName} on ${host.ip}: result.json was present`;
+                emit(`\n[${message}]\n`);
+                this.record(
+                  { taskId: opts.taskId, host: host.ip, phase: "run" },
+                  { level: "info", phase: "run", message, host: host.ip },
+                );
+                control.abortRun?.();
+                captureResolve?.({ code: 0, output: streamBuf, timedOut: false });
+              })
+              .catch(() => {})
+              .finally(() => {
+                captureProbe = undefined;
+              });
+          }, this.timings.capturePollIntervalMs);
+          capturePoll.unref?.();
+          try {
+            run = await Promise.race([
+              captureFinished,
+              this.exec.runRemote(host, cmd, emitStream, this.timings.remoteRunTimeoutMs, {
+                registerAbort: (abort) => {
+                  control.abortRun = abort;
+                  if (signal.aborted) abort();
+                },
+              }),
+              cancelledRun,
+            ]);
+          } finally {
+            if (capturePoll) clearInterval(capturePoll);
+            if (captureProbe) await captureProbe;
+            stoppedCapturePoll = true;
+            if (captureCollected) run = { code: 0, output: streamBuf, timedOut: false };
+          }
           if (signal.aborted)
             return withScope({
               ...this.infraFail("browser capture cancelled after handoff failure", {
@@ -3861,6 +4033,10 @@ export class RemoteValidationRunner implements RemoteValidator {
   }
 
   async dispose(): Promise<void> {
+    if (this.backgroundReaperTimer) {
+      clearInterval(this.backgroundReaperTimer);
+      this.backgroundReaperTimer = null;
+    }
     this.clearIdleTimer();
     if (this.lifetimeTimer) clearTimeout(this.lifetimeTimer);
     // An adopted VM belongs to whoever provisioned it; only clear our timers.
@@ -4370,77 +4546,11 @@ export class TailscaleHostPool {
       ) {
         this.lastReaperAt.set(s.spec.host, now);
         s.reaping = true;
-        void this.exec
-          .runRemote(s.ssh, reaperCommand(), () => {}, 30_000)
-          .then(async (listing) => {
-            if (listing.code !== 0 || listing.timedOut) {
-              throw new Error("could not list validation containers");
-            }
-            const completed = staleReaperCandidates(
-              listing.output,
-              Date.now(),
-              120_000,
-              s.liveContainerNames,
-            );
-            for (const candidate of completed) {
-              if (s.liveContainerNames.has(candidate.name)) continue;
-              const removed = await this.exec.runRemote(
-                s.ssh,
-                completedCaptureReaperCommand(candidate.id),
-                () => {},
-                30_000,
-              );
-              if (removed.code === 0 && !removed.timedOut) {
-                this.logger?.system(
-                  "info",
-                  `reaped completed browser capture ${candidate.name} on ${s.spec.host}: no output for two minutes and CPU idle`,
-                );
-              }
-            }
-            const stale = staleReaperCandidates(
-              listing.output,
-              Date.now(),
-              CONTAINER_REAPER_RUN_CAP_MS,
-              s.liveContainerNames,
-            );
-            for (const candidate of stale) {
-              // A run can acquire its container after the listing completes.
-              // Keep the ownership check local and repeat it at the removal
-              // boundary; cross-process ownership is intentionally best-effort.
-              if (s.liveContainerNames.has(candidate.name)) continue;
-              const inspected = await this.exec.runRemote(
-                s.ssh,
-                reaperInspectionCommand(candidate.id),
-                () => {},
-                30_000,
-              );
-              if (
-                inspected.code !== 0 ||
-                inspected.timedOut ||
-                !reaperInspectionIsStale(parseReaperInspection(inspected.output), Date.now()) ||
-                s.liveContainerNames.has(candidate.name)
-              ) {
-                continue;
-              }
-              const removed = await this.exec.runRemote(
-                s.ssh,
-                reaperRemoveCommand(candidate.id),
-                () => {},
-                30_000,
-              );
-              if (removed.code === 0 && !removed.timedOut) {
-                this.logger?.system(
-                  "info",
-                  `remote validation Reaping stale validation container ${candidate.name} (older than ${Math.ceil(CONTAINER_REAPER_RUN_CAP_MS / 60_000)} minutes with no recent activity) on ${s.spec.host}`,
-                );
-              } else {
-                this.logger?.system(
-                  "info",
-                  `container reaper could not remove ${candidate.name} on ${s.spec.host}`,
-                );
-              }
-            }
-          })
+        void runValidationContainerReaper(this.exec, s.ssh, {
+          liveContainerNames: s.liveContainerNames,
+          logger: this.logger,
+          hostLabel: s.spec.host,
+        })
           .catch(() => {
             this.logger?.system("info", `container reaper on ${s.spec.host} failed or timed out`);
           })
@@ -5743,24 +5853,29 @@ export class TailscaleRunner implements RemoteValidator {
   async cancelBrowserCaptures(taskId: string): Promise<void> {
     this.captureCancelGeneration.set(taskId, (this.captureCancelGeneration.get(taskId) ?? 0) + 1);
     const runs = this.pool.cancelCaptureRuns(taskId);
+    let killFailed = false;
     for (const { host, run } of runs) {
       if (!run.container) continue;
       const container = run.container;
       this.captureUploadAbort.get(container)?.();
       this.activeRunAbort.get(container)?.abort();
       this.activeRunSettle.get(container)?.settle({ code: null, output: "", timedOut: false });
-      await execRemoteWithHardDeadline(
+      const killRes = await execRemoteWithHardDeadline(
         this.exec,
         host,
         killContainerCommand(container),
         () => {},
         HANG_KILL_TIMEOUT_MS,
-      ).catch(() => undefined);
+      ).catch(() => ({ code: null, output: "", timedOut: true }));
+      if (killRes.timedOut || killRes.code !== 0) killFailed = true;
     }
+    if (runs.length === 0) return;
     appendRemoteValidationEvent(this.config.root, taskId, {
       level: "warn",
       phase: "run",
-      message: "cancelled outstanding browser captures after handoff failure",
+      message: killFailed
+        ? "could not kill one or more browser capture containers after handoff failure — a stale capture may still block retries"
+        : "cancelled outstanding browser captures after handoff failure",
     });
   }
 

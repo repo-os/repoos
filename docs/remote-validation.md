@@ -14,16 +14,15 @@ with no Docker at all. Both are real, maintained setup paths.
 ## Remote browser capture cleanup (#1060)
 
 The browser runner publishes its result atomically, bounds preview shutdown, and
-exits explicitly. Tailscale Docker collection checks for a complete result in
-the run-specific artifact directory and can remove the corresponding container
-if it has not exited; the result stays available for download. A force
-collection records its reason in the task's remote validation events. On an idle
-host, the periodic orphan sweep also removes completed capture containers after
-two minutes without output when their CPU is below one percent. The system log
-records those removals. A failed handoff cancels that task's queued and active
-Tailscale and Hetzner captures; other tasks' runs are left alone. Hetzner
-cancels queued captures and removes the running capture's named container on a
-best-effort, bounded basis.
+exits explicitly. Both Tailscale and Hetzner poll for a complete `result.json`
+in the run-specific artifact directory during an in-flight capture, remove the
+corresponding container if it has not exited, and record a force-collection
+event on the task. `validate.sh` repeats the same completed-capture reap at host
+startup for running leftovers; the Mac-side periodic reaper uses the shared
+`runValidationContainerReaper` sweep on idle hosts (Tailscale pool hosts and the
+warm Hetzner VM). A failed handoff cancels that task's queued and active
+captures on both providers; remote kills are bounded and failures are recorded
+explicitly instead of reporting success when SSH cannot remove the container.
 
 ## Local caps when remote is off or falls back (#0836)
 
