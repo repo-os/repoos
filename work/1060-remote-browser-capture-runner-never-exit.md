@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T09:50:49Z"
+updated_at: "2026-11-08T09:51:26Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 3828f398be804233c4fb388f9b7633a244f12d72
 review_rounds: 2
@@ -103,3 +103,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T09:44:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T09:45:56Z · body
 - 2026-11-08T09:50:49Z · body
+- 2026-11-08T09:51:26Z · handoff_deferred: 2 queued message(s) must be read before review
