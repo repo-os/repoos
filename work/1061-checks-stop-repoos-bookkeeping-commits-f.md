@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T17:01:54Z"
+updated_at: "2026-11-08T17:02:05Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -67,3 +67,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T17:01:53Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-08T17:01:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T17:01:54Z · message_delivered: 2 message(s)
+- 2026-11-08T17:02:05Z · message_queued at 2026-11-08T17:02:05.066Z
