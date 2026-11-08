@@ -116,3 +116,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T07:12:16Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T07:12:16Z · message_queued at 2026-11-08T07:12:16.403Z
 - 2026-11-08T07:12:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
+- 2026-11-08T07:12:16Z · message_delivered: 2 message(s)
