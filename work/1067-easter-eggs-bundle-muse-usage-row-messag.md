@@ -13,6 +13,7 @@ updated_at: "2026-11-08T18:41:32Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T18:29:31.454Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 502 for http://127.0.0.1:36953/api/model-providers/muse/usage (http://127.0.0.1:36953/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 502 (Bad Gateway) (http://127.0.0.1:36953/api/model-providers/muse/usage)"
 handoff_signal_retry_count: 2
+deferred_handoff_resume_count: 1
 ---
 ## Items
 
