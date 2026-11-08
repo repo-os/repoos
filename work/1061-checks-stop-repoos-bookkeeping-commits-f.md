@@ -104,3 +104,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T18:44:04Z · note: review pass 3: needs some work
 - 2026-11-08T18:44:04Z · needs_input
 - 2026-11-08T18:44:37Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T18:44:37Z · message_queued at 2026-11-08T18:44:37.562Z
