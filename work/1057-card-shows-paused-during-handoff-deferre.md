@@ -18,7 +18,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T10:13:12Z"
+updated_at: "2026-11-08T10:14:09Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:03:48.795Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
@@ -166,3 +166,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T10:04:09Z · CTO nudge: held — remote validation is running
 - 2026-11-08T10:13:11Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-08T10:13:12Z · note: handoff requested (cli)
+- 2026-11-08T10:14:09Z · CTO nudge: held — handoff gate is running
