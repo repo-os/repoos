@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -274,3 +274,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T16:14:43Z · message_queued at 2026-11-08T16:14:43.962Z
 - 2026-11-08T16:14:44Z · ↻ resuming engineer to read queued message
 - 2026-11-08T16:14:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
+- 2026-11-08T16:14:44Z · status active→review
