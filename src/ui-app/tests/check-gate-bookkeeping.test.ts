@@ -194,14 +194,7 @@ describe("check gate lock and deferred commits (#1061)", () => {
     const { root, wt } = initRepo();
     const taskFile = join(wt, "work", "0001-task.md");
     writeFileSync(taskFile, readFileSync(taskFile, "utf8") + "\n");
-    enqueueDeferredBranchCommit(
-      root,
-      ".repoos",
-      "0001",
-      wt,
-      [taskFile],
-      "docs(0001): queued",
-    );
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): queued");
     expect(readDeferredBranchCommits(root, ".repoos", "0001").length).toBe(1);
     process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
     try {

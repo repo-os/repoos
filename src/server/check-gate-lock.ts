@@ -226,12 +226,12 @@ export async function acquireCheckGateLock(args: {
   const path = lockPath(args.boardRoot, args.cacheDir, args.taskId);
   const existing = readCheckGateLock(args.boardRoot, args.cacheDir, args.taskId);
   if (existing) {
-  if (!samePath(existing.worktree, args.worktree)) {
-    return {
-      ok: false,
-      reason: `check-gate lock for #${args.taskId} is held on a different worktree`,
-    };
-  }
+    if (!samePath(existing.worktree, args.worktree)) {
+      return {
+        ok: false,
+        reason: `check-gate lock for #${args.taskId} is held on a different worktree`,
+      };
+    }
     const live = aliveHolders(existing);
     if (live.length > 0 || existing.holders.some((h) => !isPidAlive(h.pid))) {
       const merged: CheckGateLock = {
