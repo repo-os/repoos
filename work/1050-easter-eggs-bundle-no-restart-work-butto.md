@@ -14,7 +14,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T02:12:56Z"
+updated_at: "2026-11-08T02:16:03Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T01:53:16.701Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -89,26 +89,26 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 ```json
 [
 {
-  "label": "Task drawer while checks run: running-checks status, no Restart work button",
-  "target": "default",
-  "route": "/work?task=9999",
-  "highlight": ".drawer-quickbar",
-  "state": "drawer:statusChecksRunning"
+"label": "Task drawer while checks run: running-checks status, no Restart work button",
+"target": "default",
+"route": "/work?task=9999",
+"highlight": ".drawer-quickbar",
+"state": "drawer:statusChecksRunning"
 },
 {
-  "label": "Uncommitted changes panel that now closes after a successful commit",
-  "target": "default",
-  "route": "/",
-  "highlight": "[data-testid=\"repo-dirty-panel\"]",
-  "steps": [
-    {
-      "click": "[data-test-id=\"side-git-dirty\"]"
-    },
-    {
-      "waitMs": 600
-    }
-  ],
-  "state": "repo:dirtyMain"
+"label": "Uncommitted changes panel that now closes after a successful commit",
+"target": "default",
+"route": "/",
+"highlight": "[data-testid=\"repo-dirty-panel\"]",
+"steps": [
+  {
+    "click": "[data-test-id=\"side-git-dirty\"]"
+  },
+  {
+    "waitMs": 600
+  }
+],
+"state": "repo:dirtyMain"
 }
 ]
 ```
@@ -334,3 +334,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T01:58:24Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + opencode-go/deepseek-v4.1-flash); it will not chain another automatic switch (3/3 crashes in 30m)
 - 2026-11-08T02:06:18Z · needs_input
 - 2026-11-08T02:12:56Z · body
+- 2026-11-08T02:16:03Z · body
