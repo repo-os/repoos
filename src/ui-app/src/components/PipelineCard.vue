@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { formatPipelineElapsed, type PipelineCardState } from "../../../core/pipeline-view.js";
-import { stateElapsedTip } from "../lib/card-activity-recency";
+import { agentLastActivityTip } from "../lib/card-activity-recency";
 import { checkProgressPercent, type CheckProgress } from "../lib/check-progress";
 import {
   resolveSharedTaskCardStatus,
@@ -27,6 +27,7 @@ const props = defineProps<{
   chipText: string | null;
   /** ISO timestamp the current state began (updated_at; releasedAt once merged). */
   stateSince: string | null;
+  lastActivityAt: string | null;
   nowMs: number;
   roundsLabel: string;
   reviewerTone: "green" | "amber" | "red" | null;
@@ -75,7 +76,7 @@ const showInlineCheckBar = computed(
 
 /** Healthy pipeline rows hide elapsed on the line; recency lives on the step tooltip (#1058). */
 const showElapsedInline = computed(() => displayState.value !== "ok");
-const elapsedTip = computed(() => stateElapsedTip("In this state", props.stateSince, props.nowMs));
+const elapsedTip = computed(() => agentLastActivityTip(props.lastActivityAt ?? undefined, props.nowMs));
 
 function open(): void {
   emit("open", props.taskId);
@@ -154,6 +155,9 @@ function onKey(e: KeyboardEvent): void {
         test-id="pipeline-card-check-progress"
         :progress="checkProgress"
         :pipeline-status-text="displayStepLabel"
+        :data-tip="!showElapsedInline && elapsedTip ? elapsedTip : undefined"
+        :data-tip-touch="!showElapsedInline && elapsedTip ? 'tap' : undefined"
+        :tabindex="!showElapsedInline && elapsedTip ? 0 : undefined"
       />
       <template v-else>
         <span class="pl-dot" aria-hidden="true"></span>

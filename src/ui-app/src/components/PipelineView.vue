@@ -73,6 +73,7 @@ interface Lane {
   host: string;
   action: PipelineCardAction | null;
   checkProgress: CheckProgress | null;
+  lastActivityAt: string | null;
 }
 
 function lastActivityFor(taskId: string): string | undefined {
@@ -244,6 +245,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
     statusSignals,
     chipText,
     stateSince: model.state === "merged" ? (task.releasedAt ?? task.updated_at) : task.updated_at,
+    lastActivityAt: lastActivityFor(task.id) ?? null,
     roundsLabel: pipelineRoundLabel(rounds, {
       tone: verdict?.tone ?? null,
       reviewRunning,
@@ -348,6 +350,7 @@ function stageCells(stage: PipelineStage): string {
               :step-label="lane.model.stepLabel"
               :chip-text="lane.chipText"
               :state-since="lane.stateSince"
+              :last-activity-at="lane.lastActivityAt"
               :now-ms="now"
               :rounds-label="lane.roundsLabel"
               :reviewer-tone="lane.reviewerTone"

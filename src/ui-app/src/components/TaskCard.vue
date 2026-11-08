@@ -864,6 +864,10 @@ const sharedActiveStatus = computed(() => {
   });
 });
 
+const activeActivityTip = computed(() =>
+  agentLastActivityTip(lastActivityFor(props.task.id), Math.max(now.value, Date.now())),
+);
+
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. Check progress,
  *  remote validation, and queue waits suppress a false stuck label (#1000). */
@@ -1207,6 +1211,7 @@ const hint = computed<CardHint | null>(() => {
         label: lifecycle.label,
         title: "RepoOS is committing and running checks before moving this to review",
         cls: "tc-reviewing",
+        activityTip: activeActivityTip.value ?? undefined,
       };
     }
     if (lifecycle.kind === "queued") {
@@ -1845,18 +1850,25 @@ async function openDebuggerFromError(): Promise<void> {
             />
           </svg>
         </span>
-        <ChecksProgressDisplay
+        <div
           v-if="showCardCheckProgress"
-          class="task-card-check-progress"
-          variant="card"
-          test-id="task-card-check-progress"
-          :progress="cardChecksDisplay.progress"
-          :elapsed="cardChecksDisplay.elapsed"
-          :reused="cardChecksDisplay.reused"
-          :slow="cardChecksDisplay.slow"
-          :handoff-step="cardChecksDisplay.handoffStep"
-          :status-line="props.task.status === 'active' ? sharedActiveStatus.label : null"
-        />
+          class="task-card-check-progress-tip"
+          :data-tip="activeActivityTip ?? undefined"
+          :data-tip-touch="activeActivityTip ? 'tap' : undefined"
+          :tabindex="activeActivityTip ? 0 : undefined"
+        >
+          <ChecksProgressDisplay
+            class="task-card-check-progress"
+            variant="card"
+            test-id="task-card-check-progress"
+            :progress="cardChecksDisplay.progress"
+            :elapsed="cardChecksDisplay.elapsed"
+            :reused="cardChecksDisplay.reused"
+            :slow="cardChecksDisplay.slow"
+            :handoff-step="cardChecksDisplay.handoffStep"
+            :status-line="props.task.status === 'active' ? sharedActiveStatus.label : null"
+          />
+        </div>
         <Teleport to="body">
           <div
             v-if="agentPreviewOpen"
