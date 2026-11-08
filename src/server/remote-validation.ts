@@ -3250,7 +3250,10 @@ export class RemoteValidationRunner implements RemoteValidator {
       hostLabel: host.ip,
     })
       .catch(() => {
-        this.logger?.system("info", `container reaper on Hetzner runner ${host.ip} failed or timed out`);
+        this.logger?.system(
+          "info",
+          `container reaper on Hetzner runner ${host.ip} failed or timed out`,
+        );
       })
       .finally(() => {
         this.reaping = false;
