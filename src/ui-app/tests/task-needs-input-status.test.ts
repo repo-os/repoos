@@ -253,6 +253,15 @@ describe("needs_input status labels on the board card (#0511)", () => {
         },
       },
     };
+    repo.seedLandable("0506", {
+      taskId: "0506",
+      branch: "feat/x",
+      headSha: "abc",
+      lockSha: "abc",
+      landable: true,
+      checks: [],
+      summary: { pass: 6, warn: 0, fail: 0 },
+    });
     const wrapper = mountCard(task);
     const hint = wrapper.find(".tc-hint");
     expect(hint.text()).toContain("ready to finish");
