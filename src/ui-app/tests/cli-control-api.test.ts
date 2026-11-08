@@ -794,6 +794,25 @@ describe("repoos summary polling", () => {
     ).toBe(true);
   });
 
+  it.each(["idle", "done"] as const)(
+    "does not accept an unchanged %s state and old report for a new retry",
+    (status) => {
+      const expectedRunAt = new Date().toISOString();
+      expect(
+        isSummaryPollTerminal(
+          {
+            status,
+            exists: true,
+            statusAt: new Date(Date.now() - 60_000).toISOString(),
+            pendingSince: null,
+            reportMtimeMs: Date.now() - 60_000,
+          },
+          expectedRunAt,
+        ),
+      ).toBe(false);
+    },
+  );
+
   it("resolves once the report commits, without waiting for the status file", async () => {
     const staleAt = new Date(Date.now() - SUMMARY_PENDING_STALE_MS - 60_000).toISOString();
     const staleMs = Date.parse(staleAt);
