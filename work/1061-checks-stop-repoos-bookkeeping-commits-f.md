@@ -238,3 +238,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T19:59:18Z · body
 - 2026-11-08T20:01:20Z · status active→review
 - 2026-11-08T20:01:20Z · message_queued at 2026-11-08T20:01:20.227Z
+- 2026-11-08T20:01:20Z · note: shots: skipped — Docs site skipped: no docs shot declared
