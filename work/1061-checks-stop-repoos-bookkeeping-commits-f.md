@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T18:41:07Z"
+updated_at: "2026-11-08T18:41:59Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -98,3 +98,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T18:28:29Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T18:29:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T18:41:07Z · body
+- 2026-11-08T18:41:59Z · status active→review
