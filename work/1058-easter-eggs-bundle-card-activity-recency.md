@@ -3,9 +3,6 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 priority: p3
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T18:59:13Z"
+updated_at: "2026-11-08T18:59:15Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -351,3 +348,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T18:59:04Z · needs_input
 - 2026-11-08T18:59:13Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
 - 2026-11-08T18:59:13Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 12/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:15Z · needs_input
