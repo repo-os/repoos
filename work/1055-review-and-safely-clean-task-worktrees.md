@@ -149,3 +149,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T02:28:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T02:35:04Z · message_queued at 2026-11-08T02:35:04.158Z
 - 2026-11-08T02:35:04Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1055.md
+- 2026-11-08T02:35:04Z · message_delivered: 1 message(s)
