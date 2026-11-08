@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
+last_handoff_failure_sha: b010fc784b71be782b588bd1e70ed38672c1f21f
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
@@ -202,3 +204,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T13:09:28Z · note: handoff requested (cli)
 - 2026-11-08T13:10:27Z · message_queued at 2026-11-08T13:10:27.589Z
 - 2026-11-08T13:10:27Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
+
