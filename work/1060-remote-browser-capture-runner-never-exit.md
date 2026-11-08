@@ -120,3 +120,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T10:04:49Z · message_queued at 2026-11-08T10:04:49.662Z
 - 2026-11-08T10:04:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T10:09:56Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix: · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T10:09:56Z · note: handoff requested (cli)
