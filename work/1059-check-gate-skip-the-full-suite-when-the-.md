@@ -160,3 +160,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T11:17:47Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-11-08T11:18:17Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
 - 2026-11-08T11:18:18Z · needs_input
+- 2026-11-08T11:18:18Z · message_delivered: 2 message(s)
