@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T12:37:00Z"
+updated_at: "2026-11-08T12:38:18Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
@@ -58,13 +58,13 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": ".app-tooltip.show",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "waitMs": 700
+"waitMs": 700
 }
 ],
 "state": "board:activeCoding"
@@ -77,10 +77,10 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"pipe-coding\"]"
+"waitFor": "[data-task-id=\"pipe-coding\"]"
 },
 {
-  "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+"waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
 }
 ],
 "state": "board:pipeline"
@@ -205,3 +205,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T12:23:46Z · needs_input
 - 2026-11-08T12:26:39Z · body
 - 2026-11-08T12:37:00Z · message_queued at 2026-11-08T12:37:00.436Z
+- 2026-11-08T12:38:18Z · CTO nudge: held — an undelivered message is already queued
