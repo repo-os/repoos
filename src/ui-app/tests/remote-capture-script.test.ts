@@ -120,11 +120,10 @@ describe("runner worktree layout for browser capture (#0854)", () => {
     const successAt = validateScript.indexOf("[reaper] removed $bare$task_tag");
     expect(rmAt).toBeGreaterThan(-1);
     expect(successAt).toBeGreaterThan(rmAt);
-    // set -e must not abort the sweep when docker rm fails — capture rm_code first.
-    expect(validateScript.slice(Math.max(0, rmAt - 40), rmAt + 80)).toMatch(
-      /set \+e[\s\S]*rm_out=\$\(docker rm/,
+    // set -e must not abort the sweep when docker rm fails — capture rm_code in one line.
+    expect(validateScript.slice(rmAt, rmAt + 80)).toMatch(
+      /rm_out=\$\(docker rm -f "\$id" 2>&1\) && rm_code=0 \|\| rm_code=\$\?/,
     );
-    expect(validateScript.slice(rmAt, rmAt + 120)).toMatch(/rm_code=\$\?[\s\S]*set -e/);
     expect(validateScript).toMatch(/REPOOS_BROWSER_CAPTURE_TASK=/);
   });
 
