@@ -979,4 +979,29 @@ command = "false"
     });
     expect(results.find((x) => x.name === "assets")?.status).toBe("failed");
   });
+
+  it("keeps progress within total when release-only steps are profile-skipped", async () => {
+    const releaseOnly = `[[check.steps]]
+name = "release-only"
+command = "false"
+profiles = ["release"]
+`;
+    const f = fixture(`${toml}\n${releaseOnly}`, { dirs: ["work", "inputs"] });
+    execFileSync("git", ["init", "-q"], { cwd: f.root });
+    const progress: { stepsDone: number; stepsTotal: number }[] = [];
+    await runCheckPlan(planFor(f.root), {
+      repoRoot: f.root,
+      docsOnly: true,
+      echo: false,
+      onResult: (_r, p) => {
+        if (p) progress.push(p);
+      },
+    });
+    for (const p of progress) {
+      expect(p.stepsDone).toBeLessThanOrEqual(p.stepsTotal);
+    }
+    const last = progress.at(-1);
+    expect(last).toBeDefined();
+    expect(last!.stepsDone).toBe(last!.stepsTotal);
+  });
 });

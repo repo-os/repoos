@@ -2014,9 +2014,11 @@ export async function runCheckPlan(
   const results: StepRunResult[] = [];
   const runnableSteps = selected.filter(({ skip }) => !skip);
   const stepsTotal = opts.docsOnly ? runnableSteps.length + 1 : runnableSteps.length;
+  const profileStepSkip = (r: StepRunResult): boolean =>
+    r.status === "skipped" && (r.detail?.startsWith("skipped — not in profile") ?? false);
   const stepsDoneCount = (): number =>
     opts.docsOnly
-      ? results.length
+      ? results.filter((x) => !profileStepSkip(x)).length
       : results.filter((x) => x.status !== "skipped" || x.detail === DOCS_ONLY_SKIP_REASON).length;
   const push = (r: StepRunResult): StepRunResult => {
     results.push(r);
@@ -2026,6 +2028,16 @@ export async function runCheckPlan(
 
   for (const { step, skip } of selected) {
     const cwd = stepCwd(repoRoot, step) ?? repoRoot;
+    if (skip) {
+      push({
+        name: step.name,
+        status: "skipped",
+        detail: skip.detail,
+        durationMs: 0,
+        required: step.required,
+      });
+      continue;
+    }
     if (
       opts.docsOnly &&
       !["format", "lockfile-sync", "zero-runtime-deps", "task-assets"].includes(step.kind ?? "")
@@ -2034,16 +2046,6 @@ export async function runCheckPlan(
         name: step.name,
         status: "skipped",
         detail: DOCS_ONLY_SKIP_REASON,
-        durationMs: 0,
-        required: step.required,
-      });
-      continue;
-    }
-    if (skip) {
-      push({
-        name: step.name,
-        status: "skipped",
-        detail: skip.detail,
         durationMs: 0,
         required: step.required,
       });
