@@ -94,6 +94,7 @@ export function remoteBrowserEvidenceTransport(
           ...(request.canonical ? { canonical: request.canonical } : {}),
         },
       });
+      if (summary.cancelled) throw new BrowserCaptureCancelledError("browser capture cancelled");
       const resultPath = join(artifactRoot, "result.json");
       if (!existsSync(resultPath)) {
         const detail =
@@ -172,6 +173,8 @@ export function validateBrowserEvidenceArtifacts(
   };
 }
 
+export class BrowserCaptureCancelledError extends Error {}
+
 export class BrowserEvidenceUnavailableError extends Error {
   readonly browserUnavailable: boolean;
 
@@ -240,6 +243,7 @@ export async function runBrowserCaptureWithPolicy<T>(
     }
   }
 
+  if (failure instanceof BrowserCaptureCancelledError) throw failure;
   const detail = failure instanceof Error ? failure.message : String(failure);
   if (mode === "runner-only") {
     throw new BrowserEvidenceUnavailableError(`runner-only browser capture failed: ${detail}`);

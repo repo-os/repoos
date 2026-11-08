@@ -792,6 +792,8 @@ export interface RunnerTimings {
   hangKillTimeoutMs: number;
   /** After `[validate] gate exit N`, cap how long the main SSH may linger (#0739). */
   gateExitLingerTimeoutMs: number;
+  /** Poll interval for completed remote browser results. */
+  capturePollIntervalMs: number;
 }
 
 /** Default minutes with no output before a run is called hung (#0729). */
@@ -822,6 +824,7 @@ const DEFAULT_TIMINGS: RunnerTimings = {
   loadSampleIntervalMs: 45_000,
   hangKillTimeoutMs: HANG_KILL_TIMEOUT_MS,
   gateExitLingerTimeoutMs: HANG_KILL_TIMEOUT_MS,
+  capturePollIntervalMs: 5_000,
 };
 
 /** Contention-shaped failure text — matches runDoneStep's heuristic in done.ts. */
@@ -5613,9 +5616,9 @@ export class TailscaleRunner implements RemoteValidator {
     this.captureCancelGeneration.set(taskId, (this.captureCancelGeneration.get(taskId) ?? 0) + 1);
     const runs = this.pool.cancelCaptureRuns(taskId);
     for (const { host, run } of runs) {
-      this.uploadAbortByTask.get(taskId)?.();
       if (!run.container) continue;
       const container = run.container;
+      this.captureUploadAbort.get(container)?.();
       this.activeRunAbort.get(container)?.abort();
       this.activeRunSettle.get(container)?.settle({ code: null, output: "", timedOut: false });
       await execRemoteWithHardDeadline(
@@ -5641,6 +5644,7 @@ export class TailscaleRunner implements RemoteValidator {
   private readonly activeRunAbort = new Map<string, { generation: number; abort: () => void }>();
   /** In-flight bundle upload abort, keyed by task id (#0917). */
   private readonly uploadAbortByTask = new Map<string, () => void>();
+  private readonly captureUploadAbort = new Map<string, () => void>();
   private readonly linkProbe?: (host: RemoteHost) => Promise<LinkProbeResult>;
   /** Resolve the validate() transport race after hang recovery (#0739). */
   private readonly activeRunSettle = new Map<
@@ -6106,6 +6110,7 @@ export class TailscaleRunner implements RemoteValidator {
           },
         });
       } catch (e) {
+        if (captureCancelled()) return cancelled();
         const detail = e instanceof Error ? e.message : String(e);
         emit(`[remote validation not started: ${detail}]\n`);
         const outcome = e instanceof QueueDeadlineError ? "cancelled" : "fail";
@@ -6386,6 +6391,10 @@ export class TailscaleRunner implements RemoteValidator {
           hostLabel,
           registerUploadAbort: (abort) => {
             this.uploadAbortByTask.set(opts.taskId, abort);
+            if (opts.browserCapture) {
+              this.captureUploadAbort.set(containerName, abort);
+              if (captureCancelled()) abort();
+            }
             opts.registerUploadAbort?.(abort);
           },
           ...(opts.onUploadProgress ? { onUploadProgress: opts.onUploadProgress } : {}),
@@ -6393,11 +6402,13 @@ export class TailscaleRunner implements RemoteValidator {
             ? { uploadProgressIntervalMs: opts.uploadProgressIntervalMs }
             : {}),
           onUploadComplete: () => {
+            this.captureUploadAbort.delete(containerName);
             this.uploadAbortByTask.delete(opts.taskId);
             opts.onUploadComplete?.();
           },
         });
         if (!preparedUpload.ok) {
+          this.captureUploadAbort.delete(containerName);
           this.uploadAbortByTask.delete(opts.taskId);
           const detail =
             preparedUpload.stage === "bundle"
@@ -6735,7 +6746,7 @@ export class TailscaleRunner implements RemoteValidator {
               .finally(() => {
                 captureProbe = undefined;
               });
-          }, 5_000);
+          }, this.timings.capturePollIntervalMs);
           capturePoll.unref?.();
         }
         try {
@@ -6969,6 +6980,7 @@ export class TailscaleRunner implements RemoteValidator {
         this.infraFail((e as Error).message, { taskId: opts.taskId, host: host.ip }),
       );
     } finally {
+      this.captureUploadAbort.delete(containerName);
       if (tmp) rmSync(tmp, { recursive: true, force: true });
       this.setActiveRunStage(null, opts.taskId);
     }
