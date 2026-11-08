@@ -3,6 +3,9 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The check lifecycle is not wired to the new protection, and the deferred queue can lose data."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -240,3 +243,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T20:01:20Z · message_queued at 2026-11-08T20:01:20.227Z
 - 2026-11-08T20:01:20Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-08T20:02:02Z · note: review pass 4: needs some work
+- 2026-11-08T20:02:02Z · needs_input
