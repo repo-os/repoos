@@ -11,7 +11,6 @@ created_by: njachowski@gmail.com
 branch: feat/live-index-turns-review-report-files-int
 created_at: "2026-11-08T12:47:28Z"
 updated_at: "2026-11-08T13:50:41Z"
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 Reported from the "tiao" project (RepoOS v0.5.77, workDir `repoos/work`). The Work board's Inbox fills with cards `review-1` … `review-5` (type feature, area general). Opening one shows path `repoos/work/reports/0006/review-1.md`, and its "spec" is the report body. Cards from different tasks collide on the same derived id, so the latest write wins.
