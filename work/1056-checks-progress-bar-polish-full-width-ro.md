@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T02:38:43.543Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
@@ -98,3 +100,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:13:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T02:38:40Z · message_queued at 2026-11-08T02:38:40.452Z
 - 2026-11-08T02:38:43Z · message_delivered: 1 message(s)
+
