@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T12:53:04Z"
+updated_at: "2026-11-08T12:53:05Z"
 review_passes: 6
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -190,3 +190,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T12:47:57Z · needs_input
 - 2026-11-08T12:53:02Z · status review→active
 - 2026-11-08T12:53:02Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T12:53:05Z · CTO nudge: held — an undelivered message is already queued
