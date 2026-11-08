@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T17:02:05Z"
+updated_at: "2026-11-08T17:07:05Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -69,3 +69,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T17:01:54Z · message_delivered: 2 message(s)
 - 2026-11-08T17:02:05Z · message_queued at 2026-11-08T17:02:05.066Z
 - 2026-11-08T17:02:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T17:07:05Z · CTO nudge: held — an undelivered message is already queued
