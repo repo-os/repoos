@@ -8,12 +8,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
-cli_override: codex
-model_override: gpt-6.1-terra
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: codex
-review_model_override: gpt-6-luna
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T00:27:22Z"
+updated_at: "2026-11-08T00:30:28Z"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -43,3 +43,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T00:15:55Z · cli_override, model_override, review_cli_override, review_model_override
 - 2026-11-08T00:15:58Z · status inbox→ready
 - 2026-11-08T00:27:22Z · cli_override, model_override
+- 2026-11-08T00:30:28Z · cli_override, model_override, review_model_override
