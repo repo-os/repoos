@@ -2017,9 +2017,7 @@ export async function runCheckPlan(
   const stepsDoneCount = (): number =>
     opts.docsOnly
       ? results.length
-      : results.filter(
-          (x) => x.status !== "skipped" || x.detail === DOCS_ONLY_SKIP_REASON,
-        ).length;
+      : results.filter((x) => x.status !== "skipped" || x.detail === DOCS_ONLY_SKIP_REASON).length;
   const push = (r: StepRunResult): StepRunResult => {
     results.push(r);
     opts.onResult?.(r, { stepsDone: stepsDoneCount(), stepsTotal });
