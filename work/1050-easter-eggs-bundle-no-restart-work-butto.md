@@ -352,3 +352,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T03:18:29Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
 - 2026-11-08T03:18:59Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/12 crashes in 30m) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
 - 2026-11-08T03:18:59Z · needs_input
+- 2026-11-08T03:18:59Z · message_delivered: 1 message(s)
