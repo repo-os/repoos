@@ -64,3 +64,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T16:09:08Z · note: handoff requested (cli)
 - 2026-11-08T16:12:03Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-08T16:12:04Z · status active→review
+- 2026-11-08T16:12:04Z · message_queued at 2026-11-08T16:12:04.161Z
