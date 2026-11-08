@@ -9884,12 +9884,14 @@ export class AgentRunner {
     // stale nudge only for the next nudge to queue behind it.
     const blockingQueuedCount = this.blockingQueuedMessages(taskId).length;
     const handoffBlockedByQueue = blockingQueuedCount > 0;
+    let deferredHandoffRecorded = false;
     if (handoffBlockedByQueue) {
       const root = this.config.root;
       const cacheDir = this.config.cacheDir ?? ".repoos";
       const pendingMv = readHandoffRequest(root, cacheDir, taskId);
       const mvMatches = !!pendingMv && !!entry.runId && pendingMv.runId === entry.runId;
       if (entry.handoffRequested || mvMatches) {
+        deferredHandoffRecorded = true;
         entry.handoffRequested = false;
         this.clearPendingHandoff(taskId);
         clearHandoffRequest(root, cacheDir, taskId);
@@ -9955,8 +9957,8 @@ export class AgentRunner {
       }
     }
     if (
-      (!handoffBlockedByQueue && interruptedForQueue) ||
-      (!handoffBlockedByQueue &&
+      (!deferredHandoffRecorded && interruptedForQueue) ||
+      (!deferredHandoffRecorded &&
         !wasReview &&
         !entry.handoffRequested &&
         !entry.intentionalStop &&

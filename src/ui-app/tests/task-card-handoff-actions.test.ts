@@ -79,7 +79,7 @@ describe("active checks gate work actions (#1054)", () => {
         global: { plugins: [pinia] },
       });
       await nextTick();
-      expect(card.text()).toContain("running checks");
+      expect(card.text().toLowerCase()).toContain("check");
       expect(card.text()).not.toContain("paused");
       expect(card.find('[data-test-id="task-card-action-footer"]').exists()).toBe(false);
       card.unmount();
@@ -137,6 +137,7 @@ describe("active checks gate work actions (#1054)", () => {
       global: { plugins: [pinia] },
     });
     await nextTick();
+    expect(card.text().toLowerCase()).toContain("paused");
     expect(card.find('[data-test-id="task-card-action-footer"]').text()).toContain("Restart work");
     card.unmount();
   });

@@ -1052,6 +1052,7 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
+    if (showCardCheckProgress.value) return null;
     // The server handoff state covers verify and remote capture too, where
     // there may be no running check row or engineer process.
     if (repo.handoffInFlight(t.id)) {
@@ -1066,7 +1067,6 @@ const hint = computed<CardHint | null>(() => {
         cls: "tc-reviewing",
       };
     }
-    if (showCardCheckProgress.value) return null;
     if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
       return (
