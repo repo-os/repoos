@@ -125,3 +125,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T05:39:20Z · body
 - 2026-11-08T05:49:55Z · body
 - 2026-11-08T05:51:34Z · status active→review
+- 2026-11-08T05:51:34Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
