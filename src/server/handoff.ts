@@ -313,6 +313,7 @@ async function runCheck(
         REPOOS_CHECK_TASK_ID: taskId,
         REPOOS_CHECK_PHASE: "pre-review",
         REPOOS_CHECK_STORE_ROOT: config.root,
+        REPOOS_CACHE_DIR: config.cacheDir ?? ".repoos",
       }
     : {};
   const env = {

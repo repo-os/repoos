@@ -2288,6 +2288,14 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     process.exit(0);
   }
 
+  const managedEngineerGate =
+    isManagedEngineerCheck(process.env) && runContext.taskId != null;
+  let releaseCheckGate: (() => Promise<void>) | undefined;
+  const releaseGateAndExit = async (code: number): Promise<never> => {
+    await releaseCheckGate?.();
+    process.exit(code);
+  };
+
   if (
     cfg.remoteValidation?.enabled &&
     !standaloneCliCanUseRemote(cfg) &&
@@ -2336,6 +2344,30 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       }
     }
   }
+
+  if (managedEngineerGate) {
+    const boardCfg = loadConfig(checkStoreRoot);
+    installCheckGateCommitHook(boardCfg);
+    process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
+    process.env.REPOOS_CACHE_DIR = boardCfg.cacheDir ?? ".repoos";
+    const taskId = runContext.taskId!;
+    const cache = boardCfg.cacheDir ?? ".repoos";
+    const branch =
+      (await getGitWorker(checkStoreRoot).currentBranch()) ??
+      (await runGit(repoRoot, ["branch", "--show-current"], 10_000)).stdout.trim();
+    await acquireCheckGateLock({
+      boardRoot: checkStoreRoot,
+      cacheDir: cache,
+      taskId,
+      branch: branch || "main",
+      worktree: repoRoot,
+      kind: "engineer-self-check",
+    });
+    releaseCheckGate = () => releaseCheckGateLock(checkStoreRoot, cache, taskId);
+  }
+
+  let checkExitCode = 0;
+  try {
   const validationStart = await checkSnapshot(repoRoot, changedRef);
   let remoteTestsPassed = false;
   // The plan never runs when the remote gate fails, so the normal end-of-run
@@ -2377,13 +2409,13 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
     process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
 
-    const applyRemoteGateOutcome = (
+    const applyRemoteGateOutcome = async (
       gate: Awaited<ReturnType<typeof runRemotePreReviewGate>>,
-    ): void => {
+    ): Promise<void> => {
       if (gate.kind === "fail") {
         console.log(c.red(`\n  ✗ ${gate.detail}\n`));
         persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
-        process.exit(1);
+        await releaseGateAndExit(1);
       }
       if (gate.kind === "local-only" && gate.skipTests) {
         remoteTestsPassed = true;
@@ -2399,7 +2431,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
             "remote validation unavailable and remoteValidation.localFallback is off";
           console.log(c.red(`\n  ✗ ${detail}\n`));
           persistRemoteFailure(detail, remoteOutput, remoteStartedAt);
-          process.exit(1);
+          await releaseGateAndExit(1);
         }
         process.env.REPOOS_LOCAL_FALLBACK_RUN = "1";
         if (gate.detail?.trim()) {
@@ -2426,7 +2458,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
             process.stdout.write(chunk);
           },
         });
-        applyRemoteGateOutcome(gate);
+        await applyRemoteGateOutcome(gate);
       } else {
         const logger = new Logger({ root: repoRoot });
         let remoteValidator;
@@ -2449,7 +2481,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
               skippedSteps: [],
               detail: msg,
             });
-            process.exit(1);
+            await releaseGateAndExit(1);
           }
           console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
         }
@@ -2470,7 +2502,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
               },
             });
             await remoteValidator.dispose().catch(() => {});
-            applyRemoteGateOutcome(gate);
+            await applyRemoteGateOutcome(gate);
           } catch (e) {
             await remoteValidator.dispose().catch(() => {});
             throw e;
@@ -2510,30 +2542,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         ),
       );
     }
-    process.exit(1);
+    await releaseGateAndExit(1);
   }
   waitRecord = waits.finish();
 
-  if (isManagedEngineerCheck(process.env)) {
-    installCheckGateCommitHook(cfg);
-  }
-  let releaseCheckGate: (() => Promise<void>) | undefined;
-  if (isManagedEngineerCheck(process.env) && runContext.taskId) {
-    const branch =
-      (await getGitWorker(checkStoreRoot).currentBranch()) ??
-      (await runGit(repoRoot, ["branch", "--show-current"], 10_000)).stdout.trim();
-    await acquireCheckGateLock({
-      boardRoot: checkStoreRoot,
-      cacheDir: cfg.cacheDir ?? ".repoos",
-      taskId: runContext.taskId,
-      branch: branch || "main",
-      worktree: repoRoot,
-      kind: "engineer-self-check",
-    });
-    const taskId = runContext.taskId;
-    const cache = cfg.cacheDir ?? ".repoos";
-    releaseCheckGate = () => releaseCheckGateLock(checkStoreRoot, cache, taskId);
-  }
   const runStartedAt = new Date();
   // Persist a provisional row before running steps. If this process is killed,
   // the durable history still shows an interrupted run instead of no run.
@@ -2633,7 +2645,6 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   } finally {
     if (process.env.REPOOS_AGENT === "1") delete process.env.REPOOS_LOCAL_CHECK_SLOT_HELD;
     releaseLocalCheck?.();
-    await releaseCheckGate?.();
   }
 
   // ── Summary ─────────────────────────────────────────────────────────
@@ -2840,8 +2851,12 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     isolationNote: results.find((r) => r.isolationNote)?.isolationNote ?? null,
     updateId: historyRunId,
   });
+  checkExitCode = gatingFailures.length > 0 ? 1 : 0;
+  } finally {
+    await releaseCheckGate?.();
+  }
 
-  process.exit(gatingFailures.length > 0 ? 1 : 0);
+  process.exit(checkExitCode);
 }
 
 /**

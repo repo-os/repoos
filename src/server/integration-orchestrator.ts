@@ -78,6 +78,7 @@ import {
   runRemotePreReviewGate,
   spawnedRepoosCheckArgs,
 } from "./pre-review-remote-gate.js";
+import { acquireCheckGateLock, releaseCheckGateLock } from "./check-gate-lock.js";
 import {
   markTaskReleased,
   patchTaskFile,
@@ -3236,6 +3237,17 @@ export class CloseOutOrchestrator {
         }
       } else {
         this.onProgress?.("check");
+        const gateCacheDir = this.config.cacheDir ?? ".repoos";
+        const mergeGateBranch = job.branch ?? job.taskId;
+        await acquireCheckGateLock({
+          boardRoot: this.config.root,
+          cacheDir: gateCacheDir,
+          taskId: job.taskId,
+          branch: mergeGateBranch,
+          worktree: wtPath,
+          kind: "merge-gate",
+        });
+        try {
         // The candidate's OWN freshly-built CLI comes first, same as the legacy
         // done.ts close-out gate (#0130): a globally linked `repoos` resolves
         // build freshness and gate code against its own install snapshot, which
@@ -3275,6 +3287,7 @@ export class CloseOutOrchestrator {
           REPOOS_CHECK_TASK_ID: job.taskId,
           REPOOS_CHECK_PHASE: "close-out",
           REPOOS_CHECK_STORE_ROOT: this.config.root,
+          REPOOS_CACHE_DIR: this.config.cacheDir ?? ".repoos",
           // The close-out child is detached by runProcess; persist that fact
           // in its local slot so a later sweep can reap its whole group if the
           // candidate directory vanished during an interrupted shutdown.
@@ -3491,6 +3504,9 @@ export class CloseOutOrchestrator {
               `build marker). ${failure.reason.replace(/^check failed:\s*/, "")}`;
           }
           return failure;
+        }
+        } finally {
+          await releaseCheckGateLock(this.config.root, gateCacheDir, job.taskId);
         }
       }
     }

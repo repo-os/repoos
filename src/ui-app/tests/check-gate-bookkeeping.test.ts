@@ -14,9 +14,14 @@ import {
 import {
   acquireCheckGateLock,
   activeCheckGateForCommitRoot,
+  aliveCheckGateLockForWorktree,
+  checkGateEngineerBusyRefusal,
+  checkGateSourceWriteRefusal,
+  clearCheckGateLock,
   enqueueDeferredBranchCommit,
   flushDeferredBranchCommits,
   readDeferredBranchCommits,
+  reconcileDeadCheckGateLock,
   releaseCheckGateLock,
   CHECK_GATE_WRITE_REFUSAL,
 } from "../../server/check-gate-lock.js";
@@ -189,5 +194,93 @@ describe("check gate lock and deferred commits (#1061)", () => {
 
   it("exposes the engineer refusal string", () => {
     expect(CHECK_GATE_WRITE_REFUSAL).toMatch(/check is running/i);
+  });
+
+  it("blocks source writes and allows work bookkeeping paths", async () => {
+    const { root, wt, branch } = initRepo();
+    const config = cfg(root);
+    await acquireCheckGateLock({
+      boardRoot: root,
+      cacheDir: ".repoos",
+      taskId: "0001",
+      branch,
+      worktree: wt,
+      kind: "handoff-finalize",
+    });
+    expect(checkGateSourceWriteRefusal(root, ".repoos", wt, "src/app.ts", config)).toBe(
+      CHECK_GATE_WRITE_REFUSAL,
+    );
+    expect(checkGateSourceWriteRefusal(root, ".repoos", wt, "work/0001-task.md", config)).toBe(
+      undefined,
+    );
+    expect(checkGateEngineerBusyRefusal(root, ".repoos", wt)).toBe(CHECK_GATE_WRITE_REFUSAL);
+    await releaseCheckGateLock(root, ".repoos", "0001");
+    expect(checkGateEngineerBusyRefusal(root, ".repoos", wt)).toBeUndefined();
+  });
+
+  it("uses custom cacheDir for lock and hook paths", async () => {
+    const { root, wt, branch } = initRepo();
+    const custom = ".cache-alt";
+    const config = { ...cfg(root), cacheDir: custom };
+    installCheckGateCommitHook(config);
+    process.env.REPOOS_CHECK_STORE_ROOT = root;
+    process.env.REPOOS_CACHE_DIR = custom;
+    await acquireCheckGateLock({
+      boardRoot: root,
+      cacheDir: custom,
+      taskId: "0001",
+      branch,
+      worktree: wt,
+      kind: "handoff-finalize",
+    });
+    const report = join(wt, "work", "0001-task.md");
+    writeFileSync(report, readFileSync(report, "utf8") + "\n");
+    expect(commitFiles(wt, [report], "docs(0001): custom cache")).toBe(true);
+    expect(aliveCheckGateLockForWorktree(root, custom, wt)?.taskId).toBe("0001");
+    await releaseCheckGateLock(root, custom, "0001");
+    expect(git(wt, ["log", "--oneline", "-1"])).toMatch(/custom cache/);
+  });
+
+  it("retains deferred queue entries when a flush commit fails", async () => {
+    const { root, wt } = initRepo();
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [], "docs(0001): empty path list");
+    process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
+    try {
+      const result = await flushDeferredBranchCommits(root, ".repoos", "0001");
+      expect(result.ok).toBe(false);
+      expect(result.remaining).toBe(1);
+      expect(readDeferredBranchCommits(root, ".repoos", "0001").length).toBe(1);
+    } finally {
+      delete process.env.REPOOS_CHECK_GATE_INTERNAL;
+    }
+  });
+
+  it("reconciles a dead lock holder and flushes deferred commits", async () => {
+    const { root, wt, branch } = initRepo();
+    await acquireCheckGateLock({
+      boardRoot: root,
+      cacheDir: ".repoos",
+      taskId: "0001",
+      branch,
+      worktree: wt,
+      kind: "handoff-finalize",
+    });
+    const lock = aliveCheckGateLockForWorktree(root, ".repoos", wt);
+    expect(lock).not.toBeNull();
+    if (!lock) return;
+    const dead = { ...lock, pid: 2_147_483_647 };
+    clearCheckGateLock(root, ".repoos", "0001");
+    const { writeFileSync: writeJson, mkdirSync: mkdirCache } = await import("node:fs");
+    const { join: joinPath } = await import("node:path");
+    const lockDir = joinPath(root, ".repoos", "check-gate-locks");
+    mkdirCache(lockDir, { recursive: true });
+    writeJson(joinPath(lockDir, "0001.json"), `${JSON.stringify(dead, null, 2)}\n`);
+    const report = join(wt, "work", "0001-task.md");
+    writeFileSync(report, readFileSync(report, "utf8") + "x");
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [report], "docs(0001): after crash");
+    await reconcileDeadCheckGateLock(root, ".repoos", dead);
+    expect(aliveCheckGateLockForWorktree(root, ".repoos", wt)).toBeNull();
+    expect(readDeferredBranchCommits(root, ".repoos", "0001").length).toBe(0);
+    expect(git(wt, ["log", "--oneline", "-1"])).toMatch(/after crash/);
   });
 });

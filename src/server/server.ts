@@ -1156,7 +1156,20 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   }
   const logger = createLogger(config.root);
   installCheckGateCommitHook(config);
-  void recoverStaleCheckGateLocks(config.root, config.cacheDir ?? ".repoos");
+  const gateCacheDir = config.cacheDir ?? ".repoos";
+  void recoverStaleCheckGateLocks(config.root, gateCacheDir);
+  const CHECK_GATE_RECONCILE_MS = 60_000;
+  const gateReconcile = { inFlight: false };
+  const gateReconcileTimer = setInterval(() => {
+    if (gateReconcile.inFlight) return;
+    gateReconcile.inFlight = true;
+    void recoverStaleCheckGateLocks(config.root, gateCacheDir)
+      .catch(() => {})
+      .finally(() => {
+        gateReconcile.inFlight = false;
+      });
+  }, CHECK_GATE_RECONCILE_MS);
+  gateReconcileTimer.unref?.();
   setGitLockFailureSink((root, commitMessage, detail) => {
     const context = { root, commitMessage, detail };
     logger.system("warn", `git write failed because index.lock is present: ${detail}`, context);

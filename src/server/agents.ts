@@ -103,6 +103,7 @@ import { listSkills } from "./routes/helpers.js";
 import { readHandoffRequest, clearHandoffRequest } from "./handoff-request.js";
 import { deferHandoffStatus, deliverHandoffOutcome } from "./handoff-status.js";
 import { worktreeReviewLockRefusal } from "./worktree-handoff-guard.js";
+import { checkGateEngineerBusyRefusal } from "./check-gate-lock.js";
 import { readProcessOwnership } from "./system.js";
 import {
   adoptedActivityNote,
@@ -7370,6 +7371,8 @@ export class AgentRunner {
       branch ?? task?.branch,
     );
     if (lockRefusal) return { ok: false, reason: lockRefusal };
+    const checkGateRefusal = checkGateEngineerBusyRefusal(this.config.root, this.cacheDir, cwd);
+    if (checkGateRefusal) return { ok: false, reason: checkGateRefusal };
     if (task && !opts.review) {
       const worktreeRefusal = this.otherTaskLiveEngineerInWorkdir(task.id, cwd);
       if (worktreeRefusal) return { ok: false, reason: worktreeRefusal };
@@ -7917,6 +7920,8 @@ export class AgentRunner {
         branch ?? task?.branch,
       );
       if (lockRefusal) return { ok: false, reason: lockRefusal };
+      const checkGateRefusal = checkGateEngineerBusyRefusal(this.config.root, this.cacheDir, cwd);
+      if (checkGateRefusal) return { ok: false, reason: checkGateRefusal };
     }
     const runId = randomUUID();
     if (task && !opts.review) {

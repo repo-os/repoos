@@ -193,20 +193,49 @@ function listLockFiles(boardRoot: string, cacheDir: string): string[] {
   }
 }
 
+function readLockFile(boardRoot: string, cacheDir: string, name: string): CheckGateLock | null {
+  return readJsonFile(
+    join(cacheRoot(boardRoot, cacheDir), "check-gate-locks", name),
+    parseLock,
+  );
+}
+
+/** Clear a dead lock and flush its deferred queue (best-effort, in-process). */
+export async function reconcileDeadCheckGateLock(
+  boardRoot: string,
+  cacheDir: string,
+  lock: CheckGateLock,
+): Promise<void> {
+  if (isPidAlive(lock.pid)) return;
+  clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
+  await flushDeferredBranchCommits(boardRoot, cacheDir, lock.taskId);
+}
+
+/** Live lock for `worktree`, reconciling dead holders first. */
+export function aliveCheckGateLockForWorktree(
+  boardRoot: string,
+  cacheDir: string,
+  worktree: string,
+): CheckGateLock | null {
+  for (const name of listLockFiles(boardRoot, cacheDir)) {
+    const lock = readLockFile(boardRoot, cacheDir, name);
+    if (!lock || !samePath(lock.worktree, worktree)) continue;
+    if (!isPidAlive(lock.pid)) {
+      void reconcileDeadCheckGateLock(boardRoot, cacheDir, lock);
+      return null;
+    }
+    return lock;
+  }
+  return null;
+}
+
 /** Active lock whose worktree matches `commitRoot`, if the holder process is alive. */
 export function activeCheckGateForCommitRoot(
   boardRoot: string,
   cacheDir: string,
   commitRoot: string,
 ): CheckGateLock | null {
-  const dir = join(cacheRoot(boardRoot, cacheDir), "check-gate-locks");
-  for (const name of listLockFiles(boardRoot, cacheDir)) {
-    const lock = readJsonFile(join(dir, name), parseLock);
-    if (!lock) continue;
-    if (!isPidAlive(lock.pid)) continue;
-    if (samePath(lock.worktree, commitRoot)) return lock;
-  }
-  return null;
+  return aliveCheckGateLockForWorktree(boardRoot, cacheDir, commitRoot);
 }
 
 export function readDeferredBranchCommits(
@@ -279,21 +308,32 @@ export async function flushDeferredBranchCommits(
   boardRoot: string,
   cacheDir: string,
   taskId: string,
-): Promise<void> {
+): Promise<{ ok: boolean; remaining: number }> {
   const queue = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
-  if (queue.length === 0) return;
+  if (queue.length === 0) return { ok: true, remaining: 0 };
   checkGateFlushInProgress = true;
   const prev = process.env.REPOOS_CHECK_GATE_INTERNAL;
   process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
+  const remaining: DeferredBranchCommit[] = [];
   try {
+    let failed = false;
     for (const item of queue) {
-      commitFiles(item.commitRoot, item.absPaths, item.message);
+      if (failed) {
+        remaining.push(item);
+        continue;
+      }
+      const committed = commitFiles(item.commitRoot, item.absPaths, item.message);
+      if (!committed) {
+        remaining.push(item);
+        failed = true;
+      }
     }
+    writeDeferredBranchCommits(boardRoot, cacheDir, taskId, remaining);
+    return { ok: remaining.length === 0, remaining: remaining.length };
   } finally {
     if (prev === undefined) delete process.env.REPOOS_CHECK_GATE_INTERNAL;
     else process.env.REPOOS_CHECK_GATE_INTERNAL = prev;
     checkGateFlushInProgress = false;
-    writeDeferredBranchCommits(boardRoot, cacheDir, taskId, []);
   }
 }
 
@@ -323,14 +363,11 @@ export async function recoverStaleCheckGateLocks(
   boardRoot: string,
   cacheDir: string,
 ): Promise<void> {
-  const dir = join(cacheRoot(boardRoot, cacheDir), "check-gate-locks");
   for (const name of listLockFiles(boardRoot, cacheDir)) {
-    const path = join(dir, name);
-    const lock = readJsonFile(path, parseLock);
+    const lock = readLockFile(boardRoot, cacheDir, name);
     if (!lock) continue;
     if (isPidAlive(lock.pid)) continue;
-    clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
-    await flushDeferredBranchCommits(boardRoot, cacheDir, lock.taskId);
+    await reconcileDeadCheckGateLock(boardRoot, cacheDir, lock);
   }
   const deferDir = join(cacheRoot(boardRoot, cacheDir), "check-gate-deferred");
   try {
@@ -353,9 +390,35 @@ export function checkGateSourceWriteRefusal(
   relPath: string,
   config: Pick<RepoOSConfig, "workDir" | "cacheDir">,
 ): string | undefined {
-  const lock = activeCheckGateForCommitRoot(boardRoot, cacheDir, worktree);
+  const lock = aliveCheckGateLockForWorktree(boardRoot, cacheDir, worktree);
   if (!lock) return undefined;
   if (isBookkeepingPath(relPath.replace(/\\/g, "/"), config)) return undefined;
+  return CHECK_GATE_WRITE_REFUSAL;
+}
+
+/** Refuse when any repo-relative path is a source write during an active gate. */
+export function refuseCheckGateSourcePaths(
+  boardRoot: string,
+  cacheDir: string,
+  worktree: string,
+  relPaths: string[],
+  config: Pick<RepoOSConfig, "workDir" | "cacheDir">,
+): string | undefined {
+  for (const rel of relPaths) {
+    const refusal = checkGateSourceWriteRefusal(boardRoot, cacheDir, worktree, rel, config);
+    if (refusal) return refusal;
+  }
+  return undefined;
+}
+
+/** Refuse starting another engineer turn while a check gate owns the worktree. */
+export function checkGateEngineerBusyRefusal(
+  boardRoot: string,
+  cacheDir: string,
+  worktree: string,
+): string | undefined {
+  const lock = aliveCheckGateLockForWorktree(boardRoot, cacheDir, worktree);
+  if (!lock) return undefined;
   return CHECK_GATE_WRITE_REFUSAL;
 }
 
@@ -399,10 +462,13 @@ function resolveCommitHook(
 
 /** Register the shared hook used by `commitFiles` during server lifetime. */
 export function installCheckGateCommitHook(config: RepoOSConfig): void {
+  const boardRoot = config.root;
+  const cacheDir = config.cacheDir ?? ".repoos";
+  if (!process.env.REPOOS_CACHE_DIR) process.env.REPOOS_CACHE_DIR = cacheDir;
   setCheckGateCommitHook((args) =>
     resolveCommitHook(
-      args.boardRoot,
-      args.cacheDir,
+      args.boardRoot.trim() || boardRoot,
+      args.cacheDir.trim() || cacheDir,
       args.commitRoot,
       args.relPaths,
       args.absPaths,
