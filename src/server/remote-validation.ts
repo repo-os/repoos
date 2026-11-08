@@ -3227,6 +3227,15 @@ export class RemoteValidationRunner implements RemoteValidator {
   }
 
   async validate(opts: ValidateOptions): Promise<CheckSummary> {
+    // This provider cannot cancel queued or running capture jobs. Refuse them
+    // before acquiring the shared gate or provisioning a VM; callers can use
+    // the configured local fallback or report runner-only unavailability.
+    if (opts.browserCapture) {
+      return this.configFail(
+        "Hetzner browser capture is unavailable: this provider cannot cancel captures after handoff failure; use a Tailscale runner or local capture",
+        { taskId: opts.taskId, phase: "dispatch" },
+      );
+    }
     // Routing (#0521): the Hetzner runner is always one Linux/docker VM. A job
     // requiring anything else must fail here, clearly, not run in the wrong OS
     // — and as a CONFIG error, never as transient infra a caller could retry
