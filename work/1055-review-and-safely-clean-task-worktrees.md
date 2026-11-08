@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T01:01:59Z"
+updated_at: "2026-11-08T01:02:01Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -83,3 +83,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:01:20Z · body
 - 2026-11-08T01:01:58Z · status active→review
 - 2026-11-08T01:01:59Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-08T01:02:01Z · message_queued at 2026-11-08T01:02:01.610Z
