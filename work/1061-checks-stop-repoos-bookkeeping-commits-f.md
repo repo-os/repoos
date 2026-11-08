@@ -68,3 +68,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T17:01:53Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T17:01:54Z · message_delivered: 2 message(s)
 - 2026-11-08T17:02:05Z · message_queued at 2026-11-08T17:02:05.066Z
+- 2026-11-08T17:02:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
