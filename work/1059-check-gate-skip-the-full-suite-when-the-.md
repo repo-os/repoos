@@ -211,3 +211,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T14:42:31Z · body
 - 2026-11-08T14:47:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T14:48:22Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T14:48:22Z · message_queued at 2026-11-08T14:48:22.835Z
