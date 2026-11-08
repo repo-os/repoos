@@ -150,3 +150,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T19:09:45Z · body
 - 2026-11-08T19:12:37Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-08T19:12:38Z · status active→review
+- 2026-11-08T19:12:38Z · message_queued at 2026-11-08T19:12:38.515Z
