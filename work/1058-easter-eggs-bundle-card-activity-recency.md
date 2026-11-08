@@ -300,3 +300,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T18:26:26Z · note: handoff requested (cli)
 - 2026-11-08T18:27:48Z · message_delivered: 2 message(s)
 - 2026-11-08T18:28:26Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T18:28:26Z · engineer stopped by request
