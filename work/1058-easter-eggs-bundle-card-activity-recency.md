@@ -3,9 +3,6 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — Touch tooltip arbitration prevents expected navigation and switching between cards.
 priority: p3
 area: web
 assigned_to: ai
@@ -482,3 +479,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:15:56Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T21:15:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T21:16:01Z · message_delivered: 1 message(s)
+- 2026-11-08T21:16:01Z · needs_input
