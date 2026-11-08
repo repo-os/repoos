@@ -374,6 +374,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // Check-gate defaults (#0655): how many times a failing test file is
   // re-run in isolation for the informational flake-triage label.
   check: {
+    docsOnlySkip: true,
     isolationRuns: 3,
   },
   localChecks: {
@@ -1717,6 +1718,9 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     // declare a `smoke` package.json script for a zero-config default; this
     // config value overrides it when both are present. Both the `[check]` and
     // `[checks]` spellings are accepted (the task's prose used `checks.uiSmoke`).
+    const docsOnlySkip = parsed["check.docsOnlySkip"] ?? parsed["checks.docsOnlySkip"];
+    if (typeof docsOnlySkip === "boolean") cfg.check = { ...cfg.check, docsOnlySkip };
+
     const checkUiSmoke = parsed["check.uiSmoke"] ?? parsed["checks.uiSmoke"];
     if (typeof checkUiSmoke === "string" && checkUiSmoke.trim()) {
       cfg.check = { ...cfg.check, uiSmoke: checkUiSmoke.trim() };
@@ -3982,6 +3986,16 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Skip uploading the candidate bundle and run the full gate locally when you are on a slow uplink or metered hotspot. Auto-detect also runs when link probing shows a long upload.",
     },
     {
+      key: "check.docsOnlySkip",
+      label: "Skip full suite for docs-only changes",
+      type: "boolean",
+      tier: "guarded",
+      restartRequired: false,
+      default: true,
+      description:
+        "Run repository guards without the full suite for docs and bookkeeping-only diffs. Release checks always run the full suite.",
+    },
+    {
       key: "check.isolationRuns",
       label: "Isolation re-runs after a test failure",
       type: "number",
@@ -4460,6 +4474,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "preview.auth.enabled",
   // Checks
   "check.uiSmoke",
+  "check.docsOnlySkip",
   "check.isolationRuns",
   "check.uiStylesheet",
   "check.themeScopes",

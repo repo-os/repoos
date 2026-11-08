@@ -1,3 +1,5 @@
+import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
+import { buildIndex } from "../core/indexer.js";
 import {
   checkSnapshot,
   compatibleCheckSnapshots,
@@ -27,8 +29,8 @@ import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.
  * resolves to zero steps AND zero errors — no declared steps, no legacy keys,
  * nothing inferable — SKIPS the gate (exit 0, outcome `skipped`, never green)
  * with an actionable "no check plan" reminder, so task handoffs in an early
- * planning-phase repo are not permanently blocked. Plan errors and an
- * unresolvable `--changed` ref still exit non-zero. Designed for CI gates and
+ * planning-phase repo are not permanently blocked. Plan errors still exit non-zero; an unresolvable changed ref falls back to
+ * the full plan. Designed for CI gates and
  * agent pre-review.
  */
 import { execFileSync } from "node:child_process";
@@ -102,13 +104,6 @@ import {
   isManagedEngineerCheck,
   runEngineerRemoteSelfCheckGate,
 } from "../server/engineer-remote-self-check.js";
-import {
-  acquireCheckGateLock,
-  installCheckGateCommitHook,
-  releaseCheckGateLock,
-} from "../server/check-gate-lock.js";
-import { runGit } from "../core/git.js";
-import { getGitWorker } from "../server/git-worker.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
   runRemotePreReviewGate,
@@ -642,7 +637,12 @@ export function hardcodedColorOffenders(src: string, path = "<file>"): string[] 
         exemptFromDepth = Math.max(exemptFromDepth ?? 0, depth === 0 ? 1 : depth);
         if (depth === 0) pendingRule = true;
       }
-      if (!exempt && (HEX_LITERAL_RE.test(code) || WHITE_RGB_RE.test(code))) {
+      const mutedSurfaceUsedAsText =
+        /(?:^|[;{])\s*color\s*:\s*var\(\s*--muted\s*(?:,\s*[^)]*)?\)/i.test(code);
+      if (
+        !exempt &&
+        (HEX_LITERAL_RE.test(code) || WHITE_RGB_RE.test(code) || mutedSurfaceUsedAsText)
+      ) {
         out.push(`${path}:${startLine + i}  ${raw.trim()}`);
       }
       const opens = (code.match(/\{/g) ?? []).length;
@@ -1494,11 +1494,15 @@ async function stepTaskAssets(ctx: StepContext): Promise<BuiltinOutcome> {
   }
   let tracked: string[] = [];
   try {
-    tracked = execFileSync("git", ["ls-files", "--", ...usable], {
-      cwd: ctx.repoRoot,
-      encoding: "utf8",
-      maxBuffer: 16 * 1024 * 1024,
-    })
+    tracked = execFileSync(
+      "git",
+      ["ls-files", "--cached", "--others", "--exclude-standard", "--", ...usable],
+      {
+        cwd: ctx.repoRoot,
+        encoding: "utf8",
+        maxBuffer: 16 * 1024 * 1024,
+      },
+    )
       .split("\n")
       .filter(Boolean);
   } catch {
@@ -1873,18 +1877,17 @@ function outputTail(output: string | undefined, lines = 25): string | undefined 
  * having verified nothing at all.
  */
 export function changedPathsSince(repoRoot: string, ref: string): string[] | null {
-  const run = (args: string[]): string[] => {
+  const run = (args: string[]): string[] | null => {
     try {
       return execFileSync("git", args, {
         cwd: repoRoot,
         encoding: "utf8",
         maxBuffer: 16 * 1024 * 1024,
       })
-        .split("\n")
-        .map((l) => l.trim())
+        .split("\0")
         .filter(Boolean);
     } catch {
-      return [];
+      return null;
     }
   };
   // Verify the ref first: `git diff <bogus>...` exits non-zero, and `run`
@@ -1897,12 +1900,14 @@ export function changedPathsSince(repoRoot: string, ref: string): string[] | nul
   } catch {
     return null;
   }
-  const paths = new Set([
-    ...run(["diff", "--name-only", `${ref}...`]),
-    ...run(["diff", "--name-only"]),
-    ...run(["ls-files", "--others", "--exclude-standard"]),
-  ]);
-  return [...paths];
+  const lists = [
+    run(["diff", "--no-renames", "--name-only", "-z", `${ref}...`]),
+    run(["diff", "--no-renames", "--name-only", "-z"]),
+    run(["diff", "--cached", "--no-renames", "--name-only", "-z"]),
+    run(["ls-files", "-z", "--others", "--exclude-standard"]),
+  ];
+  if (lists.some((list) => list === null)) return null;
+  return [...new Set(lists.flatMap((list) => list ?? []))];
 }
 
 function planSourceLabel(plan: CheckPlan): string {
@@ -1951,6 +1956,7 @@ export interface RunPlanOptions {
   profile?: string;
   /** Changed paths for changed-path mode; absent means a full run. */
   changedPaths?: string[];
+  docsOnly?: boolean;
   /** Git ref the changed paths came from — the Tests step scopes itself to it. */
   changedRef?: string;
   /** Run each `format` step's fixer before its check (#0651). */
@@ -2007,15 +2013,21 @@ export async function runCheckPlan(
   const pkg = readPkg(repoRoot);
   const selected = selectSteps(plan, {
     profile: opts.profile,
-    changedPaths: opts.profile === "release" ? undefined : opts.changedPaths,
+    changedPaths: opts.docsOnly || opts.profile === "release" ? undefined : opts.changedPaths,
     stepNames: opts.stepNames,
   });
   const results: StepRunResult[] = [];
-  const stepsTotal = selected.filter(({ skip }) => !skip).length;
+  const runnableSteps = selected.filter(({ skip }) => !skip);
+  const stepsTotal = opts.docsOnly ? runnableSteps.length + 1 : runnableSteps.length;
+  const profileStepSkip = (r: StepRunResult): boolean =>
+    r.status === "skipped" && (r.detail?.startsWith("skipped — not in profile") ?? false);
+  const stepsDoneCount = (): number =>
+    opts.docsOnly
+      ? results.filter((x) => !profileStepSkip(x)).length
+      : results.filter((x) => x.status !== "skipped" || x.detail === DOCS_ONLY_SKIP_REASON).length;
   const push = (r: StepRunResult): StepRunResult => {
     results.push(r);
-    const stepsDone = results.filter((x) => x.status !== "skipped").length;
-    opts.onResult?.(r, { stepsDone, stepsTotal });
+    opts.onResult?.(r, { stepsDone: stepsDoneCount(), stepsTotal });
     return r;
   };
 
@@ -2026,6 +2038,19 @@ export async function runCheckPlan(
         name: step.name,
         status: "skipped",
         detail: skip.detail,
+        durationMs: 0,
+        required: step.required,
+      });
+      continue;
+    }
+    if (
+      opts.docsOnly &&
+      !["format", "lockfile-sync", "zero-runtime-deps", "task-assets"].includes(step.kind ?? "")
+    ) {
+      push({
+        name: step.name,
+        status: "skipped",
+        detail: DOCS_ONLY_SKIP_REASON,
         durationMs: 0,
         required: step.required,
       });
@@ -2058,7 +2083,7 @@ export async function runCheckPlan(
       continue;
     }
 
-    const stepsDone = results.filter((x) => x.status !== "skipped").length;
+    const stepsDone = stepsDoneCount();
     opts.onStart?.(step, {
       stepsDone,
       stepsTotal,
@@ -2131,6 +2156,26 @@ export async function runCheckPlan(
       testCaseTimings: outcome.testCaseTimings,
     });
   }
+  if (opts.docsOnly) {
+    try {
+      buildIndex(cfg, { skipGit: true });
+      push({
+        name: "task-parser",
+        status: "passed",
+        detail: "task files parsed",
+        durationMs: 0,
+        required: true,
+      });
+    } catch (error) {
+      push({
+        name: "task-parser",
+        status: "failed",
+        detail: String(error),
+        durationMs: 0,
+        required: true,
+      });
+    }
+  }
   return results;
 }
 
@@ -2175,7 +2220,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   const profile = opts.profile?.trim() || plan.defaultProfile || DEFAULT_PROFILE;
-  const changedRef =
+  let changedRef =
     profile === "release" ? undefined : opts.changed?.trim() || changedTestRef(process.env);
 
   heading("Check plan");
@@ -2197,20 +2242,18 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   for (const w of plan.warnings) console.log(c.yellow(`  ⚠ ${w}`));
   for (const e of plan.errors) console.log(c.red(`  ✗ ${e}`));
 
-  const changedPaths = changedRef ? changedPathsSince(repoRoot, changedRef) : undefined;
+  const changedPaths =
+    profile === "release" ? undefined : changedPathsSince(repoRoot, changedRef ?? "main");
   if (changedRef && changedPaths === null) {
-    // A ref git can't resolve is a mistake, not "nothing changed": scoping the
-    // run to it would skip every `whenChanged` step and could go green having
-    // verified nothing. This stays fatal even for an empty plan (#0592),
-    // because a typo'd ref is the caller's mistake — not the repo's.
-    console.log(
-      c.red(
-        `\n  ✗ Changed-path mode needs a git ref this repo can resolve: "${changedRef}" is not ` +
-          "a commit, branch or tag here. Fix the ref (or drop --changed to run the full plan).\n",
-      ),
-    );
-    process.exit(1);
+    console.log(c.yellow("  ⚠ Could not compute changed paths; running the full plan."));
+    changedRef = undefined;
   }
+  const docsOnly =
+    profile !== "release" &&
+    !opts.steps?.length &&
+    !opts.localTestsOnly &&
+    isDocsOnlyCheck(changedPaths, cfg.check?.docsOnlySkip !== false);
+  if (docsOnly) console.log(`  · ${DOCS_ONLY_SKIP_REASON}`);
   if (changedRef) {
     console.log(
       c.dim(
@@ -2249,8 +2292,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // an early planning-phase repo used to block on this forever. The gate is
   // still never green: the run records outcome `skipped` (not `passed`) and
   // the summary says plainly that nothing was verified. A repo WITH a plan
-  // that resolves to nothing usable errors instead (handled above), and a
-  // `--changed` ref that cannot resolve kept its fatal path above too.
+  // that resolves to nothing usable errors instead (handled above). An
+  // unresolved changed ref falls back to the unscoped plan.
   if (planGateSkips(plan)) {
     const startedAt = new Date();
     console.log(c.yellow(`\n  ⚠ ${NO_CHECK_PLAN_NOTICE}\n`));
@@ -2288,17 +2331,6 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     process.exit(0);
   }
 
-  const managedEngineerGate = isManagedEngineerCheck(process.env) && runContext.taskId != null;
-  const serverCheckChildGate =
-    !managedEngineerGate &&
-    runContext.taskId != null &&
-    Boolean(process.env.REPOOS_CHECK_STORE_ROOT?.trim());
-  let releaseCheckGate: (() => Promise<void>) | undefined;
-  const releaseGateAndExit = async (code: number): Promise<never> => {
-    await releaseCheckGate?.();
-    process.exit(code);
-  };
-
   if (
     cfg.remoteValidation?.enabled &&
     !standaloneCliCanUseRemote(cfg) &&
@@ -2313,7 +2345,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       ),
     );
   }
-  let runRemoteGate = shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env);
+  let runRemoteGate =
+    !docsOnly && shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env);
   if (runRemoteGate) {
     const uncommitted = await uncommittedFilesBlockingRemoteGate(repoRoot, cfg);
     if (uncommitted.length > 0) {
@@ -2347,526 +2380,492 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       }
     }
   }
-
-  if (managedEngineerGate || serverCheckChildGate) {
-    const boardCfg = loadConfig(checkStoreRoot);
-    installCheckGateCommitHook(boardCfg);
-    process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
-    process.env.REPOOS_CACHE_DIR = boardCfg.cacheDir ?? ".repoos";
-  }
-  if (managedEngineerGate) {
-    const boardCfg = loadConfig(checkStoreRoot);
-    const taskId = runContext.taskId!;
-    const cache = boardCfg.cacheDir ?? ".repoos";
-    const branch =
-      (await getGitWorker(checkStoreRoot).currentBranch()) ??
-      (await runGit(repoRoot, ["branch", "--show-current"], 10_000)).stdout.trim();
-    await acquireCheckGateLock({
-      boardRoot: checkStoreRoot,
-      cacheDir: cache,
-      taskId,
-      branch: branch || "main",
-      worktree: repoRoot,
-      kind: "engineer-self-check",
-    });
-    releaseCheckGate = () => releaseCheckGateLock(checkStoreRoot, cache, taskId);
-  }
-
-  let checkExitCode = 0;
-  try {
-    const validationStart = await checkSnapshot(repoRoot, changedRef);
-    let remoteTestsPassed = false;
-    // The plan never runs when the remote gate fails, so the normal end-of-run
-    // record is never written: persist the failure for the Checks surface too,
-    // like a local failure and like the handoff path (fail-soft).
-    const persistRemoteFailure = (detail: string, output: string, startedAt: Date): void => {
-      const finishedAt = new Date();
-      const durationMs = finishedAt.getTime() - startedAt.getTime();
-      writeCheckRun(
-        repoRoot,
-        {
-          profile,
-          source: plan.source,
-          changedRef,
-          startedAt: startedAt.toISOString(),
-          finishedAt: finishedAt.toISOString(),
-          durationMs,
-          passed: false,
-          results: [
-            {
-              name: "remote-validation",
-              status: "failed",
-              durationMs,
-              output: output || undefined,
-              detail,
-              required: true,
-            },
-          ],
-        },
-        cfg.cacheDir,
-      );
-    };
-    if (runRemoteGate) {
-      heading("Remote validation");
-      const managed = isManagedEngineerCheck(process.env) && runContext.taskId !== null;
-      const taskId = runContext.taskId || "pre-review";
-      const remoteStartedAt = new Date();
-      let remoteOutput = "";
-      const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
-      process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
-
-      const applyRemoteGateOutcome = async (
-        gate: Awaited<ReturnType<typeof runRemotePreReviewGate>>,
-      ): Promise<void> => {
-        if (gate.kind === "fail") {
-          console.log(c.red(`\n  ✗ ${gate.detail}\n`));
-          persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
-          await releaseGateAndExit(1);
-        }
-        if (gate.kind === "local-only" && gate.skipTests) {
-          remoteTestsPassed = true;
-          process.env.REPOOS_SKIP_TESTS = "1";
-          if (offloadBrowserStepsEnabled(cfg)) {
-            process.env[REPOOS_BROWSER_STEPS_REMOTE] = "1";
-          }
-          console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
-        } else if (gate.kind === "local-only") {
-          if (remoteLocalFallbackMode(cfg) === "off") {
-            const detail =
-              gate.detail?.trim() ||
-              "remote validation unavailable and remoteValidation.localFallback is off";
-            console.log(c.red(`\n  ✗ ${detail}\n`));
-            persistRemoteFailure(detail, remoteOutput, remoteStartedAt);
-            await releaseGateAndExit(1);
-          }
-          process.env.REPOOS_LOCAL_FALLBACK_RUN = "1";
-          if (gate.detail?.trim()) {
-            process.env[REPOOS_REMOTE_FALLBACK_DETAIL] = gate.detail.trim();
-          }
-          console.log(c.yellow("  ⚠ remote unavailable — running the full local gate\n"));
-        }
-      };
-
-      try {
-        if (managed) {
-          const boardRoot = boardRootForEngineerRemote(repoRoot);
-          const gateConfig = loadConfig(boardRoot);
-          const taskAbsPath = /^\d+$/.test(taskId)
-            ? boardTaskAbsPath(gateConfig, taskId)
-            : undefined;
-          const gate = await runEngineerRemoteSelfCheckGate({
-            worktreeConfig: cfg,
-            worktreePath: repoRoot,
-            taskId,
-            taskAbsPath,
-            changedRef,
-            checkProfile: profile,
-            onChunk: (chunk) => {
-              remoteOutput += chunk;
-              process.stdout.write(chunk);
-            },
-          });
-          await applyRemoteGateOutcome(gate);
-        } else {
-          const logger = new Logger({ root: repoRoot });
-          let remoteValidator;
-          try {
-            remoteValidator = createRemoteValidator(cfg, logger);
-          } catch (e) {
-            const msg = `remote validation init failed: ${(e as Error).message}`;
-            if (!cfg.remoteValidation?.fallbackToLocal) {
-              console.log(c.red(`\n  ✗ ${msg}\n`));
-              persistRemoteFailure(msg, "", new Date());
-              recordRunHistoryRow({
-                root: checkStoreRoot,
-                cacheDir: cfg.cacheDir,
-                attribution: runContext,
-                scope: "full",
-                startedAt: new Date().toISOString(),
-                durationMs: 0,
-                outcome: "fail",
-                failedStep: "remote-validation",
-                skippedSteps: [],
-                detail: msg,
-              });
-              await releaseGateAndExit(1);
-            }
-            console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
-          }
-          if (remoteValidator) {
-            try {
-              const { phase: runPhase } = runContext;
-              const gate = await runRemotePreReviewGate({
-                config: cfg,
-                remoteValidator,
-                worktreePath: repoRoot,
-                taskId,
-                phase: runPhase,
-                checkProfile: profile,
-                changedRef,
-                onChunk: (chunk) => {
-                  remoteOutput += chunk;
-                  process.stdout.write(chunk);
-                },
-              });
-              await remoteValidator.dispose().catch(() => {});
-              await applyRemoteGateOutcome(gate);
-            } catch (e) {
-              await remoteValidator.dispose().catch(() => {});
-              throw e;
-            }
-          }
-        }
-      } finally {
-        if (prevStoreRoot === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
-        else process.env.REPOOS_CHECK_STORE_ROOT = prevStoreRoot;
-      }
-    }
-
-    let releaseLocalCheck: (() => void) | undefined;
-    let waitRecord: CheckWait | null = null;
-    // #0974: a check waiting on the pressure guard or a heavy slot must say so —
-    // on stdout (the handoff transcript captures it) and in the run record below.
-    const waits = createCheckWaitRecorder((line) => console.log(c.dim(`  ${line}`)));
-    try {
-      releaseLocalCheck = await acquireLocalCheckSlot({
-        repoRoot,
-        config: cfg,
-        env: process.env,
-        onStatusLine: waits.onStatusLine,
-      });
-    } catch (e) {
-      waitRecord = waits.finish();
-      const msg =
-        e instanceof SlotQueueTimeoutError ? e.message : e instanceof Error ? e.message : String(e);
-      console.log(c.red(`\n  ✗ ${msg}\n`));
-      const holders = inspectCrossProcessSlots(
-        localCheckLockRoot(repoRoot, cfg.cacheDir ?? ".repoos"),
-      );
-      for (const holder of holders) {
-        console.log(
-          c.dim(
-            `  slot ${holder.slot}: pid ${holder.pid ?? "unknown"}, ${Math.round(holder.ageMs / 1000)}s${holder.dead ? " (process exited; reclaiming)" : holder.wedged ? ` (no recent heartbeat; last seen ${Math.round(holder.heartbeatAgeMs / 1000)}s ago)` : ""}`,
-          ),
-        );
-      }
-      await releaseGateAndExit(1);
-    }
-    waitRecord = waits.finish();
-
-    const runStartedAt = new Date();
-    // Persist a provisional row before running steps. If this process is killed,
-    // the durable history still shows an interrupted run instead of no run.
-    const historyRunId = recordRunHistoryRow({
-      root: checkStoreRoot,
-      cacheDir: cfg.cacheDir,
-      attribution: runContext,
-      scope: changedRef ? `changed:${changedRef}` : "full",
-      worktree: repoRoot,
-      startedAt: runStartedAt.toISOString(),
-      durationMs: 0,
-      outcome: "cancelled",
-      failedStep: "check",
-      skippedSteps: [],
-      detail: "Check was interrupted before completion.",
-    });
-    // Failed-first ordering (#0655): only interactive/CLI and pre-review runs
-    // reorder. Close-out and release run their selected suite from a clean
-    // slate, and the remote close-out gate never reaches this point. Attribution
-    // is validated against THIS project so an inherited foreign task id cannot
-    // pick another project's failed-test list (#0870).
-    const preflightContext = runContext;
-    const previousFailedTests = previousFailedTestsForRun({
-      root: checkStoreRoot,
-      cacheDir: cfg.cacheDir,
-      worktree: repoRoot,
-      taskId: preflightContext.taskId,
-      phase: preflightContext.phase,
-    });
-    const completedSteps: CheckStepTiming[] = [];
-    let results: StepRunResult[];
-    let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
-    try {
-      if (process.env.REPOOS_AGENT === "1") {
-        applyEngineerResourceEnv(checkEnv, cfg);
-        checkEnv.REPOOS_LOCAL_CHECK_SLOT_HELD = "1";
-        process.env.REPOOS_LOCAL_CHECK_SLOT_HELD = "1";
-      }
-      results = await runCheckPlan(plan, {
-        repoRoot,
-        env: checkEnv,
-        cfg,
-        profile,
-        // Narrowed above after the null check; `?? undefined` keeps the types
-        // honest without a cast.
-        changedPaths: changedPaths ?? undefined,
-        changedRef,
-        fix: opts.fix,
-        stepNames: opts.steps,
-        previousFailedTests,
-        isolationRuns: cfg.check?.isolationRuns,
-        onStart: (step, progress) => {
-          heading(step.name);
-          console.log(c.dim(`  · ${describeStep(step)}`));
-          if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
-        },
-        onResult: (r, progress) => {
-          const timing = { name: r.name, status: r.status, durationMs: r.durationMs };
-          completedSteps.push(timing);
-          console.log(`${STEP_TIMING_MARKER}${JSON.stringify(timing)}`);
-          finalProgress = progress;
-          if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
-          const secs = r.durationMs >= 1000 ? ` (${(r.durationMs / 1000).toFixed(1)}s)` : "";
-          if (r.status === "passed") {
-            console.log(c.green(`  ✔ ${r.name}${secs}${r.detail ? ` — ${r.detail}` : ""}`));
-          } else if (r.status === "skipped") {
-            console.log(c.dim(`  ⏭ ${r.name} — ${statusDetail(r)}`));
-          } else if (!r.required) {
-            console.log(c.yellow(`  ⚠ ${r.name} failed (optional) — ${statusDetail(r)}`));
-          } else {
-            console.log(c.red(`  ✗ ${r.name}${secs}`));
-          }
-        },
-      });
-    } catch (e) {
-      // The plan runner is not expected to throw, but if it does the normal
-      // end-of-run record below never runs — and the server-side check manager
-      // records only `code === null`, so a child that dies on an unhandled
-      // error would leave NO row at all (#0564 review). Record the crash, then
-      // re-throw for the usual CLI error path.
-      const finishedAt = new Date();
-      recordRunHistoryRow({
-        root: checkStoreRoot,
-        cacheDir: cfg.cacheDir,
-        attribution: runContext,
-        scope: changedRef ? `changed:${changedRef}` : "full",
-        startedAt: runStartedAt.toISOString(),
-        durationMs: finishedAt.getTime() - runStartedAt.getTime(),
-        outcome: "fail",
-        failedStep: "check",
-        skippedSteps: [],
-        steps: completedSteps,
-        detail: `check crashed before completing: ${(e as Error).message}`,
-        updateId: historyRunId,
-      });
-      throw e;
-    } finally {
-      if (process.env.REPOOS_AGENT === "1") delete process.env.REPOOS_LOCAL_CHECK_SLOT_HELD;
-      releaseLocalCheck?.();
-    }
-
-    // ── Summary ─────────────────────────────────────────────────────────
-    const gatingFailures = results.filter(
-      (r) => r.required && r.status !== "passed" && r.status !== "skipped",
-    );
-    const optionalFailures = results.filter(
-      (r) => !r.required && r.status !== "passed" && r.status !== "skipped",
-    );
-    console.log(c.bold(c.cyan("\n  ── Step timings ──")));
-    for (const r of results) console.log(`  ${r.name}: ${r.durationMs}ms · ${r.status}`);
-    console.log(c.bold(c.cyan("\n  ── Results ──")));
-    for (const r of results) {
-      const icon = !r.required && STATUS_ICON[r.status] === "✗" ? "⚠" : STATUS_ICON[r.status];
-      const detail = statusDetail(r);
-      console.log(`  ${icon} ${r.name}${detail ? c.dim(`  — ${detail}`) : ""}`);
-    }
-    if (results.length > 0 && results.every((r) => r.status === "skipped")) {
-      // Every step was excluded (profile, or changed paths that matched nothing).
-      // That is not a green build — it is a run that verified nothing. Say so
-      // plainly rather than letting "All checks passed" imply otherwise.
-      console.log(
-        c.yellow(
-          "\n  ⚠ No steps ran — every one was skipped. Nothing in this run verified the code; " +
-            "check the profile and the `whenChanged` globs.\n",
-        ),
-      );
-    }
-    if (gatingFailures.length === 0) {
-      console.log(c.bold(c.green("\n  All checks passed.\n")));
-    } else {
-      console.log(c.bold(c.red(`\n  ${gatingFailures.length} check(s) failed.\n`)));
-    }
-    if (optionalFailures.length > 0) {
-      console.log(
-        c.yellow(
-          `  ${optionalFailures.length} optional check(s) failed — reported, not gating: ` +
-            optionalFailures.map((r) => r.name).join(", ") +
-            "\n",
-        ),
-      );
-    }
-
-    // ── Failed-steps summary (#0651) ─────────────────────────────────────
-    // Fixed position, at the very end of the run and short enough that `tail -20`
-    // always contains it: an agent that pipes the gate through `tail`/`grep` must
-    // still see WHICH step failed and the one command that reruns it, instead of
-    // re-running the whole gate because the failing step scrolled out of view.
-    // Printed AFTER the terminal line so `parseCheckResults` stops before it.
-    const stepByName = new Map(plan.steps.map((s) => [s.name, s]));
-    console.log(c.bold(c.cyan("\n  ── Failed steps ──")));
-    if (gatingFailures.length === 0) {
-      console.log(c.green("  ✔ none"));
-    } else {
-      for (const r of gatingFailures) {
-        const step = stepByName.get(r.name);
-        const fix = step ? formatFixCommand(step, repoRoot) : null;
-        const rerun = rerunCommandFor(r.name, profile, plan.defaultProfile, changedRef);
-        const fixPart = fix && fix !== r.command ? `fix: ${fix} · ` : "";
-        console.log(`  ${c.red("✗")} ${r.name} — ${c.dim(`${fixPart}rerun: ${rerun}`)}`);
-      }
-    }
-
-    const fileTimings = results.flatMap(
-      (r) => r.testFileTimings ?? testFileTimings(r.output ?? ""),
-    );
-    // Individual case history comes only from Vitest's structured reporter
-    // events. Step output is intentionally bounded and must never be its source.
-    const caseTimings = mergeTestCaseTimings(results.flatMap((r) => r.testCaseTimings ?? []));
-    if (fileTimings.length) {
-      heading("Slowest test files");
-      console.log(formatSlowestTestFiles(fileTimings));
-      console.log(
-        c.dim(
-          "  File totals include hook time in that file; they are not the sum of individual cases below.",
-        ),
-      );
-    }
-    if (caseTimings.length) {
-      heading("Slowest test cases");
-      console.log(formatSlowestTestCases(caseTimings));
-    }
-
-    // Persist the run for the Checks surface (#0447) before exiting. Fail-soft:
-    // visibility only, never a reason to fail an otherwise-green gate.
+  const validationStart = await checkSnapshot(repoRoot, changedRef);
+  let remoteTestsPassed = false;
+  // The plan never runs when the remote gate fails, so the normal end-of-run
+  // record is never written: persist the failure for the Checks surface too,
+  // like a local failure and like the handoff path (fail-soft).
+  const persistRemoteFailure = (detail: string, output: string, startedAt: Date): void => {
     const finishedAt = new Date();
-    const validationEnd = await checkSnapshot(repoRoot, changedRef);
-    const testSteps = plan.steps.filter((s) => s.kind === "tests");
-    const testsProven =
-      testSteps.length > 0 &&
-      testSteps.every((s) =>
-        results.some(
-          (r) =>
-            r.name === s.name &&
-            (r.status === "passed" || (remoteTestsPassed && r.status === "skipped")),
-        ),
-      );
-    // Partial profiles/--step and skipped suites must never mint reusable evidence.
-    const reusableSnapshot =
-      gatingFailures.length === 0 &&
-      !opts.steps?.length &&
-      profile === (plan.defaultProfile || DEFAULT_PROFILE) &&
-      testsProven &&
-      (await compatibleCheckSnapshots(repoRoot, validationStart, validationEnd))
-        ? validationStart
-        : null;
-    const testProgress =
-      [...results]
-        .reverse()
-        .map((r) => {
-          const records = [...(r.output ?? "").matchAll(/::repoos-check-progress::([^\r\n]+)/g)];
-          if (!records.length) return null;
-          try {
-            const value = JSON.parse(records.at(-1)![1]!) as {
-              testsDone?: number;
-              testsTotal?: number;
-              testsPass?: number;
-            };
-            return Number.isInteger(value.testsDone) && Number.isInteger(value.testsTotal)
-              ? {
-                  testsDone: value.testsDone,
-                  testsTotal: value.testsTotal,
-                  testsPass: value.testsPass,
-                }
-              : null;
-          } catch {
-            return null;
-          }
-        })
-        .find(Boolean) ?? null;
+    const durationMs = finishedAt.getTime() - startedAt.getTime();
     writeCheckRun(
       repoRoot,
       {
         profile,
         source: plan.source,
         changedRef,
-        startedAt: runStartedAt.toISOString(),
+        startedAt: startedAt.toISOString(),
         finishedAt: finishedAt.toISOString(),
-        durationMs: finishedAt.getTime() - runStartedAt.getTime(),
-        // #0974: what this run waited on before its first step, so "the check
-        // sat 26 minutes" is recorded, not just remembered anecdotally.
-        waited: waitRecord
-          ? { reason: waitRecord.reason, ms: waitRecord.endedAt! - waitRecord.startedAt }
-          : undefined,
-        passed: gatingFailures.length === 0,
-        results: results.map((r) => ({
-          name: r.name,
-          status: r.status,
-          command: r.command,
-          cwd: r.cwd,
-          durationMs: r.durationMs,
-          output: r.output,
-          testFileTimings: r.testFileTimings,
-          testCaseTimings: r.testCaseTimings,
-          detail: r.detail,
-          required: r.required,
-        })),
+        durationMs,
+        passed: false,
+        results: [
+          {
+            name: "remote-validation",
+            status: "failed",
+            durationMs,
+            output: output || undefined,
+            detail,
+            required: true,
+          },
+        ],
       },
       cfg.cacheDir,
     );
+  };
+  if (runRemoteGate) {
+    heading("Remote validation");
+    const managed = isManagedEngineerCheck(process.env) && runContext.taskId !== null;
+    const taskId = runContext.taskId || "pre-review";
+    const remoteStartedAt = new Date();
+    let remoteOutput = "";
+    const prevStoreRoot = process.env.REPOOS_CHECK_STORE_ROOT;
+    process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
 
-    // Record the run in the durable history (#0564). The caller (handoff,
-    // close-out, release) identifies itself via env; a bare `repoos check`
-    // records as phase "cli" with a null task id. The store lives in the MAIN
-    // checkout (resolved at the top of this command, #0564 review) so worktree
-    // runs land in the history the server reads.
+    const applyRemoteGateOutcome = (
+      gate: Awaited<ReturnType<typeof runRemotePreReviewGate>>,
+    ): void => {
+      if (gate.kind === "fail") {
+        console.log(c.red(`\n  ✗ ${gate.detail}\n`));
+        persistRemoteFailure(gate.detail, remoteOutput, remoteStartedAt);
+        process.exit(1);
+      }
+      if (gate.kind === "local-only" && gate.skipTests) {
+        remoteTestsPassed = true;
+        process.env.REPOOS_SKIP_TESTS = "1";
+        if (offloadBrowserStepsEnabled(cfg)) {
+          process.env[REPOOS_BROWSER_STEPS_REMOTE] = "1";
+        }
+        console.log(c.green("  ✔ remote gate passed — running local guards only\n"));
+      } else if (gate.kind === "local-only") {
+        if (remoteLocalFallbackMode(cfg) === "off") {
+          const detail =
+            gate.detail?.trim() ||
+            "remote validation unavailable and remoteValidation.localFallback is off";
+          console.log(c.red(`\n  ✗ ${detail}\n`));
+          persistRemoteFailure(detail, remoteOutput, remoteStartedAt);
+          process.exit(1);
+        }
+        process.env.REPOOS_LOCAL_FALLBACK_RUN = "1";
+        if (gate.detail?.trim()) {
+          process.env[REPOOS_REMOTE_FALLBACK_DETAIL] = gate.detail.trim();
+        }
+        console.log(c.yellow("  ⚠ remote unavailable — running the full local gate\n"));
+      }
+    };
+
+    try {
+      if (managed) {
+        const boardRoot = boardRootForEngineerRemote(repoRoot);
+        const gateConfig = loadConfig(boardRoot);
+        const taskAbsPath = /^\d+$/.test(taskId) ? boardTaskAbsPath(gateConfig, taskId) : undefined;
+        const gate = await runEngineerRemoteSelfCheckGate({
+          worktreeConfig: cfg,
+          worktreePath: repoRoot,
+          taskId,
+          taskAbsPath,
+          changedRef,
+          checkProfile: profile,
+          onChunk: (chunk) => {
+            remoteOutput += chunk;
+            process.stdout.write(chunk);
+          },
+        });
+        applyRemoteGateOutcome(gate);
+      } else {
+        const logger = new Logger({ root: repoRoot });
+        let remoteValidator;
+        try {
+          remoteValidator = createRemoteValidator(cfg, logger);
+        } catch (e) {
+          const msg = `remote validation init failed: ${(e as Error).message}`;
+          if (!cfg.remoteValidation?.fallbackToLocal) {
+            console.log(c.red(`\n  ✗ ${msg}\n`));
+            persistRemoteFailure(msg, "", new Date());
+            recordRunHistoryRow({
+              root: checkStoreRoot,
+              cacheDir: cfg.cacheDir,
+              attribution: runContext,
+              scope: "full",
+              startedAt: new Date().toISOString(),
+              durationMs: 0,
+              outcome: "fail",
+              failedStep: "remote-validation",
+              skippedSteps: [],
+              detail: msg,
+            });
+            process.exit(1);
+          }
+          console.log(c.yellow(`  ⚠ ${msg} — running the full local gate\n`));
+        }
+        if (remoteValidator) {
+          try {
+            const { phase: runPhase } = runContext;
+            const gate = await runRemotePreReviewGate({
+              config: cfg,
+              remoteValidator,
+              worktreePath: repoRoot,
+              taskId,
+              phase: runPhase,
+              checkProfile: profile,
+              changedRef,
+              onChunk: (chunk) => {
+                remoteOutput += chunk;
+                process.stdout.write(chunk);
+              },
+            });
+            await remoteValidator.dispose().catch(() => {});
+            applyRemoteGateOutcome(gate);
+          } catch (e) {
+            await remoteValidator.dispose().catch(() => {});
+            throw e;
+          }
+        }
+      }
+    } finally {
+      if (prevStoreRoot === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
+      else process.env.REPOOS_CHECK_STORE_ROOT = prevStoreRoot;
+    }
+  }
+
+  let releaseLocalCheck: (() => void) | undefined;
+  let waitRecord: CheckWait | null = null;
+  // #0974: a check waiting on the pressure guard or a heavy slot must say so —
+  // on stdout (the handoff transcript captures it) and in the run record below.
+  const waits = createCheckWaitRecorder((line) => console.log(c.dim(`  ${line}`)));
+  try {
+    releaseLocalCheck = await acquireLocalCheckSlot({
+      repoRoot,
+      config: cfg,
+      env: process.env,
+      onStatusLine: waits.onStatusLine,
+    });
+  } catch (e) {
+    waitRecord = waits.finish();
+    const msg =
+      e instanceof SlotQueueTimeoutError ? e.message : e instanceof Error ? e.message : String(e);
+    console.log(c.red(`\n  ✗ ${msg}\n`));
+    const holders = inspectCrossProcessSlots(
+      localCheckLockRoot(repoRoot, cfg.cacheDir ?? ".repoos"),
+    );
+    for (const holder of holders) {
+      console.log(
+        c.dim(
+          `  slot ${holder.slot}: pid ${holder.pid ?? "unknown"}, ${Math.round(holder.ageMs / 1000)}s${holder.dead ? " (process exited; reclaiming)" : holder.wedged ? ` (no recent heartbeat; last seen ${Math.round(holder.heartbeatAgeMs / 1000)}s ago)` : ""}`,
+        ),
+      );
+    }
+    process.exit(1);
+  }
+  waitRecord = waits.finish();
+
+  const runStartedAt = new Date();
+  // Persist a provisional row before running steps. If this process is killed,
+  // the durable history still shows an interrupted run instead of no run.
+  const historyRunId = recordRunHistoryRow({
+    root: checkStoreRoot,
+    cacheDir: cfg.cacheDir,
+    attribution: runContext,
+    scope: changedRef ? `changed:${changedRef}` : "full",
+    worktree: repoRoot,
+    startedAt: runStartedAt.toISOString(),
+    durationMs: 0,
+    outcome: "cancelled",
+    failedStep: "check",
+    skippedSteps: [],
+    detail: "Check was interrupted before completion.",
+  });
+  // Failed-first ordering (#0655): only interactive/CLI and pre-review runs
+  // reorder. Close-out and release run their selected suite from a clean
+  // slate, and the remote close-out gate never reaches this point. Attribution
+  // is validated against THIS project so an inherited foreign task id cannot
+  // pick another project's failed-test list (#0870).
+  const preflightContext = runContext;
+  const previousFailedTests = previousFailedTestsForRun({
+    root: checkStoreRoot,
+    cacheDir: cfg.cacheDir,
+    worktree: repoRoot,
+    taskId: preflightContext.taskId,
+    phase: preflightContext.phase,
+  });
+  const completedSteps: CheckStepTiming[] = [];
+  let results: StepRunResult[];
+  let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
+  try {
+    if (process.env.REPOOS_AGENT === "1") {
+      applyEngineerResourceEnv(checkEnv, cfg);
+      checkEnv.REPOOS_LOCAL_CHECK_SLOT_HELD = "1";
+      process.env.REPOOS_LOCAL_CHECK_SLOT_HELD = "1";
+    }
+    results = await runCheckPlan(plan, {
+      repoRoot,
+      env: checkEnv,
+      cfg,
+      profile,
+      // Narrowed above after the null check; `?? undefined` keeps the types
+      // honest without a cast.
+      changedPaths: changedRef ? (changedPaths ?? undefined) : undefined,
+      docsOnly,
+      changedRef,
+      fix: opts.fix,
+      stepNames: opts.steps,
+      previousFailedTests,
+      isolationRuns: cfg.check?.isolationRuns,
+      onStart: (step, progress) => {
+        heading(step.name);
+        console.log(c.dim(`  · ${describeStep(step)}`));
+        if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
+      },
+      onResult: (r, progress) => {
+        const timing = { name: r.name, status: r.status, durationMs: r.durationMs };
+        completedSteps.push(timing);
+        console.log(`${STEP_TIMING_MARKER}${JSON.stringify(timing)}`);
+        finalProgress = progress;
+        if (progress) console.log(`::repoos-check-progress::${JSON.stringify(progress)}`);
+        const secs = r.durationMs >= 1000 ? ` (${(r.durationMs / 1000).toFixed(1)}s)` : "";
+        if (r.status === "passed") {
+          console.log(c.green(`  ✔ ${r.name}${secs}${r.detail ? ` — ${r.detail}` : ""}`));
+        } else if (r.status === "skipped") {
+          console.log(c.dim(`  ⏭ ${r.name} — ${statusDetail(r)}`));
+        } else if (!r.required) {
+          console.log(c.yellow(`  ⚠ ${r.name} failed (optional) — ${statusDetail(r)}`));
+        } else {
+          console.log(c.red(`  ✗ ${r.name}${secs}`));
+        }
+      },
+    });
+  } catch (e) {
+    // The plan runner is not expected to throw, but if it does the normal
+    // end-of-run record below never runs — and the server-side check manager
+    // records only `code === null`, so a child that dies on an unhandled
+    // error would leave NO row at all (#0564 review). Record the crash, then
+    // re-throw for the usual CLI error path.
+    const finishedAt = new Date();
     recordRunHistoryRow({
       root: checkStoreRoot,
       cacheDir: cfg.cacheDir,
       attribution: runContext,
       scope: changedRef ? `changed:${changedRef}` : "full",
-      worktree: repoRoot,
-      snapshot: reusableSnapshot,
       startedAt: runStartedAt.toISOString(),
       durationMs: finishedAt.getTime() - runStartedAt.getTime(),
-      outcome: gatingFailures.length === 0 ? "pass" : "fail",
-      failedStep: gatingFailures[0]?.name ?? null,
-      skippedSteps: results.filter((r) => r.status === "skipped").map((r) => r.name),
+      outcome: "fail",
+      failedStep: "check",
+      skippedSteps: [],
       steps: completedSteps,
-      stepsDone: finalProgress?.stepsDone ?? null,
-      stepsTotal: finalProgress?.stepsTotal ?? null,
-      testFileTimings: fileTimings,
-      testCaseTimings: caseTimings,
-      testsDone: testProgress?.testsDone ?? null,
-      testsTotal: testProgress?.testsTotal ?? null,
-      detail: (() => {
-        const fallback = process.env[REPOOS_REMOTE_FALLBACK_DETAIL]?.trim();
-        const stepDetail = gatingFailures[0]?.detail ?? null;
-        // #0724: which close-out gate mode ran and why, so the Checks tab is
-        // auditable ("reused from handoff check <sha>" / "scoped N files").
-        const gateNote = process.env[REPOOS_CHECK_GATE_NOTE]?.trim();
-        const fallbackPart = (() => {
-          if (!fallback) return null;
-          const summary = summarizeRemoteFallbackDetail(fallback);
-          if (!stepDetail) return summary;
-          return `${summary} — ${stepDetail}`;
-        })();
-        const base = fallbackPart ?? stepDetail;
-        if (!gateNote) return base;
-        return base ? `${gateNote} — ${base}` : gateNote;
-      })(),
-      // The stored detail is a short log tail that routinely loses the failing
-      // test's name; keep the names themselves so "which test?" is a query.
-      failedTests: gatingFailures.flatMap((r) => extractFailedTests(r.output ?? "")),
-      // Informational isolation label (#0655) — never part of the outcome.
-      isolationNote: results.find((r) => r.isolationNote)?.isolationNote ?? null,
+      detail: `check crashed before completing: ${(e as Error).message}`,
       updateId: historyRunId,
     });
-    checkExitCode = gatingFailures.length > 0 ? 1 : 0;
+    throw e;
   } finally {
-    await releaseCheckGate?.();
+    if (process.env.REPOOS_AGENT === "1") delete process.env.REPOOS_LOCAL_CHECK_SLOT_HELD;
+    releaseLocalCheck?.();
   }
 
-  process.exit(checkExitCode);
+  // ── Summary ─────────────────────────────────────────────────────────
+  const gatingFailures = results.filter(
+    (r) => r.required && r.status !== "passed" && r.status !== "skipped",
+  );
+  const optionalFailures = results.filter(
+    (r) => !r.required && r.status !== "passed" && r.status !== "skipped",
+  );
+  console.log(c.bold(c.cyan("\n  ── Step timings ──")));
+  for (const r of results) console.log(`  ${r.name}: ${r.durationMs}ms · ${r.status}`);
+  console.log(c.bold(c.cyan("\n  ── Results ──")));
+  for (const r of results) {
+    const icon = !r.required && STATUS_ICON[r.status] === "✗" ? "⚠" : STATUS_ICON[r.status];
+    const detail = statusDetail(r);
+    console.log(`  ${icon} ${r.name}${detail ? c.dim(`  — ${detail}`) : ""}`);
+  }
+  if (results.length > 0 && results.every((r) => r.status === "skipped")) {
+    // Every step was excluded (profile, or changed paths that matched nothing).
+    // That is not a green build — it is a run that verified nothing. Say so
+    // plainly rather than letting "All checks passed" imply otherwise.
+    console.log(
+      c.yellow(
+        "\n  ⚠ No steps ran — every one was skipped. Nothing in this run verified the code; " +
+          "check the profile and the `whenChanged` globs.\n",
+      ),
+    );
+  }
+  if (gatingFailures.length === 0) {
+    console.log(c.bold(c.green("\n  All checks passed.\n")));
+  } else {
+    console.log(c.bold(c.red(`\n  ${gatingFailures.length} check(s) failed.\n`)));
+  }
+  if (optionalFailures.length > 0) {
+    console.log(
+      c.yellow(
+        `  ${optionalFailures.length} optional check(s) failed — reported, not gating: ` +
+          optionalFailures.map((r) => r.name).join(", ") +
+          "\n",
+      ),
+    );
+  }
+
+  // ── Failed-steps summary (#0651) ─────────────────────────────────────
+  // Fixed position, at the very end of the run and short enough that `tail -20`
+  // always contains it: an agent that pipes the gate through `tail`/`grep` must
+  // still see WHICH step failed and the one command that reruns it, instead of
+  // re-running the whole gate because the failing step scrolled out of view.
+  // Printed AFTER the terminal line so `parseCheckResults` stops before it.
+  const stepByName = new Map(plan.steps.map((s) => [s.name, s]));
+  console.log(c.bold(c.cyan("\n  ── Failed steps ──")));
+  if (gatingFailures.length === 0) {
+    console.log(c.green("  ✔ none"));
+  } else {
+    for (const r of gatingFailures) {
+      const step = stepByName.get(r.name);
+      const fix = step ? formatFixCommand(step, repoRoot) : null;
+      const rerun = rerunCommandFor(r.name, profile, plan.defaultProfile, changedRef);
+      const fixPart = fix && fix !== r.command ? `fix: ${fix} · ` : "";
+      console.log(`  ${c.red("✗")} ${r.name} — ${c.dim(`${fixPart}rerun: ${rerun}`)}`);
+    }
+  }
+
+  const fileTimings = results.flatMap((r) => r.testFileTimings ?? testFileTimings(r.output ?? ""));
+  // Individual case history comes only from Vitest's structured reporter
+  // events. Step output is intentionally bounded and must never be its source.
+  const caseTimings = mergeTestCaseTimings(results.flatMap((r) => r.testCaseTimings ?? []));
+  if (fileTimings.length) {
+    heading("Slowest test files");
+    console.log(formatSlowestTestFiles(fileTimings));
+    console.log(
+      c.dim(
+        "  File totals include hook time in that file; they are not the sum of individual cases below.",
+      ),
+    );
+  }
+  if (caseTimings.length) {
+    heading("Slowest test cases");
+    console.log(formatSlowestTestCases(caseTimings));
+  }
+
+  // Persist the run for the Checks surface (#0447) before exiting. Fail-soft:
+  // visibility only, never a reason to fail an otherwise-green gate.
+  const finishedAt = new Date();
+  const validationEnd = await checkSnapshot(repoRoot, changedRef);
+  const testSteps = plan.steps.filter((s) => s.kind === "tests");
+  const testsProven =
+    testSteps.length > 0 &&
+    testSteps.every((s) =>
+      results.some(
+        (r) =>
+          r.name === s.name &&
+          (r.status === "passed" || (remoteTestsPassed && r.status === "skipped")),
+      ),
+    );
+  // Partial profiles/--step and skipped suites must never mint reusable evidence.
+  const reusableSnapshot =
+    gatingFailures.length === 0 &&
+    !opts.steps?.length &&
+    profile === (plan.defaultProfile || DEFAULT_PROFILE) &&
+    testsProven &&
+    (await compatibleCheckSnapshots(repoRoot, validationStart, validationEnd))
+      ? validationStart
+      : null;
+  const testProgress =
+    [...results]
+      .reverse()
+      .map((r) => {
+        const records = [...(r.output ?? "").matchAll(/::repoos-check-progress::([^\r\n]+)/g)];
+        if (!records.length) return null;
+        try {
+          const value = JSON.parse(records.at(-1)![1]!) as {
+            testsDone?: number;
+            testsTotal?: number;
+            testsPass?: number;
+          };
+          return Number.isInteger(value.testsDone) && Number.isInteger(value.testsTotal)
+            ? {
+                testsDone: value.testsDone,
+                testsTotal: value.testsTotal,
+                testsPass: value.testsPass,
+              }
+            : null;
+        } catch {
+          return null;
+        }
+      })
+      .find(Boolean) ?? null;
+  writeCheckRun(
+    repoRoot,
+    {
+      profile,
+      source: plan.source,
+      changedRef,
+      startedAt: runStartedAt.toISOString(),
+      finishedAt: finishedAt.toISOString(),
+      durationMs: finishedAt.getTime() - runStartedAt.getTime(),
+      // #0974: what this run waited on before its first step, so "the check
+      // sat 26 minutes" is recorded, not just remembered anecdotally.
+      waited: waitRecord
+        ? { reason: waitRecord.reason, ms: waitRecord.endedAt! - waitRecord.startedAt }
+        : undefined,
+      passed: gatingFailures.length === 0,
+      results: results.map((r) => ({
+        name: r.name,
+        status: r.status,
+        command: r.command,
+        cwd: r.cwd,
+        durationMs: r.durationMs,
+        output: r.output,
+        testFileTimings: r.testFileTimings,
+        testCaseTimings: r.testCaseTimings,
+        detail: r.detail,
+        required: r.required,
+      })),
+    },
+    cfg.cacheDir,
+  );
+
+  // Record the run in the durable history (#0564). The caller (handoff,
+  // close-out, release) identifies itself via env; a bare `repoos check`
+  // records as phase "cli" with a null task id. The store lives in the MAIN
+  // checkout (resolved at the top of this command, #0564 review) so worktree
+  // runs land in the history the server reads.
+  recordRunHistoryRow({
+    root: checkStoreRoot,
+    cacheDir: cfg.cacheDir,
+    attribution: runContext,
+    scope: changedRef ? `changed:${changedRef}` : "full",
+    worktree: repoRoot,
+    snapshot: reusableSnapshot,
+    startedAt: runStartedAt.toISOString(),
+    durationMs: finishedAt.getTime() - runStartedAt.getTime(),
+    outcome: gatingFailures.length === 0 ? "pass" : "fail",
+    failedStep: gatingFailures[0]?.name ?? null,
+    skippedSteps: results.filter((r) => r.status === "skipped").map((r) => r.name),
+    steps: completedSteps,
+    stepsDone: finalProgress?.stepsDone ?? null,
+    stepsTotal: finalProgress?.stepsTotal ?? null,
+    testFileTimings: fileTimings,
+    testCaseTimings: caseTimings,
+    testsDone: testProgress?.testsDone ?? null,
+    testsTotal: testProgress?.testsTotal ?? null,
+    detail: (() => {
+      const fallback = process.env[REPOOS_REMOTE_FALLBACK_DETAIL]?.trim();
+      const stepDetail = gatingFailures[0]?.detail ?? null;
+      // #0724: which close-out gate mode ran and why, so the Checks tab is
+      // auditable ("reused from handoff check <sha>" / "scoped N files").
+      const gateNote = process.env[REPOOS_CHECK_GATE_NOTE]?.trim();
+      const fallbackPart = (() => {
+        if (!fallback) return null;
+        const summary = summarizeRemoteFallbackDetail(fallback);
+        if (!stepDetail) return summary;
+        return `${summary} — ${stepDetail}`;
+      })();
+      const base = fallbackPart ?? stepDetail;
+      if (!gateNote) return base;
+      return base ? `${gateNote} — ${base}` : gateNote;
+    })(),
+    // The stored detail is a short log tail that routinely loses the failing
+    // test's name; keep the names themselves so "which test?" is a query.
+    failedTests: gatingFailures.flatMap((r) => extractFailedTests(r.output ?? "")),
+    // Informational isolation label (#0655) — never part of the outcome.
+    isolationNote: results.find((r) => r.isolationNote)?.isolationNote ?? null,
+    updateId: historyRunId,
+  });
+
+  process.exit(gatingFailures.length > 0 ? 1 : 0);
 }
 
 /**

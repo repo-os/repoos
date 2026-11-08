@@ -57,6 +57,15 @@ describe("hardcodedColorOffenders (#0596)", () => {
     expect(scan(src)).toEqual([]);
   });
 
+  it("flags the muted surface token when it is used as text color", () => {
+    expect(scan(["<style scoped>", ".a { color: var(--muted); }", "</style>"].join("\n"))).toEqual([
+      "Comp.vue:2  .a { color: var(--muted); }",
+    ]);
+    expect(
+      scan(["<style scoped>", ".a { background: var(--muted); }", "</style>"].join("\n")),
+    ).toEqual([]);
+  });
+
   it("ignores hex-looking text inside comments (task ids are #0444-shaped)", () => {
     const src = [
       "<style scoped>",

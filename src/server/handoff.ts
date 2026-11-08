@@ -1,3 +1,4 @@
+import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
 import {
   checkSnapshot,
   compatibleCheckSnapshots,
@@ -45,9 +46,9 @@ import {
   uncommittedWorkFiles,
   workFileFilter,
   commitTaskFile,
+  pathsChangedBetweenCommits,
+  getChangedFilePaths,
 } from "../core/git.js";
-import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
-import { acquireCheckGateLock, releaseCheckGateLock } from "./check-gate-lock.js";
 import { getGitWorker } from "./git-worker.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
@@ -313,7 +314,6 @@ async function runCheck(
         REPOOS_CHECK_TASK_ID: taskId,
         REPOOS_CHECK_PHASE: "pre-review",
         REPOOS_CHECK_STORE_ROOT: config.root,
-        REPOOS_CACHE_DIR: config.cacheDir ?? ".repoos",
       }
     : {};
   const env = {
@@ -479,21 +479,14 @@ async function describeStateDrift(
 ): Promise<string | null> {
   const parts: string[] = [];
   if (before.head !== after.head) {
-    const headDrift = await checkGateHeadDriftAllowed(
-      workdir,
-      config,
-      taskId,
-      before.head,
-      after.head,
-    );
-    if (!headDrift.ok) {
-      if (headDrift.reason.startsWith("could not determine")) {
-        parts.push(
-          `HEAD moved from ${before.head.slice(0, 8)} to ${after.head.slice(0, 8)} (${headDrift.reason})`,
-        );
-      } else {
-        parts.push(headDrift.reason);
-      }
+    const changed = await pathsChangedBetweenCommits(workdir, before.head, after.head);
+    const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${taskId}-`;
+    const bookkeepingOnly =
+      changed !== null &&
+      changed.length > 0 &&
+      changed.every((path) => path.startsWith(ownTaskPath) && path.endsWith(".md"));
+    if (!bookkeepingOnly) {
+      parts.push(`HEAD moved from ${before.head.slice(0, 8)} to ${after.head.slice(0, 8)}`);
     }
   }
   const added = after.files.filter((f) => !before.files.includes(f));
@@ -779,146 +772,148 @@ async function runHandoffFinalization(
     }
 
     onProgress?.("check");
-    await acquireCheckGateLock({
-      boardRoot: config.root,
-      cacheDir: config.cacheDir ?? ".repoos",
-      taskId: task.id,
-      branch: task.branch,
-      worktree: workdir,
-      kind: "handoff-finalize",
-    });
-    try {
-      // Remote half first (#0520). It bundles the worktree's HEAD, which after the
-      // commit gate above IS the tree the gate is about to prove — so the remote
-      // suite and the committed tree are the same object (#0512).
-      // One Debug-tab record covers the remote and local halves, so a remote
-      // failure is recorded too instead of vanishing from the board.
-      // The run's scope (#0564) comes from the same merge-base the check scopes
-      // its test step to — resolved once here so the handle metadata and the
-      // child env agree without a second resolution.
-      let checkScope = "full";
-      let changedBase: string | undefined;
-      if (opts.taskChecks && opts.onTaskCheckEvent) {
-        const { base } = await getGitWorker(config.root).branchChangesSinceBase(
-          workdir,
-          (await getGitWorker(config.root).currentBranch()) ?? "main",
-        );
-        if (base) {
-          changedBase = base;
-          checkScope = `changed:${base}`;
-        }
-      }
-      const checkHandle =
-        opts.taskChecks && opts.onTaskCheckEvent
-          ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent, {
-              scope: checkScope,
-              // The remote host is only known once its row is recorded; until
-              // then don't label the run with this (orchestrating) machine.
-              machine:
-                opts.remoteValidator && remotePreReviewEnabled(config) ? "remote host" : undefined,
-            })
-          : undefined;
-      const reusedCheck = await findReusableHandoffCheck(
-        config.root,
-        config.cacheDir,
-        task.id,
+    // Remote half first (#0520). It bundles the worktree's HEAD, which after the
+    // commit gate above IS the tree the gate is about to prove — so the remote
+    // suite and the committed tree are the same object (#0512).
+    // One Debug-tab record covers the remote and local halves, so a remote
+    // failure is recorded too instead of vanishing from the board.
+    // The run's scope (#0564) comes from the same merge-base the check scopes
+    // its test step to — resolved once here so the handle metadata and the
+    // child env agree without a second resolution.
+    let checkScope = "full";
+    let changedBase: string | undefined;
+    {
+      const { base } = await getGitWorker(config.root).branchChangesSinceBase(
         workdir,
+        (await getGitWorker(config.root).currentBranch()) ?? "main",
       );
-      const reuseNote = reusedCheck
-        ? `reused check ${reusedCheck.id} — same clean commit and main base`
+      if (base) {
+        changedBase = base;
+        checkScope = `changed:${base}`;
+      }
+    }
+    const docsOnly = isDocsOnlyCheck(
+      changedBase ? await getChangedFilePaths(workdir, changedBase) : null,
+      config.check?.docsOnlySkip !== false,
+    );
+    const checkHandle =
+      opts.taskChecks && opts.onTaskCheckEvent
+        ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent, {
+            scope: checkScope,
+            // The remote host is only known once its row is recorded; until
+            // then don't label the run with this (orchestrating) machine.
+            machine:
+              !docsOnly && opts.remoteValidator && remotePreReviewEnabled(config)
+                ? "remote host"
+                : undefined,
+          })
         : undefined;
-      if (reuseNote) {
-        opts.onTaskLog?.(task.id, "info", reuseNote);
-        checkHandle?.chunk?.(`\n[${reuseNote}]\n`);
-      }
-      let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
-      if (!reusedCheck && opts.remoteValidator && remotePreReviewEnabled(config)) {
-        remoteOutcome = await runRemotePreReviewGate({
-          config,
-          remoteValidator: opts.remoteValidator,
-          worktreePath: workdir,
-          taskId: task.id,
-          phase: "pre-review",
-          kind: "handoff",
-          onChunk: checkHandle?.chunk,
-          deadlineAt: handoffDeadlineAt,
-        });
-        if (remoteOutcome.kind === "fail") {
-          checkHandle?.done(1);
-          return {
-            ok: false,
-            step: "check",
-            detail: remoteOutcome.detail,
-            checkRetryable: remoteOutcome.retryable,
-          };
-        }
-      }
-      const check = await runCheck(
-        workdir,
+    const reusedCheck = await findReusableHandoffCheck(
+      config.root,
+      config.cacheDir,
+      task.id,
+      workdir,
+    );
+    const reuseNote = reusedCheck
+      ? `reused check ${reusedCheck.id} — same clean commit and main base`
+      : undefined;
+    if (reuseNote) {
+      opts.onTaskLog?.(task.id, "info", reuseNote);
+      checkHandle?.chunk?.(`\n[${reuseNote}]\n`);
+    }
+    if (docsOnly) {
+      opts.onTaskLog?.(task.id, "info", DOCS_ONLY_SKIP_REASON);
+      checkHandle?.chunk?.(`\n[${DOCS_ONLY_SKIP_REASON}]\n`);
+    }
+    let remoteOutcome: RemotePreReviewOutcome | { kind: "skip" } = { kind: "skip" };
+    if (!docsOnly && !reusedCheck && opts.remoteValidator && remotePreReviewEnabled(config)) {
+      remoteOutcome = await runRemotePreReviewGate({
         config,
-        (chunk) => {
-          checkHandle?.chunk?.(chunk);
-          opts.onCheckProgress?.(chunk);
-        },
-        {
-          ...checkEnvAfterRemoteGate(remoteOutcome, config),
-          ...(reuseNote
-            ? {
-                REPOOS_SKIP_TESTS: "1",
-                [REPOOS_REMOTE_VALIDATION_DONE]: "1",
-                [REPOOS_CHECK_GATE_NOTE]: reuseNote,
-              }
-            : {}),
-        },
-        remoteOutcome,
-        task.id,
-        changedBase,
-        checkHandle ? (cancel) => checkHandle.setCancel(cancel) : undefined,
+        remoteValidator: opts.remoteValidator,
+        worktreePath: workdir,
+        taskId: task.id,
+        phase: "pre-review",
+        kind: "handoff",
+        onChunk: checkHandle?.chunk,
+        deadlineAt: handoffDeadlineAt,
+      });
+      if (remoteOutcome.kind === "fail") {
+        checkHandle?.done(1);
+        return {
+          ok: false,
+          step: "check",
+          detail: remoteOutcome.detail,
+          checkRetryable: remoteOutcome.retryable,
+        };
+      }
+    }
+    const check = await runCheck(
+      workdir,
+      config,
+      (chunk) => {
+        checkHandle?.chunk?.(chunk);
+        opts.onCheckProgress?.(chunk);
+      },
+      {
+        ...checkEnvAfterRemoteGate(remoteOutcome, config),
+        ...(reuseNote
+          ? {
+              REPOOS_SKIP_TESTS: "1",
+              [REPOOS_REMOTE_VALIDATION_DONE]: "1",
+              [REPOOS_CHECK_GATE_NOTE]: reuseNote,
+            }
+          : {}),
+      },
+      remoteOutcome,
+      task.id,
+      changedBase,
+      checkHandle ? (cancel) => checkHandle.setCancel(cancel) : undefined,
+    );
+    checkHandle?.done(check.status);
+    const checkOutput = `${check.stdout}\n${check.stderr}`;
+    if (check.status !== 0) {
+      return fail("check", `repoos check failed: ${buildLastCheckFailureSummary(checkOutput)}`);
+    }
+    if (checkRunSkipped(checkOutput)) {
+      const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
+      if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
+        return fail("check", BRANCH_ADDS_PROJECT_NO_CHECK_PLAN);
+      }
+    }
+    if (reusedCheck) {
+      const current = await checkSnapshot(workdir);
+      if (
+        !reusedCheck.candidateSha ||
+        !reusedCheck.reuseContext ||
+        !(await compatibleCheckSnapshots(
+          workdir,
+          { candidateSha: reusedCheck.candidateSha, ...reusedCheck.reuseContext },
+          current,
+        ))
+      ) {
+        return fail("check", "reused check inputs changed during handoff — run the check again");
+      }
+    }
+    clearCheckRetryCount(config.root, task.absPath);
+
+    // Nothing may change underneath the gate (#0512). The gate's verdict is
+    // about one exact tree; a file rewritten while it ran — the #0506
+    // `style.css` flip — would make a green check describe code that is no
+    // longer what HEAD holds. Fail loudly instead of moving to `review` on a
+    // result that no longer describes anything.
+    let after: WorktreeState;
+    try {
+      after = await worktreeState(workdir, config);
+    } catch (error) {
+      return fail(
+        "check",
+        `the gate passed but the worktree's state could not be re-checked (${(error as Error).message}) — refusing to hand off a result that cannot be tied to a tree`,
       );
-      checkHandle?.done(check.status);
-      const checkOutput = `${check.stdout}\n${check.stderr}`;
-      if (check.status !== 0) {
-        return fail("check", `repoos check failed: ${buildLastCheckFailureSummary(checkOutput)}`);
-      }
-      if (checkRunSkipped(checkOutput)) {
-        const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
-        if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
-          return fail("check", BRANCH_ADDS_PROJECT_NO_CHECK_PLAN);
-        }
-      }
-      if (reusedCheck) {
-        const current = await checkSnapshot(workdir);
-        if (
-          !reusedCheck.candidateSha ||
-          !reusedCheck.reuseContext ||
-          !(await compatibleCheckSnapshots(
-            workdir,
-            { candidateSha: reusedCheck.candidateSha, ...reusedCheck.reuseContext },
-            current,
-          ))
-        ) {
-          return fail("check", "reused check inputs changed during handoff — run the check again");
-        }
-      }
-      clearCheckRetryCount(config.root, task.absPath);
+    }
+    const drift = await describeStateDrift(workdir, config, task.id, before, after);
+    if (drift) return fail("check", drift);
 
-      // Nothing may change underneath the gate (#0512). The gate's verdict is
-      // about one exact tree; a file rewritten while it ran — the #0506
-      // `style.css` flip — would make a green check describe code that is no
-      // longer what HEAD holds. Fail loudly instead of moving to `review` on a
-      // result that no longer describes anything.
-      let after: WorktreeState;
-      try {
-        after = await worktreeState(workdir, config);
-      } catch (error) {
-        return fail(
-          "check",
-          `the gate passed but the worktree's state could not be re-checked (${(error as Error).message}) — refusing to hand off a result that cannot be tied to a tree`,
-        );
-      }
-      const drift = await describeStateDrift(workdir, config, task.id, before, after);
-      if (drift) return fail("check", drift);
-
+    if (!opts.skipChecks) {
       // #0734: use the CANONICAL task body for declarations (task.body), not a
       // possibly-stale worktree copy — a `## Shots` edit on the board must be
       // honored without breaking branch source validation (which still runs
@@ -949,8 +944,6 @@ async function runHandoffFinalization(
           return fail("verify", detail);
         }
       }
-    } finally {
-      await releaseCheckGateLock(config.root, config.cacheDir ?? ".repoos", task.id);
     }
   } else {
     // Keep the step sequence honest for a UI that renders "Running checks…":

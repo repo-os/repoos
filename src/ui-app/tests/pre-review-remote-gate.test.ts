@@ -471,6 +471,12 @@ describe("standalone `repoos check` remote failure (#0520)", () => {
       );
       git(root, ["add", "."]);
       git(root, ["commit", "-q", "-m", "init"]);
+      git(root, ["branch", "-M", "main"]);
+      git(root, ["checkout", "-q", "-b", "feature"]);
+      mkdirSync(join(root, "src"));
+      writeFileSync(join(root, "src", "change.ts"), "export const changed = true;\n");
+      git(root, ["add", "src/change.ts"]);
+      git(root, ["commit", "-q", "-m", "code change"]);
 
       const res = spawnSync(process.execPath, [cli, "check"], {
         cwd: root,

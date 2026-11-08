@@ -2,16 +2,21 @@
 id: "1066"
 title: "Pipeline view: card text uses --muted (a background token), unreadable in every theme"
 type: bug
-status: active
+status: done
 paths: [src/ui-app/src/components/PipelineCard.vue, src/ui-app/src/style.css]
 priority: p1
 area: web
+merged_commit: 72273eeec7092198daede2e6ab124192b87481d0
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T15:10:01Z"
+updated_at: "2026-11-08T17:14:03Z"
+last_close_out_gate_ms: 1154947
+last_close_out_gate_at: "2026-11-08T17:13:37.287Z"
+review_passes: 1
 handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-11-08T15:22:23.159Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 On the Work > Pipeline view, the task id, type/priority chips, elapsed time, model/agent line and host label on every card are almost invisible, in every theme (light and dark). The Board view is fine.
@@ -93,3 +98,16 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T14:58:57Z · message_queued at 2026-11-08T14:58:57.151Z
 - 2026-11-08T15:09:59Z · status ready→active
 - 2026-11-08T15:10:01Z · message_delivered: 1 message(s)
+- 2026-11-08T15:10:35Z · body
+- 2026-11-08T15:16:35Z · body
+- 2026-11-08T15:17:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented the secondary-text fixes in [PipelineCard.vue](/Users/nick/code/nick/repoos-worktrees/feat/pipeline-view-card-text-uses-muted-a-bac/src/ui-app/src/components/PipelineCard.vue) and [style.css](/Users/nick/code/nick/repoos-worktr… · stderr: Reading additional input from stdin...
+- 2026-11-08T15:22:23Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
+- 2026-11-08T15:27:23Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T15:27:23Z · note: handoff requested (cli)
+- 2026-11-08T15:29:07Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T15:29:07Z · status active→review
+- 2026-11-08T15:29:07Z · message_queued at 2026-11-08T15:29:07.619Z
+- 2026-11-08T15:30:39Z · note: review pass 1: good to go
+- 2026-11-08T15:57:53Z · message_delivered: 1 message(s)
+- 2026-11-08T17:13:37Z · close-out gate completed in 1155s
+- 2026-11-08T17:14:03Z · status done→done, release:success
