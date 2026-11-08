@@ -2,7 +2,7 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -262,3 +262,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T00:28:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the required `main` sync can’t run through RepoOS while this agent turn is active. The task prohibits manual staging and commits, so E1 remains and I can’t hand off a valid branch. No handoff requested. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
 - 2026-11-08T00:31:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T00:31:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** the worktree is clean at `831c9b03`, and `repoos sync 1050` still refuses because this agent turn is active. The required sync to drop E1 can’t be completed under the no-manual-stage/commit instruction. No handoff requested. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:31:33Z · status active→review
