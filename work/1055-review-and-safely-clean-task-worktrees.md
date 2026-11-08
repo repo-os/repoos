@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1055"
 title: Review and safely clean task worktrees
 type: chore
@@ -10,7 +11,6 @@ created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
 updated_at: "2026-11-08T00:00:34Z"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 
@@ -48,3 +48,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-07T23:53:24Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I stopped before cleanup because the only GC candidate is this active #1055 worktree. `repoos status --json` warned that it was reporting the main checkout and associated the candidate with task #1008, so running `repoos gc --yes` could re… · stderr: Reading additional input from stdin...
 - 2026-11-07T23:59:36Z · body
 - 2026-11-08T00:00:34Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: `REPOOS_CHECK_CHANGED=main repoos check` passed. The report records the before snapshot, all retained reasons, and the blocker. The cleanup is still incomplete: the sole GC candidate is this active #1055 worktree, though RepoOS associates … · stderr: (empty)
+
