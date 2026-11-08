@@ -526,17 +526,24 @@ describe("ModelProvidersPanel — Muse live data", () => {
     ).toBe(true);
   });
 
-  it("shows a retryable error when the session is not logged in", async () => {
+  it("shows the CLI install and login message with Retry when Muse is unavailable", async () => {
     stubFetch([
       providersRoute(providersFixture()),
-      museUsageRoute({ error: "muse usage: not logged in: run `muse login` first" }, 502),
+      museUsageRoute({
+        kind: "muse",
+        tier: null,
+        windows: [],
+        unrecognized: false,
+        message: "Muse CLI is not on PATH — install it, then run `muse login` on this machine.",
+      }),
     ]);
     const wrapper = mount(ModelProvidersPanel);
     await flushPromises();
     await nextTick();
 
     const row = wrapper.findAll(".mp-row")[8];
-    expect(row.text()).toContain("not logged in");
+    expect(row.text()).toContain("Muse CLI is not on PATH");
+    expect(row.text()).toContain("run `muse login`");
     expect(row.find(".mp-retry").exists()).toBe(true);
     // The dashboard link-out is still one click away.
     expect(row.find(".mp-dash-link").attributes("href")).toBe("https://dev.meta.ai/docs/muse-code");
