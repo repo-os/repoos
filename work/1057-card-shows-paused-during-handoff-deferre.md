@@ -18,7 +18,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T03:04:56Z"
+updated_at: "2026-11-08T03:08:14Z"
 last_check_failure: "repoos check at 2026-11-08T02:03:13.154Z: repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯"
 handoff_signal_retry_count: 1
 dev_error_count: 3
@@ -90,3 +90,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T02:59:17Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · server-side finalization timed out (deadline exceeded) · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-11-08T03:04:56Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-08T03:04:56Z · note: handoff requested (cli)
+- 2026-11-08T03:08:14Z · CTO nudge: held — handoff gate is running
