@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T06:48:05Z"
+updated_at: "2026-11-08T06:53:14Z"
 dev_error_count: 12
 ---
 ## Items
@@ -135,3 +135,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T06:18:14Z · note: adopted orphaned engineer pid 26761
 - 2026-11-08T06:36:46Z · body
 - 2026-11-08T06:48:05Z · body
+- 2026-11-08T06:53:14Z · CTO nudge: held — handoff gate is running
