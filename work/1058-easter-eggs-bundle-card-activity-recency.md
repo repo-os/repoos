@@ -3,9 +3,6 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p3
 area: web
 assigned_to: ai
@@ -92,3 +89,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T03:26:33Z · needs_input
 - 2026-11-08T03:26:33Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-08T03:36:53Z · engineer crash recovery: resuming cursor + composer-2.5 (4/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T03:36:53Z · needs_input
