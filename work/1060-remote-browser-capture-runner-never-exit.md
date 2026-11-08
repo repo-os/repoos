@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -209,3 +209,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T13:22:30Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T13:22:30Z · message_queued at 2026-11-08T13:22:30.369Z
 - 2026-11-08T13:22:30Z · ↻ resuming engineer to read queued message
+- 2026-11-08T13:22:30Z · status active→review
