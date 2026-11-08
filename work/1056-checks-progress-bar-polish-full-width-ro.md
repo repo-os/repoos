@@ -3,6 +3,9 @@ id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection failed repeatedly"
 priority: p3
 area: web
 assigned_to: ai
@@ -13,7 +16,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T01:50:48Z"
+updated_at: "2026-11-08T01:58:23Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T01:58:23.195Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -76,3 +81,5 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T01:45:00Z · body
 - 2026-11-08T01:50:13Z · body
 - 2026-11-08T01:50:19Z · body
+- 2026-11-08T01:58:23Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-08T01:58:23Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
