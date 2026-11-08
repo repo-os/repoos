@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T06:01:25Z"
+updated_at: "2026-11-08T06:18:14Z"
 dev_error_count: 12
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T05:57:17.343Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -62,10 +62,10 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-overlay-layer=\"floating\"]",
 "steps": [
 {
-  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "state": "board:activeCoding"
@@ -133,3 +133,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T06:00:21Z · needs_input
 - 2026-11-08T06:00:21Z · message_delivered: 1 message(s)
 - 2026-11-08T06:01:25Z · body
+- 2026-11-08T06:18:14Z · note: adopted orphaned engineer pid 26761
