@@ -19,8 +19,10 @@ in the run-specific artifact directory during an in-flight capture, remove the
 corresponding container if it has not exited, and record a force-collection
 event on the task. `validate.sh` repeats the same completed-capture reap at host
 startup for running leftovers; the Mac-side periodic reaper uses the shared
-`runValidationContainerReaper` sweep on idle hosts (Tailscale pool hosts and the
-warm Hetzner VM). A failed handoff cancels that task's queued and active
+`runValidationContainerReaper` sweep on probed hosts (Tailscale pool hosts and the
+warm Hetzner VM), including while a capture is still tracked as live — completed
+shot containers are rechecked for the completion log, quiet logs, and idle CPU
+before removal. A failed handoff cancels that task's queued and active
 captures on both providers; remote kills are bounded and failures are recorded
 explicitly instead of reporting success when SSH cannot remove the container.
 
