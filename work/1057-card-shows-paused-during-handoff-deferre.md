@@ -26,7 +26,6 @@ review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T08:54:24.591Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
