@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-08T08:33:22Z"
-review_passes: 2
+last_close_out_gate_ms: 124316
+last_close_out_gate_at: "2026-11-08T08:42:18.732Z"
 id: "0963"
 title: Build the simplified client project board
 type: feature
@@ -17,6 +17,8 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
+updated_at: "2026-11-08T08:42:18Z"
+review_passes: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T08:15:08.792Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
@@ -135,4 +137,5 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T08:28:41Z · body
 - 2026-11-08T08:29:13Z · message_queued at 2026-11-08T08:29:13.934Z
 - 2026-11-08T08:33:22Z · note: review pass 2: good to go
+- 2026-11-08T08:42:18Z · close-out gate completed in 124s
 
