@@ -309,3 +309,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T18:50:00Z · message_delivered: 1 message(s)
 - 2026-11-08T18:50:00Z · needs_input
 - 2026-11-08T18:50:01Z · message_queued at 2026-11-08T18:50:01.082Z
+- 2026-11-08T18:50:01Z · CTO nudge: held — an undelivered message is already queued
