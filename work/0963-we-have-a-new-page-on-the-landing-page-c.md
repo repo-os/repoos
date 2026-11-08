@@ -15,7 +15,7 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T06:49:00Z"
+updated_at: "2026-11-08T06:49:55Z"
 ---
 ## Problem
 
@@ -67,11 +67,10 @@ Out: changes to the For Clients page, client login or invites, sprints, and any 
 ```json
 [
 {
-"label": "Read-only client project board",
-"target": "default",
-"route": "/client-board",
-"highlight": ".client-board",
-"state": "board:pipeline"
+  "label": "Simplified client project board",
+  "target": "default",
+  "route": "/client-board",
+  "highlight": ".client-board"
 }
 ]
 ```
@@ -106,3 +105,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T06:43:15Z · note: handoff requested (cli)
 - 2026-11-08T06:48:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T06:49:00Z · message_delivered: 1 message(s)
+- 2026-11-08T06:49:55Z · body
