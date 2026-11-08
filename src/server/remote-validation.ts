@@ -1186,12 +1186,32 @@ export function remoteRunHasGateExit(output: string): boolean {
   return /\[validate\] gate exit \d+/.test(output);
 }
 
+/** True once the in-container browser capture step has written its summary (#1060). */
+export function remoteRunBrowserCaptureFinished(output: string): boolean {
+  return /\[browser-capture\] runner browser capture (?:completed|reported failures)/.test(output);
+}
+
+/** Gate exit marker or a finished browser-capture step (#1060). */
+export function remoteRunHasTerminalOutput(output: string, browserCapture: boolean): boolean {
+  return (
+    remoteRunHasGateExit(output) || (browserCapture && remoteRunBrowserCaptureFinished(output))
+  );
+}
+
 /** Parse the gate exit code from streamed output, when present (#0739). */
 export function parseRemoteGateExitCode(output: string): number | null {
   const m = output.match(/\[validate\] gate exit (\d+)/);
   if (!m) return null;
   const code = Number(m[1]);
   return Number.isFinite(code) ? code : null;
+}
+
+/** Parse a finished remote run's exit code from streamed output (#1060). */
+export function parseRemoteRunExitCode(output: string, browserCapture: boolean): number | null {
+  const gate = parseRemoteGateExitCode(output);
+  if (gate !== null) return gate;
+  if (!browserCapture || !remoteRunBrowserCaptureFinished(output)) return null;
+  return /\[browser-capture\] runner browser capture completed/.test(output) ? 0 : 1;
 }
 
 /** validate.sh: bundle/mirror transport — never a test result (#0717). */
@@ -6424,7 +6444,7 @@ export class TailscaleRunner implements RemoteValidator {
           if (gateLingerTimer) return;
           gateLingerTimer = setTimeout(() => {
             abortMainRemote?.();
-            const gateCode = parseRemoteGateExitCode(streamBuf);
+            const gateCode = parseRemoteRunExitCode(streamBuf, !!opts.browserCapture);
             gateLingerResolve?.({
               code: gateCode ?? 1,
               output: streamBuf,
@@ -6572,7 +6592,7 @@ export class TailscaleRunner implements RemoteValidator {
             outerTimeoutMs = this.timings.remoteRunTimeoutMs;
           }
           advanceStepStage();
-          if (!gateFinished && remoteRunHasGateExit(streamBuf)) {
+          if (!gateFinished && remoteRunHasTerminalOutput(streamBuf, !!opts.browserCapture)) {
             gateFinished = true;
             watchdog.stop();
             scheduleGateLingerAbort();
@@ -6629,7 +6649,7 @@ export class TailscaleRunner implements RemoteValidator {
           }
         }
         if (gateFinished) {
-          const gateCode = parseRemoteGateExitCode(streamBuf);
+          const gateCode = parseRemoteRunExitCode(streamBuf, !!opts.browserCapture);
           if (gateCode !== null) {
             run = {
               code: gateCode,

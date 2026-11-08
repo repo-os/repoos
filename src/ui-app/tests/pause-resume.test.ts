@@ -94,6 +94,12 @@ async function running(server: ServerHandle): Promise<RunningAgentInfo[]> {
   return body.tasks;
 }
 
+async function explicitlyPaused(server: ServerHandle): Promise<string[]> {
+  const res = await fetch(`${server.url}/api/agents/running`);
+  const body = (await res.json()) as { pausedTasks?: string[] };
+  return body.pausedTasks ?? [];
+}
+
 function alive(pid: number): boolean {
   try {
     process.kill(pid, 0);
@@ -167,6 +173,7 @@ describe("pause keeps the task active instead of reverting to ready (#0070)", ()
       expect(paused.body.ok).toBe(true);
       // The status must stay `active` — this is the core of the fix.
       expect((paused.body.task as Record<string, unknown>).status).toBe("active");
+      expect(await explicitlyPaused(server)).toContain(id);
 
       await waitForAsync(
         async () => !(await running(server)).some((r) => r.id === id),
@@ -182,6 +189,7 @@ describe("pause keeps the task active instead of reverting to ready (#0070)", ()
       const restarted = await api(server, "POST", `/api/tasks/${id}/start`);
       expect(restarted.status).toBe(200);
       expect((restarted.body.task as Record<string, unknown>).status).toBe("active");
+      expect(await explicitlyPaused(server)).not.toContain(id);
 
       await waitForAsync(
         async () => (await running(server)).some((r) => r.id === id),

@@ -3,11 +3,12 @@
  * uses, card clicks open the panel while the action icon does not, and the
  * Board | Pipeline toggle persists with Board unchanged.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
+import { createPinia, setActivePinia, type Pinia } from "pinia";
 import PipelineCard from "../src/components/PipelineCard.vue";
 import PipelineView from "../src/components/PipelineView.vue";
+import TaskCard from "../src/components/TaskCard.vue";
 import WorkView from "../src/views/WorkView.vue";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
@@ -19,7 +20,7 @@ import {
   taskInDevPass,
   taskRoundCounts,
 } from "../src/lib/pipeline-card";
-import { makeTask } from "./component-test-helpers";
+import { EMPTY_COUNTS, FakeEventSource, json, makeTask } from "./component-test-helpers";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../core/shot-fixtures.js";
 import { applyShotPreviewFixture } from "../src/lib/shot-preview-fixtures";
 
@@ -30,16 +31,22 @@ vi.mock("vue-router", () => ({
 }));
 
 let mounted: VueWrapper[] = [];
+let pinia: Pinia;
 function track(w: VueWrapper): VueWrapper {
   mounted.push(w);
   return w;
 }
 
 beforeEach(() => {
-  setActivePinia(createPinia());
+  pinia = createPinia();
+  setActivePinia(pinia);
   localStorage.clear();
   routeQuery.query = {};
   for (const w of mounted.splice(0)) w.unmount();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("pipeline-card lib", () => {
@@ -172,6 +179,59 @@ describe("PipelineCard", () => {
 });
 
 describe("PipelineView", () => {
+  function stubCardApi(
+    task: ReturnType<typeof makeTask>,
+    paused: boolean,
+    handoffRunning: boolean,
+  ): void {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/api/health"))
+          return json({ ok: true, root: "/tmp/repo", taskCount: 1, workDir: "work" });
+        if (url.includes("/api/index"))
+          return json({
+            tasks: [task],
+            counts: { ...EMPTY_COUNTS, [task.status]: 1 },
+            taskCount: 1,
+          });
+        if (url.includes("/api/agents/running"))
+          return json({ tasks: [], pausedTasks: paused ? [task.id] : [] });
+        if (url.includes("/handoff-status"))
+          return json({
+            state: handoffRunning ? "running" : "idle",
+            step: handoffRunning ? "verify" : null,
+            attempt: handoffRunning ? 1 : 0,
+            progress: null,
+          });
+        if (url.includes("/review"))
+          return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
+        if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
+        return json({ ok: true });
+      }),
+    );
+  }
+
+  async function mountBothCards(
+    task: ReturnType<typeof makeTask>,
+    paused = false,
+    handoffRunning = false,
+  ) {
+    const repo = useRepoStore();
+    repo.tasks = [task] as never;
+    repo.runningIds = [];
+    repo.pausedIds = paused ? [task.id] : [];
+    stubCardApi(task, paused, handoffRunning);
+    const board = track(
+      mount(TaskCard, { props: { task, dragEnabled: false }, global: { plugins: [pinia] } }),
+    );
+    const pipeline = track(mount(PipelineView, { attachTo: document.body }));
+    await board.vm.$nextTick();
+    await pipeline.vm.$nextTick();
+    return { board, pipeline, repo };
+  }
+
   function seedBoard(): void {
     const repo = useRepoStore();
     repo.tasks = [
@@ -203,6 +263,79 @@ describe("PipelineView", () => {
     repo.runningIds = ["1001"];
     repo.agentActivityAt = { "1001": new Date().toISOString() };
   }
+
+  it("uses the same in-flight handoff label and hides actions in both views", async () => {
+    const task = makeTask({
+      id: "1057",
+      title: "Handoff verification",
+      status: "active",
+      branch: "feat/card-status",
+      created_at: new Date(Date.now() - 10 * 60_000).toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    const { board, pipeline, repo } = await mountBothCards(task, false, true);
+    repo.handoffStatuses[task.id] = {
+      state: "running",
+      step: "verify",
+      updatedAt: new Date().toISOString(),
+      startedAt: null,
+      attempt: 1,
+      progress: null,
+      machine: null,
+    };
+    await board.vm.$nextTick();
+    await pipeline.vm.$nextTick();
+
+    const boardStatus = board.find('[data-test-id="task-card-check-status-line"]').text();
+    const pipelineCard = pipeline.find(`[data-task-id="${task.id}"]`);
+    expect(pipelineCard.find(".pl-step").text()).toBe(boardStatus);
+    expect(boardStatus).toContain("checking verify");
+    expect(board.find('[data-test-id="task-card-action-footer"]').exists()).toBe(false);
+    expect(pipelineCard.find(".pl-action").exists()).toBe(false);
+    expect(pipelineCard.find(".pl-status-chip").exists()).toBe(false);
+  });
+
+  it("keeps an explicitly paused task paused and restartable in both views", async () => {
+    const task = makeTask({ id: "1057", status: "active", updated_at: new Date().toISOString() });
+    const { board, pipeline } = await mountBothCards(task, true);
+    await board.vm.$nextTick();
+    await pipeline.vm.$nextTick();
+
+    const boardStatus = board.find('[data-test-id="task-card-agent-hint"]').text();
+    const pipelineCard = pipeline.find(`[data-task-id="${task.id}"]`);
+    expect(pipelineCard.find(".pl-step").text()).toBe(boardStatus);
+    expect(boardStatus).toBe("Paused");
+    expect(board.find('[data-test-id="task-card-action-footer"]').text()).toContain("Restart work");
+    expect(pipelineCard.find(".pl-action").attributes("aria-label")).toContain("Restart work");
+  });
+
+  it("shows Stuck in both views only after remote validation has gone quiet", async () => {
+    const task = makeTask({ id: "1057", status: "active", updated_at: new Date().toISOString() });
+    const { board, pipeline, repo } = await mountBothCards(task);
+    const quietSince = new Date(Date.now() - 4 * 60_000).toISOString();
+    repo.taskRemoteActivity[task.id] = {
+      run: {
+        taskId: task.id,
+        host: "runner",
+        kind: "checks",
+        startedAt: quietSince,
+        elapsedMs: 4 * 60_000,
+        lastProgressAt: quietSince,
+        stage: "verify",
+        phases: [],
+      },
+      queue: null,
+    };
+    await board.vm.$nextTick();
+    await pipeline.vm.$nextTick();
+
+    const boardStatus = board.find('[data-test-id="task-card-agent-hint"]').text();
+    const pipelineCard = pipeline.find(`[data-task-id="${task.id}"]`);
+    expect(boardStatus).toBe("Stuck");
+    expect(pipelineCard.find(".pl-status-chip").text()).toBe(boardStatus);
+    expect(board.find('[data-test-id="task-card-action-footer"]').text()).toContain("Restart work");
+    expect(pipelineCard.find(".pl-action").attributes("aria-label")).toContain("Restart work");
+  });
 
   it("places active and review tasks on the track and opens the panel on click", async () => {
     setActivePinia(createPinia());
