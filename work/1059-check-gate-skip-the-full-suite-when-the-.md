@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 2
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
@@ -14,7 +13,8 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T06:20:03Z"
+updated_at: "2026-11-08T06:20:47Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 `repoos check` runs the full plan (build, format/lint, full test suite, WebKit UI smoke, contrast audit) even when a task's diff contains only task bookkeeping under `work/` (task file, `work/reports/<id>/*`) or other non-code files. Example: #1055 (the weekly worktree cleanup) changed 11 files, all under `work/`, and still waited for a remote-validation slot and ran the full 680-file suite on every handoff attempt, repeating after each outage or capture timeout. That is minutes to hours of wasted time and runner load for a change that cannot affect behavior. The recurring weekly cleanup will hit this every run.
@@ -47,4 +47,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T06:10:32Z · message_queued at 2026-11-08T06:10:32.950Z
 - 2026-11-08T06:14:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T06:20:03Z · message_delivered: 1 message(s)
-
+- 2026-11-08T06:20:47Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1059 is still active and has no implementation changes on its branch. The worktree is clean, and no handoff has been requested. I have not implemented the gate or run `repoos check`, so I cannot truthfully emit the handoff signal. · stderr: (empty)
