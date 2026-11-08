@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p3
 area: web
 assigned_to: ai
@@ -474,3 +477,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:08:32Z · status active→review
 - 2026-11-08T21:08:33Z · message_queued at 2026-11-08T21:08:33.083Z
 - 2026-11-08T21:09:24Z · note: review pass 7: needs some work
+- 2026-11-08T21:09:24Z · needs_input
