@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T13:09:26Z"
+updated_at: "2026-11-08T13:09:27Z"
 review_passes: 6
 review_rounds: 2
 handoff_signal_retry_count: 2
