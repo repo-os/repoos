@@ -25,7 +25,6 @@ routing_escalations: 1
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T19:51:20.419Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T20:21:05.967Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T01:53:33.147Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T01:53:50.419Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T01:54:07.188Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T01:55:33.606Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T01:57:01.517Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T01:58:24.114Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Items
@@ -102,10 +101,10 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 "highlight": "[data-testid=\"repo-dirty-panel\"]",
 "steps": [
 {
-  "click": "[data-test-id=\"side-git-dirty\"]"
+"click": "[data-test-id=\"side-git-dirty\"]"
 },
 {
-  "waitMs": 600
+"waitMs": 600
 }
 ],
 "state": "repo:dirtyMain"
