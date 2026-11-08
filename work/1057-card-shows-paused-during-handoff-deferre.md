@@ -93,3 +93,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T03:08:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T03:16:08Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (62f0e7e97) during finalization (#0734)
 - 2026-11-08T03:23:20Z · message_queued at 2026-11-08T03:23:20.083Z
+- 2026-11-08T03:23:20Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
