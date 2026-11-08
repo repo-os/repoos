@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T09:28:26Z"
+updated_at: "2026-11-08T09:29:09Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -94,3 +94,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T09:23:16Z · message_queued at 2026-11-08T09:23:16.389Z
 - 2026-11-08T09:28:26Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-08T09:28:26Z · note: handoff requested (cli)
+- 2026-11-08T09:29:09Z · CTO nudge: held — handoff gate is running
