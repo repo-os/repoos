@@ -148,7 +148,24 @@ describe("TaskCard activity recency (#1058)", () => {
     repo.runningIds = ["1058"];
     repo.runningSince = { "1058": "2026-11-08T02:59:00.000Z" };
     repo.agentActivityAt = { "1058": "2026-11-08T02:59:00.000Z" };
-    repo.taskChecks = { "1058": [{ running: true }] } as never;
+    repo.taskChecks = {
+      "1058": [
+        {
+          id: "check-1058",
+          taskId: "1058",
+          kind: "handoff-finalize",
+          startedAt: "2026-11-08T02:59:00.000Z",
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "local",
+        },
+      ],
+    };
     const wrapper = mount(TaskCard, {
       props: { task: baseTask(), dragEnabled: false },
       global: { plugins: [pinia] },
@@ -253,15 +270,27 @@ describe("PipelineCard activity recency (#1058)", () => {
   it("keeps last-activity recency available on check progress", () => {
     const wrapper = mount(PipelineCard, {
       props: {
-        taskId: "1058", type: "chore", priority: "p3", title: "Fixture", state: "ok",
-        statusSignals: null, stepLabel: "Running checks", chipText: null,
-        stateSince: "2026-11-08T02:48:00.000Z", lastActivityAt: "2026-11-08T02:59:00.000Z",
-        nowMs: Date.parse("2026-11-08T03:00:00.000Z"), roundsLabel: "D0 · R0",
-        reviewerTone: null, modelsLabel: "eng / rev", hostLabel: "local", action: null,
+        taskId: "1058",
+        type: "chore",
+        priority: "p3",
+        title: "Fixture",
+        state: "ok",
+        statusSignals: null,
+        stepLabel: "Running checks",
+        chipText: null,
+        stateSince: "2026-11-08T02:48:00.000Z",
+        lastActivityAt: "2026-11-08T02:59:00.000Z",
+        nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+        roundsLabel: "D0 · R0",
+        reviewerTone: null,
+        modelsLabel: "eng / rev",
+        hostLabel: "local",
+        action: null,
         checkProgress: { stepsDone: 1, stepsTotal: 2 },
       },
     });
-    expect(wrapper.get('[data-test-id="pipeline-card-check-progress"]').attributes("data-tip"))
-      .toMatch(/Active 1m ago/i);
+    expect(
+      wrapper.get('[data-test-id="pipeline-card-check-progress"]').attributes("data-tip"),
+    ).toMatch(/Active 1m ago/i);
   });
 });
