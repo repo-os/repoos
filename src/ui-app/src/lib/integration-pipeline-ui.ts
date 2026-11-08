@@ -1,5 +1,5 @@
 import type { CloseOutOutcomeEvent, IntegrationPipelineSnapshot } from "../types";
-import { formatDuration } from "./time";
+import { formatDuration, fmtFullDateTime } from "./time";
 
 /** Default stall window when the active close-out reports no stage progress (#0740). */
 export const DEFAULT_INTEGRATION_STALL_MS = 3 * 60 * 1000;
@@ -169,6 +169,8 @@ export interface IntegrationActiveCopy {
   label: string;
   title: string;
   stalled: boolean;
+  /** Elapsed close-out time for the hover popover when omitted from the line (#1058). */
+  elapsedTip?: string;
 }
 
 const INTEGRATING_PREFIX = "integrating · ";
@@ -217,26 +219,39 @@ export function integrationActiveCopy(
   }
   const stage = integrationStageLabel(active.stage);
   const elapsed = integrationElapsedMs(active.startedAt, nowMs);
-  const elapsedBit = elapsed !== null ? ` · ${formatDuration(elapsed)}` : "";
+  const elapsedTip =
+    elapsed !== null ? integrationCloseOutElapsedTip(active, elapsed) : undefined;
   const detail = active.detail?.trim();
   if (detail) {
     return {
       // A live in-stage detail line — the #0782 bundle upload or a #0799
       // heartbeat naming the current long stage (e.g. "remote tests").
-      label: `integrating · ${detail}${elapsedBit}`,
+      label: `integrating · ${detail}`,
       title:
         "Close-out is working — the detail line shows the current step. Progress refreshes every few seconds; the job is only flagged stalled when nothing arrives for a while.",
       stalled: false,
+      elapsedTip,
     };
   }
   return {
-    label: `integrating · ${stage}${elapsedBit}`,
+    label: `integrating · ${stage}`,
     title:
       active.stage === "resolve-conflict"
         ? "Resolving an integration conflict against current main in an isolated candidate — the original review is preserved and only the resolution delta is reviewed."
         : "Move to done is running — merging, building, and checking. See the pipeline bar for live progress.",
     stalled: false,
+    elapsedTip,
   };
+}
+
+function integrationCloseOutElapsedTip(
+  active: NonNullable<IntegrationPipelineSnapshot["active"]>,
+  elapsedMs: number,
+): string {
+  const dur = formatDuration(elapsedMs);
+  const headline = dur === "0s" ? "Close-out running just now" : `Close-out running ${dur}`;
+  const stamp = fmtFullDateTime(active.lastProgressAt ?? active.startedAt);
+  return stamp ? `${headline}\n${stamp}` : headline;
 }
 
 export interface IntegrationQueuedCopy {

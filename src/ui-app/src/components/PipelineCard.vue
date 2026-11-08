@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { formatPipelineElapsed, type PipelineCardState } from "../../../core/pipeline-view.js";
+import { stateElapsedTip } from "../lib/card-activity-recency";
 import type { CheckProgress } from "../lib/check-progress";
 import ChecksProgressDisplay from "./ChecksProgressDisplay.vue";
 
@@ -36,6 +37,10 @@ const emit = defineEmits<{
 }>();
 
 const elapsed = computed(() => formatPipelineElapsed(props.stateSince, props.nowMs));
+const showElapsedInline = computed(() => props.state !== "ok");
+const elapsedTip = computed(() =>
+  stateElapsedTip("In this state", props.stateSince, props.nowMs),
+);
 
 function open(): void {
   emit("open", props.taskId);
@@ -104,10 +109,19 @@ function onKey(e: KeyboardEvent): void {
       <span v-if="chipText" class="pl-status-chip">{{ chipText }}</span>
       <template v-else>
         <span class="pl-dot" aria-hidden="true"></span>
-        <span class="pl-step">{{ stepLabel }}</span>
+        <span
+          class="pl-step"
+          :class="{ 'pl-step--recency-tip': !showElapsedInline && elapsedTip }"
+          :tabindex="!showElapsedInline && elapsedTip ? 0 : undefined"
+          :data-tip="!showElapsedInline && elapsedTip ? elapsedTip : undefined"
+        >
+          {{ stepLabel }}
+        </span>
       </template>
       <span class="pl-spacer"></span>
-      <span class="pl-elapsed">{{ elapsed }}</span>
+      <span v-if="showElapsedInline" class="pl-elapsed" data-test-id="pipeline-card-elapsed">
+        {{ elapsed }}
+      </span>
     </div>
     <ChecksProgressDisplay
       v-if="checkProgress"
