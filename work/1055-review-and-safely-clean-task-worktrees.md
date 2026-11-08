@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T01:32:58Z"
+updated_at: "2026-11-08T01:35:09Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -33,18 +33,19 @@ This is the recurring hygiene pass. On each run, review the registered worktrees
 - [ ] No product code was edited, nothing was pushed, and no unrelated task was started. The diff contains only this task's own task file and report files.
 
 ## Notes for AI
-
 Runbook:
 
+0. This scheduled maintenance pass must run with RepoOS rooted at the main checkout, not from its linked task worktree. Before the inventory, check the `repoos status --json` root and warning. If it warns that it is reporting the main checkout because the command was invoked from a linked worktree, stop before `repoos gc --yes` and record the run as blocked for root resolution. In that situation status and GC can associate the current physical worktree with a stale/different task ID; do not treat a candidate matching the current worktree path as safe, even if its reported task status is done. Rerun from the main checkout context.
 1. Re-read `AGENTS.md`, `repoos driver brief`, and `repoos list`. Check the live state of any task referenced by a retained worktree before judging it.
 2. Run `repoos status --json` and `repoos gc --dry-run`. Record the current count, safe candidates, and protected reasons.
-3. If RepoOS reports safe candidates, apply its own guarded cleanup with `repoos gc --yes`, then verify with another `repoos status --json` and `repoos gc --dry-run`.
+3. If RepoOS reports safe candidates, first confirm none is the physical checkout running this task and that the status root is the expected main checkout. Apply cleanup only with `repoos gc --yes`, then verify with another `repoos status --json` plus `repoos gc --dry-run`.
 4. Never remove a worktree or branch by hand. Never clean active, review, held, human-assigned, dirty, or unmerged task work. Do not reset task files to main based only on their path. Leave unresolved done/archived worktrees for the safety rules tracked in #1004.
-5. Record before and after counts and the protected worktrees in this task's handoff report. If there are no safe candidates, report that and finish without changing anything.
+5. Record before and after counts and every protected worktree with the exact reason in this task's handoff report. If there are no safe candidates, report that and finish without changing anything. If the root-resolution guard fires, report it as a blocker rather than claiming a completed cleanup pass.
 
 Do not edit product code, push, or start unrelated tasks as part of this run.
 
 Context: `repoos gc` is the only sanctioned way to remove worktrees and branches; it decides what is safe. Worktrees outside RepoOS's managed task-worktree directory (for example other tools' worktrees) are not this task's to remove. This task comes from the "Safe worktree cleanup" schedule in `schedules/`; a normal run has an empty code diff, so there is nothing for the scoped check to test beyond the task's own files. Once #1004 lands and changes what `repoos gc` collects, update this runbook and the schedule template to match.
+
 
 ## Activity
 
@@ -114,3 +115,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:32:57Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-08T01:32:58Z · message_delivered: 2 message(s)
 - 2026-11-08T01:32:58Z · status review→active
+- 2026-11-08T01:35:09Z · body: Notes for AI (added 3, removed 2)
