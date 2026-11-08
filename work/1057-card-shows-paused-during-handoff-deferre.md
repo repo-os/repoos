@@ -89,3 +89,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T02:54:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T02:59:17Z · watchdog: escalated to needs_input · check-failed-after-retries · check failed after 2 automatic retries · server-side finalization timed out (deadline exceeded) · next step: resume the session manually from the task's worktree and check for uncommitted work
 - 2026-11-08T03:04:56Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-08T03:04:56Z · note: handoff requested (cli)
