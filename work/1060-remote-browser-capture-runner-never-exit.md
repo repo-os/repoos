@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -13,10 +13,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T12:23:19Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1b08275e to 9a7f1043) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 1b08275ec8bd2e717f7b50dde34958c433c48e20
-review_passes: 4
+updated_at: "2026-11-08T12:42:58Z"
+review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 8
@@ -176,3 +174,12 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T12:09:13Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-08T12:19:27Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-08T12:23:19Z · note: adopted orphaned engineer pid 14696
+- 2026-11-08T12:31:32Z · body
+- 2026-11-08T12:38:17Z · message_queued at 2026-11-08T12:38:17.663Z
+- 2026-11-08T12:38:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T12:39:48Z · status active→review
+- 2026-11-08T12:39:48Z · note: shots: skipped — the diff (23 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-08T12:40:23Z · message_queued at 2026-11-08T12:40:23.973Z
+- 2026-11-08T12:42:48Z · note: review pass 5: needs some work
+- 2026-11-08T12:42:48Z · needs_input
+- 2026-11-08T12:42:58Z · needs_input (review-rounds-exhausted) cleared for review again by human
