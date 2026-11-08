@@ -3,6 +3,9 @@ id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Cannot use this model: composer-2.5. Available models:"
 priority: p3
 area: web
 assigned_to: ai
@@ -13,11 +16,12 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T05:53:10Z"
+updated_at: "2026-11-08T05:56:41Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-dev_error_count: 9
+dev_error_count: 10
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T05:56:41.582Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -132,3 +136,5 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T05:53:09Z · note: review pass 1: needs some work
 - 2026-11-08T05:53:10Z · message_delivered: 1 message(s)
 - 2026-11-08T05:53:10Z · status review→active
+- 2026-11-08T05:56:41Z · agent exited with an error (cursor) · Cannot use this model: composer-2.5. Available models:
+- 2026-11-08T05:56:41Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · Cannot use this model: composer-2.5. Available models:
