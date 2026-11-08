@@ -2,7 +2,7 @@
 id: "1055"
 title: Review and safely clean task worktrees
 type: chore
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -10,6 +10,8 @@ created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
 updated_at: "2026-11-08T00:16:20Z"
+review_rounds: 1
+routing_switches: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
@@ -55,3 +57,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T00:14:50Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-08T00:16:19Z · note: review pass 1: needs some work
 - 2026-11-08T00:16:20Z · message_delivered: 1 message(s)
+- 2026-11-08T00:16:20Z · status review→active
