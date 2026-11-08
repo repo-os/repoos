@@ -2,29 +2,28 @@
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
-status: active
-needs_input: true
-needs_input_reason: check-failed-after-retries
-debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
-debug_tldr_at: "2026-11-08T02:59:35Z"
-debug_tldr_key: check-failed-after-retries|
+status: done
 priority: p2
 area: [web, core]
+merged_commit: 78f6ef2352ff150341b4a7e67d1287a4f313cc0d
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/card-shows-paused-during-handoff-deferre
-cli_override: codex
-model_override: gpt-6-luna
-review_cli_override: codex
-review_model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T07:28:14Z"
-last_check_failure: "repoos check at 2026-11-08T06:29:32.049Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 9c89e82a to 747e9d3d) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 1
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
-last_handoff_failure_sha: 62f0e7e9781363e0a9ec705ef09315f5fb9cb291
+updated_at: "2026-11-08T12:23:50Z"
+last_close_out_gate_ms: 403418
+last_close_out_gate_at: "2026-11-08T12:22:30.511Z"
+review_passes: 4
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T10:38:23.988Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+review_rounds: 1
 handoff_signal_retry_count: 1
-dev_error_count: 4
+dev_error_count: 6
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -130,3 +129,57 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T07:23:41Z · body
 - 2026-11-08T07:24:39Z · body
 - 2026-11-08T07:28:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T07:55:02Z · message_queued at 2026-11-08T07:55:02.003Z
+- 2026-11-08T07:55:05Z · message_delivered: 1 message(s)
+- 2026-11-08T07:58:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T08:03:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-08T08:03:12Z · note: handoff requested (cli)
+- 2026-11-08T08:03:12Z · body
+- 2026-11-08T08:03:13Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:22:23Z · message_queued at 2026-11-08T08:22:23.045Z
+- 2026-11-08T08:22:23Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T08:22:36Z · message_delivered: 1 message(s)
+- 2026-11-08T08:33:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T08:38:20Z · body
+- 2026-11-08T08:39:22Z · status active→review
+- 2026-11-08T08:40:24Z · note: review pass 2: needs some work
+- 2026-11-08T08:40:24Z · message_queued at 2026-11-08T08:40:24.458Z
+- 2026-11-08T08:40:24Z · status review→active
+- 2026-11-08T08:40:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:41:51Z · message_queued at 2026-11-08T08:41:51.292Z
+- 2026-11-08T08:41:54Z · message_delivered: 2 message(s)
+- 2026-11-08T08:42:08Z · engineer crash recovery: switched codex + gpt-6-luna → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · error: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 6:04 PM.
+- 2026-11-08T08:42:21Z · CTO nudge: held — remote validation is running
+- 2026-11-08T08:44:09Z · note: adopted orphaned engineer pid 11702
+- 2026-11-08T08:45:17Z · cli_override, model_override
+- 2026-11-08T08:45:21Z · review_cli_override, review_model_override
+- 2026-11-08T08:49:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Implementing counter reset when blocking queued messages are cleared: · stderr: RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-08T08:54:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T08:54:54Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-08T09:20:24Z · body
+- 2026-11-08T09:32:52Z · body
+- 2026-11-08T09:34:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T10:03:45Z · message_queued at 2026-11-08T10:03:45.706Z
+- 2026-11-08T10:03:48Z · message_delivered: 1 message(s)
+- 2026-11-08T10:04:09Z · CTO nudge: held — remote validation is running
+- 2026-11-08T10:13:11Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-08T10:13:12Z · note: handoff requested (cli)
+- 2026-11-08T10:14:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T10:25:53Z · message_queued at 2026-11-08T10:25:53.362Z
+- 2026-11-08T10:25:53Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T10:25:53Z · message_delivered: 1 message(s)
+- 2026-11-08T10:34:09Z · message_queued at 2026-11-08T10:34:09.567Z
+- 2026-11-08T10:34:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T10:35:20Z · body
+- 2026-11-08T10:35:52Z · status active→review
+- 2026-11-08T10:37:50Z · note: review pass 3: needs some work
+- 2026-11-08T10:38:20Z · message_queued at 2026-11-08T10:38:20.939Z
+- 2026-11-08T10:47:53Z · message_delivered: 1 message(s)
+- 2026-11-08T11:03:43Z · body
+- 2026-11-08T11:04:30Z · message_queued at 2026-11-08T11:04:30.710Z
+- 2026-11-08T11:08:37Z · needs_input (check-failed-after-retries) cleared for review again by human
+- 2026-11-08T11:11:39Z · note: review pass 4: good to go
+- 2026-11-08T12:09:13Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-08T12:22:30Z · close-out gate completed in 403s
+- 2026-11-08T12:23:12Z · status done→done, release:success
+- 2026-11-08T12:23:50Z · message_dropped: 1 queued message(s) discarded — task is done

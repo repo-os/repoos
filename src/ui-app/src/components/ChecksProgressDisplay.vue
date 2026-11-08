@@ -21,6 +21,8 @@ const props = withDefaults(
     /** Drawer line 3 — e.g. auto-retry 2 of 3. */
     retryLine?: string | null;
     handoffStep?: string | null;
+    /** Canonical Board/Pipeline status line for an active task. */
+    statusLine?: string | null;
     variant: "card" | "drawer" | "pipeline";
     /** Pipeline status row — step label beside the bar (e.g. "Running checks 3/680"). */
     pipelineStatusText?: string | null;
@@ -37,6 +39,7 @@ const props = withDefaults(
     machineLine: null,
     retryLine: null,
     handoffStep: null,
+    statusLine: null,
     pipelineStatusText: null,
     testId: undefined,
     showTitle: true,
@@ -58,6 +61,7 @@ const detailLabel = computed(() => {
 });
 
 const cardLine = computed(() => {
+  if (props.statusLine) return props.statusLine;
   const parts = ["Checks"];
   if (props.reused) parts.push("reused earlier check");
   else if (detailLabel.value && detailLabel.value !== "starting…") parts.push(detailLabel.value);

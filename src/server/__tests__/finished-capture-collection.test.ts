@@ -95,6 +95,7 @@ it("reaps a completed capture even when the Mac still tracks it as live", async 
   const oldCreated = new Date(Date.now() - 3 * 60_000).toISOString();
   const containerId = "0123456789ab";
   const containerName = "repoos-validate-hung";
+  const { completedCaptureTaskIdCommand } = await import("../remote-validation.js");
   const runRemote = vi.fn(async (_host, cmd) => {
     if (cmd === reaperCommand()) {
       return {
@@ -103,27 +104,38 @@ it("reaps a completed capture even when the Mac still tracks it as live", async 
         timedOut: false,
       };
     }
+    if (cmd === completedCaptureTaskIdCommand(containerId)) {
+      return { code: 0, output: "1060\n", timedOut: false };
+    }
     if (cmd === completedCaptureReaperCommand(containerId)) {
       return { code: 0, output: "", timedOut: false };
     }
     return { code: 1, output: "", timedOut: false };
   });
-  const logger = { system: vi.fn() };
-  await runValidationContainerReaper({ runRemote } as never, { ip: "100.0.0.1" } as never, {
-    liveContainerNames: new Set([containerName]),
-    logger: logger as never,
-    hostLabel: "runner",
-  });
-  expect(runRemote).toHaveBeenCalledWith(
-    expect.anything(),
-    completedCaptureReaperCommand(containerId),
-    expect.anything(),
-    30_000,
-  );
-  expect(logger.system).toHaveBeenCalledWith(
-    "info",
-    `reaped completed browser capture ${containerName} on runner: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
-  );
+  const root = mkdtempSync(join(tmpdir(), "capture-periodic-reap-"));
+  try {
+    const logger = { system: vi.fn() };
+    await runValidationContainerReaper({ runRemote } as never, { ip: "100.0.0.1" } as never, {
+      liveContainerNames: new Set([containerName]),
+      logger: logger as never,
+      hostLabel: "runner",
+      root,
+    });
+    expect(runRemote).toHaveBeenCalledWith(
+      expect.anything(),
+      completedCaptureReaperCommand(containerId),
+      expect.anything(),
+      30_000,
+    );
+    expect(logger.system).toHaveBeenCalledWith(
+      "info",
+      `reaped completed browser capture ${containerName} on runner: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
+    );
+    expect(existsSync(remoteEventsPath(root, "1060"))).toBe(true);
+    expect(readFileSync(remoteEventsPath(root, "1060"), "utf8")).toContain(containerName);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 it("records validate.sh startup reaper markers on the capture task", () => {

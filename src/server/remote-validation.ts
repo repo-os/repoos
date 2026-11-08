@@ -1205,6 +1205,18 @@ export function remoteRunHasGateExit(output: string): boolean {
   return /\[validate\] gate exit \d+/.test(output);
 }
 
+/** True once the in-container browser capture step has written its summary (#1060). */
+export function remoteRunBrowserCaptureFinished(output: string): boolean {
+  return /\[browser-capture\] runner browser capture (?:completed|reported failures)/.test(output);
+}
+
+/** Gate exit marker or a finished browser-capture step (#1060). */
+export function remoteRunHasTerminalOutput(output: string, browserCapture: boolean): boolean {
+  return (
+    remoteRunHasGateExit(output) || (browserCapture && remoteRunBrowserCaptureFinished(output))
+  );
+}
+
 /** Parse the gate exit code from streamed output, when present (#0739). */
 export function parseRemoteGateExitCode(output: string): number | null {
   const m = output.match(/\[validate\] gate exit (\d+)/);
@@ -1314,6 +1326,14 @@ export function recordValidateStartupReapedCaptures(
       infra: true,
     });
   }
+}
+
+/** Parse a finished remote run's exit code from streamed output (#1060). */
+export function parseRemoteRunExitCode(output: string, browserCapture: boolean): number | null {
+  const gate = parseRemoteGateExitCode(output);
+  if (gate !== null) return gate;
+  if (!browserCapture || !remoteRunBrowserCaptureFinished(output)) return null;
+  return /\[browser-capture\] runner browser capture completed/.test(output) ? 0 : 1;
 }
 
 /** validate.sh: bundle/mirror transport — never a test result (#0717). */
@@ -1598,6 +1618,16 @@ export function finishedCaptureCollectionCommand(paths: RemoteRunPaths, containe
   );
 }
 
+/** Read `REPOOS_BROWSER_CAPTURE_TASK` from a capture container before reaping it. */
+export function completedCaptureTaskIdCommand(containerId: string): string {
+  if (!/^[a-f\d]{12,64}$/i.test(containerId)) return "false";
+  const target = shellQuote(containerId);
+  return (
+    `docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' ${target} 2>/dev/null ` +
+    `| sed -n 's/^REPOOS_BROWSER_CAPTURE_TASK=//p' | head -1`
+  );
+}
+
 /** Recheck completion, silence and low CPU at the removal boundary. */
 export function completedCaptureReaperCommand(id: string): string {
   if (!/^[a-f\d]{12,64}$/i.test(id)) return "false";
@@ -1624,6 +1654,7 @@ export async function runValidationContainerReaper(
     liveContainerNames: ReadonlySet<string>;
     logger?: Logger;
     hostLabel: string;
+    root?: string;
   },
 ): Promise<void> {
   const listing = await exec.runRemote(host, reaperCommand(), () => {}, 30_000);
@@ -1638,6 +1669,17 @@ export async function runValidationContainerReaper(
     new Set(),
   );
   for (const candidate of completed) {
+    let taskId: string | undefined;
+    if (opts.root) {
+      const inspected = await exec.runRemote(
+        host,
+        completedCaptureTaskIdCommand(candidate.id),
+        () => {},
+        30_000,
+      );
+      const raw = inspected.code === 0 && !inspected.timedOut ? inspected.output.trim() : "";
+      if (/^\d+$/.test(raw)) taskId = raw;
+    }
     const removed = await exec.runRemote(
       host,
       completedCaptureReaperCommand(candidate.id),
@@ -1645,10 +1687,16 @@ export async function runValidationContainerReaper(
       30_000,
     );
     if (removed.code === 0 && !removed.timedOut) {
-      opts.logger?.system(
-        "info",
-        `reaped completed browser capture ${candidate.name} on ${opts.hostLabel}: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
-      );
+      const message = `reaped completed browser capture ${candidate.name} on ${opts.hostLabel}: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`;
+      opts.logger?.system("info", message);
+      if (opts.root && taskId) {
+        appendRemoteValidationEvent(opts.root, taskId, {
+          level: "info",
+          phase: "run",
+          message,
+          host: host.ip,
+        });
+      }
     }
   }
   const stale = staleReaperCandidates(
@@ -3405,6 +3453,7 @@ export class RemoteValidationRunner implements RemoteValidator {
       liveContainerNames: this.liveContainerNames,
       logger: this.logger,
       hostLabel: host.ip,
+      root: this.config.root,
     })
       .catch(() => {
         this.logger?.system(
@@ -4539,6 +4588,7 @@ export class TailscaleHostPool {
   private readonly backgroundProbeIntervalMs: number;
   private readonly keyPath?: string;
   private readonly logger?: Logger;
+  private readonly root?: string;
   /** The image every host's Docker prerequisite probe must find (#0521 review). */
   private containerImage: string;
   /** Monotonic counter behind the least-recently-used tie-break (#0890). */
@@ -4555,6 +4605,7 @@ export class TailscaleHostPool {
   constructor(rv: RemoteValidationConfig | undefined, opts: HostPoolOptions) {
     this.exec = opts.exec;
     this.logger = opts.logger;
+    this.root = opts.root;
     this.probeTimeoutMs = opts.probeTimeoutMs ?? 20_000;
     this.healthRetryMs = opts.healthRetryMs ?? HEALTH_RETRY_MS;
     this.backgroundProbeIntervalMs =
@@ -4700,6 +4751,7 @@ export class TailscaleHostPool {
           liveContainerNames: s.liveContainerNames,
           logger: this.logger,
           hostLabel: s.spec.host,
+          root: this.root,
         })
           .catch(() => {
             this.logger?.system("info", `container reaper on ${s.spec.host} failed or timed out`);
@@ -5869,6 +5921,8 @@ export class TailscaleHostPool {
 export interface HostPoolOptions {
   exec: RemoteExecDeps;
   logger?: Logger;
+  /** Repo root for task remote-event recording during background reaps. */
+  root?: string;
   /** SSH key path; omitted → SSH default resolution (agent, ~/.ssh/config). */
   keyPath?: string;
   probeTimeoutMs?: number;
@@ -6082,6 +6136,7 @@ export class TailscaleRunner implements RemoteValidator {
     this.pool = new TailscaleHostPool(config.remoteValidation, {
       exec: this.exec,
       logger,
+      root: config.root,
       keyPath: this.keyPath,
       probeTimeoutMs: this.timings.probeTimeoutMs,
       healthRetryMs: this.timings.healthRetryMs,
@@ -6959,7 +7014,7 @@ export class TailscaleRunner implements RemoteValidator {
           if (gateLingerTimer) return;
           gateLingerTimer = setTimeout(() => {
             abortMainRemote?.();
-            const gateCode = parseRemoteGateExitCode(streamBuf);
+            const gateCode = parseRemoteRunExitCode(streamBuf, !!opts.browserCapture);
             gateLingerResolve?.({
               code: gateCode ?? 1,
               output: streamBuf,
@@ -7112,7 +7167,7 @@ export class TailscaleRunner implements RemoteValidator {
             outerTimeoutMs = this.timings.remoteRunTimeoutMs;
           }
           advanceStepStage();
-          if (!gateFinished && remoteRunHasGateExit(streamBuf)) {
+          if (!gateFinished && remoteRunHasTerminalOutput(streamBuf, !!opts.browserCapture)) {
             gateFinished = true;
             watchdog.stop();
             scheduleGateLingerAbort();
@@ -7205,7 +7260,7 @@ export class TailscaleRunner implements RemoteValidator {
             cancelled: true,
           });
         if (gateFinished && !captureCollected) {
-          const gateCode = parseRemoteGateExitCode(streamBuf);
+          const gateCode = parseRemoteRunExitCode(streamBuf, !!opts.browserCapture);
           if (gateCode !== null) {
             run = {
               code: gateCode,

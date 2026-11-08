@@ -8,16 +8,20 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-gate-skip-the-full-suite-when-the-
-cli_override: codex
-model_override: gpt-6.1-terra
-review_cli_override: codex
-review_model_override: gpt-6-luna
+cli_override: cursor
+model_override: composer-2.5
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T07:38:14Z"
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-08T07:38:03.496Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+updated_at: "2026-11-08T13:53:26Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — _shallow: true"
+last_handoff_failure_sha: f3fc1a0951e0f4dc8e6b1de1bcfeeb1f5168c68a
+review_passes: 4
+review_rounds: 2
+last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 9
 ---
 ## Problem
 `repoos check` runs the full plan (build, format/lint, full test suite, WebKit UI smoke, contrast audit) even when a task's diff contains only task bookkeeping under `work/` (task file, `work/reports/<id>/*`) or other non-code files. Example: #1055 (the weekly worktree cleanup) changed 11 files, all under `work/`, and still waited for a remote-validation slot and ran the full 680-file suite on every handoff attempt, repeating after each outage or capture timeout. That is minutes to hours of wasted time and runner load for a change that cannot affect behavior. The recurring weekly cleanup will hit this every run.
@@ -47,7 +51,13 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 {
 "label": "Docs-only check setting",
 "target": "default",
-"route": "/settings?tab=advanced&setting=check.docsOnlySkip"
+"route": "/settings?tab=advanced&focus=check.docsOnlySkip",
+"highlight": "[data-config-key=\"check.docsOnlySkip\"]",
+"steps": [
+{
+"waitFor": "[data-config-key=\"check.docsOnlySkip\"]"
+}
+]
 }
 ]
 ```
@@ -78,3 +88,120 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T07:38:00Z · message_queued at 2026-11-08T07:38:00.360Z
 - 2026-11-08T07:38:03Z · message_delivered: 1 message(s)
 - 2026-11-08T07:38:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T07:51:04Z · body
+- 2026-11-08T07:53:02Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T07:53:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:03:09Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T08:03:10Z · message_queued at 2026-11-08T08:03:10.112Z
+- 2026-11-08T08:03:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T08:08:15Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-08T08:13:06Z · message_queued at 2026-11-08T08:13:06.885Z
+- 2026-11-08T08:14:32Z · message_delivered: 1 message(s)
+- 2026-11-08T08:32:51Z · body
+- 2026-11-08T08:33:36Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T08:33:36Z · message_queued at 2026-11-08T08:33:36.746Z
+- 2026-11-08T08:33:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
+- 2026-11-08T08:33:36Z · message_delivered: 2 message(s)
+- 2026-11-08T08:38:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:45:18Z · cli_override, model_override
+- 2026-11-08T08:45:23Z · review_cli_override, review_model_override
+- 2026-11-08T08:49:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T09:00:46Z · message_queued at 2026-11-08T09:00:46.811Z
+- 2026-11-08T09:00:46Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-08T09:00:49Z · message_delivered: 1 message(s)
+- 2026-11-08T09:01:24Z · agent exited with an error (codex) · 2026-11-08T09:00:54.961520Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-08T09:01:24Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-terra) is pinned, so RepoOS did not replace it (1/12 crashes in 30m)
+- 2026-11-08T09:11:26Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-08T09:16:26Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T09:22:59Z · message_queued at 2026-11-08T09:22:59.011Z
+- 2026-11-08T09:22:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T09:24:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T09:45:33Z · body
+- 2026-11-08T09:49:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T09:53:15Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T09:53:16Z · status active→review
+- 2026-11-08T09:53:16Z · message_queued at 2026-11-08T09:53:16.340Z
+- 2026-11-08T09:56:18Z · note: review pass 1: needs some work
+- 2026-11-08T09:56:18Z · status review→active
+- 2026-11-08T09:56:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T09:59:02Z · message_delivered: 1 message(s)
+- 2026-11-08T09:59:05Z · CTO nudge: held — remote validation is running
+- 2026-11-08T10:00:34Z · body
+- 2026-11-08T10:13:28Z · body
+- 2026-11-08T10:14:05Z · body
+- 2026-11-08T10:19:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T10:23:04Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T10:23:04Z · message_queued at 2026-11-08T10:23:04.935Z
+- 2026-11-08T10:24:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T10:29:11Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-11-08T10:31:24Z · message_delivered: 1 message(s)
+- 2026-11-08T10:32:15Z · body
+- 2026-11-08T10:32:20Z · body
+- 2026-11-08T10:39:09Z · message_queued at 2026-11-08T10:39:09.555Z
+- 2026-11-08T10:39:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T10:43:00Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T10:45:27Z · body
+- 2026-11-08T10:47:53Z · status active→review
+- 2026-11-08T10:50:25Z · message_queued at 2026-11-08T10:50:25.582Z
+- 2026-11-08T10:50:28Z · handoff failed · could not auto-retry after check failure · This worktree already has a recorded live engineer for task #review:1059 (pid 31725)
+- 2026-11-08T10:50:55Z · note: review pass 2: needs some work
+- 2026-11-08T10:50:55Z · status review→active
+- 2026-11-08T10:50:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T10:56:11Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T10:56:11Z · note: handoff requested (cli)
+- 2026-11-08T10:59:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T11:04:30Z · message_delivered: 1 message(s)
+- 2026-11-08T11:05:31Z · message_queued at 2026-11-08T11:05:31.738Z
+- 2026-11-08T11:05:31Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
+- 2026-11-08T11:09:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T11:09:19Z · message_queued at 2026-11-08T11:09:19.910Z
+- 2026-11-08T11:17:31Z · note: shots: failed — capture of Docs-only check setting on "default" failed: screenshot: Timeout 30000ms exceeded.
+- 2026-11-08T11:17:47Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-11-08T11:18:17Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
+- 2026-11-08T11:18:18Z · needs_input
+- 2026-11-08T11:18:18Z · message_delivered: 2 message(s)
+- 2026-11-08T11:18:35Z · agent exited with an error (cursor) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-08T11:28:41Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-08T11:28:43Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T11:38:57Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-08T11:39:01Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T11:49:12Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-08T11:49:13Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T11:59:27Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-08T11:59:28Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T12:09:42Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-08T12:09:46Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T12:19:57Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-08T12:23:20Z · note: adopted orphaned engineer pid 15502
+- 2026-11-08T12:35:15Z · body
+- 2026-11-08T12:44:59Z · message_queued at 2026-11-08T12:44:59.965Z
+- 2026-11-08T12:45:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T12:45:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T12:52:30Z · body
+- 2026-11-08T12:54:33Z · status active→review
+- 2026-11-08T12:57:32Z · note: review pass 3: needs some work
+- 2026-11-08T12:57:32Z · needs_input
+- 2026-11-08T12:58:54Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T12:58:54Z · message_queued at 2026-11-08T12:58:54.867Z
+- 2026-11-08T13:13:13Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-08T13:16:53Z · note: review pass 4: needs some work
+- 2026-11-08T13:16:53Z · needs_input
+- 2026-11-08T13:23:19Z · status review→active
+- 2026-11-08T13:23:19Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T13:23:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T13:23:27Z · needs_input
+- 2026-11-08T13:23:28Z · message_queued at 2026-11-08T13:23:28.643Z
+- 2026-11-08T13:28:39Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T13:28:40Z · note: handoff requested (cli)
+- 2026-11-08T13:30:51Z · message_delivered: 1 message(s)
+- 2026-11-08T13:30:59Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T13:36:44Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
+- 2026-11-08T13:36:44Z · status active→review
+- 2026-11-08T13:42:36Z · message_queued at 2026-11-08T13:42:36.348Z
+- 2026-11-08T13:42:36Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — _shallow: true
+- 2026-11-08T13:53:24Z · status review→active
+- 2026-11-08T13:53:24Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T13:53:25Z · needs_input
+- 2026-11-08T13:53:26Z · message_delivered: 2 message(s)
+- 2026-11-08T13:53:26Z · message_queued at 2026-11-08T13:53:26.147Z
+- 2026-11-08T13:53:26Z · CTO nudge: held — an undelivered message is already queued
