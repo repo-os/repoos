@@ -1164,6 +1164,16 @@ export function validateContainerName(runId: string): string {
   return `${VALIDATE_CONTAINER_PREFIX}-${safe}`;
 }
 
+/** Parse a RepoOS task id from `repoos-validate-<taskId>-<runSuffix>` (#1060). */
+export function parseTaskIdFromValidateContainerName(containerName: string): string | undefined {
+  const bare = containerName.replace(/^\//, "");
+  const prefix = `${VALIDATE_CONTAINER_PREFIX}-`;
+  if (!bare.startsWith(prefix)) return undefined;
+  const body = bare.slice(prefix.length);
+  const match = body.match(/^(\d+)/);
+  return match ? match[1] : undefined;
+}
+
 /**
  * Remove containers from finished/killed runs (they still carry the prefix) —
  * a `docker run --rm` that was SIGKILLed leaves its container behind. Run at
@@ -1669,8 +1679,8 @@ export async function runValidationContainerReaper(
     new Set(),
   );
   for (const candidate of completed) {
-    let taskId: string | undefined;
-    if (opts.root) {
+    let taskId = parseTaskIdFromValidateContainerName(candidate.name);
+    if (!taskId && opts.root) {
       const inspected = await exec.runRemote(
         host,
         completedCaptureTaskIdCommand(candidate.id),
@@ -1687,7 +1697,10 @@ export async function runValidationContainerReaper(
       30_000,
     );
     if (removed.code === 0 && !removed.timedOut) {
-      const message = `reaped completed browser capture ${candidate.name} on ${opts.hostLabel}: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`;
+      const bare = candidate.name.replace(/^\//, "");
+      const ageMinutes = Math.max(1, Math.round((now - candidate.createdAt) / 60_000));
+      const summary = `${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL} (reason=completed-capture-idle, container=${bare}, age=${ageMinutes}m)`;
+      const message = `reaped completed browser capture ${bare} on ${opts.hostLabel}: ${summary}`;
       opts.logger?.system("info", message);
       if (opts.root && taskId) {
         appendRemoteValidationEvent(opts.root, taskId, {
