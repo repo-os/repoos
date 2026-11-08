@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "version": "0.5.78",
+      "tag": "v0.5.78",
+      "date": "2026-11-08",
+      "notes": "### Reviewed work now lands on repos with no remote\n\nMove to done failed with \"could not get main SHA\" on a local-only repo when the machine's git `init.defaultBranch` named a branch that didn't exist (for example `master` on a repo whose branch is `main`). RepoOS now only trusts a default branch that really exists, and falls back to `main`, then `master`, then the branch that is checked out. If it still can't read the branch, the error now says which branch it tried and why.\n\n### Review reports no longer appear as Inbox tasks\n\nWhile the server was running, each review report written under `work/reports/` could show up on the board as a task named `review-1`, `review-2` and so on. Reports are now ignored by the live board the same way they are on startup.\n\n### Clearer task cards and a faster board\n\n- Cards and the task panel show running checks with a single status line and a live progress bar. The old fake progress bar is gone.\n- A task no longer shows PAUSED during handoff, and a deferred handoff now wakes the engineer.\n- The Done column loads lazily and starts collapsed, so boards with many finished tasks open faster.\n- Pipeline cards show the review round and a \"sent back\" note.\n- There is a simplified client project board for sharing progress.\n\n### Smarter project work\n\n- When a task lands, the PM agent now writes a summary report of what changed.\n- Human tasks have a Mark done dialog with a multi-line completion report.\n- Diff highlighting follows your active theme pair.\n- Muse appears on the Model providers tab, with a row of provider shortcuts at the top.\n\n### Fixes\n\n- Task ids from 1000 up are no longer dropped from `depends_on`.\n- `repoos message` and send-back accept stdin, files and heredocs, and never send junk as a message.\n- Remote validation no longer kills healthy runs as hung, keeps its evidence, and cleans up leaked containers.\n\n### Known issue\n\nOn the Work Pipeline view, the task id, type chips, elapsed time and model line on each card are hard to read in every theme. The next release fixes this."
+    },
+    {
       "version": "0.5.77",
       "tag": "v0.5.77",
       "date": "2026-11-06",

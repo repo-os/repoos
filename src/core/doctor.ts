@@ -426,8 +426,9 @@ function walkTaskFiles(dir: string, exts: string[], acc: string[] = []): string[
     } catch {
       continue;
     }
-    if (st.isDirectory()) walkTaskFiles(full, exts, acc);
-    else if (exts.includes(extname(entry))) acc.push(full);
+    if (st.isDirectory()) {
+      if (entry !== "reports" && entry !== "engineering-reports") walkTaskFiles(full, exts, acc);
+    } else if (exts.includes(extname(entry))) acc.push(full);
   }
   return acc;
 }
