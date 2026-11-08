@@ -272,6 +272,17 @@ Any new commit, dirty file, or source change on main runs the normal handoff gat
 Format, lint, build staleness, task assets and the remaining local guards still
 run. The transcript and Checks detail say `reused check <id>`.
 
+### Bookkeeping during a running gate (#1061)
+
+While handoff or an in-flight `repoos check` holds the gate for a task, RepoOS
+takes a short-lived advisory lock on that task's worktree. Server bookkeeping
+commits that touch only `work/**` or `.repoos/**` are **queued** and applied in
+order after the gate ends, so they do not move HEAD mid-run or invalidate the
+result. Commits that touch source or other paths still fail the gate, with the
+commit subject and paths named in the refusal. Engineers cannot commit source
+files during the gate (`A check is running; wait for it to finish.`). A server
+restart clears stale locks and flushes any deferred queue so nothing is lost.
+
 The internal server environment variable `REPOOS_HANDOFF_CHECK_MAX_AGE_MS`
 limits reuse age (default one hour; zero disables it; invalid values disable
 reuse). This deployment knob is deliberately not a `repoos.toml` feature key.

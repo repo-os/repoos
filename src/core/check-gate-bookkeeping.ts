@@ -1,0 +1,123 @@
+/**
+ * Paths and commit chains that must not invalidate a running check gate (#1061).
+ *
+ * Bookkeeping under `work/**` and the cache dir cannot change build or test
+ * outcomes. Engineer self-check WIP checkpoint commits are allowed even when
+ * they touch source — the gate explicitly tests that tree (#0694/#0834).
+ */
+import type { RepoOSConfig } from "./types.js";
+import { isEngineerSelfCheckCheckpointMessage } from "./engineer-checkpoint-commit.js";
+import { pathsChangedBetweenCommits, runGit } from "./git.js";
+
+function withTrailingSlash(dir: string): string {
+  return `${dir.replace(/\/+$/, "")}/`;
+}
+
+export function checkGateBookkeepingPrefix(config: Pick<RepoOSConfig, "workDir" | "cacheDir">): {
+  work: string;
+  cache: string;
+} {
+  const work = withTrailingSlash(config.workDir ?? "work");
+  const cache = withTrailingSlash(config.cacheDir ?? ".repoos");
+  return { work, cache };
+}
+
+/** True when a path change cannot affect check results during a gate run. */
+export function isCheckGateBookkeepingPath(
+  path: string,
+  config: Pick<RepoOSConfig, "workDir" | "cacheDir">,
+): boolean {
+  const { work, cache } = checkGateBookkeepingPrefix(config);
+  return path.startsWith(work) || path.startsWith(cache);
+}
+
+export type CheckGateHeadDrift =
+  | { ok: true }
+  | { ok: false; reason: string; affectingPaths?: string[] };
+
+/**
+ * Whether `afterHead` is an acceptable drift from `beforeHead` for a gate that
+ * started at `beforeHead`. Fails closed when git cannot list changed paths.
+ */
+export async function checkGateHeadDriftAllowed(
+  workdir: string,
+  config: RepoOSConfig,
+  taskId: string,
+  beforeHead: string,
+  afterHead: string,
+): Promise<CheckGateHeadDrift> {
+  if (beforeHead === afterHead) return { ok: true };
+  const changed = await pathsChangedBetweenCommits(workdir, beforeHead, afterHead);
+  if (changed === null) {
+    return {
+      ok: false,
+      reason: "could not determine which paths changed between the gate snapshots",
+    };
+  }
+  const affecting = changed.filter((p) => !isCheckGateBookkeepingPath(p, config));
+  if (affecting.length === 0) return { ok: true };
+  if (await isWipCheckpointOnlyChain(workdir, beforeHead, afterHead, taskId)) {
+    return { ok: true };
+  }
+  const commitDetail = await formatNonBookkeepingCommitDrift(
+    workdir,
+    beforeHead,
+    afterHead,
+    config,
+    affecting,
+  );
+  return { ok: false, reason: commitDetail, affectingPaths: affecting };
+}
+
+async function isWipCheckpointOnlyChain(
+  wt: string,
+  from: string,
+  to: string,
+  taskId: string,
+): Promise<boolean> {
+  const list = await runGit(wt, ["rev-list", "--first-parent", to, `^${from}`], 15_000);
+  if (list.status !== 0) return false;
+  const shas = list.stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (shas.length === 0) return false;
+  for (const sha of shas) {
+    const subj = await runGit(wt, ["log", "-1", "--format=%s", sha], 10_000);
+    if (subj.status !== 0) return false;
+    if (!isEngineerSelfCheckCheckpointMessage(subj.stdout.trim(), taskId)) return false;
+  }
+  return true;
+}
+
+async function formatNonBookkeepingCommitDrift(
+  wt: string,
+  from: string,
+  to: string,
+  config: RepoOSConfig,
+  aggregatePaths: string[],
+): Promise<string> {
+  const list = await runGit(wt, ["rev-list", "--first-parent", to, `^${from}`], 15_000);
+  const parts: string[] = [
+    `HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`,
+  ];
+  if (list.status === 0) {
+    const shas = list.stdout
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+    for (const sha of shas) {
+      const subj = await runGit(wt, ["log", "-1", "--format=%s", sha], 10_000);
+      const paths = await pathsChangedBetweenCommits(wt, `${sha}^`, sha);
+      if (paths === null) continue;
+      const affecting = paths.filter((p) => !isCheckGateBookkeepingPath(p, config));
+      if (affecting.length === 0) continue;
+      const subject = subj.status === 0 ? subj.stdout.trim() : sha.slice(0, 8);
+      parts.push(`commit "${subject}" touched ${affecting.join(", ")}`);
+    }
+  }
+  if (parts.length === 1 && aggregatePaths.length > 0) {
+    parts.push(`appeared: ${aggregatePaths.join(", ")}`);
+  }
+  return parts.join("; ");
+}
