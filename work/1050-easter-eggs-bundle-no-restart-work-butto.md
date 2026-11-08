@@ -361,3 +361,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T03:24:17Z · needs_input
 - 2026-11-08T03:25:17Z · engineer stopped by request
 - 2026-11-08T05:34:25Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T05:34:25Z · note: handoff requested (cli)
