@@ -14,7 +14,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T02:16:03Z"
+updated_at: "2026-11-08T02:18:14Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T01:53:16.701Z: repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -101,12 +101,12 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 "route": "/",
 "highlight": "[data-testid=\"repo-dirty-panel\"]",
 "steps": [
-  {
-    "click": "[data-test-id=\"side-git-dirty\"]"
-  },
-  {
-    "waitMs": 600
-  }
+{
+  "click": "[data-test-id=\"side-git-dirty\"]"
+},
+{
+  "waitMs": 600
+}
 ],
 "state": "repo:dirtyMain"
 }
@@ -335,3 +335,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T02:06:18Z · needs_input
 - 2026-11-08T02:12:56Z · body
 - 2026-11-08T02:16:03Z · body
+- 2026-11-08T02:18:14Z · CTO nudge: held — remote validation is running
