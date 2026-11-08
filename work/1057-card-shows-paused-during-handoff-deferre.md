@@ -170,3 +170,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T10:25:53Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-08T10:25:53Z · message_delivered: 1 message(s)
 - 2026-11-08T10:34:09Z · message_queued at 2026-11-08T10:34:09.567Z
+- 2026-11-08T10:34:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
