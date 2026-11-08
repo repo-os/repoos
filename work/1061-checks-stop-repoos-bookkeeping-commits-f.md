@@ -105,3 +105,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T18:50:01Z · status review→active
 - 2026-11-08T18:50:01Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T18:50:04Z · needs_input
+- 2026-11-08T18:50:04Z · message_queued at 2026-11-08T18:50:04.374Z
