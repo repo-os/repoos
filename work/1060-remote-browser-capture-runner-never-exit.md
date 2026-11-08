@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T09:59:35Z"
+updated_at: "2026-11-08T10:01:29Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -112,3 +112,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T09:59:02Z · status active→review
 - 2026-11-08T09:59:03Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-08T09:59:35Z · message_queued at 2026-11-08T09:59:35.564Z
+- 2026-11-08T10:01:29Z · note: review pass 3: needs some work
