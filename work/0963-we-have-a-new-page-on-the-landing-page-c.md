@@ -2,12 +2,12 @@
 id: "0963"
 title: Build the simplified client project board
 type: feature
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: hello@repoos.org
-branch: ""
+branch: feat/build-the-simplified-client-project-boar
 cli_override: codex
 model_override: gpt-6.1-terra
 pm_cli_override: cursor
@@ -15,7 +15,7 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T06:05:03Z"
+updated_at: "2026-11-08T06:05:04Z"
 ---
 ## Problem
 
@@ -80,3 +80,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-10-26T19:47:47Z · needs_input
 - 2026-11-06T05:05:53Z · status inbox→ready
 - 2026-11-08T06:05:03Z · cli_override, model_override, review_cli_override, review_model_override
+- 2026-11-08T06:05:04Z · status ready→active, branch
