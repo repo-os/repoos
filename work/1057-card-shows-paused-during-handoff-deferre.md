@@ -15,10 +15,10 @@ created_by: njachowski@gmail.com
 branch: feat/card-shows-paused-during-handoff-deferre
 cli_override: cursor
 model_override: composer-2.5
-review_cli_override: codex
-review_model_override: gpt-6-luna
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T08:45:17Z"
+updated_at: "2026-11-08T08:45:21Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T08:41:54.450Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 1
@@ -155,3 +155,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T08:42:21Z · CTO nudge: held — remote validation is running
 - 2026-11-08T08:44:09Z · note: adopted orphaned engineer pid 11702
 - 2026-11-08T08:45:17Z · cli_override, model_override
+- 2026-11-08T08:45:21Z · review_cli_override, review_model_override
