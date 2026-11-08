@@ -61,6 +61,12 @@ export async function checkGateHeadDriftAllowed(
     config,
     affecting,
   );
+  if (commitDetail === null) {
+    return {
+      ok: false,
+      reason: "could not determine the commit subjects and paths that moved HEAD during the check",
+    };
+  }
   return { ok: false, reason: commitDetail, affectingPaths: affecting };
 }
 
@@ -70,10 +76,11 @@ async function formatNonBookkeepingCommitDrift(
   to: string,
   config: RepoOSConfig,
   aggregatePaths: string[],
-): Promise<string> {
+): Promise<string | null> {
   const list = await runGit(wt, ["rev-list", "--first-parent", to, `^${from}`], 15_000);
   const parts: string[] = [`HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`];
-  if (list.status === 0) {
+  if (list.status !== 0) return null;
+  {
     const shas = list.stdout
       .split("\n")
       .map((l) => l.trim())
@@ -81,15 +88,14 @@ async function formatNonBookkeepingCommitDrift(
     for (const sha of shas) {
       const subj = await runGit(wt, ["log", "-1", "--format=%s", sha], 10_000);
       const paths = await pathsChangedBetweenCommits(wt, `${sha}^`, sha);
-      if (paths === null) continue;
+      if (paths === null) return null;
       const affecting = paths.filter((p) => !isCheckGateBookkeepingPath(p, config));
       if (affecting.length === 0) continue;
-      const subject = subj.status === 0 ? subj.stdout.trim() : sha.slice(0, 8);
+      if (subj.status !== 0 || !subj.stdout.trim()) return null;
+      const subject = subj.stdout.trim();
       parts.push(`commit "${subject}" touched ${affecting.join(", ")}`);
     }
   }
-  if (parts.length === 1 && aggregatePaths.length > 0) {
-    parts.push(`appeared: ${aggregatePaths.join(", ")}`);
-  }
+  if (parts.length === 1 && aggregatePaths.length > 0) return null;
   return parts.join("; ");
 }

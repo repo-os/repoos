@@ -1,5 +1,19 @@
 # Check-run history: which project owns a row (#0870)
 
+## Check-gate bookkeeping and drift (#1061)
+
+The server holds a per-task worktree lock during gated validation. RepoOS
+bookkeeping commits under `work/**` and `.repoos/**` are deferred until the gate
+releases that lock; queued writes retain individual file snapshots so repeated
+updates are replayed as separate commits in enqueue order. Server restart
+reconciles dead holders and drains their durable queues. Source writes are
+rejected with `A check is running; wait for it to finish.`
+
+After validation, HEAD drift is evaluated from the exact commit range. Changes
+under those bookkeeping roots are allowed; all other paths invalidate the
+result. If Git cannot enumerate the changed commits or their paths, validation
+fails closed because it cannot prove the checked tree remained equivalent.
+
 Every `repoos check` execution records one row in `<project>/.repoos/checks.db`
 (cacheDir from that project's `repoos.toml`). The store is how the server's
 Checks → Runs surface, slow-run detection and the next run's failed-test
