@@ -139,9 +139,7 @@ it("records validate.sh startup reaper markers on the capture task", () => {
       `reaped completed browser capture repoos-validate-hung on 100.0.0.2: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
     );
     expect(existsSync(remoteEventsPath(root, "1048"))).toBe(true);
-    expect(readFileSync(remoteEventsPath(root, "1048"), "utf8")).toContain(
-      "repoos-validate-hung",
-    );
+    expect(readFileSync(remoteEventsPath(root, "1048"), "utf8")).toContain("repoos-validate-hung");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

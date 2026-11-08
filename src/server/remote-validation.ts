@@ -1214,14 +1214,10 @@ export function parseRemoteGateExitCode(output: string): number | null {
 }
 
 /** Shared copy for periodic and validate.sh startup completed-capture reapers (#1060). */
-export const COMPLETED_CAPTURE_REAPER_IDLE_DETAIL =
-  "no output for two minutes and CPU idle";
+export const COMPLETED_CAPTURE_REAPER_IDLE_DETAIL = "no output for two minutes and CPU idle";
 
 /** Marker line `validate.sh` prints before removing a quiet completed capture at startup. */
-export function formatValidateReapedCaptureMarker(
-  containerName: string,
-  taskId?: string,
-): string {
+export function formatValidateReapedCaptureMarker(containerName: string, taskId?: string): string {
   const bare = containerName.replace(/^\//, "");
   const task = taskId?.trim() ? ` task=${taskId.trim()}` : "";
   return `[validate] reaped completed browser capture ${bare}${task}: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`;
@@ -3683,16 +3679,11 @@ export class RemoteValidationRunner implements RemoteValidator {
       this.activeRunRegistry.touch(opts.taskId);
       pushTimingOutputChunk(s, fileTimingCollector, caseTimingCollector);
       validateStreamBuf += s;
-      recordValidateStartupReapedCaptures(
-        this.config.root,
-        validateStreamBuf,
-        validateReapSeen,
-        {
-          host: emitHost.ip || undefined,
-          defaultTaskId: opts.taskId,
-          logger: this.logger,
-        },
-      );
+      recordValidateStartupReapedCaptures(this.config.root, validateStreamBuf, validateReapSeen, {
+        host: emitHost.ip || undefined,
+        defaultTaskId: opts.taskId,
+        logger: this.logger,
+      });
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
     };
@@ -7062,16 +7053,11 @@ export class TailscaleRunner implements RemoteValidator {
         const emitStream = (s: string): void => {
           this.activeRunRegistry.touch(opts.taskId);
           streamBuf += s;
-          recordValidateStartupReapedCaptures(
-            this.config.root,
-            streamBuf,
-            validateReapSeen,
-            {
-              host: host.ip,
-              defaultTaskId: opts.taskId,
-              logger: this.logger,
-            },
-          );
+          recordValidateStartupReapedCaptures(this.config.root, streamBuf, validateReapSeen, {
+            host: host.ip,
+            defaultTaskId: opts.taskId,
+            logger: this.logger,
+          });
           if (streamBuf.includes("[lock] slot ")) {
             outerTimeoutMs = this.timings.remoteRunTimeoutMs;
           }
