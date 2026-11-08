@@ -206,13 +206,16 @@ export function readSummaryStatus(config: RepoOSConfig, taskId: string): TaskSum
     // If status is "done", validate that the summary file exists and is readable.
     // If the file is missing or unreadable, return failed instead.
     if (parsed.status === "done") {
-      const markdown = loadTaskSummaryMarkdown(config, taskId);
-      if (!markdown) {
+      const reportPath = join(reportsTaskDir(config, taskId), "summary.md");
+      try {
+        const markdown = readFileSync(reportPath, "utf8");
+        if (!markdown.trim()) throw new Error("summary.md is empty");
+      } catch (err) {
         return {
           taskId,
           status: "failed",
           at: new Date().toISOString(),
-          error: "Summary marked done but summary.md is missing or unreadable.",
+          error: `Summary marked done but summary.md could not be read: ${(err as Error).message}`,
         };
       }
     }
@@ -883,8 +886,8 @@ const inFlight = new Set<string>();
  * touches the task status — a slow or failed summary must not change the
  * landing. A concurrent attempt for the same task is skipped.
  */
-export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Task[]): void {
-  if (inFlight.has(task.id)) return;
+export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Task[]): boolean {
+  if (inFlight.has(task.id)) return readSummaryStatus(config, task.id).status === "pending";
   inFlight.add(task.id);
   const diskFallback = allTasks.length === 0 ? loadCandidateTasksFromDisk(config) : null;
   // Mark the job as pending before starting. If the status write fails, do not
@@ -898,7 +901,7 @@ export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Tas
       "failed",
       "Could not write pending status — job not started",
     );
-    return;
+    return false;
   }
   void (async () => {
     try {
@@ -920,4 +923,5 @@ export function queueTaskSummary(config: RepoOSConfig, task: Task, allTasks: Tas
       inFlight.delete(task.id);
     }
   })();
+  return true;
 }

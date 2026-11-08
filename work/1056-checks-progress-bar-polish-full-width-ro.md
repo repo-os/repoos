@@ -2,18 +2,21 @@
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/checks-progress-bar-polish-full-width-ro
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T00:30:28Z"
+updated_at: "2026-11-08T02:44:50Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T02:38:43.543Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
+dev_error_count: 5
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -37,6 +40,33 @@ The checks progress bar added by #1054 works, but its styling and layout need po
 ## Notes for AI
 Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer.vue (running-checks box), PipelineCard.vue plus the shared styles in src/ui-app/src/style.css (check-progress-meter / progress). Use global classes in style.css, no native title tooltips. Reuse one shared meter class. Mind padding and hit areas.
 
+## Shots
+```json
+[
+{
+"label": "Board card: full-width rounded check bar",
+"target": "default",
+"route": "/work?status=active",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]",
+"state": "card:checksProgress"
+},
+{
+"label": "Drawer: half-width bar, detail on same row",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": "[data-test-id=\"close-out-check-progress\"]",
+"state": "drawer:checksProgress"
+},
+{
+"label": "Pipeline: bar and status on one row",
+"target": "default",
+"route": "/work?tab=pipeline",
+"highlight": ".pl-row-3 [data-test-id=\"pipeline-card-check-progress\"]",
+"state": "pipeline:checksProgress"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-08T00:15:51Z · created · njachowski@gmail.com
@@ -44,3 +74,31 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T00:15:58Z · status inbox→ready
 - 2026-11-08T00:27:22Z · cli_override, model_override
 - 2026-11-08T00:30:28Z · cli_override, model_override, review_model_override
+- 2026-11-08T01:38:36Z · status ready→active, branch
+- 2026-11-08T01:41:56Z · body
+- 2026-11-08T01:45:00Z · body
+- 2026-11-08T01:50:13Z · body
+- 2026-11-08T01:50:19Z · body
+- 2026-11-08T01:58:23Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-08T01:58:23Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-11-08T01:58:24Z · needs_input
+- 2026-11-08T01:58:24Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T01:59:24Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T01:59:25Z · needs_input
+- 2026-11-08T01:59:25Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T02:00:55Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T02:00:57Z · needs_input
+- 2026-11-08T02:00:58Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T02:02:58Z · engineer crash recovery: resuming cursor + composer-2.5 (4/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T02:03:00Z · needs_input
+- 2026-11-08T02:03:01Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T02:05:31Z · engineer crash recovery: resuming cursor + composer-2.5 (5/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T02:05:32Z · needs_input
+- 2026-11-08T02:07:49Z · body
+- 2026-11-08T02:08:19Z · body
+- 2026-11-08T02:08:35Z · body
+- 2026-11-08T02:13:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T02:38:40Z · message_queued at 2026-11-08T02:38:40.452Z
+- 2026-11-08T02:38:43Z · message_delivered: 1 message(s)
+- 2026-11-08T02:43:14Z · CTO nudge: held — remote validation is running
+- 2026-11-08T02:44:50Z · body
