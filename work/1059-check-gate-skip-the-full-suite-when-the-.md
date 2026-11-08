@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T09:16:26Z"
+updated_at: "2026-11-08T09:22:59Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
@@ -105,3 +105,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T09:01:24Z · engineer crash recovery: surfaced instead of switching — a human-set task override (codex + gpt-6.1-terra) is pinned, so RepoOS did not replace it (1/12 crashes in 30m)
 - 2026-11-08T09:11:26Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-08T09:16:26Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T09:22:59Z · message_queued at 2026-11-08T09:22:59.011Z
