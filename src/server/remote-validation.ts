@@ -1213,6 +1213,63 @@ export function parseRemoteGateExitCode(output: string): number | null {
   return Number.isFinite(code) ? code : null;
 }
 
+/** Shared copy for periodic and validate.sh startup completed-capture reapers (#1060). */
+export const COMPLETED_CAPTURE_REAPER_IDLE_DETAIL =
+  "no output for two minutes and CPU idle";
+
+/** Marker line `validate.sh` prints before removing a quiet completed capture at startup. */
+export function formatValidateReapedCaptureMarker(
+  containerName: string,
+  taskId?: string,
+): string {
+  const bare = containerName.replace(/^\//, "");
+  const task = taskId?.trim() ? ` task=${taskId.trim()}` : "";
+  return `[validate] reaped completed browser capture ${bare}${task}: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`;
+}
+
+const VALIDATE_REAPED_CAPTURE_RE =
+  /\[validate\] reaped completed browser capture ([^\s\n]+)(?: task=([0-9]+))?: no output for two minutes and CPU idle/g;
+
+export function newlySeenValidateReapedCaptures(
+  output: string,
+  seen: ReadonlySet<string>,
+): Array<{ containerName: string; taskId?: string; line: string }> {
+  const found: Array<{ containerName: string; taskId?: string; line: string }> = [];
+  for (const match of output.matchAll(VALIDATE_REAPED_CAPTURE_RE)) {
+    const line = match[0];
+    if (seen.has(line)) continue;
+    found.push({
+      line,
+      containerName: match[1]!,
+      taskId: match[2],
+    });
+  }
+  return found;
+}
+
+/** Turn startup reaper markers in streamed `validate.sh` output into task events. */
+export function recordValidateStartupReapedCaptures(
+  root: string,
+  output: string,
+  seen: Set<string>,
+  opts: { host?: string; defaultTaskId?: string; logger?: Logger },
+): void {
+  for (const { line, containerName, taskId } of newlySeenValidateReapedCaptures(output, seen)) {
+    seen.add(line);
+    const hostLabel = opts.host ?? "runner";
+    const message = `reaped completed browser capture ${containerName} on ${hostLabel}: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`;
+    opts.logger?.system("info", message);
+    const recordTask = taskId ?? opts.defaultTaskId;
+    if (!recordTask) continue;
+    appendRemoteValidationEvent(root, recordTask, {
+      level: "info",
+      phase: "run",
+      message,
+      host: opts.host,
+    });
+  }
+}
+
 /** validate.sh: bundle/mirror transport — never a test result (#0717). */
 export const VALIDATE_EXIT_TRANSPORT = 3;
 /** validate.sh: clone/install/setup failed before the gate ran (#0745). */
@@ -1544,7 +1601,7 @@ export async function runValidationContainerReaper(
     if (removed.code === 0 && !removed.timedOut) {
       opts.logger?.system(
         "info",
-        `reaped completed browser capture ${candidate.name} on ${opts.hostLabel}: no output for two minutes and CPU idle`,
+        `reaped completed browser capture ${candidate.name} on ${opts.hostLabel}: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
       );
     }
   }
@@ -3619,9 +3676,23 @@ export class RemoteValidationRunner implements RemoteValidator {
     this.activeJobs++;
     this.clearIdleTimer();
     const startedAt = Date.now();
+    const validateReapSeen = new Set<string>();
+    let validateStreamBuf = "";
+    const emitHost = { ip: "" };
     const emit = (s: string): void => {
       this.activeRunRegistry.touch(opts.taskId);
       pushTimingOutputChunk(s, fileTimingCollector, caseTimingCollector);
+      validateStreamBuf += s;
+      recordValidateStartupReapedCaptures(
+        this.config.root,
+        validateStreamBuf,
+        validateReapSeen,
+        {
+          host: emitHost.ip || undefined,
+          defaultTaskId: opts.taskId,
+          logger: this.logger,
+        },
+      );
       this.appendLog(opts.taskId, s);
       opts.onChunk?.(s);
     };
@@ -3632,6 +3703,7 @@ export class RemoteValidationRunner implements RemoteValidator {
       const host = await this.ensureRunner();
       this.runnerHost = host;
       runMeta.machine = host.ip;
+      emitHost.ip = host.ip;
       if (control) control.host = host;
       emit(`[runner ${host.ip} ready in ${Math.round((Date.now() - startedAt) / 1000)}s]\n`);
       this.record(
@@ -6543,6 +6615,7 @@ export class TailscaleRunner implements RemoteValidator {
         : {}),
       ...(remoteTestRef != null ? { remoteTestScopeRef: remoteTestRef } : {}),
     });
+    const validateReapSeen = new Set<string>();
     const emit = (s: string): void => {
       pushTimingOutputChunk(s, fileTimingCollector, caseTimingCollector);
       this.appendLog(opts.taskId, s);
@@ -6989,6 +7062,16 @@ export class TailscaleRunner implements RemoteValidator {
         const emitStream = (s: string): void => {
           this.activeRunRegistry.touch(opts.taskId);
           streamBuf += s;
+          recordValidateStartupReapedCaptures(
+            this.config.root,
+            streamBuf,
+            validateReapSeen,
+            {
+              host: host.ip,
+              defaultTaskId: opts.taskId,
+              logger: this.logger,
+            },
+          );
           if (streamBuf.includes("[lock] slot ")) {
             outerTimeoutMs = this.timings.remoteRunTimeoutMs;
           }

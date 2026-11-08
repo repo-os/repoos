@@ -83,6 +83,14 @@ docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/nul
   cpu=$(docker stats --no-stream --format '{{.CPUPerc}}' "$id" 2>/dev/null) || continue
   printf '%s\n' "$cpu" | awk '/^[0-9]+([.][0-9]+)?%$/ { sub(/%$/, ""); if ($1 < 1) ok=1 } END { exit !ok }' \
     || continue
+  task=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null \
+    | sed -n 's/^REPOOS_BROWSER_CAPTURE_TASK=//p' | head -1 || true)
+  bare=${name#/}
+  if [ -n "$task" ]; then
+    echo "[validate] reaped completed browser capture $bare task=$task: no output for two minutes and CPU idle"
+  else
+    echo "[validate] reaped completed browser capture $bare: no output for two minutes and CPU idle"
+  fi
   docker rm -f "$id" >/dev/null 2>&1 || true
 done
 
