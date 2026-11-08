@@ -2,7 +2,7 @@
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -217,4 +217,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T14:48:23Z · note: handoff requested (cli)
 - 2026-11-08T14:48:37Z · message_delivered: 2 message(s)
 - 2026-11-08T14:59:16Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-11-08T14:59:16Z · engineer stopped by request
+- 2026-11-08T14:59:16Z · status active→review
