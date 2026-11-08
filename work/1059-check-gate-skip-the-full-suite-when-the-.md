@@ -228,3 +228,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T15:35:23Z · note: handoff requested (cli)
 - 2026-11-08T15:37:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T15:46:16Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T15:46:16Z · message_queued at 2026-11-08T15:46:16.513Z
