@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T06:18:12Z"
+updated_at: "2026-11-08T06:20:03Z"
 last_close_out_gate_ms: 601385
 last_close_out_gate_at: "2026-11-08T06:17:47.338Z"
 review_rounds: 1
@@ -145,3 +145,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T06:02:54Z · note: review pass 2: good to go
 - 2026-11-08T06:17:47Z · close-out gate completed in 601s
 - 2026-11-08T06:18:12Z · status done→done, release:success
+- 2026-11-08T06:20:03Z · message_dropped: 1 queued message(s) discarded — task is done
