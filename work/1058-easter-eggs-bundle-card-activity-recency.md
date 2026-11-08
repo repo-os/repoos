@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: grok-4.7-low
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T02:51:23Z"
+updated_at: "2026-11-08T02:51:27Z"
 ---
 ## Items
 
@@ -45,3 +45,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 
 - 2026-11-08T02:51:17Z · created · njachowski@gmail.com
 - 2026-11-08T02:51:23Z · cli_override, model_override, review_cli_override, review_model_override
+- 2026-11-08T02:51:27Z · status inbox→ready
