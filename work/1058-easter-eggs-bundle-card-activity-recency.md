@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|reused check inputs changed during handoff — run the check again
+last_handoff_failure_sha: 4285447c6214f9cf946e1912f687225ca6339642
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
@@ -491,3 +493,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:32:23Z · note: handoff requested (cli)
 - 2026-11-08T21:33:05Z · message_queued at 2026-11-08T21:33:05.292Z
 - 2026-11-08T21:33:05Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
+
