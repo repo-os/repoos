@@ -192,19 +192,17 @@ describe("check gate lock and deferred commits (#1061)", () => {
 
   it("preserves queue entries across flush after stale lock recovery", async () => {
     const { root, wt } = initRepo();
+    const taskFile = join(wt, "work", "0001-task.md");
+    writeFileSync(taskFile, readFileSync(taskFile, "utf8") + "\n");
     enqueueDeferredBranchCommit(
       root,
       ".repoos",
       "0001",
       wt,
-      [join(wt, "work", "0001-task.md")],
+      [taskFile],
       "docs(0001): queued",
     );
     expect(readDeferredBranchCommits(root, ".repoos", "0001").length).toBe(1);
-    writeFileSync(
-      join(wt, "work", "0001-task.md"),
-      readFileSync(join(wt, "work", "0001-task.md")) + "\n",
-    );
     process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
     try {
       await flushDeferredBranchCommits(root, ".repoos", "0001");
@@ -320,7 +318,10 @@ describe("check gate lock and deferred commits (#1061)", () => {
     const lock = aliveCheckGateLockForWorktree(root, ".repoos", wt);
     expect(lock).not.toBeNull();
     if (!lock) return;
-    const dead = { ...lock, pid: 2_147_483_647 };
+    const dead = {
+      ...lock,
+      holders: lock.holders.map((holder) => ({ ...holder, pid: 2_147_483_647 })),
+    };
     clearCheckGateLock(root, ".repoos", "0001");
     const { writeFileSync: writeJson, mkdirSync: mkdirCache } = await import("node:fs");
     const { join: joinPath } = await import("node:path");
