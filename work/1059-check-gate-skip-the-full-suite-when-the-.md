@@ -8,12 +8,12 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-gate-skip-the-full-suite-when-the-
-cli_override: codex
-model_override: gpt-6.1-terra
+cli_override: cursor
+model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T08:38:14Z"
+updated_at: "2026-11-08T08:45:18Z"
 last_check_failure: "repoos check at 2026-11-08T07:38:03.496Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -92,3 +92,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T08:33:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
 - 2026-11-08T08:33:36Z · message_delivered: 2 message(s)
 - 2026-11-08T08:38:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T08:45:18Z · cli_override, model_override
