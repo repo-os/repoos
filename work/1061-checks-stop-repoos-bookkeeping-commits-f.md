@@ -3,9 +3,6 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Check coverage, source protection, queue durability and drift detection remain incomplete."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -280,3 +277,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T21:56:06Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T21:56:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T21:56:10Z · message_delivered: 1 message(s)
+- 2026-11-08T21:56:10Z · needs_input
