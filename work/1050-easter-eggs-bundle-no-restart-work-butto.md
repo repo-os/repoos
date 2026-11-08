@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T01:02:10Z"
+updated_at: "2026-11-08T01:04:45Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 2b311db0cbbbab67ef96af59606a4805ac3b9c2b
 review_rounds: 1
@@ -284,3 +284,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T01:02:06Z · message_queued at 2026-11-08T01:02:06.597Z
 - 2026-11-08T01:02:06Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-08T01:02:10Z · message_delivered: 2 message(s)
+- 2026-11-08T01:04:45Z · body
