@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found"
+debug_tldr: The agent hit its usage limit during the build — retry after credits reset to finish validation.
+debug_tldr_at: "2026-11-08T08:42:29Z"
+debug_tldr_key: "dev-error|2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found"
 priority: p1
 area: server
 assigned_to: ai
@@ -16,7 +19,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T08:42:12Z"
+updated_at: "2026-11-08T08:42:29Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
