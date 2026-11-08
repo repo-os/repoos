@@ -10,8 +10,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T15:17:14Z"
+updated_at: "2026-11-08T15:22:23Z"
 handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-11-08T15:22:23.159Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 On the Work > Pipeline view, the task id, type/priority chips, elapsed time, model/agent line and host label on every card are almost invisible, in every theme (light and dark). The Board view is fine.
@@ -40,12 +41,12 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 "highlight": ".pipeline-card",
 "assert": [
 {
-  "selector": ".pl-id",
-  "label": "task id is visible"
+"selector": ".pl-id",
+"label": "task id is visible"
 },
 {
-  "selector": ".pl-row-4",
-  "label": "model and host row is visible"
+"selector": ".pl-row-4",
+"label": "model and host row is visible"
 }
 ],
 "state": "pipeline:checksProgress",
@@ -58,12 +59,12 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 "highlight": ".pipeline-card",
 "assert": [
 {
-  "selector": ".pl-id",
-  "label": "task id is visible"
+"selector": ".pl-id",
+"label": "task id is visible"
 },
 {
-  "selector": ".pl-row-4",
-  "label": "model and host row is visible"
+"selector": ".pl-row-4",
+"label": "model and host row is visible"
 }
 ],
 "state": "pipeline:checksProgress",
@@ -96,3 +97,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T15:10:35Z · body
 - 2026-11-08T15:16:35Z · body
 - 2026-11-08T15:17:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented the secondary-text fixes in [PipelineCard.vue](/Users/nick/code/nick/repoos-worktrees/feat/pipeline-view-card-text-uses-muted-a-bac/src/ui-app/src/components/PipelineCard.vue) and [style.css](/Users/nick/code/nick/repoos-worktr… · stderr: Reading additional input from stdin...
+- 2026-11-08T15:22:23Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
