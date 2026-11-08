@@ -16,10 +16,10 @@ import { dirname, join } from "node:path";
 import { rmFixture } from "./helpers";
 import { ensureWorktree, getChangedFilePaths } from "../../core/git.js";
 import { createJobCoordinator } from "../../server/integration-job.js";
+import { isDocsOnlyCheck } from "../../core/check-docs-only.js";
 import {
   CloseOutOrchestrator,
   hasDependencyInputChange,
-  isDocsOnlyChange,
 } from "../../server/integration-orchestrator.js";
 
 function git(root: string, args: string[]): string {
@@ -75,30 +75,28 @@ function makeCandidate(root: string, taskId: string, branch: string) {
   return { candPath: cand.path!, coordinator, validate };
 }
 
-describe("isDocsOnlyChange (#0355)", () => {
-  it("accepts docs/, user-docs/, markdown anywhere, and the task's own file", () => {
-    expect(isDocsOnlyChange(["docs/architecture.md"])).toBe(true);
-    expect(isDocsOnlyChange(["user-docs/getting-started.md"])).toBe(true);
-    expect(isDocsOnlyChange(["README.md"])).toBe(true);
-    expect(isDocsOnlyChange(["work/0200-some-task.md"])).toBe(true);
-    expect(isDocsOnlyChange(["docs/a.md", "user-docs/b.md", "work/0200-x.md"])).toBe(true);
+describe("isDocsOnlyCheck close-out classification (#0355, #1059)", () => {
+  it("accepts docs/, user-docs/, work/, inputs/, schedules/, and markdown outside src", () => {
+    expect(isDocsOnlyCheck(["docs/architecture.md"])).toBe(true);
+    expect(isDocsOnlyCheck(["user-docs/getting-started.md"])).toBe(true);
+    expect(isDocsOnlyCheck(["README.md"])).toBe(true);
+    expect(isDocsOnlyCheck(["work/0200-some-task.md"])).toBe(true);
+    expect(isDocsOnlyCheck(["inputs/story.txt", "schedules/weekly.yml"])).toBe(true);
+    expect(isDocsOnlyCheck(["docs/a.md", "user-docs/b.md", "work/0200-x.md"])).toBe(true);
   });
 
-  it("uses the configured docs directory for non-Markdown documentation", () => {
-    expect(isDocsOnlyChange(["repoos/docs/architecture.adoc"], "repoos/docs")).toBe(true);
-    expect(isDocsOnlyChange(["docs/architecture.adoc"], "repoos/docs")).toBe(false);
+  it("rejects a single non-allowlisted path — no 'mostly docs' scoring", () => {
+    expect(isDocsOnlyCheck(["docs/a.md", "src/server/x.ts"])).toBe(false);
+    expect(isDocsOnlyCheck(["repoos.toml"])).toBe(false);
+    expect(isDocsOnlyCheck(["package.json"])).toBe(false);
+    expect(isDocsOnlyCheck(["scripts/run-tests.mjs"])).toBe(false);
+    expect(isDocsOnlyCheck([".github/workflows/ci.yml"])).toBe(false);
+    expect(isDocsOnlyCheck(["scripts/note.md"])).toBe(false);
   });
 
-  it("rejects a single non-docs path — no 'mostly docs' scoring", () => {
-    expect(isDocsOnlyChange(["docs/a.md", "src/server/x.ts"])).toBe(false);
-    expect(isDocsOnlyChange(["repoos.toml"])).toBe(false);
-    expect(isDocsOnlyChange(["package.json"])).toBe(false);
-    expect(isDocsOnlyChange(["scripts/run-tests.mjs"])).toBe(false);
-    expect(isDocsOnlyChange([".github/workflows/ci.yml"])).toBe(false);
-  });
-
-  it("treats an empty diff as docs-only (a legitimate no-op merge has nothing to gate)", () => {
-    expect(isDocsOnlyChange([])).toBe(true);
+  it("treats an empty merge diff as docs-only only for close-out", () => {
+    expect(isDocsOnlyCheck([])).toBe(false);
+    expect(isDocsOnlyCheck([], true, { allowEmpty: true })).toBe(true);
   });
 });
 

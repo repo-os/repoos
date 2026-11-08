@@ -65,6 +65,15 @@ class FakeEventSource {
 }
 
 const json = async (data: unknown) => ({ ok: true, status: 200, json: async () => data });
+const LANDABLE_GREEN = {
+  taskId: "0001",
+  branch: null,
+  headSha: "abc",
+  lockSha: "abc",
+  landable: true,
+  checks: [],
+  summary: { pass: 6, warn: 0, fail: 0 },
+};
 
 async function flush(): Promise<void> {
   for (let i = 0; i < 5; i++) await nextTick();
@@ -85,6 +94,7 @@ describe("Move to done (#0202-adjacent UX): closes the drawer and expands the in
         if (url.includes("/api/index"))
           return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.endsWith("/landable")) return json(LANDABLE_GREEN);
         if (url.includes("/review"))
           return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
         if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
@@ -95,6 +105,7 @@ describe("Move to done (#0202-adjacent UX): closes the drawer and expands the in
     );
     const repo = useRepoStore();
     await repo.init();
+    repo.seedLandable(task.id, LANDABLE_GREEN);
     const ui = useUiStore();
 
     // Start with the integration bar collapsed, as it would be after a user
@@ -138,6 +149,7 @@ describe("Move to done (#0202-adjacent UX): closes the drawer and expands the in
         if (url.includes("/api/index"))
           return json({ tasks: [task], counts: { ...EMPTY_COUNTS, review: 1 }, taskCount: 1 });
         if (url.includes("/api/agents/running")) return json({ tasks: [] });
+        if (url.endsWith("/landable")) return json(LANDABLE_GREEN);
         if (url.includes("/review"))
           return json({ ok: true, running: false, enabled: true, review: null, lines: [] });
         if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
@@ -152,6 +164,7 @@ describe("Move to done (#0202-adjacent UX): closes the drawer and expands the in
     );
     const repo = useRepoStore();
     await repo.init();
+    repo.seedLandable(task.id, LANDABLE_GREEN);
     const ui = useUiStore();
     ui.setIntegrationBarCollapsed(true);
 

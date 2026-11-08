@@ -2,9 +2,10 @@
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: active
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 5dccf854f904fb2c64a6afafc5d1e40b415406e2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-gate-skip-the-full-suite-when-the-
@@ -13,8 +14,10 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T16:29:50Z"
-review_passes: 5
+updated_at: "2026-11-08T17:34:46Z"
+last_close_out_gate_ms: 537455
+last_close_out_gate_at: "2026-11-08T17:31:35.712Z"
+review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
@@ -240,3 +243,15 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T16:28:30Z · ↻ resuming engineer to read queued message
 - 2026-11-08T16:28:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T16:29:50Z · message_delivered: 4 message(s)
+- 2026-11-08T16:29:56Z · message_queued at 2026-11-08T16:29:56.320Z
+- 2026-11-08T16:29:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T16:32:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T16:47:05Z · body
+- 2026-11-08T16:52:05Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T16:54:26Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T16:54:27Z · status active→review
+- 2026-11-08T16:54:27Z · message_queued at 2026-11-08T16:54:27.381Z
+- 2026-11-08T16:58:02Z · note: review pass 6: good to go
+- 2026-11-08T17:31:35Z · close-out gate completed in 537s
+- 2026-11-08T17:31:56Z · status done→done, release:success
+- 2026-11-08T17:34:46Z · message_dropped: 1 queued message(s) discarded — task is done

@@ -2,18 +2,20 @@
 id: "1065"
 title: Review card says 'ready to finish' while checks are still running or failing
 type: bug
-status: review
+status: done
 paths: [src/ui-app/src/components/TaskCard.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p2
 area: web
+merged_commit: 38035eabee46f9e470008cc7d43af9d7f2792ead
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
-updated_at: "2026-11-08T16:29:50Z"
+updated_at: "2026-11-08T17:29:16Z"
+last_close_out_gate_ms: 471309
+last_close_out_gate_at: "2026-11-08T17:22:05.044Z"
 review_passes: 1
 handoff_signal_retry_count: 2
-deferred_handoff_resume_count: 2
 ---
 ## Problem
 On the Work board, a task in Review whose reviewer said "good to go" shows the green "Review passed · ready to finish" label, a glowing card and an active "Move to done" button. The task drawer for the same task can say "Not ready to merge: Running checks · 7m 21s, step 10 of 11" at the same moment (seen on #1063). The two disagree.
@@ -72,3 +74,8 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T16:29:50Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-08T16:29:50Z · message_queued at 2026-11-08T16:29:50.304Z
 - 2026-11-08T16:29:50Z · ↻ resuming engineer to read queued message
+- 2026-11-08T16:52:39Z · message_delivered: 3 message(s)
+- 2026-11-08T16:52:45Z · message_queued at 2026-11-08T16:52:45.260Z
+- 2026-11-08T17:22:05Z · close-out gate completed in 471s
+- 2026-11-08T17:22:27Z · status done→done, release:success
+- 2026-11-08T17:29:16Z · message_dropped: 1 queued message(s) discarded — task is done

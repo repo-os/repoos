@@ -1389,6 +1389,8 @@ export interface RemoteValidationHost {
  * `fmt:check`/`lint`/`tests` steps do when the relevant script is absent.
  */
 export interface CheckConfig {
+  /** Skip expensive checks for documentation-only diffs; defaults to true. */
+  docsOnlySkip?: boolean;
   /**
    * Check-plan schema version (#0446). `1` is the current and only version.
    * A repo that declares `[[check.steps]]` should pin it: a future schema

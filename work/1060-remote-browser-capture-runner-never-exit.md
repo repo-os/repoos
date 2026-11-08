@@ -2,10 +2,13 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: active
 needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — startup-reaper Docker inspection failures can abort validation.
+needs_input_reason: dev-error
+needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
+debug_tldr: "The run hit the weekly usage limit during validation — wait for the limit to reset or add credits, then rerun the scoped check."
+debug_tldr_at: "2026-11-08T18:55:50Z"
+debug_tldr_key: "dev-error|ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 needs_merge: true
 priority: p1
 area: server
@@ -17,11 +20,11 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T16:28:30Z"
-review_passes: 9
+updated_at: "2026-11-08T18:55:50Z"
+review_passes: 12
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 8
+dev_error_count: 9
 ---
 ## Problem
 Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
@@ -274,3 +277,40 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T16:07:48Z · message_queued at 2026-11-08T16:07:48.570Z
 - 2026-11-08T16:07:48Z · ↻ resuming engineer to read queued message
 - 2026-11-08T16:28:30Z · message_delivered: 2 message(s)
+- 2026-11-08T16:29:56Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-08T16:32:03Z · note: review pass 11: needs some work
+- 2026-11-08T16:32:03Z · needs_input
+- 2026-11-08T16:49:54Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-08T16:52:17Z · note: review pass 12: needs some work
+- 2026-11-08T16:52:17Z · needs_input
+- 2026-11-08T17:29:54Z · status review→active
+- 2026-11-08T17:29:54Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T17:29:56Z · needs_input
+- 2026-11-08T17:29:56Z · message_queued at 2026-11-08T17:29:56.817Z
+- 2026-11-08T17:29:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T17:37:47Z · body
+- 2026-11-08T17:47:30Z · body
+- 2026-11-08T18:08:39Z · body
+- 2026-11-08T18:09:12Z · body
+- 2026-11-08T18:10:48Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T18:10:48Z · message_queued at 2026-11-08T18:10:48.294Z
+- 2026-11-08T18:10:48Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:10:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **#1060** is in good shape after review pass 12. The startup capture reaper in `validate.sh` no longer aborts the whole script when `docker ps` or `docker logs --since` fails: the loop runs under `set +e` / `set -e`, and the idle-log probe… · stderr: (empty)
+- 2026-11-08T18:10:49Z · note: handoff requested (cli)
+- 2026-11-08T18:13:33Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-08T18:13:34Z · status active→review
+- 2026-11-08T18:13:34Z · message_queued at 2026-11-08T18:13:34.286Z
+- 2026-11-08T18:18:26Z · note: review pass 13: needs some work
+- 2026-11-08T18:18:26Z · needs_input
+- 2026-11-08T18:21:49Z · message_delivered: 2 message(s)
+- 2026-11-08T18:30:11Z · needs_input
+- 2026-11-08T18:33:46Z · body
+- 2026-11-08T18:35:33Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T18:35:33Z · message_queued at 2026-11-08T18:35:33.840Z
+- 2026-11-08T18:35:34Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:35:34Z · message_delivered: 2 message(s)
+- 2026-11-08T18:49:53Z · status review→active
+- 2026-11-08T18:49:53Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T18:49:55Z · message_queued at 2026-11-08T18:49:55.797Z
+- 2026-11-08T18:50:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T18:55:35Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
