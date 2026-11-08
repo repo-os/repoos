@@ -16,7 +16,7 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T08:42:18Z"
+updated_at: "2026-11-08T08:42:35Z"
 last_close_out_gate_ms: 124316
 last_close_out_gate_at: "2026-11-08T08:42:18.732Z"
 review_passes: 2
@@ -139,4 +139,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T08:29:13Z · message_queued at 2026-11-08T08:29:13.934Z
 - 2026-11-08T08:33:22Z · note: review pass 2: good to go
 - 2026-11-08T08:42:18Z · close-out gate completed in 124s
-
+- 2026-11-08T08:42:35Z · status done→done, release:success
