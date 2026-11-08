@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T23:37:18Z"
+updated_at: "2026-11-08T23:37:19Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -295,3 +295,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T23:35:04Z · body
 - 2026-11-08T23:37:18Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-08T23:37:18Z · message_queued at 2026-11-08T23:37:18.922Z
+- 2026-11-08T23:37:19Z · ↻ resuming engineer to read queued message
