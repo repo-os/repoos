@@ -223,3 +223,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T15:30:08Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T15:30:09Z · needs_input
 - 2026-11-08T15:30:10Z · message_queued at 2026-11-08T15:30:10.034Z
+- 2026-11-08T15:30:10Z · CTO nudge: held — an undelivered message is already queued
