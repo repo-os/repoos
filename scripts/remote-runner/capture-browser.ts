@@ -21,7 +21,7 @@ import { runUiHandoffGate } from "../../src/server/ui-handoff-gate.js";
 import { shotsDir } from "../../src/server/shots.js";
 
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
-const CLEANUP_TIMEOUT_MS = 3_000;
+const PREVIEW_STOP_TIMEOUT_MS = 3_000;
 
 /** Publish only complete JSON: the collector may read it while the runner lives. */
 function writeResult(outputDir: string, result: unknown): void {
@@ -30,18 +30,15 @@ function writeResult(outputDir: string, result: unknown): void {
   renameSync(temporary, join(outputDir, "result.json"));
 }
 
-async function stopPreviewBounded(stop: () => Promise<void>): Promise<void> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    await Promise.race([
-      stop().catch(() => {}),
-      new Promise<void>((resolve) => {
-        timer = setTimeout(resolve, CLEANUP_TIMEOUT_MS);
-      }),
-    ]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
+async function boundedPreviewStop(
+  previews: PreviewManager,
+  taskId: string,
+  reason: string,
+): Promise<void> {
+  await Promise.race([
+    previews.stop(taskId, reason).catch(() => {}),
+    new Promise<void>((resolve) => setTimeout(resolve, PREVIEW_STOP_TIMEOUT_MS)),
+  ]);
 }
 
 /** Run existing RepoOS capture code in an isolated runner checkout. */
@@ -165,9 +162,7 @@ async function captureBrowserEvidenceImpl(
       detail: ok ? "runner browser capture completed" : "runner browser capture reported failures",
     };
   } finally {
-    await stopPreviewBounded(() =>
-      previews.stop(taskId, "remote browser evidence capture complete"),
-    );
+    await boundedPreviewStop(previews, taskId, "remote browser evidence capture complete");
   }
 }
 
@@ -214,17 +209,16 @@ if (import.meta.main) {
       process.exit(3);
     }
   }
-  if (process.exitCode !== 3)
+  if (process.exitCode !== 3) {
     captureBrowserEvidence(process.env.REPOOS_ROOT || process.cwd(), taskId ?? "", mode, dir, entry)
       .then((result) => {
         console.log(`[browser-capture] ${result.detail}`);
-        if (!result.ok) process.exitCode = 2;
-        process.exit(process.exitCode ?? 0);
+        process.exit(result.ok ? 0 : 2);
       })
       .catch((error: unknown) => {
         const detail = error instanceof Error ? error.message : String(error);
         console.error(`[browser-capture] failed: ${detail}`);
-        process.exitCode = 3;
-        process.exit(process.exitCode);
+        process.exit(3);
       });
+  }
 }

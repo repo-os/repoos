@@ -790,6 +790,8 @@ export const useRepoStore = defineStore("repo", () => {
     draggingTask.value = task;
   }
   const runningIds = ref<string[]>([]);
+  /** Server-confirmed deliberate pauses; separate from a task with no process. */
+  const pausedIds = ref<string[]>([]);
   /** Ids waiting for a free maxConcurrentAgents slot — will spawn automatically. */
   const queuedIds = ref<string[]>([]);
   /** Why each queued id is waiting — pressure vs maxConcurrentAgents (#0836). */
@@ -1730,6 +1732,9 @@ export const useRepoStore = defineStore("repo", () => {
       const prevStatus = e.prev?.status;
       const statusChanged =
         prevStatus !== undefined && prevStatus !== e.task.status && before !== null;
+      if (e.task.status !== "active") {
+        pausedIds.value = pausedIds.value.filter((id) => id !== e.task.id);
+      }
       // The server's index has no preview state, so carry the drawer's live
       // preview across updates (it only changes via `preview` events).
       // The retry counters live in `extra` on the full Task the SSE payload
@@ -1881,6 +1886,7 @@ export const useRepoStore = defineStore("repo", () => {
       if (!runningIds.value.includes(e.id)) {
         runningIds.value = [...runningIds.value, e.id];
       }
+      pausedIds.value = pausedIds.value.filter((id) => id !== e.id);
       // Cancel any pending "paused" debounce — a new turn is starting.
       if (pendingPauseTimers.value[e.id]) {
         clearTimeout(pendingPauseTimers.value[e.id]);
@@ -2934,6 +2940,7 @@ export const useRepoStore = defineStore("repo", () => {
     }
   }
   const isRunning = (id: string): boolean => runningIds.value.includes(id);
+  const isPaused = (id: string): boolean => pausedIds.value.includes(id);
 
   const isQueued = (id: string): boolean => queuedIds.value.includes(id);
 
@@ -3044,6 +3051,7 @@ export const useRepoStore = defineStore("repo", () => {
         throw new Error(message);
       }
       acknowledgeHumanTaskAction(t.id);
+      pausedIds.value = pausedIds.value.filter((id) => id !== t.id);
       if (t.status === "active") clearStartWorkPendingLocal(t.id);
       else if (fromReady) scheduleStartWorkPendingWatchdog(t.id);
     } catch (err) {
@@ -3062,6 +3070,7 @@ export const useRepoStore = defineStore("repo", () => {
       throw new Error(message);
     }
     acknowledgeHumanTaskAction(t.id);
+    if (!pausedIds.value.includes(t.id)) pausedIds.value = [...pausedIds.value, t.id];
   }
 
   async function cancelStalledCheck(taskId: string): Promise<void> {
@@ -3808,8 +3817,10 @@ export const useRepoStore = defineStore("repo", () => {
     try {
       const r = await api<{
         tasks: { id: string; startedAt: string; lastOutputAt?: string | null }[];
+        pausedTasks?: string[];
       }>("/api/agents/running");
       runningIds.value = r.tasks.map((t) => t.id);
+      pausedIds.value = r.pausedTasks ?? [];
       runningSince.value = Object.fromEntries(r.tasks.map((t) => [t.id, t.startedAt]));
       agentActivityAt.value = {
         ...agentActivityAt.value,
@@ -4459,6 +4470,7 @@ export const useRepoStore = defineStore("repo", () => {
     draggingTask,
     setDraggingTask,
     runningIds,
+    pausedIds,
     queuedIds,
     queuedAgentMeta,
     resourceQueueMarkers,
@@ -4593,6 +4605,7 @@ export const useRepoStore = defineStore("repo", () => {
     createSkill,
     createFreeformSkill,
     isRunning,
+    isPaused,
     isQueued,
     pmWorkingFor,
     debugTldrWorkingFor,

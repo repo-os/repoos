@@ -1310,6 +1310,8 @@ const SESSION_FILE_VERSION = 1;
 const SESSION_WRITE_DELAY_MS = 500;
 const SESSION_RETENTION_DAYS = 30;
 const SESSION_RETENTION_COUNT = 1000;
+/** Bound retries when queued human messages repeatedly block handoff. */
+const MAX_DEFERRED_HANDOFF_RESUMES = 2;
 
 interface PersistedSession {
   version: typeof SESSION_FILE_VERSION;
@@ -6560,6 +6562,11 @@ export class AgentRunner {
     return this.pausedTasks.has(taskId);
   }
 
+  /** Explicitly paused task ids, for board clients hydrating lifecycle state. */
+  pausedTaskIds(): string[] {
+    return [...this.pausedTasks];
+  }
+
   /**
    * True while the server-side handoff for a task is still finalizing (check,
    * commit, review). The process is already gone, so `isRunning` is false, but
@@ -7097,6 +7104,7 @@ export class AgentRunner {
         this.schedulePersist(id);
         this.persistQueuedMessages();
         this.recordTaskActivity(id, `message_delivered: ${delivered.length} message(s)`);
+        this.maybeClearDeferredHandoffResumeCount(id);
       },
     };
   }
@@ -7530,6 +7538,42 @@ export class AgentRunner {
 
   private hasBlockingQueuedMessages(taskId: string): boolean {
     return this.blockingQueuedMessages(taskId).length > 0;
+  }
+
+  /**
+   * The deferred-handoff auto-resume counter is scoped to one deferral episode:
+   * it caps how many times we re-launch after deferring while messages are still
+   * unread. Once blocking messages are delivered, reset it so a later deferral
+   * gets a fresh budget (#1057).
+   */
+  private maybeClearDeferredHandoffResumeCount(taskId: string): void {
+    if (this.hasBlockingQueuedMessages(taskId)) return;
+    if (!this.getTask) return;
+    try {
+      const task = this.getTask(taskId);
+      if (!task) return;
+      const current = parseTask({
+        content: readFileSync(task.absPath, "utf8"),
+        absPath: task.absPath,
+        root: this.config.root,
+        defaultStatus: this.config.defaultStatus,
+        defaultAssignee: this.config.defaultAssignee,
+      });
+      if (current.extra.deferred_handoff_resume_count == null) return;
+      delete current.extra.deferred_handoff_resume_count;
+      writeFileSync(task.absPath, serializeTask(current));
+      commitTaskFile(
+        this.config.root,
+        task.absPath,
+        `docs(${taskId}): clear deferred-handoff resume count`,
+      );
+    } catch (err) {
+      this.logger?.agent(
+        taskId,
+        "warn",
+        `Could not clear deferred-handoff resume count: ${(err as Error).message}`,
+      );
+    }
   }
 
   /** Drop automatic advisory messages once a handoff owns the turn. */
@@ -9882,12 +9926,14 @@ export class AgentRunner {
     // stale nudge only for the next nudge to queue behind it.
     const blockingQueuedCount = this.blockingQueuedMessages(taskId).length;
     const handoffBlockedByQueue = blockingQueuedCount > 0;
+    let deferredHandoffRecorded = false;
     if (handoffBlockedByQueue) {
       const root = this.config.root;
       const cacheDir = this.config.cacheDir ?? ".repoos";
       const pendingMv = readHandoffRequest(root, cacheDir, taskId);
       const mvMatches = !!pendingMv && !!entry.runId && pendingMv.runId === entry.runId;
       if (entry.handoffRequested || mvMatches) {
+        deferredHandoffRecorded = true;
         entry.handoffRequested = false;
         this.clearPendingHandoff(taskId);
         clearHandoffRequest(root, cacheDir, taskId);
@@ -9912,11 +9958,51 @@ export class AgentRunner {
         const outcomeTask = this.getTask?.(taskId) ?? entry.task;
         const outcomeAgent = outcomeTask ? resolveAgentForTask(this.config, outcomeTask) : null;
         deliverHandoffOutcome(this.config, taskId, deferred, this, outcomeAgent);
+        // No engineer remains to read the blocking message. Resume after this
+        // turn's cleanup, with a durable cap to prevent a handoff loop.
+        if (outcomeTask && !this.isPaused(taskId) && !this.entries.has(taskId)) {
+          try {
+            const current = parseTask({
+              content: readFileSync(outcomeTask.absPath, "utf8"),
+              absPath: outcomeTask.absPath,
+              root: this.config.root,
+              defaultStatus: this.config.defaultStatus,
+              defaultAssignee: this.config.defaultAssignee,
+            });
+            const rawAttempts = current.extra?.deferred_handoff_resume_count;
+            const attempts =
+              typeof rawAttempts === "number" && Number.isFinite(rawAttempts) ? rawAttempts : 0;
+            if (attempts < MAX_DEFERRED_HANDOFF_RESUMES) {
+              current.extra = { ...current.extra, deferred_handoff_resume_count: attempts + 1 };
+              writeFileSync(outcomeTask.absPath, serializeTask(current));
+              commitTaskFile(
+                this.config.root,
+                outcomeTask.absPath,
+                `docs(${taskId}): record deferred-handoff resume`,
+              );
+              const reason = "↻ resuming engineer to read queued message";
+              this.recordTaskActivity(taskId, reason);
+              this.appendLine(taskId, "sys", reason);
+              queueMicrotask(() => {
+                if (!this.entries.has(taskId) && !this.queuedIds.has(taskId)) {
+                  this.deliverQueuedMessages(taskId);
+                }
+              });
+            }
+          } catch (err) {
+            this.logger?.agent(
+              taskId,
+              "warn",
+              `Could not schedule deferred-handoff resume: ${(err as Error).message}`,
+            );
+          }
+        }
       }
     }
     if (
-      interruptedForQueue ||
-      (!wasReview &&
+      (!deferredHandoffRecorded && interruptedForQueue) ||
+      (!deferredHandoffRecorded &&
+        !wasReview &&
         !entry.handoffRequested &&
         !entry.intentionalStop &&
         !this.isPaused(taskId) &&

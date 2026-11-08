@@ -13,9 +13,26 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
 import { createJobCoordinator } from "../../server/integration-job.js";
-import { CloseOutOrchestrator, tailLine } from "../../server/integration-orchestrator.js";
+import {
+  CloseOutOrchestrator,
+  formatMainShaFailureReason,
+  tailLine,
+} from "../../server/integration-orchestrator.js";
 
 describe("tailLine (reason capture)", () => {
+  it("includes git failure diagnostics when the default branch SHA cannot be read", () => {
+    const reason = formatMainShaFailureReason("/repo", "main", {
+      status: 128,
+      timedOut: false,
+      stderr: "fatal: bad revision 'main^{commit}'\n",
+    });
+    expect(reason).toContain("branch: main");
+    expect(reason).toContain("root: /repo");
+    expect(reason).toContain("exit status: 128");
+    expect(reason).toContain("timedOut: false");
+    expect(reason).toContain("fatal: bad revision");
+  });
+
   it("strips ANSI escapes so the stored reason renders as plain text", () => {
     const out = tailLine("\u001b[31merror\u001b[0m: boom\n\u001b[1m✗\u001b[0m", "");
     expect(out).toContain("error: boom");

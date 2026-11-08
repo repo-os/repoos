@@ -2,9 +2,10 @@
 id: "0963"
 title: Build the simplified client project board
 type: feature
-status: active
+status: done
 priority: p2
 area: web
+merged_commit: fdec662c84aa26528051ec018f00087776eb9e5b
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/build-the-simplified-client-project-boar
@@ -15,9 +16,12 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T07:23:14Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/shot-target-support-0866.test.ts > app target resolution (#0866) > keeps APP_ROUTE_PREFIXES in sync with the UI router, tests/app-loading-skeleton.test.ts > repo loading skeleton > maps every standard route to an explicit skeleton kind on mini — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 79b62477efe1e44cc9044f51de0013ba7fd90ffe
+updated_at: "2026-11-08T08:42:57Z"
+last_close_out_gate_ms: 124316
+last_close_out_gate_at: "2026-11-08T08:42:18.732Z"
+review_passes: 2
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T08:15:08.792Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 ---
 ## Problem
 
@@ -119,3 +123,21 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T07:12:16Z · message_delivered: 2 message(s)
 - 2026-11-08T07:22:17Z · body
 - 2026-11-08T07:23:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T07:52:50Z · message_queued at 2026-11-08T07:52:50.301Z
+- 2026-11-08T07:52:53Z · message_delivered: 1 message(s)
+- 2026-11-08T07:53:00Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-08T07:53:00Z · note: handoff requested (cli)
+- 2026-11-08T08:05:24Z · message_queued at 2026-11-08T08:05:24.841Z
+- 2026-11-08T08:05:24Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-08T08:05:25Z · message_delivered: 1 message(s)
+- 2026-11-08T08:13:58Z · body
+- 2026-11-08T08:14:32Z · status active→review
+- 2026-11-08T08:15:05Z · note: review pass 1: good to go
+- 2026-11-08T08:15:05Z · message_queued at 2026-11-08T08:15:05.733Z
+- 2026-11-08T08:22:04Z · message_delivered: 1 message(s)
+- 2026-11-08T08:28:41Z · body
+- 2026-11-08T08:29:13Z · message_queued at 2026-11-08T08:29:13.934Z
+- 2026-11-08T08:33:22Z · note: review pass 2: good to go
+- 2026-11-08T08:42:18Z · close-out gate completed in 124s
+- 2026-11-08T08:42:35Z · status done→done, release:success
+- 2026-11-08T08:42:57Z · message_dropped: 1 queued message(s) discarded — task is done

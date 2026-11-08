@@ -20,6 +20,12 @@ export const router = createRouter({
     },
     { path: "/", name: "dashboard", component: () => import("./views/DashboardView.vue") },
     { path: "/work", name: "work", component: () => import("./views/WorkView.vue") },
+    {
+      path: "/client-board",
+      name: "client-board",
+      component: () => import("./views/ClientBoardView.vue"),
+      meta: { fullscreen: true },
+    },
     { path: "/stories", name: "stories", component: () => import("./views/StoriesView.vue") },
     { path: "/checks", name: "checks", component: () => import("./views/ChecksView.vue") },
     { path: "/dev", name: "dev", component: () => import("./views/DevView.vue") },

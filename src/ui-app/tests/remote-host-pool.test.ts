@@ -72,7 +72,10 @@ import {
   staleBundlePruneCommand,
   remoteRunCleanupCommand,
   remoteRunHasGateExit,
+  remoteRunBrowserCaptureFinished,
+  remoteRunHasTerminalOutput,
   parseRemoteGateExitCode,
+  parseRemoteRunExitCode,
   remoteRunPaths,
   validateContainerName,
   ActiveRemoteRunRegistry,
@@ -3235,6 +3238,13 @@ describe("hung container cleanup (#0729)", () => {
     expect(remoteRunHasGateExit("log\n[validate] gate exit 1\n")).toBe(true);
     expect(remoteRunHasGateExit("[validate] gate e" + "xit 42\n")).toBe(true);
     expect(parseRemoteGateExitCode("[validate] gate exit 42\n")).toBe(42);
+    const captureDone = "[browser-capture] runner browser capture completed\n";
+    expect(remoteRunBrowserCaptureFinished(captureDone)).toBe(true);
+    expect(remoteRunHasTerminalOutput(captureDone, true)).toBe(true);
+    expect(remoteRunHasTerminalOutput(captureDone, false)).toBe(false);
+    expect(parseRemoteRunExitCode(captureDone, true)).toBe(0);
+    const captureFail = "[browser-capture] runner browser capture reported failures\n";
+    expect(parseRemoteRunExitCode(captureFail, true)).toBe(1);
   });
 
   it("does not sweep containers on a native host", () => {

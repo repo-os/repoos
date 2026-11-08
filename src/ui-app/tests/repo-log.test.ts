@@ -22,6 +22,7 @@ import {
   listRepoLog,
   parseDecorations,
   parseGitLogOutput,
+  resolveDefaultBranch,
   truncatePatch,
 } from "../../core/repo-log";
 
@@ -149,6 +150,36 @@ describe("git log parsing (#0514)", () => {
     expect(isValidPathFilter("src/ui-app/")).toBe(true);
     expect(isValidPathFilter("../etc/passwd")).toBe(false);
     expect(isValidPathFilter("/etc/passwd")).toBe(false);
+  });
+});
+
+describe("resolveDefaultBranch", () => {
+  it("ignores stale init.defaultBranch when main exists", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    commitFile(root, "a.txt", "a\n", "init");
+    git(root, ["config", "init.defaultBranch", "master"]);
+    expect(await resolveDefaultBranch(root)).toBe("main");
+  });
+
+  it("uses the checked-out trunk branch in a remote-less repository", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-log-trunk-"));
+    dirs.push(root);
+    git(root, ["init", "-b", "trunk"]);
+    git(root, ["config", "user.email", "hist@example.com"]);
+    git(root, ["config", "user.name", "Hist Bot"]);
+    commitFile(root, "a.txt", "a\n", "init");
+    git(root, ["config", "init.defaultBranch", "master"]);
+    expect(await resolveDefaultBranch(root)).toBe("trunk");
+  });
+
+  it("falls through an origin/HEAD target without a local branch ref", async () => {
+    const root = initRepo();
+    dirs.push(root);
+    commitFile(root, "a.txt", "a\n", "init");
+    git(root, ["symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/missing"]);
+    git(root, ["config", "init.defaultBranch", "missing"]);
+    expect(await resolveDefaultBranch(root)).toBe("main");
   });
 });
 
