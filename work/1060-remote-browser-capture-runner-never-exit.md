@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
+debug_tldr: "The run hit the weekly usage limit during validation — wait for the limit to reset or add credits, then rerun the scoped check."
+debug_tldr_at: "2026-11-08T18:55:50Z"
+debug_tldr_key: "dev-error|ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage."
 needs_merge: true
 priority: p1
 area: server
@@ -17,7 +20,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T18:55:35Z"
+updated_at: "2026-11-08T18:55:50Z"
 review_passes: 12
 review_rounds: 2
 handoff_signal_retry_count: 2
