@@ -2,7 +2,7 @@
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
-status: active
+status: review
 needs_merge: true
 priority: p3
 area: web
@@ -278,3 +278,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T00:52:52Z · needs_merge
 - 2026-11-08T00:52:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T00:53:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **Blocked:** `repoos sync 1050` refuses during this active turn, and manual staging/committing is prohibited. E1 remains on the branch; handoff would not resolve the review finding. · stderr: if (repo.doneErrorFor(t.id)) return null; if (t.status === "active") { <<<<<<< HEAD if (repo.handoffInFlight(t.id) && !repo.isRunning(t.id)) return null; ======= if (showCardCheckProgress.value) return null; >>>>>>> main return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
+- 2026-11-08T00:53:02Z · status active→review
