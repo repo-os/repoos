@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T12:22:30Z"
+updated_at: "2026-11-08T12:23:12Z"
 last_close_out_gate_ms: 403418
 last_close_out_gate_at: "2026-11-08T12:22:30.511Z"
 review_passes: 4
@@ -181,4 +181,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T11:11:39Z · note: review pass 4: good to go
 - 2026-11-08T12:09:13Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-08T12:22:30Z · close-out gate completed in 403s
-
+- 2026-11-08T12:23:12Z · status done→done, release:success
