@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
@@ -14,7 +16,6 @@ review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
 updated_at: "2026-11-08T02:52:07Z"
-last_check_failure: "repoos check at 2026-11-08T02:38:43.543Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 5
 ---
 ## Problem
@@ -105,3 +106,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:51:29Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T02:52:04Z · message_queued at 2026-11-08T02:52:04.602Z
 - 2026-11-08T02:52:07Z · message_delivered: 1 message(s)
+
