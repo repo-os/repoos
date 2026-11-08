@@ -8,9 +8,11 @@
  * can't also appear; a later Vue update that re-sets `title` wins over the stale
  * `data-tip`, so dynamic titles stay correct.
  *
- * Touch: a short tap or a long-press on a `data-tip` target shows the tooltip
- * and keeps it open until the user taps elsewhere (#1058). Mouse hover/focus
- * behaviour is unchanged.
+ * Touch: long-press on any `data-tip` target shows the tooltip and keeps it
+ * open until the user taps elsewhere. A short tap does the same only when the
+ * host opts in with `data-tip-touch="tap"` (#1058 card recency — avoids stealing
+ * clicks from buttons and links that merely carry a hint). Mouse hover/focus is
+ * unchanged.
  */
 const SHOW_DELAY_MS = 350;
 /** Long-press threshold — matches common touch “show hint” timing. */
@@ -25,6 +27,11 @@ let installed = false;
 
 function tipHost(node: EventTarget | null): HTMLElement | null {
   return (node as Element | null)?.closest?.<HTMLElement>("[title], [data-tip]") ?? null;
+}
+
+/** Short touch release opens and pins the tooltip — only on explicit hosts (#1058). */
+function touchTapPins(el: HTMLElement): boolean {
+  return el.getAttribute("data-tip-touch") === "tap";
 }
 
 let tipEl: HTMLDivElement | null = null;
@@ -168,7 +175,13 @@ export function installTooltips(): void {
     clearLongPress();
     activeTouchId = null;
 
-    if (e.pointerType === "touch" && pending && hadLongPressTimer && !touchPinned) {
+    if (
+      e.pointerType === "touch" &&
+      pending &&
+      hadLongPressTimer &&
+      !touchPinned &&
+      touchTapPins(pending)
+    ) {
       const upEl = tipHost(e.target);
       if (upEl === pending && textFor(pending)) {
         openFor(pending, true);
@@ -196,6 +209,12 @@ export function installTooltips(): void {
     }
   };
 
+  const onPointerCancel = (e: PointerEvent) => {
+    if (activeTouchId !== null && e.pointerId !== activeTouchId) return;
+    clearLongPress();
+    activeTouchId = null;
+  };
+
   document.addEventListener("mouseover", enter);
   document.addEventListener("focusin", enter);
   document.addEventListener("mouseout", leave);
@@ -218,7 +237,7 @@ export function installTooltips(): void {
 
   document.addEventListener("pointerdown", onPointerDown, true);
   document.addEventListener("pointerup", onPointerUp);
-  document.addEventListener("pointercancel", onPointerUp);
+  document.addEventListener("pointercancel", onPointerCancel);
   document.addEventListener("pointermove", onPointerMove, { passive: true });
   document.addEventListener("click", onClickCapture, true);
   document.addEventListener("scroll", hide, true);
