@@ -1,0 +1,36 @@
+---
+id: "1064"
+title: Live index turns review report files into inbox tasks (review-1..N)
+type: bug
+status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX"
+paths: [src/server/live-index.ts, src/core/indexer.ts]
+priority: p1
+area: [core, web]
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-11-08T12:47:28Z"
+updated_at: "2026-11-08T12:47:28Z"
+---
+## Problem
+Reported from the "tiao" project (RepoOS v0.5.77, workDir `repoos/work`). The Work board's Inbox fills with cards `review-1` … `review-5` (type feature, area general). Opening one shows path `repoos/work/reports/0006/review-1.md`, and its "spec" is the report body. Cards from different tasks collide on the same derived id, so the latest write wins.
+
+Cause: `LiveIndex.applyFileChange` (src/server/live-index.ts) is the file-watcher path. Its `isTaskFile` accepts any file with a task extension under workDir. It neither skips `<workDir>/reports/` nor requires an `id` in frontmatter. `buildIndex` and `buildIndexDetailedAsync` (src/core/indexer.ts) do both (`nonTaskDirs`, and the `"id" in data` guard), so a fresh start looks fine and the bug only appears while the server is running and a report is written or changed. Review reports have `task:` frontmatter and no `id:`, so parseTask derives the id from the filename.
+
+## Acceptance criteria
+- Files under `<workDir>/reports/` (and the legacy `<workDir>/engineering-reports/`) never become tasks via the live index.
+- `applyFileChange` skips files whose frontmatter has no `id`, the same rule the indexer applies (and does not leave any existing entry for that path in the index).
+- One shared predicate (non-task directory + id check) used by buildIndex, buildIndexDetailedAsync, and LiveIndex so they cannot drift again; doctor.ts `walkTaskFiles` also skips reports.
+- Tests: with a running LiveIndex, writing `<workDir>/reports/0006/review-1.md` (frontmatter `task: "0006"`, no `id`) creates no task and emits no event. Use a non-default workDir such as `repoos/work`. A real task file still indexes. A stale `review-N` entry in an existing index is dropped on reload.
+- Check the Delete task / Archive actions cannot act on a non-task file.
+
+## Notes for AI
+Failure mode to avoid: the cards offer "Delete task", which would delete the stored review report; don't change report storage, only indexing. Related: reports dir exclusion was added in #1029 for the startup indexer only. Separate cause of the report content ("opencode agent exited without output… Unexpected server error") is a reviewer model failure on that host, not this bug.
+
+## Activity
+
+- 2026-11-08T12:47:28Z · created · njachowski@gmail.com
+- 2026-11-08T12:47:28Z · needs_input
