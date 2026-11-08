@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-08T17:29:16Z"
+review_passes: 2
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -13,10 +15,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T17:29:16Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 A task's check (build, tests, UI smoke, remote validation) is refused with "the worktree changed while the gate was running (HEAD moved from X to Y) — the check result no longer describes what is committed" whenever the branch tip moves while the check runs. On 2026-11-08 this repeatedly failed handoffs and forced full re-runs (each 10-60 minutes). The tip moved because of:
@@ -77,3 +77,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T17:25:52Z · status active→review
 - 2026-11-08T17:25:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-08T17:29:16Z · note: review pass 2: needs some work
+
