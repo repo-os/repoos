@@ -14,6 +14,7 @@ import { expect, it, vi } from "vitest";
 import {
   COMPLETED_CAPTURE_REAPER_IDLE_DETAIL,
   completedCaptureReaperCommand,
+  formatValidateFailedReapCaptureMarker,
   formatValidateReapedCaptureMarker,
   finishedCaptureCollectionCommand,
   reaperCommand,
@@ -140,6 +141,27 @@ it("records validate.sh startup reaper markers on the capture task", () => {
     );
     expect(existsSync(remoteEventsPath(root, "1048"))).toBe(true);
     expect(readFileSync(remoteEventsPath(root, "1048"), "utf8")).toContain("repoos-validate-hung");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+it("records failed validate.sh startup reaper markers separately", () => {
+  const root = mkdtempSync(join(tmpdir(), "capture-startup-reap-fail-"));
+  try {
+    const seen = new Set<string>();
+    const marker = formatValidateFailedReapCaptureMarker("repoos-validate-hung", "1048");
+    const logger = { system: vi.fn() };
+    recordValidateStartupReapedCaptures(root, `${marker}\n`, seen, {
+      host: "100.0.0.2",
+      logger: logger as never,
+    });
+    expect(logger.system).toHaveBeenCalledWith(
+      "warn",
+      "failed to reap completed browser capture repoos-validate-hung on 100.0.0.2: docker rm -f",
+    );
+    expect(existsSync(remoteEventsPath(root, "1048"))).toBe(true);
+    expect(readFileSync(remoteEventsPath(root, "1048"), "utf8")).toContain("failed to reap");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

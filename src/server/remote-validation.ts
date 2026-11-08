@@ -1216,15 +1216,25 @@ export function parseRemoteGateExitCode(output: string): number | null {
 /** Shared copy for periodic and validate.sh startup completed-capture reapers (#1060). */
 export const COMPLETED_CAPTURE_REAPER_IDLE_DETAIL = "no output for two minutes and CPU idle";
 
-/** Marker line `validate.sh` prints before removing a quiet completed capture at startup. */
+/** Marker line `validate.sh` prints after successfully removing a quiet completed capture at startup. */
 export function formatValidateReapedCaptureMarker(containerName: string, taskId?: string): string {
   const bare = containerName.replace(/^\//, "");
   const task = taskId?.trim() ? ` task=${taskId.trim()}` : "";
   return `[validate] reaped completed browser capture ${bare}${task}: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`;
 }
 
+/** Marker line `validate.sh` prints when startup completed-capture removal fails. */
+export function formatValidateFailedReapCaptureMarker(containerName: string, taskId?: string): string {
+  const bare = containerName.replace(/^\//, "");
+  const task = taskId?.trim() ? ` task=${taskId.trim()}` : "";
+  return `[validate] failed to reap completed browser capture ${bare}${task}: docker rm -f`;
+}
+
 const VALIDATE_REAPED_CAPTURE_RE =
   /\[validate\] reaped completed browser capture ([^\s\n]+)(?: task=([0-9]+))?: no output for two minutes and CPU idle/g;
+
+const VALIDATE_FAILED_REAP_CAPTURE_RE =
+  /\[validate\] failed to reap completed browser capture ([^\s\n]+)(?: task=([0-9]+))?: docker rm -f/g;
 
 export function newlySeenValidateReapedCaptures(
   output: string,
@@ -1232,6 +1242,23 @@ export function newlySeenValidateReapedCaptures(
 ): Array<{ containerName: string; taskId?: string; line: string }> {
   const found: Array<{ containerName: string; taskId?: string; line: string }> = [];
   for (const match of output.matchAll(VALIDATE_REAPED_CAPTURE_RE)) {
+    const line = match[0];
+    if (seen.has(line)) continue;
+    found.push({
+      line,
+      containerName: match[1]!,
+      taskId: match[2],
+    });
+  }
+  return found;
+}
+
+function newlySeenValidateFailedReapCaptures(
+  output: string,
+  seen: ReadonlySet<string>,
+): Array<{ containerName: string; taskId?: string; line: string }> {
+  const found: Array<{ containerName: string; taskId?: string; line: string }> = [];
+  for (const match of output.matchAll(VALIDATE_FAILED_REAP_CAPTURE_RE)) {
     const line = match[0];
     if (seen.has(line)) continue;
     found.push({
@@ -1259,6 +1286,20 @@ export function recordValidateStartupReapedCaptures(
     if (!recordTask) continue;
     appendRemoteValidationEvent(root, recordTask, {
       level: "info",
+      phase: "run",
+      message,
+      host: opts.host,
+    });
+  }
+  for (const { line, containerName, taskId } of newlySeenValidateFailedReapCaptures(output, seen)) {
+    seen.add(line);
+    const hostLabel = opts.host ?? "runner";
+    const message = `failed to reap completed browser capture ${containerName} on ${hostLabel}: docker rm -f`;
+    opts.logger?.system("warn", message);
+    const recordTask = taskId ?? opts.defaultTaskId;
+    if (!recordTask) continue;
+    appendRemoteValidationEvent(root, recordTask, {
+      level: "warn",
       phase: "run",
       message,
       host: opts.host,
