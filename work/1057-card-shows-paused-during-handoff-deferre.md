@@ -19,7 +19,6 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
 updated_at: "2026-11-08T08:03:13Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T07:55:05.134Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_passes: 1
 handoff_signal_retry_count: 1
@@ -136,3 +135,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T08:03:12Z · note: handoff requested (cli)
 - 2026-11-08T08:03:12Z · body
 - 2026-11-08T08:03:13Z · CTO nudge: held — handoff gate is running
+
