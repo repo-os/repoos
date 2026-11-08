@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T09:33:45Z"
+updated_at: "2026-11-08T09:39:16Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -96,3 +96,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T09:28:26Z · note: handoff requested (cli)
 - 2026-11-08T09:29:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T09:33:45Z · message_delivered: 1 message(s)
+- 2026-11-08T09:39:16Z · message_queued at 2026-11-08T09:39:16.399Z
