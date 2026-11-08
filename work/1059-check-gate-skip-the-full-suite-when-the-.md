@@ -3,9 +3,6 @@ id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T11:18:17Z"
+updated_at: "2026-11-08T11:18:18Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: b4f87d328cd27875d9284c01c8ecbe1df0ca150c
 review_rounds: 2
@@ -162,3 +159,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T11:17:31Z · note: shots: failed — capture of Docs-only check setting on "default" failed: screenshot: Timeout 30000ms exceeded.
 - 2026-11-08T11:17:47Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-11-08T11:18:17Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
+- 2026-11-08T11:18:18Z · needs_input
