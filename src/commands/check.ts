@@ -102,6 +102,13 @@ import {
   isManagedEngineerCheck,
   runEngineerRemoteSelfCheckGate,
 } from "../server/engineer-remote-self-check.js";
+import {
+  acquireCheckGateLock,
+  installCheckGateCommitHook,
+  releaseCheckGateLock,
+} from "../server/check-gate-lock.js";
+import { runGit } from "../core/git.js";
+import { getGitWorker } from "../server/git-worker.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
   runRemotePreReviewGate,
@@ -2507,6 +2514,26 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
   waitRecord = waits.finish();
 
+  if (isManagedEngineerCheck(process.env)) {
+    installCheckGateCommitHook(cfg);
+  }
+  let releaseCheckGate: (() => Promise<void>) | undefined;
+  if (isManagedEngineerCheck(process.env) && runContext.taskId) {
+    const branch =
+      (await getGitWorker(checkStoreRoot).currentBranch()) ??
+      (await runGit(repoRoot, ["branch", "--show-current"], 10_000)).stdout.trim();
+    await acquireCheckGateLock({
+      boardRoot: checkStoreRoot,
+      cacheDir: cfg.cacheDir ?? ".repoos",
+      taskId: runContext.taskId,
+      branch: branch || "main",
+      worktree: repoRoot,
+      kind: "engineer-self-check",
+    });
+    const taskId = runContext.taskId;
+    const cache = cfg.cacheDir ?? ".repoos";
+    releaseCheckGate = () => releaseCheckGateLock(checkStoreRoot, cache, taskId);
+  }
   const runStartedAt = new Date();
   // Persist a provisional row before running steps. If this process is killed,
   // the durable history still shows an interrupted run instead of no run.
@@ -2606,6 +2633,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   } finally {
     if (process.env.REPOOS_AGENT === "1") delete process.env.REPOOS_LOCAL_CHECK_SLOT_HELD;
     releaseLocalCheck?.();
+    await releaseCheckGate?.();
   }
 
   // ── Summary ─────────────────────────────────────────────────────────

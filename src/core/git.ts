@@ -378,6 +378,25 @@ export function setGitLockFailureSink(
   gitLockFailureSink = sink;
 }
 
+/** Verdict from the check-gate commit hook (#1061). */
+export type CheckGateCommitVerdict = "proceed" | "defer" | "refuse";
+
+export type CheckGateCommitHook = (args: {
+  boardRoot: string;
+  cacheDir: string;
+  commitRoot: string;
+  relPaths: string[];
+  absPaths: string[];
+  message: string;
+}) => CheckGateCommitVerdict;
+
+let checkGateCommitHook: CheckGateCommitHook | null = null;
+
+/** Server installs this to defer or refuse commits during an active check gate. */
+export function setCheckGateCommitHook(hook: CheckGateCommitHook | null): void {
+  checkGateCommitHook = hook;
+}
+
 /** `retryOnGitLock` predicate for a raw `runGit` result: the lock text, or null. */
 export function gitRunLockContention(r: { status: number | null; stderr: string }): string | null {
   return r.status !== 0 && isGitLockContention(r.stderr) ? r.stderr : null;
@@ -2333,6 +2352,20 @@ export function commitFiles(root: string, absPaths: string[], message: string): 
   const rels = absPaths.map((p) => relative(root, p));
   if (rels.length === 0 || rels.some((rel) => rel.startsWith("..") || isAbsolute(rel))) {
     return false;
+  }
+  const boardRoot = process.env.REPOOS_CHECK_STORE_ROOT?.trim() || root;
+  const cacheDir = process.env.REPOOS_CACHE_DIR?.trim() || ".repoos";
+  if (checkGateCommitHook) {
+    const verdict = checkGateCommitHook({
+      boardRoot,
+      cacheDir,
+      commitRoot: root,
+      relPaths: rels,
+      absPaths,
+      message,
+    });
+    if (verdict === "refuse") return false;
+    if (verdict === "defer") return true;
   }
   const status = git(root, ["status", "--porcelain", "--", ...rels]);
   if (status === null) return false;

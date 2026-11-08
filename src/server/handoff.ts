@@ -45,8 +45,9 @@ import {
   uncommittedWorkFiles,
   workFileFilter,
   commitTaskFile,
-  pathsChangedBetweenCommits,
 } from "../core/git.js";
+import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
+import { acquireCheckGateLock, releaseCheckGateLock } from "./check-gate-lock.js";
 import { getGitWorker } from "./git-worker.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
@@ -477,14 +478,21 @@ async function describeStateDrift(
 ): Promise<string | null> {
   const parts: string[] = [];
   if (before.head !== after.head) {
-    const changed = await pathsChangedBetweenCommits(workdir, before.head, after.head);
-    const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${taskId}-`;
-    const bookkeepingOnly =
-      changed !== null &&
-      changed.length > 0 &&
-      changed.every((path) => path.startsWith(ownTaskPath) && path.endsWith(".md"));
-    if (!bookkeepingOnly) {
-      parts.push(`HEAD moved from ${before.head.slice(0, 8)} to ${after.head.slice(0, 8)}`);
+    const headDrift = await checkGateHeadDriftAllowed(
+      workdir,
+      config,
+      taskId,
+      before.head,
+      after.head,
+    );
+    if (!headDrift.ok) {
+      if (headDrift.reason.startsWith("could not determine")) {
+        parts.push(
+          `HEAD moved from ${before.head.slice(0, 8)} to ${after.head.slice(0, 8)} (${headDrift.reason})`,
+        );
+      } else {
+        parts.push(headDrift.reason);
+      }
     }
   }
   const added = after.files.filter((f) => !before.files.includes(f));
@@ -770,6 +778,15 @@ async function runHandoffFinalization(
     }
 
     onProgress?.("check");
+    await acquireCheckGateLock({
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      taskId: task.id,
+      branch: task.branch,
+      worktree: workdir,
+      kind: "handoff-finalize",
+    });
+    try {
     // Remote half first (#0520). It bundles the worktree's HEAD, which after the
     // commit gate above IS the tree the gate is about to prove — so the remote
     // suite and the committed tree are the same object (#0512).
@@ -901,7 +918,6 @@ async function runHandoffFinalization(
     const drift = await describeStateDrift(workdir, config, task.id, before, after);
     if (drift) return fail("check", drift);
 
-    if (!opts.skipChecks) {
       // #0734: use the CANONICAL task body for declarations (task.body), not a
       // possibly-stale worktree copy — a `## Shots` edit on the board must be
       // honored without breaking branch source validation (which still runs
@@ -932,6 +948,8 @@ async function runHandoffFinalization(
           return fail("verify", detail);
         }
       }
+    } finally {
+      await releaseCheckGateLock(config.root, config.cacheDir ?? ".repoos", task.id);
     }
   } else {
     // Keep the step sequence honest for a UI that renders "Running checks…":
