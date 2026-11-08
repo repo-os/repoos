@@ -2,7 +2,7 @@
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: check-failed-after-retries
 debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
@@ -97,4 +97,3 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T03:23:20Z · message_queued at 2026-11-08T03:23:20.083Z
 - 2026-11-08T03:23:20Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
 - 2026-11-08T03:23:20Z · message_delivered: 3 message(s)
-- 2026-11-08T03:23:36Z · status active→review
