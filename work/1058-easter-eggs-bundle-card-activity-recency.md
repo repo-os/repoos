@@ -61,12 +61,12 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "selector": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "highlight": "[data-overlay-layer=\"floating\"]",
 "steps": [
-  {
-    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "board:activeCoding"
 },
