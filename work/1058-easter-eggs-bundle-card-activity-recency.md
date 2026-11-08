@@ -8,17 +8,17 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-activity-recency
-cli_override: cursor
-model_override: composer-2.5
-review_cli_override: github copilot
-review_model_override: default
+review_cli_override: codex
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T18:50:01Z"
+updated_at: "2026-11-08T19:11:04Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-dev_error_count: 17
+dev_error_count: 56
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:40.337Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:49.541Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:58.880Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:56:08.551Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:57:53.016Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:06.923Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:18.556Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:29.518Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:40.838Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:51.664Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:02.646Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:13.345Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:24.905Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:36.217Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:47.291Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:59.207Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:12.924Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:28.243Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:40.546Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:52.891Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:22.930Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:37.124Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:50.017Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:03.286Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:35.770Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:51.107Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:03.186Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:15.637Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:28.288Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:41.224Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:52.092Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:04.628Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:16.673Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:28.810Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:42.152Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:05:04.298Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:05:14.669Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:05:32.145Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:11:03.257Z\",\"kind\":\"usage-limit\"}]"
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Items
 
@@ -310,3 +310,124 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T18:50:00Z · needs_input
 - 2026-11-08T18:50:01Z · message_queued at 2026-11-08T18:50:01.082Z
 - 2026-11-08T18:50:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T18:55:40Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:55:40Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 1/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:55:41Z · needs_input
+- 2026-11-08T18:55:41Z · message_delivered: 1 message(s)
+- 2026-11-08T18:55:49Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:55:49Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 2/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:55:50Z · needs_input
+- 2026-11-08T18:55:58Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:55:58Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 3/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:56:00Z · needs_input
+- 2026-11-08T18:56:08Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:56:08Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 4/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:57:43Z · needs_input
+- 2026-11-08T18:57:52Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:57:53Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 5/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:57:57Z · needs_input
+- 2026-11-08T18:58:06Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:06Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 6/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:08Z · needs_input
+- 2026-11-08T18:58:18Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:18Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 7/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:20Z · needs_input
+- 2026-11-08T18:58:29Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:29Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 8/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:31Z · needs_input
+- 2026-11-08T18:58:40Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:40Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 9/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:43Z · needs_input
+- 2026-11-08T18:58:51Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:51Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 10/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:58:53Z · needs_input
+- 2026-11-08T18:59:02Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:02Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 11/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:04Z · needs_input
+- 2026-11-08T18:59:13Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:13Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 12/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:15Z · needs_input
+- 2026-11-08T18:59:24Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:24Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 13/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:27Z · needs_input
+- 2026-11-08T18:59:36Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:36Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 14/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:38Z · needs_input
+- 2026-11-08T18:59:47Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:47Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 15/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:49Z · needs_input
+- 2026-11-08T18:59:59Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T18:59:59Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 16/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:00:02Z · needs_input
+- 2026-11-08T19:00:12Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:00:12Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 17/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:00:16Z · needs_input
+- 2026-11-08T19:00:28Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:00:28Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 18/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:00:30Z · needs_input
+- 2026-11-08T19:00:40Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:00:40Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 19/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:00:43Z · needs_input
+- 2026-11-08T19:00:52Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:00:52Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 20/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:01:10Z · needs_input
+- 2026-11-08T19:01:22Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:01:22Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 21/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:01:26Z · needs_input
+- 2026-11-08T19:01:37Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:01:37Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 22/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:01:40Z · needs_input
+- 2026-11-08T19:01:49Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:01:50Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 23/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:01:53Z · needs_input
+- 2026-11-08T19:02:03Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:02:03Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 24/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:02:26Z · needs_input
+- 2026-11-08T19:02:35Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:02:35Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 25/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:02:40Z · needs_input
+- 2026-11-08T19:02:51Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:02:51Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 26/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:02:54Z · needs_input
+- 2026-11-08T19:03:03Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:03Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 27/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:06Z · needs_input
+- 2026-11-08T19:03:15Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:15Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 28/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:18Z · needs_input
+- 2026-11-08T19:03:28Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:28Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 29/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:31Z · needs_input
+- 2026-11-08T19:03:41Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:41Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 30/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:43Z · needs_input
+- 2026-11-08T19:03:52Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:52Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 31/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:03:55Z · needs_input
+- 2026-11-08T19:04:04Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:04Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 32/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:07Z · needs_input
+- 2026-11-08T19:04:16Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:16Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 33/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:18Z · needs_input
+- 2026-11-08T19:04:28Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:28Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 34/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:29Z · needs_input
+- 2026-11-08T19:04:42Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:42Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 35/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:49Z · needs_input
+- 2026-11-08T19:05:04Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:05:04Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 36/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:05:06Z · needs_input
+- 2026-11-08T19:05:14Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:05:14Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 37/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:05:23Z · needs_input
+- 2026-11-08T19:05:32Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:05:32Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 38/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:05:50Z · cli_override, model_override
+- 2026-11-08T19:05:52Z · model_override
+- 2026-11-08T19:05:58Z · needs_input
+- 2026-11-08T19:09:03Z · review_cli_override, review_model_override
+- 2026-11-08T19:11:03Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:11:03Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 39/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:11:04Z · needs_input
