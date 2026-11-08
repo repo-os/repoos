@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T10:04:49Z"
+updated_at: "2026-11-08T10:09:56Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -119,3 +119,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T10:04:49Z · needs_input
 - 2026-11-08T10:04:49Z · message_queued at 2026-11-08T10:04:49.662Z
 - 2026-11-08T10:04:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T10:09:56Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix: · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
