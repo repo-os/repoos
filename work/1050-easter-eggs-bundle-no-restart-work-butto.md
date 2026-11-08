@@ -282,3 +282,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T00:53:28Z · message_queued at 2026-11-08T00:53:28.175Z
 - 2026-11-08T00:57:56Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T01:02:06Z · message_queued at 2026-11-08T01:02:06.597Z
+- 2026-11-08T01:02:06Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
