@@ -11,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T17:13:37Z"
+updated_at: "2026-11-08T17:14:03Z"
 last_close_out_gate_ms: 1154947
 last_close_out_gate_at: "2026-11-08T17:13:37.287Z"
 review_passes: 1
@@ -110,4 +110,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T15:30:39Z · note: review pass 1: good to go
 - 2026-11-08T15:57:53Z · message_delivered: 1 message(s)
 - 2026-11-08T17:13:37Z · close-out gate completed in 1155s
-
+- 2026-11-08T17:14:03Z · status done→done, release:success
