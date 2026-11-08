@@ -61,9 +61,9 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "selector": "[data-task-id=\"pipe-coding\"] .pl-step",
 "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
-  {
-    "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
-  }
+{
+  "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+}
 ],
 "state": "board:pipeline"
 }
@@ -115,3 +115,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T05:41:52Z · body
 - 2026-11-08T05:42:38Z · body
 - 2026-11-08T05:53:12Z · message_queued at 2026-11-08T05:53:12.397Z
+- 2026-11-08T05:53:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
