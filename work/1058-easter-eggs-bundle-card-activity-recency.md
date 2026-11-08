@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p3
 area: web
 assigned_to: ai
@@ -13,9 +16,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T05:53:38Z"
-dev_error_count: 11
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T04:44:30.219Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T05:00:05.539Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-08T05:57:17Z"
+dev_error_count: 12
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T05:57:17.343Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -117,3 +120,5 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T05:53:12Z · message_queued at 2026-11-08T05:53:12.397Z
 - 2026-11-08T05:53:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T05:53:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T05:57:17Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-08T05:57:17Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
