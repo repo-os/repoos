@@ -116,3 +116,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:32:58Z · message_delivered: 2 message(s)
 - 2026-11-08T01:32:58Z · status review→active
 - 2026-11-08T01:35:09Z · body: Notes for AI (added 3, removed 2)
+- 2026-11-08T01:35:09Z · message_queued at 2026-11-08T01:35:09.338Z
