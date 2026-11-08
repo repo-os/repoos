@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 3e338391 to 734d5a95) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 3e338391a4a54b4df78d2732b7673fae3ed7d705
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
@@ -245,3 +247,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T14:59:12Z · message_queued at 2026-11-08T14:59:12.208Z
 - 2026-11-08T14:59:12Z · note: shots: skipped — the diff (30 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-08T14:59:52Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 3e338391 to 734d5a95) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
