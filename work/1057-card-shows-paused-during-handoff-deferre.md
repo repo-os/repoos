@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-08T08:40:24Z"
-review_passes: 2
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -20,6 +18,8 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
+updated_at: "2026-11-08T08:40:24Z"
+review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T07:55:05.134Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 dev_error_count: 4
@@ -142,4 +142,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T08:38:20Z · body
 - 2026-11-08T08:39:22Z · status active→review
 - 2026-11-08T08:40:24Z · note: review pass 2: needs some work
-
+- 2026-11-08T08:40:24Z · message_queued at 2026-11-08T08:40:24.458Z
