@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-08T19:29:49Z"
+review_passes: 5
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
@@ -14,8 +16,6 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T19:29:49Z"
-review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 56
@@ -439,3 +439,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T19:29:06Z · message_queued at 2026-11-08T19:29:06.926Z
 - 2026-11-08T19:29:49Z · note: review pass 5: needs some work
 - 2026-11-08T19:29:49Z · needs_input
+
