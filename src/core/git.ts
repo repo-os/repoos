@@ -69,6 +69,8 @@ const WORKTREE_ADD_LOCK_WAIT_MS = 120_000;
 const WORKTREE_ADD_LOCK_STALE_MS = WORKTREE_ADD_TIMEOUT_MS + 60_000;
 
 export function gitCapture(root: string, args: string[], timeoutMs = 4000): GitRun {
+  const blocked = refuseCheckGateGit(root, args);
+  if (blocked) return blocked;
   const run = spawnSync("git", observationalGitArgs(args), {
     cwd: root,
     encoding: "utf8",
@@ -322,6 +324,8 @@ export interface GitRun {
  * time while a long command (merge, build, check) is in flight.
  */
 export function runGit(root: string, args: string[], timeout: number): Promise<GitRun> {
+  const blocked = refuseCheckGateGit(root, args);
+  if (blocked) return Promise.resolve(blocked);
   return new Promise((resolve) => {
     const untrack = trackGitCall(root, args);
     const child = spawn("git", observationalGitArgs(args), { cwd: root });
@@ -395,6 +399,44 @@ let checkGateCommitHook: CheckGateCommitHook | null = null;
 /** Server installs this to defer or refuse commits during an active check gate. */
 export function setCheckGateCommitHook(hook: CheckGateCommitHook | null): void {
   checkGateCommitHook = hook;
+}
+
+/** Refuse selected git commands against a gated worktree (#1061). */
+export type CheckGateGitRefusal = (cwd: string, args: readonly string[]) => string | undefined;
+
+let checkGateGitRefusal: CheckGateGitRefusal | null = null;
+
+export function setCheckGateGitRefusal(hook: CheckGateGitRefusal | null): void {
+  checkGateGitRefusal = hook;
+}
+
+function refuseCheckGateGit(cwd: string, args: string[]): GitRun | null {
+  const refusal = checkGateGitRefusal?.(cwd, args);
+  if (!refusal) return null;
+  return { status: 1, stdout: "", stderr: `${refusal}\n`, timedOut: false };
+}
+
+/** Refuse worktree source writes while a check gate is active (#1061). */
+export type CheckGateWorktreeWriteRefusal = (
+  worktree: string,
+  absPath: string,
+) => string | undefined;
+
+let checkGateWorktreeWriteRefusal: CheckGateWorktreeWriteRefusal | null = null;
+
+export function setCheckGateWorktreeWriteRefusal(hook: CheckGateWorktreeWriteRefusal | null): void {
+  checkGateWorktreeWriteRefusal = hook;
+}
+
+/** Write a file in a task worktree, honoring the check-gate source write fence. */
+export function writeWorktreeSourceFile(
+  worktree: string,
+  absPath: string,
+  content: string | NodeJS.ArrayBufferView,
+): void {
+  const refusal = checkGateWorktreeWriteRefusal?.(worktree, absPath);
+  if (refusal) throw new Error(refusal);
+  writeFileSync(absPath, content);
 }
 
 /** `retryOnGitLock` predicate for a raw `runGit` result: the lock text, or null. */

@@ -11,6 +11,13 @@ import {
   checkGateHeadDriftAllowed,
   isCheckGateBookkeepingPath,
 } from "../../core/check-gate-bookkeeping.js";
+import { engineerSelfCheckCheckpointMessage } from "../../core/engineer-checkpoint-commit.js";
+import {
+  runGit,
+  setCheckGateGitRefusal,
+  setCheckGateWorktreeWriteRefusal,
+  writeWorktreeSourceFile,
+} from "../../core/git.js";
 import {
   acquireCheckGateLock,
   activeCheckGateForCommitRoot,
@@ -69,6 +76,10 @@ function initRepo(): { root: string; wt: string; branch: string } {
 
 afterEach(() => {
   setCheckGateCommitHook(null);
+  setCheckGateGitRefusal(null);
+  setCheckGateWorktreeWriteRefusal(null);
+  delete process.env.REPOOS_CHECK_STORE_ROOT;
+  delete process.env.REPOOS_CACHE_DIR;
   for (const r of roots.splice(0)) rmSync(r, { recursive: true, force: true });
 });
 
@@ -93,6 +104,18 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     const after = git(wt, ["rev-parse", "HEAD"]);
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
     expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects WIP checkpoint commits that touch source paths", async () => {
+    const { wt } = initRepo();
+    const before = git(wt, ["rev-parse", "HEAD"]);
+    writeFileSync(join(wt, "src", "app.ts"), "wip-branch\n");
+    git(wt, ["add", "src/app.ts"]);
+    git(wt, ["commit", "-qm", engineerSelfCheckCheckpointMessage("0001")]);
+    const after = git(wt, ["rev-parse", "HEAD"]);
+    const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.affectingPaths).toContain("src/app.ts");
   });
 
   it("rejects src changes and names paths", async () => {
@@ -194,6 +217,35 @@ describe("check gate lock and deferred commits (#1061)", () => {
 
   it("exposes the engineer refusal string", () => {
     expect(CHECK_GATE_WRITE_REFUSAL).toMatch(/check is running/i);
+  });
+
+  it("blocks runGit commits and worktree writes while the gate is active", async () => {
+    const { root, wt, branch } = initRepo();
+    const config = cfg(root);
+    process.env.REPOOS_CHECK_STORE_ROOT = root;
+    installCheckGateCommitHook(config);
+    await acquireCheckGateLock({
+      boardRoot: root,
+      cacheDir: ".repoos",
+      taskId: "0001",
+      branch,
+      worktree: wt,
+      kind: "handoff-finalize",
+    });
+    expect(aliveCheckGateLockForWorktree(root, ".repoos", wt)?.taskId).toBe("0001");
+    writeFileSync(join(wt, "src", "app.ts"), "mid-gate\n");
+    const denied = await runGit(wt, ["add", "src/app.ts"], 10_000);
+    expect(denied.stderr).toMatch(/check is running/i);
+    expect(denied.status).not.toBe(0);
+    expect(() => writeWorktreeSourceFile(wt, join(wt, "src", "app.ts"), "blocked\n")).toThrow(
+      CHECK_GATE_WRITE_REFUSAL,
+    );
+    writeWorktreeSourceFile(
+      wt,
+      join(wt, "work", "0001-task.md"),
+      `${readFileSync(join(wt, "work", "0001-task.md"))}\n`,
+    );
+    await releaseCheckGateLock(root, ".repoos", "0001");
   });
 
   it("blocks source writes and allows work bookkeeping paths", async () => {

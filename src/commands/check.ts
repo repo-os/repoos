@@ -2289,6 +2289,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   const managedEngineerGate = isManagedEngineerCheck(process.env) && runContext.taskId != null;
+  const serverCheckChildGate =
+    !managedEngineerGate &&
+    runContext.taskId != null &&
+    Boolean(process.env.REPOOS_CHECK_STORE_ROOT?.trim());
   let releaseCheckGate: (() => Promise<void>) | undefined;
   const releaseGateAndExit = async (code: number): Promise<never> => {
     await releaseCheckGate?.();
@@ -2344,11 +2348,14 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     }
   }
 
-  if (managedEngineerGate) {
+  if (managedEngineerGate || serverCheckChildGate) {
     const boardCfg = loadConfig(checkStoreRoot);
     installCheckGateCommitHook(boardCfg);
     process.env.REPOOS_CHECK_STORE_ROOT = checkStoreRoot;
     process.env.REPOOS_CACHE_DIR = boardCfg.cacheDir ?? ".repoos";
+  }
+  if (managedEngineerGate) {
+    const boardCfg = loadConfig(checkStoreRoot);
     const taskId = runContext.taskId!;
     const cache = boardCfg.cacheDir ?? ".repoos";
     const branch =

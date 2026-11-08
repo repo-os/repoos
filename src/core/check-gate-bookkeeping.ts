@@ -2,11 +2,9 @@
  * Paths and commit chains that must not invalidate a running check gate (#1061).
  *
  * Bookkeeping under `work/**` and the cache dir cannot change build or test
- * outcomes. Engineer self-check WIP checkpoint commits are allowed even when
- * they touch source — the gate explicitly tests that tree (#0694/#0834).
+ * outcomes. Commits touching any other path invalidate the gate (#1061).
  */
 import type { RepoOSConfig } from "./types.js";
-import { isEngineerSelfCheckCheckpointMessage } from "./engineer-checkpoint-commit.js";
 import { pathsChangedBetweenCommits, runGit } from "./git.js";
 
 function withTrailingSlash(dir: string): string {
@@ -56,9 +54,6 @@ export async function checkGateHeadDriftAllowed(
   }
   const affecting = changed.filter((p) => !isCheckGateBookkeepingPath(p, config));
   if (affecting.length === 0) return { ok: true };
-  if (await isWipCheckpointOnlyChain(workdir, beforeHead, afterHead, taskId)) {
-    return { ok: true };
-  }
   const commitDetail = await formatNonBookkeepingCommitDrift(
     workdir,
     beforeHead,
@@ -67,27 +62,6 @@ export async function checkGateHeadDriftAllowed(
     affecting,
   );
   return { ok: false, reason: commitDetail, affectingPaths: affecting };
-}
-
-async function isWipCheckpointOnlyChain(
-  wt: string,
-  from: string,
-  to: string,
-  taskId: string,
-): Promise<boolean> {
-  const list = await runGit(wt, ["rev-list", "--first-parent", to, `^${from}`], 15_000);
-  if (list.status !== 0) return false;
-  const shas = list.stdout
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-  if (shas.length === 0) return false;
-  for (const sha of shas) {
-    const subj = await runGit(wt, ["log", "-1", "--format=%s", sha], 10_000);
-    if (subj.status !== 0) return false;
-    if (!isEngineerSelfCheckCheckpointMessage(subj.stdout.trim(), taskId)) return false;
-  }
-  return true;
 }
 
 async function formatNonBookkeepingCommitDrift(
