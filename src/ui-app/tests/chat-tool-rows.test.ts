@@ -67,6 +67,20 @@ function messages(rows: DisplayRow[]) {
 }
 
 describe("toDisplayRows — run splitting", () => {
+  it("collapses consecutive identical stderr lines with count and time bounds", () => {
+    const entries = Array.from({ length: 21 }, (_, i) => ({
+      s: "err" as const,
+      d: "ERROR codex_core: missing tool output",
+      at: i === 0 ? AT_0 : AT_1,
+    }));
+    const rows = toDisplayRows(entries);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kind: "line", repeatCount: 21, firstAt: AT_0, at: AT_1 });
+    expect(messages(rows)[0].entries).toHaveLength(21);
+    expect(
+      toDisplayRows([...entries, { s: "err", d: "different diagnostic", at: AT_2 }]),
+    ).toHaveLength(2);
+  });
   it("collapses a maximal run of adjacent tool calls into one row", () => {
     const rows = toDisplayRows([tool("bash", "completed", AT_0), tool("read", "completed", AT_1)]);
     expect(rows).toHaveLength(1);
@@ -1028,9 +1042,14 @@ describe("CLI diagnostic presentation", () => {
       { s: "out", d: "retrying" },
       { s: "err", d: "third failure" },
     ]);
-    expect(rows).toHaveLength(4);
-    expect(messages(rows)[0].text).toContain("first failure\ndetails");
-    expect(messages(rows)[1].text).toContain("second failure");
+    expect(rows).toHaveLength(5);
+    expect(messages(rows).map((row) => row.text)).toEqual([
+      "2026-09-27T14:19:40Z ERROR router: first failure",
+      "details",
+      "2026-09-27T14:21:42Z ERROR router: second failure",
+      "retrying",
+      "third failure",
+    ]);
   });
 
   it("starts collapsed with a readable patch summary and preserves selectable details", () => {
@@ -1040,15 +1059,30 @@ describe("CLI diagnostic presentation", () => {
     expect(wrapper.find("details").attributes("open")).toBeUndefined();
     expect(wrapper.find("summary").text()).toContain("Patch could not be applied");
     expect(wrapper.find("summary").text()).not.toContain("codex_core");
-    expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(true);
+    expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
     expect(wrapper.find("pre").text()).toBe(raw);
     expect(wrapper.find("time").exists()).toBe(true);
   });
 
   it("does not label ordinary stderr notices as errors", () => {
     const wrapper = mount(ChatDiagnosticRow, { props: { text: "Downloading browser…" } });
-    expect(wrapper.find(".agent-diagnostic-label").text()).toBe("Diagnostic");
+    expect(wrapper.find(".agent-diagnostic-label").text()).toBe("Agent output");
     expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
+  });
+
+  it("renders a collapsed run of identical stderr lines with a count and expandable detail", () => {
+    const line = "ERROR codex_core: missing tool output";
+    const wrapper = mount(ChatDiagnosticRow, {
+      props: { text: line, detailText: line, at: AT_1, firstAt: AT_0, count: 21 },
+    });
+    const summary = wrapper.find("summary").text();
+    expect(summary).toContain("×21");
+    // First and last occurrence times are both visible on the collapsed row.
+    expect(wrapper.find("summary time").exists()).toBe(true);
+    expect(summary).toContain("→");
+    expect(wrapper.find(".agent-diagnostic-label.error").exists()).toBe(false);
+    expect(wrapper.find("details").attributes("open")).toBeUndefined();
+    expect(wrapper.find("pre").text()).toBe(`21 identical entries:\n${line}`);
   });
 });
 
