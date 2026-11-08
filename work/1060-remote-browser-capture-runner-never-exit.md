@@ -4,8 +4,8 @@ title: "Remote browser capture: runner never exits after completing; reap and fo
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 8 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — a failed startup container removal aborts validation before it can report the failure.
 needs_merge: true
 priority: p1
 area: server
