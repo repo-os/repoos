@@ -159,3 +159,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T07:38:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T08:03:10Z · note: ui verification passed: 3 of 3 shots captured with clean console
 - 2026-11-08T08:03:11Z · status active→review
+- 2026-11-08T08:03:11Z · message_queued at 2026-11-08T08:03:11.708Z
