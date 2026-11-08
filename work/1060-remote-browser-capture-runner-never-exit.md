@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — periodic reaps are missing from task Debug events, and source files conflict with main."
@@ -17,7 +17,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T13:53:12Z"
+updated_at: "2026-11-08T13:53:22Z"
 review_passes: 7
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -224,3 +224,5 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T13:45:01Z · note: review pass 8: needs some work
 - 2026-11-08T13:45:01Z · needs_input
 - 2026-11-08T13:53:12Z · needs_merge
+- 2026-11-08T13:53:22Z · status review→active
+- 2026-11-08T13:53:22Z · note: send-back — returned to active for engineer follow-up
