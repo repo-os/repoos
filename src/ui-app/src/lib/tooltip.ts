@@ -27,15 +27,23 @@ function tipHost(node: EventTarget | null): HTMLElement | null {
   return (node as Element | null)?.closest?.<HTMLElement>("[title], [data-tip]") ?? null;
 }
 
+let tipEl: HTMLDivElement | null = null;
+
 export function installTooltips(): void {
   if (typeof document === "undefined") return;
+  if (!tipEl?.isConnected) {
+    tipEl = document.querySelector<HTMLDivElement>(".app-tooltip");
+    if (!tipEl) {
+      tipEl = document.createElement("div");
+      tipEl.className = "app-tooltip";
+      tipEl.setAttribute("role", "tooltip");
+      document.body.appendChild(tipEl);
+    }
+  }
   if (installed) return;
   installed = true;
 
-  const tip = document.createElement("div");
-  tip.className = "app-tooltip";
-  tip.setAttribute("role", "tooltip");
-  document.body.appendChild(tip);
+  const tip = tipEl;
 
   let target: HTMLElement | null = null;
   let hoverTimer: number | undefined;
@@ -128,6 +136,7 @@ export function installTooltips(): void {
       if (el === target && e.pointerType === "touch") {
         armClickSuppression(target);
         hide();
+        e.preventDefault();
         return;
       }
       if (target.contains(e.target as Node) || tip.contains(e.target as Node)) return;
@@ -163,7 +172,17 @@ export function installTooltips(): void {
       const upEl = tipHost(e.target);
       if (upEl === pending && textFor(pending)) {
         openFor(pending, true);
+        e.preventDefault();
       }
+    } else if (
+      e.pointerType === "touch" &&
+      touchPinned &&
+      target &&
+      (target === tipHost(e.target) || target.contains(e.target as Node))
+    ) {
+      // Long-press opened the tip while the finger was still down — block the release click.
+      armClickSuppression(target);
+      e.preventDefault();
     }
   };
 
@@ -184,12 +203,16 @@ export function installTooltips(): void {
     if (!touchPinned) hide();
   });
   const onClickCapture = (e: MouseEvent) => {
-    const el = tipHost(e.target);
-    if (!el) return;
-    if ((suppressClickUntil.get(el) ?? 0) > Date.now()) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+    for (const node of e.composedPath()) {
+      if (!(node instanceof HTMLElement)) continue;
+      const host = tipHost(node);
+      if (!host) continue;
+      if ((suppressClickUntil.get(host) ?? 0) > Date.now()) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return;
+      }
     }
   };
 
