@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -232,10 +232,6 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T14:53:52Z · note: handoff requested (cli)
 - 2026-11-08T14:53:56Z · message_queued at 2026-11-08T14:53:56.318Z
 - 2026-11-08T14:53:56Z · handoff failed · task-file handoff failed at commit · stray repoos.toml on task branch: repoos.toml differs from main
-+paused = true
-+pausedUntil = "2026-11-10T01:00:00.000Z"
-+pausedReason = "Cursor reset"
-+pausedModels = [{ model = "gpt-6.1-terra" }]. Revert it with: git checkout main -- repoos.toml
 - 2026-11-08T14:54:02Z · message_delivered: 1 message(s)
 - 2026-11-08T15:05:07Z · body
 - 2026-11-08T15:05:50Z · handoff_deferred: 1 queued message(s) must be read before review
@@ -274,4 +270,3 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T16:14:43Z · message_queued at 2026-11-08T16:14:43.962Z
 - 2026-11-08T16:14:44Z · ↻ resuming engineer to read queued message
 - 2026-11-08T16:14:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
-- 2026-11-08T16:14:44Z · status active→review
