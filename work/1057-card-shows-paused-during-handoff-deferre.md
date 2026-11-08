@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 403418
+last_close_out_gate_at: "2026-11-08T12:22:30.511Z"
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -13,7 +15,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T12:09:13Z"
+updated_at: "2026-11-08T12:22:30Z"
 review_passes: 4
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T10:38:23.988Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -177,3 +179,5 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T11:08:37Z · needs_input (check-failed-after-retries) cleared for review again by human
 - 2026-11-08T11:11:39Z · note: review pass 4: good to go
 - 2026-11-08T12:09:13Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-08T12:22:30Z · close-out gate completed in 403s
+
