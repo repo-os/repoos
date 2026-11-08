@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — _shallow: true"
+last_handoff_failure_sha: f3fc1a0951e0f4dc8e6b1de1bcfeeb1f5168c68a
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
@@ -200,3 +202,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T13:36:44Z · status active→review
 - 2026-11-08T13:42:36Z · message_queued at 2026-11-08T13:42:36.348Z
 - 2026-11-08T13:42:36Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — _shallow: true
+
