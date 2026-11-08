@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 537455
-last_close_out_gate_at: "2026-11-08T17:31:35.712Z"
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 5dccf854f904fb2c64a6afafc5d1e40b415406e2
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-gate-skip-the-full-suite-when-the-
@@ -16,6 +15,8 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
 updated_at: "2026-11-08T17:31:35Z"
+last_close_out_gate_ms: 537455
+last_close_out_gate_at: "2026-11-08T17:31:35.712Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
