@@ -106,3 +106,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T09:11:26Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-08T09:16:26Z · watchdog: auto-surfaced stuck task · status active→review · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-08T09:22:59Z · message_queued at 2026-11-08T09:22:59.011Z
+- 2026-11-08T09:22:59Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
