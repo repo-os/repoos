@@ -131,3 +131,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T10:26:49Z · body
 - 2026-11-08T10:28:16Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-08T10:28:16Z · message_queued at 2026-11-08T10:28:16.232Z
+- 2026-11-08T10:28:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementing the reaper fix and adding a regression test. · stderr: (empty)
