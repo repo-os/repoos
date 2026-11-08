@@ -12,6 +12,7 @@
  */
 
 import type { Task } from "../types";
+import { agentLastActivityTip } from "./card-activity-recency.js";
 
 /** The label + tooltip (and board-card class) describing an in-flight retry. */
 export interface RetryHint {
@@ -19,6 +20,8 @@ export interface RetryHint {
   title: string;
   /** Board-card class; the drawer's error card only uses label/title. */
   cls: string;
+  /** Last-activity popover line when the inline label omits recency (#1058). */
+  activityTip?: string;
 }
 
 /** Mirrors handoff.ts's retry caps (not exported from the server module). */
@@ -83,8 +86,8 @@ export function retryCountFrom(task: Task, kind: RetryKind): number | null {
 }
 
 interface RetryText {
-  /** Label while the agent is still producing output. */
-  active: (activity: string) => string;
+  /** Label while the agent is still producing output (recency is on hover). */
+  active: () => string;
   /** Label when no activity timestamp is known yet. */
   retry: (count: number) => string;
   /** Explanatory tooltip for the normal case. */
@@ -95,7 +98,7 @@ interface RetryText {
 
 const RETRY_TEXT: Record<RetryKind, RetryText> = {
   check: {
-    active: (activity) => `fixing check failure · active ${activity}`,
+    active: () => `fixing check failure`,
     retry: (count) => `fixing check failure (retry ${count}/${MAX_CHECK_RETRY_ATTEMPTS})`,
     title:
       "`repoos check` failed right after handoff — the engineer is automatically fixing it and will re-submit for review",
@@ -103,7 +106,7 @@ const RETRY_TEXT: Record<RetryKind, RetryText> = {
       "agent is fixing a post-handoff check failure but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
   },
   mergeConflict: {
-    active: (activity) => `fixing merge conflict · active ${activity}`,
+    active: () => `fixing merge conflict`,
     retry: (count) => `fixing merge conflict (retry ${count}/${MAX_MERGE_CONFLICT_RETRY_ATTEMPTS})`,
     title:
       "close-out hit a real merge conflict with main — the engineer is automatically resolving it in its own branch and close-out will retry once it's done",
@@ -111,7 +114,7 @@ const RETRY_TEXT: Record<RetryKind, RetryText> = {
       "agent is resolving a merge conflict from close-out but hasn't produced output in a while — it may be hung. Click to inspect, or restart work.",
   },
   handoffSignal: {
-    active: (activity) => `confirming handoff · active ${activity}`,
+    active: () => `confirming handoff`,
     retry: (count) => `confirming handoff (retry ${count}/${MAX_HANDOFF_SIGNAL_RETRY_ATTEMPTS})`,
     title:
       "the previous turn ended without a detected handoff signal — the engineer was automatically resumed to finish and re-confirm",
@@ -140,9 +143,10 @@ export function retryHint(
   }
   const activity = formatActivity(now, lastActivity);
   return {
-    label: activity ? text.active(activity) : text.retry(retryCount),
+    label: activity ? text.active() : text.retry(retryCount),
     title: text.title,
     cls: "tc-coding",
+    activityTip: activity ? agentLastActivityTip(lastActivity, now) ?? undefined : undefined,
   };
 }
 

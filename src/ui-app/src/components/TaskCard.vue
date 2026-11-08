@@ -40,6 +40,7 @@ import {
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { activeEngineerCardHint, activeEngineerCardBlocksInterrupt } from "../lib/active-task-card";
+import { agentLastActivityTip, cardHintDataTip } from "../lib/card-activity-recency";
 import {
   AWAITING_FRESH_REVIEW_LABEL,
   PM_WORKING_LABEL,
@@ -695,6 +696,8 @@ interface CardHint {
   cls: string;
   /** Full integrating copy for Status details (#0995); card `label` may be reordered. */
   fullLabel?: string;
+  /** Last-activity or elapsed popover line when omitted from `label` (#1058). */
+  activityTip?: string;
 }
 
 /** True once Move to done has been clicked and the close-out job for this
@@ -754,12 +757,18 @@ const activeEngineerEvidence = computed(() =>
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. Check progress,
  *  remote validation, and queue waits suppress a false stuck label (#1000). */
-function codingOrStuckHint(_taskId: string): CardHint {
+function codingOrStuckHint(taskId: string): CardHint {
   const resolved = activeEngineerEvidence.value;
+  const activityTip =
+    resolved.cls === "tc-coding"
+      ? agentLastActivityTip(lastActivityFor(taskId), Math.max(now.value, Date.now())) ??
+        undefined
+      : undefined;
   return {
     label: resolved.label,
     title: resolved.title,
     cls: resolved.cls,
+    activityTip,
   };
 }
 
@@ -958,6 +967,7 @@ const hint = computed<CardHint | null>(() => {
               ? "Close-out is taking longer than usual — focus the slow badge for timing details"
               : copy.title,
           cls: copy.stalled ? "tc-stuck" : "tc-moving",
+          activityTip: copy.stalled ? undefined : copy.elapsedTip,
         };
       }
       const queued = integrationQueuedCopy(snap, t.id);
@@ -1755,7 +1765,7 @@ async function openDebuggerFromError(): Promise<void> {
           class="tc-hint"
           data-test-id="task-card-agent-hint"
           :class="[hint.cls, cardHintUsesLineClamp(hint) ? 'tc-hint--progress-clamp' : '']"
-          :data-tip="hint.title"
+          :data-tip="cardHintDataTip(hint.title, hint.activityTip)"
           tabindex="0"
           role="button"
           @click.stop="onCardHintClick"
