@@ -127,6 +127,19 @@ describe("runner worktree layout for browser capture (#0854)", () => {
     expect(validateScript).toMatch(/REPOOS_BROWSER_CAPTURE_TASK=/);
   });
 
+  it("does not abort validate.sh when startup reaper inspection fails (#1060)", () => {
+    const marker =
+      "# handles the hang where the runner process never exits after writing result.json.";
+    const start = validateScript.indexOf(marker);
+    expect(start).toBeGreaterThan(-1);
+    const block = validateScript.slice(start, start + 2200);
+    expect(block).toMatch(/set \+e\n(?:.*\n)*?docker ps -q --filter "name=repoos-validate-"/);
+    expect(block).toMatch(
+      /recent=\$\(docker logs --since 120s --tail 1 "\$id" 2>&1\) \|\| continue/,
+    );
+    expect(block).toMatch(/\ndone\nset -e\n/);
+  });
+
   it("creates and bind-mounts a writable /repo-worktrees for the capture worktree", () => {
     // capture-browser.ts resolves the task worktree through
     // worktreePathForBranch, which points at worktreesDir("/repo") =
