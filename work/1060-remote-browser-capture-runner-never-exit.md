@@ -3,6 +3,9 @@ id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 13 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 needs_merge: true
 priority: p1
 area: server
@@ -316,3 +319,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T19:38:20Z · body
 - 2026-11-08T19:39:05Z · status active→review
 - 2026-11-08T19:40:07Z · note: review pass 14: needs some work
+- 2026-11-08T19:40:07Z · needs_input
