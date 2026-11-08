@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
+last_handoff_failure_sha: 57c8d8f181a815b01dacea7bf46149784f55a231
 id: "1055"
 title: Review and safely clean task worktrees
 type: chore
@@ -129,3 +131,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:43:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T01:53:45Z · message_queued at 2026-11-08T01:53:45.479Z
 - 2026-11-08T01:53:45Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+
