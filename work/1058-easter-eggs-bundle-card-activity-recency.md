@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -432,3 +432,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T19:11:04Z · needs_input
 - 2026-11-08T19:26:06Z · body
 - 2026-11-08T19:29:06Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T19:29:06Z · status active→review
