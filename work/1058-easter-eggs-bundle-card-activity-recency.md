@@ -21,7 +21,6 @@ last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 review_rounds: 1
 review_passes: 1
 dev_error_count: 16
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T11:17:44.938Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T11:18:29.254Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T11:20:59.443Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T11:22:30.986Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -53,38 +52,38 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ```json
 [
 {
-  "label": "Board hint: coding line and hover recency",
-  "target": "default",
-  "route": "/work",
-  "highlight": ".app-tooltip.show",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    },
-    {
-      "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-    },
-    {
-      "waitMs": 700
-    }
-  ],
-  "state": "board:activeCoding"
+"label": "Board hint: coding line and hover recency",
+"target": "default",
+"route": "/work",
+"highlight": ".app-tooltip.show",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  },
+  {
+    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  },
+  {
+    "waitMs": 700
+  }
+],
+"state": "board:activeCoding"
 },
 {
-  "label": "Pipeline coding card hides inline elapsed",
-  "target": "default",
-  "route": "/work?tab=pipeline",
-  "selector": "[data-task-id=\"pipe-coding\"]",
-  "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
-  "steps": [
-    {
-      "waitFor": "[data-task-id=\"pipe-coding\"]"
-    },
-    {
-      "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
-    }
-  ],
-  "state": "board:pipeline"
+"label": "Pipeline coding card hides inline elapsed",
+"target": "default",
+"route": "/work?tab=pipeline",
+"selector": "[data-task-id=\"pipe-coding\"]",
+"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+"steps": [
+  {
+    "waitFor": "[data-task-id=\"pipe-coding\"]"
+  },
+  {
+    "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+  }
+],
+"state": "board:pipeline"
 }
 ]
 ```
