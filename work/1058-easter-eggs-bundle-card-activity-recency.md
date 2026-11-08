@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
@@ -16,6 +14,8 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
 updated_at: "2026-11-08T09:53:05Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T07:13:07.485Z: repoos check failed: ui verification failed (10 issue(s)): [missing-target] Board card coding without inline active recency (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:42935/?shotState=board%3AactiveCoding); [missing-target] Board card coding without inline active recency (target \"default\"): highlight [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"] matched nothing on / (http://127.0.0.1:42935/?shotState=bo… (truncated)"
@@ -181,4 +181,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T09:51:26Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-08T09:53:05Z · message_queued at 2026-11-08T09:53:05.247Z
 - 2026-11-08T09:53:05Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-08T09:53:05Z · message_delivered: 2 message(s)
