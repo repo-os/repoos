@@ -121,3 +121,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:40:50Z · body
 - 2026-11-08T01:42:26Z · body
 - 2026-11-08T01:42:46Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T01:42:46Z · message_queued at 2026-11-08T01:42:46.171Z
