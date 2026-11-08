@@ -76,7 +76,9 @@ const showInlineCheckBar = computed(
 
 /** Healthy pipeline rows hide elapsed on the line; recency lives on the step tooltip (#1058). */
 const showElapsedInline = computed(() => displayState.value !== "ok");
-const elapsedTip = computed(() => agentLastActivityTip(props.lastActivityAt ?? undefined, props.nowMs));
+const elapsedTip = computed(() =>
+  agentLastActivityTip(props.lastActivityAt ?? undefined, props.nowMs),
+);
 
 function open(): void {
   emit("open", props.taskId);
