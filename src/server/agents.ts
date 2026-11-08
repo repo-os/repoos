@@ -9919,18 +9919,18 @@ export class AgentRunner {
         // No engineer remains to read the blocking message. Resume after this
         // turn's cleanup, with a durable cap to prevent a handoff loop.
         if (outcomeTask && !this.isPaused(taskId) && !this.entries.has(taskId)) {
-          const rawAttempts = outcomeTask.extra?.deferred_handoff_resume_count;
-          const attempts =
-            typeof rawAttempts === "number" && Number.isFinite(rawAttempts) ? rawAttempts : 0;
-          if (attempts < MAX_DEFERRED_HANDOFF_RESUMES) {
-            try {
-              const current = parseTask({
-                content: readFileSync(outcomeTask.absPath, "utf8"),
-                absPath: outcomeTask.absPath,
-                root: this.config.root,
-                defaultStatus: this.config.defaultStatus,
-                defaultAssignee: this.config.defaultAssignee,
-              });
+          try {
+            const current = parseTask({
+              content: readFileSync(outcomeTask.absPath, "utf8"),
+              absPath: outcomeTask.absPath,
+              root: this.config.root,
+              defaultStatus: this.config.defaultStatus,
+              defaultAssignee: this.config.defaultAssignee,
+            });
+            const rawAttempts = current.extra?.deferred_handoff_resume_count;
+            const attempts =
+              typeof rawAttempts === "number" && Number.isFinite(rawAttempts) ? rawAttempts : 0;
+            if (attempts < MAX_DEFERRED_HANDOFF_RESUMES) {
               current.extra = { ...current.extra, deferred_handoff_resume_count: attempts + 1 };
               writeFileSync(outcomeTask.absPath, serializeTask(current));
               commitTaskFile(
@@ -9946,13 +9946,13 @@ export class AgentRunner {
                   this.deliverQueuedMessages(taskId);
                 }
               });
-            } catch (err) {
-              this.logger?.agent(
-                taskId,
-                "warn",
-                `Could not schedule deferred-handoff resume: ${(err as Error).message}`,
-              );
             }
+          } catch (err) {
+            this.logger?.agent(
+              taskId,
+              "warn",
+              `Could not schedule deferred-handoff resume: ${(err as Error).message}`,
+            );
           }
         }
       }

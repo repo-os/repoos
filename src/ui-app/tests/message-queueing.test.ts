@@ -655,6 +655,39 @@ describe("handoff deferral while messages are queued (#0865)", () => {
     }
   });
 
+  it("does not auto-resume again after the deferred-handoff retry cap", async () => {
+    const fx = makeFixture();
+    const oldPath = withFakePath(fx);
+    process.env.REPOOS_FAKEBIN_LOG = fx.log;
+    const id = "defer-cap-test";
+    const absPath = setupTaskFile(fx.root, id, "active");
+    writeFileSync(absPath, readFileSync(absPath, "utf8").replace("assigned_to: ai", "assigned_to: ai\ndeferred_handoff_resume_count: 2"));
+    const runner = new AgentRunner(config(fx.root), () => {}, {
+      getTask: () => parseFile(fx.root, absPath),
+    });
+    try {
+      const t = task(id);
+      expect(runner.start(t, `feat/${id}`, agent, { cwd: fx.bin }).ok).toBe(true);
+      expect(runner.send(id, "Please also fix the docs", agent).queued).toBe(true);
+      const entry = runner["entries"].get(id) as { handoffRequested?: boolean } | undefined;
+      expect(entry).toBeDefined();
+      entry!.handoffRequested = true;
+
+      await waitFor(() => !runner.isRunning(id), 8000);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(parseFile(fx.root, absPath).extra?.deferred_handoff_resume_count).toBe(2);
+      expect(readFileSync(fx.log, "utf8").trim().split("\n")).toHaveLength(1);
+      expect(readFileSync(absPath, "utf8")).not.toContain(
+        "resuming engineer to read queued message",
+      );
+    } finally {
+      runner.dispose();
+      process.env.PATH = oldPath;
+      delete process.env.REPOOS_FAKEBIN_LOG;
+      fx.clean();
+    }
+  });
+
   it("defers handoff when repoos mv request file lands in the same turn as a queued message (#0865)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-msg-handoff-file-"));
     const bin = join(root, "bin");
