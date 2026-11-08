@@ -297,3 +297,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T18:26:25Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T18:26:26Z · message_queued at 2026-11-08T18:26:26.055Z
 - 2026-11-08T18:26:26Z · ↻ resuming engineer to read queued message
+- 2026-11-08T18:26:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **#1058 — Card activity recency on hover** Healthy running board and pipeline cards no longer show inline “active N ago” / elapsed text; recency is in the shared `data-tip` tooltip (hover, focus, long-press, and short tap on card hints onl… · stderr: (empty)
