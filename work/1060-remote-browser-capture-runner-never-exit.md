@@ -294,3 +294,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T18:10:49Z · note: handoff requested (cli)
 - 2026-11-08T18:13:33Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-08T18:13:34Z · status active→review
+- 2026-11-08T18:13:34Z · message_queued at 2026-11-08T18:13:34.286Z
