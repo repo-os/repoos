@@ -1120,7 +1120,11 @@ const hint = computed<CardHint | null>(() => {
     // Check / remote / telemetry stalls outrank the generic "Coding" lifecycle
     // label while the engineer slot is still held (#1000). Pure agent silence
     // stays on the coding path when `running` is true (see task-card-stuck test).
-    if (evidence.cls === "tc-stuck" && activeEngineerCardBlocksInterrupt(evidence)) {
+    if (
+      evidence.cls === "tc-stuck" &&
+      (activeEngineerCardBlocksInterrupt(evidence) ||
+        evidence.label.startsWith("stuck · silent"))
+    ) {
       return {
         label: evidence.label,
         title: evidence.title,
