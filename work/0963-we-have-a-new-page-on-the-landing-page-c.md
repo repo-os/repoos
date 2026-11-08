@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 124316
-last_close_out_gate_at: "2026-11-08T08:42:18.732Z"
 id: "0963"
 title: Build the simplified client project board
 type: feature
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: fdec662c84aa26528051ec018f00087776eb9e5b
 assigned_to: ai
 created_by: hello@repoos.org
 branch: feat/build-the-simplified-client-project-boar
@@ -18,6 +17,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
 updated_at: "2026-11-08T08:42:18Z"
+last_close_out_gate_ms: 124316
+last_close_out_gate_at: "2026-11-08T08:42:18.732Z"
 review_passes: 2
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T08:15:08.792Z: repoos check failed: reused check inputs changed during handoff — run the check again"
