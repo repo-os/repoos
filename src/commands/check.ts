@@ -635,7 +635,12 @@ export function hardcodedColorOffenders(src: string, path = "<file>"): string[] 
         exemptFromDepth = Math.max(exemptFromDepth ?? 0, depth === 0 ? 1 : depth);
         if (depth === 0) pendingRule = true;
       }
-      if (!exempt && (HEX_LITERAL_RE.test(code) || WHITE_RGB_RE.test(code))) {
+      const mutedSurfaceUsedAsText =
+        /(?:^|[;{])\s*color\s*:\s*var\(\s*--muted\s*(?:,\s*[^)]*)?\)/i.test(code);
+      if (
+        !exempt &&
+        (HEX_LITERAL_RE.test(code) || WHITE_RGB_RE.test(code) || mutedSurfaceUsedAsText)
+      ) {
         out.push(`${path}:${startLine + i}  ${raw.trim()}`);
       }
       const opens = (code.match(/\{/g) ?? []).length;
