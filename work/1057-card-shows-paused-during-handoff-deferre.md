@@ -3,6 +3,9 @@ id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-08T02:03:35.530915Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -13,12 +16,12 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T02:03:30Z"
+updated_at: "2026-11-08T02:03:45Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T02:03:13.154Z: repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯"
 handoff_signal_retry_count: 1
-dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T02:03:29.214Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 2
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T02:03:29.214Z\",\"kind\":\"dev-error\"},{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T02:03:45.869Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -71,3 +74,5 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T02:03:29Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-08T02:03:18.737057Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
 - 2026-11-08T02:03:29Z · needs_input
 - 2026-11-08T02:03:30Z · message_delivered: 1 message(s)
+- 2026-11-08T02:03:45Z · agent exited with an error (codex) · 2026-11-08T02:03:35.530915Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T02:03:45Z · engineer crash recovery: resuming codex + gpt-6-luna (2/3 crashes in 30m) · 2026-11-08T02:03:35.530915Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
