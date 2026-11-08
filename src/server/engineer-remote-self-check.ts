@@ -23,7 +23,7 @@ import type { RemotePreReviewOutcome } from "./pre-review-remote-gate.js";
 import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import { createRemoteValidator } from "./remote-validation.js";
-import { aliveCheckGateLockForWorktree } from "./check-gate-lock.js";
+import { acquireCheckGateLock, aliveCheckGateLockForWorktree } from "./check-gate-lock.js";
 import { Logger } from "../core/logger.js";
 import { checkSnapshot } from "../core/check-reuse.js";
 
@@ -164,6 +164,27 @@ export async function runEngineerRemoteSelfCheckGate(params: {
   const prevStore = process.env.REPOOS_CHECK_STORE_ROOT;
   process.env.REPOOS_CHECK_STORE_ROOT = boardRoot;
   const startedAt = Date.now();
+  const branch = await runGit(params.worktreePath, ["branch", "--show-current"], 10_000);
+  if (branch.status !== 0 || !branch.stdout.trim()) {
+    if (prevStore === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
+    else process.env.REPOOS_CHECK_STORE_ROOT = prevStore;
+    await remoteValidator.dispose().catch(() => {});
+    return { kind: "fail", retryable: false, detail: "could not resolve task branch for check-gate lock" };
+  }
+  const gateLock = await acquireCheckGateLock({
+    boardRoot,
+    cacheDir: boardCfg.cacheDir ?? ".repoos",
+    taskId: params.taskId,
+    branch: branch.stdout.trim(),
+    worktree: params.worktreePath,
+    kind: "engineer-self-check",
+  });
+  if (!gateLock.ok) {
+    if (prevStore === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
+    else process.env.REPOOS_CHECK_STORE_ROOT = prevStore;
+    await remoteValidator.dispose().catch(() => {});
+    return { kind: "fail", retryable: true, detail: gateLock.reason };
+  }
   try {
     const snapshot = await checkSnapshot(params.worktreePath, params.changedRef);
     const gate = await runRemotePreReviewGate({
@@ -200,6 +221,7 @@ export async function runEngineerRemoteSelfCheckGate(params: {
     }
     return gate;
   } finally {
+    await gateLock.release();
     if (prevStore === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
     else process.env.REPOOS_CHECK_STORE_ROOT = prevStore;
   }

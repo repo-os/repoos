@@ -52,22 +52,25 @@ export async function checkGateHeadDriftAllowed(
       reason: "could not determine which paths changed between the gate snapshots",
     };
   }
-  const affecting = changed.filter((p) => !isCheckGateBookkeepingPath(p, config));
-  if (affecting.length === 0) return { ok: true };
   const commitDetail = await formatNonBookkeepingCommitDrift(
     workdir,
     beforeHead,
     afterHead,
     config,
-    affecting,
+    changed.filter((p) => !isCheckGateBookkeepingPath(p, config)),
   );
+  if (commitDetail === "") return { ok: true };
   if (commitDetail === null) {
     return {
       ok: false,
       reason: "could not determine the commit subjects and paths that moved HEAD during the check",
     };
   }
-  return { ok: false, reason: commitDetail, affectingPaths: affecting };
+  return {
+    ok: false,
+    reason: commitDetail,
+    affectingPaths: changed.filter((p) => !isCheckGateBookkeepingPath(p, config)),
+  };
 }
 
 async function formatNonBookkeepingCommitDrift(
@@ -97,5 +100,5 @@ async function formatNonBookkeepingCommitDrift(
     }
   }
   if (parts.length === 1 && aggregatePaths.length > 0) return null;
-  return parts.join("; ");
+  return parts.length === 1 ? "" : parts.join("; ");
 }

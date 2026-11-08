@@ -718,6 +718,16 @@ async function runHandoffFinalization(
   // still fail an unformatted committed tree. Skipped under `skipChecks` so a
   // deliberate no-gate override does not rewrite the tree under the human.
   if (!opts.skipChecks) {
+    const branchForGate = task.branch;
+    const outerGate = await acquireCheckGateLock({
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      taskId: task.id,
+      branch: branchForGate,
+      worktree: workdir,
+      kind: "handoff-finalize",
+    });
+    if (!outerGate.ok) return fail("check", outerGate.reason);
     try {
       const fixes = await runFormatFixes(workdir, config);
       for (const command of fixes.commands) {
@@ -781,6 +791,7 @@ async function runHandoffFinalization(
     try {
       before = await worktreeState(workdir, config);
     } catch (error) {
+      await outerGate.release();
       return fail(
         "commit",
         `could not snapshot the worktree before the gate (${(error as Error).message})`,
@@ -855,6 +866,7 @@ async function runHandoffFinalization(
       });
       if (remoteOutcome.kind === "fail") {
         checkHandle?.done(1);
+        await outerGate.release();
         return {
           ok: false,
           step: "check",
@@ -885,14 +897,20 @@ async function runHandoffFinalization(
       changedBase,
       checkHandle ? (cancel) => checkHandle.setCancel(cancel) : undefined,
     );
+    // The local check's inner holder is released by runCheck. Keep this outer
+    // holder through the remote half and drift check, then release before the
+    // report/status bookkeeping that follows.
+    const releaseOuterGate = outerGate.release;
     checkHandle?.done(check.status);
     const checkOutput = `${check.stdout}\n${check.stderr}`;
     if (check.status !== 0) {
+      await releaseOuterGate();
       return fail("check", `repoos check failed: ${buildLastCheckFailureSummary(checkOutput)}`);
     }
     if (checkRunSkipped(checkOutput)) {
       const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
       if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
+        await releaseOuterGate();
         return fail("check", BRANCH_ADDS_PROJECT_NO_CHECK_PLAN);
       }
     }
@@ -907,6 +925,7 @@ async function runHandoffFinalization(
           current,
         ))
       ) {
+        await releaseOuterGate();
         return fail("check", "reused check inputs changed during handoff — run the check again");
       }
     }
@@ -921,13 +940,17 @@ async function runHandoffFinalization(
     try {
       after = await worktreeState(workdir, config);
     } catch (error) {
+      await releaseOuterGate();
       return fail(
         "check",
         `the gate passed but the worktree's state could not be re-checked (${(error as Error).message}) — refusing to hand off a result that cannot be tied to a tree`,
       );
     }
     const drift = await describeStateDrift(workdir, config, task.id, before, after);
-    if (drift) return fail("check", drift);
+    if (drift) {
+      await releaseOuterGate();
+      return fail("check", drift);
+    }
 
     if (!opts.skipChecks) {
       // #0734: use the CANONICAL task body for declarations (task.body), not a
@@ -945,6 +968,7 @@ async function runHandoffFinalization(
           { remoteTransport: remoteBrowserEvidenceTransport(config, opts.remoteValidator) },
         );
         if (!ui.ok && !ui.skipped) {
+          await releaseOuterGate();
           return fail("verify", ui.detail);
         }
         // #0909 review round 2: a skipped gate (no preview, Playwright missing,
@@ -957,10 +981,12 @@ async function runHandoffFinalization(
           const detail = ui.skipped
             ? `browser verification did not run: ${ui.detail}`
             : "browser verification did not store evidence — console errors were not checked";
+          await releaseOuterGate();
           return fail("verify", detail);
         }
       }
     }
+    await releaseOuterGate();
   } else {
     // Keep the step sequence honest for a UI that renders "Running checks…":
     // the commit gate is still real work, so report it as the step in flight.
