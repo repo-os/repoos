@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -265,3 +265,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T21:16:10Z · message_queued at 2026-11-08T21:16:10.786Z
 - 2026-11-08T21:35:18Z · body
 - 2026-11-08T21:37:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I did **not** request handoff. The review findings are still open: managed self-check and close-out lifecycle coverage, protection against direct source-file writes, and process-safe lock and queue updates. The scoped check passed on the c… · stderr: Reading additional input from stdin... 2026-11-08T21:36:30.916306Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 17448
+- 2026-11-08T21:37:04Z · status active→review
