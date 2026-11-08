@@ -41,6 +41,19 @@ describe("ChecksProgressDisplay", () => {
     expect(row.find(".checks-progress-drawer-detail").text()).toContain("tests 24/72 files");
   });
 
+  it("exposes a single accessible progressbar (native meter is aria-hidden)", () => {
+    const wrapper = mount(ChecksProgressDisplay, {
+      props: {
+        variant: "card",
+        progress: { ...progress, stepsDone: 5, stepsTotal: 10 },
+      },
+    });
+    expect(wrapper.find('[role="progressbar"]').exists()).toBe(true);
+    const native = wrapper.find("progress");
+    expect(native.exists()).toBe(true);
+    expect(native.attributes("aria-hidden")).toBe("true");
+  });
+
   it("puts pipeline status text beside the bar", () => {
     const wrapper = mount(ChecksProgressDisplay, {
       props: {
