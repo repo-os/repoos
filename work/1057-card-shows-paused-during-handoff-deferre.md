@@ -80,3 +80,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T02:48:57Z · message_queued at 2026-11-08T02:48:57.240Z
 - 2026-11-08T02:52:23Z · review_model_override
 - 2026-11-08T02:53:29Z · handoff failed · check failed after 2 automatic retries · server-side finalization timed out (deadline exceeded)
+- 2026-11-08T02:53:29Z · message_queued at 2026-11-08T02:53:29.730Z
