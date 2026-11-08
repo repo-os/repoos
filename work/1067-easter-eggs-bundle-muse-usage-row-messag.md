@@ -139,3 +139,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:54:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T18:55:14Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-08T18:55:15Z · status active→review
+- 2026-11-08T18:55:15Z · message_queued at 2026-11-08T18:55:15.214Z
