@@ -2,7 +2,7 @@
 id: "1066"
 title: "Pipeline view: card text uses --muted (a background token), unreadable in every theme"
 type: bug
-status: active
+status: ready
 paths: [src/ui-app/src/components/PipelineCard.vue, src/ui-app/src/style.css]
 priority: p1
 area: web
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T14:27:05Z"
+updated_at: "2026-11-08T14:32:07Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -40,3 +40,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T14:16:58Z · status ready→active, branch
 - 2026-11-08T14:22:39Z · message_queued at 2026-11-08T14:22:39.911Z
 - 2026-11-08T14:27:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T14:32:07Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
