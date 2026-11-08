@@ -293,3 +293,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T23:15:58Z · message_queued at 2026-11-08T23:15:58.274Z
 - 2026-11-08T23:35:04Z · body
 - 2026-11-08T23:37:18Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T23:37:18Z · message_queued at 2026-11-08T23:37:18.922Z
