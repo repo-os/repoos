@@ -19,6 +19,7 @@ import {
 import { join, relative } from "node:path";
 import { spawn } from "node:child_process";
 import { notifyGitMutation } from "../core/git-activity.js";
+import { resolveDefaultBranch } from "../core/repo-log.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
 import type { IntegrationJob, JobCoordinator, JobPhase } from "./integration-job.js";
 import { jobAttempt } from "./integration-job.js";
@@ -693,14 +694,6 @@ export function isDocsOnlyChange(paths: string[], docsDir = "docs"): boolean {
 }
 
 /**
- * Resolve the repository's actual default branch name.
- * Tries (in order):
- * 1. git symbolic-ref refs/remotes/origin/HEAD (when remote exists)
- * 2. git config --get init.defaultBranch
- * 3. currently checked-out branch
- * 4. fallback to "main"
- */
-/**
  * Whether this project is expected to build its own `dist/cli/index.js` at
  * all. True only for RepoOS itself (self-hosting) and any other managed
  * project that happens to declare the same `bin` target — the vast majority
@@ -719,31 +712,6 @@ function expectsOwnCli(wtPath: string): boolean {
   } catch {
     return false;
   }
-}
-
-async function resolveDefaultBranch(root: string): Promise<string> {
-  // Try remote HEAD first (most reliable for cloned repos)
-  const remoteHeadRes = await runGit(root, ["symbolic-ref", "refs/remotes/origin/HEAD"], 4000);
-  if (remoteHeadRes.status === 0) {
-    // Output format: "ref: refs/remotes/origin/main" -> extract "main"
-    const match = remoteHeadRes.stdout.trim().match(/refs\/remotes\/origin\/(.+)$/);
-    if (match) return match[1];
-  }
-
-  // Try init.defaultBranch config
-  const configRes = await runGit(root, ["config", "--get", "init.defaultBranch"], 4000);
-  if (configRes.status === 0 && configRes.stdout.trim()) {
-    return configRes.stdout.trim();
-  }
-
-  // Fall back to currently checked-out branch
-  const currentRes = await runGit(root, ["rev-parse", "--abbrev-ref", "HEAD"], 4000);
-  if (currentRes.status === 0 && currentRes.stdout.trim() && currentRes.stdout.trim() !== "HEAD") {
-    return currentRes.stdout.trim();
-  }
-
-  // Final fallback
-  return "main";
 }
 
 // How much of a failed command's output to keep as the failure reason.
@@ -841,6 +809,18 @@ export interface ProcessRunResult {
    * close-out rather than report a gate failure.
    */
   cancelled?: boolean;
+}
+
+export function formatMainShaFailureReason(
+  root: string,
+  branch: string,
+  result: Pick<ProcessRunResult, "status" | "timedOut" | "stderr">,
+): string {
+  return (
+    `could not get main SHA (branch: ${branch}; root: ${root}; ` +
+    `exit status: ${result.status}; timedOut: ${result.timedOut}; ` +
+    `stderr: ${result.stderr.trim() || "(empty)"})`
+  );
 }
 
 /**
@@ -2416,7 +2396,10 @@ export class CloseOutOrchestrator {
     // Record main SHA at validation start.
     const mainShaRes = await runGit(root, ["rev-parse", `${mainBranch}^{commit}`], 4000);
     if (mainShaRes.status !== 0) {
-      return { ok: false, reason: "could not get main SHA" };
+      return {
+        ok: false,
+        reason: formatMainShaFailureReason(root, mainBranch, mainShaRes),
+      };
     }
     const baseMainSha = mainShaRes.stdout.trim();
 

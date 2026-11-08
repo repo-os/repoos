@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 559631
-last_close_out_gate_at: "2026-11-08T13:48:42.577Z"
 id: "1063"
 title: Close-out resolves wrong default branch when init.defaultBranch names a missing branch
 type: bug
-status: review
+status: done
 paths: [src/server/integration-orchestrator.ts, src/core/repo-log.ts]
 priority: p1
 area: core
+merged_commit: fa78573bf52b6d9c9620d396fbfb8a1313187ca5
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/close-out-resolves-wrong-default-branch-
 created_at: "2026-11-08T12:38:05Z"
 updated_at: "2026-11-08T13:48:42Z"
+last_close_out_gate_ms: 559631
+last_close_out_gate_at: "2026-11-08T13:48:42.577Z"
 review_passes: 1
 ---
 ## Problem
