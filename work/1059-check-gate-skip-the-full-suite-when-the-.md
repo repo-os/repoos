@@ -229,3 +229,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T15:37:05Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T15:46:16Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-08T15:46:16Z · message_queued at 2026-11-08T15:46:16.513Z
+- 2026-11-08T15:46:16Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1059.md
