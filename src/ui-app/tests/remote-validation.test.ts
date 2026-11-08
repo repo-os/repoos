@@ -359,7 +359,7 @@ describe("RemoteValidationRunner", () => {
       expect((await running).cancelled).toBe(true);
       expect(
         readRemoteValidationEvents(root, "1060").some((event) =>
-          event.message.includes("could not kill one or more Hetzner browser capture containers"),
+          event.message.includes("browser capture cancellation failed"),
         ),
       ).toBe(true);
     } finally {

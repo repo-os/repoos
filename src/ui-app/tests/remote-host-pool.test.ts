@@ -762,6 +762,52 @@ const opts = (taskId: string, extra: Record<string, unknown> = {}) => ({
 });
 
 describe("completed browser capture collection", () => {
+  it("records capture cancellation failed when remote ssh cannot kill the container", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    let started = false;
+    const exec: RemoteExecDeps = {
+      ...f.exec,
+      runRemote: vi.fn(async (host, cmd, onChunk, timeout, remoteOpts) => {
+        if (cmd.includes("/browser-capture/result.json"))
+          return { code: 1, output: "", timedOut: false };
+        if (cmd.startsWith("docker rm -f"))
+          return {
+            code: 255,
+            output: "ssh: connect to host port 22: Connection refused\n",
+            timedOut: false,
+          };
+        if (!cmd.includes("REPOOS_CONTAINER="))
+          return f.exec.runRemote(host, cmd, onChunk, timeout, remoteOpts);
+        started = true;
+        return new Promise<RemoteExecResult>((resolve) =>
+          remoteOpts?.registerAbort?.(() => resolve({ code: null, output: "", timedOut: false })),
+        );
+      }),
+    };
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec,
+      timings: { capturePollIntervalMs: 20, healthRetryMs: 40 },
+    });
+    const capture = {
+      kind: "shot" as const,
+      browserCapture: { taskId: "1060", branch: "feat/test", operation: "shots" as const },
+    };
+    try {
+      const running = runner.validate(opts("1060", capture));
+      await vi.waitFor(() => expect(started).toBe(true));
+      await runner.cancelBrowserCaptures("1060");
+      expect((await running).cancelled).toBe(true);
+      expect(
+        runner
+          .remoteEvents("1060")
+          .some((event) => event.message.includes("browser capture cancellation failed")),
+      ).toBe(true);
+    } finally {
+      await runner.dispose();
+      await f.runner.dispose();
+    }
+  });
+
   it("cancels both a running and queued capture after a failed handoff", async () => {
     const f = poolFixture({ hosts: [{ host: "a" }], maxConcurrent: 1 });
     const capture = {
