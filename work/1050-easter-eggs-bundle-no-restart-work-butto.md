@@ -364,3 +364,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T05:53:35Z · note: Task body is underspecified: E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI
 - 2026-11-08T05:53:35Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
 - 2026-11-08T05:53:36Z · message_queued at 2026-11-08T05:53:36.140Z
+- 2026-11-08T05:53:36Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
