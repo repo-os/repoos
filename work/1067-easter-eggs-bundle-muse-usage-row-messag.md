@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1067"
 title: "Easter eggs bundle: Muse usage row messages and dashboard link, needs-input flag after body fix"
 type: chore
@@ -72,3 +73,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T14:28:43Z · status inbox→ready
 - 2026-11-08T16:29:52Z · status ready→active, branch
 - 2026-11-08T16:34:56Z · message_queued at 2026-11-08T16:34:56.718Z
+
