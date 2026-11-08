@@ -3,12 +3,6 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
-debug_tldr: The engineer stalled in a scoped check amid a failing test and index.lock contention; inspect the check log and resolve the blocker before retrying.
-debug_tldr_at: "2026-11-08T05:57:43Z"
-debug_tldr_key: "dev-error|RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p3
 area: web
 assigned_to: ai
@@ -19,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T05:57:43Z"
+updated_at: "2026-11-08T06:00:21Z"
 dev_error_count: 12
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T05:57:17.343Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -125,3 +119,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T05:53:38Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T05:57:17Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-08T05:57:17Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-08T06:00:21Z · needs_input
