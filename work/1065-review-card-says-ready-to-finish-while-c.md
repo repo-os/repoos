@@ -12,6 +12,7 @@ branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
 updated_at: "2026-11-08T15:58:50Z"
 handoff_signal_retry_count: 1
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 On the Work board, a task in Review whose reviewer said "good to go" shows the green "Review passed · ready to finish" label, a glowing card and an active "Move to done" button. The task drawer for the same task can say "Not ready to merge: Running checks · 7m 21s, step 10 of 11" at the same moment (seen on #1063). The two disagree.
