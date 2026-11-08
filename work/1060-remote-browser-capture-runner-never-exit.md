@@ -252,3 +252,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T15:30:05Z · status review→active
 - 2026-11-08T15:30:05Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T15:30:07Z · needs_input
+- 2026-11-08T15:30:07Z · message_queued at 2026-11-08T15:30:07.795Z
