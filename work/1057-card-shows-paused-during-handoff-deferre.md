@@ -2,7 +2,7 @@
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: check-failed-after-retries
 debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
@@ -135,4 +135,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T07:55:05Z · message_delivered: 1 message(s)
 - 2026-11-08T07:58:14Z · CTO nudge: held — remote validation is running
 - 2026-11-08T08:03:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
-- 2026-11-08T08:03:11Z · engineer stopped by request
+- 2026-11-08T08:03:11Z · status active→review
