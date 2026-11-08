@@ -541,6 +541,21 @@ describe("post-merge summary status persistence", () => {
     expect(payload.status).toBe("failed");
     expect(payload.error).toMatch(/summary\.md could not be read/);
   });
+
+  it("resolves a persisted done state with an unreadable report to failed with a reason", () => {
+    const { config, task } = setup();
+    const statusDir = join(root(config), ".repoos", "task-summary");
+    mkdirSync(statusDir, { recursive: true });
+    writeFileSync(
+      join(statusDir, `${task.id}.json`),
+      JSON.stringify({ status: "done", at: new Date().toISOString() }),
+    );
+    const reportDir = join(root(config), "work", "reports", task.id);
+    mkdirSync(join(reportDir, "summary.md"), { recursive: true });
+    const payload = getTaskSummaryJobPayload(config, task.id);
+    expect(payload.status).toBe("failed");
+    expect(payload.error).toMatch(/summary\.md could not be read/);
+  });
 });
 
 describe("post-merge summary disk fallbacks", () => {
