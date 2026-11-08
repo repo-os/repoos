@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -249,3 +249,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T20:16:01Z · message_queued at 2026-11-08T20:16:01.123Z
 - 2026-11-08T20:50:12Z · body
 - 2026-11-08T20:52:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed after a remote retry, and the focused check-gate suite passed all 14 tests. The report draft is at [.repoos/engineering-report-drafts/1061.md](/Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeepi… · stderr: Reading additional input from stdin... 2026-11-08T20:17:32.205738Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeeping-commits-f/src/server/handoff.ts: async function runCheck( 2026-11-08T20:…
+- 2026-11-08T20:52:31Z · status active→review
