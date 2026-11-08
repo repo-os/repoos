@@ -37,6 +37,7 @@ import {
   isShotPreviewCaptureActive,
   readShotPreviewFixtureFromLocation,
 } from "../lib/shot-preview-fixtures.js";
+import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
 import type { Task } from "../types";
 
 const DRAFT_BAR = "#3a4055";
@@ -82,6 +83,23 @@ function tabFromQuery(raw: unknown): typeof ui.activeTab | null {
 }
 
 const router = useRouter();
+watch(
+  () => {
+    const shot =
+      typeof window !== "undefined" ? readShotPreviewFixtureFromLocation(window.location) : null;
+    return shot === "drawer:postMergeSummary"
+      ? repo.tasks.find((task) => task.id === SHOT_PREVIEW_FIXTURE_TASK_ID)
+      : undefined;
+  },
+  (task) => {
+    // App.vue applies shot fixtures in its parent mounted hook, after this
+    // view's own hook. Watch for the seeded task so the drawer opens reliably.
+    if (!task || ui.active) return;
+    void ui.openTask(task);
+    ui.activeTab = "agent";
+  },
+  { immediate: true },
+);
 watch(
   () => route.query.task,
   (v) => {
@@ -287,20 +305,7 @@ function setWorkViewMode(mode: WorkViewMode): void {
     /* ignore quota / privacy-mode failures */
   }
 }
-onMounted(() => {
-  loadWorkViewMode();
-  // The shot runner may drop ordinary query keys while adding shotState. Open
-  // this fixture's drawer after WorkView is mounted so the report capture does
-  // not depend on a `?task=` deep link or a startup-time drawer mutation.
-  const shot = readShotPreviewFixtureFromLocation(
-    typeof window !== "undefined" ? window.location : { search: "" },
-  );
-  if (shot !== "drawer:postMergeSummary" || ui.active) return;
-  const task = repo.tasks.find((candidate) => candidate.id === "9999");
-  if (!task) return;
-  void ui.openTask(task);
-  ui.activeTab = "agent";
-});
+onMounted(loadWorkViewMode);
 // Shot captures must land on the track even when the stored preference is
 // board-first (`board:pipeline`, `pipeline:*`, or `/work?tab=pipeline`).
 // `?shotState=` is enough to force the track before /api/health returns
