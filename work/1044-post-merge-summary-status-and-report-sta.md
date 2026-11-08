@@ -2,7 +2,7 @@
 id: "1044"
 title: "Post-merge summary: status and report-state edge cases (follow-up to #1041)"
 type: bug
-status: review
+status: active
 priority: p3
 area: [core, web]
 assigned_to: ai
@@ -87,4 +87,3 @@ Read work/reports/1041/review-14.md (and review-12, review-13) on the 1041 branc
 - 2026-11-08T00:49:43Z · body
 - 2026-11-08T00:52:07Z · CTO nudge: held — remote validation is running
 - 2026-11-08T00:52:15Z · note: ui verification passed: 1 of 1 shot captured with clean console
-- 2026-11-08T00:52:15Z · status active→review
