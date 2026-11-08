@@ -48,3 +48,4 @@ Failure mode to avoid: the cards offer "Delete task", which would delete the sto
 - 2026-11-08T13:50:41Z · message_delivered: 2 message(s)
 - 2026-11-08T13:53:17Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T14:06:18Z · status active→review
+- 2026-11-08T14:06:18Z · message_queued at 2026-11-08T14:06:18.877Z
