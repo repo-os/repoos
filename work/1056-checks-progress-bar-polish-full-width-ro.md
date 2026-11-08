@@ -18,7 +18,6 @@ review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 10
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T05:56:41.582Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
