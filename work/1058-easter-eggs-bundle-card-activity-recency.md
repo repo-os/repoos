@@ -270,3 +270,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T16:02:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T16:12:00Z · body
 - 2026-11-08T16:14:43Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T16:14:43Z · message_queued at 2026-11-08T16:14:43.962Z
