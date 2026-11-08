@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1066"
 title: "Pipeline view: card text uses --muted (a background token), unreadable in every theme"
 type: bug
@@ -37,3 +38,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T13:15:51Z · body: Problem (added 1, removed 2); Desired UX (added); Acceptance criteria (added 1, removed 1)
 - 2026-11-08T13:40:06Z · status inbox→ready
 - 2026-11-08T14:16:58Z · status ready→active, branch
+
