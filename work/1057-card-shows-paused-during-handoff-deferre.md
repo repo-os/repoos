@@ -2,7 +2,7 @@
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T00:26:12Z"
+updated_at: "2026-11-08T00:26:14Z"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -38,3 +38,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 
 - 2026-11-08T00:26:09Z · created · njachowski@gmail.com
 - 2026-11-08T00:26:12Z · cli_override, model_override, review_cli_override, review_model_override
+- 2026-11-08T00:26:14Z · status inbox→ready
