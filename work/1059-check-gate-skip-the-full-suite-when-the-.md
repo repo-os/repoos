@@ -2,7 +2,10 @@
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -13,13 +16,13 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T13:30:59Z"
+updated_at: "2026-11-08T13:36:44Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T06:26:00.174Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 8
+dev_error_count: 9
 ---
 ## Problem
 `repoos check` runs the full plan (build, format/lint, full test suite, WebKit UI smoke, contrast audit) even when a task's diff contains only task bookkeeping under `work/` (task file, `work/reports/<id>/*`) or other non-code files. Example: #1055 (the weekly worktree cleanup) changed 11 files, all under `work/`, and still waited for a remote-validation slot and ran the full 680-file suite on every handoff attempt, repeating after each outage or capture timeout. That is minutes to hours of wasted time and runner load for a change that cannot affect behavior. The recurring weekly cleanup will hit this every run.
@@ -193,3 +196,5 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T13:28:40Z · note: handoff requested (cli)
 - 2026-11-08T13:30:51Z · message_delivered: 1 message(s)
 - 2026-11-08T13:30:59Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T13:36:44Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
+- 2026-11-08T13:36:44Z · status active→review
