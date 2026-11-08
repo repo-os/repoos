@@ -263,3 +263,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T15:54:50Z · note: handoff requested (cli)
 - 2026-11-08T15:55:24Z · status active→review
 - 2026-11-08T15:55:24Z · message_queued at 2026-11-08T15:55:24.308Z
+- 2026-11-08T15:55:24Z · note: shots: skipped — the diff (32 changed paths) touches no capture target's globs — no UI change to capture
