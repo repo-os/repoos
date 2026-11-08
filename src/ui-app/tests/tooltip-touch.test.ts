@@ -6,7 +6,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { installTooltips } from "../src/lib/tooltip";
 
 function touch(
-  type: "pointerdown" | "pointerup" | "pointermove",
+  type: "pointerdown" | "pointerup" | "pointermove" | "pointercancel",
   el: Element,
   over: Partial<PointerEventInit> = {},
 ): void {
