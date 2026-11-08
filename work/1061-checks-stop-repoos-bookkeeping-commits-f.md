@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T15:56:32Z"
+updated_at: "2026-11-08T15:56:34Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -58,3 +58,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T15:54:00Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-08T15:56:32Z · note: review pass 1: needs some work
 - 2026-11-08T15:56:32Z · status review→active
+- 2026-11-08T15:56:34Z · CTO nudge: held — an undelivered message is already queued
