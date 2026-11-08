@@ -3,9 +3,6 @@ id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `src/server/integration-orchestrator.ts` conflicts with `main`, blocking a clean landing."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T15:30:08Z"
+updated_at: "2026-11-08T15:30:09Z"
 review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -224,3 +221,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T15:01:02Z · needs_input
 - 2026-11-08T15:30:08Z · status review→active
 - 2026-11-08T15:30:08Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T15:30:09Z · needs_input
