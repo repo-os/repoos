@@ -133,9 +133,9 @@ describe("TaskCard stuck-agent detection", () => {
 
     hint = wrapper.find(".tc-hint");
     expect(hint.exists()).toBe(true);
-    expect(hint.classes()).toContain("tc-coding");
-    expect(hint.text()).toContain("Coding");
-    expect(hint.classes()).not.toContain("tc-stuck");
+    expect(hint.classes()).toContain("tc-stuck");
+    expect(hint.text().toLowerCase()).toMatch(/stuck · silent/);
+    expect(hint.text()).not.toBe("Stuck");
   });
 
   it("stays 'coding' when output keeps arriving past the 5-minute mark", async () => {
