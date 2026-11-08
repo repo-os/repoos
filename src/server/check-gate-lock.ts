@@ -194,10 +194,7 @@ function listLockFiles(boardRoot: string, cacheDir: string): string[] {
 }
 
 function readLockFile(boardRoot: string, cacheDir: string, name: string): CheckGateLock | null {
-  return readJsonFile(
-    join(cacheRoot(boardRoot, cacheDir), "check-gate-locks", name),
-    parseLock,
-  );
+  return readJsonFile(join(cacheRoot(boardRoot, cacheDir), "check-gate-locks", name), parseLock);
 }
 
 /** Clear a dead lock and flush its deferred queue (best-effort, in-process). */
