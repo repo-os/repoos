@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T03:01:29Z"
+updated_at: "2026-11-08T04:10:19Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -171,3 +171,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T02:58:11Z · held, held-reason, held-at
 - 2026-11-08T03:00:50Z · handoff failed · remote validation failed: test failure: gate exit 137 on bee — fix it in the feature branch and re-run the gate
 - 2026-11-08T03:00:50Z · message_queued at 2026-11-08T03:00:50.509Z
+- 2026-11-08T04:10:19Z · message_overdue: still queued after 60m without being delivered
