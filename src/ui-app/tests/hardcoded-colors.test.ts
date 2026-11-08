@@ -61,9 +61,9 @@ describe("hardcodedColorOffenders (#0596)", () => {
     expect(scan(["<style scoped>", ".a { color: var(--muted); }", "</style>"].join("\n"))).toEqual([
       "Comp.vue:2  .a { color: var(--muted); }",
     ]);
-    expect(scan(["<style scoped>", ".a { background: var(--muted); }", "</style>"].join("\n"))).toEqual(
-      [],
-    );
+    expect(
+      scan(["<style scoped>", ".a { background: var(--muted); }", "</style>"].join("\n")),
+    ).toEqual([]);
   });
 
   it("ignores hex-looking text inside comments (task ids are #0444-shaped)", () => {
