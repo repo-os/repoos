@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T13:30:43Z"
+updated_at: "2026-11-08T13:35:54Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
@@ -21,6 +21,7 @@ last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 review_rounds: 1
 review_passes: 1
 dev_error_count: 16
+engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Items
 
@@ -211,3 +212,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T12:50:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T12:53:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T13:30:43Z · message_queued at 2026-11-08T13:30:43.628Z
+- 2026-11-08T13:35:54Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
