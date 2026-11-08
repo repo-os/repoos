@@ -404,6 +404,37 @@ ${"Substantive notes that are long enough to avoid the short-body heuristic. ".r
     }
   });
 
+  it("clears the underspecified flag after a complete body PATCH", async () => {
+    const extra = "needs_input: true\nneeds_input_reason: underspecified\n";
+    const fx = makeFixture("active", extra);
+    try {
+      writeFileSync(fx.taskPath, taskText("active", extra).replace(STUB_BODY, "just a stub"));
+      const { res, fake } = makeRes();
+      await patchTask(makeCtx(fx), makeReq({ body: WELL_SPECIFIED }), res, { param1: "0558" });
+      expect(fake.status).toBe(200);
+      expect(readTaskFile(fx)).toMatchObject({ needsInput: false });
+      expect(readTaskFile(fx).needsInputReason).toBeUndefined();
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("keeps a needs-input flag owned by a different reason after a body PATCH", async () => {
+    const extra = "needs_input: true\nneeds_input_reason: provider-failure\n";
+    const fx = makeFixture("active", extra);
+    try {
+      writeFileSync(fx.taskPath, taskText("active", extra).replace(STUB_BODY, "just a stub"));
+      const { res } = makeRes();
+      await patchTask(makeCtx(fx), makeReq({ body: WELL_SPECIFIED }), res, { param1: "0558" });
+      expect(readTaskFile(fx)).toMatchObject({
+        needsInput: true,
+        needsInputReason: "provider-failure",
+      });
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("drops a stale underspecified reason but keeps needs_input while questions remain (#0613)", () => {
     const extra =
       'needs_input: true\nneeds_input_reason: underspecified\nneeds_input_detail: "stub"\nquestions:\n  - "Which API?"\n';

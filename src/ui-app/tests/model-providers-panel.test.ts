@@ -87,6 +87,7 @@ function providersFixture(
       label: "Muse",
       kind: "live",
       dashboardUrl: "https://dev.meta.ai/docs/muse-code",
+      dashboardLabel: "Muse docs",
       note: "Allowance from your `muse login` session — no key to paste.",
       hasKey: false,
       usesCliLogin: true,
@@ -539,6 +540,37 @@ describe("ModelProvidersPanel — Muse live data", () => {
     expect(row.find(".mp-retry").exists()).toBe(true);
     // The dashboard link-out is still one click away.
     expect(row.find(".mp-dash-link").attributes("href")).toBe("https://dev.meta.ai/docs/muse-code");
+    expect(row.find(".mp-dash-link").text()).toContain("Muse docs");
+  });
+
+  it("shows Meta's no-allowance hint with a retry action", async () => {
+    stubFetch([
+      providersRoute(providersFixture()),
+      museUsageRoute({
+        kind: "muse",
+        tier: null,
+        windows: [],
+        unrecognized: false,
+        message:
+          "The server sent no usage data for this subscription; this can happen before your first use in a new window.",
+      }),
+    ]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    await nextTick();
+
+    const row = wrapper.findAll(".mp-row")[8];
+    expect(row.text()).toContain("before your first use in a new window");
+    expect(row.find(".mp-retry").text()).toBe("Retry");
+  });
+
+  it("labels the docs destination explicitly", async () => {
+    stubFetch([providersRoute(providersFixture())]);
+    const wrapper = mount(ModelProvidersPanel);
+    await flushPromises();
+    const link = wrapper.findAll(".mp-row")[8].find(".mp-dash-link");
+    expect(link.attributes("href")).toBe("https://dev.meta.ai/docs/muse-code");
+    expect(link.text()).toContain("Muse docs");
   });
 });
 
