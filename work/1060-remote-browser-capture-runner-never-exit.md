@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
@@ -169,4 +169,3 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T11:28:11Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-08T11:28:12Z · message_delivered: 2 message(s)
 - 2026-11-08T11:28:13Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
-- 2026-11-08T11:28:13Z · status active→review
