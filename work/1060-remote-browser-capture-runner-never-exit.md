@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-11-08T12:42:48Z"
-review_passes: 5
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — startup reaper can report success when removal fails; main also has reported source conflicts.
 priority: p1
 area: server
 assigned_to: ai
@@ -18,6 +13,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
+updated_at: "2026-11-08T12:42:58Z"
+review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 8
@@ -185,4 +182,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T12:40:23Z · message_queued at 2026-11-08T12:40:23.973Z
 - 2026-11-08T12:42:48Z · note: review pass 5: needs some work
 - 2026-11-08T12:42:48Z · needs_input
-
+- 2026-11-08T12:42:58Z · needs_input (review-rounds-exhausted) cleared for review again by human
