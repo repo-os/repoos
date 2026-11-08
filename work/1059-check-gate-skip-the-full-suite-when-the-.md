@@ -2,7 +2,7 @@
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T10:45:27Z"
+updated_at: "2026-11-08T10:47:53Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -139,3 +139,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T10:39:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T10:43:00Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T10:45:27Z · body
+- 2026-11-08T10:47:53Z · status active→review
