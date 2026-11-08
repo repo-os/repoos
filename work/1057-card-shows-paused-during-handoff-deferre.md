@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T08:41:54.450Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -21,7 +23,6 @@ created_at: "2026-11-08T00:26:09Z"
 updated_at: "2026-11-08T08:41:54Z"
 review_rounds: 1
 review_passes: 2
-last_check_failure: "repoos check at 2026-11-08T07:55:05.134Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 1
 dev_error_count: 4
 ---
@@ -148,3 +149,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T08:40:26Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T08:41:51Z · message_queued at 2026-11-08T08:41:51.292Z
 - 2026-11-08T08:41:54Z · message_delivered: 2 message(s)
+
