@@ -95,15 +95,11 @@ it("reaps a completed capture even when the Mac still tracks it as live", async 
     return { code: 1, output: "", timedOut: false };
   });
   const logger = { system: vi.fn() };
-  await runValidationContainerReaper(
-    { runRemote } as never,
-    { ip: "100.0.0.1" } as never,
-    {
-      liveContainerNames: new Set([containerName]),
-      logger: logger as never,
-      hostLabel: "runner",
-    },
-  );
+  await runValidationContainerReaper({ runRemote } as never, { ip: "100.0.0.1" } as never, {
+    liveContainerNames: new Set([containerName]),
+    logger: logger as never,
+    hostLabel: "runner",
+  });
   expect(runRemote).toHaveBeenCalledWith(
     expect.anything(),
     completedCaptureReaperCommand(containerId),
