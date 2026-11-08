@@ -111,6 +111,7 @@ describe("PipelineCard", () => {
       stepLabel: "Coding",
       chipText: null,
       stateSince: new Date(Date.now() - 12 * 60_000).toISOString(),
+      lastActivityAt: new Date(Date.now() - 60_000).toISOString(),
       nowMs: Date.now(),
       roundsLabel: "D2 · R1 ✓",
       reviewerTone: "green",

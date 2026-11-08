@@ -142,6 +142,22 @@ describe("TaskCard activity recency (#1058)", () => {
     const hint = wrapper.get('[data-test-id="task-card-agent-hint"]');
     expect(hint.text().toLowerCase()).toMatch(/stuck · silent/);
   });
+
+  it("keeps last-activity recency available on the check-progress line", async () => {
+    const repo = useRepoStore();
+    repo.runningIds = ["1058"];
+    repo.runningSince = { "1058": "2026-11-08T02:59:00.000Z" };
+    repo.agentActivityAt = { "1058": "2026-11-08T02:59:00.000Z" };
+    repo.taskChecks = { "1058": [{ running: true }] } as never;
+    const wrapper = mount(TaskCard, {
+      props: { task: baseTask(), dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    const progress = wrapper.get(".task-card-check-progress-tip");
+    expect(progress.attributes("data-tip")).toMatch(/Active 1m ago/i);
+    expect(progress.attributes("tabindex")).toBe("0");
+  });
 });
 
 describe("PipelineCard activity recency (#1058)", () => {
@@ -157,6 +173,7 @@ describe("PipelineCard activity recency (#1058)", () => {
         stepLabel: "Coding",
         chipText: null,
         stateSince: "2026-11-08T02:48:00.000Z",
+        lastActivityAt: "2026-11-08T02:59:00.000Z",
         nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
         roundsLabel: "D0 · R0",
         reviewerTone: null,
@@ -169,7 +186,8 @@ describe("PipelineCard activity recency (#1058)", () => {
     expect(wrapper.find('[data-test-id="pipeline-card-elapsed"]').exists()).toBe(false);
     const step = wrapper.get(".pl-step");
     const tip = step.attributes("data-tip") ?? "";
-    expect(tip).toContain("In this state for 12m");
+    expect(tip).toMatch(/Active 1m ago/i);
+    expect(tip).not.toContain("In this state");
   });
 
   it("does not open the task when a touch tap only reveals step recency", async () => {
@@ -185,6 +203,7 @@ describe("PipelineCard activity recency (#1058)", () => {
         stepLabel: "Coding",
         chipText: null,
         stateSince: "2026-11-08T02:48:00.000Z",
+        lastActivityAt: "2026-11-08T02:59:00.000Z",
         nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
         roundsLabel: "D0 · R0",
         reviewerTone: null,
@@ -199,7 +218,7 @@ describe("PipelineCard activity recency (#1058)", () => {
     touchTip("pointerdown", step);
     vi.advanceTimersByTime(100);
     touchTip("pointerup", step);
-    expect(document.querySelector(".app-tooltip.show")?.textContent).toContain("In this state");
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toMatch(/Active 1m ago/i);
     step.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     expect(wrapper.emitted("open")).toBeUndefined();
     wrapper.unmount();
@@ -218,6 +237,7 @@ describe("PipelineCard activity recency (#1058)", () => {
         stepLabel: "Coding",
         chipText: "Stuck",
         stateSince: "2026-11-08T02:48:00.000Z",
+        lastActivityAt: "2026-11-08T02:59:00.000Z",
         nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
         roundsLabel: "D0 · R0",
         reviewerTone: null,
@@ -228,5 +248,20 @@ describe("PipelineCard activity recency (#1058)", () => {
       },
     });
     expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
+  });
+
+  it("keeps last-activity recency available on check progress", () => {
+    const wrapper = mount(PipelineCard, {
+      props: {
+        taskId: "1058", type: "chore", priority: "p3", title: "Fixture", state: "ok",
+        statusSignals: null, stepLabel: "Running checks", chipText: null,
+        stateSince: "2026-11-08T02:48:00.000Z", lastActivityAt: "2026-11-08T02:59:00.000Z",
+        nowMs: Date.parse("2026-11-08T03:00:00.000Z"), roundsLabel: "D0 · R0",
+        reviewerTone: null, modelsLabel: "eng / rev", hostLabel: "local", action: null,
+        checkProgress: { stepsDone: 1, stepsTotal: 2 },
+      },
+    });
+    expect(wrapper.get('[data-test-id="pipeline-card-check-progress"]').attributes("data-tip"))
+      .toMatch(/Active 1m ago/i);
   });
 });
