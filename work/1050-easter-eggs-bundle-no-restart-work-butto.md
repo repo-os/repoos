@@ -346,3 +346,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T02:42:32Z · message_queued at 2026-11-08T02:42:32.864Z
 - 2026-11-08T02:42:35Z · message_delivered: 1 message(s)
 - 2026-11-08T03:13:14Z · message_queued at 2026-11-08T03:13:14.909Z
+- 2026-11-08T03:13:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
