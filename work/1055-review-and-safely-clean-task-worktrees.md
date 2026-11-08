@@ -10,8 +10,6 @@ created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
 updated_at: "2026-11-08T02:19:16Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
-last_handoff_failure_sha: 57c8d8f181a815b01dacea7bf46149784f55a231
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -142,3 +140,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T02:10:20Z · note: handoff requested (cli)
 - 2026-11-08T02:13:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T02:19:16Z · status active→review
+
