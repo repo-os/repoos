@@ -4,7 +4,7 @@
  * fields get sensible derived defaults so even a bare markdown file becomes a
  * usable task.
  */
-import { basename, relative } from "node:path";
+import { basename, relative, resolve } from "node:path";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
 import { STATUSES, type Task, type Status, type Assignee, type TaskGitInfo } from "./types.js";
 import { emptyGitInfo } from "./git.js";
@@ -98,7 +98,20 @@ export function isTaskFilePath(workDir: string, repoRel: string, extensions: str
   if (!normalized.startsWith(prefix)) return false;
   const name = normalized.slice(prefix.length);
   if (!name) return false;
+  const firstDir = name.split("/")[0]?.toLowerCase();
+  if (firstDir === "reports" || firstDir === "engineering-reports") return false;
   return extensions.some((ext) => ext.length > 0 && name.toLowerCase().endsWith(ext.toLowerCase()));
+}
+
+/** Shared task identity check for every index-building path. */
+export function isIndexableTaskFile(
+  config: { root: string; workDir: string; taskExtensions: string[] },
+  absPath: string,
+  content: string,
+): boolean {
+  const repoRel = relative(resolve(config.root), resolve(absPath));
+  if (!isTaskFilePath(config.workDir, repoRel, config.taskExtensions)) return false;
+  return "id" in parseDocument(content).data;
 }
 
 /**

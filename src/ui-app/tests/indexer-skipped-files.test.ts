@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { loadConfig } from "../../core/config.js";
 import { buildIndex, buildIndexAsync } from "../../core/indexer.js";
+import { LiveIndex } from "../../server/live-index.js";
 
 const roots: string[] = [];
 
@@ -61,5 +62,44 @@ describe("indexer skipped task files", () => {
 
     expect(index.tasks.map((t) => t.id)).toEqual(["0001"]);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("does not live-index reports or emit task events, and drops stale report entries on reload", () => {
+    const root = makeRoot();
+    const config = loadConfig(root);
+    config.workDir = "repoos/work";
+    mkdirSync(join(root, config.workDir), { recursive: true });
+    const reportPath = "repoos/work/reports/0006/review-1.md";
+    writeTaskFile(root, reportPath, '---\ntask: "0006"\n---\nReview body\n');
+    writeTaskFile(
+      root,
+      "repoos/work/0001-task.md",
+      '---\nid: "0001"\ntitle: Real task\nstatus: active\n---\nTask body\n',
+    );
+
+    const index = new LiveIndex(config);
+    index.refreshAll();
+    const events: unknown[] = [];
+    index.on((event) => events.push(event));
+    index.applyFileChange(join(root, reportPath));
+    expect(index.getTask("review-1")).toBeNull();
+    expect(index.getTask("0001")?.title).toBe("Real task");
+    expect(events).toEqual([]);
+
+    // Simulate a stale cache from an older live-index version: rebuild must
+    // replace it with the same filtered view used at startup.
+    const realTask = index.getTask("0001")!;
+    const stale = { ...realTask, id: "review-1", absPath: join(root, reportPath) };
+    const internals = index as unknown as {
+      byId: Map<string, typeof stale>;
+      pathToId: Map<string, string>;
+    };
+    internals.byId.set(stale.id, stale);
+    internals.pathToId.set(stale.absPath, stale.id);
+    index.applyFileChange(join(root, reportPath));
+    expect(index.getTask("review-1")).toBeNull();
+    index.refreshAll();
+    expect(index.getTask("review-1")).toBeNull();
+    expect(index.getTask("0001")?.title).toBe("Real task");
   });
 });
