@@ -792,6 +792,10 @@ async function runHandoffFinalization(
         checkScope = `changed:${base}`;
       }
     }
+    const docsOnly = isDocsOnlyCheck(
+      changedBase ? await getChangedFilePaths(workdir, changedBase) : null,
+      config.check?.docsOnlySkip !== false,
+    );
     const checkHandle =
       opts.taskChecks && opts.onTaskCheckEvent
         ? opts.taskChecks.start(task.id, "handoff-finalize", opts.onTaskCheckEvent, {
@@ -799,7 +803,9 @@ async function runHandoffFinalization(
             // The remote host is only known once its row is recorded; until
             // then don't label the run with this (orchestrating) machine.
             machine:
-              opts.remoteValidator && remotePreReviewEnabled(config) ? "remote host" : undefined,
+              !docsOnly && opts.remoteValidator && remotePreReviewEnabled(config)
+                ? "remote host"
+                : undefined,
           })
         : undefined;
     const reusedCheck = await findReusableHandoffCheck(
@@ -815,10 +821,6 @@ async function runHandoffFinalization(
       opts.onTaskLog?.(task.id, "info", reuseNote);
       checkHandle?.chunk?.(`\n[${reuseNote}]\n`);
     }
-    const docsOnly = isDocsOnlyCheck(
-      changedBase ? await getChangedFilePaths(workdir, changedBase) : null,
-      config.check?.docsOnlySkip !== false,
-    );
     if (docsOnly) {
       opts.onTaskLog?.(task.id, "info", DOCS_ONLY_SKIP_REASON);
       checkHandle?.chunk?.(`\n[${DOCS_ONLY_SKIP_REASON}]\n`);

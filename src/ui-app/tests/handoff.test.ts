@@ -800,6 +800,37 @@ exit 0
       return { validator, shas };
     }
 
+    it("does not queue remote validation for a bookkeeping-only diff", async () => {
+      const fx = remoteFixture();
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      try {
+        git(fx.worktree, ["checkout", "--", "source.txt"]);
+        mkdirSync(join(fx.worktree, "work", "reports", "0001"), { recursive: true });
+        writeFileSync(join(fx.worktree, "work", "reports", "0001", "note.md"), "# Note\n");
+        const { validator, shas } = fakeRemote({ ok: true });
+        const logs: string[] = [];
+        const result = await handoffTask(
+          fx.config,
+          readTask(fx),
+          request(fx),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          validator,
+          undefined,
+          (_id, _level, message) => logs.push(message),
+        );
+        expect(result.ok, result.detail).toBe(true);
+        expect(shas).toHaveLength(0);
+        expect(logs.join("\n")).toContain("docs/bookkeeping-only diff: full suite skipped");
+      } finally {
+        process.env.PATH = oldPath;
+        fx.clean();
+      }
+    });
+
     it("sends the runner the COMMITTED tree, including edits that were uncommitted at handoff", async () => {
       const fx = remoteFixture();
       const oldPath = process.env.PATH ?? "";

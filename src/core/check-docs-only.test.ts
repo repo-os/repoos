@@ -8,6 +8,8 @@ describe("docs/bookkeeping check classification", () => {
       ["src/a.ts", "work/a.md"],
       ["package.json"],
       ["repoos.toml"],
+      ["user-docs/package.json"],
+      ["docs/bun.lock"],
       ["src/a.md"],
       ["scripts/a.md"],
     ]) {
