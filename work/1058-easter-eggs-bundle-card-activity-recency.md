@@ -245,3 +245,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T15:05:50Z · message_queued at 2026-11-08T15:05:50.848Z
 - 2026-11-08T15:05:50Z · ↻ resuming engineer to read queued message
 - 2026-11-08T15:05:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Merged `main` (resolved `work/*.md` conflicts with main’s copies, including `work/1058-*.md`), left `repoos.toml` alone — still matches `main` on the branch (`git diff main HEAD -- repoos.toml` empty). `REPOOS_CHECK_CHANGED=main repoos che… · stderr: (empty)
+- 2026-11-08T15:05:51Z · message_delivered: 2 message(s)
