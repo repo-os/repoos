@@ -8,8 +8,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: grok-4.7-low
+review_cli_override: codex
+review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T02:51:17Z"
+updated_at: "2026-11-08T02:51:23Z"
 ---
 ## Items
 
@@ -40,3 +44,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ## Activity
 
 - 2026-11-08T02:51:17Z · created · njachowski@gmail.com
+- 2026-11-08T02:51:23Z · cli_override, model_override, review_cli_override, review_model_override
