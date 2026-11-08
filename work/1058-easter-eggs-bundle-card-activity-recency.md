@@ -13,9 +13,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T04:26:54Z"
-dev_error_count: 8
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T04:10:20.424Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T04:25:40.449Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-08T04:44:29Z"
+dev_error_count: 9
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T04:10:20.424Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T04:25:40.449Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T04:26:55.142Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -102,3 +102,6 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T04:25:40Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-08T04:26:52Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-08T04:26:54Z · needs_input
+- 2026-11-08T04:26:55Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T04:44:27Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T04:44:29Z · needs_input
