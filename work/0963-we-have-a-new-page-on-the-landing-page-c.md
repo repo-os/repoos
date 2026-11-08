@@ -2,7 +2,7 @@
 id: "0963"
 title: Build the simplified client project board
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -124,4 +124,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-08T07:52:50Z · message_queued at 2026-11-08T07:52:50.301Z
 - 2026-11-08T07:52:53Z · message_delivered: 1 message(s)
 - 2026-11-08T07:53:00Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
-- 2026-11-08T07:53:00Z · engineer stopped by request
+- 2026-11-08T07:53:00Z · status active→review
