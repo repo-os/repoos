@@ -3,9 +3,6 @@ id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 needs_merge: true
 priority: p3
 area: web
@@ -311,3 +308,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T01:53:51Z · needs_input
 - 2026-11-08T01:54:07Z · agent exited with an error (codex) · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
 - 2026-11-08T01:54:07Z · engineer crash recovery: switched codex + gpt-6-luna → opencode + opencode-go/deepseek-v4.1-flash after 3/3 crashes in 30m · 2026-11-08T01:53:56.885801Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)…
+- 2026-11-08T01:54:07Z · needs_input
