@@ -102,3 +102,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T15:27:23Z · note: handoff requested (cli)
 - 2026-11-08T15:29:07Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-08T15:29:07Z · status active→review
+- 2026-11-08T15:29:07Z · message_queued at 2026-11-08T15:29:07.619Z
