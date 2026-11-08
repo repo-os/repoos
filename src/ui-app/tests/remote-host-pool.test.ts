@@ -3330,7 +3330,6 @@ describe("pool hung-run bookkeeping (#0729)", () => {
     const result = await f.runner.killHungValidation!("1060-kill-fail");
     expect(result.ok).toBe(false);
     expect(result.detail).toMatch(/docker rm exited 1/);
-    f.release();
     await run;
     await f.runner.dispose();
   });
