@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T13:36:44Z"
+updated_at: "2026-11-08T13:42:36Z"
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -198,3 +198,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T13:30:59Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T13:36:44Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
 - 2026-11-08T13:36:44Z · status active→review
+- 2026-11-08T13:42:36Z · message_queued at 2026-11-08T13:42:36.348Z
