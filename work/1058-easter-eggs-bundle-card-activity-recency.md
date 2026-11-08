@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T09:53:05Z"
+updated_at: "2026-11-08T09:53:13Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 review_rounds: 1
@@ -182,3 +182,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T09:53:05Z · message_queued at 2026-11-08T09:53:05.247Z
 - 2026-11-08T09:53:05Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-08T09:53:05Z · message_delivered: 2 message(s)
+- 2026-11-08T09:53:13Z · note: ui verification passed: 3 of 3 shots captured with clean console
