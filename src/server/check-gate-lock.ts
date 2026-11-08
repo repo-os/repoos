@@ -279,15 +279,15 @@ async function releaseCheckGateHolder(
   if (remaining.length > 0) {
     const live = remaining.filter((h) => isPidAlive(h.pid));
     if (live.length === 0) {
-      const flushed = await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
-      if (flushed.ok) clearCheckGateLock(boardRoot, cacheDir, taskId);
+      clearCheckGateLock(boardRoot, cacheDir, taskId);
+      await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
       return;
     }
     atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), { ...existing, holders: live });
     return;
   }
-  const flushed = await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
-  if (flushed.ok) clearCheckGateLock(boardRoot, cacheDir, taskId);
+  clearCheckGateLock(boardRoot, cacheDir, taskId);
+  await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
 }
 
 /**
@@ -307,8 +307,8 @@ export async function releaseCheckGateLock(
   const mine = existing.holders.filter((h) => h.pid === process.pid);
   if (mine.length === 0) {
     if (!lockHasLiveHolder(existing)) {
-      const flushed = await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
-      if (flushed.ok) clearCheckGateLock(boardRoot, cacheDir, taskId);
+      clearCheckGateLock(boardRoot, cacheDir, taskId);
+      await flushDeferredBranchCommits(boardRoot, cacheDir, taskId);
     }
     return;
   }
@@ -351,8 +351,8 @@ export async function reconcileDeadCheckGateLock(
     }
     return;
   }
-  const flushed = await flushDeferredBranchCommits(boardRoot, cacheDir, lock.taskId);
-  if (flushed.ok) clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
+  clearCheckGateLock(boardRoot, cacheDir, lock.taskId);
+  await flushDeferredBranchCommits(boardRoot, cacheDir, lock.taskId);
 }
 
 /** Live lock for `worktree`, reconciling dead holders first. */
@@ -671,7 +671,7 @@ export function installCheckGateCommitHook(config: RepoOSConfig): void {
   const boardRoot = config.root;
   const cacheDir = config.cacheDir ?? ".repoos";
   if (!process.env.REPOOS_CACHE_DIR) process.env.REPOOS_CACHE_DIR = cacheDir;
-  if (!process.env.REPOOS_BOARD_ROOT) process.env.REPOOS_BOARD_ROOT = boardRoot;
+  process.env.REPOOS_BOARD_ROOT = boardRoot;
   const scope = config;
   setCheckGateCommitHook((args) =>
     resolveCommitHook(
