@@ -1253,6 +1253,7 @@ export async function handoffTask(
       return fail("validate", `unexpected error: ${message}`);
     }
   });
+  if (!result.ok) await remoteValidator?.cancelBrowserCaptures?.(task.id);
   finishHandoffStatus(config, task.id, attemptKey, result);
   return result;
 }
@@ -1316,6 +1317,7 @@ export async function finalizeReviewHandoff(
       return fail("validate", `unexpected error: ${message}`);
     }
   });
+  if (!result.ok) await opts.remoteValidator?.cancelBrowserCaptures?.(task.id);
   finishHandoffStatus(config, task.id, attemptKey, result);
   return result;
 }

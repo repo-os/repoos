@@ -11,6 +11,18 @@ your tailnet). A tailscale host runs the gate one of two ways, set per host
 container (Linux or macOS via Docker Desktop), or, on macOS only, natively
 with no Docker at all. Both are real, maintained setup paths.
 
+## Remote browser capture cleanup (#1060)
+
+The browser runner publishes its result atomically, bounds preview shutdown, and
+exits explicitly. Tailscale Docker collection checks for a complete result in
+the run-specific artifact directory and can remove the corresponding container
+if it has not exited; the result stays available for download. A force
+collection records its reason in the task's remote validation events. On an idle
+host, the periodic orphan sweep also removes completed capture containers after
+two minutes without output when their CPU is below one percent. The system log
+records those removals. A failed handoff cancels that task's queued and active
+Tailscale captures; other tasks' runs are left alone.
+
 ## Local caps when remote is off or falls back (#0836)
 
 Even with remote validation, local guards, Playwright smoke/contrast/shots, and

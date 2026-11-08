@@ -1641,6 +1641,22 @@ describe("pool LRU tie-break across idle hosts (#0890)", () => {
     return host;
   }
 
+  it("cancels only the failed task's queued and running captures", async () => {
+    const pool = lruPool([{ host: "a" }]);
+    const active = await pool.acquire([], { taskId: "1060", kind: "shot" });
+    active.setContainer?.("repoos-validate-1060");
+    const waiting = pool.acquire([], { taskId: "1060", kind: "shot" });
+    const other = pool.acquire([], { taskId: "1061", kind: "shot" });
+    await vi.waitFor(() => expect(pool.queuedCount).toBe(2));
+    const cancelled = pool.cancelCaptureRuns("1060");
+    await expect(waiting).rejects.toThrow("cancelled");
+    expect(cancelled.map(({ run }) => run.container)).toEqual(["repoos-validate-1060"]);
+    expect(pool.queuedCount).toBe(1);
+    active.release();
+    (await other).release();
+    pool.dispose();
+  });
+
   it("rotates sequential single runs across three idle healthy hosts", async () => {
     const pool = lruPool([{ host: "a" }, { host: "b" }, { host: "c" }]);
     const seen: string[] = [];

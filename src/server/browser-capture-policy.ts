@@ -57,6 +57,7 @@ export interface BrowserEvidenceArtifacts {
 
 export interface BrowserEvidenceTransport {
   capture(request: BrowserEvidenceRequest): Promise<BrowserEvidenceArtifacts>;
+  cancel?(taskId: string): Promise<void>;
 }
 
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
@@ -68,6 +69,7 @@ export function remoteBrowserEvidenceTransport(
 ): BrowserEvidenceTransport | undefined {
   if (!validator || config.remoteValidation?.enabled !== true) return undefined;
   return {
+    cancel: (taskId) => validator.cancelBrowserCaptures?.(taskId) ?? Promise.resolve(),
     async capture(request) {
       const artifactRoot = join(
         config.root,

@@ -1,4 +1,12 @@
-import { cpSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { createRepoOS } from "../../src/core/repoos.js";
 import { worktreePathForBranch } from "../../src/core/git.js";
@@ -13,6 +21,28 @@ import { runUiHandoffGate } from "../../src/server/ui-handoff-gate.js";
 import { shotsDir } from "../../src/server/shots.js";
 
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
+const CLEANUP_TIMEOUT_MS = 3_000;
+
+/** Publish only complete JSON: the collector may read it while the runner lives. */
+function writeResult(outputDir: string, result: unknown): void {
+  const temporary = join(outputDir, "result.json.tmp");
+  writeFileSync(temporary, JSON.stringify(result, null, 2));
+  renameSync(temporary, join(outputDir, "result.json"));
+}
+
+async function stopPreviewBounded(stop: () => Promise<void>): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      stop().catch(() => {}),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, CLEANUP_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 /** Run existing RepoOS capture code in an isolated runner checkout. */
 async function captureBrowserEvidenceImpl(
@@ -120,31 +150,24 @@ async function captureBrowserEvidenceImpl(
       /playwright|webkit|browser executable|executable doesn.t exist|not installed/i.test(
         JSON.stringify(results),
       );
-    writeFileSync(
-      join(outputDir, "result.json"),
-      JSON.stringify(
-        {
-          version: 1,
-          taskId,
-          ok,
-          detail: ok
-            ? "runner browser capture completed"
-            : "runner browser capture reported failures",
-          results,
-          files,
-          bytes,
-          ...(browserUnavailable ? { browserUnavailable: true } : {}),
-        },
-        null,
-        2,
-      ),
-    );
+    writeResult(outputDir, {
+      version: 1,
+      taskId,
+      ok,
+      detail: ok ? "runner browser capture completed" : "runner browser capture reported failures",
+      results,
+      files,
+      bytes,
+      ...(browserUnavailable ? { browserUnavailable: true } : {}),
+    });
     return {
       ok,
       detail: ok ? "runner browser capture completed" : "runner browser capture reported failures",
     };
   } finally {
-    await previews.stop(taskId, "remote browser evidence capture complete");
+    await stopPreviewBounded(() =>
+      previews.stop(taskId, "remote browser evidence capture complete"),
+    );
   }
 }
 
@@ -163,23 +186,16 @@ export async function captureBrowserEvidence(
     mkdirSync(outputDir, { recursive: true });
     const browserUnavailable =
       /playwright|webkit|browser executable|executable doesn.t exist|not installed/i.test(detail);
-    writeFileSync(
-      join(outputDir, "result.json"),
-      JSON.stringify(
-        {
-          version: 1,
-          taskId,
-          ok: false,
-          detail,
-          results: { error: detail },
-          files: [],
-          bytes: 0,
-          ...(browserUnavailable ? { browserUnavailable: true } : {}),
-        },
-        null,
-        2,
-      ),
-    );
+    writeResult(outputDir, {
+      version: 1,
+      taskId,
+      ok: false,
+      detail,
+      results: { error: detail },
+      files: [],
+      bytes: 0,
+      ...(browserUnavailable ? { browserUnavailable: true } : {}),
+    });
     return { ok: false, detail };
   }
 }
@@ -195,7 +211,7 @@ if (import.meta.main) {
       entry = JSON.parse(process.env.REPOOS_BROWSER_CAPTURE_ENTRY ?? "") as typeof entry;
     } catch {
       console.error("[browser-capture] single-shot request has invalid entry JSON");
-      process.exitCode = 3;
+      process.exit(3);
     }
   }
   if (process.exitCode !== 3)
@@ -203,10 +219,12 @@ if (import.meta.main) {
       .then((result) => {
         console.log(`[browser-capture] ${result.detail}`);
         if (!result.ok) process.exitCode = 2;
+        process.exit(process.exitCode ?? 0);
       })
       .catch((error: unknown) => {
         const detail = error instanceof Error ? error.message : String(error);
         console.error(`[browser-capture] failed: ${detail}`);
         process.exitCode = 3;
+        process.exit(process.exitCode);
       });
 }
