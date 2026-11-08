@@ -761,6 +761,65 @@ const opts = (taskId: string, extra: Record<string, unknown> = {}) => ({
   ...extra,
 });
 
+describe("completed browser capture collection", () => {
+  it("cancels both a running and queued capture after a failed handoff", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], maxConcurrent: 1 });
+    const capture = {
+      kind: "shot",
+      browserCapture: { taskId: "1060", branch: "feat/test", operation: "shots" },
+    };
+    try {
+      const running = f.runner.validate(opts("1060", capture));
+      await vi.waitFor(() => expect(f.pending()).toHaveLength(1));
+      const queued = f.runner.validate(opts("1060", capture));
+      await vi.waitFor(() => expect(f.runner.queueStatus()).toHaveLength(1));
+      await f.runner.cancelBrowserCaptures("1060");
+      expect((await running).cancelled).toBe(true);
+      expect((await queued).cancelled).toBe(true);
+      expect(f.killed).toHaveLength(1);
+      expect(f.runner.queueStatus()).toHaveLength(0);
+    } finally {
+      await f.runner.dispose();
+    }
+  });
+
+  it("collects while the validation SSH is still running", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    let collected = false;
+    const exec: RemoteExecDeps = {
+      ...f.exec,
+      runRemote: vi.fn(async (host, cmd, onChunk, timeout, remoteOpts) => {
+        if (cmd.includes("/browser-capture/result.json") && cmd.includes("docker rm -f")) {
+          collected = true;
+          return { code: 0, output: "", timedOut: false };
+        }
+        return f.exec.runRemote(host, cmd, onChunk, timeout, remoteOpts);
+      }),
+    };
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec,
+      timings: { capturePollIntervalMs: 20, healthRetryMs: 40 },
+    });
+    try {
+      const result = await runner.validate(
+        opts("1060", {
+          kind: "shot",
+          browserCapture: { taskId: "1060", branch: "feat/test", operation: "shots" },
+        }),
+      );
+      expect(result.ok).toBe(true);
+      expect(collected).toBe(true);
+      expect(exec.downloadDir).toHaveBeenCalled();
+      expect(
+        runner.remoteEvents("1060").some((event) => event.message.includes("force-collected")),
+      ).toBe(true);
+    } finally {
+      await runner.dispose();
+      await f.runner.dispose();
+    }
+  });
+});
+
 describe("remote gate profiles (#0970)", () => {
   it.each([
     ["pre-review", undefined, "default"],
