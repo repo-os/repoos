@@ -488,6 +488,8 @@ function poolFixture(opts: {
   hangKillNeverCompletes?: boolean;
   /** Hang-kill SSH never resolves (ignores timeoutMs) — hard deadline must release (#0739). */
   hangKillNeverResolves?: boolean;
+  /** `docker rm -f` returns non-zero — hang/manual kill must report failure (#1060). */
+  hangKillFails?: boolean;
   /** Load idle probes always fail — hang must still be bounded (#0739). */
   loadProbeFails?: boolean;
   containerCpuOutput?: string;
@@ -582,7 +584,10 @@ function poolFixture(opts: {
               killGate = { resolve };
             });
           }
-          return { code: 137, output: "", timedOut: false };
+          if (opts.hangKillFails) {
+            return { code: 1, output: "Error response from daemon: conflict", timedOut: false };
+          }
+          return { code: 0, output: "", timedOut: false };
         }
         if (cmd.includes("__HOST_LOCK__")) {
           const n = opts.hostLockOccupancy?.[host.ip] ?? 0;
@@ -768,17 +773,20 @@ describe("completed browser capture collection", () => {
   it("records capture cancellation failed when remote ssh cannot kill the container", async () => {
     const f = poolFixture({ hosts: [{ host: "a" }] });
     let started = false;
+    let killCmd: string | undefined;
     const exec: RemoteExecDeps = {
       ...f.exec,
       runRemote: vi.fn(async (host, cmd, onChunk, timeout, remoteOpts) => {
         if (cmd.includes("/browser-capture/result.json"))
           return { code: 1, output: "", timedOut: false };
-        if (cmd.startsWith("docker rm -f"))
+        if (cmd.startsWith("docker rm -f")) {
+          killCmd = cmd;
           return {
             code: 255,
             output: "ssh: connect to host port 22: Connection refused\n",
             timedOut: false,
           };
+        }
         if (!cmd.includes("REPOOS_CONTAINER="))
           return f.exec.runRemote(host, cmd, onChunk, timeout, remoteOpts);
         started = true;
@@ -800,6 +808,8 @@ describe("completed browser capture collection", () => {
       await vi.waitFor(() => expect(started).toBe(true));
       await runner.cancelBrowserCaptures("1060");
       expect((await running).cancelled).toBe(true);
+      expect(killCmd).toBeDefined();
+      expect(killCmd).not.toContain("|| true");
       expect(
         runner
           .remoteEvents("1060")
@@ -3160,7 +3170,8 @@ describe("hung container cleanup (#0729)", () => {
 
   it("kills only the named container, never by a pattern", () => {
     const cmd = killContainerCommand("repoos-validate-0729-ab12cd34");
-    expect(cmd).toBe("docker rm -f 'repoos-validate-0729-ab12cd34' >/dev/null 2>&1 || true");
+    expect(cmd).toBe("docker rm -f 'repoos-validate-0729-ab12cd34' >/dev/null 2>&1");
+    expect(cmd).not.toContain("|| true");
     // A hostile name cannot inject a second command.
     expect(killContainerCommand("bad; rm -rf /")).not.toContain("; rm -rf /");
   });
@@ -3306,6 +3317,22 @@ describe("pool hung-run bookkeeping (#0729)", () => {
     const result = await pool.killHungRun("0729");
     expect(result.ok).toBe(false);
     expect(result.detail).toMatch(/no in-flight remote validation run/);
+  });
+
+  it("killHungRun reports when docker rm returns non-zero (#1060)", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], hangKillFails: true });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const run = f.runner.validate(opts("1060-kill-fail"));
+    let attempts = 0;
+    while (attempts++ < 200 && (f.runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) {
+      await tick(5);
+    }
+    const result = await f.runner.killHungValidation!("1060-kill-fail");
+    expect(result.ok).toBe(false);
+    expect(result.detail).toMatch(/docker rm exited 1/);
+    f.release();
+    await run;
+    await f.runner.dispose();
   });
 });
 

@@ -1203,11 +1203,13 @@ export function staleContainerCleanupCommand(): string {
 
 /**
  * Kill exactly one run's container by name (#0729) — never a blanket
- * `docker kill`. Best effort: a missing container or a dead SSH link is fine.
+ * `docker kill`. Exit status must propagate (#1060): callers treat a non-zero
+ * SSH exit as a failed kill so cancellation and hang recovery do not assume
+ * the container is gone when `docker rm` failed.
  */
 export function killContainerCommand(containerName: string): string {
   const safe = containerName.replace(/[^A-Za-z0-9_.-]/g, "");
-  return `docker rm -f ${shellQuote(safe)} >/dev/null 2>&1 || true`;
+  return `docker rm -f ${shellQuote(safe)} >/dev/null 2>&1`;
 }
 
 /** True once validate.sh has printed its gate result — not a hang (#0739). */
@@ -5100,6 +5102,7 @@ export class TailscaleHostPool {
         /* best effort — the requested removal must still proceed */
       }
       let killTimedOut = false;
+      let killCode: number | null = 0;
       let killErr: string | undefined;
       try {
         const killRes = await execRemoteWithHardDeadline(
@@ -5110,6 +5113,7 @@ export class TailscaleHostPool {
           HANG_KILL_TIMEOUT_MS,
         );
         killTimedOut = killRes.timedOut;
+        killCode = killRes.code;
       } catch (e) {
         killErr = (e as Error).message;
       } finally {
@@ -5119,6 +5123,13 @@ export class TailscaleHostPool {
         return {
           ok: false,
           detail: `could not kill ${container} on ${s.spec.host}: ${killErr}`,
+          container,
+        };
+      }
+      if (!killTimedOut && killCode !== 0) {
+        return {
+          ok: false,
+          detail: `could not kill ${container} on ${s.spec.host}: docker rm exited ${killCode ?? "?"}`,
           container,
         };
       }
@@ -6409,6 +6420,7 @@ export class TailscaleRunner implements RemoteValidator {
     }));
 
     let killTimedOut = false;
+    let killCode: number | null = 0;
     try {
       const killRes = await execRemoteWithHardDeadline(
         this.exec,
@@ -6418,6 +6430,7 @@ export class TailscaleRunner implements RemoteValidator {
         this.timings.hangKillTimeoutMs,
       );
       killTimedOut = killRes.timedOut;
+      killCode = killRes.code;
     } catch {
       /* best effort — still release the slot */
     }
@@ -6464,6 +6477,15 @@ export class TailscaleRunner implements RemoteValidator {
       this.logger?.system(
         "warn",
         `remote validation hang kill for #${opts.taskId} on ${opts.host.ip} timed out`,
+      );
+    } else if (killCode !== 0) {
+      this.pool.markUnhealthy(
+        opts.host.ip,
+        `hang kill for #${opts.taskId} failed: docker rm exited ${killCode ?? "?"}`,
+      );
+      this.logger?.system(
+        "warn",
+        `remote validation hang kill for #${opts.taskId} on ${opts.host.ip} failed (exit ${killCode})`,
       );
     }
   }
