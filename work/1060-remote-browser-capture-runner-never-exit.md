@@ -13,7 +13,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T08:29:13Z"
+updated_at: "2026-11-08T08:33:02Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -65,3 +65,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T08:24:42Z · status review→active
 - 2026-11-08T08:24:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T08:29:13Z · message_delivered: 1 message(s)
+- 2026-11-08T08:33:02Z · message_queued at 2026-11-08T08:33:02.422Z
