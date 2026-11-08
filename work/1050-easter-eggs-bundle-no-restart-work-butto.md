@@ -15,7 +15,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T06:04:57Z"
+updated_at: "2026-11-08T06:05:19Z"
 last_close_out_gate_ms: 106594
 last_close_out_gate_at: "2026-11-08T06:04:39.842Z"
 review_passes: 2
@@ -371,3 +371,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T06:00:21Z · note: review pass 2: good to go
 - 2026-11-08T06:04:39Z · close-out gate completed in 107s
 - 2026-11-08T06:04:57Z · status done→done, release:success
+- 2026-11-08T06:05:19Z · message_dropped: 1 queued message(s) discarded — task is done
