@@ -2917,6 +2917,7 @@ export class CloseOutOrchestrator {
     const docsOnly = isDocsOnlyCheck(
       changedPaths,
       loadConfig(wtPath).check?.docsOnlySkip !== false,
+      { allowEmpty: true },
     );
     // #0724: how much of the suite the merged candidate needs. The same commit
     // already passed the full gate at handoff; only main's real advance can

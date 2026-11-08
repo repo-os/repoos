@@ -945,11 +945,18 @@ command = "false"
   it("runs the guards and skips expensive steps", async () => {
     const f = fixture(toml, { dirs: ["work", "inputs"] });
     execFileSync("git", ["init", "-q"], { cwd: f.root });
+    const progress: { stepsDone: number; stepsTotal: number }[] = [];
     const results = await runCheckPlan(planFor(f.root), {
       repoRoot: f.root,
       docsOnly: true,
       echo: false,
+      onResult: (_r, p) => {
+        if (p) progress.push(p);
+      },
     });
+    const last = progress.at(-1);
+    expect(last).toBeDefined();
+    expect(last!.stepsDone).toBe(last!.stepsTotal);
     expect(results.find((x) => x.name === "expensive")).toMatchObject({
       status: "skipped",
       detail: "docs/bookkeeping-only diff: full suite skipped",

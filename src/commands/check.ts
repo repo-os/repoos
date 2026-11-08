@@ -2012,11 +2012,17 @@ export async function runCheckPlan(
     stepNames: opts.stepNames,
   });
   const results: StepRunResult[] = [];
-  const stepsTotal = selected.filter(({ skip }) => !skip).length;
+  const runnableSteps = selected.filter(({ skip }) => !skip);
+  const stepsTotal = opts.docsOnly ? runnableSteps.length + 1 : runnableSteps.length;
+  const stepsDoneCount = (): number =>
+    opts.docsOnly
+      ? results.length
+      : results.filter(
+          (x) => x.status !== "skipped" || x.detail === DOCS_ONLY_SKIP_REASON,
+        ).length;
   const push = (r: StepRunResult): StepRunResult => {
     results.push(r);
-    const stepsDone = results.filter((x) => x.status !== "skipped").length;
-    opts.onResult?.(r, { stepsDone, stepsTotal });
+    opts.onResult?.(r, { stepsDone: stepsDoneCount(), stepsTotal });
     return r;
   };
 
@@ -2072,7 +2078,7 @@ export async function runCheckPlan(
       continue;
     }
 
-    const stepsDone = results.filter((x) => x.status !== "skipped").length;
+    const stepsDone = stepsDoneCount();
     opts.onStart?.(step, {
       stepsDone,
       stepsTotal,
