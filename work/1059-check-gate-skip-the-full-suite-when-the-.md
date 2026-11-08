@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T14:42:31Z"
+updated_at: "2026-11-08T14:47:06Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — _shallow: true"
 last_handoff_failure_sha: f3fc1a0951e0f4dc8e6b1de1bcfeeb1f5168c68a
 review_passes: 4
@@ -209,3 +209,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T14:27:05Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T14:27:59Z · body
 - 2026-11-08T14:42:31Z · body
+- 2026-11-08T14:47:06Z · CTO nudge: held — handoff gate is running
