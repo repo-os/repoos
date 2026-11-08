@@ -215,3 +215,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T14:48:22Z · message_queued at 2026-11-08T14:48:22.835Z
 - 2026-11-08T14:48:23Z · ↻ resuming engineer to read queued message
 - 2026-11-08T14:48:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: **#1059 (pass 4)** — Review feedback is addressed and committed on the branch (`a7af9f469` checkpoint): profile skip ordering and docs-only progress, CLI classification tests, and `user-docs/check.md` exclusions. **Handoff** — `repoos hand… · stderr: RetriableError: Connection stalled repeatedly
+- 2026-11-08T14:48:23Z · note: handoff requested (cli)
