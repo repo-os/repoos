@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from d40a1def to e46993f3) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: d40a1defcfd005f492e1284e43fc0325079fa8a8
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
@@ -15,7 +13,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T10:24:41Z"
+updated_at: "2026-11-08T10:26:49Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from d40a1def to e46993f3) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: d40a1defcfd005f492e1284e43fc0325079fa8a8
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -128,4 +128,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T10:21:23Z · body
 - 2026-11-08T10:24:41Z · message_queued at 2026-11-08T10:24:41.166Z
 - 2026-11-08T10:24:41Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from d40a1def to e46993f3) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-11-08T10:26:49Z · body
