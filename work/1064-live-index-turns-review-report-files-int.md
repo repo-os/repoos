@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 297406
-last_close_out_gate_at: "2026-11-08T14:21:47.656Z"
 id: "1064"
 title: Live index turns review report files into inbox tasks (review-1..N)
 type: bug
-status: review
+status: done
 paths: [src/server/live-index.ts, src/core/indexer.ts]
 priority: p1
 area: [core, web]
+merged_commit: bb5e1ea009cdac40086afdde432458eb58d52475
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/live-index-turns-review-report-files-int
 created_at: "2026-11-08T12:47:28Z"
 updated_at: "2026-11-08T14:21:47Z"
+last_close_out_gate_ms: 297406
+last_close_out_gate_at: "2026-11-08T14:21:47.656Z"
 review_passes: 1
 ---
 ## Problem
