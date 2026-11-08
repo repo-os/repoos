@@ -127,3 +127,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T06:31:01Z · note: Resuming #1057 for requested shared Board/Pipeline status derivation, check failure investigation, and fresh card evidence.
 - 2026-11-08T06:48:14Z · CTO nudge: held — remote validation is running
 - 2026-11-08T07:23:14Z · message_queued at 2026-11-08T07:23:14.221Z
+- 2026-11-08T07:23:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
