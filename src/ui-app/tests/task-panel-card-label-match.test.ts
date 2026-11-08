@@ -368,6 +368,20 @@ describe("task panel status label matches the board card (#1023)", () => {
     drawer.unmount();
   });
 
+  it("shows changed-path scope and machine once in the drawer checks box", async () => {
+    const task = activeTask();
+    stubApi(task);
+    const repo = useRepoStore();
+    repo.taskChecks[task.id] = [runningCheck({ machine: "remote host" })];
+
+    const drawer = await mountDrawer(pinia, task);
+    const box = drawer.find('[data-test-id="close-out-check-progress"]');
+    expect(box.text()).toContain("on remote host");
+    expect(box.text().match(/remote host/g)?.length ?? 0).toBe(1);
+    expect(box.find(".checks-progress-drawer-bar-row").exists()).toBe(true);
+    drawer.unmount();
+  });
+
   it("names confirming handoff exactly as the card does, with at most two rows", async () => {
     const task = activeTask();
     stubApi(task);
