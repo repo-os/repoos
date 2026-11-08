@@ -261,3 +261,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T15:47:06Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-08T15:49:50Z · message_queued at 2026-11-08T15:49:50.506Z
 - 2026-11-08T15:54:53Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · server-side finalization timed out (deadline exceeded) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T15:54:53Z · note: handoff requested (cli)
