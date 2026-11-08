@@ -14,8 +14,6 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
 updated_at: "2026-11-08T14:59:16Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — _shallow: true"
-last_handoff_failure_sha: f3fc1a0951e0f4dc8e6b1de1bcfeeb1f5168c68a
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -218,3 +216,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T14:48:37Z · message_delivered: 2 message(s)
 - 2026-11-08T14:59:16Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-08T14:59:16Z · status active→review
+
