@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (1 in 30m): a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1058 --fresh`."
 priority: p3
 area: web
 assigned_to: ai
@@ -13,14 +16,16 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T12:53:05Z"
+updated_at: "2026-11-08T13:37:40Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: a0794a6e8b42bec618845a4f471f84e81ecfdf4c
 review_rounds: 1
 review_passes: 1
-dev_error_count: 16
+dev_error_count: 17
+engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T13:37:40.779Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -210,3 +215,8 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T12:50:27Z · message_queued at 2026-11-08T12:50:27.847Z
 - 2026-11-08T12:50:27Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T12:53:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T13:30:43Z · message_queued at 2026-11-08T13:30:43.628Z
+- 2026-11-08T13:35:54Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-08T13:35:55Z · message_delivered: 1 message(s)
+- 2026-11-08T13:37:40Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-08T13:37:40Z · engineer crash recovery: surfaced instead of switching — a human-set task override (cursor + composer-2.5) is pinned, so RepoOS did not replace it (1/12 crashes in 30m)
