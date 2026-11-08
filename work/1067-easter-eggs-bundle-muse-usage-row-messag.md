@@ -104,3 +104,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T17:34:53Z · body
 - 2026-11-08T17:39:06Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T17:56:18Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Muse usage message and docs link (target "default"): highlight .mp-row[data-provider-id="muse"] matched nothing on /agents?tab=model-providers (http://127.0.0.1:41839/agents?tab=model-providers)
+- 2026-11-08T17:56:18Z · message_queued at 2026-11-08T17:56:18.728Z
