@@ -22,7 +22,6 @@ review_rounds: 1
 review_passes: 1
 dev_error_count: 17
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T13:37:40.779Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
