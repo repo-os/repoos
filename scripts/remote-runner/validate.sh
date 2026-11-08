@@ -88,10 +88,7 @@ docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/nul
   bare=${name#/}
   task_tag=""
   [ -n "$task" ] && task_tag=" task=$task"
-  set +e
-  rm_out=$(docker rm -f "$id" 2>&1)
-  rm_code=$?
-  set -e
+  rm_out=$(docker rm -f "$id" 2>&1) && rm_code=0 || rm_code=$?
   if [ "$rm_code" -eq 0 ] && ! docker inspect "$id" >/dev/null 2>&1; then
     echo "[reaper] removed $bare$task_tag: no output for two minutes and CPU idle"
   else
