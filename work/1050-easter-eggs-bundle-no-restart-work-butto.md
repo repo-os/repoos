@@ -3,9 +3,6 @@ id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?"
 needs_merge: true
 priority: p3
 area: web
@@ -17,7 +14,7 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T03:21:20Z"
+updated_at: "2026-11-08T03:21:21Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T02:42:36.012Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -358,3 +355,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T03:18:59Z · message_delivered: 1 message(s)
 - 2026-11-08T03:20:20Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
 - 2026-11-08T03:21:20Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/12 crashes in 30m) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
+- 2026-11-08T03:21:21Z · needs_input
