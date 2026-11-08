@@ -14,7 +14,6 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
 updated_at: "2026-11-08T07:38:14Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T07:13:07.485Z: repoos check failed: ui verification failed (10 issue(s)): [missing-target] Board card coding without inline active recency (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:42935/?shotState=board%3AactiveCoding); [missing-target] Board card coding without inline active recency (target \"default\"): highlight [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"] matched nothing on / (http://127.0.0.1:42935/?shotState=bo… (truncated)"
 dev_error_count: 12
 ---
@@ -158,3 +157,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T07:28:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T07:35:29Z · body
 - 2026-11-08T07:38:14Z · CTO nudge: held — handoff gate is running
+
