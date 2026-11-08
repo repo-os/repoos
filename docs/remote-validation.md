@@ -19,8 +19,9 @@ in the run-specific artifact directory during an in-flight capture, remove the
 corresponding container if it has not exited, and record a force-collection
 event on the task. `validate.sh` repeats the same completed-capture reap at host
 startup for running leftovers and prints a `[validate] reaped completed browser
-capture …` line (with the capture task id when known) so the control plane can
-record it in Debug/events; the Mac-side periodic reaper uses the shared
+capture …` line only after a successful `docker rm -f` (with the capture task id
+when known) so the control plane can record it in Debug/events; failed removals
+emit a separate `[validate] failed to reap …` line; the Mac-side periodic reaper uses the shared
 `runValidationContainerReaper` sweep on probed hosts (Tailscale pool hosts and the
 warm Hetzner VM), including while a capture is still tracked as live — completed
 shot containers are rechecked for the completion log, quiet logs, and idle CPU

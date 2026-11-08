@@ -86,12 +86,19 @@ docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/nul
   task=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null \
     | sed -n 's/^REPOOS_BROWSER_CAPTURE_TASK=//p' | head -1 || true)
   bare=${name#/}
-  if [ -n "$task" ]; then
-    echo "[validate] reaped completed browser capture $bare task=$task: no output for two minutes and CPU idle"
+  if docker rm -f "$id" >/dev/null 2>&1; then
+    if [ -n "$task" ]; then
+      echo "[validate] reaped completed browser capture $bare task=$task: no output for two minutes and CPU idle"
+    else
+      echo "[validate] reaped completed browser capture $bare: no output for two minutes and CPU idle"
+    fi
   else
-    echo "[validate] reaped completed browser capture $bare: no output for two minutes and CPU idle"
+    if [ -n "$task" ]; then
+      echo "[validate] failed to reap completed browser capture $bare task=$task: docker rm -f" >&2
+    else
+      echo "[validate] failed to reap completed browser capture $bare: docker rm -f" >&2
+    fi
   fi
-  docker rm -f "$id" >/dev/null 2>&1 || true
 done
 
 # No global sweep of $HOME/.repoos-validate.* at startup (#0729): it runs before
