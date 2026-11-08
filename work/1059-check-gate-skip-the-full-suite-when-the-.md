@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T09:59:05Z"
+updated_at: "2026-11-08T10:00:34Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -47,9 +47,15 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 ```json
 [
 {
-"label": "Docs-only check setting",
-"target": "default",
-"route": "/settings?tab=advanced&setting=check.docsOnlySkip"
+  "label": "Docs/bookkeeping-only check shortcut toggle",
+  "target": "default",
+  "route": "/settings?tab=advanced",
+  "highlight": "[id=\"setting-check.docsOnlySkip\"]",
+  "steps": [
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -118,3 +124,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T09:56:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T09:59:02Z · message_delivered: 1 message(s)
 - 2026-11-08T09:59:05Z · CTO nudge: held — remote validation is running
+- 2026-11-08T10:00:34Z · body
