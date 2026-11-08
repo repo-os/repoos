@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-no-restart-work-butto
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
-updated_at: "2026-11-08T01:39:18Z"
+updated_at: "2026-11-08T01:43:14Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T01:36:33.337Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
@@ -291,3 +291,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T01:36:33Z · message_delivered: 1 message(s)
 - 2026-11-08T01:37:57Z · CTO nudge: held — remote validation is running
 - 2026-11-08T01:39:18Z · body
+- 2026-11-08T01:43:14Z · CTO nudge: held — handoff gate is running
