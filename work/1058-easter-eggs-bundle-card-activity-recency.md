@@ -3,9 +3,6 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — Pipeline hides the silent-agent signal and removes elapsed time from unrelated states.
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T20:35:59Z"
+updated_at: "2026-11-08T20:36:00Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -463,3 +460,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T20:35:54Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T20:35:57Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T20:35:59Z · message_delivered: 1 message(s)
+- 2026-11-08T20:36:00Z · needs_input
