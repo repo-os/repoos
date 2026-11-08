@@ -6562,6 +6562,11 @@ export class AgentRunner {
     return this.pausedTasks.has(taskId);
   }
 
+  /** Explicitly paused task ids, for board clients hydrating lifecycle state. */
+  pausedTaskIds(): string[] {
+    return [...this.pausedTasks];
+  }
+
   /**
    * True while the server-side handoff for a task is still finalizing (check,
    * commit, review). The process is already gone, so `isRunning` is false, but

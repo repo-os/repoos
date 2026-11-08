@@ -2,6 +2,10 @@
 import { computed } from "vue";
 import { formatPipelineElapsed, type PipelineCardState } from "../../../core/pipeline-view.js";
 import type { CheckProgress } from "../lib/check-progress";
+import {
+  resolveSharedTaskCardStatus,
+  type SharedTaskCardStatusInput,
+} from "../lib/task-card-status.js";
 import ChecksProgressDisplay from "./ChecksProgressDisplay.vue";
 
 export interface PipelineCardAction {
@@ -15,6 +19,7 @@ const props = defineProps<{
   priority: string;
   title: string;
   state: PipelineCardState;
+  statusSignals: SharedTaskCardStatusInput | null;
   /** Live step in words ("Coding", "Running checks 3/5", …). */
   stepLabel: string;
   /** Coloured chip text replacing the dot+step for stuck / needs-input / merged. */
@@ -36,6 +41,32 @@ const emit = defineEmits<{
 }>();
 
 const elapsed = computed(() => formatPipelineElapsed(props.stateSince, props.nowMs));
+const sharedStatus = computed(() =>
+  props.statusSignals ? resolveSharedTaskCardStatus(props.statusSignals) : null,
+);
+const displayState = computed<PipelineCardState>(() => {
+  if (!sharedStatus.value) return props.state;
+  if (sharedStatus.value.stuck) return "stuck";
+  if (sharedStatus.value.kind === "needs-input") return "needs-input";
+  if (sharedStatus.value.kind === "paused") return "paused";
+  return "ok";
+});
+const displayStepLabel = computed(() => sharedStatus.value?.label ?? props.stepLabel);
+const displayChipText = computed(() => {
+  if (sharedStatus.value?.stuck) return "Stuck";
+  if (sharedStatus.value?.kind === "needs-input") return sharedStatus.value.label;
+  return props.chipText;
+});
+const displayAction = computed<PipelineCardAction | null>(() => {
+  if (!props.statusSignals || !sharedStatus.value) return props.action;
+  if (sharedStatus.value.action === "pause") {
+    return { icon: "pause", label: `Pause work on task ${props.taskId}` };
+  }
+  if (sharedStatus.value.action === "restart") {
+    return { icon: "resume", label: `Restart work on task ${props.taskId}` };
+  }
+  return null;
+});
 
 function open(): void {
   emit("open", props.taskId);
@@ -54,7 +85,7 @@ function onKey(e: KeyboardEvent): void {
 <template>
   <article
     class="pipeline-card"
-    :class="`is-${state}`"
+    :class="`is-${displayState}`"
     :data-task-id="taskId"
     tabindex="0"
     role="button"
@@ -69,17 +100,22 @@ function onKey(e: KeyboardEvent): void {
       <span class="pl-chip">{{ priority }}</span>
       <span class="pl-spacer"></span>
       <button
-        v-if="action"
+        v-if="displayAction"
         type="button"
         class="pl-action"
-        :aria-label="action.label"
+        :aria-label="displayAction.label"
         @click.stop="act"
       >
-        <svg v-if="action.icon === 'pause'" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <svg
+          v-if="displayAction.icon === 'pause'"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
           <path d="M10 4H6v16h4zM18 4h-4v16h4z" stroke="currentColor" stroke-width="2" />
         </svg>
         <svg
-          v-else-if="action.icon === 'resume'"
+          v-else-if="displayAction.icon === 'resume'"
           viewBox="0 0 24 24"
           fill="none"
           aria-hidden="true"
@@ -101,10 +137,10 @@ function onKey(e: KeyboardEvent): void {
     <div class="pl-row pl-row-2 pl-title">{{ title }}</div>
     <!-- Row 3: status -->
     <div class="pl-row pl-row-3">
-      <span v-if="chipText" class="pl-status-chip">{{ chipText }}</span>
+      <span v-if="displayChipText" class="pl-status-chip">{{ displayChipText }}</span>
       <template v-else>
         <span class="pl-dot" aria-hidden="true"></span>
-        <span class="pl-step">{{ stepLabel }}</span>
+        <span class="pl-step">{{ displayStepLabel }}</span>
       </template>
       <span class="pl-spacer"></span>
       <span class="pl-elapsed">{{ elapsed }}</span>
