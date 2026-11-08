@@ -67,11 +67,11 @@ Out: changes to the For Clients page, client login or invites, sprints, and any 
 ```json
 [
 {
-  "label": "Read-only client project board",
-  "target": "default",
-  "route": "/client-board",
-  "highlight": ".client-board",
-  "state": "board:pipeline"
+"label": "Read-only client project board",
+"target": "default",
+"route": "/client-board",
+"highlight": ".client-board",
+"state": "board:pipeline"
 }
 ]
 ```
