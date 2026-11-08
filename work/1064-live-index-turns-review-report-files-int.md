@@ -2,15 +2,19 @@
 id: "1064"
 title: Live index turns review report files into inbox tasks (review-1..N)
 type: bug
-status: active
+status: done
 paths: [src/server/live-index.ts, src/core/indexer.ts]
 priority: p1
 area: [core, web]
+merged_commit: bb5e1ea009cdac40086afdde432458eb58d52475
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/live-index-turns-review-report-files-int
 created_at: "2026-11-08T12:47:28Z"
-updated_at: "2026-11-08T13:53:17Z"
+updated_at: "2026-11-08T14:22:25Z"
+last_close_out_gate_ms: 297406
+last_close_out_gate_at: "2026-11-08T14:21:47.656Z"
+review_passes: 1
 ---
 ## Problem
 Reported from the "tiao" project (RepoOS v0.5.77, workDir `repoos/work`). The Work board's Inbox fills with cards `review-1` … `review-5` (type feature, area general). Opening one shows path `repoos/work/reports/0006/review-1.md`, and its "spec" is the report body. Cards from different tasks collide on the same derived id, so the latest write wins.
@@ -47,3 +51,10 @@ Failure mode to avoid: the cards offer "Delete task", which would delete the sto
 - 2026-11-08T13:50:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The rerun is green: the remote scoped suite passed all 436 selected test files (including the previously flaky suites), and local format/lint/build/contrast/UI smoke guards passed. I’m writing the requested engineer report draft now, then … · stderr: Reading additional input from stdin... 2026-11-08T13:12:02.780634Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid hunk at line 2, Update file hunk for path '/Users/nick/code/nick/repoos-worktrees/feat/live-index-turns-review-files-int/src/core/indexer.ts' is empty 2026-11-08T13:12:19.6…
 - 2026-11-08T13:50:41Z · message_delivered: 2 message(s)
 - 2026-11-08T13:53:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T14:06:18Z · status active→review
+- 2026-11-08T14:06:18Z · message_queued at 2026-11-08T14:06:18.877Z
+- 2026-11-08T14:06:18Z · note: shots: skipped — the diff (7 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-08T14:10:14Z · note: review pass 1: good to go
+- 2026-11-08T14:21:47Z · close-out gate completed in 297s
+- 2026-11-08T14:22:03Z · status done→done, release:success
+- 2026-11-08T14:22:25Z · message_dropped: 1 queued message(s) discarded — task is done
