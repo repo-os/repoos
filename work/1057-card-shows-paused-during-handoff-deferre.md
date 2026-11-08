@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-08T11:11:39Z"
+review_passes: 4
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -13,10 +15,8 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T11:11:39Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T10:38:23.988Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
-review_passes: 3
 review_rounds: 1
 handoff_signal_retry_count: 1
 dev_error_count: 6
@@ -176,3 +176,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T11:04:30Z · message_queued at 2026-11-08T11:04:30.710Z
 - 2026-11-08T11:08:37Z · needs_input (check-failed-after-retries) cleared for review again by human
 - 2026-11-08T11:11:39Z · note: review pass 4: good to go
+
