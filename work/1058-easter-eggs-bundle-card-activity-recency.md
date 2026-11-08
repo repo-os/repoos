@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T03:02:50Z"
+updated_at: "2026-11-08T03:07:12Z"
 ---
 ## Items
 
@@ -41,6 +41,33 @@ Board cards show a running state with a recency suffix, for example "CONFIRMING 
 ### Notes for AI
 Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder in `src/ui-app/src/components/TaskCard.vue`, around the hint/`cardHintUsesLineClamp` code) and reuse the shared styled tooltip/popover (AGENTS.md: no native `title`, use a styled keyboard- and touch-usable tooltip). Coordinate with #1057, which is rewriting the card status derivation; if #1057 has landed, build on its shared status function. Source: human report 2026-11-08.
 
+## Shots
+```json
+[
+{
+  "label": "Board card coding without inline active recency",
+  "target": "default",
+  "route": "/",
+  "selector": "[data-task-id=\"9999\"]",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+  "state": "board:activeCoding"
+},
+{
+  "label": "Pipeline coding lane elapsed on hover",
+  "target": "default",
+  "route": "/work?tab=pipeline",
+  "selector": "[data-task-id=\"pipe-coding\"]",
+  "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+  "steps": [
+    {
+      "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+    }
+  ],
+  "state": "board:pipeline"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-08T02:51:17Z · created · njachowski@gmail.com
@@ -48,3 +75,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T02:51:27Z · status inbox→ready
 - 2026-11-08T02:52:24Z · model_override
 - 2026-11-08T03:02:50Z · status ready→active, branch
+- 2026-11-08T03:07:12Z · body
