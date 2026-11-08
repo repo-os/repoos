@@ -179,4 +179,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T12:38:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T12:39:48Z · status active→review
 - 2026-11-08T12:39:48Z · note: shots: skipped — the diff (23 changed paths) touches no capture target's globs — no UI change to capture
-
+- 2026-11-08T12:40:23Z · message_queued at 2026-11-08T12:40:23.973Z
