@@ -27,7 +27,9 @@ describe("repo loading skeleton", () => {
     expect(loadingSkeletonKind("/work?task=0972")).toBe("board");
     expect(loadingSkeletonKind("/stories")).toBe("rows");
     expect(loadingSkeletonKind("/settings")).toBe("rows");
-    expect(loadingSkeletonKind("/inputs")).toBe("inputBoard");
+    for (const path of ["/inputs", "/client-board"]) {
+      expect(loadingSkeletonKind(path)).toBe("inputBoard");
+    }
     expect(loadingSkeletonKind("/")).toBe("dashboard");
     expect(loadingSkeletonKind("/checks")).toBe("table");
     expect(loadingSkeletonKind("/agents")).toBe("cards");
@@ -67,6 +69,7 @@ describe("repo loading skeleton", () => {
       expect(loadingPageHeader(path)?.title, path).toBeTruthy();
     }
     expect(loadingPageHeader("/work?task=0972")?.title).toBe("Work Queue");
+    expect(loadingPageHeader("/client-board")?.title).toBe("Project board");
     expect(loadingPageHeader("/tasks/0001/diff")).toBeNull();
   });
 
