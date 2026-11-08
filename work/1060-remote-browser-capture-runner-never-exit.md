@@ -4,8 +4,8 @@ title: "Remote browser capture: runner never exits after completing; reap and fo
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 13 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — failed watchdog removal still triggers cleanup and is reported as a successful removal.
 needs_merge: true
 priority: p1
 area: server
@@ -16,7 +16,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T19:40:07Z"
+updated_at: "2026-11-08T19:40:08Z"
 review_passes: 12
 review_rounds: 2
 handoff_signal_retry_count: 2
