@@ -199,3 +199,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T13:09:25Z · ↻ resuming engineer to read queued message
 - 2026-11-08T13:09:25Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T13:09:26Z · status active→review
+- 2026-11-08T13:09:26Z · message_delivered: 2 message(s)
