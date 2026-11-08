@@ -2,14 +2,17 @@
 id: "1055"
 title: Review and safely clean task worktrees
 type: chore
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-08T01:53:51.237776Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-08T01:53:45Z"
+updated_at: "2026-11-08T01:54:01Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_sha: 57c8d8f181a815b01dacea7bf46149784f55a231
 review_rounds: 1
@@ -18,6 +21,7 @@ routing_escalations: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T00:36:58.679Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-08T00:57:13.853Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+dev_error_count: 1
 ---
 ## Problem
 
@@ -132,3 +136,5 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:53:45Z · message_queued at 2026-11-08T01:53:45.479Z
 - 2026-11-08T01:53:45Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
 - 2026-11-08T01:53:45Z · message_delivered: 1 message(s)
+- 2026-11-08T01:54:01Z · agent exited with an error (codex) · 2026-11-08T01:53:51.237776Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
+- 2026-11-08T01:54:01Z · status active→review
