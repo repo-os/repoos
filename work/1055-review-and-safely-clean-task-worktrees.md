@@ -2,7 +2,7 @@
 id: "1055"
 title: Review and safely clean task worktrees
 type: chore
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -156,3 +156,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T02:52:03Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T02:52:03Z · message_queued at 2026-11-08T02:52:03.094Z
 - 2026-11-08T02:52:03Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: `repoos check` passed, including remote validation, the full test suite, UI smoke, contrast audit, and repository checks. I’m requesting review now; the cleanup report still records the root-resolution guard and that no unsafe cleanup was … · stderr: (empty)
+- 2026-11-08T02:52:03Z · status active→review
