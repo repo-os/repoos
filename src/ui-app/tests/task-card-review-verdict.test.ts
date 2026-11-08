@@ -97,6 +97,15 @@ describe("TaskCard review-passed hint reflects the actual verdict", () => {
         report: report("## Verdict\ngood to go."),
       },
     };
+    repo.seedLandable("0001", {
+      taskId: "0001",
+      branch: "feat/x",
+      headSha: "abc",
+      lockSha: "abc",
+      landable: true,
+      checks: [],
+      summary: { pass: 6, warn: 0, fail: 0 },
+    });
 
     const wrapper = mountCard(task);
 

@@ -542,7 +542,7 @@ falls back, in order, to:
    which is fine while a repo is still in its planning phase, but the gate is
    never green — it is never recorded or displayed as "Checks passed".
    Config mistakes (malformed rows, an unusable step) keep failing as errors,
-   and `--changed <ref>` with a ref git cannot resolve keeps exiting non-zero.
+   and `--changed <ref>` with a ref git cannot resolve falls back to the full plan.
 
 **Handoff and close-out (#0697).** A skip stays correct for a docs-only or
 planning-phase repo. If a branch **newly adds** a buildable project marker
@@ -587,3 +587,7 @@ RepoOS-shaped lives in RepoOS's own build context:
 — a repo-relative link that ships in the RepoOS source checkout, not on this
 site. It's written for people working on RepoOS itself; #0446 implemented its
 recommendation, which is this declarative plan.
+
+## Documentation and bookkeeping-only changes
+
+When a check finds only `work/**`, `docs/**`, `user-docs/**`, `inputs/**`, `schedules/**` or Markdown files outside `src/`, `scripts/`, `tests/`, `.githooks/`, and script directories — excluding package manifests and lockfiles — it reports `docs/bookkeeping-only diff: full suite skipped`. It runs formatting, lockfile and runtime-dependency checks, the task-asset guard, and the task parser; it skips the build, tests, browser checks and remote validation. Handoff and close-out use the same rule. If Git cannot compute the diff, the full plan runs; release checks always run the full plan. Set `check.docsOnlySkip = false` in Settings → Advanced to disable the shortcut.
