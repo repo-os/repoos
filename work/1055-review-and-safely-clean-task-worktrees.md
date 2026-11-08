@@ -2,7 +2,7 @@
 id: "1055"
 title: Review and safely clean task worktrees
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-11-08T02:04:08.348375Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest(\"http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)\")))"
@@ -139,4 +139,3 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:54:01Z · agent exited with an error (codex) · 2026-11-08T01:53:51.237776Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
 - 2026-11-08T02:04:01Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-08T02:04:18Z · agent exited with an error (codex) · 2026-11-08T02:04:08.348375Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when Client(HttpRequest(HttpRequest("http/request failed: error sending request for url (https://chatgpt.com/backend-api/ps/mcp)")))
-- 2026-11-08T02:04:18Z · status active→review
