@@ -22,6 +22,8 @@ const props = withDefaults(
     retryLine?: string | null;
     handoffStep?: string | null;
     variant: "card" | "drawer" | "pipeline";
+    /** Pipeline status row — step label beside the bar (e.g. "Running checks 3/680"). */
+    pipelineStatusText?: string | null;
     testId?: string;
     /** When false, drawer renders only bar row + footer (title lives in l1). */
     showTitle?: boolean;
@@ -35,10 +37,17 @@ const props = withDefaults(
     machineLine: null,
     retryLine: null,
     handoffStep: null,
+    pipelineStatusText: null,
     testId: undefined,
     showTitle: true,
   },
 );
+
+const fillPercent = computed(() => {
+  const p = percent.value;
+  if (p == null) return null;
+  return Math.min(100, Math.max(p, 2));
+});
 
 const percent = computed(() => (props.progress ? checkProgressPercent(props.progress) : null));
 
@@ -96,7 +105,17 @@ const drawerFooter = computed(() => {
         data-test-id="checks-progress-drawer-bar-row"
       >
         <span v-if="percent != null" class="check-progress-meter checks-progress-meter--half">
-          <progress :value="percent" max="100" aria-label="Checks running progress" />
+          <span
+            class="check-progress-meter__track"
+            role="progressbar"
+            :aria-valuenow="percent"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-label="Checks running progress"
+          >
+            <span class="check-progress-meter__fill" :style="{ width: `${fillPercent}%` }" />
+          </span>
+          <progress class="check-progress-meter__native" :value="percent" max="100" tabindex="-1" />
         </span>
         <span class="checks-progress-drawer-detail">{{ detailLabel }}</span>
       </div>
@@ -109,15 +128,38 @@ const drawerFooter = computed(() => {
       </div>
     </template>
     <template v-else-if="variant === 'pipeline'">
-      <div class="checks-progress-pipeline">
-        <span v-if="percent != null" class="check-progress-meter checks-progress-meter--pipeline">
-          <progress :value="percent" max="100" aria-label="Check progress" />
+      <div class="checks-progress-pipeline-row">
+        <span v-if="percent != null" class="check-progress-meter checks-progress-meter--half">
+          <span
+            class="check-progress-meter__track"
+            role="progressbar"
+            :aria-valuenow="percent"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-label="Check progress"
+          >
+            <span class="check-progress-meter__fill" :style="{ width: `${fillPercent}%` }" />
+          </span>
+          <progress class="check-progress-meter__native" :value="percent" max="100" tabindex="-1" />
         </span>
+        <span v-if="pipelineStatusText" class="checks-progress-pipeline-status">{{
+          pipelineStatusText
+        }}</span>
       </div>
     </template>
     <template v-else>
-      <span v-if="percent != null" class="check-progress-meter">
-        <progress :value="percent" max="100" aria-label="Checks running progress" />
+      <span v-if="percent != null" class="check-progress-meter checks-progress-meter--full">
+        <span
+          class="check-progress-meter__track"
+          role="progressbar"
+          :aria-valuenow="percent"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-label="Checks running progress"
+        >
+          <span class="check-progress-meter__fill" :style="{ width: `${fillPercent}%` }" />
+        </span>
+        <progress class="check-progress-meter__native" :value="percent" max="100" tabindex="-1" />
       </span>
       <span data-test-id="task-card-check-status-line">{{ cardLine }}</span>
     </template>

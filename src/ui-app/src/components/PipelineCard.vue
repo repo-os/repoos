@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { formatPipelineElapsed, type PipelineCardState } from "../../../core/pipeline-view.js";
-import type { CheckProgress } from "../lib/check-progress";
+import { checkProgressPercent, type CheckProgress } from "../lib/check-progress";
 import ChecksProgressDisplay from "./ChecksProgressDisplay.vue";
 
 export interface PipelineCardAction {
@@ -36,6 +36,10 @@ const emit = defineEmits<{
 }>();
 
 const elapsed = computed(() => formatPipelineElapsed(props.stateSince, props.nowMs));
+
+const showInlineCheckBar = computed(
+  () => props.checkProgress != null && checkProgressPercent(props.checkProgress) != null,
+);
 
 function open(): void {
   emit("open", props.taskId);
@@ -102,6 +106,14 @@ function onKey(e: KeyboardEvent): void {
     <!-- Row 3: status -->
     <div class="pl-row pl-row-3">
       <span v-if="chipText" class="pl-status-chip">{{ chipText }}</span>
+      <ChecksProgressDisplay
+        v-else-if="showInlineCheckBar"
+        class="pl-check-progress"
+        variant="pipeline"
+        test-id="pipeline-card-check-progress"
+        :progress="checkProgress"
+        :pipeline-status-text="stepLabel"
+      />
       <template v-else>
         <span class="pl-dot" aria-hidden="true"></span>
         <span class="pl-step">{{ stepLabel }}</span>
@@ -109,12 +121,6 @@ function onKey(e: KeyboardEvent): void {
       <span class="pl-spacer"></span>
       <span class="pl-elapsed">{{ elapsed }}</span>
     </div>
-    <ChecksProgressDisplay
-      v-if="checkProgress"
-      variant="pipeline"
-      test-id="pipeline-card-check-progress"
-      :progress="checkProgress"
-    />
     <!-- Row 4: rounds, models, host -->
     <div class="pl-row pl-row-4">
       <span class="rounds-badge pl-round" :class="reviewerTone ? `tone-${reviewerTone}` : ''">
@@ -217,6 +223,10 @@ function onKey(e: KeyboardEvent): void {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.pl-check-progress {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .pl-elapsed {
   flex: 0 0 auto;
