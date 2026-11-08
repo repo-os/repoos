@@ -3,9 +3,6 @@ id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — periodic reaps are missing from task Debug events, and source files conflict with main."
 needs_merge: true
 priority: p1
 area: server
@@ -227,3 +224,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T13:53:22Z · status review→active
 - 2026-11-08T13:53:22Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T13:53:23Z · message_delivered: 1 message(s)
+- 2026-11-08T13:53:23Z · needs_input
