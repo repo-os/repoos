@@ -241,3 +241,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T16:28:30Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T16:29:50Z · message_delivered: 4 message(s)
 - 2026-11-08T16:29:56Z · message_queued at 2026-11-08T16:29:56.320Z
+- 2026-11-08T16:29:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
