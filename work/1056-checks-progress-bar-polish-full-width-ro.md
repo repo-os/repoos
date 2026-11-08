@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T02:51:29Z"
+updated_at: "2026-11-08T02:52:04Z"
 last_check_failure: "repoos check at 2026-11-08T02:38:43.543Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 dev_error_count: 5
 ---
@@ -103,3 +103,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:44:50Z · body
 - 2026-11-08T02:49:04Z · body
 - 2026-11-08T02:51:29Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T02:52:04Z · message_queued at 2026-11-08T02:52:04.602Z
