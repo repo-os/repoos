@@ -170,3 +170,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T02:53:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T02:58:11Z · held, held-reason, held-at
 - 2026-11-08T03:00:50Z · handoff failed · remote validation failed: test failure: gate exit 137 on bee — fix it in the feature branch and re-run the gate
+- 2026-11-08T03:00:50Z · message_queued at 2026-11-08T03:00:50.509Z
