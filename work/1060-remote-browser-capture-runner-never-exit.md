@@ -2,18 +2,18 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: ready
+status: active
 priority: p1
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/remote-browser-capture-runner-never-exit
 cli_override: codex
 model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T07:43:36Z"
+updated_at: "2026-11-08T07:43:37Z"
 ---
 ## Problem
 Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
@@ -44,3 +44,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T07:43:30Z · created · njachowski@gmail.com
 - 2026-11-08T07:43:34Z · cli_override, model_override, review_cli_override, review_model_override
 - 2026-11-08T07:43:36Z · status inbox→ready
+- 2026-11-08T07:43:37Z · status ready→active, branch
