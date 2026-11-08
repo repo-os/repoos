@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/live-index-turns-review-report-files-int
 created_at: "2026-11-08T12:47:28Z"
-updated_at: "2026-11-08T13:18:17Z"
+updated_at: "2026-11-08T13:49:13Z"
 ---
 ## Problem
 Reported from the "tiao" project (RepoOS v0.5.77, workDir `repoos/work`). The Work board's Inbox fills with cards `review-1` … `review-5` (type feature, area general). Opening one shows path `repoos/work/reports/0006/review-1.md`, and its "spec" is the report body. Cards from different tasks collide on the same derived id, so the latest write wins.
@@ -40,3 +40,4 @@ Failure mode to avoid: the cards offer "Delete task", which would delete the sto
 - 2026-11-08T13:15:50Z · body: Desired UX (added)
 - 2026-11-08T13:15:50Z · message_queued at 2026-11-08T13:15:50.344Z
 - 2026-11-08T13:18:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T13:49:13Z · body
