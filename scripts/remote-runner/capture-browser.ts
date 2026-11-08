@@ -13,6 +13,18 @@ import { runUiHandoffGate } from "../../src/server/ui-handoff-gate.js";
 import { shotsDir } from "../../src/server/shots.js";
 
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
+const PREVIEW_STOP_TIMEOUT_MS = 3_000;
+
+async function boundedPreviewStop(
+  previews: PreviewManager,
+  taskId: string,
+  reason: string,
+): Promise<void> {
+  await Promise.race([
+    previews.stop(taskId, reason),
+    new Promise<void>((resolve) => setTimeout(resolve, PREVIEW_STOP_TIMEOUT_MS)),
+  ]);
+}
 
 /** Run existing RepoOS capture code in an isolated runner checkout. */
 async function captureBrowserEvidenceImpl(
@@ -144,7 +156,7 @@ async function captureBrowserEvidenceImpl(
       detail: ok ? "runner browser capture completed" : "runner browser capture reported failures",
     };
   } finally {
-    await previews.stop(taskId, "remote browser evidence capture complete");
+    await boundedPreviewStop(previews, taskId, "remote browser evidence capture complete");
   }
 }
 
@@ -195,18 +207,19 @@ if (import.meta.main) {
       entry = JSON.parse(process.env.REPOOS_BROWSER_CAPTURE_ENTRY ?? "") as typeof entry;
     } catch {
       console.error("[browser-capture] single-shot request has invalid entry JSON");
-      process.exitCode = 3;
+      process.exit(3);
     }
   }
-  if (process.exitCode !== 3)
+  if (process.exitCode !== 3) {
     captureBrowserEvidence(process.env.REPOOS_ROOT || process.cwd(), taskId ?? "", mode, dir, entry)
       .then((result) => {
         console.log(`[browser-capture] ${result.detail}`);
-        if (!result.ok) process.exitCode = 2;
+        process.exit(result.ok ? 0 : 2);
       })
       .catch((error: unknown) => {
         const detail = error instanceof Error ? error.message : String(error);
         console.error(`[browser-capture] failed: ${detail}`);
-        process.exitCode = 3;
+        process.exit(3);
       });
+  }
 }
