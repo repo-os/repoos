@@ -71,3 +71,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T07:07:45Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T07:07:45Z · message_queued at 2026-11-08T07:07:45.569Z
 - 2026-11-08T07:07:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The follow-up used the linked RepoOS CLI and started remote validation instead of exercising the new shortcut. It has already started, so I’ll let it finish, then verify the shortcut with this worktree’s compiled CLI. · stderr: (empty)
+- 2026-11-08T07:07:45Z · message_delivered: 2 message(s)
