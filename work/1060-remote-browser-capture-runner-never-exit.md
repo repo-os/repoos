@@ -262,4 +262,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T15:54:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T15:54:50Z · note: handoff requested (cli)
 - 2026-11-08T15:55:24Z · status active→review
-
+- 2026-11-08T15:55:24Z · message_queued at 2026-11-08T15:55:24.308Z
