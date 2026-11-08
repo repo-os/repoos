@@ -279,8 +279,10 @@ takes a short-lived advisory lock on that task's worktree. Server bookkeeping
 commits that touch only `work/**` or `.repoos/**` are **queued** and applied in
 order after the gate ends, so they do not move HEAD mid-run or invalidate the
 result. Commits that touch source or other paths still fail the gate, with the
-commit subject and paths named in the refusal. Engineers cannot commit source
-files during the gate (`A check is running; wait for it to finish.`). A server
+commit subject and paths named in the refusal. RepoOS refuses to start another
+managed engineer turn while the lock is held (`A check is running; wait for it
+to finish.`), and source commits are rejected. Any source edit that bypasses
+those managed paths is caught by the post-check drift comparison. A server
 restart clears stale locks and flushes any deferred queue so nothing is lost.
 
 The internal server environment variable `REPOOS_HANDOFF_CHECK_MAX_AGE_MS`

@@ -45,60 +45,67 @@ export async function checkGateHeadDriftAllowed(
   afterHead: string,
 ): Promise<CheckGateHeadDrift> {
   if (beforeHead === afterHead) return { ok: true };
-  const changed = await pathsChangedBetweenCommits(workdir, beforeHead, afterHead);
-  if (changed === null) {
-    return {
-      ok: false,
-      reason: "could not determine which paths changed between the gate snapshots",
-    };
-  }
-  const commitDetail = await formatNonBookkeepingCommitDrift(
-    workdir,
-    beforeHead,
-    afterHead,
-    config,
-    changed.filter((p) => !isCheckGateBookkeepingPath(p, config)),
-  );
-  if (commitDetail === "") return { ok: true };
-  if (commitDetail === null) {
-    return {
-      ok: false,
-      reason: "could not determine the commit subjects and paths that moved HEAD during the check",
-    };
-  }
-  return {
-    ok: false,
-    reason: commitDetail,
-    affectingPaths: changed.filter((p) => !isCheckGateBookkeepingPath(p, config)),
-  };
+  const inspected = await formatNonBookkeepingCommitDrift(workdir, beforeHead, afterHead, config);
+  if (inspected.kind === "clean") return { ok: true };
+  return { ok: false, reason: inspected.reason, affectingPaths: inspected.paths };
 }
+
+type CommitDriftInspection =
+  | { kind: "clean" }
+  | { kind: "changed"; reason: string; paths: string[] };
 
 async function formatNonBookkeepingCommitDrift(
   wt: string,
   from: string,
   to: string,
   config: RepoOSConfig,
-  aggregatePaths: string[],
-): Promise<string | null> {
+): Promise<CommitDriftInspection> {
+  const ancestor = await runGit(wt, ["merge-base", "--is-ancestor", from, to], 10_000);
+  if (ancestor.status !== 0) {
+    return {
+      kind: "changed",
+      reason: `HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}; commit ancestry could not be verified (source change; paths unavailable)`,
+      paths: ["<paths unavailable>"],
+    };
+  }
   const list = await runGit(wt, ["rev-list", "--first-parent", to, `^${from}`], 15_000);
   const parts: string[] = [`HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`];
-  if (list.status !== 0) return null;
+  if (list.status !== 0) {
+    return {
+      kind: "changed",
+      reason: `${parts[0]}; commit history could not be inspected (source change; paths unavailable)`,
+      paths: [],
+    };
+  }
+  const allAffecting = new Set<string>();
   {
     const shas = list.stdout
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
     for (const sha of shas) {
-      const subj = await runGit(wt, ["log", "-1", "--format=%s", sha], 10_000);
-      const paths = await pathsChangedBetweenCommits(wt, `${sha}^`, sha);
-      if (paths === null) return null;
+      const subj = await runGit(wt, ["show", "-s", "--format=%s", sha], 10_000);
+      const subject =
+        subj.status === 0 && subj.stdout.trim() ? subj.stdout.trim() : "<subject unavailable>";
+      const parent = await runGit(wt, ["rev-parse", `${sha}^1`], 10_000);
+      const paths =
+        parent.status === 0
+          ? await pathsChangedBetweenCommits(wt, parent.stdout.trim(), sha)
+          : null;
+      if (paths === null) {
+        parts.push(
+          `commit ${sha.slice(0, 8)} "${subject}" touched source paths (paths unavailable)`,
+        );
+        allAffecting.add("<paths unavailable>");
+        continue;
+      }
       const affecting = paths.filter((p) => !isCheckGateBookkeepingPath(p, config));
       if (affecting.length === 0) continue;
-      if (subj.status !== 0 || !subj.stdout.trim()) return null;
-      const subject = subj.stdout.trim();
+      affecting.forEach((p) => allAffecting.add(p));
       parts.push(`commit "${subject}" touched ${affecting.join(", ")}`);
     }
   }
-  if (parts.length === 1 && aggregatePaths.length > 0) return null;
-  return parts.length === 1 ? "" : parts.join("; ");
+  return parts.length === 1
+    ? { kind: "clean" }
+    : { kind: "changed", reason: parts.join("; "), paths: [...allAffecting] };
 }

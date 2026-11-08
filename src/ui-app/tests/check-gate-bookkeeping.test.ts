@@ -12,18 +12,12 @@ import {
   isCheckGateBookkeepingPath,
 } from "../../core/check-gate-bookkeeping.js";
 import { engineerSelfCheckCheckpointMessage } from "../../core/engineer-checkpoint-commit.js";
-import {
-  runGit,
-  setCheckGateGitRefusal,
-  setCheckGateWorktreeWriteRefusal,
-  writeWorktreeSourceFile,
-} from "../../core/git.js";
+import { runGit, setCheckGateGitRefusal } from "../../core/git.js";
 import {
   acquireCheckGateLock,
   activeCheckGateForCommitRoot,
   aliveCheckGateLockForWorktree,
   checkGateEngineerBusyRefusal,
-  checkGateSourceWriteRefusal,
   clearCheckGateLock,
   enqueueDeferredBranchCommit,
   flushDeferredBranchCommits,
@@ -77,7 +71,6 @@ function initRepo(): { root: string; wt: string; branch: string } {
 afterEach(() => {
   setCheckGateCommitHook(null);
   setCheckGateGitRefusal(null);
-  setCheckGateWorktreeWriteRefusal(null);
   delete process.env.REPOOS_CHECK_STORE_ROOT;
   delete process.env.REPOOS_CACHE_DIR;
   for (const r of roots.splice(0)) rmSync(r, { recursive: true, force: true });
@@ -148,15 +141,19 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.reason).toContain("feat: temporary source change");
+      expect(result.reason).toContain("revert: restore source");
       expect(result.reason).toContain("src/app.ts");
     }
+    expect(git(wt, ["show", `${before}:src/app.ts`])).toBe(
+      git(wt, ["show", `${after}:src/app.ts`]),
+    );
   });
 
   it("fails closed when path diff is unavailable", async () => {
     const { wt } = initRepo();
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", "notasha", "alsobad");
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toMatch(/could not determine/);
+    if (!result.ok) expect(result.reason).toMatch(/could not be inspected|paths unavailable/);
   });
 });
 
@@ -299,18 +296,14 @@ describe("check gate lock and deferred commits (#1061)", () => {
     const denied = await runGit(wt, ["add", "src/app.ts"], 10_000);
     expect(denied.stderr).toMatch(/check is running/i);
     expect(denied.status).not.toBe(0);
-    expect(() => writeWorktreeSourceFile(wt, join(wt, "src", "app.ts"), "blocked\n")).toThrow(
-      CHECK_GATE_WRITE_REFUSAL,
-    );
-    writeWorktreeSourceFile(
-      wt,
-      join(wt, "work", "0001-task.md"),
-      `${readFileSync(join(wt, "work", "0001-task.md"))}\n`,
-    );
+    const taskFile = join(wt, "work", "0001-task.md");
+    writeFileSync(taskFile, `${readFileSync(taskFile, "utf8")}\n`);
+    expect(commitFiles(wt, [taskFile], "docs(0001): bookkeeping during gate")).toBe(true);
     await releaseCheckGateLock(root, ".repoos", "0001");
+    expect(git(wt, ["log", "-1", "--format=%s"])).toBe("docs(0001): bookkeeping during gate");
   });
 
-  it("blocks source writes and allows work bookkeeping paths", async () => {
+  it("refuses a new engineer turn while the production gate is active", async () => {
     const { root, wt, branch } = initRepo();
     const config = cfg(root);
     await acquireCheckGateLock({
@@ -321,12 +314,6 @@ describe("check gate lock and deferred commits (#1061)", () => {
       worktree: wt,
       kind: "handoff-finalize",
     });
-    expect(checkGateSourceWriteRefusal(root, ".repoos", wt, "src/app.ts", config)).toBe(
-      CHECK_GATE_WRITE_REFUSAL,
-    );
-    expect(checkGateSourceWriteRefusal(root, ".repoos", wt, "work/0001-task.md", config)).toBe(
-      undefined,
-    );
     expect(checkGateEngineerBusyRefusal(root, ".repoos", wt)).toBe(CHECK_GATE_WRITE_REFUSAL);
     await releaseCheckGateLock(root, ".repoos", "0001");
     expect(checkGateEngineerBusyRefusal(root, ".repoos", wt)).toBeUndefined();

@@ -10,6 +10,7 @@ import { checkSnapshot } from "../../core/check-reuse.js";
 import { handoffTask } from "../../server/handoff";
 import { TaskCheckManager } from "../../server/task-check";
 import type { RemoteValidator } from "../../server/remote-validation";
+import { readCheckGateLock } from "../../server/check-gate-lock.js";
 
 interface Fixture {
   root: string;
@@ -852,6 +853,40 @@ exit 0
         // The edit was only on disk when the handoff began (makeFixture). Because
         // the commit gate runs first, the sha the runner tested contains it.
         expect(git(fx.worktree, ["show", `${shas[0]}:source.txt`])).toBe("implemented");
+      } finally {
+        process.env.PATH = oldPath;
+        fx.clean();
+      }
+    });
+
+    it("holds the production check lock during remote handoff validation", async () => {
+      const fx = remoteFixture();
+      const oldPath = process.env.PATH ?? "";
+      process.env.PATH = `${fx.bin}:${oldPath}`;
+      let lockDuringRemote: unknown;
+      try {
+        const validator = {
+          validate: async () => {
+            lockDuringRemote = readCheckGateLock(fx.root, ".repoos", "0001");
+            return { ok: true };
+          },
+          dispose: async () => {},
+          reconcile: async () => {},
+          logPath: () => "",
+        } as unknown as RemoteValidator;
+        const result = await handoffTask(
+          fx.config,
+          readTask(fx),
+          request(fx),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          validator,
+        );
+        expect(result.ok, result.detail).toBe(true);
+        expect(lockDuringRemote).toMatchObject({ taskId: "0001" });
+        expect(readCheckGateLock(fx.root, ".repoos", "0001")).toBeNull();
       } finally {
         process.env.PATH = oldPath;
         fx.clean();
