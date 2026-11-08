@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-08T06:00:21Z"
-review_passes: 2
 id: "1050"
 title: "Easter eggs bundle: no Restart work button while checks run"
 type: chore
@@ -16,14 +14,18 @@ model_override: opencode-go/deepseek-v4.1-flash
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-07T07:03:41Z"
+updated_at: "2026-11-08T05:53:35Z"
+check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T02:42:36.012Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 2b311db0 to 7de76e04) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 2b311db0cbbbab67ef96af59606a4805ac3b9c2b
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
+review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-07T19:51:20.419Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-07T20:21:05.967Z\",\"reason\":\"clean-exit-without-handoff\"}]"
-dev_error_count: 9
+dev_error_count: 6
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T03:18:29.073Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T03:20:20.632Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-08T03:22:46.673Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 ## Items
@@ -343,27 +345,4 @@ Start from the `action` computed in `src/ui-app/src/components/TaskCard.vue` (ab
 - 2026-11-08T02:38:19Z · body
 - 2026-11-08T02:42:32Z · message_queued at 2026-11-08T02:42:32.864Z
 - 2026-11-08T02:42:35Z · message_delivered: 1 message(s)
-- 2026-11-08T03:13:14Z · message_queued at 2026-11-08T03:13:14.909Z
-- 2026-11-08T03:13:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-08T03:18:14Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-08T03:18:29Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
-- 2026-11-08T03:18:59Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (1/12 crashes in 30m) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
-- 2026-11-08T03:18:59Z · needs_input
-- 2026-11-08T03:18:59Z · message_delivered: 1 message(s)
-- 2026-11-08T03:20:20Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
-- 2026-11-08T03:21:20Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (2/12 crashes in 30m) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
-- 2026-11-08T03:21:21Z · needs_input
-- 2026-11-08T03:22:46Z · agent exited with an error (opencode) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
-- 2026-11-08T03:24:16Z · engineer crash recovery: resuming opencode + opencode-go/deepseek-v4.1-flash (3/12 crashes in 30m) · network problem reaching the model provider, not a code issue: ECONNREFUSED: Unable to connect. Is the computer able to access the url?
-- 2026-11-08T03:24:17Z · needs_input
-- 2026-11-08T03:25:17Z · engineer stopped by request
-- 2026-11-08T05:34:25Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
-- 2026-11-08T05:34:25Z · note: handoff requested (cli)
-- 2026-11-08T05:35:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T05:53:35Z · status active→review
-- 2026-11-08T05:53:35Z · note: Task body is underspecified: E2: empty Problem, Desired UX, Notes for AI; E3: empty Problem, Desired UX, Notes for AI
-- 2026-11-08T05:53:35Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-08T05:53:36Z · message_queued at 2026-11-08T05:53:36.140Z
-- 2026-11-08T05:53:36Z · note: shots: skipped — 1 shot already captured — an engineer-made capture pre-empts the automatic one
-- 2026-11-08T06:00:21Z · note: review pass 2: good to go
-
