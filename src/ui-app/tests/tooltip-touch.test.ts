@@ -33,15 +33,17 @@ describe("installTooltips touch (#1058)", () => {
     const keep = document.querySelector(".app-tooltip");
     document.body.replaceChildren();
     if (keep) document.body.appendChild(keep);
-    for (const [id, tip] of [
-      ["tip-btn", "Active 2m ago"],
-      ["elsewhere", ""],
+    for (const [id, tip, touchTap] of [
+      ["tip-btn", "Active 2m ago", true],
+      ["plain-tip-btn", "Save settings", false],
+      ["elsewhere", "", false],
     ] as const) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.id = id;
       if (tip) btn.setAttribute("data-tip", tip);
-      btn.textContent = id === "tip-btn" ? "hint" : "other";
+      if (touchTap) btn.setAttribute("data-tip-touch", "tap");
+      btn.textContent = id === "tip-btn" ? "hint" : id === "plain-tip-btn" ? "open" : "other";
       document.body.appendChild(btn);
     }
   });
@@ -106,6 +108,29 @@ describe("installTooltips touch (#1058)", () => {
     vi.advanceTimersByTime(500);
     expect(document.querySelector(".app-tooltip.show")).not.toBeNull();
     touch("pointerdown", other);
+    expect(document.querySelector(".app-tooltip.show")).toBeNull();
+  });
+
+  it("does not open on short tap without data-tip-touch and still allows click", () => {
+    const btn = document.getElementById("plain-tip-btn")!;
+    const click = vi.fn();
+    btn.addEventListener("click", click);
+    touch("pointerdown", btn);
+    vi.advanceTimersByTime(100);
+    touch("pointerup", btn);
+    expect(document.querySelector(".app-tooltip.show")).toBeNull();
+    btn.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
+    expect(click).toHaveBeenCalled();
+  });
+
+  it("does not open the tooltip when the touch is cancelled before long-press", () => {
+    const btn = document.getElementById("tip-btn")!;
+    touch("pointerdown", btn);
+    vi.advanceTimersByTime(200);
+    touch("pointercancel", btn);
+    vi.advanceTimersByTime(400);
+    expect(document.querySelector(".app-tooltip.show")).toBeNull();
+    touch("pointerup", btn);
     expect(document.querySelector(".app-tooltip.show")).toBeNull();
   });
 });
