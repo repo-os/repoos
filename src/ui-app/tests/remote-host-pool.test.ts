@@ -567,7 +567,7 @@ function poolFixture(opts: {
         }
         // The hang kill (#0729): record the named container and let the pending
         // run resolve as if docker rm -f ended it.
-        if (cmd.startsWith("docker rm -f ") && cmd.includes("repoos-validate-")) {
+        if (cmd.startsWith("out=$(docker rm -f ") && cmd.includes("repoos-validate-")) {
           const name = cmd.split("'")[1] ?? cmd.split(" ").pop()!;
           killed.push(name);
           if (opts.hangKillNeverResolves) {
@@ -618,7 +618,7 @@ function poolFixture(opts: {
         }
         // The periodic container reaper lists candidates independently of
         // validation jobs. Most dispatch fixtures have no stale containers.
-        if (cmd.startsWith("docker ps -aq --filter 'name=^/repoos-validate-")) {
+        if (cmd.startsWith("ids=$(docker ps -aq --filter 'name=^/repoos-validate-")) {
           return { code: 0, output: "", timedOut: false };
         }
         if (opts.timeoutRunOn?.includes(host.ip)) {
@@ -779,7 +779,7 @@ describe("completed browser capture collection", () => {
       runRemote: vi.fn(async (host, cmd, onChunk, timeout, remoteOpts) => {
         if (cmd.includes("/browser-capture/result.json"))
           return { code: 1, output: "", timedOut: false };
-        if (cmd.startsWith("docker rm -f")) {
+        if (cmd.startsWith("out=$(docker rm -f")) {
           killCmd = cmd;
           return {
             code: 255,
@@ -3170,7 +3170,7 @@ describe("hung container cleanup (#0729)", () => {
 
   it("kills only the named container, never by a pattern", () => {
     const cmd = killContainerCommand("repoos-validate-0729-ab12cd34");
-    expect(cmd).toBe("docker rm -f 'repoos-validate-0729-ab12cd34' >/dev/null 2>&1");
+    expect(cmd).toContain("docker rm -f 'repoos-validate-0729-ab12cd34'");
     expect(cmd).not.toContain("|| true");
     // A hostile name cannot inject a second command.
     expect(killContainerCommand("bad; rm -rf /")).not.toContain("; rm -rf /");
@@ -3446,7 +3446,7 @@ describe("hung run recovery end to end (#0729)", () => {
     const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
     const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
     const removeAt = f.remoteOrder.findIndex((cmd) =>
-      cmd.startsWith("docker rm -f 'repoos-validate-"),
+      cmd.startsWith("out=$(docker rm -f 'repoos-validate-"),
     );
     expect(logsAt).toBeGreaterThanOrEqual(0);
     expect(inspectAt).toBeGreaterThan(logsAt);
@@ -3757,7 +3757,7 @@ describe("hung run recovery end to end (#0729)", () => {
       const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
       const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
       const removeAt = f.remoteOrder.findIndex((cmd) =>
-        cmd.startsWith("docker rm -f 'repoos-validate-"),
+        cmd.startsWith("out=$(docker rm -f 'repoos-validate-"),
       );
       expect(logsAt).toBeGreaterThanOrEqual(0);
       expect(inspectAt).toBeGreaterThan(logsAt);

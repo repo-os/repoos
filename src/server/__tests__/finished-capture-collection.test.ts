@@ -18,11 +18,43 @@ import {
   formatValidateReapedCaptureMarker,
   newlySeenValidateFailedReapCaptures,
   finishedCaptureCollectionCommand,
+  killContainerCommand,
   reaperCommand,
   recordValidateStartupReapedCaptures,
   remoteEventsPath,
   runValidationContainerReaper,
 } from "../remote-validation.js";
+
+it.each([
+  { code: 0, output: "removed", expected: 0 },
+  {
+    code: 1,
+    output: "Error response from daemon: No such container: repoos-validate-test",
+    expected: 0,
+  },
+  { code: 1, output: "permission denied", expected: 1 },
+])("propagates the actual Docker removal result: $output", ({ code, output, expected }) => {
+  const root = mkdtempSync(join(tmpdir(), "capture-kill-"));
+  try {
+    writeFileSync(
+      join(root, "docker"),
+      `#!/bin/sh\nprintf '%s\\n' "$DOCKER_OUTPUT" >&2\nexit "$DOCKER_CODE"\n`,
+    );
+    chmodSync(join(root, "docker"), 0o755);
+    const result = spawnSync("sh", ["-c", killContainerCommand("repoos-validate-test")], {
+      env: {
+        ...process.env,
+        PATH: `${root}:${process.env.PATH}`,
+        DOCKER_OUTPUT: output,
+        DOCKER_CODE: String(code),
+      },
+    });
+    expect(result.status).toBe(expected);
+    if (expected) expect(result.stderr.toString()).toContain(output);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 it("removes only the run's container when its result is present", () => {
   const root = mkdtempSync(join(tmpdir(), "capture-collect-"));

@@ -75,7 +75,7 @@ if [ "$_reap_ps_ok" -ne 0 ]; then
 else
   while IFS= read -r id; do
     [ -n "$id" ] || continue
-    if ! name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null); then
+    if name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null); then :; else
       echo "[reaper] failed to inspect capture container $id reason=exit-$?"
       continue
     fi
@@ -90,12 +90,12 @@ else
       | grep -Eq '(completed|reported failures)'; then
       continue
     fi
-    if ! recent=$(docker logs --since 120s --tail 1 "$id" 2>&1); then
+    if recent=$(docker logs --since 120s --tail 1 "$id" 2>&1); then :; else
       echo "[reaper] failed to read recent logs for $bare reason=exit-$?"
       continue
     fi
     [ -z "$recent" ] || continue
-    if ! cpu=$(docker stats --no-stream --format '{{.CPUPerc}}' "$id" 2>/dev/null); then
+    if cpu=$(docker stats --no-stream --format '{{.CPUPerc}}' "$id" 2>/dev/null); then :; else
       echo "[reaper] failed to read cpu for $bare reason=exit-$?"
       continue
     fi
@@ -144,7 +144,11 @@ _rvcleanup() {
   # run below), so a plain rm is sufficient — no chown container needed.
   # Kill THIS run's container too: a signal (or a runner-side hang kill that
   # races our exit) must not leave it running (#0729).
-  docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+  # The container normally already vanished via --rm; report other cleanup failures.
+  _cleanup_out=$(docker rm -f "$CONTAINER" 2>&1) || case "$_cleanup_out" in
+    "Error response from daemon: No such container: "*) ;;
+    *) echo "[validate] failed to remove $CONTAINER: $_cleanup_out" >&2 ;;
+  esac
   rm -rf "$WORK" "$BUNDLE"
 }
 trap _rvcleanup EXIT
