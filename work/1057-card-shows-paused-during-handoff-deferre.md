@@ -25,7 +25,6 @@ review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-08T08:42:08.800Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
