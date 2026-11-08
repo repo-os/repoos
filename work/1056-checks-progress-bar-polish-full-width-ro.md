@@ -11,9 +11,9 @@ branch: feat/checks-progress-bar-polish-full-width-ro
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: codex
-review_model_override: gpt-6.1-terra
+review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T02:52:19Z"
+updated_at: "2026-11-08T02:52:22Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 5
@@ -107,3 +107,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T02:52:04Z · message_queued at 2026-11-08T02:52:04.602Z
 - 2026-11-08T02:52:07Z · message_delivered: 1 message(s)
 - 2026-11-08T02:52:19Z · CTO nudge: held — remote validation is running
+- 2026-11-08T02:52:22Z · review_model_override
