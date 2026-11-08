@@ -2490,6 +2490,11 @@
   font-family: "JetBrains Mono", monospace;
   cursor: help;
 }
+/* Allow tap / long-press tooltips on cards without browser gesture delay (#1058). */
+.tc-hint[data-tip],
+.pipeline-card .pl-step--recency-tip[data-tip] {
+  touch-action: manipulation;
+}
 .check-progress {
   display: flex;
   align-items: center;
