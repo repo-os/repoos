@@ -287,7 +287,20 @@ function setWorkViewMode(mode: WorkViewMode): void {
     /* ignore quota / privacy-mode failures */
   }
 }
-onMounted(loadWorkViewMode);
+onMounted(() => {
+  loadWorkViewMode();
+  // The shot runner may drop ordinary query keys while adding shotState. Open
+  // this fixture's drawer after WorkView is mounted so the report capture does
+  // not depend on a `?task=` deep link or a startup-time drawer mutation.
+  const shot = readShotPreviewFixtureFromLocation(
+    typeof window !== "undefined" ? window.location : { search: "" },
+  );
+  if (shot !== "drawer:postMergeSummary" || ui.active) return;
+  const task = repo.tasks.find((candidate) => candidate.id === "9999");
+  if (!task) return;
+  void ui.openTask(task);
+  ui.activeTab = "agent";
+});
 // Shot captures must land on the track even when the stored preference is
 // board-first (`board:pipeline`, `pipeline:*`, or `/work?tab=pipeline`).
 // `?shotState=` is enough to force the track before /api/health returns
