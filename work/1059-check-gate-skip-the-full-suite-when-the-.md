@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T10:14:05Z"
+updated_at: "2026-11-08T10:14:13Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -47,15 +47,15 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 ```json
 [
 {
-  "label": "Docs/bookkeeping-only check shortcut toggle",
-  "target": "default",
-  "route": "/settings?tab=advanced",
-  "highlight": "[id=\"setting-check.docsOnlySkip\"]",
-  "steps": [
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Docs/bookkeeping-only check shortcut toggle",
+"target": "default",
+"route": "/settings?tab=advanced",
+"highlight": "[id=\"setting-check.docsOnlySkip\"]",
+"steps": [
+  {
+    "waitMs": 300
+  }
+]
 }
 ]
 ```
