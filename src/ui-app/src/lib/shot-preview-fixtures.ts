@@ -1273,12 +1273,14 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         headSha: "a".repeat(40),
         lockSha: "a".repeat(40),
         landable: false,
-        checks: [{
-          id: "merge-conflicts",
-          label: "Checks running",
-          status: "fail",
-          detail: "Post-review checks are running",
-        }],
+        checks: [
+          {
+            id: "merge-conflicts",
+            label: "Checks running",
+            status: "fail",
+            detail: "Post-review checks are running",
+          },
+        ],
         summary: { pass: 5, warn: 0, fail: 1 },
       });
       break;

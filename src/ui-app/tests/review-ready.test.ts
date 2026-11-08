@@ -97,10 +97,19 @@ const GOOD_REPORT = {
 };
 
 const LANDABLE_GREEN: LandableResult = {
-  taskId: "0001", branch: "feat/test", headSha: "abc", lockSha: "abc", landable: true,
-  checks: [], summary: { pass: 6, warn: 0, fail: 0 },
+  taskId: "0001",
+  branch: "feat/test",
+  headSha: "abc",
+  lockSha: "abc",
+  landable: true,
+  checks: [],
+  summary: { pass: 6, warn: 0, fail: 0 },
 };
-const landability = (status: "pass" | "fail", label = "Checks", detail = "Checks are running"): LandableResult => ({
+const landability = (
+  status: "pass" | "fail",
+  label = "Checks",
+  detail = "Checks are running",
+): LandableResult => ({
   ...LANDABLE_GREEN,
   landable: status !== "fail",
   checks: [{ id: "review-verdict", label, status, detail }],
@@ -261,7 +270,8 @@ describe("TaskCard review-ready highlight (0270)", () => {
     const { pinia, repo } = await setupRepo(task);
     repo.reviews[task.id]!.report = {
       ...GOOD_REPORT,
-      markdown: tone === "amber" ? "## Verdict\nneeds some work" : "## Verdict\nback to the drawing board",
+      markdown:
+        tone === "amber" ? "## Verdict\nneeds some work" : "## Verdict\nback to the drawing board",
     };
     const wrapper = await mountCard(pinia, task);
     expect(wrapper.find(".task-card").classes()).not.toContain("review-ready");
