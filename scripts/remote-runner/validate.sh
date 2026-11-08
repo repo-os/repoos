@@ -68,6 +68,7 @@ docker ps -aq --filter "name=repoos-validate-" \
 # Best-effort: remove still-running capture containers that already published a
 # result and have gone quiet (#1060). Non-running leftovers are swept above; this
 # handles the hang where the runner process never exits after writing result.json.
+set +e
 docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/null \
   | while IFS= read -r id; do
   [ -n "$id" ] || continue
@@ -78,7 +79,7 @@ docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/nul
   docker logs "$id" 2>&1 \
     | grep -F '[browser-capture] runner browser capture ' \
     | grep -Eq '(completed|reported failures)' || continue
-  recent=$(docker logs --since 120s --tail 1 "$id" 2>&1)
+  recent=$(docker logs --since 120s --tail 1 "$id" 2>&1) || continue
   [ -z "$recent" ] || continue
   cpu=$(docker stats --no-stream --format '{{.CPUPerc}}' "$id" 2>/dev/null) || continue
   printf '%s\n' "$cpu" | awk '/^[0-9]+([.][0-9]+)?%$/ { sub(/%$/, ""); if ($1 < 1) ok=1 } END { exit !ok }' \
@@ -97,6 +98,7 @@ docker ps -q --filter "name=repoos-validate-" --filter status=running 2>/dev/nul
     echo "[reaper] failed to remove $bare$task_tag reason=$rm_reason"
   fi
 done
+set -e
 
 # No global sweep of $HOME/.repoos-validate.* at startup (#0729): it runs before
 # the host lock and before this run's container exists, so a sibling run's work
