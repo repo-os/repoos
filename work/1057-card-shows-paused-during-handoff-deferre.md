@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T01:00:16Z"
+updated_at: "2026-11-08T01:02:01Z"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -46,3 +46,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T00:42:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T00:51:05Z · body
 - 2026-11-08T01:00:16Z · body
+- 2026-11-08T01:02:01Z · CTO nudge: held — handoff gate is running
