@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T01:50:13Z"
+updated_at: "2026-11-08T01:50:19Z"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -75,3 +75,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T01:41:56Z · body
 - 2026-11-08T01:45:00Z · body
 - 2026-11-08T01:50:13Z · body
+- 2026-11-08T01:50:19Z · body
