@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found"
@@ -78,4 +78,3 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T08:39:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T08:39:15Z · message_delivered: 2 message(s)
 - 2026-11-08T08:42:12Z · agent exited with an error (codex) · 2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found
-- 2026-11-08T08:42:12Z · status active→review
