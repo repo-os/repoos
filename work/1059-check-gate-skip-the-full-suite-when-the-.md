@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T15:47:04Z"
+updated_at: "2026-11-08T15:49:51Z"
 review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -231,3 +231,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T15:46:16Z · message_queued at 2026-11-08T15:46:16.513Z
 - 2026-11-08T15:46:16Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1059.md
 - 2026-11-08T15:47:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:49:51Z · message_queued at 2026-11-08T15:49:51.170Z
