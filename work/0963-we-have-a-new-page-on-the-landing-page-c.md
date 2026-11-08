@@ -2,7 +2,7 @@
 id: "0963"
 title: Build the simplified client project board
 type: feature
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -15,7 +15,7 @@ pm_model_override: grok-4.7-medium
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-10-26T19:44:54Z"
-updated_at: "2026-11-08T06:05:04Z"
+updated_at: "2026-11-08T07:53:00Z"
 ---
 ## Problem
 
@@ -81,3 +81,4 @@ We have a new page on the landing page called "For Clients" which explains the R
 - 2026-11-06T05:05:53Z · status inbox→ready
 - 2026-11-08T06:05:03Z · cli_override, model_override, review_cli_override, review_model_override
 - 2026-11-08T06:05:04Z · status ready→active, branch
+- 2026-11-08T07:53:00Z · status active→review
