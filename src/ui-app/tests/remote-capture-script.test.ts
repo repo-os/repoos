@@ -101,6 +101,13 @@ describe("runner worktree layout for browser capture (#0854)", () => {
     expect(() => execFileSync("bash", ["-n", validatePath], { stdio: "ignore" })).not.toThrow();
   });
 
+  it("logs a structured line before removing a quiet completed capture at startup (#1060)", () => {
+    expect(validateScript).toMatch(
+      /\[validate\] reaped completed browser capture \$bare task=\$task: no output for two minutes and CPU idle/,
+    );
+    expect(validateScript).toMatch(/REPOOS_BROWSER_CAPTURE_TASK=/);
+  });
+
   it("creates and bind-mounts a writable /repo-worktrees for the capture worktree", () => {
     // capture-browser.ts resolves the task worktree through
     // worktreePathForBranch, which points at worktreesDir("/repo") =

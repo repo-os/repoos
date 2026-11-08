@@ -1,12 +1,24 @@
-import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { expect, it, vi } from "vitest";
 import {
+  COMPLETED_CAPTURE_REAPER_IDLE_DETAIL,
   completedCaptureReaperCommand,
+  formatValidateReapedCaptureMarker,
   finishedCaptureCollectionCommand,
   reaperCommand,
+  recordValidateStartupReapedCaptures,
+  remoteEventsPath,
   runValidationContainerReaper,
 } from "../remote-validation.js";
 
@@ -108,6 +120,29 @@ it("reaps a completed capture even when the Mac still tracks it as live", async 
   );
   expect(logger.system).toHaveBeenCalledWith(
     "info",
-    `reaped completed browser capture ${containerName} on runner: no output for two minutes and CPU idle`,
+    `reaped completed browser capture ${containerName} on runner: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
   );
+});
+
+it("records validate.sh startup reaper markers on the capture task", () => {
+  const root = mkdtempSync(join(tmpdir(), "capture-startup-reap-"));
+  try {
+    const seen = new Set<string>();
+    const marker = formatValidateReapedCaptureMarker("repoos-validate-hung", "1048");
+    const logger = { system: vi.fn() };
+    recordValidateStartupReapedCaptures(root, `${marker}\n`, seen, {
+      host: "100.0.0.2",
+      logger: logger as never,
+    });
+    expect(logger.system).toHaveBeenCalledWith(
+      "info",
+      `reaped completed browser capture repoos-validate-hung on 100.0.0.2: ${COMPLETED_CAPTURE_REAPER_IDLE_DETAIL}`,
+    );
+    expect(existsSync(remoteEventsPath(root, "1048"))).toBe(true);
+    expect(readFileSync(remoteEventsPath(root, "1048"), "utf8")).toContain(
+      "repoos-validate-hung",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
