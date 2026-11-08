@@ -469,3 +469,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:05:17Z · ↻ resuming engineer to read queued message
 - 2026-11-08T21:05:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The rerun passed: all 5,088 scoped tests passed (with one skipped), and RepoOS’s local format, lint, build, contrast, and UI smoke checks passed. I’m writing the required engineer report draft now; the declared Board and Pipeline shots wil… · stderr: Reading additional input from stdin...
 - 2026-11-08T21:05:17Z · status active→review
+- 2026-11-08T21:05:17Z · message_delivered: 2 message(s)
