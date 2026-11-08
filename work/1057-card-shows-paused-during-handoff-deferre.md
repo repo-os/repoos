@@ -1,6 +1,4 @@
 ---
-check_retry_count: 2
-last_check_failure: "repoos check at 2026-11-08T10:03:48.795Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -20,7 +18,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T10:03:48Z"
+updated_at: "2026-11-08T10:04:09Z"
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-08T10:03:48.795Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 review_rounds: 1
 review_passes: 2
 handoff_signal_retry_count: 1
@@ -163,4 +163,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T09:34:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T10:03:45Z · message_queued at 2026-11-08T10:03:45.706Z
 - 2026-11-08T10:03:48Z · message_delivered: 1 message(s)
-
+- 2026-11-08T10:04:09Z · CTO nudge: held — remote validation is running
