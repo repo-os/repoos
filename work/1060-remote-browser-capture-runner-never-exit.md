@@ -125,3 +125,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T10:14:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T10:21:23Z · body
 - 2026-11-08T10:24:41Z · message_queued at 2026-11-08T10:24:41.166Z
+- 2026-11-08T10:24:41Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from d40a1def to e46993f3) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
