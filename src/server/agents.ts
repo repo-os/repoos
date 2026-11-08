@@ -9920,7 +9920,8 @@ export class AgentRunner {
         // turn's cleanup, with a durable cap to prevent a handoff loop.
         if (outcomeTask && !this.isPaused(taskId) && !this.entries.has(taskId)) {
           const rawAttempts = outcomeTask.extra?.deferred_handoff_resume_count;
-          const attempts = typeof rawAttempts === "number" && Number.isFinite(rawAttempts) ? rawAttempts : 0;
+          const attempts =
+            typeof rawAttempts === "number" && Number.isFinite(rawAttempts) ? rawAttempts : 0;
           if (attempts < MAX_DEFERRED_HANDOFF_RESUMES) {
             try {
               const current = parseTask({
