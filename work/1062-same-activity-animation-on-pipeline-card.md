@@ -3,16 +3,17 @@ id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
+review_cli_override: github copilot
+review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-08T09:14:00Z"
+updated_at: "2026-11-08T09:14:01Z"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -40,3 +41,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-08T09:13:53Z · created · njachowski@gmail.com
 - 2026-11-08T09:13:53Z · needs_input
 - 2026-11-08T09:14:00Z · body
+- 2026-11-08T09:14:01Z · needs_input, cli_override, model_override, review_cli_override, review_model_override
