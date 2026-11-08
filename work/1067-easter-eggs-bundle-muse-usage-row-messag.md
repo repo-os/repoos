@@ -2,14 +2,14 @@
 id: "1067"
 title: "Easter eggs bundle: Muse usage row messages and dashboard link, needs-input flag after body fix"
 type: chore
-status: active
+status: review
 priority: p3
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T18:57:46Z"
+updated_at: "2026-11-08T19:12:38Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -147,3 +147,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:56:58Z · status review→active
 - 2026-11-08T18:57:00Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T18:57:46Z · message_delivered: 1 message(s)
+- 2026-11-08T19:12:38Z · status active→review
