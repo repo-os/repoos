@@ -89,3 +89,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T14:53:14Z · body
 - 2026-11-08T14:54:02Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-08T14:54:02Z · message_queued at 2026-11-08T14:54:02.724Z
+- 2026-11-08T14:54:02Z · ↻ resuming engineer to read queued message
