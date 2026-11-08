@@ -13,13 +13,13 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-08T09:14:01Z"
+updated_at: "2026-11-08T09:14:07Z"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
 2. Animations keep running when they cannot be seen. `ActivityIndicator.vue` has no visibility handling (no `visibilitychange`, no `IntersectionObserver`, no `animation-play-state` control), so animations on the non-visible view (the Board while Pipeline is shown, or the reverse), in collapsed columns, off-screen cards, hidden browser tabs, and behind drawers and dialogs still run and cost CPU and memory (compositor layers, JS timers).
 
-## Desired behavior
+## Desired UX
 1. Pipeline cards show the same Settings-selected activity animation (style and size) as Board cards wherever the Board card shows it for the same state (coding, running checks, reviewing, etc.). Use the shared `ActivityIndicator` component, not a copy. The Pipeline dot is replaced by (or wraps) it without changing the card height.
 2. Animations run only while visible: paused (CSS `animation-play-state: paused`, no JS timers or rAF loops, no will-change layers) when the document is hidden, the card is outside the viewport, its column is collapsed, or its whole view is not the active one. Resume immediately when visible again. Implement once in the shared component (one shared `IntersectionObserver` plus a single `visibilitychange` listener, not one per card).
 3. The non-active view (Board vs Pipeline) should not keep rendering or animating its cards: unmount it or mark it `v-show` hidden with animations paused, whichever the router/view setup allows without losing scroll state.
@@ -42,3 +42,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-08T09:13:53Z · needs_input
 - 2026-11-08T09:14:00Z · body
 - 2026-11-08T09:14:01Z · needs_input, cli_override, model_override, review_cli_override, review_model_override
+- 2026-11-08T09:14:07Z · body: Desired UX (added); Desired behavior (removed)
