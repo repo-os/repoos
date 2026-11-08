@@ -97,3 +97,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T09:29:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T09:33:45Z · message_delivered: 1 message(s)
 - 2026-11-08T09:39:16Z · message_queued at 2026-11-08T09:39:16.399Z
+- 2026-11-08T09:39:16Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
