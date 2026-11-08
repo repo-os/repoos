@@ -288,3 +288,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T22:56:24Z · note: handoff requested (cli)
 - 2026-11-08T22:59:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T23:07:50Z · message_queued at 2026-11-08T23:07:50.630Z
+- 2026-11-08T23:07:50Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1061.md
