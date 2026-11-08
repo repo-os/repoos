@@ -22,6 +22,7 @@ review_rounds: 1
 review_passes: 1
 dev_error_count: 17
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
+deferred_handoff_resume_count: 1
 ---
 ## Items
 
