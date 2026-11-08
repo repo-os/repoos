@@ -13,7 +13,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T00:51:05Z"
+updated_at: "2026-11-08T01:00:16Z"
 ---
 ## Problem
 Two related lifecycle bugs seen on 2026-11-08:
@@ -45,3 +45,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T00:41:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-08T00:42:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T00:51:05Z · body
+- 2026-11-08T01:00:16Z · body
