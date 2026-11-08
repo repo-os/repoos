@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p3
 area: web
 assigned_to: ai
@@ -13,7 +16,9 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T03:07:12Z"
+updated_at: "2026-11-08T03:23:59Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T03:23:29.277Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Items
 
@@ -45,25 +50,25 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ```json
 [
 {
-  "label": "Board card coding without inline active recency",
-  "target": "default",
-  "route": "/",
-  "selector": "[data-task-id=\"9999\"]",
-  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-  "state": "board:activeCoding"
+"label": "Board card coding without inline active recency",
+"target": "default",
+"route": "/",
+"selector": "[data-task-id=\"9999\"]",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
+"state": "board:activeCoding"
 },
 {
-  "label": "Pipeline coding lane elapsed on hover",
-  "target": "default",
-  "route": "/work?tab=pipeline",
-  "selector": "[data-task-id=\"pipe-coding\"]",
-  "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
-  "steps": [
-    {
-      "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
-    }
-  ],
-  "state": "board:pipeline"
+"label": "Pipeline coding lane elapsed on hover",
+"target": "default",
+"route": "/work?tab=pipeline",
+"selector": "[data-task-id=\"pipe-coding\"]",
+"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+"steps": [
+{
+  "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+}
+],
+"state": "board:pipeline"
 }
 ]
 ```
@@ -76,3 +81,5 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T02:52:24Z · model_override
 - 2026-11-08T03:02:50Z · status ready→active, branch
 - 2026-11-08T03:07:12Z · body
+- 2026-11-08T03:23:29Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-11-08T03:23:59Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
