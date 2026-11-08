@@ -164,15 +164,25 @@ describe("check gate lock and deferred commits (#1061)", () => {
 
   it("preserves queue entries across flush after stale lock recovery", async () => {
     const { root, wt } = initRepo();
-    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [join(wt, "work", "0001-task.md")], "docs(0001): queued");
+    enqueueDeferredBranchCommit(
+      root,
+      ".repoos",
+      "0001",
+      wt,
+      [join(wt, "work", "0001-task.md")],
+      "docs(0001): queued",
+    );
     expect(readDeferredBranchCommits(root, ".repoos", "0001").length).toBe(1);
-    writeFileSync(join(wt, "work", "0001-task.md"), readFileSync(join(wt, "work", "0001-task.md")) + "\n");
+    writeFileSync(
+      join(wt, "work", "0001-task.md"),
+      readFileSync(join(wt, "work", "0001-task.md")) + "\n",
+    );
     process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
-  try {
-    await flushDeferredBranchCommits(root, ".repoos", "0001");
-  } finally {
-    delete process.env.REPOOS_CHECK_GATE_INTERNAL;
-  }
+    try {
+      await flushDeferredBranchCommits(root, ".repoos", "0001");
+    } finally {
+      delete process.env.REPOOS_CHECK_GATE_INTERNAL;
+    }
     expect(readDeferredBranchCommits(root, ".repoos", "0001").length).toBe(0);
     expect(git(wt, ["log", "--oneline", "-1"])).toMatch(/docs\(0001\)/);
   });

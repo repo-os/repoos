@@ -98,9 +98,7 @@ async function formatNonBookkeepingCommitDrift(
   aggregatePaths: string[],
 ): Promise<string> {
   const list = await runGit(wt, ["rev-list", "--first-parent", to, `^${from}`], 15_000);
-  const parts: string[] = [
-    `HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`,
-  ];
+  const parts: string[] = [`HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`];
   if (list.status === 0) {
     const shas = list.stdout
       .split("\n")
