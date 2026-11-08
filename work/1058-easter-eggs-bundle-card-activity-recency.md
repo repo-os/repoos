@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T21:05:18Z"
+updated_at: "2026-11-08T21:08:32Z"
 review_passes: 6
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -470,3 +470,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:05:17Z · status active→review
 - 2026-11-08T21:05:17Z · message_delivered: 2 message(s)
 - 2026-11-08T21:05:18Z · note: handoff requested (cli)
+- 2026-11-08T21:08:32Z · note: ui verification passed: 2 of 2 shots captured with clean console
