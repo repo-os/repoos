@@ -1,10 +1,8 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — _shallow: true"
-last_handoff_failure_sha: f3fc1a0951e0f4dc8e6b1de1bcfeeb1f5168c68a
 id: "1059"
 title: "Check gate: skip the full suite when the diff is bookkeeping/docs only"
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
@@ -18,7 +16,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T13:42:36Z"
+updated_at: "2026-11-08T13:53:24Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — _shallow: true"
+last_handoff_failure_sha: f3fc1a0951e0f4dc8e6b1de1bcfeeb1f5168c68a
 review_passes: 4
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T09:00:49.938Z: repoos check failed: tests — version: 0,"
@@ -202,4 +202,5 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T13:36:44Z · status active→review
 - 2026-11-08T13:42:36Z · message_queued at 2026-11-08T13:42:36.348Z
 - 2026-11-08T13:42:36Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — _shallow: true
-
+- 2026-11-08T13:53:24Z · status review→active
+- 2026-11-08T13:53:24Z · note: send-back — returned to active for engineer follow-up
