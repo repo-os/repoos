@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T11:07:12Z"
+updated_at: "2026-11-08T11:08:39Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
@@ -52,47 +52,38 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ```json
 [
 {
-"label": "Board card coding without inline active recency",
-"target": "default",
-"route": "/work",
-"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-}
-],
-"state": "board:activeCoding"
+  "label": "Board hint: coding line and hover recency",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".app-tooltip.show",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    },
+    {
+      "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    },
+    {
+      "waitMs": 1200
+    },
+    {
+      "waitFor": ".app-tooltip.show"
+    }
+  ],
+  "state": "board:activeCoding"
 },
 {
-"label": "Board hint popover shows last activity on hover",
-"target": "default",
-"route": "/work",
-"highlight": ".app-tooltip.show",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-},
-{
-"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-},
-{
-"waitMs": 700
-}
-],
-"state": "board:activeCoding"
-},
-{
-"label": "Pipeline ok card hides inline elapsed",
-"target": "default",
-"route": "/work?tab=pipeline",
-"selector": "[data-task-id=\"pipe-coding\"]",
-"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
-"steps": [
-{
-"waitFor": "[data-task-id=\"pipe-coding\"]"
-}
-],
-"state": "board:pipeline"
+  "label": "Pipeline ok card hides inline elapsed",
+  "target": "default",
+  "route": "/work?tab=pipeline",
+  "selector": "[data-task-id=\"pipe-coding\"]",
+  "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"pipe-coding\"]"
+    }
+  ],
+  "state": "board:pipeline"
 }
 ]
 ```
@@ -198,3 +189,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T10:59:11Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
 - 2026-11-08T10:59:11Z · message_queued at 2026-11-08T10:59:11.737Z
 - 2026-11-08T11:07:12Z · message_delivered: 1 message(s)
+- 2026-11-08T11:08:39Z · body
