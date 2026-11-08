@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 601385
-last_close_out_gate_at: "2026-11-08T06:17:47.338Z"
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 6f835206acd0dfef03730eb9bf1ea0872cceb7cb
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/checks-progress-bar-polish-full-width-ro
@@ -16,6 +15,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:15:51Z"
 updated_at: "2026-11-08T06:17:47Z"
+last_close_out_gate_ms: 601385
+last_close_out_gate_at: "2026-11-08T06:17:47.338Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T02:52:07.694Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
