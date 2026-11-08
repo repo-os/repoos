@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T14:53:14Z"
+updated_at: "2026-11-08T14:54:02Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -40,12 +40,12 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 "highlight": ".pipeline-card",
 "assert": [
 {
-  "selector": ".pl-id",
-  "label": "task id is visible"
+"selector": ".pl-id",
+"label": "task id is visible"
 },
 {
-  "selector": ".pl-row-4",
-  "label": "model and host row is visible"
+"selector": ".pl-row-4",
+"label": "model and host row is visible"
 }
 ],
 "state": "pipeline:checksProgress",
@@ -58,12 +58,12 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 "highlight": ".pipeline-card",
 "assert": [
 {
-  "selector": ".pl-id",
-  "label": "task id is visible"
+"selector": ".pl-id",
+"label": "task id is visible"
 },
 {
-  "selector": ".pl-row-4",
-  "label": "model and host row is visible"
+"selector": ".pl-row-4",
+"label": "model and host row is visible"
 }
 ],
 "state": "pipeline:checksProgress",
@@ -86,3 +86,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T14:40:44Z · body
 - 2026-11-08T14:46:44Z · body
 - 2026-11-08T14:53:14Z · body
+- 2026-11-08T14:54:02Z · handoff_deferred: 1 queued message(s) must be read before review
