@@ -3,11 +3,6 @@ id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
 status: review
-needs_input: true
-needs_input_reason: check-failed-after-retries
-debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
-debug_tldr_at: "2026-11-08T02:59:35Z"
-debug_tldr_key: check-failed-after-retries|
 priority: p2
 area: [web, core]
 assigned_to: ai
@@ -18,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T11:04:30Z"
+updated_at: "2026-11-08T11:08:37Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T10:38:23.988Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_passes: 3
@@ -179,3 +174,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T10:47:53Z · message_delivered: 1 message(s)
 - 2026-11-08T11:03:43Z · body
 - 2026-11-08T11:04:30Z · message_queued at 2026-11-08T11:04:30.710Z
+- 2026-11-08T11:08:37Z · needs_input (check-failed-after-retries) cleared for review again by human
