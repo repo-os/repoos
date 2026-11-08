@@ -18,7 +18,7 @@ model_override: gpt-6-luna
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
-updated_at: "2026-11-08T06:29:28Z"
+updated_at: "2026-11-08T06:29:31Z"
 review_passes: 1
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
 last_handoff_failure_sha: 62f0e7e9781363e0a9ec705ef09315f5fb9cb291
@@ -121,3 +121,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T06:20:30Z · status active→review
 - 2026-11-08T06:21:31Z · note: review pass 1: needs some work
 - 2026-11-08T06:29:28Z · message_queued at 2026-11-08T06:29:28.887Z
+- 2026-11-08T06:29:31Z · message_delivered: 1 message(s)
