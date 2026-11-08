@@ -38,9 +38,7 @@ const emit = defineEmits<{
 
 const elapsed = computed(() => formatPipelineElapsed(props.stateSince, props.nowMs));
 const showElapsedInline = computed(() => props.state !== "ok");
-const elapsedTip = computed(() =>
-  stateElapsedTip("In this state", props.stateSince, props.nowMs),
-);
+const elapsedTip = computed(() => stateElapsedTip("In this state", props.stateSince, props.nowMs));
 
 function open(): void {
   emit("open", props.taskId);

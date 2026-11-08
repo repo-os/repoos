@@ -146,7 +146,7 @@ export function retryHint(
     label: activity ? text.active() : text.retry(retryCount),
     title: text.title,
     cls: "tc-coding",
-    activityTip: activity ? agentLastActivityTip(lastActivity, now) ?? undefined : undefined,
+    activityTip: activity ? (agentLastActivityTip(lastActivity, now) ?? undefined) : undefined,
   };
 }
 

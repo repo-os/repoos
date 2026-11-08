@@ -219,8 +219,7 @@ export function integrationActiveCopy(
   }
   const stage = integrationStageLabel(active.stage);
   const elapsed = integrationElapsedMs(active.startedAt, nowMs);
-  const elapsedTip =
-    elapsed !== null ? integrationCloseOutElapsedTip(active, elapsed) : undefined;
+  const elapsedTip = elapsed !== null ? integrationCloseOutElapsedTip(active, elapsed) : undefined;
   const detail = active.detail?.trim();
   if (detail) {
     return {
