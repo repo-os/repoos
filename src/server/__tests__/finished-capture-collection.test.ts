@@ -2,8 +2,13 @@ import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { expect, it } from "vitest";
-import { finishedCaptureCollectionCommand } from "../remote-validation.js";
+import { expect, it, vi } from "vitest";
+import {
+  completedCaptureReaperCommand,
+  finishedCaptureCollectionCommand,
+  reaperCommand,
+  runValidationContainerReaper,
+} from "../remote-validation.js";
 
 it("removes only the run's container when its result is present", () => {
   const root = mkdtempSync(join(tmpdir(), "capture-collect-"));
@@ -71,3 +76,42 @@ esac
     }
   },
 );
+
+it("reaps a completed capture even when the Mac still tracks it as live", async () => {
+  const oldCreated = new Date(Date.now() - 3 * 60_000).toISOString();
+  const containerId = "0123456789ab";
+  const containerName = "repoos-validate-hung";
+  const runRemote = vi.fn(async (_host, cmd) => {
+    if (cmd === reaperCommand()) {
+      return {
+        code: 0,
+        output: `${containerId}\t/${containerName}\t${oldCreated}`,
+        timedOut: false,
+      };
+    }
+    if (cmd === completedCaptureReaperCommand(containerId)) {
+      return { code: 0, output: "", timedOut: false };
+    }
+    return { code: 1, output: "", timedOut: false };
+  });
+  const logger = { system: vi.fn() };
+  await runValidationContainerReaper(
+    { runRemote } as never,
+    { ip: "100.0.0.1" } as never,
+    {
+      liveContainerNames: new Set([containerName]),
+      logger: logger as never,
+      hostLabel: "runner",
+    },
+  );
+  expect(runRemote).toHaveBeenCalledWith(
+    expect.anything(),
+    completedCaptureReaperCommand(containerId),
+    expect.anything(),
+    30_000,
+  );
+  expect(logger.system).toHaveBeenCalledWith(
+    "info",
+    `reaped completed browser capture ${containerName} on runner: no output for two minutes and CPU idle`,
+  );
+});

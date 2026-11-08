@@ -1532,10 +1532,9 @@ export async function runValidationContainerReaper(
     listing.output,
     now,
     COMPLETED_CAPTURE_REAPER_GRACE_MS,
-    opts.liveContainerNames,
+    new Set(),
   );
   for (const candidate of completed) {
-    if (opts.liveContainerNames.has(candidate.name)) continue;
     const removed = await exec.runRemote(
       host,
       completedCaptureReaperCommand(candidate.id),
@@ -3294,12 +3293,7 @@ export class RemoteValidationRunner implements RemoteValidator {
 
   private maybeRunReaper(): void {
     const host = this.runnerHost;
-    if (
-      !host ||
-      this.reaping ||
-      this.activeJobs > 0 ||
-      !containerReaperDue(this.lastReaperAt, Date.now())
-    ) {
+    if (!host || this.reaping || !containerReaperDue(this.lastReaperAt, Date.now())) {
       return;
     }
     this.lastReaperAt = Date.now();
@@ -4586,12 +4580,7 @@ export class TailscaleHostPool {
     const now = Date.now();
     for (const s of this.liveHosts()) {
       const lastReaperAt = this.lastReaperAt.get(s.spec.host);
-      if (
-        s.probed &&
-        this.effectiveActive(s) === 0 &&
-        !s.reaping &&
-        containerReaperDue(lastReaperAt, now)
-      ) {
+      if (s.probed && !s.reaping && containerReaperDue(lastReaperAt, now)) {
         this.lastReaperAt.set(s.spec.host, now);
         s.reaping = true;
         void runValidationContainerReaper(this.exec, s.ssh, {
