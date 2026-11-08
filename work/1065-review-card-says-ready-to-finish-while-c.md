@@ -1,18 +1,19 @@
 ---
-last_close_out_gate_ms: 471309
-last_close_out_gate_at: "2026-11-08T17:22:05.044Z"
 id: "1065"
 title: Review card says 'ready to finish' while checks are still running or failing
 type: bug
-status: review
+status: done
 paths: [src/ui-app/src/components/TaskCard.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p2
 area: web
+merged_commit: 38035eabee46f9e470008cc7d43af9d7f2792ead
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
 updated_at: "2026-11-08T17:22:05Z"
+last_close_out_gate_ms: 471309
+last_close_out_gate_at: "2026-11-08T17:22:05.044Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
