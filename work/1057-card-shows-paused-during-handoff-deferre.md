@@ -167,3 +167,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T10:13:12Z · note: handoff requested (cli)
 - 2026-11-08T10:14:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T10:25:53Z · message_queued at 2026-11-08T10:25:53.362Z
+- 2026-11-08T10:25:53Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
