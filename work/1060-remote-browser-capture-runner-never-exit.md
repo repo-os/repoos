@@ -2,7 +2,10 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found"
 priority: p1
 area: server
 assigned_to: ai
@@ -13,10 +16,11 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T08:39:15Z"
+updated_at: "2026-11-08T08:42:12Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
+dev_error_count: 1
 ---
 ## Problem
 Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
@@ -73,3 +77,5 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T08:39:15Z · message_queued at 2026-11-08T08:39:15.451Z
 - 2026-11-08T08:39:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T08:39:15Z · message_delivered: 2 message(s)
+- 2026-11-08T08:42:12Z · agent exited with an error (codex) · 2026-11-08T08:42:12.387156Z ERROR codex_core::session: failed to record rollout items: thread 01a1ba1c-eb96-77a0-8ad1-e1a00c386531 not found
+- 2026-11-08T08:42:12Z · status active→review
