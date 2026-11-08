@@ -2,7 +2,7 @@
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Connection failed repeatedly"
@@ -117,4 +117,3 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T03:08:58Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
 - 2026-11-08T03:08:58Z · message_delivered: 1 message(s)
 - 2026-11-08T03:23:47Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
-- 2026-11-08T03:23:47Z · status active→review
