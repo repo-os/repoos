@@ -2,7 +2,7 @@
 id: "1065"
 title: Review card says 'ready to finish' while checks are still running or failing
 type: bug
-status: review
+status: active
 paths: [src/ui-app/src/components/TaskCard.vue, src/ui-app/src/components/TaskDrawer.vue]
 priority: p2
 area: web
