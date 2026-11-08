@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-card-says-ready-to-finish-while-c
 created_at: "2026-11-08T13:12:26Z"
-updated_at: "2026-11-08T15:17:05Z"
+updated_at: "2026-11-08T15:19:23Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -33,6 +33,18 @@ Cause: `reviewReady` and the review hint in `TaskCard.vue` (~1055-1105, ~1257) o
 ## Notes for AI
 Confirm first whether Move to done is already rejected server-side while checks run (see `repoos landable <id>` and docs/close-out-pipeline.md); if so, the card should just mirror that. Do not widen close-out gates here; this is display/button state only. Use the existing dimmed-footer classes (`actionFooterClass` `inert`) instead of new styles.
 
+## Shots
+```json
+[
+{
+  "label": "Review card with checks running",
+  "target": "default",
+  "route": "/work?shotState=card:reviewChecksRunning",
+  "highlight": "[data-task-id=\"9999\"] .tc-card-footer-action"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-08T13:12:26Z · created · njachowski@gmail.com
@@ -40,3 +52,4 @@ Confirm first whether Move to done is already rejected server-side while checks 
 - 2026-11-08T15:10:07Z · status ready→active, branch
 - 2026-11-08T15:15:10Z · message_queued at 2026-11-08T15:15:10.896Z
 - 2026-11-08T15:17:05Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T15:19:23Z · body
