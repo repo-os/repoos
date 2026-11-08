@@ -238,3 +238,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T14:38:52Z · ↻ resuming engineer to read queued message
 - 2026-11-08T14:38:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Resolving merge conflicts and fixing periodic reaper observability. · stderr: (empty)
 - 2026-11-08T14:44:07Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix: · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T14:44:07Z · note: handoff requested (cli)
