@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T20:30:30Z"
+updated_at: "2026-11-08T20:30:31Z"
 review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -455,3 +458,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T20:29:44Z · status active→review
 - 2026-11-08T20:29:44Z · message_queued at 2026-11-08T20:29:44.363Z
 - 2026-11-08T20:30:30Z · note: review pass 6: needs some work
+- 2026-11-08T20:30:31Z · needs_input
