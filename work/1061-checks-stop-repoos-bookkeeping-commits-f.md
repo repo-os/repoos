@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T17:29:16Z"
+updated_at: "2026-11-08T17:29:18Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -79,3 +79,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T17:29:16Z · note: review pass 2: needs some work
 - 2026-11-08T17:29:16Z · message_queued at 2026-11-08T17:29:16.580Z
 - 2026-11-08T17:29:16Z · status review→active
+- 2026-11-08T17:29:18Z · CTO nudge: held — handoff gate is running
