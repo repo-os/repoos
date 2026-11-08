@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T21:37:04Z"
+updated_at: "2026-11-08T21:37:05Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -266,3 +266,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T21:35:18Z · body
 - 2026-11-08T21:37:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I did **not** request handoff. The review findings are still open: managed self-check and close-out lifecycle coverage, protection against direct source-file writes, and process-safe lock and queue updates. The scoped check passed on the c… · stderr: Reading additional input from stdin... 2026-11-08T21:36:30.916306Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 17448
 - 2026-11-08T21:37:04Z · status active→review
+- 2026-11-08T21:37:05Z · message_delivered: 1 message(s)
