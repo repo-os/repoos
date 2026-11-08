@@ -187,13 +187,22 @@ async function gitOk(root: string, args: string[], timeout = 4000): Promise<stri
 }
 
 export async function resolveDefaultBranch(root: string): Promise<string> {
-  const mainRun = await runGit(root, ["show-ref", "--verify", "--quiet", "refs/heads/main"], 4000);
-  if (mainRun.status === 0 && !mainRun.timedOut) return "main";
-  const master = await runGit(root, ["show-ref", "--verify", "--quiet", "refs/heads/master"], 4000);
-  if (master.status === 0 && !master.timedOut) return "master";
+  const candidates: string[] = [];
+  const remoteHead = await gitOk(root, ["symbolic-ref", "refs/remotes/origin/HEAD"]);
+  const remoteMatch = remoteHead?.match(/^refs\/remotes\/origin\/(.+)$/);
+  if (remoteMatch?.[1]) candidates.push(remoteMatch[1]);
+  const configured = await gitOk(root, ["config", "--get", "init.defaultBranch"]);
+  if (configured) candidates.push(configured);
   const current = await gitOk(root, ["rev-parse", "--abbrev-ref", "HEAD"]);
-  if (current && current !== "HEAD") return current;
-  return "HEAD";
+  if (current && current !== "HEAD") candidates.push(current);
+  candidates.push("main", "master");
+
+  for (const candidate of [...new Set(candidates)]) {
+    if (!BRANCH_RE.test(candidate)) continue;
+    const ref = await runGit(root, ["show-ref", "--verify", "--quiet", `refs/heads/${candidate}`], 4000);
+    if (ref.status === 0 && !ref.timedOut) return candidate;
+  }
+  return current && current !== "HEAD" ? current : "HEAD";
 }
 
 export async function listRepoBranches(root: string): Promise<RepoBranchList | RepoLogError> {
