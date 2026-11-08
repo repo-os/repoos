@@ -111,3 +111,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T01:22:37Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T01:32:56Z · status active→review
 - 2026-11-08T01:32:57Z · message_queued at 2026-11-08T01:32:57.109Z
+- 2026-11-08T01:32:57Z · note: shots: skipped — the diff (9 changed paths) touches no capture target's globs — no UI change to capture
