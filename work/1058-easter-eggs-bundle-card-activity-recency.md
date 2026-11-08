@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T16:14:44Z"
+updated_at: "2026-11-08T16:17:05Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -271,3 +271,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T16:14:44Z · ↻ resuming engineer to read queued message
 - 2026-11-08T16:14:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T16:14:44Z · note: handoff requested (cli)
+- 2026-11-08T16:17:05Z · CTO nudge: held — handoff gate is running
