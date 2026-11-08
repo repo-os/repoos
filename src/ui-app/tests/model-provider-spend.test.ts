@@ -532,12 +532,16 @@ describe("parseMuseUsage", () => {
       tier: null,
       windows: [],
       unrecognized: true,
+      reason: null,
+      hint: null,
       message: null,
     });
     expect(parseMuseUsage({ allowance: null })).toEqual({
       tier: null,
       windows: [],
       unrecognized: true,
+      reason: null,
+      hint: null,
       message: null,
     });
     const noUsage = parseMuseUsage({
@@ -545,7 +549,12 @@ describe("parseMuseUsage", () => {
       reason: "server_sent_no_usage",
       hint: "No usage data yet.",
     });
-    expect(noUsage).toMatchObject({ unrecognized: false, message: "No usage data yet." });
+    expect(noUsage).toMatchObject({
+      unrecognized: false,
+      reason: "server_sent_no_usage",
+      hint: "No usage data yet.",
+      message: "No usage data yet.",
+    });
     // A bare cost object must not become a row — same rule as the Go parser.
     expect(parseMuseUsage({ allowance: { tier: "x", cost: 0.05 } }).unrecognized).toBe(true);
   });

@@ -203,6 +203,10 @@ const goUsage = (u: ModelProviderUsage | null): OpenCodeGoUsage | null =>
   u?.kind === "opencode-go" ? u : null;
 const museUsage = (u: ModelProviderUsage | null): MuseUsage | null =>
   u?.kind === "muse" ? u : null;
+const museAvailabilityMessage = (u: ModelProviderUsage | null): string | null => {
+  const muse = museUsage(u);
+  return muse?.message || muse?.hint || null;
+};
 const deepinfraUsage = (u: ModelProviderUsage | null): DeepInfraUsage | null =>
   u?.kind === "deepinfra" ? u : null;
 
@@ -437,8 +441,8 @@ onMounted(() => {
                 </div>
               </div>
             </template>
-            <div v-if="museUsage(rowState(row.id).usage)?.message" class="mp-part-error">
-              {{ museUsage(rowState(row.id).usage)!.message }}
+            <div v-if="museAvailabilityMessage(rowState(row.id).usage)" class="mp-part-error">
+              {{ museAvailabilityMessage(rowState(row.id).usage) }}
               <button class="mp-retry" @click="loadUsage(row.id)">Retry</button>
             </div>
             <div

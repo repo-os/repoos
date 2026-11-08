@@ -534,7 +534,8 @@ describe("ModelProvidersPanel — Muse live data", () => {
         tier: null,
         windows: [],
         unrecognized: false,
-        message: "Muse CLI is not on PATH — install it, then run `muse login` on this machine.",
+        reason: "usage_unavailable",
+        hint: "Muse CLI is not on PATH — install it, then run `muse login` on this machine.",
       }),
     ]);
     const wrapper = mount(ModelProvidersPanel);
