@@ -519,14 +519,42 @@ describe("post-merge summary status persistence", () => {
     err.mockRestore();
   });
 
-  it("logs instead of suppressing when the pending-status write fails", async () => {
+  it("does not queue the run when the pending-status write fails", async () => {
     const { config, task } = setup();
     writeFileSync(join(root(config), "blocked"), "not a dir");
     const blocked = { ...config, cacheDir: "blocked" } as RepoOSConfig;
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
-    queueTaskSummary(blocked, task, []);
+    expect(queueTaskSummary(blocked, task, [])).toBe(false);
     expect(err.mock.calls.map((c) => String(c[0])).join("\n")).toMatch(/not persisted/);
     err.mockRestore();
+  });
+
+  it("resolves a persisted done state with a missing report to failed with a reason", () => {
+    const { config, task } = setup();
+    const statusDir = join(root(config), ".repoos", "task-summary");
+    mkdirSync(statusDir, { recursive: true });
+    writeFileSync(
+      join(statusDir, `${task.id}.json`),
+      JSON.stringify({ status: "done", at: new Date().toISOString() }),
+    );
+    const payload = getTaskSummaryJobPayload(config, task.id);
+    expect(payload.status).toBe("failed");
+    expect(payload.error).toMatch(/summary\.md could not be read/);
+  });
+
+  it("resolves a persisted done state with an unreadable report to failed with a reason", () => {
+    const { config, task } = setup();
+    const statusDir = join(root(config), ".repoos", "task-summary");
+    mkdirSync(statusDir, { recursive: true });
+    writeFileSync(
+      join(statusDir, `${task.id}.json`),
+      JSON.stringify({ status: "done", at: new Date().toISOString() }),
+    );
+    const reportDir = join(root(config), "work", "reports", task.id);
+    mkdirSync(join(reportDir, "summary.md"), { recursive: true });
+    const payload = getTaskSummaryJobPayload(config, task.id);
+    expect(payload.status).toBe("failed");
+    expect(payload.error).toMatch(/summary\.md could not be read/);
   });
 });
 
