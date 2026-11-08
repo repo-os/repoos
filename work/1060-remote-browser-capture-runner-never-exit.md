@@ -201,3 +201,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T13:09:26Z · message_delivered: 2 message(s)
 - 2026-11-08T13:09:28Z · note: handoff requested (cli)
 - 2026-11-08T13:10:27Z · message_queued at 2026-11-08T13:10:27.589Z
+- 2026-11-08T13:10:27Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
