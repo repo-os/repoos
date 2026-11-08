@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -298,4 +298,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T23:37:19Z · status active→review
 - 2026-11-08T23:37:19Z · message_delivered: 3 message(s)
 - 2026-11-08T23:37:19Z · note: handoff requested (cli)
-- 2026-11-08T23:38:04Z · engineer stopped by request
+- 2026-11-08T23:38:04Z · status active→review
