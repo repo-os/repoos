@@ -13,7 +13,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T07:43:37Z"
+updated_at: "2026-11-08T07:45:15Z"
 ---
 ## Problem
 Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
@@ -45,3 +45,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T07:43:34Z · cli_override, model_override, review_cli_override, review_model_override
 - 2026-11-08T07:43:36Z · status inbox→ready
 - 2026-11-08T07:43:37Z · status ready→active, branch
+- 2026-11-08T07:45:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1060 is **not ready for handoff**. The runner now writes `result.json` atomically, bounds preview cleanup to three seconds, and explicitly exits after logging. A subprocess test with a live timer passes; the focused test file passed … · stderr: Reading additional input from stdin...
