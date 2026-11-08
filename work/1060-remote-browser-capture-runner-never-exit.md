@@ -10,10 +10,10 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-browser-capture-runner-never-exit
 model_override: gpt-6.1-terra
-review_cli_override: github copilot
-review_model_override: default
+review_cli_override: codex
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T19:05:04Z"
+updated_at: "2026-11-08T19:09:02Z"
 review_passes: 12
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -311,3 +311,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T19:04:43Z · model_override
 - 2026-11-08T19:04:53Z · needs_input
 - 2026-11-08T19:05:04Z · message_delivered: 1 message(s)
+- 2026-11-08T19:09:02Z · review_cli_override, review_model_override
