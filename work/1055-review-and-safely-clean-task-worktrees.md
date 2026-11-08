@@ -145,3 +145,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-08T02:19:18Z · message_delivered: 1 message(s)
 - 2026-11-08T02:19:18Z · status review→active
 - 2026-11-08T02:24:32Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-08T02:24:32Z · note: handoff requested (cli)
