@@ -155,3 +155,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T11:04:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T11:06:43Z · body
 - 2026-11-08T11:07:12Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T11:07:12Z · message_queued at 2026-11-08T11:07:12.335Z
