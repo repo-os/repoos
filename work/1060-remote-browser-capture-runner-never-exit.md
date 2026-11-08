@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
 needs_merge: true
 priority: p1
 area: server
@@ -291,3 +291,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T18:10:48Z · message_queued at 2026-11-08T18:10:48.294Z
 - 2026-11-08T18:10:48Z · ↻ resuming engineer to read queued message
 - 2026-11-08T18:10:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **#1060** is in good shape after review pass 12. The startup capture reaper in `validate.sh` no longer aborts the whole script when `docker ps` or `docker logs --since` fails: the loop runs under `set +e` / `set -e`, and the idle-log probe… · stderr: (empty)
+- 2026-11-08T18:10:48Z · status active→review
