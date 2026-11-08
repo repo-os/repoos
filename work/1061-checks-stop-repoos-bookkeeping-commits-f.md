@@ -47,3 +47,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T14:28:51Z · status inbox→ready
 - 2026-11-08T15:10:02Z · status ready→active, branch
 - 2026-11-08T15:27:05Z · message_queued at 2026-11-08T15:27:05.003Z
+- 2026-11-08T15:27:05Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
