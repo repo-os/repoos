@@ -433,3 +433,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T19:26:06Z · body
 - 2026-11-08T19:29:06Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-08T19:29:06Z · status active→review
+- 2026-11-08T19:29:06Z · message_queued at 2026-11-08T19:29:06.926Z
