@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -13,7 +13,8 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T08:04:18Z"
+updated_at: "2026-11-08T08:04:19Z"
+review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-08T07:13:07.485Z: repoos check failed: ui verification failed (10 issue(s)): [missing-target] Board card coding without inline active recency (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:42935/?shotState=board%3AactiveCoding); [missing-target] Board card coding without inline active recency (target \"default\"): highlight [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"] matched nothing on / (http://127.0.0.1:42935/?shotState=bo… (truncated)"
 dev_error_count: 12
@@ -163,3 +164,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T08:03:11Z · message_queued at 2026-11-08T08:03:11.708Z
 - 2026-11-08T08:04:18Z · note: review pass 1: needs some work
 - 2026-11-08T08:04:18Z · message_delivered: 1 message(s)
+- 2026-11-08T08:04:19Z · status review→active
