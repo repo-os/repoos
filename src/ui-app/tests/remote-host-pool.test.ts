@@ -26,6 +26,10 @@ import {
   CACHE_VOLUME_NAME,
   DEFAULT_HANG_IDLE_MINUTES,
   DEFAULT_HOST_LOCK_WAIT_SECS,
+  MAX_REMOTE_RUN_LIFETIME_MS,
+  REMOTE_RUN_TIMEOUT_MS,
+  CONTAINER_REAPER_RUN_CAP_MS,
+  CONTAINER_REAPER_SAFETY_MARGIN_MS,
   HANG_IDLE_LOAD_THRESHOLD,
   HOST_LOCK_HEARTBEAT_SECS,
   HOST_LOCK_STALE_MINUTES,
@@ -41,6 +45,19 @@ import {
   deadlineLockWaitSecs,
   deleteActiveRunControlEntry,
   detectHungRun,
+  containerCpuCommand,
+  containerReaperDue,
+  parseDockerCreatedTimestamp,
+  staleReaperCandidates,
+  parseContainerCpuActive,
+  reaperCommand,
+  reaperInspectionCommand,
+  parseReaperInspection,
+  reaperInspectionIsStale,
+  reaperRemoveCommand,
+  lockAwareRemoteTimeoutRemainingMs,
+  appendRemoteValidationEvent,
+  readRemoteValidationEvents,
   execRemoteWithHardDeadline,
   hangIdleThresholdMs,
   hostLoadCommand,
@@ -417,6 +434,7 @@ interface Fixture {
   releaseKill(): void;
   /** Post-kill bundle/artifact cleanup SSH commands (#0739). */
   cleanupCmds: string[];
+  remoteOrder: string[];
 }
 
 function poolFixture(opts: {
@@ -469,6 +487,9 @@ function poolFixture(opts: {
   hangKillNeverResolves?: boolean;
   /** Load idle probes always fail — hang must still be bounded (#0739). */
   loadProbeFails?: boolean;
+  containerCpuOutput?: string;
+  containerLogsOutput?: string;
+  containerStateOutput?: string;
   /** Validation SSH never resolves and ignores registerAbort (#0739 wedge). */
   validateStallNoAbortOn?: string[];
   /** Stream `repoos check` step headings so phase timings split build/tests (#0897). */
@@ -500,6 +521,7 @@ function poolFixture(opts: {
   const down = new Set<string>();
   const killed: string[] = [];
   const cleanupCmds: string[] = [];
+  const remoteOrder: string[] = [];
   const infraFailedOnce = new Set<string>();
   let killGate: { resolve: () => void } | null = null;
   let inFlight = 0;
@@ -510,6 +532,7 @@ function poolFixture(opts: {
     downloadDir: vi.fn(async () => {}),
     runRemote: vi.fn(
       async (host, cmd, onChunk, timeoutMs, remoteOpts): Promise<RemoteExecResult> => {
+        remoteOrder.push(cmd);
         if (cmd.startsWith("rm -f ") && cmd.includes(".bundle") && cmd.includes("rm -rf")) {
           cleanupCmds.push(cmd);
           return { code: 0, output: "", timedOut: false };
@@ -521,7 +544,19 @@ function poolFixture(opts: {
           }
           return {
             code: 0,
-            output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n`,
+            output: `__UPTIME__\n 12:00  up 1 day, load averages: ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0} ${opts.fixedLoad ?? 0}\n__CPU__\n1\n__CONTAINER_CPU__\n${opts.containerCpuOutput ?? "0.0%"}\n`,
+            timedOut: false,
+          };
+        }
+        if (cmd.includes("docker stats --no-stream")) {
+          return { code: 0, output: opts.containerCpuOutput ?? "0.0%", timedOut: false };
+        }
+        if (cmd.startsWith("docker logs --tail") || cmd.startsWith("docker inspect ")) {
+          return {
+            code: 0,
+            output: cmd.startsWith("docker logs")
+              ? (opts.containerLogsOutput ?? "container log evidence")
+              : (opts.containerStateOutput ?? "container state evidence"),
             timedOut: false,
           };
         }
@@ -572,6 +607,11 @@ function poolFixture(opts: {
         // dispatch tests are not exercising a real host's pressure.
         if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
           return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
+        }
+        // The periodic container reaper lists candidates independently of
+        // validation jobs. Most dispatch fixtures have no stale containers.
+        if (cmd.startsWith("docker ps -aq --filter 'name=^/repoos-validate-")) {
+          return { code: 0, output: "", timedOut: false };
         }
         if (opts.timeoutRunOn?.includes(host.ip)) {
           (cmds[host.ip] ??= []).push(cmd);
@@ -699,6 +739,7 @@ function poolFixture(opts: {
     peak: () => peak,
     killed,
     cleanupCmds,
+    remoteOrder,
     releaseKill() {
       killGate?.resolve();
       killGate = null;
@@ -1233,6 +1274,8 @@ describe("infra vs test failure classification (#0745)", () => {
     const mini = f.runner.hostStatus()?.find((h) => h.host === "mini");
     expect(mini?.degraded).toBe(true);
     expect(mini?.healthy).toBe(false);
+    expect(mini?.detail).toContain("install/clone/setup failed");
+    expect(mini?.detail).not.toContain("bun install EACCES accessing temporary directory");
     const rows = getCheckStore(f.root).list({ taskId: "0745" });
     expect(rows.map((r) => [r.machine, r.outcome])).toEqual([
       ["bee", "pass"],
@@ -1797,7 +1840,7 @@ describe("health-cooldown arrivals and recovery (#0521 review)", () => {
   }, 15_000);
 });
 
-describe("outer SSH timeout covers the lock wait, not just the run (#0521 review)", () => {
+describe("outer SSH timeout starts the run deadline at lock acquisition (#1049)", () => {
   // The outer SSH-level timeout wraps BOTH phases as one process (waiting
   // for a free host slot, then the actual build+test). A fixed
   // remoteRunTimeoutMs regardless of how long the lock was allowed to wait
@@ -1805,10 +1848,16 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
   // then had only the remainder left for a normally-healthy suite — it
   // could be SIGKILLed and reported as an infra failure purely because of
   // how long it queued, never because anything was actually wrong.
-  it("adds the lock wait budget on top of remoteRunTimeoutMs when there is no deadline", async () => {
+  it("keeps the lock-wait allowance separate and resets the run timeout after acquisition", async () => {
     const root = tmpRoot();
     const runRemote = vi.fn(
-      async (_host: unknown, cmd: string, _onChunk?: unknown, _timeoutMs?: number) => {
+      async (
+        _host: unknown,
+        cmd: string,
+        onChunk?: (chunk: string) => void,
+        _timeoutMs?: number,
+        _remoteOpts?: Parameters<RemoteExecDeps["runRemote"]>[4],
+      ) => {
         if (cmd.includes(PREREQ_OK_TOKEN))
           return {
             code: 0,
@@ -1817,6 +1866,7 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
           };
         if (cmd.includes("__HOST_LOCK__"))
           return { code: 0, output: "__HOST_LOCK__\n", timedOut: false };
+        onChunk?.("[lock] slot 0 acquired after 0s\n");
         return { code: 0, output: "ok", timedOut: false };
       },
     );
@@ -1852,6 +1902,39 @@ describe("outer SSH timeout covers the lock wait, not just the run (#0521 review
         !String(c[1]).includes(HOST_HEALTH_PROBE_TOKEN),
     );
     expect(runCall?.[3]).toBe(remoteRunTimeoutMs + DEFAULT_HOST_LOCK_WAIT_SECS * 1000);
+    expect(runCall?.[4]?.lockAwareTimeout).toEqual({
+      acquiredMarker: "[lock] slot ",
+      waitBudgetMs: DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+      runTimeoutMs: remoteRunTimeoutMs,
+    });
+    const startedAt = 10_000;
+    const lockAcquiredAt = startedAt + 1_250;
+    expect(
+      lockAwareRemoteTimeoutRemainingMs({
+        startedAt,
+        now: startedAt,
+        waitBudgetMs: DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+        runTimeoutMs: remoteRunTimeoutMs,
+      }),
+    ).toBe(remoteRunTimeoutMs + DEFAULT_HOST_LOCK_WAIT_SECS * 1000);
+    expect(
+      lockAwareRemoteTimeoutRemainingMs({
+        startedAt,
+        lockAcquiredAt,
+        now: lockAcquiredAt,
+        waitBudgetMs: DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+        runTimeoutMs: remoteRunTimeoutMs,
+      }),
+    ).toBe(remoteRunTimeoutMs);
+    expect(
+      lockAwareRemoteTimeoutRemainingMs({
+        startedAt,
+        lockAcquiredAt,
+        now: lockAcquiredAt + 2_000,
+        waitBudgetMs: DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+        runTimeoutMs: remoteRunTimeoutMs,
+      }),
+    ).toBe(remoteRunTimeoutMs - 2_000);
   });
 });
 
@@ -2439,15 +2522,60 @@ describe("hang detector (#0729)", () => {
     const thresholdMs = 300_000;
     const now = 10_000_000;
     const quiet = now - thresholdMs - 1;
-    // Idle output + idle host → hung.
-    expect(detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 0.1 })).toBe(true);
+    // A single idle CPU sample may be an I/O wait and is not enough.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+      }),
+    ).toBe(false);
+    // Sustained idle output and container inactivity → hung.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: thresholdMs,
+      }),
+    ).toBe(true);
     // Output advanced recently → not hung, even on an idle host.
-    expect(detectHungRun({ lastOutputAt: now - 1_000, now, thresholdMs, loadPerCpu: 0.1 })).toBe(
-      false,
-    );
-    // Host busy → not hung (the run may simply be queued behind real work).
-    expect(detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 4 })).toBe(false);
-    // Unknown load with no prior busy sample → hung once unknown long enough (#0739).
+    expect(
+      detectHungRun({
+        lastOutputAt: now - 1_000,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+      }),
+    ).toBe(false);
+    // A busy host does not hide an explicit inactive-container sample.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 4,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: thresholdMs,
+      }),
+    ).toBe(true);
+    // Busy host without a container sample remains inconclusive.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 4,
+      }),
+    ).toBe(false);
+    // Failed probe is unknown, not proof that the host is idle (#1049).
     expect(
       detectHungRun({
         lastOutputAt: quiet,
@@ -2456,8 +2584,31 @@ describe("hang detector (#0729)", () => {
         loadPerCpu: Number.POSITIVE_INFINITY,
         loadUnknownSince: quiet,
       }),
+    ).toBe(false);
+    // A successful host-side container sample can establish inactivity.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: thresholdMs,
+      }),
     ).toBe(true);
-    // Unknown load but host was busy when last measured → not hung.
+    // A progressing container protects a run from a silent local stream.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: true,
+      }),
+    ).toBe(false);
+    // Unknown load but host was busy when last measured stays inconclusive
+    // without a container sample.
     expect(
       detectHungRun({
         lastOutputAt: quiet,
@@ -2468,18 +2619,294 @@ describe("hang detector (#0729)", () => {
         loadUnknownSince: quiet,
       }),
     ).toBe(false);
+    // A slow probe must not leave a cached idle sample eligible to kill.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 0.1,
+        loadUnknownSince: now,
+      }),
+    ).toBe(false);
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: thresholdMs - 1,
+      }),
+    ).toBe(false);
+    // The exact container being inactive overrides stale busy host load.
+    expect(
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 4,
+        loadUnknownSince: quiet,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: thresholdMs,
+      }),
+    ).toBe(true);
     // Gate already finished — quiet container is not a hang (#0739).
     expect(
-      detectHungRun({ lastOutputAt: quiet, now, thresholdMs, loadPerCpu: 0.1, gateFinished: true }),
+      detectHungRun({
+        lastOutputAt: quiet,
+        now,
+        thresholdMs,
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        gateFinished: true,
+      }),
     ).toBe(false);
   });
 
   it("treats exactly-threshold idle time as hung (inclusive)", () => {
     const now = 1_000_000;
     expect(
-      detectHungRun({ lastOutputAt: now - 300_000, now, thresholdMs: 300_000, loadPerCpu: 0 }),
+      detectHungRun({
+        lastOutputAt: now - 300_000,
+        now,
+        thresholdMs: 300_000,
+        loadPerCpu: 0,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: 300_000,
+      }),
     ).toBe(true);
   });
+
+  it("classifies load probe outcomes conservatively and reads host container CPU", () => {
+    const common = { lastOutputAt: 0, now: 300_000, thresholdMs: 300_000 };
+    const probeCases = [
+      { name: "failed", loadPerCpu: Number.POSITIVE_INFINITY, hung: false },
+      { name: "slow", loadPerCpu: Number.POSITIVE_INFINITY, hung: false },
+      {
+        name: "ok and idle with inactive container",
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: 300_000,
+        hung: true,
+      },
+      {
+        name: "one old zero-CPU sample is inconclusive",
+        loadPerCpu: 0.1,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 1,
+        containerCpuInactiveForMs: 300_000,
+        hung: false,
+      },
+      {
+        name: "new probe in flight invalidates an older idle load sample",
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 0.1,
+        loadProbeInFlight: true,
+        hung: false,
+      },
+      {
+        name: "ok with container progress",
+        loadPerCpu: 0.1,
+        containerCpuActive: true,
+        hung: false,
+      },
+      {
+        name: "busy host with inactive container",
+        loadPerCpu: 4,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: 300_000,
+        hung: true,
+      },
+      {
+        name: "busy host with active container",
+        loadPerCpu: 4,
+        containerCpuActive: true,
+        hung: false,
+      },
+      {
+        name: "failed probe after busy sample with inactive container",
+        loadPerCpu: Number.POSITIVE_INFINITY,
+        lastKnownLoadPerCpu: 4,
+        containerCpuActive: false,
+        containerCpuIdleSamples: 2,
+        containerCpuInactiveForMs: 300_000,
+        hung: true,
+      },
+      {
+        name: "busy host with unavailable container sample",
+        loadPerCpu: 4,
+        hung: false,
+      },
+    ];
+    for (const probe of probeCases) {
+      expect(detectHungRun({ ...common, ...probe })).toBe(probe.hung);
+    }
+    expect(parseContainerCpuActive("0.00%")).toBe(false);
+    expect(parseContainerCpuActive("12.4%")).toBe(true);
+    expect(parseContainerCpuActive("")).toBeUndefined();
+    expect(containerCpuCommand("run-1")).toContain("docker stats --no-stream");
+    expect(reaperCommand()).toContain("name=^/repoos-validate-");
+    expect(reaperCommand()).toContain('case "$name" in /repoos-validate-*)');
+    const createdWithZone = "2026-11-07T03:30:53.123456789Z";
+    const createdWithoutZone = "2026-11-07T03:30:53.123456789";
+    const expectedCreatedAt = Date.parse("2026-11-07T03:30:53.123Z");
+    expect(parseDockerCreatedTimestamp(createdWithZone)).toBe(expectedCreatedAt);
+    expect(parseDockerCreatedTimestamp(createdWithoutZone)).toBe(expectedCreatedAt);
+    expect(parseDockerCreatedTimestamp("not-a-docker-timestamp")).toBeUndefined();
+    expect(reaperCommand()).toContain(`name=^/repoos-validate-`);
+    expect(reaperCommand()).toContain("{{.Created}}");
+    expect(reaperCommand()).toContain("printf '%s\\t%s\\t%s\\n'");
+    expect(reaperCommand()).not.toContain("date -j");
+    expect(reaperCommand()).not.toContain("date -d");
+    expect(reaperInspectionCommand("0123456789ab")).toContain("docker inspect --format");
+    expect(reaperInspectionCommand("0123456789ab")).toContain("docker logs --since 300s");
+    expect(reaperRemoveCommand("0123456789ab")).toContain("docker rm -f '0123456789ab'");
+    expect(reaperRemoveCommand("0123456789ab")).not.toContain(".repoos-validate-locks");
+    expect(reaperRemoveCommand("0123456789ab")).toContain("docker inspect --format");
+    expect(reaperRemoveCommand("not-an-id")).toBe("false");
+    const slotLock = hostLockShell({ slots: 2, waitSecs: 30, inner: "true" });
+    expect(slotLock).toContain('mkdir "$LOCKROOT/.acquire-gate"');
+    expect(slotLock).toContain('[ -d "$LOCKROOT/.reaping" ]');
+    expect(slotLock).toContain('rmdir "$LOCKROOT/.acquire-gate"');
+    const now = Date.parse("2026-11-07T04:00:00Z");
+    const maximumAge = CONTAINER_REAPER_RUN_CAP_MS;
+    expect(REMOTE_RUN_TIMEOUT_MS).toBe(25 * 60_000);
+    expect(MAX_REMOTE_RUN_LIFETIME_MS).toBe(
+      REMOTE_RUN_TIMEOUT_MS + DEFAULT_HOST_LOCK_WAIT_SECS * 1000,
+    );
+    expect(CONTAINER_REAPER_RUN_CAP_MS).toBe(REMOTE_RUN_TIMEOUT_MS);
+    const ownershipIndependentCandidates = staleReaperCandidates(
+      [
+        `0123456789a1\t/repoos-validate-young\t${new Date(now - maximumAge + 1).toISOString()}`,
+        `0123456789a2\t/repoos-validate-old\t${new Date(now - maximumAge - 1).toISOString()}`,
+      ].join("\n"),
+      now,
+    );
+    expect(ownershipIndependentCandidates.map(({ name }) => name)).toEqual(["repoos-validate-old"]);
+    const oldCreated = "2026-11-07T03:00:53.123456789Z";
+    expect(
+      staleReaperCandidates(
+        [
+          `0123456789ab\t/repoos-validate-old\t${oldCreated}`,
+          `0123456789af\t/repoos-validate-active\t${oldCreated}`,
+          `0123456789ac\t/other-repoos-validate-old\t${oldCreated}`,
+          `0123456789ad\t/repoos-validate-recent\t2026-11-07T03:50:00Z`,
+          `0123456789ae\t/repoos-validate-invalid\tnot-a-timestamp`,
+        ].join("\n"),
+        now,
+        maximumAge,
+        new Set(["repoos-validate-active"]),
+      ),
+    ).toEqual([
+      {
+        id: "0123456789ab",
+        name: "repoos-validate-old",
+        createdAt: Date.parse("2026-11-07T03:00:53.123Z"),
+      },
+    ]);
+    const staleInspection = parseReaperInspection(
+      `${oldCreated}\trunning\t${oldCreated}\t0001-01-01T00:00:00Z\tQUIET`,
+    );
+    expect(reaperInspectionIsStale(staleInspection, now)).toBe(true);
+    expect(
+      reaperInspectionIsStale(
+        parseReaperInspection(
+          `${oldCreated}\trunning\t2026-11-07T03:59:00Z\t0001-01-01T00:00:00Z\tRECENT`,
+        ),
+        now,
+      ),
+    ).toBe(false);
+    // An old container owned by a live run is never selected as a reaper candidate.
+    expect(
+      staleReaperCandidates(
+        `0123456789af\t/repoos-validate-owned\t${oldCreated}`,
+        now,
+        maximumAge,
+        new Set(["repoos-validate-owned"]),
+      ),
+    ).toEqual([]);
+    expect(containerReaperDue(undefined, 1_000_000)).toBe(true);
+    expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000)).toBe(true);
+    expect(containerReaperDue(1_000_000, 1_000_000 + 5 * 60_000 - 1)).toBe(false);
+  });
+
+  it.each([false, true])(
+    "schedules a reaper and rechecks state/activity before removal (recent=%s)",
+    async (recentActivity) => {
+      const staleCreatedAt = new Date(Date.now() - 26 * 60_000).toISOString();
+      const runRemote = vi.fn(async (_host, cmd, onChunk): Promise<RemoteExecResult> => {
+        if (cmd.includes(PREREQ_OK_TOKEN)) {
+          return {
+            code: 0,
+            output: `prereq ok ${RUNNER_SCRIPT_MIRROR_TOKEN}=1 ${PREREQ_OK_TOKEN}`,
+            timedOut: false,
+          };
+        }
+        if (cmd.includes(HOST_HEALTH_PROBE_TOKEN)) {
+          return { code: 0, output: HEALTHY_HOST_PROBE, timedOut: false };
+        }
+        if (cmd === reaperInspectionCommand("0123456789ab")) {
+          return {
+            code: 0,
+            output: `${staleCreatedAt}\trunning\t${recentActivity ? new Date().toISOString() : staleCreatedAt}\t0001-01-01T00:00:00Z\t${recentActivity ? "RECENT" : "QUIET"}`,
+            timedOut: false,
+          };
+        }
+        if (cmd === reaperCommand()) {
+          return {
+            code: 0,
+            output: `0123456789ab\t/repoos-validate-old\t${staleCreatedAt}`,
+            timedOut: false,
+          };
+        }
+        if (cmd === reaperRemoveCommand("0123456789ab")) {
+          return { code: 0, output: "", timedOut: false };
+        }
+        return { code: 1, output: "unexpected command", timedOut: false };
+      });
+      const logger = { system: vi.fn() };
+      const pool = new TailscaleHostPool(
+        { enabled: true, provider: "tailscale", tailscaleHosts: [{ host: "runner" }] } as never,
+        {
+          exec: {
+            bundleRepo: vi.fn(async () => ({ ok: true })),
+            uploadFile: vi.fn(async () => ({ ok: true })),
+            downloadDir: vi.fn(async () => {}),
+            probeTcp: vi.fn(async () => true),
+            runRemote,
+          },
+          logger: logger as never,
+          pressureProbe: vi.fn(async () => null),
+          pressureOptions: () => ({ enabled: false, thresholds: pressureThresholds() }),
+        },
+      );
+
+      pool.probeDueHosts();
+      await tick(30);
+      pool.probeDueHosts();
+      await tick(30);
+
+      expect(runRemote.mock.calls.some(([, cmd]) => cmd === reaperCommand())).toBe(true);
+      expect(
+        runRemote.mock.calls.some(([, cmd]) => cmd === reaperRemoveCommand("0123456789ab")),
+      ).toBe(!recentActivity);
+      if (!recentActivity) {
+        expect(logger.system).toHaveBeenCalledWith(
+          "info",
+          "remote validation Reaping stale validation container repoos-validate-old (older than 25 minutes with no recent activity) on runner",
+        );
+      }
+    },
+  );
 
   it("HangWatchdog fires onHung exactly once and stops after firing", () => {
     let now = 0;
@@ -2488,6 +2915,9 @@ describe("hang detector (#0729)", () => {
     const wd = new HangWatchdog({
       thresholdMs: 300_000,
       loadPerCpu: () => load,
+      containerCpuActive: () => false,
+      containerCpuInactiveForMs: () => now,
+      containerCpuIdleSamples: () => 2,
       onHung: () => {
         killed++;
       },
@@ -2539,6 +2969,9 @@ describe("hang detector (#0729)", () => {
     const wd = new HangWatchdog({
       thresholdMs: 300_000,
       loadPerCpu: () => load,
+      containerCpuActive: () => (load < 0.5 ? false : undefined),
+      containerCpuInactiveForMs: () => (load < 0.5 ? 300_000 : undefined),
+      containerCpuIdleSamples: () => (load < 0.5 ? 2 : 0),
       onHung: () => {
         killed++;
       },
@@ -2574,6 +3007,24 @@ describe("active run control generation (#0739)", () => {
 });
 
 describe("hung container cleanup (#0729)", () => {
+  it("redacts nested log and state evidence before appending remote events", () => {
+    const root = tmpRoot();
+    appendRemoteValidationEvent(root, "1049-redaction", {
+      level: "warn",
+      phase: "run",
+      message: "captured docker evidence",
+      hangEvidence: {
+        condition: "manual-kill",
+        containerLogs: "Bearer abc.def-ghp_testSecret123",
+        containerState: "sk-testSecret123",
+      },
+    });
+    const event = readRemoteValidationEvents(root, "1049-redaction")[0];
+    expect(event?.hangEvidence?.containerLogs).toContain("***");
+    expect(event?.hangEvidence?.containerState).toBe("***");
+    expect(JSON.stringify(event)).not.toContain("testSecret123");
+  });
+
   it("names one run's container uniquely and safely", () => {
     const name = validateContainerName("0729-ab12cd34");
     expect(name).toBe("repoos-validate-0729-ab12cd34");
@@ -2593,8 +3044,9 @@ describe("hung container cleanup (#0729)", () => {
   it("sweeps stale containers by the repoos-validate- prefix only", () => {
     const cmd = staleContainerCleanupCommand();
     expect(cmd).toContain("docker ps -aq");
-    expect(cmd).toContain("name=repoos-validate-");
-    expect(cmd).toContain("xargs -r docker rm -f");
+    expect(cmd).toContain("name=^/repoos-validate-");
+    expect(cmd).toContain('case "$name" in repoos-validate-*)');
+    expect(cmd).toContain('docker rm -f "$id"');
     // Never a blanket kill of every container on the host.
     expect(cmd).not.toMatch(/docker ps -aq\s*\|/);
   });
@@ -2650,7 +3102,7 @@ describe("hung container cleanup (#0729)", () => {
 
   it("probes for stale containers when checking a docker host", () => {
     const cmd = prereqProbeCommand("docker", "repoos-ci");
-    expect(cmd).toContain("name=repoos-validate-");
+    expect(cmd).toContain("name=^/repoos-validate-");
     expect(cmd).toContain(staleBundlePruneCommand());
   });
 
@@ -2822,6 +3274,7 @@ describe("hung run recovery end to end (#0729)", () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
       validateStallNoAbortOn: ["a"],
+      containerLogsOutput: "manual output ghp_testSecret123",
     });
     for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
     const started = Date.now();
@@ -2832,6 +3285,23 @@ describe("hung run recovery end to end (#0729)", () => {
     }
     const killResult = await f.runner.killHungValidation!("0739-manual-wedge");
     expect(killResult.ok).toBe(true);
+    const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
+    const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
+    const removeAt = f.remoteOrder.findIndex((cmd) =>
+      cmd.startsWith("docker rm -f 'repoos-validate-"),
+    );
+    expect(logsAt).toBeGreaterThanOrEqual(0);
+    expect(inspectAt).toBeGreaterThan(logsAt);
+    expect(removeAt).toBeGreaterThan(inspectAt);
+    const manualEvent = readRemoteValidationEvents(f.root, "0739-manual-wedge").find(
+      (event) => event.hangEvidence?.condition === "manual-kill",
+    );
+    expect(manualEvent?.hangEvidence).toMatchObject({
+      condition: "manual-kill",
+      containerLogs: "manual output ***",
+      containerState: "container state evidence",
+    });
+    expect(JSON.stringify(manualEvent)).not.toContain("ghp_testSecret123");
     const summary = await Promise.race([
       resultPromise,
       tick(3_000).then(() => {
@@ -2897,7 +3367,7 @@ describe("hung run recovery end to end (#0729)", () => {
     await resultPromise;
   });
 
-  it("kills a stalled run when load probes never succeed (#0739)", async () => {
+  it("does not kill a stalled run when load probes never succeed (#1049)", async () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
       loadProbeFails: true,
@@ -2907,10 +3377,28 @@ describe("hung run recovery end to end (#0729)", () => {
     });
     for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
     const resultPromise = f.runner.validate(opts("0739-load"));
-    let attempts = 0;
-    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
-    expect(f.killed).toHaveLength(1);
+    for (let i = 0; i < 30; i++) await tick(10);
+    expect(f.killed).toHaveLength(0);
+    expect(f.pending()).toHaveLength(1);
+    f.release();
     await resultPromise;
+  });
+
+  it("does not kill a silent stream while the host reports container CPU progress", async () => {
+    const f = poolFixture({
+      hosts: [{ host: "a" }],
+      fixedLoad: 0,
+      containerCpuOutput: "18.2%",
+      hangIdleMinutes: 0.0005,
+      hangCheckIntervalMs: 15,
+      loadSampleIntervalMs: 10,
+    });
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const resultPromise = f.runner.validate(opts("1049-progress"));
+    for (let i = 0; i < 30; i++) await tick(10);
+    expect(f.killed).toHaveLength(0);
+    f.release();
+    expect((await resultPromise).ok).toBe(true);
   });
 
   it("execRemoteWithHardDeadline returns when runRemote ignores timeoutMs (#0739)", async () => {
@@ -3086,6 +3574,51 @@ describe("hung run recovery end to end (#0729)", () => {
     expect(f.cleanupCmds.some((c) => c.includes(".bundle"))).toBe(true);
   });
 
+  it.each([
+    { load: 0, condition: "host-idle", detail: "host was idle" },
+    { load: Number.NaN, condition: "container-inactive", detail: "container was inactive" },
+  ] as const)(
+    "reports $condition and captures evidence before removal (#1049)",
+    async ({ load, condition, detail }) => {
+      const logs = `${"older log output\n".repeat(300)}LATEST CONTAINER OUTPUT ghp_testSecret123`;
+      const state = `${JSON.stringify({ Status: "exited" })}${" ".repeat(2100)}LATEST STATE FIELD`;
+      const f = poolFixture({
+        hosts: [{ host: "a" }],
+        fixedLoad: load,
+        hangIdleMinutes: 0.0005,
+        hangCheckIntervalMs: 15,
+        loadSampleIntervalMs: 10,
+        containerCpuOutput: condition === "host-idle" ? "" : "0.0%",
+        containerLogsOutput: logs,
+        containerStateOutput: state,
+      });
+      for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+      const resultPromise = f.runner.validate(opts("1049-evidence"));
+      let attempts = 0;
+      while (attempts++ < 200 && f.killed.length === 0) await tick(5);
+      const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
+      const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
+      const removeAt = f.remoteOrder.findIndex((cmd) =>
+        cmd.startsWith("docker rm -f 'repoos-validate-"),
+      );
+      expect(logsAt).toBeGreaterThanOrEqual(0);
+      expect(inspectAt).toBeGreaterThan(logsAt);
+      expect(removeAt).toBeGreaterThan(inspectAt);
+      const events = readRemoteValidationEvents(f.root, "1049-evidence");
+      const hang = events.find((event) => event.message.includes("killed as hung"));
+      expect(hang?.hangEvidence).toMatchObject({
+        condition,
+        containerLogs: expect.stringContaining("LATEST CONTAINER OUTPUT"),
+        containerState: expect.stringContaining("LATEST STATE FIELD"),
+      });
+      expect(hang?.hangEvidence?.containerLogs).not.toContain("ghp_testSecret123");
+      expect(hang?.hangEvidence?.containerLogs).toContain("***");
+      const result = events.find((event) => event.phase === "result");
+      expect(result?.message).toContain(detail);
+      await resultPromise;
+    },
+  );
+
   it("records outcome 'hung' in the check-run history", async () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
@@ -3111,6 +3644,7 @@ describe("hung run recovery end to end (#0729)", () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
       fixedLoad: 8, // busy: a stalled run may just be queued behind real work
+      containerCpuOutput: "1.0%", // this run is still progressing
       hangIdleMinutes: 0.0005,
       hangCheckIntervalMs: 15,
       loadSampleIntervalMs: 10,

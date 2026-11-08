@@ -2545,6 +2545,62 @@
 .task-card-check-progress {
   margin-top: 8px;
 }
+.checks-progress-display {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.checks-progress-display--card {
+  width: min(100%, 320px);
+  margin-top: 8px;
+}
+.checks-progress-display--drawer {
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin-top: 8px;
+  text-align: left;
+}
+.checks-progress-drawer-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.checks-progress-drawer-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.checks-progress-meter--half {
+  flex: 0 0 50%;
+  width: 50%;
+  max-width: 220px;
+}
+.checks-progress-drawer-detail {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+.checks-progress-drawer-footer {
+  font-size: 11px;
+  color: var(--txt-dim);
+  font-family: "JetBrains Mono", monospace;
+}
+.checks-progress-display--pipeline {
+  width: 100%;
+  margin-top: 4px;
+}
+.checks-progress-meter--pipeline {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+}
 .tc-hint.tc-hint--progress-clamp {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -13667,6 +13723,10 @@
     0 0 0 1px var(--border);
   overflow: hidden;
   animation: cc-modal-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.human-done-report {
+  min-height: 8.5rem;
+  resize: vertical;
 }
 /* Add-shot modal (#0627): declare one ## Shots entry with plain inputs and
  * capture it immediately. Same modal shell as the commit dialog. */

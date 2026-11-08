@@ -406,25 +406,47 @@ Three changes close that hole:
   precisely by name — never a blanket `docker kill` that could take a sibling
   run's container. `validateContainerName()` / `killContainerCommand()` build the
   name and the command.
-- **A hang watchdog.** While a run streams, the runner samples the host's load
-  and watches the output clock. If the output has not advanced for
-  `hangIdleMinutes` (default **5**) *and* the host is idle (1-min load per CPU
-  below `HANG_IDLE_LOAD_THRESHOLD`, `0.5`), the run is declared **hung**: the
-  runner removes that run's container, records the outcome as `hung`
-  (check-run history + structured event + the task's remote-validation log), and
-  returns a transient failure so `retryOtherHosts` retries it on another host.
-  Unknown load is never treated as idle. Tune the threshold with
-  `repoos.toml` /
-  Settings (`remoteValidation.hangIdleMinutes`).
+- **A hang watchdog.** The runner watches the local output clock and samples
+  both host load and Docker CPU for the run's container. After
+  `hangIdleMinutes` (default **5**) without output, a container with observed
+  CPU progress stays alive even if SSH output is stalled. A failed or timed-out
+  load probe is unknown, never idle, and cannot independently trigger a kill.
+  If the host is idle (1-min load per CPU below
+  `HANG_IDLE_LOAD_THRESHOLD`, `0.5`) it can support a hang decision only when
+  no container sample is available. One zero-CPU sample is inconclusive: the
+  container must remain inactive across the full output-silence interval. A
+  progressing container protects the run, and a slow in-flight probe invalidates
+  old load/CPU samples until it returns. The runner captures the last 100
+  container log lines and `docker inspect` state before removal, then attaches
+  them to the task's remote-validation event with the fired condition
+  (`host-idle` or `container-inactive`). Logs are ANSI stripped and secret-
+  redacted before storage. It records the outcome as `hung` and
+  returns a transient failure so `retryOtherHosts` can try another host. Tune
+  the threshold with `repoos.toml` / Settings
+  (`remoteValidation.hangIdleMinutes`).
+
+Host status stores a short classified reason such as "host environment error
+before the gate". Raw installer or test output stays in the run event, so text
+printed by a command cannot become the host's degraded status message.
 
 **Cleanup.** Each run removes **only its own** `$WORK` tree and container in
 `validate.sh`'s `EXIT` trap — there is no global workdir sweep at startup
-anymore. Containers left behind by a killed/hung run are reaped two ways: that
-per-run trap, and the host prerequisite probe's **stale-container** sweep
+anymore. Containers left behind by a killed/hung run are reaped three ways: that
+per-run trap, the host prerequisite probe's **stale-container** sweep
 (`staleContainerCleanupCommand()`) — `repoos-validate-*` name prefix only, and
-**not** `status=running`, so a live sibling run is never removed. Safe GC of
-abandoned workdirs (age-bound, mount-aware) is deliberately future work; until
-then, rely on per-run EXIT cleanup plus non-running container sweeps.
+**not** `status=running`, so a live sibling run is never removed; and a periodic
+background reaper (`reaperCommand()`) (#1049). Containers are created only
+after a host slot is acquired, so the reaper uses the 25-minute run cap rather
+than adding the preceding 15-minute slot-wait allowance. It also excludes names
+currently owned by this server process and rechecks Docker creation/state
+timestamps plus recent logs immediately before removal. Recent logs use a
+five-minute quiet window. Cross-user ownership is not inferred from
+`$HOME/.repoos-validate-locks`; a legitimately active container cannot reach
+the 25-minute age cap because the run deadline has already expired. Dispatch is
+held while the reaper runs and every removal is logged. Safe GC of
+abandoned workdirs (age-bound, mount-aware) is
+deliberately future work; until then, rely on per-run EXIT cleanup, non-running
+container sweeps, and the background reaper.
 
 **Bounded kill and slot release (#0739).** The hang kill is a separate SSH
 round-trip (30 s cap), raced against a **local** hard deadline so a wedged SSH
@@ -919,10 +941,14 @@ The runner now watches each in-flight run. It samples the host's own 1-minute
 load average (per CPU) on a timer, and every `hangCheckIntervalMs` (30 s) asks:
 has this run's output been unchanged for `hangIdleMinutes` (default **5**) **and**
 is the host idle (load per CPU below `0.5`)? Both must hold — a quiet run on a
-**busy** host may simply be queued behind real work. When load probes fail, the
-runner still recovers: output idle for `hangIdleMinutes` while load has been
-unknown that long **and** the host was not busy the last time load was measured
-(#0739) — unreachable stats must not hold a slot until the outer SSH timeout.
+**busy** host may simply be queued behind real work. When the load probe fails
+or times out, load is **unknown**, not idle. That result never triggers a kill
+by itself. The runner also samples the container's CPU on the host: observed
+CPU activity protects a quiet SSH stream. A successful idle-host sample or an
+explicitly inactive sample for this container can confirm a hang; container
+inactivity remains decisive even if unrelated work keeps the host busy or a
+later load probe fails. A failed stream or second SSH probe alone cannot kill
+a progressing run.
 When both hold the runner removes **that run's** container by name (`docker rm -f
 repoos-validate-<run-id>`, never a blanket `docker kill`), marks the summary
 `hung` (transient, so the caller retries on another host, which the pool
