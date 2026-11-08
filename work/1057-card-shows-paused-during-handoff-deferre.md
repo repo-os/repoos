@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
-last_handoff_failure_sha: 62f0e7e9781363e0a9ec705ef09315f5fb9cb291
 id: "1057"
 title: Card shows PAUSED during handoff; deferred handoff never wakes the engineer
 type: bug
@@ -21,6 +19,8 @@ review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T00:26:09Z"
 updated_at: "2026-11-08T03:23:20Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯"
+last_handoff_failure_sha: 62f0e7e9781363e0a9ec705ef09315f5fb9cb291
 last_check_failure: "repoos check at 2026-11-08T02:03:13.154Z: repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯"
 handoff_signal_retry_count: 1
 dev_error_count: 3
@@ -96,4 +96,4 @@ Start from TaskCard.vue (the label/action computed near `ACTIVE_RESTART`), store
 - 2026-11-08T03:16:08Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (62f0e7e97) during finalization (#0734)
 - 2026-11-08T03:23:20Z · message_queued at 2026-11-08T03:23:20.083Z
 - 2026-11-08T03:23:20Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
-
+- 2026-11-08T03:23:20Z · message_delivered: 3 message(s)
