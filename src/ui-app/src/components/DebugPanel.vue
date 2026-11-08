@@ -147,16 +147,40 @@ function parseActivity(body: string): { at: string; text: string }[] {
   if (heading === -1) return [];
   const section = body.slice(heading);
   const entries: { at: string; text: string }[] = [];
-  const re = /^- (\S+) · (.+)$/gmu;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(section))) {
-    entries.push({ at: m[1], text: m[2] });
+  for (const line of section.split("\n")) {
+    const entry = /^- (\S+) · (.+)$/.exec(line);
+    if (entry) {
+      entries.push({ at: entry[1], text: entry[2] });
+      continue;
+    }
+    const previous = entries.at(-1);
+    if (previous && line.startsWith("> ")) {
+      // Multiline notes are encoded as blockquote continuation lines so they
+      // survive task-file body normalization. Restore the report's newlines
+      // and blank lines for the expanded activity entry.
+      previous.text += `\n${line.slice(2)}`;
+    }
   }
   return entries;
 }
 
 function checkLabel(kind: TaskCheckRun["kind"]): string {
   return kind === "handoff-finalize" ? "handoff-finalize check" : "MTD merge-gate check";
+}
+
+function hangConditionLabel(
+  condition: NonNullable<RemoteValidationEvent["hangEvidence"]>["condition"],
+): string {
+  switch (condition) {
+    case "host-idle":
+      return "host idle";
+    case "container-inactive":
+      return "container inactive";
+    case "manual-kill":
+      return "operator requested kill";
+    case "stream-silent":
+      return "stream silent";
+  }
 }
 
 function fmtDuration(ms: number | null): string {
@@ -234,13 +258,23 @@ const events = computed<DebugEvent[]>(() => {
   }
 
   for (const r of repo.taskRemoteEvents[props.task.id] ?? []) {
+    const evidence = r.hangEvidence;
+    const evidenceDetail = evidence
+      ? [
+          `Hang condition: ${hangConditionLabel(evidence.condition)}`,
+          evidence.containerLogs ? `Container logs (last lines):\n${evidence.containerLogs}` : "",
+          evidence.containerState ? `Container inspect state:\n${evidence.containerState}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n\n")
+      : "";
     out.push({
       key: `remote-${r.at}-${r.message.slice(0, 24)}`,
       at: r.at,
       kind: "remote",
       level: r.level,
       title: r.message,
-      detail: r.message,
+      detail: [r.message, evidenceDetail].filter(Boolean).join("\n\n"),
       remote: r,
     });
   }

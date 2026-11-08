@@ -47,6 +47,11 @@ describe("debugEventExpandable (#0829)", () => {
     expect(debugEventExpandable({ kind: "activity", title: text, detail: text })).toBe(false);
   });
 
+  it("expands multiline activity reports without waiting for ellipsis measurement", () => {
+    const report = "note: tested on device\n- **Observed:** stayed awake";
+    expect(debugEventExpandable({ kind: "activity", title: report, detail: report })).toBe(true);
+  });
+
   it("relies on layout truncation for title-only rows", () => {
     const medium = "close-out complete — published to main after a long merge gate";
     expect(debugEventExpandable({ kind: "log", title: medium })).toBe(false);
@@ -77,6 +82,71 @@ describe("debugEventExpandable (#0829)", () => {
 });
 
 describe("DebugPanel expanded rows (#0829)", () => {
+  it("shows captured remote hang evidence when the event is expanded (#1049)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.taskRemoteEvents[TASK.id] = [
+      {
+        at: "2026-11-07T00:00:00Z",
+        level: "warn",
+        phase: "run",
+        message: "killed as hung (output stream silent; host idle) on runner",
+        hangEvidence: {
+          condition: "host-idle",
+          containerLogs: "last container output",
+          containerState: "container inspect state",
+        },
+      },
+    ];
+    const wrapper = mount(DebugPanel, {
+      props: { task: TASK },
+      global: { plugins: [pinia], stubs: { teleport: true } },
+      attachTo: document.body,
+    });
+    await nextTick();
+    const row = wrapper.get(".debug-event");
+    expect(row.classes()).toContain("debug-event-expandable");
+    await row.trigger("click");
+    await nextTick();
+    const detail = wrapper.get(".debug-log-inline");
+    expect(detail.text()).toContain("Hang condition: host idle");
+    expect(detail.text()).toContain("last container output");
+    expect(detail.text()).toContain("container inspect state");
+    wrapper.unmount();
+  });
+
+  it("labels an operator-requested container kill in plain words (#1049)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    repo.taskRemoteEvents[TASK.id] = [
+      {
+        at: "2026-11-07T00:00:00Z",
+        level: "warn",
+        phase: "run",
+        message: "operator requested removal of a hung container",
+        hangEvidence: {
+          condition: "manual-kill",
+          containerLogs: "last container output",
+          containerState: "container inspect state",
+        },
+      },
+    ];
+    const wrapper = mount(DebugPanel, {
+      props: { task: TASK },
+      global: { plugins: [pinia], stubs: { teleport: true } },
+      attachTo: document.body,
+    });
+    await nextTick();
+    await wrapper.get(".debug-event").trigger("click");
+    await nextTick();
+    expect(wrapper.get(".debug-log-inline").text()).toContain(
+      "Hang condition: operator requested kill",
+    );
+    wrapper.unmount();
+  });
+
   it("renders the full message and JSON payload when a long log row is expanded", async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
@@ -108,6 +178,31 @@ describe("DebugPanel expanded rows (#0829)", () => {
     expect(message.text()).toBe(LONG);
     const detail = wrapper.get(".debug-log-inline");
     expect(detail.text()).toContain('"from"');
+    wrapper.unmount();
+  });
+
+  it("renders every line of a multiline activity report when expanded", async () => {
+    const report =
+      "note: Tested lid-close behavior.\n\n- **Observed:** the device stayed awake.\n- **Not verified:** battery-only operation.";
+    const activity = `- 2026-11-07T03:00:00Z · ${report.replace(/\n/g, "\n> ")}`;
+    const task = {
+      ...TASK,
+      body: `## Problem\n\nTask body.\n\n## Activity\n\n${activity}\n`,
+    } as Task;
+    const wrapper = mount(DebugPanel, {
+      props: { task },
+      global: { plugins: [createPinia()], stubs: { teleport: true } },
+      attachTo: document.body,
+    });
+    await nextTick();
+    await nextTick();
+
+    const row = wrapper.get('.debug-event[data-debug-event^="activity-"]');
+    expect(row.classes()).toContain("debug-event-expandable");
+    await row.trigger("click");
+    await nextTick();
+
+    expect(wrapper.get(".debug-event-message").text()).toBe(report);
     wrapper.unmount();
   });
 });

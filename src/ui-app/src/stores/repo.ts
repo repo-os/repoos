@@ -25,6 +25,8 @@ import {
   shotFixturePinnedSystemStats,
   shotFixturePinnedTaskRemoteActivity,
   shotFixtureSchedules,
+  shotPreviewSkipsRemoteEventsFetch,
+  shotFixtureSeedsLiveTaskChecks,
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
@@ -2332,7 +2334,7 @@ export const useRepoStore = defineStore("repo", () => {
         taskId === SHOT_PREVIEW_FIXTURE_TASK_ID &&
         typeof window !== "undefined" &&
         isShotPreviewCaptureActive(window.location) &&
-        readShotPreviewFixtureFromLocation(window.location) === "checks:progress";
+        shotFixtureSeedsLiveTaskChecks(readShotPreviewFixtureFromLocation(window.location));
       if (!opts?.remoteOnly && !keepProgressShot) {
         taskChecks.value[taskId] = mergeTaskCheckRuns(taskChecks.value[taskId], r.runs);
       }
@@ -2348,7 +2350,14 @@ export const useRepoStore = defineStore("repo", () => {
   /** Hydrate a task's log entries (Debug tab, 0310). */
   async function refreshTaskLogs(taskId: string): Promise<void> {
     if (typeof window !== "undefined" && shotPreviewSkipsTaskLogsFetch(window.location, taskId)) {
-      seedShotPreviewDebugLogs({ tasks: tasks.value, taskLogs: taskLogs.value }, taskId);
+      seedShotPreviewDebugLogs(
+        {
+          tasks: tasks.value,
+          taskLogs: taskLogs.value,
+          taskRemoteEvents: taskRemoteEvents.value,
+        },
+        taskId,
+      );
       return;
     }
     try {
@@ -2361,6 +2370,20 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Hydrate a task's structured remote-validation events (#0568 Debug tab). */
   async function refreshTaskRemoteEvents(taskId: string): Promise<void> {
+    if (
+      typeof window !== "undefined" &&
+      shotPreviewSkipsRemoteEventsFetch(window.location, taskId)
+    ) {
+      seedShotPreviewDebugLogs(
+        {
+          tasks: tasks.value,
+          taskLogs: taskLogs.value,
+          taskRemoteEvents: taskRemoteEvents.value,
+        },
+        taskId,
+      );
+      return;
+    }
     try {
       const r = await api<{ ok: boolean; events: RemoteValidationEvent[] }>(
         `/api/tasks/${taskId}/remote-validation/events`,

@@ -156,6 +156,7 @@ import StopWorkConfirmModal from "./StopWorkConfirmModal.vue";
 import DeleteTaskDialog from "./DeleteTaskDialog.vue";
 import ArchiveTaskDialog from "./ArchiveTaskDialog.vue";
 import HoldTaskDialog from "./HoldTaskDialog.vue";
+import HumanTaskDoneDialog from "./HumanTaskDoneDialog.vue";
 import { storyDeepLinkRef, storyOpenLabel } from "../lib/story-deep-link";
 import { normalizeStoryName } from "../../../core/stories.js";
 import { insertTextAtCursor } from "../utils/text-insertion";
@@ -181,6 +182,14 @@ import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { taskInDevPass, taskRoundCounts, taskRoundLabel } from "../lib/pipeline-card";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { checkProgressLabel, checkProgressPercent } from "../lib/check-progress";
+import {
+  activeTaskChecksBusy,
+  formatChecksCardLine,
+  isReusedCheckOutput,
+} from "../lib/checks-card-status";
+import ChecksProgressDisplay from "./ChecksProgressDisplay.vue";
+import { toCheckProgress } from "../lib/check-progress";
+import { MAX_CHECK_RETRY_ATTEMPTS } from "../lib/retryHints";
 import { autoRepairHint, retryCountFrom } from "../lib/retryHints";
 import { resolveEffectiveAgent } from "../lib/effective-agent";
 import CopyableNumber from "./CopyableNumber.vue";
@@ -339,7 +348,7 @@ const currentStatusLabel = computed(() => {
   if (!current) return "";
   return allStatuses.value.find((status) => status.id === current)?.label ?? current;
 });
-const humanCompletionNote = ref("");
+const humanDoneDialogOpen = ref(false);
 
 /**
  * #0507: a handoff finalization is running for this task, so the Review
@@ -431,6 +440,51 @@ const statusProgressLabel = computed(() => {
 const showStatusProgress = computed(() =>
   Boolean(statusProgress.value || handoffBusy.value || localCheckSlot.value),
 );
+const activeChecksBusy = computed(() =>
+  ui.active ? activeTaskChecksBusy(repo, ui.active.id, checkNow.value) : false,
+);
+const checksAutoRetryLine = computed(() => {
+  const task = ui.active;
+  if (!task) return null;
+  const count = retryCountFrom(task, "check");
+  if (count && count > 0) return `auto-retry ${count} of ${MAX_CHECK_RETRY_ATTEMPTS}`;
+  return null;
+});
+const drawerChecksDisplay = computed(() => {
+  const task = ui.active;
+  if (!task) return null;
+  const run = activeCheckRun.value;
+  const status = repo.handoffStatuses[task.id];
+  const progress = statusProgress.value
+    ? toCheckProgress(statusProgress.value)
+    : run
+      ? toCheckProgress(run)
+      : null;
+  const startedAt = status?.startedAt ?? run?.startedAt ?? null;
+  const elapsed = startedAt
+    ? formatDuration(Math.max(0, checkNow.value - Date.parse(startedAt)))
+    : localCheckSlot.value
+      ? formatDuration(localCheckSlot.value.ageMs)
+      : null;
+  const scopeWhereLine = run
+    ? (() => {
+        const where = scopeWhere(run.scope, checkMachine.value ?? run.machine);
+        if (where === "Full check") return null;
+        const machine = checkMachine.value ?? run.machine;
+        return machine ? `${where} · ${machine}` : where;
+      })()
+    : null;
+  return {
+    progress,
+    elapsed,
+    reused: isReusedCheckOutput(run?.output),
+    scopeLine: scopeWhereLine,
+    machineLine: scopeWhereLine
+      ? null
+      : (checkMachine.value ?? run?.machine ?? status?.machine ?? null),
+    retryLine: checksAutoRetryLine.value,
+  };
+});
 
 const lastCheckRun = computed(() => {
   const id = ui.active?.id;
@@ -831,30 +885,35 @@ const cardChecksHeading = computed(() => {
   if (!task) return runningChecksLabel(false);
   const wait = localCheckWait.value;
   if (wait) return wait.label;
-  if (localCheckSlot.value) {
-    return `running checks · check · ${formatDuration(localCheckSlot.value.ageMs)}`;
-  }
   if (repo.handoffInFlight(task.id)) {
     const pool = remotePoolQueueHintForTaskChecks(repo.taskChecks[task.id]);
-    const status = repo.handoffStatuses[task.id];
-    const startedAt =
-      status?.startedAt ?? repo.taskChecks[task.id]?.find((run) => run.running)?.startedAt;
-    const elapsed = startedAt
-      ? formatDuration(Math.max(0, checkNow.value - Date.parse(startedAt)))
-      : "";
-    const progress = repo.taskChecks[task.id]?.find(
-      (run) => run.running && run.kind === "handoff-finalize",
-    );
-    const step = status?.step ?? repo.handoffSteps[task.id] ?? "starting";
-    return (
-      pool?.label ??
-      `running checks · ${step}${elapsed ? ` · ${elapsed}` : ""}${progress ? ` · ${checkProgressLabel(progress)}` : ""}`
-    );
+    if (pool) return pool.label;
   }
-  if (activeCheckRun.value) {
+  if (repo.handoffInFlight(task.id) || activeCheckRun.value || localCheckSlot.value) {
+    const status = repo.handoffStatuses[task.id];
     const run = activeCheckRun.value;
-    const elapsed = formatDuration(Math.max(0, checkNow.value - Date.parse(run.startedAt)));
-    return `running checks · ${run.stepName ?? "check"} · ${elapsed}`;
+    const slow = !!notices.slowRunByTask[task.id];
+    const startedAt = status?.startedAt ?? run?.startedAt ?? null;
+    const progress = run
+      ? {
+          stepsDone: run.stepsDone ?? null,
+          stepsTotal: run.stepsTotal ?? null,
+          currentStep: run.currentStep ?? null,
+          stepName: run.stepName ?? null,
+          testsDone: run.testsDone ?? null,
+          testsTotal: run.testsTotal ?? null,
+          testsPass: run.testsPass ?? null,
+        }
+      : (status?.progress ?? null);
+    return formatChecksCardLine({
+      nowMs: checkNow.value,
+      startedAt,
+      progress,
+      handoffStep: status?.step ?? repo.handoffSteps[task.id] ?? null,
+      checkOutput: run?.output,
+      slow,
+      slotAgeMs: localCheckSlot.value?.ageMs ?? null,
+    });
   }
   if (inPipeline.value) {
     return integrationCardLabel.value ?? runningChecksLabel(false);
@@ -905,7 +964,9 @@ const drawerStatusSummary = computed(() => {
     integrating: inPipeline.value && Boolean(integrationCardLabel.value),
     confirmingHandoff: handoffBusy.value || awaitingFreshReview.value,
     checksFailedAfterRetries: Boolean(
-      checkChip.value?.state === "fail" && retryCountFrom(task, "check"),
+      checkChip.value?.state === "fail" &&
+      retryCountFrom(task, "check") &&
+      !(activeCheckRun.value || localCheckWait.value || localCheckSlot.value || handoffBusy.value),
     ),
     reviewerRunning: Boolean(review.value?.running),
     workRunning: repo.isRunning(task.id) || repo.pmWorkingFor(task.id),
@@ -1005,16 +1066,16 @@ const drawerStatusSummary = computed(() => {
     lines = compactStatusLines(cardChecksHeading.value);
   } else if (key === "checksRunning" && handoffBusy.value) {
     motion = "reviewing";
-    lines = activeCheckRun.value
-      ? compactStatusLines(cardChecksHeading.value, where, cardProgressLine(activeCheckRun.value))
-      : compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…");
+    lines = compactStatusLines(cardChecksHeading.value);
   } else if (key === "integrating") {
     motion = "reviewing";
     lines = compactStatusLines(integrationCardLabel.value ?? "integrating");
   } else if (key === "checksRunning") {
     motion = "reviewing";
     const heading = cardChecksHeading.value;
-    if (heading.startsWith("checking ·")) {
+    if (heading.startsWith("Checks ·")) {
+      lines = compactStatusLines(heading);
+    } else if (heading.startsWith("checking ·")) {
       // The card's live-check label already carries the step and elapsed time,
       // so only the scope/machine line adds anything.
       lines = compactStatusLines(heading, where);
@@ -1044,7 +1105,7 @@ const drawerStatusSummary = computed(() => {
   } else if (key === "confirmingHandoff") {
     motion = "reviewing";
     lines = handoffBusy.value
-      ? compactStatusLines(cardChecksHeading.value, handoffStepLabel.value || "Starting…")
+      ? compactStatusLines(cardChecksHeading.value)
       : compactStatusLines(
           AWAITING_FRESH_REVIEW_LABEL,
           "The visible review report is older than the latest handoff.",
@@ -1916,8 +1977,12 @@ onUnmounted(() => {
   window.removeEventListener("scroll", onShotHintViewportChange, true);
 });
 
-async function setStatus(status: string): Promise<void> {
+async function setStatus(status: string, completionReport?: string): Promise<void> {
   if (!ui.active || ui.active.status === status) return;
+  if (status === "done" && isHumanTask.value && completionReport === undefined) {
+    humanDoneDialogOpen.value = true;
+    return;
+  }
   // #0507: `review` is a request, not a write — it starts the handoff
   // finalization, so it goes through the confirm modal (run checks / skip
   // checks) instead of a bare PATCH. Every other status is still a plain write.
@@ -1927,8 +1992,7 @@ async function setStatus(status: string): Promise<void> {
   }
   ui.saving = true;
   try {
-    const note =
-      status === "done" && isHumanTask.value ? humanCompletionNote.value.trim() : undefined;
+    const note = status === "done" && isHumanTask.value ? (completionReport ?? "") : undefined;
     await repo.setStatus(ui.active, status, note);
   } catch (err) {
     repo.onError(err);
@@ -5443,12 +5507,6 @@ watch(
             <div v-if="isHumanTask" class="ff-notice drawer-human-task" role="status">
               <strong>Human task: no AI will work on this.</strong>
               <span>Move it between board columns as the human work progresses.</span>
-              <Input
-                v-if="ui.active.status !== 'done'"
-                v-model="humanCompletionNote"
-                aria-label="Completion note (optional)"
-                placeholder="Completion note (optional)"
-              />
               <Button
                 v-if="ui.active.status !== 'done'"
                 variant="status"
@@ -5507,7 +5565,8 @@ watch(
                 v-if="
                   !isHumanTask &&
                   (ui.active.status === 'ready' || ui.active.status === 'active') &&
-                  (ui.active.status === 'ready' || (!repo.isRunning(ui.active.id) && !handoffBusy))
+                  (ui.active.status === 'ready' || !repo.isRunning(ui.active.id)) &&
+                  !activeChecksBusy
                 "
                 data-test-id="task-drawer-start-work"
                 variant="status"
@@ -5530,7 +5589,8 @@ watch(
                   !isHumanTask &&
                   ui.active.status === 'active' &&
                   !repo.isRunning(ui.active.id) &&
-                  !handoffBusy
+                  !handoffBusy &&
+                  !activeChecksBusy
                 "
                 data-test-id="task-drawer-request-review"
                 variant="status"
@@ -5543,7 +5603,12 @@ watch(
                 Review
               </Button>
               <Button
-                v-if="!isHumanTask && ui.active.status === 'active' && repo.isRunning(ui.active.id)"
+                v-if="
+                  !isHumanTask &&
+                  ui.active.status === 'active' &&
+                  repo.isRunning(ui.active.id) &&
+                  !activeChecksBusy
+                "
                 variant="outline"
                 :disabled="ui.saving"
                 @click="pauseWork"
@@ -5908,52 +5973,19 @@ watch(
               :class="index === 0 ? 'drawer-status-l2' : 'drawer-status-l3'"
               >{{ line }}</span
             >
-            <div
-              v-if="showStatusProgress"
-              class="check-progress close-out-check-progress"
-              data-test-id="close-out-check-progress"
-              role="status"
-            >
-              <span
-                class="check-progress-meter"
-                :class="{ 'is-indeterminate': statusProgressPercent == null }"
-              >
-                <progress
-                  :value="statusProgressPercent ?? undefined"
-                  max="100"
-                  aria-label="Checks running progress"
-                />
-                <span
-                  v-if="statusProgressPercent == null"
-                  class="check-progress-indeterminate"
-                  aria-hidden="true"
-                />
-              </span>
-              <span
-                >{{ statusProgressLabel
-                }}<template v-if="handoffBusy"> · {{ handoffStepLabel }}</template></span
-              >
-              <span
-                v-if="
-                  statusProgress?.attempt ||
-                  statusProgress?.machine ||
-                  repo.handoffStatuses[ui.active.id]?.attempt ||
-                  repo.handoffStatuses[ui.active.id]?.machine
-                "
-                >{{
-                  (statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt)
-                    ? `attempt ${statusProgress?.attempt ?? repo.handoffStatuses[ui.active.id]?.attempt}`
-                    : ""
-                }}<template
-                  v-if="statusProgress?.machine ?? repo.handoffStatuses[ui.active.id]?.machine"
-                >
-                  · on
-                  {{
-                    statusProgress?.machine ?? repo.handoffStatuses[ui.active.id]?.machine
-                  }}</template
-                ></span
-              >
-            </div>
+            <ChecksProgressDisplay
+              v-if="showStatusProgress && drawerChecksDisplay"
+              class="close-out-check-progress"
+              variant="drawer"
+              test-id="close-out-check-progress"
+              :show-title="true"
+              :progress="drawerChecksDisplay.progress"
+              :elapsed="drawerChecksDisplay.elapsed"
+              :reused="drawerChecksDisplay.reused"
+              :scope-line="drawerChecksDisplay.scopeLine"
+              :machine-line="drawerChecksDisplay.machineLine"
+              :retry-line="drawerChecksDisplay.retryLine"
+            />
           </button>
           <DoneErrorCard
             v-if="ui.active.status === 'review' && repo.doneErrorFor(ui.active.id)"
@@ -7763,6 +7795,17 @@ watch(
       }
     "
     @started="ui.activeTab = 'agent'"
+  />
+  <HumanTaskDoneDialog
+    :open="humanDoneDialogOpen"
+    :busy="ui.saving"
+    @update:open="(value) => (humanDoneDialogOpen = value)"
+    @confirm="
+      (report) => {
+        humanDoneDialogOpen = false;
+        setStatus('done', report);
+      }
+    "
   />
 
   <DirtyCheckoutDialog

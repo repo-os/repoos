@@ -304,6 +304,22 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(hint.label).toContain("109/645");
   });
 
+  it("seeds pipeline:checksProgress on the checks lane without handoff state", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "pipeline:checksProgress");
+    expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]).toMatchObject({
+      kind: "merge-gate",
+      testsDone: 3,
+      testsTotal: 680,
+      stepsDone: 3,
+      stepsTotal: 9,
+    });
+    expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBeUndefined();
+    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+  });
+
   it("seeds close-out progress on the deep-linked task without creating a fake task", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();
@@ -845,6 +861,8 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(repo.taskLogs[drawerId]).toHaveLength(2);
     expect(repo.taskLogs[drawerId]![0]!.message).toContain("main advanced with bookkeeping");
     expect(repo.taskLogs[drawerId]![1]!.message).toBe("close-out complete — published to main");
+    expect(repo.taskRemoteEvents[drawerId]).toHaveLength(1);
+    expect(repo.taskRemoteEvents[drawerId]![0]!.hangEvidence?.condition).toBe("host-idle");
     vi.unstubAllGlobals();
   });
 
@@ -864,6 +882,12 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(repo.taskLogs["0820"]).toHaveLength(2);
     expect(repo.taskLogs["0820"]![0]!.message).toContain("main advanced with bookkeeping");
+    await repo.refreshTaskRemoteEvents("0820");
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(repo.taskRemoteEvents["0820"]?.[0]?.message).toContain("output stream went silent");
+    expect(repo.taskRemoteEvents["0820"]?.[0]?.hangEvidence?.containerLogs).toContain(
+      "installing dependencies",
+    );
     vi.unstubAllGlobals();
   });
 
