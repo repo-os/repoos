@@ -206,3 +206,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T13:10:27Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
 - 2026-11-08T13:21:43Z · body
 - 2026-11-08T13:22:30Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T13:22:30Z · message_queued at 2026-11-08T13:22:30.369Z
