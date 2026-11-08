@@ -174,3 +174,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T08:45:22Z · review_cli_override, review_model_override
 - 2026-11-08T09:22:56Z · status review→active
 - 2026-11-08T09:22:59Z · CTO nudge: held — review is running
+- 2026-11-08T09:23:05Z · note: handoff requested (cli)
