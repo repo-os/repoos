@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T07:23:14Z"
+updated_at: "2026-11-08T07:28:14Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-08T07:13:07.485Z: repoos check failed: ui verification failed (10 issue(s)): [missing-target] Board card coding without inline active recency (target \"default\"): state \"board:activeCoding\" did not render on target \"default\" — / shows no task card (http://127.0.0.1:42935/?shotState=board%3AactiveCoding); [missing-target] Board card coding without inline active recency (target \"default\"): highlight [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"] matched nothing on / (http://127.0.0.1:42935/?shotState=bo… (truncated)"
 dev_error_count: 12
@@ -54,7 +54,7 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 }
 ],
 "state": "board:activeCoding"
@@ -66,13 +66,13 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": ".app-tooltip.show",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "waitMs": 700
+"waitMs": 700
 }
 ],
 "state": "board:activeCoding"
@@ -85,7 +85,7 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"pipe-coding\"]"
+"waitFor": "[data-task-id=\"pipe-coding\"]"
 }
 ],
 "state": "board:pipeline"
@@ -155,3 +155,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T07:13:47Z · body
 - 2026-11-08T07:23:14Z · message_queued at 2026-11-08T07:23:14.412Z
 - 2026-11-08T07:23:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T07:28:14Z · CTO nudge: held — an undelivered message is already queued
