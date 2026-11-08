@@ -52,9 +52,9 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 "route": "/settings?tab=advanced&focus=check.docsOnlySkip",
 "highlight": "[data-config-key=\"check.docsOnlySkip\"]",
 "steps": [
-  {
-    "waitFor": "[data-config-key=\"check.docsOnlySkip\"]"
-  }
+{
+  "waitFor": "[data-config-key=\"check.docsOnlySkip\"]"
+}
 ]
 }
 ]
@@ -136,3 +136,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T10:32:15Z · body
 - 2026-11-08T10:32:20Z · body
 - 2026-11-08T10:39:09Z · message_queued at 2026-11-08T10:39:09.555Z
+- 2026-11-08T10:39:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
