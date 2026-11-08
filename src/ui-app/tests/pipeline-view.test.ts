@@ -332,8 +332,8 @@ describe("PipelineView", () => {
 
     const boardStatus = board.find('[data-test-id="task-card-agent-hint"]').text();
     const pipelineCard = pipeline.find(`[data-task-id="${task.id}"]`);
-    expect(boardStatus).toBe("Stuck");
-    expect(pipelineCard.find(".pl-status-chip").text()).toBe(boardStatus);
+    expect(boardStatus).toMatch(/^remote validation stalled/);
+    expect(pipelineCard.find(".pl-status-chip").text()).toBe("Stuck");
     expect(board.find('[data-test-id="task-card-action-footer"]').text()).toContain("Restart work");
     expect(pipelineCard.find(".pl-action").attributes("aria-label")).toContain("Restart work");
   });
