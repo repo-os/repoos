@@ -2,15 +2,15 @@
 id: "1064"
 title: Live index turns review report files into inbox tasks (review-1..N)
 type: bug
-status: ready
+status: active
 paths: [src/server/live-index.ts, src/core/indexer.ts]
 priority: p1
 area: [core, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/live-index-turns-review-report-files-int
 created_at: "2026-11-08T12:47:28Z"
-updated_at: "2026-11-08T12:50:25Z"
+updated_at: "2026-11-08T13:10:53Z"
 ---
 ## Problem
 Reported from the "tiao" project (RepoOS v0.5.77, workDir `repoos/work`). The Work board's Inbox fills with cards `review-1` … `review-5` (type feature, area general). Opening one shows path `repoos/work/reports/0006/review-1.md`, and its "spec" is the report body. Cards from different tasks collide on the same derived id, so the latest write wins.
@@ -33,3 +33,4 @@ Failure mode to avoid: the cards offer "Delete task", which would delete the sto
 - 2026-11-08T12:47:28Z · needs_input
 - 2026-11-08T12:47:29Z · needs_input
 - 2026-11-08T12:50:25Z · status inbox→ready
+- 2026-11-08T13:10:53Z · status ready→active, branch
