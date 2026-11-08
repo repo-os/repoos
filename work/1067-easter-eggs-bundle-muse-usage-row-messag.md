@@ -95,3 +95,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T17:15:06Z · body
 - 2026-11-08T17:15:52Z · body
 - 2026-11-08T17:16:07Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T17:16:07Z · message_queued at 2026-11-08T17:16:07.268Z
