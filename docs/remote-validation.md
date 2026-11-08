@@ -18,10 +18,10 @@ exits explicitly. Both Tailscale and Hetzner poll for a complete `result.json`
 in the run-specific artifact directory during an in-flight capture, remove the
 corresponding container if it has not exited, and record a force-collection
 event on the task. `validate.sh` repeats the same completed-capture reap at host
-startup for running leftovers and prints a `[validate] reaped completed browser
-capture …` line only after a successful `docker rm -f` (with the capture task id
-when known) so the control plane can record it in Debug/events; failed removals
-emit a separate `[validate] failed to reap …` line; the Mac-side periodic reaper uses the shared
+startup for running leftovers and prints `[reaper] removed …` only after
+`docker rm -f` succeeds (task id in the marker when known); failed removals print
+`[reaper] failed to remove … reason=…` and the control plane records them as warn/
+infra events, not successes. The Mac-side periodic reaper uses the shared
 `runValidationContainerReaper` sweep on probed hosts (Tailscale pool hosts and the
 warm Hetzner VM), including while a capture is still tracked as live — completed
 shot containers are rechecked for the completion log, quiet logs, and idle CPU
