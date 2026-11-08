@@ -60,6 +60,32 @@ afterEach(() => {
 });
 
 describe("active checks gate work actions (#1054)", () => {
+  it.each(["check", "verify", "review", "capture"])(
+    "shows running checks during handoff step %s after the engineer exits",
+    async (step) => {
+      const task = activeTask();
+      stubApi(task);
+      const repo = useRepoStore();
+      repo.handoffStatuses[task.id] = {
+        state: "running",
+        step,
+        attempt: 1,
+        progress: null,
+        updatedAt: new Date().toISOString(),
+        machine: null,
+      };
+      const card = mount(TaskCard, {
+        props: { task, dragEnabled: false },
+        global: { plugins: [pinia] },
+      });
+      await nextTick();
+      expect(card.text()).toContain("running checks");
+      expect(card.text()).not.toContain("paused");
+      expect(card.find('[data-test-id="task-card-action-footer"]').exists()).toBe(false);
+      card.unmount();
+    },
+  );
+
   it("hides the card action button while handoff checks run", async () => {
     const task = activeTask();
     stubApi(task);

@@ -1052,6 +1052,20 @@ const hint = computed<CardHint | null>(() => {
     return null;
   }
   if (t.status === "active") {
+    // The server handoff state covers verify and remote capture too, where
+    // there may be no running check row or engineer process.
+    if (repo.handoffInFlight(t.id)) {
+      const queued = remotePoolQueueHintForTaskChecks(repo.taskChecks[t.id]);
+      if (queued) return { label: queued.label, title: queued.title, cls: "tc-queued" };
+      const slow = slowCheck.value;
+      return {
+        label: runningChecksLabel(!!slow),
+        title: slow
+          ? "Handoff checks are running slower than usual — focus the slow badge for timing details"
+          : "RepoOS is committing and running the checks before moving this to review",
+        cls: "tc-reviewing",
+      };
+    }
     if (showCardCheckProgress.value) return null;
     if (repo.isQueued(t.id)) return agentQueuedHint(t.id);
     if (repo.isRunning(t.id)) {
@@ -1064,23 +1078,6 @@ const hint = computed<CardHint | null>(() => {
           suppressAgentStuck: suppressAgentStuckHint.value,
         }) ?? codingOrStuckHint(t.id)
       );
-    }
-    // A stale needs-input flag (e.g. "review still finding issues") must not
-    // hide the live handoff: the human already sent it back and it is
-    // running checks to return to review.
-    if (repo.handoffInFlight(t.id)) {
-      const queued = remotePoolQueueHintForTaskChecks(repo.taskChecks[t.id]);
-      if (queued) {
-        return { label: queued.label, title: queued.title, cls: "tc-queued" };
-      }
-      const slow = slowCheck.value;
-      return {
-        label: runningChecksLabel(!!slow),
-        title: slow
-          ? "Handoff checks are running slower than usual — focus the slow badge for timing details"
-          : "RepoOS is committing and running the checks before moving this to review",
-        cls: "tc-reviewing",
-      };
     }
     if (t.needsInput) return needsInputHint(t);
     // 0381: the engineer is idle (paused) but the PM is chatting about this
@@ -1183,6 +1180,7 @@ const action = computed<CardAction | null>(() => {
   // button, so retrying is still one click away, just not from the card.
   if (t.status === "review" && repo.doneErrorFor(t.id)) return null;
   if (t.status === "active") {
+    if (repo.handoffInFlight(t.id)) return null;
     if (showCardCheckProgress.value) return null;
     return repo.isRunning(t.id) ? ACTIVE_PAUSE : ACTIVE_RESTART;
   }
