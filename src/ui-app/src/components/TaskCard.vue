@@ -1122,8 +1122,7 @@ const hint = computed<CardHint | null>(() => {
     // stays on the coding path when `running` is true (see task-card-stuck test).
     if (
       evidence.cls === "tc-stuck" &&
-      (activeEngineerCardBlocksInterrupt(evidence) ||
-        evidence.label.startsWith("stuck · silent"))
+      (activeEngineerCardBlocksInterrupt(evidence) || evidence.label.startsWith("stuck · silent"))
     ) {
       return {
         label: evidence.label,
