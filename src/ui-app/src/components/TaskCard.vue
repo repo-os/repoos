@@ -1117,7 +1117,10 @@ const hint = computed<CardHint | null>(() => {
   if (t.status === "active") {
     if (showCardCheckProgress.value) return null;
     const evidence = activeEngineerEvidence.value;
-    if (evidence.cls === "tc-stuck") {
+    // Check / remote / telemetry stalls outrank the generic "Coding" lifecycle
+    // label while the engineer slot is still held (#1000). Pure agent silence
+    // stays on the coding path when `running` is true (see task-card-stuck test).
+    if (evidence.cls === "tc-stuck" && activeEngineerCardBlocksInterrupt(evidence)) {
       return {
         label: evidence.label,
         title: evidence.title,
