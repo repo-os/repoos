@@ -218,7 +218,7 @@ function onKey(e: KeyboardEvent): void {
 }
 .pl-id {
   font-weight: 700;
-  color: var(--muted);
+  color: var(--txt-dim);
 }
 .pl-chip {
   padding: 1px 5px;
@@ -227,7 +227,7 @@ function onKey(e: KeyboardEvent): void {
   text-transform: uppercase;
   font-weight: 600;
   border: 1px solid var(--border);
-  color: var(--muted);
+  color: var(--txt-dim);
 }
 .pl-title {
   font-weight: 600;
@@ -277,7 +277,7 @@ function onKey(e: KeyboardEvent): void {
   color: var(--amber);
 }
 .pl-elapsed {
-  color: var(--muted);
+  color: var(--txt-dim);
   font-size: 10px;
   white-space: nowrap;
 }
@@ -302,7 +302,7 @@ function onKey(e: KeyboardEvent): void {
   height: 14px;
 }
 .pl-row-4 {
-  color: var(--muted);
+  color: var(--txt-dim);
   font-size: 10px;
 }
 .pl-round {
