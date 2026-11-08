@@ -69,3 +69,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 - 2026-11-08T07:05:07Z · body
 - 2026-11-08T07:07:20Z · body
 - 2026-11-08T07:07:45Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T07:07:45Z · message_queued at 2026-11-08T07:07:45.569Z
