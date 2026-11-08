@@ -8,8 +8,12 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6.1-terra
+review_cli_override: codex
+review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:53:59Z"
-updated_at: "2026-11-08T02:53:59Z"
+updated_at: "2026-11-08T02:54:04Z"
 ---
 ## Problem
 `repoos check` runs the full plan (build, format/lint, full test suite, WebKit UI smoke, contrast audit) even when a task's diff contains only task bookkeeping under `work/` (task file, `work/reports/<id>/*`) or other non-code files. Example: #1055 (the weekly worktree cleanup) changed 11 files, all under `work/`, and still waited for a remote-validation slot and ran the full 680-file suite on every handoff attempt, repeating after each outage or capture timeout. That is minutes to hours of wasted time and runner load for a change that cannot affect behavior. The recurring weekly cleanup will hit this every run.
@@ -36,3 +40,4 @@ Start from `repoos.toml` `[[check.steps]]`, `src/commands/check.ts` (scoped `--c
 ## Activity
 
 - 2026-11-08T02:53:59Z · created · njachowski@gmail.com
+- 2026-11-08T02:54:04Z · cli_override, model_override, review_cli_override, review_model_override
