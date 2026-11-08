@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6-luna
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T07:13:04Z"
+updated_at: "2026-11-08T07:13:07Z"
 dev_error_count: 12
 ---
 ## Items
@@ -138,3 +138,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T06:53:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-08T07:13:04Z · note: ui verification failed: ui verification failed (10 issue(s)): [missing-target] Board card coding without inline active recency (target "default"): state "board:activeCoding" did not render on target "default" — / shows no task card (http://127.0.0.1:42935/?shotState=board%3AactiveCoding); [missing-target] Board card coding without inline active recency (target "default"): highlight [data-task-id="9999"] [data-test-id="task-card-agent-hint"] matched nothing on / (http://127.0.0.1:42935/?shotState
 - 2026-11-08T07:13:04Z · message_queued at 2026-11-08T07:13:04.395Z
+- 2026-11-08T07:13:07Z · message_delivered: 1 message(s)
