@@ -15,10 +15,7 @@ export function cardHintDataTip(title: string, activityTip?: string | null): str
 }
 
 /** Last engineer output — "Active 3m ago" plus the local timestamp. */
-export function agentLastActivityTip(
-  lastAt: string | undefined,
-  nowMs: number,
-): string | null {
+export function agentLastActivityTip(lastAt: string | undefined, nowMs: number): string | null {
   const activity = formatActivity(nowMs, lastAt);
   if (!activity) return null;
   const headline = activity === "just now" ? "Active just now" : `Active ${activity}`;
@@ -35,8 +32,7 @@ export function stateElapsedTip(
   if (!sinceIso || Number.isNaN(Date.parse(sinceIso))) return null;
   const compact = formatPipelineElapsed(sinceIso, nowMs);
   if (compact === "—") return null;
-  const headline =
-    compact === "just now" ? `${prefix} just now` : `${prefix} for ${compact}`;
+  const headline = compact === "just now" ? `${prefix} just now` : `${prefix} for ${compact}`;
   const rel = relTime(sinceIso, new Date(nowMs));
   const stamp = fmtFullDateTime(sinceIso);
   const ageLine = rel !== "unknown" ? rel : null;

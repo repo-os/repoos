@@ -761,8 +761,8 @@ function codingOrStuckHint(taskId: string): CardHint {
   const resolved = activeEngineerEvidence.value;
   const activityTip =
     resolved.cls === "tc-coding"
-      ? agentLastActivityTip(lastActivityFor(taskId), Math.max(now.value, Date.now())) ??
-        undefined
+      ? (agentLastActivityTip(lastActivityFor(taskId), Math.max(now.value, Date.now())) ??
+        undefined)
       : undefined;
   return {
     label: resolved.label,
