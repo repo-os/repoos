@@ -2,7 +2,7 @@
 id: "1066"
 title: "Pipeline view: card text uses --muted (a background token), unreadable in every theme"
 type: bug
-status: ready
+status: active
 paths: [src/ui-app/src/components/PipelineCard.vue, src/ui-app/src/style.css]
 priority: p1
 area: web
@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/pipeline-view-card-text-uses-muted-a-bac
 created_at: "2026-11-08T13:13:52Z"
-updated_at: "2026-11-08T14:58:57Z"
+updated_at: "2026-11-08T15:09:59Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -91,3 +91,4 @@ Reported with a screenshot from the tiao project; titles are readable but id, ch
 - 2026-11-08T14:54:02Z · ↻ resuming engineer to read queued message
 - 2026-11-08T14:58:43Z · message_delivered: 2 message(s)
 - 2026-11-08T14:58:57Z · message_queued at 2026-11-08T14:58:57.151Z
+- 2026-11-08T15:09:59Z · status ready→active
