@@ -106,3 +106,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T09:51:26Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-08T09:51:27Z · message_queued at 2026-11-08T09:51:27.040Z
 - 2026-11-08T09:51:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementing shared reaper logic, Hetzner capture polling, background reaping, and cancellation honesty. · stderr: (empty)
+- 2026-11-08T09:51:27Z · message_delivered: 3 message(s)
