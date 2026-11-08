@@ -1130,4 +1130,3 @@ wedged after `localChecks.staleAfterMs`; after
 SIGKILL if needed. The Checks page and `repoos checks slots` show slot owners
 and queued checks. A wedged managed holder can be released explicitly after
 confirming its displayed PID.
-
