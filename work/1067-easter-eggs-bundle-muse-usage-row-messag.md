@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T19:09:45Z"
+updated_at: "2026-11-08T19:12:37Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -148,3 +148,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:57:00Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T18:57:46Z · message_delivered: 1 message(s)
 - 2026-11-08T19:09:45Z · body
+- 2026-11-08T19:12:37Z · note: ui verification passed: 1 of 1 shot captured with clean console
