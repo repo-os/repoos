@@ -2,18 +2,18 @@
 id: "1056"
 title: "Checks progress bar polish: full-width rounded on cards, half-width on panel and pipeline"
 type: chore
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/checks-progress-bar-polish-full-width-ro
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T00:15:51Z"
-updated_at: "2026-11-08T00:30:28Z"
+updated_at: "2026-11-08T01:38:36Z"
 ---
 ## Problem
 The checks progress bar added by #1054 works, but its styling and layout need polish in three places (see Nick's 2026-11-08 screenshots of #1055/#1044):
@@ -44,3 +44,4 @@ Files: src/ui-app/src/components/TaskCard.vue (check-progress block), TaskDrawer
 - 2026-11-08T00:15:58Z · status inbox→ready
 - 2026-11-08T00:27:22Z · cli_override, model_override
 - 2026-11-08T00:30:28Z · cli_override, model_override, review_model_override
+- 2026-11-08T01:38:36Z · status ready→active, branch
