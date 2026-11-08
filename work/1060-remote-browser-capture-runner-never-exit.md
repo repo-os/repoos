@@ -15,7 +15,7 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-browser-capture-runner-never-exit
-model_override: default
+model_override: gpt-6.1-terra
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T07:43:30Z"
@@ -314,3 +314,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T18:50:01Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-08T18:55:35Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
 - 2026-11-08T19:04:43Z · cli_override, model_override
+- 2026-11-08T19:04:43Z · model_override
