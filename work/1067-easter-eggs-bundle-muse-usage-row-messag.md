@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-08T18:29:31.454Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 502 for http://127.0.0.1:36953/api/model-providers/muse/usage (http://127.0.0.1:36953/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 502 (Bad Gateway) (http://127.0.0.1:36953/api/model-providers/muse/usage)"
 id: "1067"
 title: "Easter eggs bundle: Muse usage row messages and dashboard link, needs-input flag after body fix"
 type: chore
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T18:29:28Z"
+updated_at: "2026-11-08T18:29:53Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-08T18:29:31.454Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 502 for http://127.0.0.1:36953/api/model-providers/muse/usage (http://127.0.0.1:36953/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 502 (Bad Gateway) (http://127.0.0.1:36953/api/model-providers/muse/usage)"
 handoff_signal_retry_count: 2
 ---
 ## Items
