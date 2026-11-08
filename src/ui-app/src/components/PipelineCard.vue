@@ -74,8 +74,10 @@ const showInlineCheckBar = computed(
   () => props.checkProgress != null && checkProgressPercent(props.checkProgress) != null,
 );
 
-/** Healthy pipeline rows hide elapsed on the line; recency lives on the step tooltip (#1058). */
-const showElapsedInline = computed(() => displayState.value !== "ok");
+/** Hide elapsed only while live work is healthy; idle review/close-out rows keep state time. */
+const showElapsedInline = computed(
+  () => !(sharedStatus.value?.inFlight && !sharedStatus.value.stuck),
+);
 const elapsedTip = computed(() =>
   agentLastActivityTip(props.lastActivityAt ?? undefined, props.nowMs),
 );
