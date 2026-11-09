@@ -422,3 +422,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T06:56:18Z · note: handoff requested (cli)
 - 2026-11-09T06:59:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T07:06:49Z · message_queued at 2026-11-09T07:06:49.226Z
+- 2026-11-09T07:06:49Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: docs/check-run-history.md, src/core/check-gate-bookkeeping.ts, src/ui-app/tests/check-gate-bookkeeping.test.ts, user-docs/check.md) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
