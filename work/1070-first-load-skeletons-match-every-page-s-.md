@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -256,4 +256,3 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T14:23:57Z · message_queued at 2026-11-09T14:23:57.299Z
 - 2026-11-09T14:23:57Z · ↻ resuming engineer to read queued message
 - 2026-11-09T14:23:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed on `bee`: 5,072 tests passed with one skipped, and rendered contrast plus UI smoke passed. The obsolete shot declarations are removed. I’m requesting review again now. · stderr: 2026-11-09T14:13:27.698554Z ERROR codex_core::util: Custom tool call output is missing for call id: call_fbf673e9d1914b7093c88ca45aeb92ba 2026-11-09T14:13:40.057517Z ERROR codex_core::util: Custom tool call output is missing for call id: call_fbf673e9d1914b7093c88ca45aeb92ba 2026-11-09T14:13:52.730662Z ERROR codex_cor…
-- 2026-11-09T14:23:57Z · status active→review
