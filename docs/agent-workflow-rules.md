@@ -121,6 +121,33 @@ to avoid that race by skipping review or reissuing `mv done` is not the current
 workflow. The lesson is to coordinate through server actions, wait for actual
 completion, and keep merging and status changes in the close-out pipeline.
 
+## Review loop: blocking bar, freeze and accepted scope (#1080)
+
+A review should converge in 2–4 passes. The reviewer prompt (`reviewMission` in
+`src/server/review.ts`, tested in `src/ui-app/tests/default-agent-prompts.test.ts`)
+enforces four rules:
+
+- **Priority-aware bar.** P1/P2 use the full bar: every item under `## Bugs`
+  blocks. P3 tasks and tasks titled `Easter eggs bundle…` use the light bar from
+  pass 1: correctness bugs and landing blockers only.
+- **Automatic freeze.** From pass `review.freezeAfterPasses + 1` (default 4 →
+  pass 5) the bar is frozen: blocking = a defect that breaks the task's own
+  acceptance criteria, a regression of existing behaviour, or a landing blocker.
+  Further edge cases of an already-fixed class and hardening ideas go under
+  `## Suggestions (non-blocking)` and do not change the verdict.
+- **Accepted scope is authoritative.** A `## Accepted scope and known limitations`
+  section (any heading starting `Accepted scope`) is quoted into the prompt; the
+  items it lists, and anything it explicitly supersedes, are not blocking.
+- **One enumeration.** After any bug listed, the `## Bugs` section ends with
+  `No further findings of this class were found after grepping: <patterns and
+  paths>`. The parser ignores that line, so it never counts as a blocking bug.
+  The engineer self-reviews against the same checklist before handoff.
+
+Not covered here: auto-filing follow-up tasks from suggestions and the
+`round N of ~4` convergence display. Housekeeping failures that waste rounds are
+#1076 (stray other-task bookkeeping in branches) and #1061 (bookkeeping commits
+invalidating checks).
+
 ## Definition of done: the check plan in detail
 
 ## Definition of done

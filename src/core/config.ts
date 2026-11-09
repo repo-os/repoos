@@ -156,7 +156,10 @@ export const DEFAULT_AGENTS: Agent[] = [
       "`highlight` selector that exists on the page; then open the captured PNG and confirm it shows the change. " +
       "Before handoff, re-read the newest review report and any message sent to you; fix EVERY item, and when a " +
       "finding names a bug, find its whole class (grep sibling paths, callers, config/schema/docs/test " +
-      "registrations) and fix all instances with a table-driven test instead of patching one. A new config key " +
+      "registrations) and fix all instances with a table-driven test instead of patching one. Before handoff, " +
+      "self-review your diff against the reviewer's checklist (the whole class of each fixed bug, the accepted-scope " +
+      "section if the task has one, and the shots); a bug you fixed but did not enumerate costs a review round. " +
+      "A new config key " +
       "needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs. Run " +
       "the scoped check once and hand off only when it passes; end the final message with the handoff signal " +
       "alone on its own line. After a merge conflict with the base branch, merge it and take the base branch's " +
@@ -176,6 +179,7 @@ export const DEFAULT_AGENTS: Agent[] = [
     instructions:
       "Reviews a task the moment it lands in `review`: reads the diff in the task's worktree and reports bugs, edge cases, and suggestions for the human signing off. " +
       "When there are no bugs, write exactly `None found` under Bugs (no trailing period); use the same exact text for empty Edge cases or Suggestions. " +
+      "After any bug you list, end the Bugs section with one line: `No further findings of this class were found after grepping: <patterns and paths>`. " +
       "Report the WHOLE CLASS of every bug in one pass: name its class (lifecycle/teardown ordering, unhandled spawn errors, config-key registration, import/export path rewriting, fallback handling, and the like), grep the diff and the files it touches for every other instance — sibling paths, callers, config/schema/docs/test registrations, and both sides of a fallback — and list them all in this one report instead of holding findings for later rounds. " +
       "Read the newest earlier review reports for the task first (the committed reports under `work/reports/<id>/`, newest pass first; older passes may be in the cache's `reviews/<id>/`), verify each finding was actually fixed, and never re-report a fixed item as new. " +
       "Separate code defects from evidence-only gaps: when the code is sound but a capture is wrong or stale, say `EVIDENCE-GAP-ONLY` or `STALE-EVIDENCE-ONLY`, and check that each declared shot's target and route can really render its declared state. " +
@@ -369,6 +373,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // is flagged for a human.
   review: {
     humanFlagAfterPasses: 5,
+    freezeAfterPasses: 4,
     timeoutMinutes: 15,
   },
   // Check-gate defaults (#0655): how many times a failing test file is
@@ -2523,11 +2528,16 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
           ? Number(raw.trim())
           : undefined;
     const reviewHumanFlag = reviewNumber(parsed["review.humanFlagAfterPasses"]);
+    const reviewFreeze = reviewNumber(parsed["review.freezeAfterPasses"]);
     const reviewTimeout = reviewNumber(parsed["review.timeoutMinutes"]);
     const review: ReviewConfig = { ...DEFAULT_CONFIG.review, ...cfg.review };
     let reviewConfigured = false;
     if (reviewHumanFlag !== undefined && Number.isFinite(reviewHumanFlag) && reviewHumanFlag >= 1) {
       review.humanFlagAfterPasses = Math.min(50, Math.floor(reviewHumanFlag));
+      reviewConfigured = true;
+    }
+    if (reviewFreeze !== undefined && Number.isFinite(reviewFreeze) && reviewFreeze >= 1) {
+      review.freezeAfterPasses = Math.min(50, Math.floor(reviewFreeze));
       reviewConfigured = true;
     }
     if (reviewTimeout !== undefined && Number.isFinite(reviewTimeout) && reviewTimeout >= 1) {
@@ -3367,6 +3377,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Completed review passes on one task before the next report opens with a summary of the repeated " +
         "bug classes earlier passes kept finding and the task is flagged for a human. Default 5. The flag is " +
         "separate from the auto-bounce review-rounds-exhausted backstop.",
+    },
+    {
+      key: "review.freezeAfterPasses",
+      label: "Freeze the blocking bar after",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.review!.freezeAfterPasses!,
+      description:
+        "Completed review passes on one task before the blocking bar freezes. From the next pass on, only real " +
+        "defects, regressions and landing blockers can block; further edge cases and hardening ideas become " +
+        "non-blocking suggestions. Default 4. P3 tasks and Easter eggs bundles use the lighter bar from pass 1.",
     },
     {
       key: "review.timeoutMinutes",
@@ -4589,6 +4611,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "reviewVerification.guardTestCheck",
   "reviewVerification.testGlobs",
   "review.humanFlagAfterPasses",
+  "review.freezeAfterPasses",
   "review.timeoutMinutes",
   // Remote validation
   "remoteValidation.enabled",

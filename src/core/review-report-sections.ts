@@ -61,6 +61,14 @@ const QUALIFIER_TAIL =
 
 const LIST_MARKER = /^\s*(?:[-+*•]|\d+[.)])\s+/;
 
+/**
+ * The one-line closer every `## Bugs` list ends with (#1080): it records what
+ * the reviewer grepped for the class. It is a statement, not a finding.
+ */
+export const NO_FURTHER_FINDINGS_PREFIX =
+  "No further findings of this class were found after grepping";
+const NO_FURTHER_FINDINGS_LINE = new RegExp(`^${NO_FURTHER_FINDINGS_PREFIX}\\b`, "i");
+
 function stripListMarker(line: string): string {
   return line.replace(LIST_MARKER, "").trim();
 }
@@ -121,6 +129,8 @@ export function isEmptyReviewSection(text: string | null | undefined): boolean {
     const content = stripListMarker(line);
     if (!content) continue;
     if (isNoneStatement(content)) continue;
+    // The enumeration closer (#1080) records what was grepped; it is not a finding.
+    if (NO_FURTHER_FINDINGS_LINE.test(content)) continue;
     const bold = parseBoldLabelFinding(line);
     if (bold) {
       if (!bold.value || isNoneStatement(bold.value)) continue;
@@ -184,7 +194,8 @@ export function extractReviewReportSections(markdown: string): {
     } else if (trimmed === "## Edge cases") {
       currentSection = "edgeCases";
       sectionLines.edgeCases = [];
-    } else if (trimmed === "## Suggestions") {
+    } else if (trimmed === "## Suggestions" || trimmed.startsWith("## Suggestions (")) {
+      // `## Suggestions (non-blocking)` is the post-freeze heading (#1080).
       currentSection = "suggestions";
       sectionLines.suggestions = [];
     } else if (trimmed === "## Evidence") {
