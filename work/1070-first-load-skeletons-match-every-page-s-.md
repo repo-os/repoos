@@ -128,3 +128,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:04:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T08:16:25Z · body
 - 2026-11-09T08:17:22Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T08:17:22Z · message_queued at 2026-11-09T08:17:22.493Z
