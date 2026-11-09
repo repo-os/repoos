@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T22:07:17Z"
+updated_at: "2026-11-09T22:07:19Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
 last_handoff_failure_sha: 8af881db99489688c2299b217eabe93b92349fe6
 review_passes: 11
@@ -381,3 +381,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T21:43:52Z · note: handoff requested (cli)
 - 2026-11-09T22:02:50Z · message_delivered: 2 message(s)
 - 2026-11-09T22:07:17Z · message_queued at 2026-11-09T22:07:17.409Z
+- 2026-11-09T22:07:19Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
