@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T05:15:50Z"
+updated_at: "2026-11-09T05:24:09Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -40,18 +40,18 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 ```json
 [
 {
-  "label": "Mission Control first-load skeleton",
-  "target": "default",
-  "route": "/?shotState=loading:dashboard",
-  "highlight": ".page-skeleton--dashboard",
-  "state": "loading:dashboard"
+"label": "Mission Control first-load skeleton",
+"target": "default",
+"route": "/?shotState=loading:dashboard",
+"highlight": ".page-skeleton--dashboard",
+"state": "loading:dashboard"
 },
 {
-  "label": "Stories first-load skeleton",
-  "target": "default",
-  "route": "/stories?shotState=loading:stories",
-  "highlight": ".page-skeleton--rows",
-  "state": "loading:stories"
+"label": "Stories first-load skeleton",
+"target": "default",
+"route": "/stories?shotState=loading:stories",
+"highlight": ".page-skeleton--rows",
+"state": "loading:stories"
 }
 ]
 ```
@@ -73,3 +73,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T05:02:21Z · body
 - 2026-11-09T05:13:52Z · body
 - 2026-11-09T05:15:50Z · body
+- 2026-11-09T05:24:09Z · message_queued at 2026-11-09T05:24:09.159Z
