@@ -11,6 +11,24 @@ your tailnet). A tailscale host runs the gate one of two ways, set per host
 container (Linux or macOS via Docker Desktop), or, on macOS only, natively
 with no Docker at all. Both are real, maintained setup paths.
 
+## Remote browser capture cleanup (#1060)
+
+The browser runner publishes its result atomically, bounds preview shutdown, and
+exits explicitly. Both Tailscale and Hetzner poll for a complete `result.json`
+in the run-specific artifact directory during an in-flight capture, remove the
+corresponding container if it has not exited, and record a force-collection
+event on the task. `validate.sh` repeats the same completed-capture reap at host
+startup for running leftovers and prints `[reaper] removed …` only after
+`docker rm -f` succeeds (task id in the marker when known); failed removals print
+`[reaper] failed to remove … reason=…` and the control plane records them as warn/
+infra events, not successes. The Mac-side periodic reaper uses the shared
+`runValidationContainerReaper` sweep on probed hosts (Tailscale pool hosts and the
+warm Hetzner VM), including while a capture is still tracked as live — completed
+shot containers are rechecked for the completion log, quiet logs, and idle CPU
+before removal. A failed handoff cancels that task's queued and active
+captures on both providers; remote kills are bounded and failures are recorded
+explicitly instead of reporting success when SSH cannot remove the container.
+
 ## Local caps when remote is off or falls back (#0836)
 
 Even with remote validation, local guards, Playwright smoke/contrast/shots, and

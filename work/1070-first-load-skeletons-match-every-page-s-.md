@@ -9,11 +9,12 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T06:12:49Z"
-review_rounds: 1
+updated_at: "2026-11-09T10:09:21Z"
+review_rounds: 2
 routing_switches: 1
-review_passes: 1
-last_check_failure: "repoos check at 2026-11-09T05:46:31.592Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /?shotState=loading:dashboard (http://127.0.0.1:45271/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories?shotState=loading:stories (http://127.0.0.1:45271/stories?shotState=loading%3Ast… (truncated)"
+routing_escalations: 1
+review_passes: 3
+last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -42,23 +43,14 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 
 ## Shots
 ```json
-[
-{
-  "label": "Mission Control first-load skeleton",
-  "target": "default",
-  "route": "/",
-  "highlight": ".page-skeleton",
-  "state": "loading:dashboard"
-},
-{
-  "label": "Stories first-load skeleton",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".page-skeleton",
-  "state": "loading:stories"
-}
-]
+[]
 ```
+
+## Accepted scope: no loading-state screenshots
+Owner-side decision (2026-11-09): the handoff capture tool deliberately treats any page showing aria-busy / a loading indicator as a FAILED shot ('loading state detected', src/core/shot-page.ts), so declared shots of the skeleton itself cannot pass. Acceptance criterion 6 (shots of the loading state) is therefore replaced by: precise component tests that assert the skeleton structure and item counts against the real layout constants, plus optional shots of the SETTLED Mission Control and Stories pages to show the real layout the skeleton must match. A reviewer must not require loading-state screenshots.
+
+## Accepted scope and known limitations
+Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and minimum-visible-time (about 350 ms) are applied at the SHELL level in App.vue only. Applying the same gate inside every individual view that renders its own PageSkeleton (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) is out of scope here and is tracked in a follow-up task; a reviewer must report it as a suggestion, not a blocking bug. Still required: fix the Settings row-count regression, and replace the magic placeholder counts for non-board kinds with named constants documented next to the real layout they mirror.
 
 ## Screenshots
 
@@ -95,3 +87,72 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T06:11:28Z · message_delivered: 1 message(s)
 - 2026-11-09T06:11:28Z · status review→active
 - 2026-11-09T06:12:49Z · body
+- 2026-11-09T06:24:09Z · message_queued at 2026-11-09T06:24:09.181Z
+- 2026-11-09T06:24:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T06:29:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T06:43:44Z · body
+- 2026-11-09T06:46:16Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)
+- 2026-11-09T06:46:16Z · message_queued at 2026-11-09T06:46:16.907Z
+- 2026-11-09T06:46:19Z · message_delivered: 1 message(s)
+- 2026-11-09T06:56:04Z · body: Accepted scope: no loading-state screenshots (added)
+- 2026-11-09T06:56:04Z · message_queued at 2026-11-09T06:56:04.962Z
+- 2026-11-09T06:56:06Z · message_queued at 2026-11-09T06:56:06.830Z
+- 2026-11-09T06:59:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T06:59:49Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T06:59:49Z · message_queued at 2026-11-09T06:59:49.726Z
+- 2026-11-09T06:59:49Z · ↻ resuming engineer to read queued message
+- 2026-11-09T06:59:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped `repoos check` passed after falling back to the local gate: build, lint, contrast audit, all 364 test files, and UI smoke are green. I’m doing the required review-report and worktree-state check, then I’ll send the handoff reque… · stderr: 2026-11-09T06:55:28.308805Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-09T06:59:50Z · message_delivered: 3 message(s)
+- 2026-11-09T07:00:25Z · body
+- 2026-11-09T07:04:09Z · message_queued at 2026-11-09T07:04:09.261Z
+- 2026-11-09T07:04:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T07:09:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T07:14:05Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T07:14:05Z · status active→review
+- 2026-11-09T07:14:05Z · message_queued at 2026-11-09T07:14:05.742Z
+- 2026-11-09T07:16:06Z · note: review pass 2: good to go
+- 2026-11-09T07:59:34Z · status review→active
+- 2026-11-09T07:59:34Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T07:59:37Z · message_delivered: 1 message(s)
+- 2026-11-09T07:59:38Z · message_queued at 2026-11-09T07:59:38.089Z
+- 2026-11-09T08:02:04Z · body
+- 2026-11-09T08:04:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T08:16:25Z · body
+- 2026-11-09T08:17:22Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T08:17:22Z · message_queued at 2026-11-09T08:17:22.493Z
+- 2026-11-09T08:17:22Z · ↻ resuming engineer to read queued message
+- 2026-11-09T08:17:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
+- 2026-11-09T08:17:22Z · status active→review
+- 2026-11-09T08:17:22Z · message_delivered: 2 message(s)
+- 2026-11-09T08:17:23Z · note: handoff requested (cli)
+- 2026-11-09T08:19:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T08:19:25Z · body
+- 2026-11-09T08:19:34Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /?shotState=loading:dashboard (http://127.0.0.1:45643/?shotState=loading:dashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories?shotState=loading:stories (http://127.0.0.1:45643/stories?shotState=loading:sto
+- 2026-11-09T08:19:34Z · message_queued at 2026-11-09T08:19:34.648Z
+- 2026-11-09T08:19:34Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /?shotState=loading:dashboard (http://127.0.0.1:45643/?shotState=loading:dashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories?shotState=loading:stories (http://127.0.0.1:45643/stories?shotState=loading:stories)
+- 2026-11-09T08:24:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T08:33:54Z · body
+- 2026-11-09T08:35:03Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T08:35:04Z · message_queued at 2026-11-09T08:35:04.172Z
+- 2026-11-09T08:35:04Z · ↻ resuming engineer to read queued message
+- 2026-11-09T08:35:04Z · status active→review
+- 2026-11-09T08:35:04Z · message_delivered: 2 message(s)
+- 2026-11-09T08:35:05Z · note: handoff requested (cli)
+- 2026-11-09T08:36:11Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T08:37:15Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T08:37:16Z · status active→review
+- 2026-11-09T08:37:16Z · message_queued at 2026-11-09T08:37:16.314Z
+- 2026-11-09T08:38:04Z · note: review pass 3: needs some work
+- 2026-11-09T08:38:05Z · message_delivered: 1 message(s)
+- 2026-11-09T08:38:05Z · status review→active
+- 2026-11-09T08:38:07Z · CTO nudge: held — remote validation is running
+- 2026-11-09T09:09:09Z · message_queued at 2026-11-09T09:09:09.254Z
+- 2026-11-09T09:09:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T09:09:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T09:38:35Z · body: Accepted scope and known limitations (added)
+- 2026-11-09T09:38:35Z · message_queued at 2026-11-09T09:38:35.958Z
+- 2026-11-09T09:38:39Z · message_queued at 2026-11-09T09:38:39.224Z
+- 2026-11-09T10:02:27Z · body
+- 2026-11-09T10:02:27Z · body
+- 2026-11-09T10:09:21Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T10:09:21Z · message_delivered: 3 message(s)

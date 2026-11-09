@@ -1,8 +1,13 @@
 ---
+updated_at: "2026-11-09T10:25:25Z"
+review_passes: 13
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Landing conflicts and unrelated task changes remain; the Pipeline popup capture is cropped.
 priority: p3
 area: web
 assigned_to: ai
@@ -11,10 +16,6 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T07:39:23Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/debugger-integration.test.ts > debugger agent integration > does not re-broadcast a turn the panel already drew optimistically (#0443) on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: abab38560543ef8b2c776e875315f491fc5a3e6b
-review_passes: 9
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 56
@@ -63,17 +64,17 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-"waitMs": 300
+"waitMs": 500
 }
 ],
 "state": "board:activeCoding"
 },
 {
-"label": "Pipeline coding row with activity popup",
+"label": "Pipeline coding row with full activity popup",
 "target": "default",
 "route": "/work?tab=pipeline",
 "selector": "[data-task-id=\"pipe-coding\"]",
-"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+"highlight": "[role=\"tooltip\"].show",
 "steps": [
 {
 "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
@@ -82,7 +83,7 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-"waitMs": 300
+"waitMs": 500
 }
 ],
 "state": "board:pipeline"
@@ -566,4 +567,65 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T06:40:56Z · body
 - 2026-11-09T06:56:08Z · message_queued at 2026-11-09T06:56:08.462Z
 - 2026-11-09T07:03:11Z · body
+- 2026-11-09T07:25:16Z · body
+- 2026-11-09T07:26:32Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T07:26:32Z · message_queued at 2026-11-09T07:26:32.507Z
+- 2026-11-09T07:26:32Z · ↻ resuming engineer to read queued message
+- 2026-11-09T07:26:32Z · message_delivered: 3 message(s)
+- 2026-11-09T07:29:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T07:39:23Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-09T07:39:23Z · status active→review
+- 2026-11-09T07:39:24Z · message_queued at 2026-11-09T07:39:24.111Z
+- 2026-11-09T07:40:05Z · note: review pass 10: needs some work
+- 2026-11-09T07:40:05Z · needs_input
+- 2026-11-09T07:52:49Z · status review→active
+- 2026-11-09T07:52:49Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T07:52:51Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T07:52:52Z · message_delivered: 1 message(s)
+- 2026-11-09T07:52:52Z · needs_input
+- 2026-11-09T07:52:53Z · message_queued at 2026-11-09T07:52:53.746Z
+- 2026-11-09T08:11:17Z · body
+- 2026-11-09T08:13:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented the timing fallback for automatic check-failure and merge-conflict retries in [TaskCard.vue](/Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-activity-recency/src/ui-app/src/components/TaskCard.vue) and [retr… · stderr: Reading additional input from stdin...
+- 2026-11-09T08:13:02Z · status active→review
+- 2026-11-09T08:13:02Z · message_delivered: 1 message(s)
+- 2026-11-09T08:13:03Z · note: handoff requested (cli)
+- 2026-11-09T08:14:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T08:14:59Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-09T08:15:00Z · status active→review
+- 2026-11-09T08:15:00Z · message_queued at 2026-11-09T08:15:00.377Z
+- 2026-11-09T08:15:32Z · note: review pass 11: needs some work
+- 2026-11-09T08:15:32Z · needs_input
+- 2026-11-09T08:36:09Z · status review→active
+- 2026-11-09T08:36:09Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T08:36:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T08:36:14Z · message_delivered: 1 message(s)
+- 2026-11-09T08:36:14Z · needs_input
+- 2026-11-09T08:36:16Z · message_queued at 2026-11-09T08:36:16.253Z
+- 2026-11-09T08:51:04Z · body
+- 2026-11-09T09:06:06Z · body
+- 2026-11-09T09:07:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The card activity UI implementation is already in place. I fixed the capture race where live runner data replaced the Board and Pipeline fixtures with paused state, and added a regression test. `REPOOS_CHECK_CHANGED=main repoos check` pass… · stderr: Reading additional input from stdin...
+- 2026-11-09T09:07:20Z · status active→review
+- 2026-11-09T09:07:20Z · message_delivered: 1 message(s)
+- 2026-11-09T09:07:20Z · note: handoff requested (cli)
+- 2026-11-09T09:08:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T09:09:29Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-09T09:09:29Z · status active→review
+- 2026-11-09T09:09:29Z · message_queued at 2026-11-09T09:09:29.659Z
+- 2026-11-09T09:09:59Z · note: review pass 12: needs some work
+- 2026-11-09T09:09:59Z · needs_input
+- 2026-11-09T09:35:42Z · status review→active
+- 2026-11-09T09:35:42Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T09:35:45Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T09:35:50Z · needs_input
+- 2026-11-09T09:35:51Z · message_queued at 2026-11-09T09:35:51.371Z
+- 2026-11-09T09:38:43Z · message_delivered: 1 message(s)
+- 2026-11-09T09:40:44Z · body
+- 2026-11-09T10:05:53Z · engineer stopped by request
+- 2026-11-09T10:05:53Z · note: handoff requested (cli)
+- 2026-11-09T10:05:59Z · message_queued at 2026-11-09T10:05:59.076Z
+- 2026-11-09T10:24:56Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-09T10:24:57Z · status active→review
+- 2026-11-09T10:24:57Z · message_queued at 2026-11-09T10:24:57.309Z
+- 2026-11-09T10:25:25Z · note: review pass 13: needs some work
+- 2026-11-09T10:25:25Z · needs_input
+

@@ -1,6 +1,12 @@
 {
   "releases": [
     {
+      "version": "0.5.79",
+      "tag": "v0.5.79",
+      "date": "2026-11-09",
+      "notes": "## Highlights\n\n- **Remote browser captures no longer stall.** The runner now exits as soon as a capture finishes, finished captures are collected and cleaned up automatically, and a failed handoff cancels its own outstanding captures. This removes the 15-30 minute waits and the pile-up of stale capture containers that slowed every task's handoff (#1060).\n- **Faster checks for bookkeeping-only changes.** When a diff only touches task bookkeeping or docs, the check skips the full test suite (#1059).\n\n## Improvements and fixes\n\n- Review card no longer says \"ready to finish\" while checks are still running or failing (#1065).\n- Pipeline view: card text uses a readable colour in every theme (#1066).\n- Muse usage row: clearer messages and a better dashboard link (#1067).\n\n## Known issues\n\n- Cancelling remote captures is verified on the Tailscale runner. Parity for the other remote provider (for example Hetzner) and a few rarer Docker/ssh failure-handling edge cases are tracked in #1068.\n- Two further items are still in review and are not in this release: bookkeeping commits invalidating a running check (#1061) and hover-only \"last active\" details on cards (#1058)."
+    },
+    {
       "version": "0.5.78",
       "tag": "v0.5.78",
       "date": "2026-11-08",
