@@ -4,8 +4,8 @@ title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 12 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Unrelated task records remain in the branch and conflict with main.
 priority: p3
 area: web
 assigned_to: ai
