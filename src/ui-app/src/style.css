@@ -1374,7 +1374,6 @@
 }
 
 .main {
-  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1439,30 +1438,6 @@
   flex: 1 1 auto;
   min-height: 0;
   height: auto;
-}
-.page-loading-shell-enter-active,
-.page-loading-shell-leave-active {
-  transition: opacity 140ms ease;
-}
-.page-loading-shell-leave-active {
-  position: absolute;
-  inset: 22px 26px 0;
-  flex: none;
-  pointer-events: none;
-  z-index: 0;
-}
-.main > .main-route:not(.page-loading) {
-  z-index: 1;
-}
-.page-loading-shell-enter-from,
-.page-loading-shell-leave-to {
-  opacity: 0;
-}
-@media (prefers-reduced-motion: reduce) {
-  .page-loading-shell-enter-active,
-  .page-loading-shell-leave-active {
-    transition: none;
-  }
 }
 .page-header-actions {
   display: flex;
