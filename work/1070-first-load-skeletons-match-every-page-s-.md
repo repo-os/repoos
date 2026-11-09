@@ -105,3 +105,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T07:09:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T07:14:05Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-09T07:14:05Z · status active→review
+- 2026-11-09T07:14:05Z · message_queued at 2026-11-09T07:14:05.742Z
