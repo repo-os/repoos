@@ -13,7 +13,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T22:22:35Z"
+updated_at: "2026-11-09T23:10:45Z"
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 review_passes: 2
@@ -168,3 +168,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T22:09:50Z · status active→review
 - 2026-11-09T22:09:50Z · message_queued at 2026-11-09T22:09:50.594Z
 - 2026-11-09T22:22:35Z · review_cli_override, review_model_override
+- 2026-11-09T23:10:45Z · message_overdue: still queued after 60m without being delivered
