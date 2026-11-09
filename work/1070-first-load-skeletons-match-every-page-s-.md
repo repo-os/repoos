@@ -3,6 +3,9 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 9 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p3
 area: web
 assigned_to: ai
@@ -285,3 +288,4 @@ Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under
 - 2026-11-09T17:03:14Z · note: review pass 8: good to go
 - 2026-11-09T17:08:38Z · review_cli_override, review_model_override
 - 2026-11-09T17:09:21Z · note: review pass 9: needs some work
+- 2026-11-09T17:09:21Z · needs_input
