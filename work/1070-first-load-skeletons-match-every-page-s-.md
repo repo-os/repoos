@@ -150,3 +150,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T09:09:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T09:09:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T09:38:35Z · body: Accepted scope and known limitations (added)
+- 2026-11-09T09:38:35Z · message_queued at 2026-11-09T09:38:35.958Z
