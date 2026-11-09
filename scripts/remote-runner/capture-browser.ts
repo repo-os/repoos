@@ -1,4 +1,12 @@
-import { cpSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { basename, join, resolve } from "node:path";
 import { createRepoOS } from "../../src/core/repoos.js";
 import { worktreePathForBranch } from "../../src/core/git.js";
@@ -15,13 +23,20 @@ import { shotsDir } from "../../src/server/shots.js";
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
 const PREVIEW_STOP_TIMEOUT_MS = 3_000;
 
+/** Publish only complete JSON: the collector may read it while the runner lives. */
+function writeResult(outputDir: string, result: unknown): void {
+  const temporary = join(outputDir, "result.json.tmp");
+  writeFileSync(temporary, JSON.stringify(result, null, 2));
+  renameSync(temporary, join(outputDir, "result.json"));
+}
+
 async function boundedPreviewStop(
   previews: PreviewManager,
   taskId: string,
   reason: string,
 ): Promise<void> {
   await Promise.race([
-    previews.stop(taskId, reason),
+    previews.stop(taskId, reason).catch(() => {}),
     new Promise<void>((resolve) => setTimeout(resolve, PREVIEW_STOP_TIMEOUT_MS)),
   ]);
 }
@@ -132,25 +147,16 @@ async function captureBrowserEvidenceImpl(
       /playwright|webkit|browser executable|executable doesn.t exist|not installed/i.test(
         JSON.stringify(results),
       );
-    writeFileSync(
-      join(outputDir, "result.json"),
-      JSON.stringify(
-        {
-          version: 1,
-          taskId,
-          ok,
-          detail: ok
-            ? "runner browser capture completed"
-            : "runner browser capture reported failures",
-          results,
-          files,
-          bytes,
-          ...(browserUnavailable ? { browserUnavailable: true } : {}),
-        },
-        null,
-        2,
-      ),
-    );
+    writeResult(outputDir, {
+      version: 1,
+      taskId,
+      ok,
+      detail: ok ? "runner browser capture completed" : "runner browser capture reported failures",
+      results,
+      files,
+      bytes,
+      ...(browserUnavailable ? { browserUnavailable: true } : {}),
+    });
     return {
       ok,
       detail: ok ? "runner browser capture completed" : "runner browser capture reported failures",
@@ -175,23 +181,16 @@ export async function captureBrowserEvidence(
     mkdirSync(outputDir, { recursive: true });
     const browserUnavailable =
       /playwright|webkit|browser executable|executable doesn.t exist|not installed/i.test(detail);
-    writeFileSync(
-      join(outputDir, "result.json"),
-      JSON.stringify(
-        {
-          version: 1,
-          taskId,
-          ok: false,
-          detail,
-          results: { error: detail },
-          files: [],
-          bytes: 0,
-          ...(browserUnavailable ? { browserUnavailable: true } : {}),
-        },
-        null,
-        2,
-      ),
-    );
+    writeResult(outputDir, {
+      version: 1,
+      taskId,
+      ok: false,
+      detail,
+      results: { error: detail },
+      files: [],
+      bytes: 0,
+      ...(browserUnavailable ? { browserUnavailable: true } : {}),
+    });
     return { ok: false, detail };
   }
 }
