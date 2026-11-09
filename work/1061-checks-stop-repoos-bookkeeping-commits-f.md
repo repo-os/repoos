@@ -3,6 +3,12 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "2026-11-09T14:02:23.383432Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4344452ce80e419089324beb390515d6"
+debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
+debug_tldr_at: "2026-11-09T14:02:41Z"
+debug_tldr_key: "dev-error|2026-11-09T14:02:23.383432Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4344452ce80e419089324beb390515d6"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,12 +17,12 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T14:01:35Z"
+updated_at: "2026-11-09T14:02:41Z"
 review_passes: 18
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 42
+dev_error_count: 43
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 deferred_handoff_resume_count: 1
 ---
@@ -589,3 +595,4 @@ Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositori
 - 2026-11-09T13:57:42Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-09T13:58:49Z · note: review pass 18: good to go
 - 2026-11-09T14:01:35Z · message_delivered: 2 message(s)
+- 2026-11-09T14:02:24Z · agent exited with an error (codex) · 2026-11-09T14:02:23.383432Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4344452ce80e419089324beb390515d6
