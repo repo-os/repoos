@@ -136,9 +136,7 @@ async function formatNonBookkeepingCommitDrift(
       const diffBase = mergeCommit ? from : firstParent;
       const paths = diffBase ? await pathsChangedBetweenCommits(wt, diffBase, sha) : null;
       if (paths === null) {
-        parts.push(
-          `commit ${sha.slice(0, 8)} "${subject}" changed paths could not be computed`,
-        );
+        parts.push(`commit ${sha.slice(0, 8)} "${subject}" changed paths could not be computed`);
         allAffecting.add("<paths unavailable>");
         explainedSourceChange = true;
         continue;
