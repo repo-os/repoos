@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
