@@ -3,9 +3,6 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Source writes remain unprotected, and bookkeeping-only merges can be rejected."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -414,3 +411,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T05:56:07Z · status review→active
 - 2026-11-09T05:56:07Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-09T05:56:09Z · message_delivered: 1 message(s)
+- 2026-11-09T05:56:09Z · needs_input
