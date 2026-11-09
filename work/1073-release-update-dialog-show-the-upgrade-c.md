@@ -2,7 +2,10 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "✗ Server finalization skipped: the branch tip is unchanged since the last identical check failure — fix the code or wait for an engineer recovery turn"
 priority: p3
 area: web
 assigned_to: ai
@@ -11,14 +14,14 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T23:25:40Z"
+updated_at: "2026-11-09T23:46:39Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: build — src/commands/upgrade.ts(237,14): error TS2304: Cannot find name 'readVersion'."
 last_handoff_failure_sha: e83b162a0832adf0bf5d8728211f3d1be87d6d50
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-09T16:54:34.079Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — the page at / did not apply the fixture (is this the app target?) (http://127.0.0.1:53313/?shotState=release%3AupdateAvailable)"
 handoff_signal_retry_count: 2
-dev_error_count: 11
+dev_error_count: 12
 ---
 ## Problem
 The dashboard already tells users when a newer RepoOS is available (`ReleaseUpdateNotification.vue`, data from `GET /api/release/available`): a banner, then a dialog with installed vs available version and the release notes. But the dialog's only action is an "Upgrade" button that just opens the GitHub release page. It never says how to actually upgrade, even though the answer is a single command.
@@ -223,3 +226,5 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T22:55:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T23:21:38Z · message_queued at 2026-11-09T23:21:38.605Z
 - 2026-11-09T23:25:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T23:46:39Z · agent exited with an error (opencode) · ✗ Server finalization skipped: the branch tip is unchanged since the last identical check failure — fix the code or wait for an engineer recovery turn
+- 2026-11-09T23:46:39Z · status active→review
