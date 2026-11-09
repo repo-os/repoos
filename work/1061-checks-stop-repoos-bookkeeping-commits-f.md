@@ -525,3 +525,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:14:04Z · review_cli_override, review_model_override
 - 2026-11-09T12:14:19Z · body
 - 2026-11-09T12:15:21Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T12:15:21Z · message_queued at 2026-11-09T12:15:21.824Z
