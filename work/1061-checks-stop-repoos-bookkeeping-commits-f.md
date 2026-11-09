@@ -12,8 +12,6 @@ review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
 updated_at: "2026-11-09T12:32:47Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ff405c9d to 8a1f6321) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: ff405c9d4cb5152e5391e24aa3601571709c5557
 review_passes: 15
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -545,3 +543,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:32:10Z · message_delivered: 2 message(s)
 - 2026-11-09T12:32:10Z · note: handoff requested (cli)
 - 2026-11-09T12:32:47Z · status active→review
+
