@@ -11,7 +11,7 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T13:16:58Z"
+updated_at: "2026-11-09T13:21:55Z"
 ---
 ## Problem
 Tasks routinely take 10-15 review rounds (#1058, #1060, #1061 each took 15; #1070 is at 4+). Each round is 20-40 minutes. Rounds are dominated by narrow edge cases found one at a time, reviewer bars that drift between rounds, and housekeeping failures, not by real defects in the change. The review prompt (`src/server/review.ts`) already says to report the whole bug class in one pass and never hold an instance back, and `review.humanFlagAfterPasses` (default 5) only flags needs-input; neither stops the loop.
@@ -44,3 +44,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T13:16:58Z · body: Priority and slicing (owner, 2026-11-09 night) (added)
 - 2026-11-09T13:16:58Z · message_queued at 2026-11-09T13:16:58.461Z
 - 2026-11-09T13:16:58Z · message_queued at 2026-11-09T13:16:58.782Z
+- 2026-11-09T13:21:55Z · CTO nudge: held — an undelivered message is already queued
