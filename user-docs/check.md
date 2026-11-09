@@ -282,8 +282,10 @@ result. Commits that touch source or other paths still fail the gate, with the
 commit subject and paths named in the refusal. RepoOS refuses to start another
 managed engineer turn while the lock is held (`A check is running; wait for it
 to finish.`), and source commits are rejected. Any source edit that bypasses
-those managed paths is caught by the post-check drift comparison. A server
-restart clears stale locks and flushes any deferred queue so nothing is lost.
+those managed paths is blocked by making tracked non-bookkeeping files
+read-only; their original permissions are restored when the gate ends. A server
+restart clears stale locks, restores file permissions and flushes any deferred
+queue so nothing is lost.
 
 The internal server environment variable `REPOOS_HANDOFF_CHECK_MAX_AGE_MS`
 limits reuse age (default one hour; zero disables it; invalid values disable

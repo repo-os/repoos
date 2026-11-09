@@ -337,6 +337,7 @@ async function runCheck(
       branch: branch.stdout.trim(),
       worktree,
       kind: "handoff-finalize",
+      config,
     });
     if (!gate.ok) return { status: 1, stdout: "", stderr: gate.reason };
   }
@@ -794,6 +795,7 @@ async function runHandoffFinalization(
       branch: task.branch,
       worktree: workdir,
       kind: "handoff-finalize",
+      config,
     });
     if (!outerGate.ok) return fail("check", outerGate.reason);
     try {

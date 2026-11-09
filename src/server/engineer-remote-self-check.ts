@@ -182,6 +182,7 @@ export async function runEngineerRemoteSelfCheckGate(params: {
     branch: branch.stdout.trim(),
     worktree: params.worktreePath,
     kind: "engineer-self-check",
+    config: boardCfg,
   });
   if (!gateLock.ok) {
     if (prevStore === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;

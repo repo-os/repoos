@@ -2566,6 +2566,7 @@ export class CloseOutOrchestrator {
       branch,
       worktree,
       kind: "merge-gate",
+      config: this.config,
     });
     if (!gate.ok) return { ok: false, retryable: true, reason: gate.reason };
     try {
