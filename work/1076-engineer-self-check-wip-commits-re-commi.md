@@ -167,3 +167,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T22:45:14Z · body
 - 2026-11-09T22:48:22Z · status active→review
 - 2026-11-09T22:48:22Z · message_queued at 2026-11-09T22:48:22.690Z
+- 2026-11-09T22:48:22Z · note: shots: skipped — the diff (23 changed paths) touches no capture target's globs — no UI change to capture
