@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T16:38:06Z"
+updated_at: "2026-11-09T17:01:33Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -59,6 +59,9 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 
 ## Accepted scope: items moved to #1078 (final)
 Owner decision (2026-11-09, release night): review 5 items 3 (board responsive breakpoints), 4 (reuse of motion settings) and 5 (cache seeding) are accepted follow-up work tracked in #1078, not blockers for this task. Only these remain required: (1) discard the uncommitted edits in the worktree (they regress Mission Control to six blocks); (2) the named placeholder counts for the non-board kinds must be real named constants that the render and the test both use, with Mission Control (dashboard) staying a SINGLE block (value 1) and a comment explaining what real layout each constant mirrors. A reviewer must report everything else as suggestions.
+
+## Review report format (final)
+Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under '## Bugs', and the landing check treats any entry under '## Bugs' as a blocking bug. For the next pass: put every non-blocking observation (shell exit transition, one-row contrast selector, source-text assertions) under '## Suggestions', leave '## Bugs' EMPTY ('None found') when nothing blocks, and give a clear verdict. The code needs no further change.
 
 ## Screenshots
 
@@ -278,3 +281,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T16:34:22Z · note: review pass 7: good to go
 - 2026-11-09T16:35:13Z · note: loading state detected: loading indicator [aria-busy="true"] on /
 - 2026-11-09T16:38:06Z · message_queued at 2026-11-09T16:38:06.901Z
+- 2026-11-09T17:01:33Z · body: Review report format (final) (added)
