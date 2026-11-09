@@ -2,7 +2,10 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,12 +14,12 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T09:02:12Z"
+updated_at: "2026-11-09T09:02:18Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 41
+dev_error_count: 42
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -456,3 +459,5 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T09:02:12Z · status active→review
 - 2026-11-09T09:02:12Z · message_delivered: 1 message(s)
 - 2026-11-09T09:02:12Z · note: handoff requested (cli)
+- 2026-11-09T09:02:18Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
+- 2026-11-09T09:02:18Z · status active→review
