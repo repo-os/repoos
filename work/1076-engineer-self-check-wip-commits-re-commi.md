@@ -94,3 +94,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T16:53:07Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-09T16:53:08Z · message_delivered: 1 message(s)
 - 2026-11-09T17:10:15Z · message_queued at 2026-11-09T17:10:15.129Z
+- 2026-11-09T17:10:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
