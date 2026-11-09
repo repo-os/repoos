@@ -5459,7 +5459,12 @@ watch(
           </DialogClose>
         </div>
         <div v-show="!fullscreen" class="drawer-pre-tabs">
-          <p v-if="humanGuideWarning" class="hotfix-note hotfix-banner" role="status" data-test-id="human-guide-warning">
+          <p
+            v-if="humanGuideWarning"
+            class="hotfix-note hotfix-banner"
+            role="status"
+            data-test-id="human-guide-warning"
+          >
             {{ humanGuideWarning }}
           </p>
           <p v-if="ui.active.hotfix" class="hotfix-note hotfix-banner" role="status">
