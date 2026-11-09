@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-09T11:37:32Z"
-review_passes: 4
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -14,6 +12,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
+updated_at: "2026-11-09T11:55:21Z"
+review_passes: 4
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -54,6 +54,9 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 
 ## Accepted scope and known limitations
 Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and minimum-visible-time (about 350 ms) are applied at the SHELL level in App.vue only. Applying the same gate inside every individual view that renders its own PageSkeleton (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) is out of scope here and is tracked in a follow-up task; a reviewer must report it as a suggestion, not a blocking bug. Still required: fix the Settings row-count regression, and replace the magic placeholder counts for non-board kinds with named constants documented next to the real layout they mirror.
+
+## Accepted scope: per-view exit timing
+Per-view skeleton exit timing (the brief overlap of a per-view skeleton with content when it leaves) belongs to follow-up #1078 together with the per-view show-delay gate; a reviewer must report it as a suggestion, not a blocking bug.
 
 ## Screenshots
 
@@ -187,4 +190,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T11:36:04Z · message_queued at 2026-11-09T11:36:04.305Z
 - 2026-11-09T11:37:32Z · note: review pass 4: needs some work
 - 2026-11-09T11:37:32Z · needs_input
-
+- 2026-11-09T11:55:21Z · body: Accepted scope: per-view exit timing (added)
