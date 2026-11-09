@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T03:49:40Z"
+updated_at: "2026-11-09T04:44:09Z"
 review_passes: 8
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -52,7 +52,7 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "label": "Board coding status with activity popup",
 "target": "default",
 "route": "/work",
-"highlight": ".app-tooltip.show",
+"highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
   {
     "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
@@ -71,7 +71,7 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "target": "default",
 "route": "/work?tab=pipeline",
 "selector": "[data-task-id=\"pipe-coding\"]",
-"highlight": ".app-tooltip.show",
+"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
   {
     "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
@@ -519,3 +519,15 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T03:34:15Z · message_queued at 2026-11-09T03:34:15.762Z
 - 2026-11-09T03:36:25Z · body
 - 2026-11-09T03:49:40Z · body
+- 2026-11-09T04:03:59Z · body
+- 2026-11-09T04:34:29Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T04:34:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The targeted retry also invokes RepoOS’s remote validation before the requested local step, and that runner is silent again. I’m letting RepoOS’s own timeout and fallback logic handle it; this retry is only to clear the sole local smoke fa… · stderr: Reading additional input from stdin... 2026-11-09T04:05:54.325739Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request 2026-11-09T04:06:38.694718Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: Network is unreachab…
+- 2026-11-09T04:34:30Z · status active→review
+- 2026-11-09T04:34:30Z · message_delivered: 1 message(s)
+- 2026-11-09T04:34:30Z · note: handoff requested (cli)
+- 2026-11-09T04:39:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T04:40:21Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline coding row with activity popup (target "default"): highlight .app-tooltip.show matched nothing on /work?tab=pipeline (http://127.0.0.1:41235/work?tab=pipeline&shotState=board%3Apipeline)
+- 2026-11-09T04:40:21Z · message_queued at 2026-11-09T04:40:21.720Z
+- 2026-11-09T04:40:21Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Pipeline coding row with activity popup (target "default"): highlight .app-tooltip.show matched nothing on /work?tab=pipeline (http://127.0.0.1:41235/work?tab=pipeline&shotState=board%3Apipeline)
+- 2026-11-09T04:43:21Z · body
+- 2026-11-09T04:44:09Z · CTO nudge: held — an undelivered message is already queued
