@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-09T08:38:04Z"
+review_passes: 3
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -9,8 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T08:38:04Z"
-review_passes: 2
 last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
 review_rounds: 1
 routing_switches: 1
@@ -139,3 +139,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:37:16Z · status active→review
 - 2026-11-09T08:37:16Z · message_queued at 2026-11-09T08:37:16.314Z
 - 2026-11-09T08:38:04Z · note: review pass 3: needs some work
+
