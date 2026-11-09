@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T12:15:22Z"
+updated_at: "2026-11-09T12:16:55Z"
 review_passes: 15
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -531,3 +531,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:15:22Z · status active→review
 - 2026-11-09T12:15:22Z · message_delivered: 2 message(s)
 - 2026-11-09T12:15:22Z · note: handoff requested (cli)
+- 2026-11-09T12:16:55Z · CTO nudge: held — handoff gate is running
