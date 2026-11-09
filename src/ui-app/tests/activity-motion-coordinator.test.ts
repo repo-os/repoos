@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ActivityIndicator from "../src/components/ActivityIndicator.vue";
 import { resetActivityMotionCoordinatorForTests } from "../src/lib/activity-motion";
 import { useConfigStore } from "../src/stores/config";
