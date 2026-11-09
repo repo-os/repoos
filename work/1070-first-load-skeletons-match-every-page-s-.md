@@ -133,3 +133,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:35:04Z · ↻ resuming engineer to read queued message
 - 2026-11-09T08:35:04Z · status active→review
 - 2026-11-09T08:35:04Z · message_delivered: 2 message(s)
+- 2026-11-09T08:35:05Z · note: handoff requested (cli)
