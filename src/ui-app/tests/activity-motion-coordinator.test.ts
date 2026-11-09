@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import ActivityIndicator from "../src/components/ActivityIndicator.vue";
+import { resetActivityMotionCoordinatorForTests } from "../src/lib/activity-motion";
 import { useConfigStore } from "../src/stores/config";
 
 type Entry = { target: Element; isIntersecting: boolean };
@@ -28,11 +29,37 @@ describe("activity animation coordinator", () => {
   const originalObserver = globalThis.IntersectionObserver;
   let oldVisibility: PropertyDescriptor | undefined;
 
+  beforeEach(() => {
+    resetActivityMotionCoordinatorForTests();
+  });
+
   afterEach(() => {
     mounted.splice(0).forEach((wrapper) => wrapper.unmount());
+    resetActivityMotionCoordinatorForTests();
     globalThis.IntersectionObserver = originalObserver;
     if (oldVisibility) Object.defineProperty(document, "visibilityState", oldVisibility);
     vi.restoreAllMocks();
+  });
+
+  it("registers one shared IntersectionObserver and one visibility listener", async () => {
+    observers.length = 0;
+    globalThis.IntersectionObserver =
+      FakeIntersectionObserver as unknown as typeof IntersectionObserver;
+    const addSpy = vi.spyOn(document, "addEventListener");
+    const removeSpy = vi.spyOn(document, "removeEventListener");
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const wrappers = Array.from({ length: 5 }, () => {
+      const wrapper = mount(ActivityIndicator, { global: { plugins: [pinia] } });
+      mounted.push(wrapper);
+      return wrapper;
+    });
+    expect(observers).toHaveLength(1);
+    expect(addSpy.mock.calls.filter((c) => c[0] === "visibilitychange")).toHaveLength(1);
+    wrappers.forEach((w) => w.unmount());
+    expect(removeSpy.mock.calls.filter((c) => c[0] === "visibilitychange")).toHaveLength(1);
+    addSpy.mockRestore();
+    removeSpy.mockRestore();
   });
 
   it("pauses offscreen and hidden indicators and enforces the live cap", async () => {
@@ -59,6 +86,7 @@ describe("activity animation coordinator", () => {
 
     const pinia = createPinia();
     setActivePinia(pinia);
+    useConfigStore(pinia).form.activityAnimationEnabled = true;
     useConfigStore(pinia).form.activityAnimationConcurrency = 2;
     const wrappers = Array.from({ length: 3 }, () => {
       const wrapper = mount(ActivityIndicator, { global: { plugins: [pinia] } });
