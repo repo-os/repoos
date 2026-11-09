@@ -97,3 +97,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T13:38:49Z · message_queued at 2026-11-09T13:38:49.873Z
 - 2026-11-09T13:47:19Z · message_queued at 2026-11-09T13:47:19.920Z
 - 2026-11-09T13:52:32Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T13:52:32Z · note: handoff requested (cli)
