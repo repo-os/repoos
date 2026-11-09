@@ -272,6 +272,42 @@ Any new commit, dirty file, or source change on main runs the normal handoff gat
 Format, lint, build staleness, task assets and the remaining local guards still
 run. The transcript and Checks detail say `reused check <id>`.
 
+### Bookkeeping during a running gate (#1061)
+
+While handoff or an in-flight `repoos check` holds the gate for a task, RepoOS
+takes a short-lived advisory lock on that task's worktree. Server bookkeeping
+commits that touch only `work/**` or `.repoos/**` are **queued** and applied in
+order after the gate ends, so they do not move HEAD mid-run or invalidate the
+result. Commits that touch source or other paths still fail the gate, with the
+commit subject and paths named in the refusal. RepoOS refuses to start another
+managed engineer turn while the lock is held (`A check is running; wait for it
+to finish.`), and RepoOS source commits are rejected. An engineer turn that was
+already running can still write files directly; filesystem writes cannot be
+reliably fenced from that process. Such source changes are detected by the
+post-check drift comparison and invalidate the result. That comparison hashes
+the actual tracked and non-ignored untracked source files at both endpoints, so
+it catches edits to an already-dirty file and newly created source files. A
+server restart clears stale locks and flushes any deferred queue so nothing is
+lost.
+
+Tracked submodules are checked at their own repository boundary: an initialized
+submodule's commit and working-tree status are included, and an uninitialized
+gitlink is represented by the object id in the parent index. Nested repositories
+without commits are supported. Symlinks are compared by link text; changes to
+the target of a symlink outside the worktree are not followed.
+
+Drift inspection examines intervening commits as well as the net tree
+difference from the commit where the check started to the resulting tree. Any
+intervening commit that touches a source path invalidates the result, even if a
+later commit reverts it, and the refusal names the commit subjects and paths.
+If Git cannot compute changed paths or inspect the commit history, the check
+fails closed. The inspection handles merges where the checked commit is the
+second parent without blaming older first-parent history. An engineer who was
+already running can still write source files directly during a check; RepoOS
+cannot reliably fence those filesystem writes. An uncommitted edit that is
+made and then restored before the end snapshots is outside the guarantee; a
+committed source change followed by a revert is detected from commit history.
+
 The internal server environment variable `REPOOS_HANDOFF_CHECK_MAX_AGE_MS`
 limits reuse age (default one hour; zero disables it; invalid values disable
 reuse). This deployment knob is deliberately not a `repoos.toml` feature key.

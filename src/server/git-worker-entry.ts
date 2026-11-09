@@ -24,6 +24,20 @@ import { pressureSnapshotForDisplay } from "../core/pressure-guard.js";
 import { heavyJobCounts } from "../core/cross-process-slots.js";
 import { ensureCanaryReadyForTask } from "../core/canary-repo.js";
 import { writeProjectEnvironmentValue } from "../core/project-environments.js";
+import { loadConfig } from "../core/config.js";
+import { installCheckGateCommitHook } from "./check-gate-lock.js";
+
+// Git-worker commits run in a separate process from the HTTP server. Install
+// the same disk-backed check-gate hook here so worker-side task/report writes
+// are deferred by the owning gate too.
+const workerRoot = process.env.REPOOS_BOARD_ROOT?.trim();
+if (workerRoot) {
+  try {
+    installCheckGateCommitHook(loadConfig(workerRoot));
+  } catch {
+    // Keep the worker available for read-only git requests if config is absent.
+  }
+}
 
 setGitCallSink((event) => {
   process.stdout.write(`${JSON.stringify({ type: "git-call", ...event })}\n`);

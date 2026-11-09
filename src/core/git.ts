@@ -69,6 +69,8 @@ const WORKTREE_ADD_LOCK_WAIT_MS = 120_000;
 const WORKTREE_ADD_LOCK_STALE_MS = WORKTREE_ADD_TIMEOUT_MS + 60_000;
 
 export function gitCapture(root: string, args: string[], timeoutMs = 4000): GitRun {
+  const blocked = refuseCheckGateGit(root, args);
+  if (blocked) return blocked;
   const run = spawnSync("git", observationalGitArgs(args), {
     cwd: root,
     encoding: "utf8",
@@ -322,6 +324,8 @@ export interface GitRun {
  * time while a long command (merge, build, check) is in flight.
  */
 export function runGit(root: string, args: string[], timeout: number): Promise<GitRun> {
+  const blocked = refuseCheckGateGit(root, args);
+  if (blocked) return Promise.resolve(blocked);
   return new Promise((resolve) => {
     const untrack = trackGitCall(root, args);
     const child = spawn("git", observationalGitArgs(args), { cwd: root });
@@ -376,6 +380,40 @@ export function setGitLockFailureSink(
   sink: ((root: string, message: string, detail: string) => void) | null,
 ): void {
   gitLockFailureSink = sink;
+}
+
+/** Verdict from the check-gate commit hook (#1061). */
+export type CheckGateCommitVerdict = "proceed" | "defer" | "refuse";
+
+export type CheckGateCommitHook = (args: {
+  boardRoot: string;
+  cacheDir: string;
+  commitRoot: string;
+  relPaths: string[];
+  absPaths: string[];
+  message: string;
+}) => CheckGateCommitVerdict;
+
+let checkGateCommitHook: CheckGateCommitHook | null = null;
+
+/** Server installs this to defer or refuse commits during an active check gate. */
+export function setCheckGateCommitHook(hook: CheckGateCommitHook | null): void {
+  checkGateCommitHook = hook;
+}
+
+/** Refuse selected git commands against a gated worktree (#1061). */
+export type CheckGateGitRefusal = (cwd: string, args: readonly string[]) => string | undefined;
+
+let checkGateGitRefusal: CheckGateGitRefusal | null = null;
+
+export function setCheckGateGitRefusal(hook: CheckGateGitRefusal | null): void {
+  checkGateGitRefusal = hook;
+}
+
+function refuseCheckGateGit(cwd: string, args: string[]): GitRun | null {
+  const refusal = checkGateGitRefusal?.(cwd, args);
+  if (!refusal) return null;
+  return { status: 1, stdout: "", stderr: `${refusal}\n`, timedOut: false };
 }
 
 /** `retryOnGitLock` predicate for a raw `runGit` result: the lock text, or null. */
@@ -2334,6 +2372,21 @@ export function commitFiles(root: string, absPaths: string[], message: string): 
   const rels = absPaths.map((p) => relative(root, p));
   if (rels.length === 0 || rels.some((rel) => rel.startsWith("..") || isAbsolute(rel))) {
     return false;
+  }
+  const boardRoot =
+    process.env.REPOOS_BOARD_ROOT?.trim() || process.env.REPOOS_CHECK_STORE_ROOT?.trim() || root;
+  const cacheDir = process.env.REPOOS_CACHE_DIR?.trim() || ".repoos";
+  if (checkGateCommitHook) {
+    const verdict = checkGateCommitHook({
+      boardRoot,
+      cacheDir,
+      commitRoot: root,
+      relPaths: rels,
+      absPaths,
+      message,
+    });
+    if (verdict === "refuse") return false;
+    if (verdict === "defer") return true;
   }
   const status = git(root, ["status", "--porcelain", "--", ...rels]);
   if (status === null) return false;

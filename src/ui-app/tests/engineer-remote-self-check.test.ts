@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
@@ -11,6 +12,7 @@ import * as preReview from "../../server/pre-review-remote-gate.js";
 import * as remoteValidation from "../../server/remote-validation.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { shouldRunCliRemotePreReviewGate } from "../../server/pre-review-remote-gate.js";
+import { readCheckGateLock } from "../../server/check-gate-lock.js";
 
 function makeConfig(root: string, rv: Record<string, unknown>): RepoOSConfig {
   return {
@@ -49,18 +51,38 @@ describe("engineer remote self-check (#0694)", () => {
       reconcile: async () => {},
       logPath: () => "",
     } as never);
-    vi.spyOn(preReview, "runRemotePreReviewGate").mockResolvedValue({
-      kind: "local-only",
-      skipTests: true,
-    });
     const root = mkdtempSync(join(tmpdir(), "repoos-0694-gate-"));
-    const cfg = makeConfig(root, { enabled: true, provider: "hetzner" });
-    await runEngineerRemoteSelfCheckGate({
-      worktreeConfig: cfg,
-      worktreePath: root,
-      taskId: "0694",
+    const git = (args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
+    git(["init", "-q", "-b", "feat/0694"]);
+    git(["config", "user.email", "t@example.com"]);
+    git(["config", "user.name", "Test"]);
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "a.ts"), "export const a = 1;\n");
+    writeFileSync(join(root, "repoos.toml"), 'work_dir = "work"\n');
+    git(["add", "-A"]);
+    git(["commit", "-qm", "init"]);
+    let lockDuringRemote: unknown;
+    vi.spyOn(preReview, "runRemotePreReviewGate").mockImplementation(async () => {
+      lockDuringRemote = readCheckGateLock(root, ".repoos", "0694");
+      return { kind: "local-only", skipTests: true };
     });
-    expect(dispose).toHaveBeenCalledTimes(1);
-    vi.restoreAllMocks();
+    const cfg = makeConfig(root, { enabled: true, provider: "hetzner" });
+    const prevStore = process.env.REPOOS_CHECK_STORE_ROOT;
+    process.env.REPOOS_CHECK_STORE_ROOT = root;
+    try {
+      await runEngineerRemoteSelfCheckGate({
+        worktreeConfig: cfg,
+        worktreePath: root,
+        taskId: "0694",
+      });
+      expect(dispose).toHaveBeenCalledTimes(1);
+      expect(lockDuringRemote).toMatchObject({ taskId: "0694" });
+      expect(readCheckGateLock(root, ".repoos", "0694")).toBeNull();
+    } finally {
+      if (prevStore === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
+      else process.env.REPOOS_CHECK_STORE_ROOT = prevStore;
+      vi.restoreAllMocks();
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

@@ -1,18 +1,11 @@
 ---
-last_close_out_gate_ms: 601759
-last_close_out_gate_at: "2026-11-09T14:39:47.251Z"
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-11-09T14:02:23.383432Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4344452ce80e419089324beb390515d6"
-debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
-debug_tldr_at: "2026-11-09T14:02:41Z"
-debug_tldr_key: "dev-error|2026-11-09T14:02:23.383432Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4344452ce80e419089324beb390515d6"
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 35e96d713adb7d49dae4b1e9d32cb2507fcaa961
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/checks-stop-repoos-bookkeeping-commits-f
@@ -20,6 +13,8 @@ review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
 updated_at: "2026-11-09T14:39:47Z"
+last_close_out_gate_ms: 601759
+last_close_out_gate_at: "2026-11-09T14:39:47.251Z"
 review_passes: 18
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
