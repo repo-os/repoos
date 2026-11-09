@@ -607,3 +607,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T09:08:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T09:09:29Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-09T09:09:29Z · status active→review
+- 2026-11-09T09:09:29Z · message_queued at 2026-11-09T09:09:29.659Z
