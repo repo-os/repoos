@@ -3,6 +3,9 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 9 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p3
 area: web
 assigned_to: ai
@@ -544,3 +547,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T05:31:10Z · status active→review
 - 2026-11-09T05:31:11Z · message_queued at 2026-11-09T05:31:11.069Z
 - 2026-11-09T05:32:08Z · note: review pass 9: needs some work
+- 2026-11-09T05:32:08Z · needs_input
