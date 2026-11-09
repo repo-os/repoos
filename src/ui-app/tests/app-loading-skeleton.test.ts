@@ -282,7 +282,9 @@ describe("repo loading skeleton", () => {
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").classes()).toContain("page-skeleton--motion-active");
     const source = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
-    expect(source).toMatch(/\.page-skeleton--motion-active \.page-skeleton__item i\s*\{\s*animation: page-skeleton-pulse/);
+    expect(source).toMatch(
+      /\.page-skeleton--motion-active \.page-skeleton__item i\s*\{\s*animation: page-skeleton-pulse/,
+    );
     wrapper.unmount();
     vi.unstubAllGlobals();
     vi.useRealTimers();
