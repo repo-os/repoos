@@ -144,3 +144,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T20:15:23Z · body
 - 2026-11-09T20:18:05Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-09T20:18:06Z · message_queued at 2026-11-09T20:18:06.167Z
+- 2026-11-09T20:18:06Z · ↻ resuming engineer to read queued message
