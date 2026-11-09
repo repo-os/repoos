@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -240,3 +240,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T13:23:10Z · message_queued at 2026-11-09T13:23:10.640Z
 - 2026-11-09T13:23:10Z · ↻ resuming engineer to read queued message
 - 2026-11-09T13:23:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The second remote run passed, including the orphaned-process test; the full scoped check is now green. Local format/lint, build, CSS and contrast guards, task-asset guard, and UI smoke also passed. I’m updating the engineer report with the… · stderr: Reading additional input from stdin... 2026-11-09T12:59:20.832163Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-09T13:00:57.334591Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos…
+- 2026-11-09T13:23:10Z · status active→review
