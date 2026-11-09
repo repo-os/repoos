@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-09T13:04:13Z"
-review_passes: 17
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
+updated_at: "2026-11-09T13:14:16Z"
+review_passes: 17
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -48,6 +48,9 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 
 ## Accepted scope and known limitations
 Owner decision (2026-11-09): this task lands once bookkeeping commits are deferred during a check, new engineer turns are refused during a check, and any NET source change that exists when the check ends is detected and invalidates the result (with commit subject and paths when they can be determined; an unexplained non-empty source delta must still invalidate, fail closed). Out of scope, tracked in a follow-up task: (a) blocking filesystem writes by an already-running engineer (not enforceable), (b) a source change that is committed and then reverted within the same check window (endpoint diff is empty; the transient state is not caught). A reviewer must report (a) and (b) as suggestions, not blocking bugs. Docs and the report must state both limitations.
+
+## Accepted scope: submodules (final)
+Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositories are OUT OF SCOPE for the drift snapshot. Gitlink (mode 160000) entries and nested repos are skipped entirely (not fingerprinted, not read, not chmod'ed) and the docs state plainly that submodule contents are not covered by drift detection or protection. A reviewer must report anything about submodule contents, uninitialized submodules, nested repos or dirty submodule edits as a suggestion, never as a blocking bug. Real source files, regular files and tracked symlinks (by link target, never followed) remain in scope.
 
 ## Activity
 
@@ -569,4 +572,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T13:02:29Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-09T13:04:13Z · note: review pass 17: needs some work
 - 2026-11-09T13:04:13Z · needs_input
-
+- 2026-11-09T13:14:16Z · body: Accepted scope: submodules (final) (added)
