@@ -3,9 +3,6 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — The shell replaces its skeleton without the required content cross-fade.
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T22:51:42Z"
+updated_at: "2026-11-09T22:51:48Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -403,3 +400,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T22:51:39Z · status review→active
 - 2026-11-09T22:51:39Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-09T22:51:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T22:51:48Z · needs_input
