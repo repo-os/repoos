@@ -48,6 +48,8 @@ import {
   commitTaskFile,
   pathsChangedBetweenCommits,
   getChangedFilePaths,
+  restoreForeignTaskBookkeepingFromMain,
+  foreignTaskBookkeepingPaths,
 } from "../core/git.js";
 import { getGitWorker } from "./git-worker.js";
 import { parseTask } from "../core/task.js";
@@ -677,12 +679,21 @@ async function runHandoffFinalization(
         path === reportPath || path === legacyReportPath;
       const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${task.id}-`;
       const reportNarrative = report.markdown.split("\n\n## Generated change summary", 1)[0];
+      // A retry after the #1076 bookkeeping restore sees the restore commit
+      // between the report's source and HEAD; treat its foreign `work/` files as
+      // tolerated bookkeeping so the completed report is still recognized.
+      const tolerated = (path: string): boolean =>
+        isReportPath(path) ||
+        (path.startsWith(ownTaskPath) && path.endsWith(".md")) ||
+        foreignTaskBookkeepingPaths([path], {
+          workDir: config.workDir,
+          cacheDir: config.cacheDir,
+          taskId: task.id,
+        }).length > 0;
       if (
         paths.some(isReportPath) &&
         (!pendingNarrative || reportNarrative === pendingNarrative) &&
-        paths.every(
-          (path) => isReportPath(path) || (path.startsWith(ownTaskPath) && path.endsWith(".md")),
-        )
+        paths.every(tolerated)
       ) {
         return report;
       }
@@ -736,6 +747,40 @@ async function runHandoffFinalization(
   const gate = await guardReviewTransition(config, { ...worktreeTask, branch: task.branch });
   if (!gate.ok) {
     return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
+  }
+
+  // #1076: a self-check WIP checkpoint (or a concurrent board write, or a
+  // partial merge of main) can leave ANOTHER task's `work/` bookkeeping on this
+  // branch. Restore main's copy now, before the check snapshots the tree and
+  // before the review lock — the restore lands as one bookkeeping commit, so a
+  // branch that already drifted is healed here instead of failing landing with
+  // "the diff changes another task's bookkeeping". Report it; never fail on it.
+  if (!isHotfix) {
+    try {
+      const restored = await restoreForeignTaskBookkeepingFromMain({
+        worktree: workdir,
+        baseBranch: (await getGitWorker(config.root).currentBranch()) ?? "main",
+        taskId: task.id,
+        ownTaskFile: task.path,
+        workDir: config.workDir,
+      });
+      if (restored.length > 0) {
+        const listed = restored.slice(0, 8).join(", ");
+        const more = restored.length > 8 ? ` (+${restored.length - 8} more)` : "";
+        opts.onTaskLog?.(
+          task.id,
+          "info",
+          `restored main's copy of another task's bookkeeping on this branch: ${listed}${more}`,
+        );
+      }
+    } catch (error) {
+      // Fail closed on a real restore failure: continuing would hand off a
+      // branch that still carries a sibling's files and cannot land.
+      return fail(
+        "commit",
+        `could not restore main's copy of another task's bookkeeping on this branch: ${(error as Error).message}`,
+      );
+    }
   }
 
   const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(

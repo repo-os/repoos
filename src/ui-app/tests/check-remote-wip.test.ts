@@ -3,7 +3,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cmdCheck } from "../../commands/check.js";
@@ -97,6 +97,43 @@ describe("commitWipCheckpointForRemoteGate (#0695)", () => {
     expect(execFileSync("git", ["status", "--porcelain"], { cwd: root, encoding: "utf8" })).toBe(
       "",
     );
+  });
+
+  it("never folds another task's work files into the checkpoint (#1076)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-wip-foreign-"));
+    cleanups.push(root);
+    gitInit(root);
+    mkdirSync(join(root, "work", "reports", "9999"), { recursive: true });
+    writeFileSync(join(root, "work", "1076-mine.md"), '---\nid: "1076"\n---\n');
+    writeFileSync(join(root, "work", "9999-other.md"), '---\nid: "9999"\n---\norig\n');
+    writeFileSync(join(root, "work", "reports", "9999", "review-1.md"), "r1\n");
+    execFileSync("git", ["add", "."], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["commit", "-qm", "seed"], { cwd: root, stdio: "ignore" });
+
+    // The engineer's own edit is unstaged; a sibling task's bookkeeping is
+    // dirty AND already staged (exactly the state a board write plus a prior
+    // `git add -A` leaves behind).
+    writeFileSync(join(root, "src.txt"), "edit\n");
+    writeFileSync(join(root, "work", "9999-other.md"), '---\nid: "9999"\n---\nchanged\n');
+    writeFileSync(join(root, "work", "reports", "9999", "review-1.md"), "r2\n");
+    execFileSync(
+      "git",
+      ["add", "--", "work/9999-other.md", "work/reports/9999/review-1.md"],
+      { cwd: root, stdio: "ignore" },
+    );
+
+    const err = await commitWipCheckpointForRemoteGate(root, relConfig(root), "1076");
+    expect(err).toBeNull();
+    const committed = execFileSync("git", ["show", "--name-only", "--format=", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+    })
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    expect(committed).toContain("src.txt");
+    expect(committed).not.toContain("work/9999-other.md");
+    expect(committed).not.toContain("work/reports/9999/review-1.md");
   });
 });
 
