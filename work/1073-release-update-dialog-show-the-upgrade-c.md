@@ -3,12 +3,6 @@ id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
-debug_tldr: "Handoff finalization was interrupted by a server reload — restart the work to hand off again, or use `repoos start 1073 --fresh` if it repeats."
-debug_tldr_at: "2026-11-09T14:01:52Z"
-debug_tldr_key: "dev-error|handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
 priority: p3
 area: web
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T14:07:33Z"
+updated_at: "2026-11-09T14:09:09Z"
 handoff_signal_retry_count: 2
 dev_error_count: 4
 ---
@@ -111,3 +105,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T14:07:33Z · note: ui verification failed: ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (light) (target "default"): highlight [data-test-id="release-upgrade-comman
 - 2026-11-09T14:07:33Z · message_queued at 2026-11-09T14:07:33.633Z
 - 2026-11-09T14:07:33Z · handoff failed · task-file handoff failed at verify · ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (light) (target "default"): highlight [data-test-id="release-upgrade-command"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target "default"): highlight [data-test-id="release-upgrade-command"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable)
+- 2026-11-09T14:09:09Z · needs_input
