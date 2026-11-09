@@ -2696,8 +2696,9 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
   workDir?: string;
 }): Promise<string[]> {
   const workDir = opts.workDir ?? "work";
-  const baseFull = (await runGit(opts.worktree, ["merge-base", opts.baseBranch, "HEAD"], 15_000))
-    .stdout.trim();
+  const baseFull = (
+    await runGit(opts.worktree, ["merge-base", opts.baseBranch, "HEAD"], 15_000)
+  ).stdout.trim();
   if (!baseFull) return [];
   const changed = await runGit(
     opts.worktree,

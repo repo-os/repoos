@@ -81,7 +81,9 @@ describe("restoreForeignTaskBookkeepingFromMain (#1076)", () => {
 
       // The branch's diff against main no longer names the sibling's files, so
       // the landing preflight's Task scope check passes.
-      const changed = git(fx.wt, ["diff", "--name-only", "main...HEAD"]).split("\n").filter(Boolean);
+      const changed = git(fx.wt, ["diff", "--name-only", "main...HEAD"])
+        .split("\n")
+        .filter(Boolean);
       expect(changed).not.toContain("work/2000-other.md");
       expect(changed).not.toContain("work/reports/2000/review-1.md");
       const scope = evaluateTaskScopeCheck({
