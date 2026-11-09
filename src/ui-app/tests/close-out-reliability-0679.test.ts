@@ -15,7 +15,7 @@ import {
   recordCloseOutGateTimingStats,
 } from "../../core/close-out-timing.js";
 import { isLockfileOnlyConflicts } from "../../core/lockfile-conflict.js";
-import { mergeBranch } from "../../core/git.js";
+import { dropDistBeforeMerge, mergeBranch } from "../../core/git.js";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { scheduleCloseOutRepairHandback } from "../../server/close-out-repair.js";
 import {
@@ -174,6 +174,135 @@ describe("lockfile-only conflict completes the merge commit (#1076)", () => {
       rmSync(root, { recursive: true, force: true });
     }
   }, 60_000);
+
+  it("unstages a sibling staged DURING the lockfile regeneration, before the bare merge commit", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-0679-lockfile-staged-"));
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    // The real `bun install` can run for minutes; a concurrent board write can
+    // stage a sibling's bookkeeping into the index in that window, after the
+    // merge already started (so git's merge-start guard cannot help). The fake
+    // `bun` stands in for that: it writes and stages a sibling's file, exactly
+    // the shape the commit boundary must survive (#1076).
+    writeFileSync(
+      join(bin, "bun"),
+      '#!/bin/sh\nprintf "regenerated lock\\n" > bun.lock\n' +
+        'mkdir -p work/reports/2000\n' +
+        'printf "DRIFT\\n" > work/2000-other.md\n' +
+        'printf "stale\\n" > work/reports/2000/review-1.md\n' +
+        'git add -- work/2000-other.md work/reports/2000/review-1.md\n' +
+        "exit 0\n",
+      { mode: 0o755 },
+    );
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    try {
+      sh(root, ["init", "-q", "-b", "main"]);
+      sh(root, ["config", "user.email", "t@example.com"]);
+      sh(root, ["config", "user.name", "T"]);
+      mkdirSync(join(root, "work", "reports", "2000"), { recursive: true });
+      writeFileSync(join(root, "package.json"), '{"name":"x","version":"1.0.0"}\n');
+      writeFileSync(join(root, "bun.lock"), "main lock\n");
+      writeFileSync(join(root, "src.ts"), "base\n");
+      writeFileSync(join(root, "work", "2000-other.md"), '---\nid: "2000"\n---\nMAIN\n');
+      writeFileSync(join(root, "work", "reports", "2000", "review-1.md"), "main report\n");
+      sh(root, ["add", "-A"]);
+      sh(root, ["commit", "-q", "-m", "init"]);
+
+      sh(root, ["checkout", "-q", "-b", "feat/t"]);
+      writeFileSync(join(root, "bun.lock"), "feature lock\n");
+      sh(root, ["commit", "-qam", "feature lock"]);
+      sh(root, ["checkout", "-q", "main"]);
+      writeFileSync(join(root, "bun.lock"), "main lock v2\n");
+      sh(root, ["commit", "-qam", "main lock"]);
+
+      const conflict = await mergeBranch(root, "feat/t", {
+        regenerateLockfileConflicts: true,
+        taskId: "1076",
+        workFileFilter: { workDir: "work", cacheDir: ".repoos" },
+      });
+      expect(conflict.merged).toBe(true);
+
+      const committed = sh(root, ["show", "--name-only", "--format=", "HEAD"])
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      expect(committed).not.toContain("work/2000-other.md");
+      expect(committed).not.toContain("work/reports/2000/review-1.md");
+      // The merge is a real merge commit (two parents).
+      const parents = sh(root, ["log", "-1", "--format=%P"]).trim().split(/\s+/).filter(Boolean);
+      expect(parents.length).toBe(2);
+    } finally {
+      process.env.PATH = oldPath;
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 60_000);
+});
+
+describe("dropDistBeforeMerge (#1076)", () => {
+  function sh(cwd: string, args: string[]): string {
+    return execFileSync("git", args, { cwd, encoding: "utf8" });
+  }
+
+  it("drops tracked dist/ as one commit and keeps a staged sibling out of it", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-1076-dropdist-"));
+    try {
+      sh(root, ["init", "-q", "-b", "main"]);
+      sh(root, ["config", "user.email", "t@example.com"]);
+      sh(root, ["config", "user.name", "T"]);
+      mkdirSync(join(root, "dist"), { recursive: true });
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "dist", "a.js"), "old\n");
+      writeFileSync(join(root, "work", "2000-other.md"), '---\nid: "2000"\n---\nMAIN\n');
+      writeFileSync(join(root, "work", "1076-own.md"), '---\nid: "1076"\n---\nown\n');
+      writeFileSync(join(root, "src.ts"), "base\n");
+      sh(root, ["add", "-A"]);
+      sh(root, ["commit", "-q", "-m", "init"]);
+
+      // A sibling's file is left staged (a board write + `git add`), plus the
+      // task's own file. The bare drop commit must not carry either.
+      writeFileSync(join(root, "work", "2000-other.md"), '---\nid: "2000"\n---\nDRIFT\n');
+      sh(root, ["add", "work/2000-other.md"]);
+
+      const committed = await dropDistBeforeMerge(root, {
+        workDir: "work",
+        cacheDir: ".repoos",
+        taskId: "1076",
+      });
+      expect(committed).toBe(true);
+
+      // dist/ is actually gone from HEAD (the pathspec no-op this replaced
+      // would have left it tracked).
+      expect(sh(root, ["ls-files", "dist/"]).trim()).toBe("");
+      const inCommit = sh(root, ["show", "--name-only", "--format=", "HEAD"])
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      expect(inCommit).toContain("dist/a.js");
+      expect(inCommit).not.toContain("work/2000-other.md");
+      // The sibling is unstaged again, not committed.
+      expect(sh(root, ["diff", "--cached", "--name-only"])).not.toContain("work/2000-other.md");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("is a no-op when dist/ is not tracked", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-1076-dropdist-noop-"));
+    try {
+      sh(root, ["init", "-q", "-b", "main"]);
+      sh(root, ["config", "user.email", "t@example.com"]);
+      sh(root, ["config", "user.name", "T"]);
+      writeFileSync(join(root, "src.ts"), "base\n");
+      sh(root, ["add", "-A"]);
+      sh(root, ["commit", "-q", "-m", "init"]);
+      const before = sh(root, ["rev-parse", "HEAD"]).trim();
+      expect(await dropDistBeforeMerge(root, { workDir: "work", taskId: "1076" })).toBe(false);
+      expect(sh(root, ["rev-parse", "HEAD"]).trim()).toBe(before);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("scheduleCloseOutRepairHandback (#0679)", () => {

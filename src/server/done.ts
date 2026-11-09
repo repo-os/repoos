@@ -34,9 +34,8 @@ import {
   runGit,
   mainDirtyFilesForCloseOut,
   GitDirtyCheckError,
-  stagedForeignBookkeepingPaths,
+  dropDistBeforeMerge,
   workFileFilter,
-  type WorkFileFilter,
 } from "../core/git.js";
 import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { markTaskReleased } from "./write.js";
@@ -605,26 +604,10 @@ async function completeTaskLocked(
   // right after the merge anyway.
   const wt = task.branch ? await getGitWorker(root).worktreePath(task.branch) : null;
   if (wt !== null && !task.hotfix) {
-    const r1 = await runGit(wt, ["ls-files", "dist/"], 5000);
-    if (r1.status === 0 && r1.stdout.trim().length > 0) {
-      await runGit(wt, ["rm", "-r", "--cached", "--", "dist/"], 15_000);
-      // Drop any OTHER task's bookkeeping from the index before the commit
-      // (#1076). This commit must stay bare: a pathspec commit cannot carry the
-      // `git rm --cached` deletion above (the paths are untracked in the
-      // working tree, so `git commit -- dist/` is a no-op), and a bare commit
-      // folds WHATEVER is staged into the branch. Unstaging a sibling's
-      // `work/<other-id>-*.md` (a board write a prior `git add -A` staged)
-      // keeps it off the branch; the dist removal and this task's own work are
-      // untouched, exactly as before.
-      const foreign = await stagedForeignBookkeepingPaths(wt, {
-        ...workFileFilter(config),
-        taskId: task.id,
-      });
-      if (foreign.length > 0) {
-        await runGit(wt, ["reset", "--quiet", "HEAD", "--", ...foreign], 15_000);
-      }
-      await runGit(wt, ["commit", "-m", "chore: drop dist before merge"], 15_000);
-    }
+    // `dist/` is dropped from the branch as one bookkeeping commit; the helper
+    // unstages any other task's `work/` bookkeeping the index holds first, so a
+    // sibling's file can never ride that bare commit onto the branch (#1076).
+    await dropDistBeforeMerge(wt, { ...workFileFilter(config), taskId: task.id });
   }
   const autoResolve = [rel, "dist/"];
 

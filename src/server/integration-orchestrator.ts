@@ -2745,6 +2745,8 @@ export class CloseOutOrchestrator {
       autoResolve,
       autoResolveOurs,
       regenerateLockfileConflicts: true,
+      taskId: job.taskId,
+      workFileFilter: { workDir: this.config.workDir, cacheDir: this.config.cacheDir },
     });
     if (!merge.merged) {
       // A conflict is a property of the two trees, not of the machine. Retrying

@@ -2871,6 +2871,36 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
 }
 
 /**
+ * Drop the tracked `dist/` from a task worktree's branch, as one bookkeeping
+ * commit, without letting any OTHER task's `work/` bookkeeping ride along
+ * (#1076). `dist/` is regenerated from source on main right after the close-out
+ * merge, and leaving it tracked makes hashed Vite asset filenames conflict
+ * artificially.
+ *
+ * The commit must stay bare: after `git rm -r --cached -- dist/`, the deletion
+ * is untracked in the working tree, so a pathspec commit (`git commit -- dist/`)
+ * sees nothing to commit and leaves `dist/` tracked in HEAD (a silent no-op).
+ * A bare commit would otherwise fold in whatever the index holds — including a
+ * sibling's `work/<other-id>-*.md` staged by a concurrent board write — so the
+ * foreign paths are unstaged first. Returns true when a commit was made.
+ */
+export async function dropDistBeforeMerge(
+  worktree: string,
+  filter: WorkFileFilter & { taskId: string },
+): Promise<boolean> {
+  const tracked = await runGit(worktree, ["ls-files", "dist/"], 5000);
+  if (tracked.status !== 0 || tracked.stdout.trim().length === 0) return false;
+  await runGit(worktree, ["rm", "-r", "--cached", "--", "dist/"], 15_000);
+  const foreign = await stagedForeignBookkeepingPaths(worktree, filter);
+  if (foreign.length > 0) {
+    await runGit(worktree, ["reset", "--quiet", "HEAD", "--", ...foreign], 15_000);
+  }
+  const commit = await runGit(worktree, ["commit", "-m", "chore: drop dist before merge"], 15_000);
+  if (commit.status === 0) notifyGitMutation(worktree, "commit");
+  return commit.status === 0;
+}
+
+/**
  * The dirty paths on `main` that must block close-out. Task markdown under the
  * work dir is excluded: the publish step checkpoint-commits it when the merge
  * leaves it untouched, and stashes/pops it when the merge would overwrite it,
@@ -3151,6 +3181,14 @@ export async function mergeBranch(
     dryRun?: boolean;
     /** When true, lockfile-only conflicts are resolved by regenerating the lockfile (#0679). */
     regenerateLockfileConflicts?: boolean;
+    /**
+     * The task id whose branch is merging. When set, a lockfile-regeneration
+     * merge commit unstages any other task's `work/` bookkeeping the index may
+     * hold, so a sibling's file can never ride the merge commit (#1076).
+     */
+    taskId?: string;
+    /** Work/cache dirs for the foreign-bookkeeping filter (#1076). */
+    workFileFilter?: { workDir?: string; cacheDir?: string };
   } = {},
 ): Promise<MergeBranchResult> {
   if (opts.dryRun) return dryRunMergeBranch(root, branch, opts);
@@ -3229,7 +3267,10 @@ export async function mergeBranch(
     // unresolved (non-auto-resolvable) paths.
     // Lockfile-only conflicts: regenerate instead of failing (#0679).
     if (opts.regenerateLockfileConflicts && isLockfileOnlyConflicts(blocking)) {
-      const regen = await tryCompleteMergeByRegeneratingLockfile(root);
+      const regen = await tryCompleteMergeByRegeneratingLockfile(root, {
+        taskId: opts.taskId,
+        filter: opts.workFileFilter ? workFileFilter(opts.workFileFilter) : undefined,
+      });
       if (regen.ok) {
         notifyGitMutation(root, "merge");
         return { merged: true, ff: false, conflicts: [] };
