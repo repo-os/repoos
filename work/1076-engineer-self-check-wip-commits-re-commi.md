@@ -3,9 +3,6 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (1 in 30m): a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1076 --fresh`."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T09:15:28Z"
+updated_at: "2026-11-09T09:25:35Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-09T09:15:28.830Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -44,3 +41,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T09:11:35Z · model_override
 - 2026-11-09T09:15:28Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T09:15:28Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (1/3 crashes in 30m)
+- 2026-11-09T09:25:35Z · watchdog: restarting engineer after 10m with no live process
