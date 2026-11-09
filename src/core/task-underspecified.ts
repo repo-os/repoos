@@ -52,7 +52,10 @@ _Write numbered steps with exact commands or click paths, where to enter informa
 export const HUMAN_TASK_GUIDE_HEADING = "## Step-by-step guide";
 
 /** Missing-guide warning shared by CLI, HTTP responses and task UI. */
-export function humanTaskGuideWarning(assignee: string | null | undefined, body: string): string | null {
+export function humanTaskGuideWarning(
+  assignee: string | null | undefined,
+  body: string,
+): string | null {
   if (!isHumanAssigned(assignee) || /^## Step-by-step guide\s*$/im.test(body)) return null;
   return "Missing ## Step-by-step guide — add numbered steps, exact commands or click paths, safe secret handling, success checks, and what to report back.";
 }
