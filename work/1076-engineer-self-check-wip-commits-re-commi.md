@@ -140,3 +140,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T20:57:42Z · message_delivered: 3 message(s)
 - 2026-11-09T21:00:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T21:01:38Z · status active→review
+- 2026-11-09T21:01:38Z · message_queued at 2026-11-09T21:01:38.414Z
