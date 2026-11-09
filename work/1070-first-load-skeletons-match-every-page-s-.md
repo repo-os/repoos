@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -10,7 +11,6 @@ created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
 updated_at: "2026-11-09T04:38:14Z"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 First-load skeletons are jarring and in places wrong. On Mission Control (`/`) the `dashboard` skeleton draws six tall cards in an `auto-fit` grid (`PageSkeleton.vue`), so on a wide window they wrap into one row of four plus a stray card on a second row, and none of it resembles the real page (which is not a board of cards like Work and Inputs). Stories shows the same kind of mismatch. Other pages use `board`, `inputBoard`, `cards`, `table`, `rows`, `targets` and `deployments` shapes picked by route in `src/ui-app/src/lib/loading-skeleton.ts`, and nobody has checked each one against its real content.
@@ -47,3 +47,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T03:56:06Z · status ready→active, branch
 - 2026-11-09T04:26:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The layout fixes are in [PageSkeleton.vue](/Users/nick/code/nick/repoos-worktrees/feat/first-load-skeletons-match-every-page-s-/src/ui-app/src/components/PageSkeleton.vue): Mission Control now has one full-width block, and Stories one repr… · stderr: Reading additional input from stdin... 2026-11-09T04:05:17.989467Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: Network is unreachable (os error 51), url: wss://chatgpt.com/backend-api/codex/responses 2026-11-09T04:05:18.046309Z ERROR codex_models_manager::manager: failed t…
 - 2026-11-09T04:38:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The shell-level loader now delays its skeleton by 180 ms and keeps it visible for at least 350 ms once shown. The focused skeleton tests pass, and formatting completed. I can’t emit the handoff signal: this task is still incomplete. Per-vi… · stderr: 2026-11-09T04:38:08.246607Z ERROR codex_core::session: failed to record rollout items: thread 01a1be73-01d2-7e62-81a2-025af3368adc not found
+
