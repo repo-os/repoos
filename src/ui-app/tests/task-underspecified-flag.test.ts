@@ -12,9 +12,18 @@ import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { createTask, patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import {
+  humanTaskGuideWarning,
   PM_SPLIT_HUMAN_STEP_MESSAGE,
   splitHumanStepRequirementsPrompt,
 } from "../../core/task-underspecified.js";
+
+describe("human task guide warning", () => {
+  it("warns only when a human task lacks the guide heading", () => {
+    expect(humanTaskGuideWarning("human", "## Problem\nDo it")).toContain("## Step-by-step guide");
+    expect(humanTaskGuideWarning("ai", "## Problem\nDo it")).toBeNull();
+    expect(humanTaskGuideWarning("human", "## Step-by-step guide\n1. Do it")).toBeNull();
+  });
+});
 import {
   flagNeedsHumanStepIfNeeded,
   flagTaskSpecFlagsIfNeeded,

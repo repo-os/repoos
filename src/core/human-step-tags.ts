@@ -143,6 +143,10 @@ N/A — this is human-only verification.
 
 ${criteria}
 
+## Step-by-step guide
+
+_Write numbered steps with exact commands or click paths, where to enter information and store secrets (never in chat, task text or git), what can go wrong, how to tell each step worked, and what to report back._
+
 ## Notes for AI
 
 _Assigned to a human, not an AI agent. The human-only steps were moved here from #${input.sourceId}; finish them and record the outcome there if it affects the AI task._`;

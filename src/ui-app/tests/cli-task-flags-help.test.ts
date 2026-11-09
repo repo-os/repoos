@@ -238,6 +238,7 @@ describe("repoos new --assigned-to / --human / --ai (#0815)", () => {
   it("stamps a human task with a note and does not flag it underspecified", async () => {
     const { task, body } = await createAndRead(["A human chore", "--human"]);
     expect(body).toContain("## Human task");
+    expect(body).toContain("## Step-by-step guide");
     expect(task.needsInput).toBe(false);
     expect(task.needsInputReason).toBeUndefined();
   });
