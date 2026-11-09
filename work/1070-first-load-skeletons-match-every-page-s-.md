@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -13,7 +15,6 @@ updated_at: "2026-11-09T06:46:19Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
-last_check_failure: "repoos check at 2026-11-09T05:46:31.592Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /?shotState=loading:dashboard (http://127.0.0.1:45271/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories?shotState=loading:stories (http://127.0.0.1:45271/stories?shotState=loading%3Ast… (truncated)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -102,3 +103,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T06:46:16Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)
 - 2026-11-09T06:46:16Z · message_queued at 2026-11-09T06:46:16.907Z
 - 2026-11-09T06:46:19Z · message_delivered: 1 message(s)
+
