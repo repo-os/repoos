@@ -399,4 +399,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T03:36:19Z · message_delivered: 2 message(s)
 - 2026-11-09T03:36:19Z · note: handoff requested (cli)
 - 2026-11-09T03:37:03Z · status active→review
-
+- 2026-11-09T03:37:03Z · message_queued at 2026-11-09T03:37:03.887Z
