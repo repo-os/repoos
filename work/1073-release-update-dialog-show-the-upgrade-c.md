@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T20:21:35Z"
+updated_at: "2026-11-09T20:21:38Z"
 last_check_failure: "repoos check at 2026-11-09T16:54:34.079Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — the page at / did not apply the fixture (is this the app target?) (http://127.0.0.1:53313/?shotState=release%3AupdateAvailable)"
 handoff_signal_retry_count: 2
 dev_error_count: 11
@@ -174,3 +174,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T20:16:51Z · body
 - 2026-11-09T20:20:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T20:21:35Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-09T20:21:38Z · status active→review
