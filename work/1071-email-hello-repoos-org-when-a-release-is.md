@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -54,3 +55,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-09T23:27:41Z · cli_override, model_override
 - 2026-11-09T23:27:46Z · status ready→active, branch
 - 2026-11-09T23:33:02Z · message_queued at 2026-11-09T23:33:02.755Z
+
