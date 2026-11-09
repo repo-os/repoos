@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T19:51:44Z"
+updated_at: "2026-11-09T19:56:45Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -124,3 +124,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T19:15:04Z · body
 - 2026-11-09T19:46:07Z · body
 - 2026-11-09T19:51:44Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
+- 2026-11-09T19:56:45Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
