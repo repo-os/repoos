@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — Submodule snapshots read the parent repo's HEAD and ignore submodule edits; bookkeeping can still invalidate a check.
@@ -14,7 +14,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T13:14:16Z"
+updated_at: "2026-11-09T13:14:17Z"
 review_passes: 17
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -573,3 +573,5 @@ Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositori
 - 2026-11-09T13:04:13Z · note: review pass 17: needs some work
 - 2026-11-09T13:04:13Z · needs_input
 - 2026-11-09T13:14:16Z · body: Accepted scope: submodules (final) (added)
+- 2026-11-09T13:14:17Z · status review→active
+- 2026-11-09T13:14:17Z · note: send-back — returned to active for engineer follow-up
