@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T00:49:08Z"
+updated_at: "2026-11-09T01:14:14Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: b998f2b345ce184ad2370e90a100ca07c64293f4
 review_passes: 8
@@ -336,3 +336,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T00:45:33Z · message_queued at 2026-11-09T00:45:33.445Z
 - 2026-11-09T00:45:33Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
 - 2026-11-09T00:49:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T01:14:14Z · body
