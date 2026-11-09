@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -353,3 +353,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T20:55:53Z · message_queued at 2026-11-09T20:55:53.721Z
 - 2026-11-09T20:55:54Z · ↻ resuming engineer to read queued message
 - 2026-11-09T20:55:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The gate passed, but the prior handoff record shows a separate review-step failure: RepoOS could not find the required engineering report draft. I’m checking whether the draft exists at the required worktree path before requesting handoff;… · stderr: (empty)
+- 2026-11-09T20:55:54Z · status active→review
