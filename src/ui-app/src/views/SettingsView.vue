@@ -589,8 +589,14 @@ function retainedSectionQuery(tab: TabId): { section?: string } {
   return typeof raw === "string" && isGeneralSectionId(raw) ? { section: raw } : {};
 }
 
+const activityAnimationEnabledField = computed(() =>
+  config.schema.find((f) => f.key === "activityAnimationEnabled"),
+);
 const activityAnimationField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationStyle"),
+);
+const activityAnimationOn = computed(
+  () => form.activityAnimationEnabled !== false,
 );
 
 const activityAnimationSizeField = computed(() =>
@@ -1326,150 +1332,181 @@ onUnmounted(() => {
             class="settings-section"
             aria-label="Activity animation"
           >
-            <Card style="padding: 0 18px 6px; margin-bottom: 16px">
+            <Card style="padding: 0 18px 10px; margin-bottom: 16px">
               <div class="setting-group">
                 <div class="sec-label" style="padding-top: 16px; margin-bottom: 0">
                   <span class="live-dot"></span>Activity animation
                 </div>
-                <div id="setting-activityAnimationStyle" class="setting-row">
-                  <div class="setting-info">
-                    <div class="setting-desc">{{ activityAnimationField.description }}</div>
-                  </div>
-                  <div class="setting-input">
-                    <Select
-                      :model-value="
-                        String(form.activityAnimationStyle ?? activityAnimationField.default)
-                      "
-                      :disabled="config.saving"
-                      @update:model-value="(v) => (form.activityAnimationStyle = v)"
-                    >
-                      <SelectTrigger class="h-[34px] w-[min(100%,240px)] rounded-[9px] px-[11px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent position="popper">
-                        <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
-                          <SelectItem
-                            v-for="o in activityAnimationField.options"
-                            :key="o.value"
-                            :value="o.value"
-                            >{{ o.label }}</SelectItem
-                          >
-                        </SelectViewport>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
                 <div
-                  v-if="activityAnimationSizeField"
-                  id="setting-activityAnimationSize"
+                  v-if="activityAnimationEnabledField"
+                  id="setting-activityAnimationEnabled"
                   class="setting-row"
                 >
                   <div class="setting-info">
-                    <div class="setting-label">Animation size</div>
-                    <div class="setting-desc">{{ activityAnimationSizeField.description }}</div>
+                    <div class="setting-label">Motion</div>
+                    <div class="setting-desc">
+                      {{
+                        activityAnimationOn
+                          ? "Animated status beside live agent work on cards, Pipeline and Dev."
+                          : "Plain colored dots only — no motion or animation timers."
+                      }}
+                    </div>
                   </div>
                   <div class="setting-input">
-                    <div class="activity-size-control">
-                      <div class="activity-size-range-wrap">
-                        <input
-                          id="setting-activityAnimationSize-range"
-                          class="activity-size-range"
-                          type="range"
-                          :min="ACTIVITY_SIZE_MIN"
-                          :max="ACTIVITY_SIZE_MAX"
-                          :step="ACTIVITY_SIZE_STEP"
-                          :value="activityAnimationSliderValue"
-                          :disabled="config.saving"
-                          aria-label="Activity animation size in pixels"
-                          :aria-valuetext="activityAnimationSizeValueText"
-                          @input="
-                            setActivityAnimationSizeFromRange(
-                              ($event.target as HTMLInputElement).value,
-                            )
-                          "
-                        />
-                        <span
-                          class="activity-size-default-tick"
-                          :style="{ left: `${activityAnimationDefaultTickPercent}%` }"
-                          data-test-id="activity-size-default-tick"
-                          aria-hidden="true"
-                        ></span>
+                    <Switch
+                      :checked="activityAnimationOn"
+                      :disabled="config.saving"
+                      aria-label="Activity animation motion"
+                      @update:checked="(v) => (form.activityAnimationEnabled = v)"
+                    />
+                  </div>
+                </div>
+                <template v-if="activityAnimationOn">
+                  <div class="activity-animation-controls" role="group" aria-label="Animation style">
+                    <div id="setting-activityAnimationStyle" class="activity-animation-control">
+                      <label class="activity-animation-control-label" for="activity-style-select"
+                        >Style</label
+                      >
+                      <Select
+                        :model-value="
+                          String(form.activityAnimationStyle ?? activityAnimationField?.default)
+                        "
+                        :disabled="config.saving"
+                        @update:model-value="(v) => (form.activityAnimationStyle = v)"
+                      >
+                        <SelectTrigger
+                          id="activity-style-select"
+                          class="h-[34px] w-full rounded-[9px] px-[11px]"
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          <SelectViewport class="min-w-[var(--radix-select-trigger-width)]">
+                            <SelectItem
+                              v-for="o in activityAnimationField?.options ?? []"
+                              :key="o.value"
+                              :value="o.value"
+                              >{{ o.label }}</SelectItem
+                            >
+                          </SelectViewport>
+                        </SelectContent>
+                      </Select>
+                      <span class="activity-animation-control-hint">{{
+                        activityAnimationField?.description
+                      }}</span>
+                    </div>
+                    <div
+                      v-if="activityAnimationSizeField"
+                      id="setting-activityAnimationSize"
+                      class="activity-animation-control"
+                    >
+                      <label class="activity-animation-control-label" for="setting-activityAnimationSize-range"
+                        >Size</label
+                      >
+                      <div class="activity-size-control">
+                        <div class="activity-size-range-wrap">
+                          <input
+                            id="setting-activityAnimationSize-range"
+                            class="activity-size-range"
+                            type="range"
+                            :min="ACTIVITY_SIZE_MIN"
+                            :max="ACTIVITY_SIZE_MAX"
+                            :step="ACTIVITY_SIZE_STEP"
+                            :value="activityAnimationSliderValue"
+                            :disabled="config.saving"
+                            aria-label="Activity animation size in pixels"
+                            :aria-valuetext="activityAnimationSizeValueText"
+                            @input="
+                              setActivityAnimationSizeFromRange(
+                                ($event.target as HTMLInputElement).value,
+                              )
+                            "
+                          />
+                          <span
+                            class="activity-size-default-tick"
+                            :style="{ left: `${activityAnimationDefaultTickPercent}%` }"
+                            data-test-id="activity-size-default-tick"
+                            aria-hidden="true"
+                          ></span>
+                        </div>
+                        <span class="activity-size-value" aria-hidden="true">{{
+                          activityAnimationSizeValueText
+                        }}</span>
                       </div>
-                      <span class="activity-size-value" aria-hidden="true">{{
-                        activityAnimationSizeValueText
+                      <span class="activity-animation-control-hint">{{
+                        activityAnimationSizeField.description
+                      }}</span>
+                    </div>
+                    <div
+                      v-if="activityAnimationConcurrencyField"
+                      id="setting-activityAnimationConcurrency"
+                      class="activity-animation-control activity-animation-control--cap"
+                    >
+                      <label class="activity-animation-control-label" for="activity-animation-cap"
+                        >At once</label
+                      >
+                      <input
+                        id="activity-animation-cap"
+                        class="input activity-animation-cap-input"
+                        type="number"
+                        min="0"
+                        max="24"
+                        step="1"
+                        :value="
+                          form.activityAnimationConcurrency ??
+                          activityAnimationConcurrencyField.default
+                        "
+                        :disabled="config.saving"
+                        aria-label="Animated indicators at once"
+                        @input="
+                          form.activityAnimationConcurrency = Math.max(
+                            0,
+                            Math.min(
+                              24,
+                              Math.round(Number(($event.target as HTMLInputElement).value) || 0),
+                            ),
+                          )
+                        "
+                      />
+                      <span class="activity-animation-control-hint">{{
+                        activityAnimationConcurrencyField.description
                       }}</span>
                     </div>
                   </div>
-                </div>
-                <div
-                  v-if="activityAnimationConcurrencyField"
-                  id="setting-activityAnimationConcurrency"
-                  class="setting-row"
-                >
-                  <div class="setting-info">
-                    <div class="setting-label">{{ activityAnimationConcurrencyField.label }}</div>
-                    <div class="setting-desc">
-                      {{ activityAnimationConcurrencyField.description }}
+                  <div class="activity-animation-preview activity-animation-preview--inline" aria-hidden="true">
+                    <div class="activity-animation-preview-line">
+                      <ActivityIndicator
+                        :animation-style="activityAnimationPreviewStyle"
+                        :animation-size="activityAnimationPreviewSize"
+                        activity="coding"
+                        label="Coding preview"
+                      />
+                      <span>Coding</span>
+                    </div>
+                    <div class="activity-animation-preview-line ai-reviewing-preview">
+                      <ActivityIndicator
+                        :animation-style="activityAnimationPreviewStyle"
+                        :animation-size="activityAnimationPreviewSize"
+                        variant="reviewing"
+                        activity="reviewing"
+                        label="Reviewing preview"
+                      />
+                      <span>Reviewing</span>
+                    </div>
+                    <div class="activity-animation-preview-line">
+                      <ActivityIndicator
+                        :animation-style="activityAnimationPreviewStyle"
+                        :animation-size="activityAnimationPreviewSize"
+                        activity="agent"
+                        label="Agent working preview"
+                      />
+                      <span>Agent working</span>
                     </div>
                   </div>
-                  <div class="setting-input">
-                    <input
-                      class="input"
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="1"
-                      :value="
-                        form.activityAnimationConcurrency ??
-                        activityAnimationConcurrencyField.default
-                      "
-                      :disabled="config.saving"
-                      aria-label="Animated indicators at once"
-                      @input="
-                        form.activityAnimationConcurrency = Math.max(
-                          0,
-                          Math.min(
-                            24,
-                            Math.round(Number(($event.target as HTMLInputElement).value) || 0),
-                          ),
-                        )
-                      "
-                    />
+                  <div class="setting-desc" style="padding: 2px 0 4px">
+                    Preview matches task cards — saves automatically.
                   </div>
-                </div>
-                <div class="activity-animation-preview" aria-hidden="true">
-                  <div class="activity-animation-preview-line">
-                    <ActivityIndicator
-                      :animation-style="activityAnimationPreviewStyle"
-                      :animation-size="activityAnimationPreviewSize"
-                      activity="coding"
-                      label="Coding preview"
-                    />
-                    <span>CODING</span>
-                  </div>
-                  <div class="activity-animation-preview-line ai-reviewing-preview">
-                    <ActivityIndicator
-                      :animation-style="activityAnimationPreviewStyle"
-                      :animation-size="activityAnimationPreviewSize"
-                      variant="reviewing"
-                      activity="reviewing"
-                      label="Reviewing preview"
-                    />
-                    <span>REVIEWING</span>
-                  </div>
-                  <div class="activity-animation-preview-line">
-                    <ActivityIndicator
-                      :animation-style="activityAnimationPreviewStyle"
-                      :animation-size="activityAnimationPreviewSize"
-                      activity="agent"
-                      label="Agent working preview"
-                    />
-                    <span>AGENT WORKING</span>
-                  </div>
-                </div>
-                <div class="setting-desc" style="padding: 4px 0 10px">
-                  Previewed at the exact size used in the app — changes save automatically.
-                </div>
+                </template>
               </div>
             </Card>
           </section>

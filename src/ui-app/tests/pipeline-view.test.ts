@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mount, type VueWrapper } from "@vue/test-utils";
 import { createPinia, setActivePinia, type Pinia } from "pinia";
 import PipelineCard from "../src/components/PipelineCard.vue";
+import ActivityIndicator from "../src/components/ActivityIndicator.vue";
 import PipelineView from "../src/components/PipelineView.vue";
 import TaskCard from "../src/components/TaskCard.vue";
 import WorkView from "../src/views/WorkView.vue";
@@ -107,6 +108,9 @@ describe("PipelineCard", () => {
       priority: "p2",
       title: "Pipeline view for the work page",
       state: "ok",
+      pipelineStage: "coding",
+      reviewRunning: false,
+      closeoutActive: false,
       statusSignals: null,
       stepLabel: "Coding",
       chipText: null,
@@ -137,6 +141,31 @@ describe("PipelineCard", () => {
     expect(barRow.find("progress").exists()).toBe(true);
     expect(barRow.find(".checks-progress-pipeline-status").text()).toContain("Running checks");
     expect(wrapper.findAll(".pl-row")).toHaveLength(4);
+  });
+
+  it("shows ActivityIndicator for in-flight active work", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const wrapper = track(
+      mount(PipelineCard, {
+        global: { plugins: [pinia] },
+        props: cardProps({
+          statusSignals: {
+            handoffInFlight: false,
+            checkInFlight: false,
+            remoteValidationInFlight: false,
+            queued: false,
+            running: true,
+            paused: false,
+            stuckSignal: false,
+            quietForMs: 0,
+            nowMs: Date.now(),
+          },
+        }),
+      }),
+    );
+    expect(wrapper.findComponent(ActivityIndicator).exists()).toBe(true);
+    expect(wrapper.find(".pl-dot").exists()).toBe(false);
   });
 
   it("renders four rows with rounds, models and host", () => {
