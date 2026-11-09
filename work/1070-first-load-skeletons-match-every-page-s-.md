@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -84,3 +84,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T06:06:30Z · body
 - 2026-11-09T06:09:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T06:09:10Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-09T06:09:10Z · status active→review
