@@ -11,14 +11,13 @@ start another managed engineer turn with `A check is running; wait for it to
 finish.` and rejects source commits. Edits that bypass those managed paths are
 detected by the post-check drift comparison.
 
-After validation, HEAD drift is evaluated from the exact commit range. Changes
-under those bookkeeping roots are allowed; all other paths invalidate the
-result. If Git cannot enumerate the changed commits or their paths, validation
-fails closed because it cannot prove the checked tree remained equivalent.
-Ordinary first-parent commits are inspected individually, so a source change
-followed by a revert still invalidates the check. A merge is classified by its
-net tree delta against the check-start commit; source commits on its side branch
-whose content was already present at check start do not count as drift.
+After validation, drift is first evaluated from the net tree difference between
+the check-start commit and the resulting HEAD. Changes under those bookkeeping
+roots are allowed; any remaining path invalidates the result. If Git cannot
+compute that difference, validation fails closed. Commit history is then used
+only to identify the subjects and paths responsible for the established net
+source delta. A merge whose checked tree is its second parent is therefore
+judged by its resulting tree, not unrelated first-parent history.
 
 An already-running engineer can still edit source files directly during a
 check; filesystem writes cannot be reliably fenced. RepoOS detects committed

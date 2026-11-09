@@ -287,11 +287,12 @@ reliably fenced from that process. Such source changes are detected by the
 post-check drift comparison and invalidate the result. A server restart clears
 stale locks and flushes any deferred queue so nothing is lost.
 
-Drift inspection checks each ordinary commit on the checked branch, so a source
-change followed by a revert still invalidates the check. Merge commits are
-judged by their net tree difference from the commit where the check started;
-an older side-branch source commit whose content was already present at check
-start does not count as a new change. An engineer who was already running can
+Drift inspection compares the net tree difference from the commit where the
+check started to the resulting tree. A source change followed by a revert does
+not invalidate the result if the final tree is identical. Commit history is
+used to name the commits and paths behind a real source delta; this also handles
+merges where the checked commit is the second parent without blaming older
+first-parent history. An engineer who was already running can
 still write source files directly during a check. RepoOS cannot reliably fence
 those filesystem writes; committed source drift is detected after the check
 and invalidates its result.
