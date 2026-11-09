@@ -148,3 +148,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T21:21:38Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-09T21:21:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T21:21:47Z · needs_input
+- 2026-11-09T21:21:47Z · message_queued at 2026-11-09T21:21:47.685Z
