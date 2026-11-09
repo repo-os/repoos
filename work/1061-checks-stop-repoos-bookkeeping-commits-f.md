@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-09T12:34:23Z"
-review_passes: 16
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Gated checks fail in repos with submodules, and protection can chmod files outside the worktree."
@@ -16,6 +14,8 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
+updated_at: "2026-11-09T12:36:33Z"
+review_passes: 16
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -550,4 +550,5 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:32:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-09T12:34:23Z · note: review pass 16: needs some work
 - 2026-11-09T12:34:23Z · needs_input
-
+- 2026-11-09T12:36:33Z · status review→active
+- 2026-11-09T12:36:33Z · note: send-back — returned to active for engineer follow-up
