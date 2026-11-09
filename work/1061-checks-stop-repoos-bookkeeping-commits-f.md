@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T13:55:39Z"
+updated_at: "2026-11-09T13:57:10Z"
 review_passes: 17
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -578,3 +578,4 @@ Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositori
 - 2026-11-09T13:14:22Z · message_queued at 2026-11-09T13:14:22.418Z
 - 2026-11-09T13:37:32Z · body
 - 2026-11-09T13:55:39Z · body
+- 2026-11-09T13:57:10Z · handoff_deferred: 1 queued message(s) must be read before review
