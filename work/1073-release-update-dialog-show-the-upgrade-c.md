@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -208,3 +208,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T22:08:42Z · handoff failed · task-file handoff failed at check · repoos check failed: build — src/commands/upgrade.ts(237,14): error TS2304: Cannot find name 'readVersion'.
 - 2026-11-09T22:09:08Z · message_delivered: 1 message(s)
 - 2026-11-09T22:11:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Now let me build/typecheck to catch remaining errors, then run the tests. Let me run the build. Let me run `bun run build` and the release tests. Let me do it. Let me run. Running the build. OK. (I'll issue the tool call now.) Let me run t… · stderr: (empty)
+- 2026-11-09T22:11:11Z · status active→review
