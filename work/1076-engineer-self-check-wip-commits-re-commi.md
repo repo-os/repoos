@@ -3,6 +3,9 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the new commit-boundary scoping misses a hotfix commit and the union-merge commit, and the restore comment contradicts …"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T22:50:13Z"
+updated_at: "2026-11-09T22:50:14Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -169,3 +172,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T22:48:22Z · message_queued at 2026-11-09T22:48:22.690Z
 - 2026-11-09T22:48:22Z · note: shots: skipped — the diff (23 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-09T22:50:13Z · note: review pass 4: needs some work
+- 2026-11-09T22:50:14Z · needs_input
