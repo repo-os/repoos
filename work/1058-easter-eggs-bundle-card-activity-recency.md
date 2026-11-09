@@ -55,13 +55,13 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "board:activeCoding"
@@ -74,13 +74,13 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+"waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-  "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+"hover": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "board:pipeline"
@@ -532,3 +532,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T04:43:21Z · body
 - 2026-11-09T04:44:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T05:03:11Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T05:03:11Z · message_queued at 2026-11-09T05:03:11.874Z
