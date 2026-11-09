@@ -95,6 +95,7 @@ import {
   resolveCheckStoreRoot,
   getCheckStore,
   localMachineName,
+  taskIdFromWorktreeBranch,
   type CheckRunPhase,
 } from "../core/check-store.js";
 import { Logger } from "../core/logger.js";
@@ -2383,6 +2384,32 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     }
   }
   const validationStart = await checkSnapshot(repoRoot, changedRef);
+  // Own one task-worktree holder across remote validation and the local plan.
+  // The managed remote helper takes a nested holder for its own operation; this
+  // outer holder keeps bookkeeping deferred until the local half has finished.
+  // A plain `repoos check` discovers its task from the checked-out branch and
+  // task file, so it gets the same protection without agent environment vars.
+  const gateTaskId = isManagedEngineerCheck(process.env)
+    ? runContext.taskId
+    : taskIdFromWorktreeBranch(repoRoot, cfg.workDir);
+  let selfCheckLock: Awaited<ReturnType<typeof acquireCheckGateLock>> | null = null;
+  if (gateTaskId) {
+    const branch = await runGit(repoRoot, ["branch", "--show-current"], 10_000);
+    if (branch.status !== 0 || !branch.stdout.trim()) {
+      throw new Error("could not resolve task branch for check-gate lock");
+    }
+    const boardRoot = boardRootForEngineerRemote(repoRoot);
+    const gateConfig = loadConfig(boardRoot);
+    selfCheckLock = await acquireCheckGateLock({
+      boardRoot,
+      cacheDir: gateConfig.cacheDir ?? ".repoos",
+      taskId: gateTaskId,
+      branch: branch.stdout.trim(),
+      worktree: repoRoot,
+      kind: "engineer-self-check",
+    });
+    if (!selfCheckLock.ok) throw new Error(selfCheckLock.reason);
+  }
   let remoteTestsPassed = false;
   // The plan never runs when the remote gate fails, so the normal end-of-run
   // record is never written: persist the failure for the Checks surface too,
@@ -2523,6 +2550,15 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           }
         }
       }
+    } catch (error) {
+      // Remote failures can exit before the local plan's finally is reached.
+      // Drop this holder on ordinary thrown errors; abrupt process termination
+      // is recovered through the stale-lock path.
+      if (selfCheckLock?.ok) {
+        await selfCheckLock.release();
+        selfCheckLock = null;
+      }
+      throw error;
     } finally {
       if (prevStoreRoot === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
       else process.env.REPOOS_CHECK_STORE_ROOT = prevStoreRoot;
@@ -2555,6 +2591,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           `  slot ${holder.slot}: pid ${holder.pid ?? "unknown"}, ${Math.round(holder.ageMs / 1000)}s${holder.dead ? " (process exited; reclaiming)" : holder.wedged ? ` (no recent heartbeat; last seen ${Math.round(holder.heartbeatAgeMs / 1000)}s ago)` : ""}`,
         ),
       );
+    }
+    if (selfCheckLock?.ok) {
+      await selfCheckLock.release();
+      selfCheckLock = null;
     }
     process.exit(1);
   }
@@ -2592,24 +2632,6 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   const completedSteps: CheckStepTiming[] = [];
   let results: StepRunResult[];
   let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
-  let selfCheckLock: Awaited<ReturnType<typeof acquireCheckGateLock>> | null = null;
-  if (isManagedEngineerCheck(process.env) && runContext.taskId) {
-    const branch = await runGit(repoRoot, ["branch", "--show-current"], 10_000);
-    if (branch.status !== 0 || !branch.stdout.trim()) {
-      throw new Error("could not resolve task branch for check-gate lock");
-    }
-    const boardRoot = boardRootForEngineerRemote(repoRoot);
-    const gateConfig = loadConfig(boardRoot);
-    selfCheckLock = await acquireCheckGateLock({
-      boardRoot,
-      cacheDir: gateConfig.cacheDir ?? ".repoos",
-      taskId: runContext.taskId,
-      branch: branch.stdout.trim(),
-      worktree: repoRoot,
-      kind: "engineer-self-check",
-    });
-    if (!selfCheckLock.ok) throw new Error(selfCheckLock.reason);
-  }
   try {
     if (process.env.REPOOS_AGENT === "1") {
       applyEngineerResourceEnv(checkEnv, cfg);

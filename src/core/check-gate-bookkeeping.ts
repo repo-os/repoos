@@ -68,14 +68,11 @@ async function formatNonBookkeepingCommitDrift(
       paths: ["<paths unavailable>"],
     };
   }
-  // `from` may become a merge's second parent while a check is running. Walk
-  // the ancestry path from that exact commit instead of assuming first-parent
-  // history, which can include unrelated changes already present at start.
-  const list = await runGit(
-    wt,
-    ["rev-list", "--ancestry-path", "--reverse", `${from}..${to}`],
-    15_000,
-  );
+  // Inspect the complete newly reachable range, including commits carried by
+  // a merged side branch. Each merge's own tree delta is measured against its
+  // first parent (the checked branch), never against an unrelated second
+  // parent that may lack files already present when the gate began.
+  const list = await runGit(wt, ["rev-list", "--reverse", `${from}..${to}`], 15_000);
   const parts: string[] = [`HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`];
   if (list.status !== 0) {
     return {
@@ -96,15 +93,8 @@ async function formatNonBookkeepingCommitDrift(
         subj.status === 0 && subj.stdout.trim() ? subj.stdout.trim() : "<subject unavailable>";
       const parents = await runGit(wt, ["rev-list", "--parents", "-n", "1", sha], 10_000);
       const parentShas = parents.status === 0 ? parents.stdout.trim().split(/\s+/).slice(1) : [];
-      let paths: string[] | null = parentShas.length > 0 ? [] : null;
-      for (const parent of parentShas) {
-        const changed = await pathsChangedBetweenCommits(wt, parent, sha);
-        if (changed === null) {
-          paths = null;
-          break;
-        }
-        paths?.push(...changed);
-      }
+      const firstParent = parentShas[0];
+      const paths = firstParent ? await pathsChangedBetweenCommits(wt, firstParent, sha) : null;
       if (paths === null) {
         parts.push(
           `commit ${sha.slice(0, 8)} "${subject}" touched source paths (paths unavailable)`,

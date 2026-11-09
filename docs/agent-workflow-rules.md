@@ -225,7 +225,7 @@ cannot tell from the code alone:
 
 - **Merging main into a task branch: take main's copy of work/<id>-*.md.** When manually merging main into an active task branch, git may stop on a conflict in `work/<id>-*.md` (the task file is pure bookkeeping, always superseded by main's version). Take main's copy: `git checkout --theirs work/<id>-*.md`, then stage and commit. Do not pause the merge to report this. RepoOS auto-resolves these inside close-out (#0754); manual merges need the same rule.
 - **A task's reports are its own bookkeeping.** Engineering rounds and review passes live together under `work/reports/<id>/` (`round-<n>.json`, `review-<n>.md`; see `user-docs/engineering-reports.md`). They are committed with the task, and handoff/landable/close-out treat this task's report files as bookkeeping rather than implementation drift — another task's reports still fail the task-scope check. Never hand-edit or delete a stored round or pass.
-- **Check gate bookkeeping (#1061).** While a handoff or in-flight check runs, `work/**` and `.repoos/**` commits on the task branch are deferred (not invalidating); source edits are refused. See `user-docs/check.md` § "Bookkeeping during a running gate".
+- **Check gate bookkeeping (#1061).** While a handoff or in-flight check runs, `work/**` and `.repoos/**` commits on the task branch are deferred (not invalidating), and new managed engineer turns plus source commits are refused. An already-running engineer's direct filesystem edit cannot be fenced; post-check drift detection catches it and refuses the result with the commit subject and paths. See `user-docs/check.md` § "Bookkeeping during a running gate".
 
 - **`repoos mv <id> done` never merges code — it only flips the status
   frontmatter.** Confirmed live twice in one session (2026-09-17): #0389 and
@@ -398,4 +398,3 @@ cannot tell from the code alone:
   `git checkout main -- <them>` before merging. Anything but the task's own
   file is drift that will pollute another task's record. Background:
   `docs/close-out-pipeline.md`.
-
