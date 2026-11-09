@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ff405c9d to 8a1f6321) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: ff405c9d4cb5152e5391e24aa3601571709c5557
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -534,3 +536,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:16:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T12:25:07Z · message_queued at 2026-11-09T12:25:07.617Z
 - 2026-11-09T12:25:07Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from ff405c9d to 8a1f6321) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+
