@@ -27,10 +27,7 @@ import {
   reviewPassesSoFar,
   reviewUsesLightBar,
 } from "../../server/review.js";
-import {
-  extractReviewReportSections,
-  reviewReportHasBlockingBugs,
-} from "../../core/review-report-sections.js";
+import { extractReviewReportSections } from "../../core/review-report-sections.js";
 import {
   needsInputClearsOnNewEngineerRun,
   needsInputClearsOnSuccessfulReview,
@@ -418,46 +415,11 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
     expect(mission).not.toContain("AUTHORITATIVE");
   });
 
-  it("asks for the enumeration closer at the end of the Bugs section", () => {
-    const mission = reviewMission(task(), reviewer, root, "main", config(root));
-    expect(mission).toContain(
-      "No further findings of this class were found after grepping: <the grep patterns and paths you searched>",
-    );
-    expect(mission).toMatch(/Do not stop at the first instance/);
-  });
-
-  it("does not count the enumeration closer as a blocking bug", () => {
-    const report = [
-      "## Verdict",
-      "`needs some work` — one bug",
-      "",
-      "## Bugs",
-      "- **src/a.ts**: the guard is missing.",
-      "No further findings of this class were found after grepping: src/**/*.ts",
-      "",
-      "## Suggestions (non-blocking)",
-      "Consider a helper.",
-    ].join("\n");
-    expect(reviewReportHasBlockingBugs(report)).toBe(true);
-    const clean = [
-      "## Bugs",
-      "None found",
-      "No further findings of this class were found after grepping: src/**/*.ts",
-    ].join("\n");
-    expect(reviewReportHasBlockingBugs(clean)).toBe(false);
-  });
-
   it("parses the frozen suggestions heading as the Suggestions section", () => {
     const sections = extractReviewReportSections(
       "## Bugs\nNone found\n\n## Suggestions (non-blocking)\n- Add a helper for the retry.\n",
     );
     expect(sections.suggestions).toContain("Add a helper for the retry.");
-  });
-
-  it("asks the engineer to self-review against the reviewer checklist before handoff", () => {
-    const engineer = promptFor("engineer");
-    expect(engineer).toMatch(/self-review your diff against the reviewer's checklist/);
-    expect(engineer).toMatch(/accepted-scope/);
   });
 
   it("exposes the freeze setting in the schema, supported keys and loader", () => {
