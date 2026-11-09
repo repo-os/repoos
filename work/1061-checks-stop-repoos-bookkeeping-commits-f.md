@@ -431,3 +431,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T07:35:35Z · body
 - 2026-11-09T07:37:46Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-09T07:37:46Z · message_queued at 2026-11-09T07:37:46.416Z
+- 2026-11-09T07:37:46Z · ↻ resuming engineer to read queued message
