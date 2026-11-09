@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
@@ -46,3 +47,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T13:16:58Z · message_queued at 2026-11-09T13:16:58.782Z
 - 2026-11-09T13:21:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T13:27:04Z · message_queued at 2026-11-09T13:27:04.740Z
+
