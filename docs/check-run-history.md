@@ -88,6 +88,9 @@ worktree lock. RepoOS bookkeeping in `work/` and the configured cache directory
 is queued and replayed in order after the last gate holder exits. Source changes
 remain gate-invalidating: the handoff reports the commit subject and changed
 paths. If Git cannot determine the paths or commit ancestry, the gate fails
-closed. Engineer attempts to write source while the lock is active should be
-refused with “A check is running; wait for it to finish.” Dead holders are
-reconciled on server startup and their durable bookkeeping queue is replayed.
+closed. RepoOS refuses new managed engineer turns and its own source commits
+while the lock is active. An engineer that was already running can still write
+source files directly; RepoOS cannot fence those filesystem writes. Drift
+detection catches committed source edits after the check and refuses the result
+with the commit subject and paths. Dead holders are reconciled on server startup
+and their durable bookkeeping queue is replayed.

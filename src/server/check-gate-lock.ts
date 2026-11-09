@@ -11,6 +11,7 @@ import {
   readdirSync,
   readFileSync,
   renameSync,
+  statSync,
   unlinkSync,
   rmSync,
   writeFileSync,
@@ -22,12 +23,13 @@ import { dirname, join, relative, resolve } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import {
   commitFiles,
+  gitCapture,
+  runGit,
   setCheckGateCommitHook,
   setCheckGateGitRefusal,
   type CheckGateCommitVerdict,
 } from "../core/git.js";
 import { isCheckGateBookkeepingPath as isBookkeepingPath } from "../core/check-gate-bookkeeping.js";
-import { runGit } from "../core/git.js";
 
 export const CHECK_GATE_WRITE_REFUSAL = "A check is running; wait for it to finish.";
 
@@ -61,6 +63,17 @@ export interface DeferredBranchCommit {
 
 export type DeferredFileSnapshot = { op: "write"; content: string } | { op: "delete" };
 
+interface DeferredBranchCommitQueueState {
+  entries: DeferredBranchCommit[];
+  replayExpected?: Record<string, DeferredFileSnapshot>;
+  pending?: {
+    headBefore: string;
+    message: string;
+    beforeSnapshots: Record<string, DeferredFileSnapshot>;
+    fileSnapshots: Record<string, DeferredFileSnapshot>;
+  };
+}
+
 export type CheckGateAcquireResult =
   | { ok: true; release: () => Promise<void> }
   | { ok: false; reason: string };
@@ -91,6 +104,8 @@ function stateMutexPath(root: string, cacheDir: string, taskId: string): string 
   return join(cacheRoot(root, cacheDir), "check-gate-state", encodeURIComponent(taskId));
 }
 
+const STATE_MUTEX_INIT_GRACE_MS = 5_000;
+
 /** Cross-process serialization for holder and deferred-queue read/modify/write. */
 function acquireStateMutex(root: string, cacheDir: string, taskId: string): () => void {
   const path = stateMutexPath(root, cacheDir, taskId);
@@ -104,14 +119,27 @@ function acquireStateMutex(root: string, cacheDir: string, taskId: string): () =
       return () => rmSync(path, { recursive: true, force: true });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      let ownerText: string | undefined;
       try {
-        const owner = Number(readFileSync(join(path, "pid"), "utf8"));
-        if (Number.isFinite(owner) && !isPidAlive(owner)) {
-          rmSync(path, { recursive: true, force: true });
+        ownerText = readFileSync(join(path, "pid"), "utf8");
+      } catch {
+        // A crashed process can leave the directory before writing its pid.
+      }
+      const owner = ownerText === undefined ? Number.NaN : Number(ownerText);
+      if (Number.isFinite(owner) && !isPidAlive(owner)) {
+        rmSync(path, { recursive: true, force: true });
+        continue;
+      }
+      if (!Number.isFinite(owner)) {
+        try {
+          if (Date.now() - statSync(path).mtimeMs >= STATE_MUTEX_INIT_GRACE_MS) {
+            rmSync(path, { recursive: true, force: true });
+            continue;
+          }
+        } catch {
+          // It was removed concurrently; retry the atomic mkdir.
           continue;
         }
-      } catch {
-        // The directory may have been created just before its owner file.
       }
       if (Date.now() >= deadline)
         throw new Error(`timed out waiting for check-gate state lock: ${taskId}`);
@@ -456,60 +484,127 @@ export function readDeferredBranchCommits(
   cacheDir: string,
   taskId: string,
 ): DeferredBranchCommit[] {
-  return (
-    readJsonFile(deferredPath(boardRoot, cacheDir, taskId), (parsed) => {
-      if (!Array.isArray(parsed)) return null;
-      const out: DeferredBranchCommit[] = [];
-      for (const item of parsed) {
-        const o = item as Partial<DeferredBranchCommit>;
-        if (
-          typeof o?.commitRoot === "string" &&
-          Array.isArray(o?.absPaths) &&
-          o.absPaths.every((p) => typeof p === "string") &&
-          typeof o?.message === "string" &&
-          typeof o?.enqueuedAt === "string"
-        ) {
-          const fileSnapshots: Record<string, DeferredFileSnapshot> = {};
-          if (o.fileSnapshots && typeof o.fileSnapshots === "object") {
-            for (const [k, v] of Object.entries(o.fileSnapshots as Record<string, unknown>)) {
-              if (
-                v &&
-                typeof v === "object" &&
-                (v as { op?: unknown }).op === "write" &&
-                typeof (v as { content?: unknown }).content === "string"
-              ) {
-                fileSnapshots[k] = { op: "write", content: (v as { content: string }).content };
-              } else if (v && typeof v === "object" && (v as { op?: unknown }).op === "delete") {
-                fileSnapshots[k] = { op: "delete" };
-              } else if (typeof v === "string") {
-                // Read older queued snapshots written before the explicit operation tag.
-                fileSnapshots[k] = { op: "write", content: v };
-              } else if (v === null) {
-                fileSnapshots[k] = { op: "delete" };
-              }
-            }
-          }
-          out.push({
-            commitRoot: o.commitRoot,
-            absPaths: o.absPaths,
-            message: o.message,
-            enqueuedAt: o.enqueuedAt,
-            fileSnapshots,
-          });
-        }
-      }
-      return out;
-    }) ?? []
-  );
+  return readDeferredBranchQueueState(boardRoot, cacheDir, taskId).entries;
 }
 
-function writeDeferredBranchCommits(
+function parseDeferredEntries(parsed: unknown): DeferredBranchCommit[] | null {
+  if (!Array.isArray(parsed)) return null;
+  const out: DeferredBranchCommit[] = [];
+  for (const item of parsed) {
+    const o = item as Partial<DeferredBranchCommit>;
+    if (
+      typeof o?.commitRoot === "string" &&
+      Array.isArray(o?.absPaths) &&
+      o.absPaths.every((p) => typeof p === "string") &&
+      typeof o?.message === "string" &&
+      typeof o?.enqueuedAt === "string"
+    ) {
+      const fileSnapshots: Record<string, DeferredFileSnapshot> = {};
+      if (o.fileSnapshots && typeof o.fileSnapshots === "object") {
+        for (const [k, v] of Object.entries(o.fileSnapshots as Record<string, unknown>)) {
+          if (
+            v &&
+            typeof v === "object" &&
+            (v as { op?: unknown }).op === "write" &&
+            typeof (v as { content?: unknown }).content === "string"
+          ) {
+            fileSnapshots[k] = { op: "write", content: (v as { content: string }).content };
+          } else if (v && typeof v === "object" && (v as { op?: unknown }).op === "delete") {
+            fileSnapshots[k] = { op: "delete" };
+          } else if (typeof v === "string") {
+            // Read older queued snapshots written before the explicit operation tag.
+            fileSnapshots[k] = { op: "write", content: v };
+          } else if (v === null) {
+            fileSnapshots[k] = { op: "delete" };
+          }
+        }
+      }
+      out.push({
+        commitRoot: o.commitRoot,
+        absPaths: o.absPaths,
+        message: o.message,
+        enqueuedAt: o.enqueuedAt,
+        fileSnapshots,
+      });
+    }
+  }
+  return out;
+}
+
+function parseSnapshotMap(input: unknown): Record<string, DeferredFileSnapshot> | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const snapshots: Record<string, DeferredFileSnapshot> = {};
+  for (const [path, value] of Object.entries(input as Record<string, unknown>)) {
+    if (
+      value &&
+      typeof value === "object" &&
+      (value as { op?: unknown }).op === "write" &&
+      typeof (value as { content?: unknown }).content === "string"
+    ) {
+      snapshots[path] = { op: "write", content: (value as { content: string }).content };
+    } else if (value && typeof value === "object" && (value as { op?: unknown }).op === "delete") {
+      snapshots[path] = { op: "delete" };
+    } else if (typeof value === "string") {
+      snapshots[path] = { op: "write", content: value };
+    } else if (value === null) {
+      snapshots[path] = { op: "delete" };
+    } else {
+      return null;
+    }
+  }
+  return snapshots;
+}
+
+function readDeferredBranchQueueState(
   boardRoot: string,
   cacheDir: string,
   taskId: string,
-  items: DeferredBranchCommit[],
+): DeferredBranchCommitQueueState {
+  return (
+    readJsonFile(deferredPath(boardRoot, cacheDir, taskId), (parsed) => {
+      if (Array.isArray(parsed)) {
+        const entries = parseDeferredEntries(parsed);
+        return entries ? { entries } : null;
+      }
+      if (!parsed || typeof parsed !== "object") return null;
+      const o = parsed as Record<string, unknown>;
+      const entries = parseDeferredEntries(o.entries);
+      if (!entries) return null;
+      const replayExpected =
+        o.replayExpected === undefined ? undefined : parseSnapshotMap(o.replayExpected);
+      const pendingRaw = o.pending;
+      let pending: DeferredBranchCommitQueueState["pending"];
+      if (pendingRaw !== undefined) {
+        if (!pendingRaw || typeof pendingRaw !== "object") return null;
+        const p = pendingRaw as Record<string, unknown>;
+        const beforeSnapshots = parseSnapshotMap(p.beforeSnapshots);
+        const fileSnapshots = parseSnapshotMap(p.fileSnapshots);
+        if (
+          typeof p.headBefore !== "string" ||
+          typeof p.message !== "string" ||
+          !beforeSnapshots ||
+          !fileSnapshots
+        )
+          return null;
+        pending = { headBefore: p.headBefore, message: p.message, beforeSnapshots, fileSnapshots };
+      }
+      if (o.replayExpected !== undefined && !replayExpected) return null;
+      return {
+        entries,
+        ...(replayExpected ? { replayExpected } : {}),
+        ...(pending ? { pending } : {}),
+      };
+    }) ?? { entries: [] }
+  );
+}
+
+function writeDeferredBranchQueueState(
+  boardRoot: string,
+  cacheDir: string,
+  taskId: string,
+  state: DeferredBranchCommitQueueState,
 ): void {
-  if (items.length === 0) {
+  if (state.entries.length === 0 && !state.pending) {
     try {
       unlinkSync(deferredPath(boardRoot, cacheDir, taskId));
     } catch {
@@ -517,7 +612,7 @@ function writeDeferredBranchCommits(
     }
     return;
   }
-  atomicWriteJson(deferredPath(boardRoot, cacheDir, taskId), items);
+  atomicWriteJson(deferredPath(boardRoot, cacheDir, taskId), state);
 }
 
 function snapshotAbsPaths(absPaths: string[]): Record<string, DeferredFileSnapshot> {
@@ -607,15 +702,15 @@ function enqueueDeferredBranchCommitLocked(
   absPaths: string[],
   message: string,
 ): void {
-  const existing = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
-  existing.push({
+  const state = readDeferredBranchQueueState(boardRoot, cacheDir, taskId);
+  state.entries.push({
     commitRoot,
     absPaths: [...absPaths],
     message,
     enqueuedAt: new Date().toISOString(),
     fileSnapshots: snapshotAbsPaths(absPaths),
   });
-  writeDeferredBranchCommits(boardRoot, cacheDir, taskId, existing);
+  writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
 }
 
 function flushDeferredBranchCommitsLocked(
@@ -623,15 +718,63 @@ function flushDeferredBranchCommitsLocked(
   cacheDir: string,
   taskId: string,
 ): { ok: boolean; remaining: number } {
-  const queue = readDeferredBranchCommits(boardRoot, cacheDir, taskId);
+  const state = readDeferredBranchQueueState(boardRoot, cacheDir, taskId);
+  let queue = state.entries;
   if (queue.length === 0) return { ok: true, remaining: 0 };
   const expectedFinal: Record<string, DeferredFileSnapshot> = {};
   for (const item of queue) Object.assign(expectedFinal, item.fileSnapshots);
-  const touched = Object.keys(expectedFinal);
+  let expectedCurrent = state.replayExpected ?? expectedFinal;
+
+  // A crash may land between git commit and the next queue-file update. The
+  // durable pending record identifies that exact commit so recovery can advance
+  // the queue instead of comparing an intermediate file state to the old end.
+  if (state.pending) {
+    const pending = state.pending;
+    const first = queue[0];
+    if (!first || first.message !== pending.message) return { ok: false, remaining: queue.length };
+    const head = awaitHead(first.commitRoot);
+    if (!head) return { ok: false, remaining: queue.length };
+    try {
+      if (head !== pending.headBefore) {
+        const parent = gitCapture(first.commitRoot, ["rev-parse", "HEAD^"], 10_000);
+        const subject = gitCapture(first.commitRoot, ["log", "-1", "--format=%s"], 10_000);
+        if (
+          parent.status !== 0 ||
+          parent.stdout.trim() !== pending.headBefore ||
+          subject.status !== 0 ||
+          subject.stdout.trim() !== pending.message.split(/\r?\n/, 1)[0] ||
+          !snapshotsMatchOnPaths(pending.fileSnapshots, Object.keys(pending.fileSnapshots))
+        ) {
+          return { ok: false, remaining: queue.length };
+        }
+        for (const [path, snapshot] of Object.entries(first.fileSnapshots))
+          expectedCurrent[path] = snapshot;
+        queue = queue.slice(1);
+        state.entries = queue;
+        state.replayExpected = expectedCurrent;
+        state.pending = undefined;
+        writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
+      } else {
+        const targetPaths = Object.keys(pending.fileSnapshots);
+        if (snapshotsMatchOnPaths(pending.fileSnapshots, targetPaths)) {
+          restoreSnapshotsIfUnchanged(pending.beforeSnapshots, pending.fileSnapshots);
+        } else if (!snapshotsMatchOnPaths(pending.beforeSnapshots, targetPaths)) {
+          return { ok: false, remaining: queue.length };
+        }
+        state.pending = undefined;
+        writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
+        expectedCurrent = pending.beforeSnapshots;
+      }
+    } catch {
+      return { ok: false, remaining: queue.length };
+    }
+    if (queue.length === 0) return { ok: true, remaining: 0 };
+  }
+
+  if (!state.replayExpected) expectedCurrent = expectedFinal;
+  const touched = Object.keys(expectedCurrent);
   try {
-    // Never replay stale snapshots over later edits. Keep every queue entry for
-    // recovery if the worktree no longer matches the last queued state.
-    if (!snapshotsMatchOnPaths(expectedFinal, touched)) {
+    if (!snapshotsMatchOnPaths(expectedCurrent, touched)) {
       return { ok: false, remaining: queue.length };
     }
   } catch {
@@ -641,49 +784,69 @@ function flushDeferredBranchCommitsLocked(
   checkGateFlushInProgress = true;
   const prev = process.env.REPOOS_CHECK_GATE_INTERNAL;
   process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
-  const remaining: DeferredBranchCommit[] = [];
-  const expectedCurrent = { ...expectedFinal };
   try {
-    let failed = false;
-    for (const [index, item] of queue.entries()) {
-      if (failed) {
-        remaining.push(item);
-        continue;
-      }
+    while (queue.length > 0) {
+      const item = queue[0]!;
       const itemPaths = Object.keys(item.fileSnapshots);
       if (
         itemPaths.length !== item.absPaths.length ||
         !item.absPaths.every((path) => item.fileSnapshots[path]) ||
         !snapshotsMatchOnPaths(expectedCurrent, Object.keys(expectedCurrent))
       ) {
-        remaining.push(...queue.slice(index));
-        failed = true;
-        continue;
+        writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, {
+          ...state,
+          entries: queue,
+          replayExpected: expectedCurrent,
+          pending: undefined,
+        });
+        return { ok: false, remaining: queue.length };
       }
-      const prior = { ...expectedCurrent };
+      const headBefore = awaitHead(item.commitRoot);
+      if (!headBefore) return { ok: false, remaining: queue.length };
+      const pending = {
+        headBefore,
+        message: item.message,
+        beforeSnapshots: { ...expectedCurrent },
+        fileSnapshots: item.fileSnapshots,
+      };
+      state.pending = pending;
+      state.entries = queue;
+      state.replayExpected = expectedCurrent;
+      writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
       try {
         restoreSnapshots(item.fileSnapshots);
         const committed = commitFiles(item.commitRoot, item.absPaths, item.message);
         if (!committed) {
-          restoreSnapshotsIfUnchanged(prior, item.fileSnapshots);
-          remaining.push(...queue.slice(index));
-          failed = true;
-          continue;
+          restoreSnapshotsIfUnchanged(expectedCurrent, item.fileSnapshots);
+          state.pending = undefined;
+          writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
+          return { ok: false, remaining: queue.length };
         }
         for (const path of itemPaths) expectedCurrent[path] = item.fileSnapshots[path]!;
+        queue = queue.slice(1);
+        state.entries = queue;
+        state.replayExpected = expectedCurrent;
+        state.pending = undefined;
+        writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
       } catch {
-        restoreSnapshotsIfUnchanged(prior, item.fileSnapshots);
-        remaining.push(...queue.slice(index));
-        failed = true;
+        restoreSnapshotsIfUnchanged(pending.beforeSnapshots, item.fileSnapshots);
+        state.pending = undefined;
+        writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
+        return { ok: false, remaining: queue.length };
       }
     }
-    writeDeferredBranchCommits(boardRoot, cacheDir, taskId, remaining);
-    return { ok: remaining.length === 0, remaining: remaining.length };
+    writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
+    return { ok: true, remaining: 0 };
   } finally {
     if (prev === undefined) delete process.env.REPOOS_CHECK_GATE_INTERNAL;
     else process.env.REPOOS_CHECK_GATE_INTERNAL = prev;
     checkGateFlushInProgress = false;
   }
+}
+
+function awaitHead(commitRoot: string): string | null {
+  const result = gitCapture(commitRoot, ["rev-parse", "HEAD"], 10_000);
+  return result.status === 0 && result.stdout.trim() ? result.stdout.trim() : null;
 }
 
 export async function flushDeferredBranchCommits(
@@ -861,12 +1024,12 @@ function resolveCommitHook(
   // closes the race where release cleared the lock after lookup but before the
   // queue write, leaving a late bookkeeping entry stranded out of order.
   for (const name of listLockFiles(boardRoot, cacheDir)) {
-    const lock = readLockFile(boardRoot, cacheDir, name);
-    if (!lock || !samePath(lock.worktree, commitRoot)) continue;
-    const releaseState = acquireStateMutex(boardRoot, cacheDir, lock.taskId);
+    const taskId = decodeURIComponent(name.replace(/\.json$/, ""));
+    const releaseState = acquireStateMutex(boardRoot, cacheDir, taskId);
     try {
-      const current = readCheckGateLock(boardRoot, cacheDir, lock.taskId);
-      if (!current || !lockHasLiveHolder(current)) continue;
+      const current = readCheckGateLock(boardRoot, cacheDir, taskId);
+      if (!current || !samePath(current.worktree, commitRoot) || !lockHasLiveHolder(current))
+        continue;
       if (!relPaths.every((p) => isBookkeepingPath(p, config))) return "refuse";
       enqueueDeferredBranchCommitLocked(
         boardRoot,

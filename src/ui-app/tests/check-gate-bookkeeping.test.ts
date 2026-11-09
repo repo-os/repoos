@@ -3,7 +3,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
@@ -149,6 +149,42 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     );
   });
 
+  it("inspects source commits carried by a merged side branch", async () => {
+    const { root, wt } = initRepo();
+    const before = git(wt, ["rev-parse", "HEAD"]);
+    git(root, ["checkout", "-b", "side-source"]);
+    writeFileSync(join(root, "src", "app.ts"), "side change\n");
+    git(root, ["add", "src/app.ts"]);
+    git(root, ["commit", "-qm", "feat: side branch source"]);
+    git(root, ["checkout", "main"]);
+    git(wt, ["merge", "--no-ff", "side-source", "-m", "merge side source"]);
+    const after = git(wt, ["rev-parse", "HEAD"]);
+    const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toContain('"feat: side branch source"');
+      expect(result.reason).toContain("src/app.ts");
+    }
+  });
+
+  it("compares merge commits against the checked branch first parent", async () => {
+    const { root, wt } = initRepo();
+    writeFileSync(join(wt, "src", "app.ts"), "checked branch source\n");
+    git(wt, ["add", "src/app.ts"]);
+    git(wt, ["commit", "-qm", "feat: source before gate"]);
+    const before = git(wt, ["rev-parse", "HEAD"]);
+    git(root, ["checkout", "-b", "side-bookkeeping"]);
+    mkdirSync(join(root, ".repoos"), { recursive: true });
+    writeFileSync(join(root, ".repoos", "side-note.json"), "{}\n");
+    git(root, ["add", ".repoos/side-note.json"]);
+    git(root, ["commit", "-qm", "docs: side bookkeeping"]);
+    git(root, ["checkout", "main"]);
+    git(wt, ["merge", "--no-ff", "side-bookkeeping", "-m", "merge bookkeeping"]);
+    const after = git(wt, ["rev-parse", "HEAD"]);
+    const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
+    expect(result).toEqual({ ok: true });
+  });
+
   it("fails closed when path diff is unavailable", async () => {
     const { wt } = initRepo();
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", "notasha", "alsobad");
@@ -242,6 +278,17 @@ describe("check gate lock and deferred commits (#1061)", () => {
     expect(git(wt, ["log", "--oneline", "-1"])).toMatch(/docs\(0001\)/);
   });
 
+  it("reclaims an old state mutex directory left without its pid file", () => {
+    const { root, wt } = initRepo();
+    const mutex = join(root, ".repoos", "check-gate-state", "0001");
+    mkdirSync(mutex, { recursive: true });
+    const staleAt = new Date(Date.now() - 60_000);
+    utimesSync(mutex, staleAt, staleAt);
+    const taskFile = join(wt, "work", "0001-task.md");
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): recover");
+    expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(1);
+  });
+
   it("replays repeated writes to one bookkeeping file as ordered commits", async () => {
     const { root, wt } = initRepo();
     const taskFile = join(wt, "work", "0001-task.md");
@@ -251,6 +298,31 @@ describe("check gate lock and deferred commits (#1061)", () => {
     writeFileSync(taskFile, `${original}\nfirst\nsecond`);
     enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): second");
     await flushDeferredBranchCommits(root, ".repoos", "0001");
+    expect(git(wt, ["log", "-2", "--format=%s"]).split("\n")).toEqual([
+      "docs(0001): second",
+      "docs(0001): first",
+    ]);
+    expect(readFileSync(taskFile, "utf8")).toBe(`${original}\nfirst\nsecond`);
+  });
+
+  it("persists replay progress and resumes from the intermediate snapshot after a failed entry", async () => {
+    const { root, wt } = initRepo();
+    const taskFile = join(wt, "work", "0001-task.md");
+    const original = readFileSync(taskFile, "utf8");
+    writeFileSync(taskFile, `${original}\nfirst`);
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): first");
+    writeFileSync(taskFile, `${original}\nfirst\nsecond`);
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): second");
+    setCheckGateCommitHook(({ message }) => (message.endsWith("second") ? "refuse" : "proceed"));
+    const firstFlush = await flushDeferredBranchCommits(root, ".repoos", "0001");
+    expect(firstFlush).toMatchObject({ ok: false, remaining: 1 });
+    expect(git(wt, ["log", "-1", "--format=%s"])).toBe("docs(0001): first");
+    expect(readFileSync(taskFile, "utf8")).toBe(`${original}\nfirst`);
+    expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(1);
+
+    setCheckGateCommitHook(null);
+    const resumed = await flushDeferredBranchCommits(root, ".repoos", "0001");
+    expect(resumed).toEqual({ ok: true, remaining: 0 });
     expect(git(wt, ["log", "-2", "--format=%s"]).split("\n")).toEqual([
       "docs(0001): second",
       "docs(0001): first",
