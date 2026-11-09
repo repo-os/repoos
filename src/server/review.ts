@@ -53,7 +53,6 @@ import {
 } from "../core/review-verdict.js";
 import {
   extractReviewReportSections,
-  NO_FURTHER_FINDINGS_PREFIX,
   reviewReportIsEnvironmentOnly,
 } from "../core/review-report-sections.js";
 import type { LandableResult } from "../core/landable.js";
@@ -311,9 +310,6 @@ export function reviewBlockingBar(
   if (reviewPassesSoFar(task) >= reviewFreezeThreshold(config)) return "frozen";
   return reviewUsesLightBar(task) ? "light" : "full";
 }
-
-/** The enumeration closer the Bugs section must end with (#1080). */
-const NO_FURTHER_LINE_TEMPLATE = `${NO_FURTHER_FINDINGS_PREFIX}: <the grep patterns and paths you searched>`;
 
 /** Cap on the quoted accepted-scope section (#1080). */
 const ACCEPTED_SCOPE_CHARS = 4000;
@@ -807,8 +803,7 @@ export function reviewMission(
     "  like), then grep the diff and the files it touches for every other",
     "  instance — sibling paths, callers, config/schema/docs/test registrations,",
     "  both sides of a fallback — and list them all under ## Bugs. Never hold an",
-    "  instance back for a later pass. Do not stop at the first instance you find:",
-    "  a class is only enumerated once the grep has run over every path it can reach.",
+    "  instance back for a later pass.",
     "- Separate code defects from evidence-only gaps: when the code is sound but a",
     "  capture is wrong or stale, use `EVIDENCE-GAP-ONLY` / `STALE-EVIDENCE-ONLY`",
     "  and check that each declared shot's target and route can really render its",
@@ -886,9 +881,7 @@ export function reviewMission(
     "(route/label) on its own line. Write `None` when not applicable.",
     "",
     "## Bugs",
-    "Concrete defects, each with the file and what goes wrong. After any bug listed,",
-    "end this section with one line, exactly:",
-    `\`${NO_FURTHER_LINE_TEMPLATE}\``,
+    "Concrete defects, each with the file and what goes wrong.",
     "",
     "## Edge cases",
     "Cases worth checking that the change may not handle.",

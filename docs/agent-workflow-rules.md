@@ -138,15 +138,11 @@ enforces four rules:
 - **Accepted scope is authoritative.** A `## Accepted scope and known limitations`
   section (any heading starting `Accepted scope`) is quoted into the prompt; the
   items it lists, and anything it explicitly supersedes, are not blocking.
-- **One enumeration.** After any bug listed, the `## Bugs` section ends with
-  `No further findings of this class were found after grepping: <patterns and
-  paths>`. The parser ignores that line, so it never counts as a blocking bug.
-  The engineer self-reviews against the same checklist before handoff.
-
-Not covered here: auto-filing follow-up tasks from suggestions and the
-`round N of ~4` convergence display. Housekeeping failures that waste rounds are
-#1076 (stray other-task bookkeeping in branches) and #1061 (bookkeeping commits
-invalidating checks).
+Slice 1 covers only the rules above. Enumeration closers, engineer self-review,
+auto-filed follow-ups, the `Land anyway` override and the `round N of ~4`
+convergence display are slice 2, tracked as a follow-up task. Housekeeping
+failures that waste rounds are #1076 (stray other-task bookkeeping in branches)
+and #1061 (bookkeeping commits invalidating checks).
 
 ## Definition of done: the check plan in detail
 
