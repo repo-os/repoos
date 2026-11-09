@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T14:41:05Z"
+updated_at: "2026-11-09T14:56:18Z"
 handoff_signal_retry_count: 2
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T14:40:15.096Z\",\"kind\":\"dev-error\"}]"
@@ -114,3 +114,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T14:40:15Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at verify: ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no…
 - 2026-11-09T14:40:17Z · needs_input
 - 2026-11-09T14:41:05Z · body
+- 2026-11-09T14:56:18Z · watchdog: restarting engineer after 15m with no live process
