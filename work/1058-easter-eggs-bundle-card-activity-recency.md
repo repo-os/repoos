@@ -622,3 +622,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T10:05:59Z · message_queued at 2026-11-09T10:05:59.076Z
 - 2026-11-09T10:24:56Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-09T10:24:57Z · status active→review
+- 2026-11-09T10:24:57Z · message_queued at 2026-11-09T10:24:57.309Z
