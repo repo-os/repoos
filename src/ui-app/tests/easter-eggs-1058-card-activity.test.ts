@@ -266,11 +266,23 @@ describe("PipelineCard activity recency (#1058)", () => {
   it.each([null, "invalid"])("keeps elapsed inline when last activity is %s", (lastActivityAt) => {
     const wrapper = mount(PipelineCard, {
       props: {
-        taskId: "1058", type: "chore", priority: "p3", title: "Fixture", state: "ok",
-        statusSignals: healthyPipelineSignals, stepLabel: "Coding", chipText: null,
-        stateSince: "2026-11-08T02:48:00.000Z", lastActivityAt, nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
-        roundsLabel: "D0 · R0", reviewerTone: null, modelsLabel: "eng / rev", hostLabel: "local",
-        action: null, checkProgress: null,
+        taskId: "1058",
+        type: "chore",
+        priority: "p3",
+        title: "Fixture",
+        state: "ok",
+        statusSignals: healthyPipelineSignals,
+        stepLabel: "Coding",
+        chipText: null,
+        stateSince: "2026-11-08T02:48:00.000Z",
+        lastActivityAt,
+        nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+        roundsLabel: "D0 · R0",
+        reviewerTone: null,
+        modelsLabel: "eng / rev",
+        hostLabel: "local",
+        action: null,
+        checkProgress: null,
       },
     });
     expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
