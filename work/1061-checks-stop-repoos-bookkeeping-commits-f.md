@@ -435,4 +435,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T07:39:26Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T07:54:37Z · body
 - 2026-11-09T07:55:47Z · status active→review
-
+- 2026-11-09T07:55:47Z · message_queued at 2026-11-09T07:55:47.620Z
