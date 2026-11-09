@@ -12,10 +12,11 @@ const props = withDefaults(
   defineProps<{
     kind?: LoadingSkeletonKind;
     loading?: boolean;
+    defer?: boolean;
     count?: number;
     matrixCount?: number;
   }>(),
-  { kind: "rows", loading: true },
+  { kind: "rows", loading: true, defer: false },
 );
 const emit = defineEmits<{ "visibility-change": [visible: boolean] }>();
 
@@ -48,6 +49,13 @@ function updateLoading(loading: boolean): void {
   if (showTimer) clearTimeout(showTimer);
   showTimer = null;
 
+  if (!props.defer) {
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = null;
+    setVisible(loading);
+    return;
+  }
+
   if (loading) {
     if (hideTimer) clearTimeout(hideTimer);
     hideTimer = null;
@@ -68,7 +76,10 @@ function updateLoading(loading: boolean): void {
   }, remaining);
 }
 
-watch(() => props.loading, updateLoading);
+watch(
+  () => [props.loading, props.defer] as const,
+  ([loading]) => updateLoading(loading),
+);
 onMounted(() => {
   updateLoading(props.loading);
   if (typeof window.matchMedia === "function") {

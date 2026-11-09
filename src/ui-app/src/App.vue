@@ -173,6 +173,7 @@ onUnmounted(() => {
             <PageSkeleton
               :kind="loadingKind"
               :loading="repo.loading"
+              defer
               @visibility-change="showRepoSkeleton = $event"
             />
           </div>
