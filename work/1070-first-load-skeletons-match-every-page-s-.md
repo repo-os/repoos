@@ -343,3 +343,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T20:10:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T20:20:53Z · message_delivered: 2 message(s)
 - 2026-11-09T20:22:13Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T20:22:13Z · message_queued at 2026-11-09T20:22:13.789Z
