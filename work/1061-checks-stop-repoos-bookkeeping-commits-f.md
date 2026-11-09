@@ -355,3 +355,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T01:36:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1061’s handoff passed, and it is now in **review**. The repo instructions say not to edit a task worktree while it’s in review; it must first be sent back to **active** through RepoOS. I haven’t changed any files or written the repor… · stderr: Reading additional input from stdin...
 - 2026-11-09T01:36:17Z · status active→review
 - 2026-11-09T01:36:18Z · message_delivered: 1 message(s)
+- 2026-11-09T01:36:18Z · note: handoff requested (cli)
