@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T18:27:39Z"
+updated_at: "2026-11-09T18:30:40Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -117,3 +117,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T18:17:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T18:17:34Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
 - 2026-11-09T18:27:39Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T18:30:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The handoff wiring is correct and does run the restore inside `runHandoffFinalization`, before the check gate and review lock. The test does exercise it via `finalizeReviewHandoff`. Now let me assess the actual remaining work. Let me focus… · stderr: (empty)
