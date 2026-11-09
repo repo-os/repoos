@@ -3,9 +3,6 @@ id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Automatic recovery could not restart the engineer: This worktree already has a recorded live engineer for task #1073 (pid 37393)"
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T15:07:05Z"
+updated_at: "2026-11-09T15:19:34Z"
 handoff_signal_retry_count: 2
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T14:40:15.096Z\",\"kind\":\"dev-error\"}]"
@@ -121,3 +118,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T14:56:19Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1073 (pid 37393)
 - 2026-11-09T14:57:51Z · body
 - 2026-11-09T15:07:05Z · body
+- 2026-11-09T15:19:34Z · watchdog: restarting engineer after 12m with no live process
