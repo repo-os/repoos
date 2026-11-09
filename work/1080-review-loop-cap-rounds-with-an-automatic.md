@@ -83,3 +83,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T15:40:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T15:43:05Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (f6a6e0eca) during finalization (#0734)
 - 2026-11-09T15:48:07Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T15:48:07Z · note: handoff requested (cli)
