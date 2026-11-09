@@ -195,6 +195,23 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     expect(result).toEqual({ ok: true });
   });
 
+  it("does not classify source commits from a side branch when the merge tree adds no source delta", async () => {
+    const { root, wt } = initRepo();
+    git(root, ["checkout", "-b", "side-old-source"]);
+    writeFileSync(join(root, "src", "app.ts"), "side content\n");
+    git(root, ["add", "src/app.ts"]);
+    git(root, ["commit", "-qm", "feat: old side source"]);
+    git(wt, ["checkout", "-b", "feat/checked-equivalent"]);
+    writeFileSync(join(wt, "src", "app.ts"), "side content\n");
+    git(wt, ["add", "src/app.ts"]);
+    git(wt, ["commit", "-qm", "feat: equivalent source already checked"]);
+    const before = git(wt, ["rev-parse", "HEAD"]);
+    git(wt, ["merge", "--no-ff", "-s", "ours", "side-old-source", "-m", "merge bookkeeping only"]);
+    const after = git(wt, ["rev-parse", "HEAD"]);
+    const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
+    expect(result).toEqual({ ok: true });
+  });
+
   it("fails closed when path diff is unavailable", async () => {
     const { wt } = initRepo();
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", "notasha", "alsobad");
