@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: b998f2b345ce184ad2370e90a100ca07c64293f4
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -333,3 +335,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T00:39:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T00:45:33Z · message_queued at 2026-11-09T00:45:33.445Z
 - 2026-11-09T00:45:33Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+
