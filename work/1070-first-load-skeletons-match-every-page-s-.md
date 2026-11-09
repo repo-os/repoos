@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T10:58:51Z"
+updated_at: "2026-11-09T10:59:44Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -167,3 +167,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T10:58:51Z · status active→review
 - 2026-11-09T10:58:51Z · message_delivered: 2 message(s)
 - 2026-11-09T10:58:51Z · note: handoff requested (cli)
+- 2026-11-09T10:59:44Z · message_queued at 2026-11-09T10:59:44.829Z
