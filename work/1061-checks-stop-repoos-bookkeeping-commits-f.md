@@ -465,3 +465,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T09:02:18Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
 - 2026-11-09T09:02:18Z · status active→review
 - 2026-11-09T09:02:19Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T09:02:44Z · message_queued at 2026-11-09T09:02:44.202Z
