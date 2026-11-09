@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — failed watchdog removal still triggers cleanup and is reported as a successful removal.
@@ -16,7 +16,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-09T03:05:26Z"
+updated_at: "2026-11-09T03:05:37Z"
 review_passes: 13
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -327,3 +327,5 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-08T19:41:48Z · message_queued at 2026-11-08T19:41:48.793Z
 - 2026-11-08T20:53:18Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-09T03:05:26Z · body: Accepted scope and known limitations (added)
+- 2026-11-09T03:05:37Z · status review→active
+- 2026-11-09T03:05:37Z · note: send-back — returned to active for engineer follow-up
