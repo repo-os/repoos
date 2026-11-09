@@ -187,10 +187,10 @@ describe("lockfile-only conflict completes the merge commit (#1076)", () => {
     writeFileSync(
       join(bin, "bun"),
       '#!/bin/sh\nprintf "regenerated lock\\n" > bun.lock\n' +
-        'mkdir -p work/reports/2000\n' +
+        "mkdir -p work/reports/2000\n" +
         'printf "DRIFT\\n" > work/2000-other.md\n' +
         'printf "stale\\n" > work/reports/2000/review-1.md\n' +
-        'git add -- work/2000-other.md work/reports/2000/review-1.md\n' +
+        "git add -- work/2000-other.md work/reports/2000/review-1.md\n" +
         "exit 0\n",
       { mode: 0o755 },
     );
