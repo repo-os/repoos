@@ -114,3 +114,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T06:59:49Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-09T06:59:49Z · message_queued at 2026-11-09T06:59:49.726Z
 - 2026-11-09T06:59:49Z · ↻ resuming engineer to read queued message
+- 2026-11-09T06:59:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped `repoos check` passed after falling back to the local gate: build, lint, contrast audit, all 364 test files, and UI smoke are green. I’m doing the required review-report and worktree-state check, then I’ll send the handoff reque… · stderr: 2026-11-09T06:55:28.308805Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
