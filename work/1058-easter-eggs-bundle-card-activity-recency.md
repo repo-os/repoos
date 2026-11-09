@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T03:34:45Z"
+updated_at: "2026-11-09T03:36:25Z"
 review_passes: 8
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -49,38 +49,41 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ```json
 [
 {
-"label": "Board hint: coding line and hover recency",
-"target": "default",
-"route": "/work",
-"highlight": ".app-tooltip.show",
-"steps": [
-{
-"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+  "label": "Board coding status with activity popup",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".app-tooltip.show",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    },
+    {
+      "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+    },
+    {
+      "waitMs": 500
+    }
+  ],
+  "state": "board:activeCoding"
 },
 {
-"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-},
-{
-"waitMs": 700
-}
-],
-"state": "board:activeCoding"
-},
-{
-"label": "Pipeline coding card hides inline elapsed",
-"target": "default",
-"route": "/work?tab=pipeline",
-"selector": "[data-task-id=\"pipe-coding\"]",
-"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
-"steps": [
-{
-"waitFor": "[data-task-id=\"pipe-coding\"]"
-},
-{
-"waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
-}
-],
-"state": "board:pipeline"
+  "label": "Pipeline coding row with activity popup",
+  "target": "default",
+  "route": "/work?tab=pipeline",
+  "selector": "[data-task-id=\"pipe-coding\"]",
+  "highlight": ".app-tooltip.show",
+  "steps": [
+    {
+      "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+    },
+    {
+      "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+    },
+    {
+      "waitMs": 500
+    }
+  ],
+  "state": "board:pipeline"
 }
 ]
 ```
@@ -514,3 +517,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T03:34:13Z · message_delivered: 1 message(s)
 - 2026-11-09T03:34:14Z · needs_input
 - 2026-11-09T03:34:15Z · message_queued at 2026-11-09T03:34:15.762Z
+- 2026-11-09T03:36:25Z · body
