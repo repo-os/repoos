@@ -71,7 +71,11 @@ async function formatNonBookkeepingCommitDrift(
   // `from` may become a merge's second parent while a check is running. Walk
   // the ancestry path from that exact commit instead of assuming first-parent
   // history, which can include unrelated changes already present at start.
-  const list = await runGit(wt, ["rev-list", "--ancestry-path", "--reverse", `${from}..${to}`], 15_000);
+  const list = await runGit(
+    wt,
+    ["rev-list", "--ancestry-path", "--reverse", `${from}..${to}`],
+    15_000,
+  );
   const parts: string[] = [`HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`];
   if (list.status !== 0) {
     return {

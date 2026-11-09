@@ -868,7 +868,14 @@ function resolveCommitHook(
       const current = readCheckGateLock(boardRoot, cacheDir, lock.taskId);
       if (!current || !lockHasLiveHolder(current)) continue;
       if (!relPaths.every((p) => isBookkeepingPath(p, config))) return "refuse";
-      enqueueDeferredBranchCommitLocked(boardRoot, cacheDir, current.taskId, commitRoot, absPaths, message);
+      enqueueDeferredBranchCommitLocked(
+        boardRoot,
+        cacheDir,
+        current.taskId,
+        commitRoot,
+        absPaths,
+        message,
+      );
       return "defer";
     } finally {
       releaseState();
