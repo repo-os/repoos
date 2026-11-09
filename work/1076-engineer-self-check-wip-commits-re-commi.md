@@ -3,12 +3,6 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Model busy, retry later"
-debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
-debug_tldr_at: "2026-11-09T13:58:58Z"
-debug_tldr_key: "dev-error|error: Model busy, retry later"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T13:58:58Z"
+updated_at: "2026-11-09T14:02:24Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -77,3 +71,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T13:52:03Z · message_delivered: 1 message(s)
 - 2026-11-09T13:58:41Z · agent exited with an error (opencode) · error: Model busy, retry later
 - 2026-11-09T13:58:41Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · error: Model busy, retry later
+- 2026-11-09T14:02:24Z · needs_input
