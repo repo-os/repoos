@@ -109,7 +109,7 @@ const matrixCount = (): number =>
 </script>
 
 <template>
-  <Transition name="page-skeleton" :css="defer">
+  <Transition name="page-skeleton">
     <div
       v-if="visible"
       class="page-skeleton"
