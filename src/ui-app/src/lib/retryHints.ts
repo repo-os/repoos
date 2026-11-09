@@ -130,7 +130,7 @@ export function retryHint(
   retryCount: number,
   lastActivity: string | undefined,
   now: number,
-  opts?: { suppressAgentStuck?: boolean },
+  opts?: { suppressAgentStuck?: boolean; activityFallback?: string },
 ): RetryHint {
   const text = RETRY_TEXT[kind];
   const ms = silentMs(now, lastActivity);
@@ -146,7 +146,9 @@ export function retryHint(
     label: activity ? text.active() : text.retry(retryCount),
     title: text.title,
     cls: "tc-coding",
-    activityTip: activity ? (agentLastActivityTip(lastActivity, now) ?? undefined) : undefined,
+    activityTip: activity
+      ? (agentLastActivityTip(lastActivity, now) ?? opts?.activityFallback)
+      : opts?.activityFallback,
   };
 }
 
@@ -162,20 +164,33 @@ export function autoRepairHint(opts: {
   lastActivity: string | undefined;
   now: number;
   suppressAgentStuck?: boolean;
+  /** State-time tooltip when both activity telemetry timestamps are unusable. */
+  activityFallback?: string;
 }): RetryHint | null {
   const { task, running, lastActivity, now, suppressAgentStuck } = opts;
   if (!running) return null;
   if (task.status === "review") {
     const merge = retryCountFrom(task, "mergeConflict");
-    if (merge) return retryHint("mergeConflict", merge, lastActivity, now, { suppressAgentStuck });
+    if (merge)
+      return retryHint("mergeConflict", merge, lastActivity, now, {
+        suppressAgentStuck,
+        activityFallback: opts.activityFallback,
+      });
     const check = retryCountFrom(task, "check");
-    if (check) return retryHint("check", check, lastActivity, now, { suppressAgentStuck });
+    if (check)
+      return retryHint("check", check, lastActivity, now, {
+        suppressAgentStuck,
+        activityFallback: opts.activityFallback,
+      });
     return null;
   }
   if (task.status === "active") {
     const signal = retryCountFrom(task, "handoffSignal");
     if (signal)
-      return retryHint("handoffSignal", signal, lastActivity, now, { suppressAgentStuck });
+      return retryHint("handoffSignal", signal, lastActivity, now, {
+        suppressAgentStuck,
+        activityFallback: opts.activityFallback,
+      });
   }
   return null;
 }
