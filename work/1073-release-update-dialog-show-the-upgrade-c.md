@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -214,3 +214,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T22:31:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: TypeScript passes (exit 0, no `readVersion` in upgrade.ts). Now let me add the route-level tests the review asked for, plus address the other review items. Let me look at the existing release-route tests to add cases. Let me find where the… · stderr: (empty)
 - 2026-11-09T22:35:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T22:46:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: There's no dedicated test exercising the `getAvailableRelease` route handler. The review asked for route-level tests. Let me add tests to `releases.test.ts` that call `getAvailableRelease` with a fake request/response, covering the source-… · stderr: (empty)
+- 2026-11-09T22:46:26Z · status active→review
