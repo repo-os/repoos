@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T15:13:20Z"
+updated_at: "2026-11-09T15:55:14Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -33,6 +33,9 @@ A task branch's diff against main only ever contains that task's own files. Othe
 
 ## Notes for AI
 Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/git.ts`, the server's task-file sync (`ensureWorktree`, bookkeeping commits in `src/server/handoff.ts`), and the landing preflight (`repoos landable`, `src/server/conflict-resolution.ts`). Coordinate with #1061 (bookkeeping deferral during checks); do not duplicate it. Do not edit repoos.toml.
+
+## Accepted scope (criterion 1)
+Owner/accepted interpretation: the server already writes only the LIVE task's own file into a task worktree — an audit of the write sites (activity, CTO/watchdog notes, `routes/tasks.ts` sync, `server.ts` `syncTaskBranch`) shows each targets `config.root`/main or this task's own `task.path`. No write site is changed. Enforcement lands at the commit boundary instead: every commit made in a task worktree is scoped (pathspec, or an explicit foreign-unstage before a bare commit) so a sibling's `work/<other-id>-*.md` / `work/reports/<other-id>/**` can never ride the branch, and handoff restores any that already did.
 
 ## Activity
 
@@ -85,3 +88,6 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T15:12:31Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-09T15:13:20Z · note: review pass 2: needs some work
 - 2026-11-09T15:13:20Z · status review→active
+- 2026-11-09T15:52:58Z · body: Accepted scope (criterion 1) (added)
+- 2026-11-09T15:52:58Z · message_queued at 2026-11-09T15:52:58.690Z
+- 2026-11-09T15:55:14Z · CTO nudge: held — an undelivered message is already queued
