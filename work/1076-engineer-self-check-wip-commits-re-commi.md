@@ -11,11 +11,12 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T19:46:07Z"
+updated_at: "2026-11-09T19:51:44Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
 dev_error_count: 12
+engineer_stall_resume_log: "[{\"at\":\"2026-11-09T19:51:44.422Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
@@ -122,3 +123,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T19:00:14Z · note: adopted orphaned engineer pid 13123
 - 2026-11-09T19:15:04Z · body
 - 2026-11-09T19:46:07Z · body
+- 2026-11-09T19:51:44Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
