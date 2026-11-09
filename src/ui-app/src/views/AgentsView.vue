@@ -734,7 +734,7 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <PageSkeleton :loading="!config.loaded" kind="cards" :count="localAgents.length" />
+    <PageSkeleton :loading="!config.loaded" kind="cards" />
 
     <template v-if="config.loaded">
       <div
@@ -954,7 +954,6 @@ onUnmounted(() => {
           <PageSkeleton
             :loading="detectLoading && !detected.length && !detectHasSnapshot"
             kind="rows"
-            :count="detectRows.length"
           />
           <div v-if="!detected.length && (!detectLoading || detectHasSnapshot)" class="agent-empty">
             No known coding agents detected on PATH.

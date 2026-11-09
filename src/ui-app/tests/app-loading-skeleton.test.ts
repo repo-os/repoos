@@ -88,7 +88,7 @@ describe("repo loading skeleton", () => {
     expect(loadingSkeletonKind("/stories")).toBe("rows");
   });
 
-  it("binds page skeleton counts to the same collections as each page layout", () => {
+  it("uses one representative block while the gated collection is not loaded", () => {
     const settings = readFileSync(resolve(__dirname, "../src/views/SettingsView.vue"), "utf8");
     const agents = readFileSync(resolve(__dirname, "../src/views/AgentsView.vue"), "utf8");
     const checks = readFileSync(resolve(__dirname, "../src/views/ChecksView.vue"), "utf8");
@@ -117,18 +117,26 @@ describe("repo loading skeleton", () => {
     );
     expect(GENERAL_FIELD_SECTIONS).toHaveLength(6);
     expect(settings).toMatch(/kind="rows" :count="GENERAL_FIELD_SECTIONS\.length"/);
-    expect(agents).toMatch(/kind="cards" :count="localAgents\.length"/);
-    expect(agents).toMatch(/kind="rows"\s+:count="detectRows\.length"/);
-    expect(checks).toMatch(/kind="table" :count="steps\.length"/);
-    expect(secrets).toMatch(/kind="table"\s+:count="snapshot\?\.keys\.length \?\? 0"/);
-    expect(releases).toMatch(/:count="distribution\.length"/);
-    expect(deployments).toMatch(/:count="services\.length"/);
-    expect(deployments).toMatch(/:matrix-count="status\?\.branches\.length \?\? 0"/);
-    expect(dev).toMatch(/kind="targets" :count="targets\.length"/);
-    expect(checkRuns).toMatch(/kind="table" :count="runs\.length"/);
-    expect(reminders).toMatch(/kind="rows"\s+:count="store\.reminders\.length"/);
-    expect(schedules).toMatch(/kind="rows"\s+:count="schedules\.length"/);
-    expect(providers).toMatch(/kind="rows"\s+:count="rows\.length"/);
+    for (const source of [
+      agents,
+      checks,
+      secrets,
+      releases,
+      deployments,
+      dev,
+      checkRuns,
+      reminders,
+      schedules,
+      providers,
+    ]) {
+      const tags = [...source.matchAll(/<PageSkeleton\b[\s\S]*?\/>/g)].map((match) => match[0]);
+      for (const tag of tags) {
+        expect(tag).not.toMatch(
+          /:count="(?:localAgents|detectRows|steps|snapshot|distribution|services|targets|runs|store\.reminders|schedules|rows)\.*/,
+        );
+        expect(tag).not.toContain(":matrix-count=");
+      }
+    }
   });
 
   it("keeps per-view skeletons immediate and reserves the timing gate for the shell", () => {
@@ -200,6 +208,24 @@ describe("repo loading skeleton", () => {
       GENERAL_FIELD_SECTIONS.length,
     );
     settings.unmount();
+    const planSized = mount(PageSkeleton, {
+      props: { kind: "table", loading: true, count: 12 },
+    });
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
+    expect(planSized.findAll(":scope > .page-skeleton__item")).toHaveLength(12);
+    planSized.unmount();
+    vi.useRealTimers();
+  });
+
+  it("takes leaving view skeletons out of flow while they fade", async () => {
+    vi.useFakeTimers();
+    const wrapper = mount(PageSkeleton, { props: { kind: "rows", loading: true } });
+    await wrapper.setProps({ loading: false });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(wrapper.find(".page-skeleton-leave-active").exists()).toBe(true);
+    const source = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
+    expect(source).toMatch(/\.page-skeleton-leave-active\s*\{\s*position:\s*absolute/);
+    wrapper.unmount();
     vi.useRealTimers();
   });
 

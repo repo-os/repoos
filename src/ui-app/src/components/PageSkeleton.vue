@@ -142,6 +142,11 @@ const matrixCount = (): number =>
 .page-skeleton-leave-active {
   transition: opacity 140ms ease;
 }
+.page-skeleton-leave-active {
+  position: absolute;
+  inset-inline: 0;
+  pointer-events: none;
+}
 .page-skeleton-enter-from,
 .page-skeleton-leave-to {
   opacity: 0;

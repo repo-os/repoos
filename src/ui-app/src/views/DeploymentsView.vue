@@ -359,12 +359,7 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="page-scroll-body">
-      <PageSkeleton
-        :loading="loading && !status"
-        kind="deployments"
-        :count="services.length"
-        :matrix-count="status?.branches.length ?? 0"
-      />
+      <PageSkeleton :loading="loading && !status" kind="deployments" />
       <p v-if="error && !status" class="dep-err">{{ error }}</p>
       <p v-if="error && status" class="dep-err" role="status">Refresh failed: {{ error }}</p>
 
