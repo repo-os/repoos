@@ -54,15 +54,15 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "board:activeCoding"
 },
@@ -73,15 +73,15 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "selector": "[data-task-id=\"pipe-coding\"]",
 "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
-  },
-  {
-    "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
-  },
-  {
-    "waitMs": 300
-  }
+{
+  "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+},
+{
+  "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+},
+{
+  "waitMs": 300
+}
 ],
 "state": "board:pipeline"
 }
@@ -537,3 +537,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T05:03:13Z · message_delivered: 2 message(s)
 - 2026-11-09T05:03:50Z · body
 - 2026-11-09T05:04:09Z · message_queued at 2026-11-09T05:04:09.299Z
+- 2026-11-09T05:04:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
