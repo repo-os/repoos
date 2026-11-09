@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -12,8 +12,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
 updated_at: "2026-11-09T17:00:19Z"
+review_rounds: 2
 review_passes: 2
-review_rounds: 1
 last_check_failure: "repoos check at 2026-11-09T15:23:19.003Z: repoos check failed: ui verification failed (3 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: The Internet connection appears to be offline.; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: The Internet connection appears to be offline.; [request] Failed to load resource: The Internet connection appears to be offline. (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=P… (truncated)"
 handoff_signal_retry_count: 2
 ---
@@ -107,3 +107,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T16:59:11Z · status active→review
 - 2026-11-09T17:00:19Z · note: review pass 2: needs some work
 - 2026-11-09T17:00:19Z · message_queued at 2026-11-09T17:00:19.484Z
+- 2026-11-09T17:00:19Z · status review→active
