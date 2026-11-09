@@ -11,6 +11,7 @@
 const SHOW_DELAY_MS = 350;
 const GAP = 8;
 const MARGIN = 8;
+const TOUCH_LONG_PRESS_MS = 500;
 
 export function installTooltips(): void {
   if (typeof document === "undefined") return;
@@ -21,6 +22,9 @@ export function installTooltips(): void {
 
   let target: HTMLElement | null = null;
   let timer: number | undefined;
+  let touchTimer: number | undefined;
+  let touchTarget: HTMLElement | null = null;
+  let touchStartedAt = 0;
 
   const hide = () => {
     window.clearTimeout(timer);
@@ -70,6 +74,31 @@ export function installTooltips(): void {
     timer = window.setTimeout(() => show(el), e.type === "focusin" ? 0 : SHOW_DELAY_MS);
   };
 
+  const touchStart = (event: PointerEvent) => {
+    if (event.pointerType !== "touch") return;
+    const el = (event.target as Element | null)?.closest?.<HTMLElement>("[title], [data-tip]");
+    if (!el || el.closest(".app-tooltip")) return;
+    hide();
+    target = el;
+    window.clearTimeout(touchTimer);
+    touchTarget = el;
+    touchStartedAt = Date.now();
+    touchTimer = window.setTimeout(() => show(el), TOUCH_LONG_PRESS_MS);
+  };
+
+  const touchEnd = (event: PointerEvent) => {
+    if (event.pointerType !== "touch" || !touchTarget) return;
+    window.clearTimeout(touchTimer);
+    const el = touchTarget;
+    touchTarget = null;
+    // A tap opens the same popup; a long press already opened it above.
+    if (Date.now() - touchStartedAt < TOUCH_LONG_PRESS_MS) {
+      hide();
+      target = el;
+      show(el);
+    }
+  };
+
   const leave = (e: Event) => {
     if (target && !target.contains((e as MouseEvent).relatedTarget as Node | null)) hide();
   };
@@ -78,7 +107,20 @@ export function installTooltips(): void {
   document.addEventListener("focusin", enter);
   document.addEventListener("mouseout", leave);
   document.addEventListener("focusout", hide);
-  document.addEventListener("pointerdown", hide, true);
+  document.addEventListener("pointerdown", (event) => {
+    const pointer = event as PointerEvent;
+    if (pointer.pointerType === "touch") {
+      touchStart(pointer);
+      return;
+    }
+    if (!target || !(event.target instanceof Node) || !target.contains(event.target)) hide();
+  }, true);
+  document.addEventListener("pointerup", touchEnd, true);
+  document.addEventListener("pointercancel", (event) => {
+    if ((event as PointerEvent).pointerType !== "touch") return;
+    window.clearTimeout(touchTimer);
+    touchTarget = null;
+  }, true);
   document.addEventListener("scroll", hide, true);
   window.addEventListener("blur", hide);
 }

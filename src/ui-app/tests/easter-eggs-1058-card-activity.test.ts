@@ -121,6 +121,30 @@ describe("TaskCard activity recency (#1058)", () => {
     document.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
 
+  it("opens the shared recency popup on a touch tap", async () => {
+    const repo = useRepoStore();
+    repo.runningIds = ["1058"];
+    repo.runningSince = { "1058": "2026-11-08T02:59:00.000Z" };
+    repo.agentActivityAt = { "1058": "2026-11-08T02:59:00.000Z" };
+    const wrapper = mount(TaskCard, {
+      props: { task: baseTask(), dragEnabled: false },
+      attachTo: document.body,
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    const hint = wrapper.get('[data-test-id="task-card-agent-hint"]').element;
+    const pointer = (type: string) => {
+      const event = new Event(type, { bubbles: true });
+      Object.defineProperty(event, "pointerType", { value: "touch" });
+      hint.dispatchEvent(event);
+    };
+    pointer("pointerdown");
+    pointer("pointerup");
+    expect(document.querySelector(".app-tooltip.show")?.textContent).toMatch(/Active .*ago/i);
+    wrapper.unmount();
+    document.dispatchEvent(new Event("scroll", { bubbles: true }));
+  });
+
   it("keeps stuck · silent on the line", async () => {
     const repo = useRepoStore();
     repo.runningIds = ["1058"];
@@ -237,6 +261,20 @@ describe("PipelineCard activity recency (#1058)", () => {
       },
     });
     expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
+  });
+
+  it.each([null, "invalid"])("keeps elapsed inline when last activity is %s", (lastActivityAt) => {
+    const wrapper = mount(PipelineCard, {
+      props: {
+        taskId: "1058", type: "chore", priority: "p3", title: "Fixture", state: "ok",
+        statusSignals: healthyPipelineSignals, stepLabel: "Coding", chipText: null,
+        stateSince: "2026-11-08T02:48:00.000Z", lastActivityAt, nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+        roundsLabel: "D0 · R0", reviewerTone: null, modelsLabel: "eng / rev", hostLabel: "local",
+        action: null, checkProgress: null,
+      },
+    });
+    expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
+    expect(wrapper.get(".pl-step").attributes("data-tip")).toBeUndefined();
   });
 
   it("shows stuck and elapsed time for a silent agent that still reports running", () => {

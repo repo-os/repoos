@@ -76,7 +76,10 @@ const showInlineCheckBar = computed(
 
 /** Hide elapsed only while live work is healthy; idle review/close-out rows keep state time. */
 const showElapsedInline = computed(
-  () => !(sharedStatus.value?.inFlight && !sharedStatus.value.stuck),
+  () =>
+    !(sharedStatus.value?.inFlight && !sharedStatus.value.stuck) ||
+    !props.lastActivityAt ||
+    Number.isNaN(Date.parse(props.lastActivityAt)),
 );
 const elapsedTip = computed(() =>
   agentLastActivityTip(props.lastActivityAt ?? undefined, props.nowMs),
