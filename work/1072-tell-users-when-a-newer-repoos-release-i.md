@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: [cli, server, web]
+depends_on: ["1073"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-09T05:50:45Z"
+updated_at: "2026-11-09T07:50:34Z"
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
@@ -36,9 +37,11 @@ Users learn about new RepoOS releases only if they happen to read an announcemen
 Look at `src/commands/upgrade.ts` (`fetchLatestRelease`, channel handling), `src/cli/index.ts` (command dispatch, where a post-command hook fits), the existing notice/bell system (docs: user-docs/notifications.md) and `GET /api/release*` routes. Respect the standalone-vs-source-checkout distinction already used by `repoos upgrade`. Do not edit repoos.toml. Do not make any network call in tests.
 
 ## Correction: what already exists
-The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/components/ReleaseUpdateNotification.vue, data from GET /api/release/available). Do NOT build a second dashboard banner or a second update-status route. Scope of this task is the part that is missing: a passive, throttled update notice in the CLI (acceptance criteria 1, 2, 4, 5, 6), reusing the same data source/logic as /api/release/available and fetchLatestRelease in src/commands/upgrade.ts. For the dashboard only: remember the dismissed version across page loads (the banner currently uses in-memory state and reappears on every load) and respect the new Settings toggle. Showing the upgrade command in the dialog is task #1073, not this one. Criteria 3 and 7 above are superseded by this section.
+The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/components/ReleaseUpdateNotification.vue, data from GET /api/release/available). Do NOT build a second dashboard banner or a second update-status route. Scope of this task is the part that is missing: a passive, throttled update notice in the CLI (acceptance criteria 1, 2, 4, 5, 6), reusing the same data source/logic as /api/release/available and fetchLatestRelease in src/commands/upgrade.ts. The dashboard part here is only: honour the new Settings toggle (hide the banner when updates.check is off). Overlap with #1073, which owns the dialog: #1073 owns (a) the upgrade command text and install-kind detection (installKind / upgradeCommand from the server) and (b) remembering the dismissed version. The CLI notice must reuse #1073's install-kind and command helper instead of re-deriving it, so this task depends on #1073 landing first. Criteria 3 and 7 above are superseded by this section.
 
 ## Activity
 
 - 2026-11-09T05:34:00Z · created · njachowski@gmail.com
 - 2026-11-09T05:50:45Z · body: Correction: what already exists (added)
+- 2026-11-09T07:50:32Z · body: Correction: what already exists (added 1, removed 1)
+- 2026-11-09T07:50:34Z · depends_on
