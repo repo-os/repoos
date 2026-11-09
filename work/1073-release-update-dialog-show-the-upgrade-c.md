@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T05:50:38Z"
+updated_at: "2026-11-09T07:50:36Z"
 ---
 ## Problem
 The dashboard already tells users when a newer RepoOS is available (`ReleaseUpdateNotification.vue`, data from `GET /api/release/available`): a banner, then a dialog with installed vs available version and the release notes. But the dialog's only action is an "Upgrade" button that just opens the GitHub release page. It never says how to actually upgrade, even though the answer is a single command.
@@ -32,6 +32,9 @@ The dashboard already tells users when a newer RepoOS is available (`ReleaseUpda
 ## Notes for AI
 Files: `src/ui-app/src/components/ReleaseUpdateNotification.vue`, the `/api/release/available` handler in `src/server`, `src/commands/upgrade.ts` (install-kind detection and the per-source instructions). Check that the command text matches what `repoos upgrade` prints today. Do not edit repoos.toml.
 
+## Scope boundary with #1072
+This task owns the install-kind detection and the upgrade command text (server: installKind and upgradeCommand on GET /api/release/available, as a reusable helper in src/commands/upgrade.ts or a small module) and the dismissed-version persistence. #1072 (CLI notice and Settings toggle) will reuse that helper, so expose it as a plain exported function with tests, not as UI-only code.
+
 ## Screenshots
 
 ![Update banner: RepoOS 0.5.79 is ready](/api/tasks/1073/attachments/att_b0660367-12b4-4966-a9f2-e46d4de77e1d.png)
@@ -41,3 +44,4 @@ Files: `src/ui-app/src/components/ReleaseUpdateNotification.vue`, the `/api/rele
 
 - 2026-11-09T05:50:38Z · created · njachowski@gmail.com
 - 2026-11-09T05:50:38Z · screenshots
+- 2026-11-09T07:50:36Z · body: Scope boundary with #1072 (added)
