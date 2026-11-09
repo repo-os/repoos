@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T04:34:29Z"
+updated_at: "2026-11-09T04:34:30Z"
 review_passes: 8
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -522,3 +522,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T04:03:59Z · body
 - 2026-11-09T04:34:29Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-09T04:34:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The targeted retry also invokes RepoOS’s remote validation before the requested local step, and that runner is silent again. I’m letting RepoOS’s own timeout and fallback logic handle it; this retry is only to clear the sole local smoke fa… · stderr: Reading additional input from stdin... 2026-11-09T04:05:54.325739Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request 2026-11-09T04:06:38.694718Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: Network is unreachab…
+- 2026-11-09T04:34:30Z · status active→review
