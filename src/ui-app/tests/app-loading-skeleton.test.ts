@@ -21,6 +21,7 @@ import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../src/lib/wo
 import { GENERAL_FIELD_SECTIONS } from "../src/settings-location";
 
 const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
+const appCss = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
 const LoadingHarness = defineComponent({
   components: { PageSkeleton },
   props: { loading: { type: Boolean, required: true } },
@@ -70,6 +71,10 @@ describe("repo loading skeleton", () => {
     expect(leavingShell).not.toBeNull();
     expect(wrapper.vm.finishLeave).toBeTypeOf("function");
     expect(wrapper.find(".page-content").exists()).toBe(true);
+    // The incoming route owns the pane's flex height. The outgoing loading
+    // shell overlays it during the fade instead of sharing that flex space.
+    expect(appCss).toMatch(/\.page-loading-shell-leave-active\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*flex:\s*none;/s);
+    expect(appCss).toMatch(/\.main\s*\{[^}]*position:\s*relative;/s);
     (wrapper.vm.finishLeave as () => void)();
     await wrapper.vm.$nextTick();
     expect(document.querySelector(".page-loading")).toBeNull();
