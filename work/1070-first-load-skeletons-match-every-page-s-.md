@@ -252,3 +252,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T14:14:31Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:42281/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:42281/stories)
 - 2026-11-09T14:16:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T14:23:57Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T14:23:57Z · message_queued at 2026-11-09T14:23:57.299Z
