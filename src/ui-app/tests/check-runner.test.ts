@@ -923,3 +923,85 @@ describe("prerequisites — install-oriented diagnostics", () => {
     expect(installHint("some-tool")).toMatch(/install "some-tool"/);
   });
 });
+
+describe("docs-only gate", () => {
+  const toml = `[check]
+[[check.steps]]
+name = "format"
+kind = "format"
+[[check.steps]]
+name = "lockfile"
+kind = "lockfile-sync"
+[[check.steps]]
+name = "dependencies"
+kind = "zero-runtime-deps"
+[[check.steps]]
+name = "assets"
+kind = "task-assets"
+[[check.steps]]
+name = "expensive"
+command = "false"
+`;
+  it("runs the guards and skips expensive steps", async () => {
+    const f = fixture(toml, { dirs: ["work", "inputs"] });
+    execFileSync("git", ["init", "-q"], { cwd: f.root });
+    const progress: { stepsDone: number; stepsTotal: number }[] = [];
+    const results = await runCheckPlan(planFor(f.root), {
+      repoRoot: f.root,
+      docsOnly: true,
+      echo: false,
+      onResult: (_r, p) => {
+        if (p) progress.push(p);
+      },
+    });
+    const last = progress.at(-1);
+    expect(last).toBeDefined();
+    expect(last!.stepsDone).toBe(last!.stepsTotal);
+    expect(results.find((x) => x.name === "expensive")).toMatchObject({
+      status: "skipped",
+      detail: "docs/bookkeeping-only diff: full suite skipped",
+    });
+    for (const name of ["format", "lockfile", "dependencies", "assets", "task-parser"]) {
+      expect(results.find((x) => x.name === name)).toBeDefined();
+    }
+    expect(results.find((x) => x.name === "assets")?.status).toBe("passed");
+    expect(results.find((x) => x.name === "task-parser")?.status).toBe("passed");
+  });
+  it("rejects an added binary under work", async () => {
+    const f = fixture(toml, { dirs: ["work", "inputs"] });
+    execFileSync("git", ["init", "-q"], { cwd: f.root });
+    writeFileSync(join(f.root, "work", "bad.png"), Buffer.from([0, 1, 2]));
+    execFileSync("git", ["add", "work/bad.png"], { cwd: f.root });
+    const results = await runCheckPlan(planFor(f.root), {
+      repoRoot: f.root,
+      docsOnly: true,
+      echo: false,
+    });
+    expect(results.find((x) => x.name === "assets")?.status).toBe("failed");
+  });
+
+  it("keeps progress within total when release-only steps are profile-skipped", async () => {
+    const releaseOnly = `[[check.steps]]
+name = "release-only"
+command = "false"
+profiles = ["release"]
+`;
+    const f = fixture(`${toml}\n${releaseOnly}`, { dirs: ["work", "inputs"] });
+    execFileSync("git", ["init", "-q"], { cwd: f.root });
+    const progress: { stepsDone: number; stepsTotal: number }[] = [];
+    await runCheckPlan(planFor(f.root), {
+      repoRoot: f.root,
+      docsOnly: true,
+      echo: false,
+      onResult: (_r, p) => {
+        if (p) progress.push(p);
+      },
+    });
+    for (const p of progress) {
+      expect(p.stepsDone).toBeLessThanOrEqual(p.stepsTotal);
+    }
+    const last = progress.at(-1);
+    expect(last).toBeDefined();
+    expect(last!.stepsDone).toBe(last!.stepsTotal);
+  });
+});

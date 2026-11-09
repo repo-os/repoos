@@ -1,3 +1,5 @@
+import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
+import { buildIndex } from "../core/indexer.js";
 import {
   checkSnapshot,
   compatibleCheckSnapshots,
@@ -27,8 +29,8 @@ import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.
  * resolves to zero steps AND zero errors — no declared steps, no legacy keys,
  * nothing inferable — SKIPS the gate (exit 0, outcome `skipped`, never green)
  * with an actionable "no check plan" reminder, so task handoffs in an early
- * planning-phase repo are not permanently blocked. Plan errors and an
- * unresolvable `--changed` ref still exit non-zero. Designed for CI gates and
+ * planning-phase repo are not permanently blocked. Plan errors still exit non-zero; an unresolvable changed ref falls back to
+ * the full plan. Designed for CI gates and
  * agent pre-review.
  */
 import { execFileSync } from "node:child_process";
@@ -635,7 +637,12 @@ export function hardcodedColorOffenders(src: string, path = "<file>"): string[] 
         exemptFromDepth = Math.max(exemptFromDepth ?? 0, depth === 0 ? 1 : depth);
         if (depth === 0) pendingRule = true;
       }
-      if (!exempt && (HEX_LITERAL_RE.test(code) || WHITE_RGB_RE.test(code))) {
+      const mutedSurfaceUsedAsText =
+        /(?:^|[;{])\s*color\s*:\s*var\(\s*--muted\s*(?:,\s*[^)]*)?\)/i.test(code);
+      if (
+        !exempt &&
+        (HEX_LITERAL_RE.test(code) || WHITE_RGB_RE.test(code) || mutedSurfaceUsedAsText)
+      ) {
         out.push(`${path}:${startLine + i}  ${raw.trim()}`);
       }
       const opens = (code.match(/\{/g) ?? []).length;
@@ -1487,11 +1494,15 @@ async function stepTaskAssets(ctx: StepContext): Promise<BuiltinOutcome> {
   }
   let tracked: string[] = [];
   try {
-    tracked = execFileSync("git", ["ls-files", "--", ...usable], {
-      cwd: ctx.repoRoot,
-      encoding: "utf8",
-      maxBuffer: 16 * 1024 * 1024,
-    })
+    tracked = execFileSync(
+      "git",
+      ["ls-files", "--cached", "--others", "--exclude-standard", "--", ...usable],
+      {
+        cwd: ctx.repoRoot,
+        encoding: "utf8",
+        maxBuffer: 16 * 1024 * 1024,
+      },
+    )
       .split("\n")
       .filter(Boolean);
   } catch {
@@ -1866,18 +1877,17 @@ function outputTail(output: string | undefined, lines = 25): string | undefined 
  * having verified nothing at all.
  */
 export function changedPathsSince(repoRoot: string, ref: string): string[] | null {
-  const run = (args: string[]): string[] => {
+  const run = (args: string[]): string[] | null => {
     try {
       return execFileSync("git", args, {
         cwd: repoRoot,
         encoding: "utf8",
         maxBuffer: 16 * 1024 * 1024,
       })
-        .split("\n")
-        .map((l) => l.trim())
+        .split("\0")
         .filter(Boolean);
     } catch {
-      return [];
+      return null;
     }
   };
   // Verify the ref first: `git diff <bogus>...` exits non-zero, and `run`
@@ -1890,12 +1900,14 @@ export function changedPathsSince(repoRoot: string, ref: string): string[] | nul
   } catch {
     return null;
   }
-  const paths = new Set([
-    ...run(["diff", "--name-only", `${ref}...`]),
-    ...run(["diff", "--name-only"]),
-    ...run(["ls-files", "--others", "--exclude-standard"]),
-  ]);
-  return [...paths];
+  const lists = [
+    run(["diff", "--no-renames", "--name-only", "-z", `${ref}...`]),
+    run(["diff", "--no-renames", "--name-only", "-z"]),
+    run(["diff", "--cached", "--no-renames", "--name-only", "-z"]),
+    run(["ls-files", "-z", "--others", "--exclude-standard"]),
+  ];
+  if (lists.some((list) => list === null)) return null;
+  return [...new Set(lists.flatMap((list) => list ?? []))];
 }
 
 function planSourceLabel(plan: CheckPlan): string {
@@ -1944,6 +1956,7 @@ export interface RunPlanOptions {
   profile?: string;
   /** Changed paths for changed-path mode; absent means a full run. */
   changedPaths?: string[];
+  docsOnly?: boolean;
   /** Git ref the changed paths came from — the Tests step scopes itself to it. */
   changedRef?: string;
   /** Run each `format` step's fixer before its check (#0651). */
@@ -2000,15 +2013,21 @@ export async function runCheckPlan(
   const pkg = readPkg(repoRoot);
   const selected = selectSteps(plan, {
     profile: opts.profile,
-    changedPaths: opts.profile === "release" ? undefined : opts.changedPaths,
+    changedPaths: opts.docsOnly || opts.profile === "release" ? undefined : opts.changedPaths,
     stepNames: opts.stepNames,
   });
   const results: StepRunResult[] = [];
-  const stepsTotal = selected.filter(({ skip }) => !skip).length;
+  const runnableSteps = selected.filter(({ skip }) => !skip);
+  const stepsTotal = opts.docsOnly ? runnableSteps.length + 1 : runnableSteps.length;
+  const profileStepSkip = (r: StepRunResult): boolean =>
+    r.status === "skipped" && (r.detail?.startsWith("skipped — not in profile") ?? false);
+  const stepsDoneCount = (): number =>
+    opts.docsOnly
+      ? results.filter((x) => !profileStepSkip(x)).length
+      : results.filter((x) => x.status !== "skipped" || x.detail === DOCS_ONLY_SKIP_REASON).length;
   const push = (r: StepRunResult): StepRunResult => {
     results.push(r);
-    const stepsDone = results.filter((x) => x.status !== "skipped").length;
-    opts.onResult?.(r, { stepsDone, stepsTotal });
+    opts.onResult?.(r, { stepsDone: stepsDoneCount(), stepsTotal });
     return r;
   };
 
@@ -2019,6 +2038,19 @@ export async function runCheckPlan(
         name: step.name,
         status: "skipped",
         detail: skip.detail,
+        durationMs: 0,
+        required: step.required,
+      });
+      continue;
+    }
+    if (
+      opts.docsOnly &&
+      !["format", "lockfile-sync", "zero-runtime-deps", "task-assets"].includes(step.kind ?? "")
+    ) {
+      push({
+        name: step.name,
+        status: "skipped",
+        detail: DOCS_ONLY_SKIP_REASON,
         durationMs: 0,
         required: step.required,
       });
@@ -2051,7 +2083,7 @@ export async function runCheckPlan(
       continue;
     }
 
-    const stepsDone = results.filter((x) => x.status !== "skipped").length;
+    const stepsDone = stepsDoneCount();
     opts.onStart?.(step, {
       stepsDone,
       stepsTotal,
@@ -2124,6 +2156,26 @@ export async function runCheckPlan(
       testCaseTimings: outcome.testCaseTimings,
     });
   }
+  if (opts.docsOnly) {
+    try {
+      buildIndex(cfg, { skipGit: true });
+      push({
+        name: "task-parser",
+        status: "passed",
+        detail: "task files parsed",
+        durationMs: 0,
+        required: true,
+      });
+    } catch (error) {
+      push({
+        name: "task-parser",
+        status: "failed",
+        detail: String(error),
+        durationMs: 0,
+        required: true,
+      });
+    }
+  }
   return results;
 }
 
@@ -2168,7 +2220,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   }
 
   const profile = opts.profile?.trim() || plan.defaultProfile || DEFAULT_PROFILE;
-  const changedRef =
+  let changedRef =
     profile === "release" ? undefined : opts.changed?.trim() || changedTestRef(process.env);
 
   heading("Check plan");
@@ -2190,20 +2242,18 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   for (const w of plan.warnings) console.log(c.yellow(`  ⚠ ${w}`));
   for (const e of plan.errors) console.log(c.red(`  ✗ ${e}`));
 
-  const changedPaths = changedRef ? changedPathsSince(repoRoot, changedRef) : undefined;
+  const changedPaths =
+    profile === "release" ? undefined : changedPathsSince(repoRoot, changedRef ?? "main");
   if (changedRef && changedPaths === null) {
-    // A ref git can't resolve is a mistake, not "nothing changed": scoping the
-    // run to it would skip every `whenChanged` step and could go green having
-    // verified nothing. This stays fatal even for an empty plan (#0592),
-    // because a typo'd ref is the caller's mistake — not the repo's.
-    console.log(
-      c.red(
-        `\n  ✗ Changed-path mode needs a git ref this repo can resolve: "${changedRef}" is not ` +
-          "a commit, branch or tag here. Fix the ref (or drop --changed to run the full plan).\n",
-      ),
-    );
-    process.exit(1);
+    console.log(c.yellow("  ⚠ Could not compute changed paths; running the full plan."));
+    changedRef = undefined;
   }
+  const docsOnly =
+    profile !== "release" &&
+    !opts.steps?.length &&
+    !opts.localTestsOnly &&
+    isDocsOnlyCheck(changedPaths, cfg.check?.docsOnlySkip !== false);
+  if (docsOnly) console.log(`  · ${DOCS_ONLY_SKIP_REASON}`);
   if (changedRef) {
     console.log(
       c.dim(
@@ -2242,8 +2292,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   // an early planning-phase repo used to block on this forever. The gate is
   // still never green: the run records outcome `skipped` (not `passed`) and
   // the summary says plainly that nothing was verified. A repo WITH a plan
-  // that resolves to nothing usable errors instead (handled above), and a
-  // `--changed` ref that cannot resolve kept its fatal path above too.
+  // that resolves to nothing usable errors instead (handled above). An
+  // unresolved changed ref falls back to the unscoped plan.
   if (planGateSkips(plan)) {
     const startedAt = new Date();
     console.log(c.yellow(`\n  ⚠ ${NO_CHECK_PLAN_NOTICE}\n`));
@@ -2295,7 +2345,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       ),
     );
   }
-  let runRemoteGate = shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env);
+  let runRemoteGate =
+    !docsOnly && shouldRunCliRemotePreReviewGate(cfg, { ...opts, changedRef }, process.env);
   if (runRemoteGate) {
     const uncommitted = await uncommittedFilesBlockingRemoteGate(repoRoot, cfg);
     if (uncommitted.length > 0) {
@@ -2552,7 +2603,8 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       profile,
       // Narrowed above after the null check; `?? undefined` keeps the types
       // honest without a cast.
-      changedPaths: changedPaths ?? undefined,
+      changedPaths: changedRef ? (changedPaths ?? undefined) : undefined,
+      docsOnly,
       changedRef,
       fix: opts.fix,
       stepNames: opts.steps,

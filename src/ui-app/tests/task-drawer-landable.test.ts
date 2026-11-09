@@ -168,6 +168,7 @@ describe("task drawer landing pre-checks (#0867)", () => {
     const title = button!.attributes("title") ?? "";
     expect(title).toContain("Merge with main");
     expect(title).toContain("src/core/types.ts conflicts with main");
+    expect(button!.attributes("disabled")).toBeDefined();
 
     await wrapper
       .findAll("button.tab-btn")
@@ -190,6 +191,48 @@ describe("task drawer landing pre-checks (#0867)", () => {
     const button = moveToDone(wrapper);
     expect(button).toBeTruthy();
     expect(button!.attributes("title") ?? "").not.toContain("Merge with main");
+    expect(button!.attributes("disabled")).toBeDefined();
+  });
+
+  it("enables Move to done when the shared landability result is green", async () => {
+    const wrapper = await mountDrawer(setup(), reviewTask(), {
+      ok: true,
+      taskId: "0001",
+      landable: true,
+      checks: [],
+      summary: { pass: 6, warn: 0, fail: 0 },
+    });
+    expect(moveToDone(wrapper)?.attributes("disabled")).toBeUndefined();
+  });
+
+  it("disables Move to done while a post-review check run is active", async () => {
+    const pinia = setup();
+    useRepoStore().taskChecks["0001"] = [
+      {
+        id: "0001-merge-gate-1",
+        taskId: "0001",
+        kind: "merge-gate",
+        startedAt: new Date().toISOString(),
+        finishedAt: null,
+        durationMs: null,
+        running: true,
+        passed: null,
+        code: null,
+        output: "",
+        scope: "changed:main",
+        machine: "local",
+      },
+    ];
+    const wrapper = await mountDrawer(pinia, reviewTask(), {
+      ok: true,
+      taskId: "0001",
+      landable: true,
+      checks: [],
+      summary: { pass: 6, warn: 0, fail: 0 },
+    });
+    const button = moveToDone(wrapper);
+    expect(button?.attributes("disabled")).toBeDefined();
+    expect(button?.attributes("title")).toContain("Checks are still running");
   });
 
   it("renders the declared drawer:landable shot fixture", async () => {

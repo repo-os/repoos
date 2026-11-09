@@ -528,11 +528,32 @@ describe("parseMuseUsage", () => {
   });
 
   it("treats a missing allowance as unrecognized rather than a window", () => {
-    expect(parseMuseUsage(null)).toEqual({ tier: null, windows: [], unrecognized: true });
+    expect(parseMuseUsage(null)).toEqual({
+      tier: null,
+      windows: [],
+      unrecognized: true,
+      reason: null,
+      hint: null,
+      message: null,
+    });
     expect(parseMuseUsage({ allowance: null })).toEqual({
       tier: null,
       windows: [],
       unrecognized: true,
+      reason: null,
+      hint: null,
+      message: null,
+    });
+    const noUsage = parseMuseUsage({
+      allowance: null,
+      reason: "server_sent_no_usage",
+      hint: "No usage data yet.",
+    });
+    expect(noUsage).toMatchObject({
+      unrecognized: false,
+      reason: "server_sent_no_usage",
+      hint: "No usage data yet.",
+      message: "No usage data yet.",
     });
     // A bare cost object must not become a row — same rule as the Go parser.
     expect(parseMuseUsage({ allowance: { tier: "x", cost: 0.05 } }).unrecognized).toBe(true);
@@ -543,6 +564,7 @@ describe("parseMuseUsage", () => {
       allowance: { tier: "t", monthly: { usedPercent: 55, resetsAtMs: 1794182400000 } },
     });
     expect(usage.unrecognized).toBe(false);
+    expect(usage.message).toBeNull();
     expect(usage.windows).toHaveLength(1);
     expect(usage.windows[0].id).toBe("monthly");
   });
