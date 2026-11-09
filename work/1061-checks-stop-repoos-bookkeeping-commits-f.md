@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 601759
+last_close_out_gate_at: "2026-11-09T14:39:47.251Z"
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -17,7 +19,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T14:02:41Z"
+updated_at: "2026-11-09T14:39:47Z"
 review_passes: 18
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -596,3 +598,5 @@ Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositori
 - 2026-11-09T13:58:49Z · note: review pass 18: good to go
 - 2026-11-09T14:01:35Z · message_delivered: 2 message(s)
 - 2026-11-09T14:02:24Z · agent exited with an error (codex) · 2026-11-09T14:02:23.383432Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4344452ce80e419089324beb390515d6
+- 2026-11-09T14:39:47Z · close-out gate completed in 602s
+
