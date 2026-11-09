@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -104,3 +104,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T07:04:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T07:09:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T07:14:05Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T07:14:05Z · status active→review
