@@ -8,8 +8,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
+review_cli_override: claude code
+review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T11:55:26Z"
+updated_at: "2026-11-09T12:14:05Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -194,3 +196,4 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 - 2026-11-09T11:55:25Z · message_delivered: 1 message(s)
 - 2026-11-09T11:55:25Z · needs_input
 - 2026-11-09T11:55:26Z · message_queued at 2026-11-09T11:55:26.397Z
+- 2026-11-09T12:14:05Z · review_cli_override, review_model_override
