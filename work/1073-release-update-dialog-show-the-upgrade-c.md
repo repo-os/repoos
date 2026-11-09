@@ -3,6 +3,12 @@ id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
+debug_tldr: "Handoff finalization was interrupted by a server reload — restart the work to hand off again, or use `repoos start 1073 --fresh` if it repeats."
+debug_tldr_at: "2026-11-09T14:01:52Z"
+debug_tldr_key: "dev-error|handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
 priority: p3
 area: web
 assigned_to: ai
@@ -11,9 +17,9 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T13:58:38Z"
+updated_at: "2026-11-09T14:01:52Z"
 handoff_signal_retry_count: 2
-dev_error_count: 3
+dev_error_count: 4
 ---
 ## Problem
 The dashboard already tells users when a newer RepoOS is available (`ReleaseUpdateNotification.vue`, data from `GET /api/release/available`): a banner, then a dialog with installed vs available version and the release notes. But the dialog's only action is an "Upgrade" button that just opens the GitHub release page. It never says how to actually upgrade, even though the answer is a single command.
@@ -101,3 +107,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T13:56:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T13:57:10Z · message_delivered: 1 message(s)
 - 2026-11-09T13:58:38Z · body
+- 2026-11-09T14:01:35Z · agent exited with an error (opencode) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
