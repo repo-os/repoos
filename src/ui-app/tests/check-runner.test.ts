@@ -36,6 +36,7 @@ import {
   failedTestFile,
   failedTestFiles,
   runCheckPlan,
+  trackedSourceSnapshot,
   testFileFilterArgs,
 } from "../../commands/check.js";
 
@@ -652,6 +653,29 @@ describe("changedPathsSince — a ref git can't resolve is an error, not an empt
     execFileSync("git", ["add", "a.txt"], { cwd: root });
     execFileSync("git", ["commit", "-q", "-m", "add a.txt"], { cwd: root });
     expect(changedPathsSince(root, "HEAD~1")).toEqual(["a.txt"]);
+  });
+});
+
+describe("trackedSourceSnapshot — detects content and untracked source drift", () => {
+  it("detects a second edit to an already-dirty tracked file and a new source file", async () => {
+    const root = tmpDir("repoos-snapshot-");
+    execFileSync("git", ["init", "-q"], { cwd: root });
+    execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: root });
+    execFileSync("git", ["config", "user.name", "Test"], { cwd: root });
+    mkdirSync(join(root, "src"), { recursive: true });
+    writeFileSync(join(root, "src", "app.ts"), "committed\n");
+    execFileSync("git", ["add", "src/app.ts"], { cwd: root });
+    execFileSync("git", ["commit", "-qm", "fixture"], { cwd: root });
+    const cfg = { workDir: "work", cacheDir: ".repoos" } as never;
+    writeFileSync(join(root, "src", "app.ts"), "dirty before check\n");
+    const before = await trackedSourceSnapshot(root, cfg);
+    writeFileSync(join(root, "src", "app.ts"), "changed during check\n");
+    writeFileSync(join(root, "src", "new.ts"), "new source\n");
+    const after = await trackedSourceSnapshot(root, cfg);
+    expect(before).not.toBeNull();
+    expect(after).not.toBeNull();
+    expect([...after!.keys()]).toEqual(expect.arrayContaining(["src/app.ts", "src/new.ts"]));
+    expect(after!.get("src/app.ts")).not.toBe(before!.get("src/app.ts"));
   });
 });
 

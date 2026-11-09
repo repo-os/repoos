@@ -1,10 +1,16 @@
 import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
 import { buildIndex } from "../core/indexer.js";
+import { runGit } from "../core/git.js";
+import { gitDirectorySnapshot } from "../core/git-directory-snapshot.js";
 import {
   checkSnapshot,
   compatibleCheckSnapshots,
   type CheckSnapshot,
 } from "../core/check-reuse.js";
+import {
+  checkGateBookkeepingPrefix,
+  checkGateHeadDriftAllowed,
+} from "../core/check-gate-bookkeeping.js";
 import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.js";
 /**
  * `repoos check` — the definition-of-done gate.
@@ -34,7 +40,8 @@ import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.
  * agent pre-review.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, lstatSync, readFileSync, readlinkSync, readdirSync } from "node:fs";
 import { cpus, totalmem } from "node:os";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { c } from "../cli/colors.js";
@@ -94,6 +101,7 @@ import {
   resolveCheckStoreRoot,
   getCheckStore,
   localMachineName,
+  taskIdFromWorktreeBranch,
   type CheckRunPhase,
 } from "../core/check-store.js";
 import { Logger } from "../core/logger.js";
@@ -104,6 +112,7 @@ import {
   isManagedEngineerCheck,
   runEngineerRemoteSelfCheckGate,
 } from "../server/engineer-remote-self-check.js";
+import { acquireCheckGateLock } from "../server/check-gate-lock.js";
 import { createRemoteValidator } from "../server/remote-validation.js";
 import {
   runRemotePreReviewGate,
@@ -1910,6 +1919,74 @@ export function changedPathsSince(repoRoot: string, ref: string): string[] | nul
   return [...new Set(lists.flatMap((list) => list ?? []))];
 }
 
+type TrackedSourceSnapshot = Map<string, string>;
+
+/** Snapshot tracked worktree changes relative to HEAD, ignoring bookkeeping roots. */
+export async function trackedSourceSnapshot(
+  repoRoot: string,
+  cfg: RepoOSConfig,
+): Promise<TrackedSourceSnapshot | null> {
+  const { work, cache } = checkGateBookkeepingPrefix(cfg);
+  const result = await runGit(
+    repoRoot,
+    ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+    15_000,
+  );
+  if (result.status !== 0) return null;
+  const fields = result.stdout.split("\0");
+  const snapshot = new Map<string, string>();
+  for (const path of fields.filter(Boolean)) {
+    if (path.startsWith(work) || path.startsWith(cache)) continue;
+    const absolute = join(repoRoot, path);
+    try {
+      const stat = lstatSync(absolute);
+      if (stat.isSymbolicLink()) {
+        snapshot.set(path, `symlink:${readlinkSync(absolute)}`);
+      } else if (stat.isDirectory()) {
+        const directory = await gitDirectorySnapshot(repoRoot, path, stat.mode & 0o777);
+        if (directory === null) return null;
+        snapshot.set(path, directory);
+      } else if (stat.isFile()) {
+        const content = readFileSync(absolute);
+        snapshot.set(
+          path,
+          `${stat.mode & 0o777}:${createHash("sha256").update(content).digest("hex")}`,
+        );
+      } else {
+        snapshot.set(path, `non-regular:${stat.mode & 0o777}:${stat.size}:${stat.mtimeMs}`);
+      }
+    } catch (error) {
+      // A tracked file deleted during the check remains in the snapshot as a
+      // missing marker, so creation/deletion and content changes are visible.
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") snapshot.set(path, "<missing>");
+      else return null;
+    }
+  }
+  return snapshot;
+}
+
+function trackedSourceSnapshotDrift(
+  before: TrackedSourceSnapshot | null,
+  after: TrackedSourceSnapshot | null,
+): { ok: true } | { ok: false; reason: string; paths: string[] } {
+  if (!before || !after) {
+    return {
+      ok: false,
+      reason: "Could not compare tracked source files before and after the check.",
+      paths: ["<paths unavailable>"],
+    };
+  }
+  const changedPaths = [...new Set([...before.keys(), ...after.keys()])].filter(
+    (path) => before.get(path) !== after.get(path),
+  );
+  if (changedPaths.length === 0) return { ok: true };
+  return {
+    ok: false,
+    reason: `Tracked source files changed in the working tree during the check: ${changedPaths.join(", ")}`,
+    paths: changedPaths,
+  };
+}
+
 function planSourceLabel(plan: CheckPlan): string {
   switch (plan.source) {
     case "declared":
@@ -2381,6 +2458,40 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     }
   }
   const validationStart = await checkSnapshot(repoRoot, changedRef);
+  // Own one task-worktree holder across remote validation and the local plan.
+  // The managed remote helper takes a nested holder for its own operation; this
+  // outer holder keeps bookkeeping deferred until the local half has finished.
+  // A plain `repoos check` discovers its task from the checked-out branch and
+  // task file, so it gets the same protection without agent environment vars.
+  const gateTaskId = isManagedEngineerCheck(process.env)
+    ? runContext.taskId
+    : taskIdFromWorktreeBranch(repoRoot, cfg.workDir);
+  const checkHeadAtStartResult = await runGit(repoRoot, ["rev-parse", "HEAD"], 10_000);
+  const checkHeadAtStart =
+    checkHeadAtStartResult.status === 0 ? checkHeadAtStartResult.stdout.trim() : null;
+  if (gateTaskId && !checkHeadAtStart) {
+    throw new Error("could not read HEAD before task self-check");
+  }
+  let selfCheckLock: Awaited<ReturnType<typeof acquireCheckGateLock>> | null = null;
+  if (gateTaskId) {
+    const branch = await runGit(repoRoot, ["branch", "--show-current"], 10_000);
+    if (branch.status !== 0 || !branch.stdout.trim()) {
+      throw new Error("could not resolve task branch for check-gate lock");
+    }
+    const boardRoot = boardRootForEngineerRemote(repoRoot);
+    const gateConfig = loadConfig(boardRoot);
+    selfCheckLock = await acquireCheckGateLock({
+      boardRoot,
+      cacheDir: gateConfig.cacheDir ?? ".repoos",
+      taskId: gateTaskId,
+      branch: branch.stdout.trim(),
+      worktree: repoRoot,
+      kind: "engineer-self-check",
+      config: gateConfig,
+    });
+    if (!selfCheckLock.ok) throw new Error(selfCheckLock.reason);
+  }
+  const trackedSourceAtStart = gateTaskId ? await trackedSourceSnapshot(repoRoot, cfg) : null;
   let remoteTestsPassed = false;
   // The plan never runs when the remote gate fails, so the normal end-of-run
   // record is never written: persist the failure for the Checks surface too,
@@ -2521,6 +2632,15 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           }
         }
       }
+    } catch (error) {
+      // Remote failures can exit before the local plan's finally is reached.
+      // Drop this holder on ordinary thrown errors; abrupt process termination
+      // is recovered through the stale-lock path.
+      if (selfCheckLock?.ok) {
+        await selfCheckLock.release();
+        selfCheckLock = null;
+      }
+      throw error;
     } finally {
       if (prevStoreRoot === undefined) delete process.env.REPOOS_CHECK_STORE_ROOT;
       else process.env.REPOOS_CHECK_STORE_ROOT = prevStoreRoot;
@@ -2553,6 +2673,10 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
           `  slot ${holder.slot}: pid ${holder.pid ?? "unknown"}, ${Math.round(holder.ageMs / 1000)}s${holder.dead ? " (process exited; reclaiming)" : holder.wedged ? ` (no recent heartbeat; last seen ${Math.round(holder.heartbeatAgeMs / 1000)}s ago)` : ""}`,
         ),
       );
+    }
+    if (selfCheckLock?.ok) {
+      await selfCheckLock.release();
+      selfCheckLock = null;
     }
     process.exit(1);
   }
@@ -2590,6 +2714,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   const completedSteps: CheckStepTiming[] = [];
   let results: StepRunResult[];
   let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
+  let gateDriftResult: Awaited<ReturnType<typeof checkGateHeadDriftAllowed>> = { ok: true };
   try {
     if (process.env.REPOOS_AGENT === "1") {
       applyEngineerResourceEnv(checkEnv, cfg);
@@ -2633,6 +2758,47 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         }
       },
     });
+    if (gateTaskId && checkHeadAtStart) {
+      const endHead = await runGit(repoRoot, ["rev-parse", "HEAD"], 10_000);
+      gateDriftResult = await checkGateHeadDriftAllowed(
+        repoRoot,
+        cfg,
+        gateTaskId,
+        checkHeadAtStart,
+        endHead.status === 0 ? endHead.stdout.trim() : "<HEAD unavailable>",
+      );
+      const sourceTreeDrift = trackedSourceSnapshotDrift(
+        trackedSourceAtStart,
+        await trackedSourceSnapshot(repoRoot, cfg),
+      );
+      if (!sourceTreeDrift.ok) {
+        gateDriftResult = {
+          ok: false,
+          reason: [!gateDriftResult.ok ? gateDriftResult.reason : "", sourceTreeDrift.reason]
+            .filter(Boolean)
+            .join("; "),
+          affectingPaths: [
+            ...new Set([
+              ...(!gateDriftResult.ok ? (gateDriftResult.affectingPaths ?? []) : []),
+              ...sourceTreeDrift.paths,
+            ]),
+          ],
+        };
+      }
+      if (!gateDriftResult.ok) {
+        const result: StepRunResult = {
+          name: "worktree-drift",
+          status: "failed",
+          detail: gateDriftResult.reason,
+          output: gateDriftResult.reason,
+          durationMs: 0,
+          required: true,
+        };
+        results.push(result);
+        completedSteps.push({ name: result.name, status: result.status, durationMs: 0 });
+        console.log(c.red(`  ✗ ${result.name} — ${result.detail}`));
+      }
+    }
   } catch (e) {
     // The plan runner is not expected to throw, but if it does the normal
     // end-of-run record below never runs — and the server-side check manager
@@ -2658,6 +2824,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   } finally {
     if (process.env.REPOOS_AGENT === "1") delete process.env.REPOOS_LOCAL_CHECK_SLOT_HELD;
     releaseLocalCheck?.();
+    if (selfCheckLock?.ok) await selfCheckLock.release();
   }
 
   // ── Summary ─────────────────────────────────────────────────────────
@@ -2759,6 +2926,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     !opts.steps?.length &&
     profile === (plan.defaultProfile || DEFAULT_PROFILE) &&
     testsProven &&
+    gateDriftResult.ok &&
     (await compatibleCheckSnapshots(repoRoot, validationStart, validationEnd))
       ? validationStart
       : null;

@@ -11,14 +11,15 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T13:02:35Z"
-review_passes: 5
+updated_at: "2026-11-09T15:02:19Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+review_passes: 6
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
 handoff_signal_retry_count: 2
-engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-09T15:02:18.464Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 First-load skeletons are jarring and in places wrong. On Mission Control (`/`) the `dashboard` skeleton draws six tall cards in an `auto-fit` grid (`PageSkeleton.vue`), so on a wide window they wrap into one row of four plus a stray card on a second row, and none of it resembles the real page (which is not a board of cards like Work and Inputs). Stories shows the same kind of mismatch. Other pages use `board`, `inputBoard`, `cards`, `table`, `rows`, `targets` and `deployments` shapes picked by route in `src/ui-app/src/lib/loading-skeleton.ts`, and nobody has checked each one against its real content.
@@ -45,20 +46,7 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 
 ## Shots
 ```json
-[
-{
-  "label": "Mission Control loading skeleton",
-  "target": "default",
-  "route": "/",
-  "highlight": ".page-skeleton--dashboard"
-},
-{
-  "label": "Stories loading skeleton",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".page-skeleton--rows"
-}
-]
+[]
 ```
 
 ## Accepted scope: no loading-state screenshots
@@ -234,3 +222,52 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T12:59:16Z · needs_input
 - 2026-11-09T12:59:17Z · message_queued at 2026-11-09T12:59:17.992Z
 - 2026-11-09T13:02:35Z · body
+- 2026-11-09T13:21:58Z · body
+- 2026-11-09T13:23:10Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T13:23:10Z · message_queued at 2026-11-09T13:23:10.640Z
+- 2026-11-09T13:23:10Z · ↻ resuming engineer to read queued message
+- 2026-11-09T13:23:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The second remote run passed, including the orphaned-process test; the full scoped check is now green. Local format/lint, build, CSS and contrast guards, task-asset guard, and UI smoke also passed. I’m updating the engineer report with the… · stderr: Reading additional input from stdin... 2026-11-09T12:59:20.832163Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out 2026-11-09T13:00:57.334591Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos…
+- 2026-11-09T13:23:11Z · note: handoff requested (cli)
+- 2026-11-09T13:26:42Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:46419/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:46419/stories)
+- 2026-11-09T13:26:42Z · message_queued at 2026-11-09T13:26:42.415Z
+- 2026-11-09T13:26:42Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:46419/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:46419/stories)
+- 2026-11-09T13:31:47Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /?shotState=loading:dashboard (http://127.0.0.1:45643/?shotState=loading:dashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories?shotState=loading:stories (http://127.0.0.1:45643/stories?shotState=loading:stories) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T13:31:47Z · note: handoff requested (cli)
+- 2026-11-09T13:31:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T13:33:42Z · message_delivered: 2 message(s)
+- 2026-11-09T13:35:49Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:42667/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:42667/stories)
+- 2026-11-09T13:35:49Z · message_queued at 2026-11-09T13:35:49.339Z
+- 2026-11-09T13:35:49Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:42667/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:42667/stories)
+- 2026-11-09T13:36:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T14:07:45Z · body
+- 2026-11-09T14:09:10Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T14:09:10Z · message_queued at 2026-11-09T14:09:10.092Z
+- 2026-11-09T14:09:10Z · ↻ resuming engineer to read queued message
+- 2026-11-09T14:09:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: 2026-11-09T13:33:44.037843Z ERROR codex_core::util: Custom tool call output is missing for call id: call_fbf673e9d1914b7093c88ca45aeb92ba 2026-11-09T13:34:13.589734Z ERROR codex_core::util: Custom tool call output is missing for call id: call_fbf673e9d1914b7093c88ca45aeb92ba 2026-11-09T13:34:22.976505Z ERROR codex_cor…
+- 2026-11-09T14:09:10Z · note: handoff requested (cli)
+- 2026-11-09T14:11:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T14:13:25Z · message_delivered: 3 message(s)
+- 2026-11-09T14:13:52Z · body
+- 2026-11-09T14:14:31Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:42281/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:42281/stories)
+- 2026-11-09T14:14:31Z · message_queued at 2026-11-09T14:14:31.508Z
+- 2026-11-09T14:14:31Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:42281/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:42281/stories)
+- 2026-11-09T14:16:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T14:23:57Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T14:23:57Z · message_queued at 2026-11-09T14:23:57.299Z
+- 2026-11-09T14:23:57Z · ↻ resuming engineer to read queued message
+- 2026-11-09T14:23:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed on `bee`: 5,072 tests passed with one skipped, and rendered contrast plus UI smoke passed. The obsolete shot declarations are removed. I’m requesting review again now. · stderr: 2026-11-09T14:13:27.698554Z ERROR codex_core::util: Custom tool call output is missing for call id: call_fbf673e9d1914b7093c88ca45aeb92ba 2026-11-09T14:13:40.057517Z ERROR codex_core::util: Custom tool call output is missing for call id: call_fbf673e9d1914b7093c88ca45aeb92ba 2026-11-09T14:13:52.730662Z ERROR codex_cor…
+- 2026-11-09T14:23:57Z · note: handoff requested (cli)
+- 2026-11-09T14:24:31Z · message_delivered: 2 message(s)
+- 2026-11-09T14:26:29Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T14:26:29Z · status active→review
+- 2026-11-09T14:27:55Z · note: review pass 6: needs some work
+- 2026-11-09T14:27:55Z · needs_input
+- 2026-11-09T14:40:13Z · message_queued at 2026-11-09T14:40:13.918Z
+- 2026-11-09T14:40:17Z · message_delivered: 1 message(s)
+- 2026-11-09T14:51:40Z · status review→active
+- 2026-11-09T14:51:40Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T14:51:42Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T14:51:45Z · needs_input
+- 2026-11-09T14:56:49Z · body
+- 2026-11-09T15:02:18Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-09T15:02:19Z · message_delivered: 1 message(s)

@@ -2,22 +2,26 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 35e96d713adb7d49dae4b1e9d32cb2507fcaa961
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T13:14:39Z"
-review_passes: 17
+updated_at: "2026-11-09T14:40:13Z"
+last_close_out_gate_ms: 601759
+last_close_out_gate_at: "2026-11-09T14:39:47.251Z"
+review_passes: 18
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 42
+dev_error_count: 43
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 A task's check (build, tests, UI smoke, remote validation) is refused with "the worktree changed while the gate was running (HEAD moved from X to Y) — the check result no longer describes what is committed" whenever the branch tip moves while the check runs. On 2026-11-08 this repeatedly failed handoffs and forced full re-runs (each 10-60 minutes). The tip moved because of:
@@ -576,3 +580,19 @@ Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositori
 - 2026-11-09T13:14:20Z · message_delivered: 1 message(s)
 - 2026-11-09T13:14:21Z · needs_input
 - 2026-11-09T13:14:22Z · message_queued at 2026-11-09T13:14:22.418Z
+- 2026-11-09T13:37:32Z · body
+- 2026-11-09T13:55:39Z · body
+- 2026-11-09T13:57:10Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T13:57:10Z · message_queued at 2026-11-09T13:57:10.824Z
+- 2026-11-09T13:57:10Z · ↻ resuming engineer to read queued message
+- 2026-11-09T13:57:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The second changed-main check is green: remote build and scoped test suite passed on `bee` after the `thinkpad` runner timed out; local format, lint, build, safety guards, UI smoke, rendered contrast, and user-docs build also passed. I’m w… · stderr: Reading additional input from stdin... 2026-11-09T13:15:49.488617Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeeping-commits-f/src/server/handoff.ts: import { runGit, 2026-11-09T13:56:18.35…
+- 2026-11-09T13:57:11Z · note: handoff requested (cli)
+- 2026-11-09T13:57:41Z · status active→review
+- 2026-11-09T13:57:41Z · message_queued at 2026-11-09T13:57:41.965Z
+- 2026-11-09T13:57:42Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T13:58:49Z · note: review pass 18: good to go
+- 2026-11-09T14:01:35Z · message_delivered: 2 message(s)
+- 2026-11-09T14:02:24Z · agent exited with an error (codex) · 2026-11-09T14:02:23.383432Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4344452ce80e419089324beb390515d6
+- 2026-11-09T14:39:47Z · close-out gate completed in 602s
+- 2026-11-09T14:40:13Z · status done→done, release:success
+- 2026-11-09T14:40:13Z · message_dropped: 1 queued message(s) discarded — task is done
