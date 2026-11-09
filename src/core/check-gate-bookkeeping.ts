@@ -68,11 +68,22 @@ async function formatNonBookkeepingCommitDrift(
       paths: ["<paths unavailable>"],
     };
   }
-  // Inspect only commits on the checked branch's first-parent timeline. For
-  // an ordinary commit, inspect its own delta so a source edit followed by a
-  // revert still invalidates the check. For a merge, inspect the merge result
-  // against the check-start tree: side-branch commits are not part of the
-  // checked branch's work unless their content changes that resulting tree.
+  // Determine whether check-relevant content changed from the checked tree.
+  // Commit ancestry alone is insufficient here: a merge can have the checked
+  // commit as its second parent while its first-parent history predates it.
+  const netPaths = await pathsChangedBetweenCommits(wt, from, to);
+  if (netPaths === null) {
+    return {
+      kind: "changed",
+      reason: `HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}; changed paths could not be computed (source change; paths unavailable)`,
+      paths: ["<paths unavailable>"],
+    };
+  }
+  const netAffecting = netPaths.filter((path) => !isCheckGateBookkeepingPath(path, config));
+  if (netAffecting.length === 0) return { kind: "clean" };
+
+  // Walk commits only to explain the already-established source delta.
+  // Ignore commits that were part of the checked tree's history.
   const list = await runGit(
     wt,
     ["rev-list", "--first-parent", "--reverse", `${from}..${to}`],
@@ -86,13 +97,20 @@ async function formatNonBookkeepingCommitDrift(
       paths: [],
     };
   }
-  const allAffecting = new Set<string>();
+  const allAffecting = new Set<string>(netAffecting);
   {
     const shas = list.stdout
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
     for (const sha of shas) {
+      // `from` may be reachable through a merge's second parent rather than
+      // its first-parent chain. In that case rev-list --first-parent can
+      // include commits that were already present in the checked tree. They
+      // cannot represent drift that happened during this gate.
+      const alreadyInCheckedTree = await runGit(wt, ["merge-base", "--is-ancestor", sha, from], 10_000);
+      if (alreadyInCheckedTree.status === 0) continue;
+
       const subj = await runGit(wt, ["show", "-s", "--format=%s", sha], 10_000);
       const subject =
         subj.status === 0 && subj.stdout.trim() ? subj.stdout.trim() : "<subject unavailable>";
@@ -109,7 +127,7 @@ async function formatNonBookkeepingCommitDrift(
         allAffecting.add("<paths unavailable>");
         continue;
       }
-      const affecting = paths.filter((p) => !isCheckGateBookkeepingPath(p, config));
+      const affecting = paths.filter((p) => netAffecting.includes(p));
       if (affecting.length === 0) continue;
       affecting.forEach((p) => allAffecting.add(p));
       parts.push(`commit "${subject}" touched ${affecting.join(", ")}`);

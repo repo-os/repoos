@@ -137,7 +137,7 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     }
   });
 
-  it("rejects source commits even when a later commit restores the original tree", async () => {
+  it("allows source commits when the final checked tree is unchanged", async () => {
     const { wt } = initRepo();
     const before = git(wt, ["rev-parse", "HEAD"]);
     writeFileSync(join(wt, "src", "app.ts"), "intermediate\n");
@@ -148,12 +148,7 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     git(wt, ["commit", "-qm", "revert: restore source"]);
     const after = git(wt, ["rev-parse", "HEAD"]);
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toContain("feat: temporary source change");
-      expect(result.reason).toContain("revert: restore source");
-      expect(result.reason).toContain("src/app.ts");
-    }
+    expect(result).toEqual({ ok: true });
     expect(git(wt, ["show", `${before}:src/app.ts`])).toBe(
       git(wt, ["show", `${after}:src/app.ts`]),
     );
@@ -214,6 +209,61 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     expect(git(wt, ["diff", "--name-only", `${before}..${after}`])).toBe("work/side-report.md");
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
     expect(result).toEqual({ ok: true });
+  });
+
+  it("ignores first-parent source commits that were already in the check-start tree's second-parent history", async () => {
+    const { root, wt } = initRepo();
+    git(root, ["checkout", "-b", "checked-side"]);
+    writeFileSync(join(root, "src", "app.ts"), "checked source\n");
+    git(root, ["add", "src/app.ts"]);
+    git(root, ["commit", "-qm", "feat: source present when check started"]);
+    const before = git(root, ["rev-parse", "HEAD"]);
+
+    git(root, ["checkout", "main"]);
+    writeFileSync(join(root, "src", "app.ts"), "temporary source\n");
+    git(root, ["add", "src/app.ts"]);
+    git(root, ["commit", "-qm", "feat: old first-parent source change"]);
+    writeFileSync(join(root, "src", "app.ts"), "v1\n");
+    git(root, ["add", "src/app.ts"]);
+    git(root, ["commit", "-qm", "revert: old first-parent source change"]);
+    mkdirSync(join(root, "work", "reports", "0001"), { recursive: true });
+    writeFileSync(join(root, "work", "reports", "0001", "note.md"), "bookkeeping\n");
+    git(root, ["add", "work/reports/0001/note.md"]);
+    git(root, ["commit", "-qm", "docs: first-parent bookkeeping"]);
+
+    git(wt, ["checkout", "-B", "feat/1061", "main"]);
+    git(wt, ["merge", "--no-ff", "checked-side", "-m", "merge checked tree"]);
+    const after = git(wt, ["rev-parse", "HEAD"]);
+    const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects a source delta introduced by a merge whose second parent is the check-start commit", async () => {
+    const { root, wt } = initRepo();
+    git(root, ["checkout", "-b", "checked-side"]);
+    writeFileSync(join(root, "src", "app.ts"), "checked source\n");
+    git(root, ["add", "src/app.ts"]);
+    git(root, ["commit", "-qm", "feat: source present when check started"]);
+    const before = git(root, ["rev-parse", "HEAD"]);
+
+    git(root, ["checkout", "main"]);
+    mkdirSync(join(root, "work", "reports", "0001"), { recursive: true });
+    writeFileSync(join(root, "work", "reports", "0001", "note.md"), "bookkeeping\n");
+    git(root, ["add", "work/reports/0001/note.md"]);
+    git(root, ["commit", "-qm", "docs: first-parent bookkeeping"]);
+    writeFileSync(join(root, "src", "added.ts"), "source drift\n");
+    git(root, ["add", "src/added.ts"]);
+    git(root, ["commit", "-qm", "feat: first-parent source drift"]);
+
+    git(wt, ["checkout", "-B", "feat/1061", "main"]);
+    git(wt, ["merge", "--no-ff", "checked-side", "-m", "merge checked tree"]);
+    const after = git(wt, ["rev-parse", "HEAD"]);
+    const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toContain('"merge checked tree"');
+      expect(result.reason).toContain("src/added.ts");
+    }
   });
 
   it("fails closed when path diff is unavailable", async () => {
