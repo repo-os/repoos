@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T07:54:37Z"
+updated_at: "2026-11-09T07:55:47Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: docs/check-run-history.md, src/core/check-gate-bookkeeping.ts, src/ui-app/tests/check-gate-bookkeeping.test.ts, user-docs/check.md) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 0f8997fdb73e748ccda585a141de29f4f8dd272f
 review_passes: 11
@@ -436,3 +436,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T07:39:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T07:39:26Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T07:54:37Z · body
+- 2026-11-09T07:55:47Z · status active→review
