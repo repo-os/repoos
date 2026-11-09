@@ -335,3 +335,4 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-09T03:18:59Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-09T03:18:59Z · message_queued at 2026-11-09T03:18:59.360Z
 - 2026-11-09T03:18:59Z · ↻ resuming engineer to read queued message
+- 2026-11-09T03:18:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
