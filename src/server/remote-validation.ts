@@ -5095,7 +5095,7 @@ export class TailscaleHostPool {
       }
       const container = run.container;
       const releaseSlot = run.releaseSlot;
-      this.markHung(s.spec.host, `killed on request (#${taskId})`, { taskId });
+      this.markHung(s.spec.host, `removal requested (#${taskId})`, { taskId });
       // The operator/CTO kill path removes the same evidence-bearing run as
       // the watchdog path. Capture before `docker rm -f` while the container
       // still exists; evidence collection is fail-soft so a broken SSH link
@@ -5120,9 +5120,14 @@ export class TailscaleHostPool {
         killCode = killRes.code;
       } catch (e) {
         killErr = (e as Error).message;
-      } finally {
-        releaseSlot?.();
       }
+      if (killErr || killTimedOut || killCode !== 0) {
+        this.markUnhealthy(
+          s.spec.host,
+          `hang removal for #${taskId} failed; container may still be running`,
+        );
+      }
+      releaseSlot?.();
       if (killErr) {
         return {
           ok: false,
@@ -5130,7 +5135,14 @@ export class TailscaleHostPool {
           container,
         };
       }
-      if (!killTimedOut && killCode !== 0) {
+      if (killTimedOut) {
+        return {
+          ok: false,
+          detail: `could not kill ${container} on ${s.spec.host}: removal timed out; container may still be running`,
+          container,
+        };
+      }
+      if (killCode !== 0) {
         return {
           ok: false,
           detail: `could not kill ${container} on ${s.spec.host}: docker rm exited ${killCode ?? "?"}`,
@@ -5145,12 +5157,6 @@ export class TailscaleHostPool {
           () => {},
           HANG_KILL_TIMEOUT_MS,
         ).catch(() => undefined);
-      }
-      if (killTimedOut) {
-        this.markUnhealthy(
-          s.spec.host,
-          `hang kill for #${taskId} timed out after ${HANG_KILL_TIMEOUT_MS / 1000}s — slot released`,
-        );
       }
       return {
         ok: true,
@@ -6414,7 +6420,7 @@ export class TailscaleRunner implements RemoteValidator {
     taskId: string;
     abortMain: () => void;
     releaseSlot: () => void;
-    settleMain: () => void;
+    settleMain: (removed: boolean) => void;
     hangCondition?: "stream-silent" | "host-idle" | "container-inactive";
   }): Promise<void> {
     // Capture evidence before killing (#1049)
@@ -6439,13 +6445,16 @@ export class TailscaleRunner implements RemoteValidator {
       // A failed SSH call is not evidence that Docker removed the container.
       killCode = null;
     }
-    void execRemoteWithHardDeadline(
-      this.exec,
-      opts.host,
-      remoteRunCleanupCommand(opts.paths),
-      () => {},
-      this.timings.hangKillTimeoutMs,
-    ).catch(() => undefined);
+    const removed = !killTimedOut && killCode === 0;
+    if (removed) {
+      void execRemoteWithHardDeadline(
+        this.exec,
+        opts.host,
+        remoteRunCleanupCommand(opts.paths),
+        () => {},
+        this.timings.hangKillTimeoutMs,
+      ).catch(() => undefined);
+    }
 
     // Record hang event with evidence (#1049)
     const condition = opts.hangCondition ?? "stream-silent";
@@ -6471,9 +6480,6 @@ export class TailscaleRunner implements RemoteValidator {
       },
     });
 
-    opts.abortMain();
-    opts.releaseSlot();
-    opts.settleMain();
     if (killTimedOut) {
       this.pool.markUnhealthy(
         opts.host.ip,
@@ -6493,6 +6499,9 @@ export class TailscaleRunner implements RemoteValidator {
         `remote validation hang kill for #${opts.taskId} on ${opts.host.ip} failed (exit ${killCode})`,
       );
     }
+    opts.abortMain();
+    opts.releaseSlot();
+    opts.settleMain(removed);
   }
 
   /**
@@ -7036,6 +7045,7 @@ export class TailscaleRunner implements RemoteValidator {
         let hangCondition: "stream-silent" | "host-idle" | "container-inactive" = "stream-silent";
         let runAbortGen: number | undefined;
         let hangRecovery: Promise<void> | undefined;
+        let hungContainerRemoved = false;
         let endedByHangRecovery = false;
         let hangRecoveryResolve: ((r: RemoteExecResult) => void) | undefined;
         const settleHangRecovery = (r: RemoteExecResult): void => {
@@ -7162,7 +7172,8 @@ export class TailscaleRunner implements RemoteValidator {
               hangCondition,
               abortMain: () => abortMainRemote?.(),
               releaseSlot: () => slot.release(),
-              settleMain: () => {
+              settleMain: (removed) => {
+                hungContainerRemoved = removed;
                 settleHangRecovery({
                   code: null,
                   output: streamBuf,
@@ -7314,8 +7325,11 @@ export class TailscaleRunner implements RemoteValidator {
           // retries on another host (the pool excludes this one, #0632).
           this.pool.recordRun(host.ip, opts.taskId, false, Date.now() - startedAt);
           emit(
-            `\n[remote validation HUNG on ${host.ip} — container ${containerName} killed; ` +
-              "retrying on another host]\n",
+            `\n[remote validation HUNG on ${host.ip} — container ${containerName} ` +
+              (hungContainerRemoved
+                ? "removed"
+                : "removal failed; container may still be running") +
+              "]\n",
           );
           const detectedCondition = hangCondition as
             | "stream-silent"
@@ -7330,7 +7344,10 @@ export class TailscaleRunner implements RemoteValidator {
           const detail =
             `remote validation hung on ${host.ip} — no output for ` +
             `${hangIdleMinutes}m while ${conditionDescription}; the run's container ` +
-            `(${containerName}) was removed and the run retried on another host`;
+            `(${containerName}) ` +
+            (hungContainerRemoved
+              ? "was removed"
+              : "could not be confirmed removed and may still be running");
           this.record(
             { taskId: opts.taskId, host: host.ip, phase: "result" },
             {
