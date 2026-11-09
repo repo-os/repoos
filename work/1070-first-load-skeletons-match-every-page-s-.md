@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-09T14:27:55Z"
-review_passes: 6
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
+updated_at: "2026-11-09T14:40:13Z"
+review_passes: 6
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -264,4 +264,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T14:26:29Z · status active→review
 - 2026-11-09T14:27:55Z · note: review pass 6: needs some work
 - 2026-11-09T14:27:55Z · needs_input
-
+- 2026-11-09T14:40:13Z · message_queued at 2026-11-09T14:40:13.918Z
