@@ -149,3 +149,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T20:50:39Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T20:51:40Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-09T20:51:45Z · status active→review
+- 2026-11-09T20:51:45Z · message_queued at 2026-11-09T20:51:45.580Z
