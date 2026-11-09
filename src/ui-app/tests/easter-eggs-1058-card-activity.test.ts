@@ -263,31 +263,50 @@ describe("PipelineCard activity recency (#1058)", () => {
     expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
   });
 
-  it.each([null, "invalid"])("keeps elapsed inline when last activity is %s", (lastActivityAt) => {
-    const wrapper = mount(PipelineCard, {
-      props: {
-        taskId: "1058",
-        type: "chore",
-        priority: "p3",
-        title: "Fixture",
-        state: "ok",
-        statusSignals: healthyPipelineSignals,
-        stepLabel: "Coding",
-        chipText: null,
-        stateSince: "2026-11-08T02:48:00.000Z",
-        lastActivityAt,
-        nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
-        roundsLabel: "D0 · R0",
-        reviewerTone: null,
-        modelsLabel: "eng / rev",
-        hostLabel: "local",
-        action: null,
-        checkProgress: null,
-      },
-    });
-    expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
-    expect(wrapper.get(".pl-step").attributes("data-tip")).toBeUndefined();
-  });
+  it.each([
+    { lastActivityAt: null, checkProgress: null, path: "status" },
+    { lastActivityAt: "invalid", checkProgress: null, path: "status" },
+    {
+      lastActivityAt: null,
+      checkProgress: { stepsDone: 1, stepsTotal: 2 },
+      path: "check progress",
+    },
+    {
+      lastActivityAt: "invalid",
+      checkProgress: { stepsDone: 1, stepsTotal: 2 },
+      path: "check progress",
+    },
+  ])(
+    "keeps elapsed inline on $path when last activity is $lastActivityAt",
+    ({ lastActivityAt, checkProgress }) => {
+      const wrapper = mount(PipelineCard, {
+        props: {
+          taskId: "1058",
+          type: "chore",
+          priority: "p3",
+          title: "Fixture",
+          state: "ok",
+          statusSignals: healthyPipelineSignals,
+          stepLabel: "Coding",
+          chipText: null,
+          stateSince: "2026-11-08T02:48:00.000Z",
+          lastActivityAt,
+          nowMs: Date.parse("2026-11-08T03:00:00.000Z"),
+          roundsLabel: "D0 · R0",
+          reviewerTone: null,
+          modelsLabel: "eng / rev",
+          hostLabel: "local",
+          action: null,
+          checkProgress,
+        },
+      });
+      expect(wrapper.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("12m");
+      const tipTarget = checkProgress
+        ? wrapper.get('[data-test-id="pipeline-card-check-progress"]')
+        : wrapper.get(".pl-step");
+      expect(tipTarget.attributes("data-tip")).toBeUndefined();
+    },
+  );
 
   it("shows stuck and elapsed time for a silent agent that still reports running", () => {
     const wrapper = mount(PipelineCard, {

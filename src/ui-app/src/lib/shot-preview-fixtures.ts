@@ -1319,6 +1319,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       };
       const runAgent = (taskId: string, activeMinAgo: number): void => {
         const at = agoMin(activeMinAgo);
+        repo.pausedIds = repo.pausedIds.filter((id) => id !== taskId);
         if (!repo.runningIds.includes(taskId)) {
           repo.runningIds = [...repo.runningIds, taskId];
         }
@@ -1554,9 +1555,14 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       break;
     case "board:activeCoding":
       ensureFixtureTask(repo, "active");
+      repo.pausedIds = repo.pausedIds.filter((id) => id !== SHOT_PREVIEW_FIXTURE_TASK_ID);
       if (!repo.runningIds.includes(SHOT_PREVIEW_FIXTURE_TASK_ID)) {
         repo.runningIds = [...repo.runningIds, SHOT_PREVIEW_FIXTURE_TASK_ID];
       }
+      repo.runningSince = {
+        ...repo.runningSince,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
+      };
       repo.agentActivityAt = {
         ...repo.agentActivityAt,
         [SHOT_PREVIEW_FIXTURE_TASK_ID]: nowIso(),
