@@ -101,3 +101,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T17:39:49Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T17:39:49Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T17:39:53Z · needs_input
+- 2026-11-09T17:39:53Z · message_delivered: 1 message(s)
