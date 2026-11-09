@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RepoOSConfig } from "../../core/types.js";
 import {
+  BrowserCaptureCancelledError,
   BrowserEvidenceUnavailableError,
   recordBrowserCaptureActivity,
   runBrowserCaptureWithPolicy,
@@ -60,6 +61,25 @@ describe("browser capture runner policy", () => {
       "shots: captured 2 screenshots",
       "ui verification failed: missing target",
     ]);
+  });
+
+  it("does not restart a cancelled remote capture locally", async () => {
+    const local = vi.fn(async () => "local");
+    await expect(
+      runBrowserCaptureWithPolicy({
+        config: config("runner-available"),
+        request,
+        transport: {
+          capture: async () => {
+            throw new BrowserCaptureCancelledError("cancelled");
+          },
+        },
+        local,
+        useArtifacts: vi.fn(),
+        note: vi.fn(),
+      }),
+    ).rejects.toBeInstanceOf(BrowserCaptureCancelledError);
+    expect(local).not.toHaveBeenCalled();
   });
 
   it("uses the runner and imports returned artifacts", async () => {
