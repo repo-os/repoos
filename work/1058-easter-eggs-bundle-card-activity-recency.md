@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -606,4 +606,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T09:07:20Z · note: handoff requested (cli)
 - 2026-11-09T09:08:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T09:09:29Z · note: ui verification passed: 2 of 2 shots captured with clean console
-- 2026-11-09T09:09:29Z · engineer stopped by request
+- 2026-11-09T09:09:29Z · status active→review
