@@ -11,8 +11,10 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T19:22:03Z"
-review_passes: 10
+updated_at: "2026-11-09T22:09:52Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: d788fa71c3861ca8cb16bad1104950ae4b662212
+review_passes: 11
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -62,6 +64,9 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 
 ## Review report format (final)
 Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under '## Bugs', and the landing check treats any entry under '## Bugs' as a blocking bug. For the next pass: put every non-blocking observation (shell exit transition, one-row contrast selector, source-text assertions) under '## Suggestions', leave '## Bugs' EMPTY ('None found') when nothing blocks, and give a clear verdict. The code needs no further change.
+
+## Accepted scope: no shell cross-fade (final)
+Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade of the loading skeleton is NOT required for this task. Replace it with an instant swap (no leave transition, no out-of-flow positioning); a smooth fade-out is part of follow-up #1078. A reviewer must not raise missing cross-fade, transition geometry or exit animation as blocking; report it as a suggestion. Keep: shell show-delay and minimum-visible time, Mission Control single block, Stories, named counts, reduced-motion.
 
 ## Screenshots
 
@@ -315,3 +320,66 @@ Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under
 - 2026-11-09T19:22:01Z · message_delivered: 2 message(s)
 - 2026-11-09T19:22:01Z · needs_input
 - 2026-11-09T19:22:03Z · message_queued at 2026-11-09T19:22:03.164Z
+- 2026-11-09T19:38:28Z · body
+- 2026-11-09T19:54:11Z · body
+- 2026-11-09T19:58:04Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T19:58:04Z · message_queued at 2026-11-09T19:58:04.280Z
+- 2026-11-09T19:58:04Z · ↻ resuming engineer to read queued message
+- 2026-11-09T19:58:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The formatted tree has now passed the full scoped check: build, changed-path tests, contrast audit, UI smoke, and local guards are green. I’m writing the required engineer report draft now, including the requested page-layout audit summary… · stderr: Reading additional input from stdin...
+- 2026-11-09T19:58:05Z · note: handoff requested (cli)
+- 2026-11-09T20:00:28Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T20:01:54Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T20:01:56Z · status active→review
+- 2026-11-09T20:01:57Z · message_queued at 2026-11-09T20:01:57.163Z
+- 2026-11-09T20:02:44Z · note: review pass 11: needs some work
+- 2026-11-09T20:02:44Z · needs_input
+- 2026-11-09T20:04:14Z · body: Accepted scope: no shell cross-fade (final) (added)
+- 2026-11-09T20:04:14Z · status review→active
+- 2026-11-09T20:04:14Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T20:04:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T20:04:23Z · needs_input
+- 2026-11-09T20:04:25Z · message_queued at 2026-11-09T20:04:25.032Z
+- 2026-11-09T20:09:31Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /?shotState=loading:dashboard (http://127.0.0.1:45643/?shotState=loading:dashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories?shotState=loading:stories (http://127.0.0.1:45643/stories?shotState=loading:stories) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T20:09:31Z · note: handoff requested (cli)
+- 2026-11-09T20:10:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T20:20:53Z · message_delivered: 2 message(s)
+- 2026-11-09T20:22:13Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T20:22:13Z · message_queued at 2026-11-09T20:22:13.789Z
+- 2026-11-09T20:22:14Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1070.md
+- 2026-11-09T20:23:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T20:36:59Z · body
+- 2026-11-09T20:51:18Z · body
+- 2026-11-09T20:51:41Z · message_queued at 2026-11-09T20:51:41.834Z
+- 2026-11-09T20:55:53Z · handoff_deferred: 4 queued message(s) must be read before review
+- 2026-11-09T20:55:53Z · message_queued at 2026-11-09T20:55:53.721Z
+- 2026-11-09T20:55:54Z · ↻ resuming engineer to read queued message
+- 2026-11-09T20:55:54Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The gate passed, but the prior handoff record shows a separate review-step failure: RepoOS could not find the required engineering report draft. I’m checking whether the draft exists at the required worktree path before requesting handoff;… · stderr: (empty)
+- 2026-11-09T20:55:55Z · note: handoff requested (cli)
+- 2026-11-09T20:57:54Z · message_delivered: 5 message(s)
+- 2026-11-09T21:00:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T21:01:25Z · message_queued at 2026-11-09T21:01:25.515Z
+- 2026-11-09T21:01:25Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)
+- 2026-11-09T21:01:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T21:14:36Z · body
+- 2026-11-09T21:18:48Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T21:18:48Z · message_queued at 2026-11-09T21:18:48.787Z
+- 2026-11-09T21:18:49Z · ↻ resuming engineer to read queued message
+- 2026-11-09T21:18:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: 2026-11-09T20:59:53.505319Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/first-load-skeletons-match-every-page-s-/src/ui-app/src/App.vue
+- 2026-11-09T21:18:50Z · note: handoff requested (cli)
+- 2026-11-09T21:20:09Z · message_delivered: 2 message(s)
+- 2026-11-09T21:20:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T21:23:51Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T21:23:52Z · message_queued at 2026-11-09T21:23:52.053Z
+- 2026-11-09T21:23:52Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: A check is running; wait for it to finish.
+- 2026-11-09T21:25:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T21:34:58Z · body
+- 2026-11-09T21:40:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T21:43:51Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T21:43:51Z · message_queued at 2026-11-09T21:43:51.266Z
+- 2026-11-09T21:43:51Z · ↻ resuming engineer to read queued message
+- 2026-11-09T21:43:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The Playwright slot opened and the UI smoke passed; the complete changed-path check is green. I’m writing the required ignored report draft now and immediately requesting handoff, with no further check after the draft is written. · stderr: (empty)
+- 2026-11-09T21:43:52Z · note: handoff requested (cli)
+- 2026-11-09T22:02:50Z · message_delivered: 2 message(s)
+- 2026-11-09T22:07:17Z · message_queued at 2026-11-09T22:07:17.409Z
+- 2026-11-09T22:07:19Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-09T22:09:52Z · CTO nudge: held — an undelivered message is already queued
