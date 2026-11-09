@@ -13,7 +13,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-09T03:18:01Z"
+updated_at: "2026-11-09T03:18:59Z"
 review_passes: 13
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -331,3 +331,4 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-09T03:05:43Z · needs_input
 - 2026-11-09T03:05:44Z · message_queued at 2026-11-09T03:05:44.308Z
 - 2026-11-09T03:18:01Z · body
+- 2026-11-09T03:18:59Z · handoff_deferred: 1 queued message(s) must be read before review
