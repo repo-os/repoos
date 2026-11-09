@@ -552,3 +552,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:34:23Z · needs_input
 - 2026-11-09T12:36:33Z · status review→active
 - 2026-11-09T12:36:33Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T12:36:36Z · CTO nudge: held — an undelivered message is already queued
