@@ -483,7 +483,9 @@ async function worktreeState(workdir: string, config: RepoOSConfig): Promise<Wor
   const files: Record<string, string> = {};
   for (const path of paths) {
     try {
-      files[path] = createHash("sha256").update(readFileSync(join(workdir, path))).digest("hex");
+      files[path] = createHash("sha256")
+        .update(readFileSync(join(workdir, path)))
+        .digest("hex");
     } catch {
       files[path] = "<unreadable>";
     }
