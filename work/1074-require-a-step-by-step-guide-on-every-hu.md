@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/require-a-step-by-step-guide-on-every-hu
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-09T20:04:16Z"
+updated_at: "2026-11-09T20:09:33Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -38,3 +38,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-09T19:57:02Z · status ready→active, branch
 - 2026-11-09T20:02:17Z · message_queued at 2026-11-09T20:02:17.663Z
 - 2026-11-09T20:04:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T20:09:33Z · message_queued at 2026-11-09T20:09:33.278Z
