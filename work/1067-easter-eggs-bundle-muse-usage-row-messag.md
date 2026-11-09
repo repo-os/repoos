@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 129626
-last_close_out_gate_at: "2026-11-09T03:04:05.844Z"
 id: "1067"
 title: "Easter eggs bundle: Muse usage row messages and dashboard link, needs-input flag after body fix"
 type: chore
-status: review
+status: done
 priority: p3
 area: [web, server]
+merged_commit: 629bb67d85453e104bdc44555affd4e9f735f7a6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
 updated_at: "2026-11-09T03:04:05Z"
+last_close_out_gate_ms: 129626
+last_close_out_gate_at: "2026-11-09T03:04:05.844Z"
 review_passes: 2
 review_rounds: 1
 routing_switches: 1

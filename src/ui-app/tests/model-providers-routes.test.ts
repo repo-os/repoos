@@ -382,15 +382,23 @@ describe("GET /api/model-providers/:id/usage", () => {
     expect(capture.body.windows).toHaveLength(1);
   });
 
-  it("maps a Muse allowance failure to a 502 with the login hint", async () => {
+  it("returns an actionable Muse login message as a successful empty usage result", async () => {
     mockFetchMuseUsage.mockRejectedValue(
       new Error("muse usage: not logged in: run `muse login` first"),
     );
     const ctx = makeCtx(tmpRoot());
     const { capture, res } = makeRes();
     await getModelProviderUsage(ctx as never, makeReq(), res as never, { param1: "muse" });
-    expect(capture.statusCode).toBe(502);
-    expect(capture.body.error).toContain("not logged in");
+    expect(capture.statusCode).toBe(200);
+    expect(capture.body).toMatchObject({
+      kind: "muse",
+      tier: null,
+      windows: [],
+      unrecognized: false,
+      reason: "usage_unavailable",
+      hint: "muse usage: not logged in: run `muse login` first",
+      message: "muse usage: not logged in: run `muse login` first",
+    });
   });
 
   it("renders GitHub Copilot as a link row with no scope in the payload (#0629)", async () => {
