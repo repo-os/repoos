@@ -584,3 +584,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T08:11:17Z · body
 - 2026-11-09T08:13:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented the timing fallback for automatic check-failure and merge-conflict retries in [TaskCard.vue](/Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-activity-recency/src/ui-app/src/components/TaskCard.vue) and [retr… · stderr: Reading additional input from stdin...
 - 2026-11-09T08:13:02Z · status active→review
+- 2026-11-09T08:13:02Z · message_delivered: 1 message(s)
