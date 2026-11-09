@@ -248,9 +248,17 @@ describe("feature releases", () => {
       expect(document.body.querySelector(".release-update-code")?.textContent?.trim()).toBe(
         "repoos upgrade",
       );
+      // These are the two probes the server's UI verification runs for a shot
+      // (#0866): the applied-state marker, an open dialog, and the declared
+      // highlight resolving on the page. Asserting them here means a regression
+      // that would fail the capture fails the test first.
       expect(
-        document.body.querySelector('[data-test-id="release-upgrade-command"]'),
-      ).not.toBeNull();
+        document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR),
+      ).toBe("release:updateAvailable");
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+      const highlight = document.querySelector('[data-test-id="release-upgrade-command"]');
+      expect(highlight).not.toBeNull();
+      expect(highlight?.textContent ?? "").toContain("repoos upgrade");
     } finally {
       wrapper.unmount();
       repo.health = null;
