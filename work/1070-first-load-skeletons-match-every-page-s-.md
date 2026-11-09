@@ -370,3 +370,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T21:20:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T21:23:51Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-09T21:23:52Z · message_queued at 2026-11-09T21:23:52.053Z
+- 2026-11-09T21:23:52Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: A check is running; wait for it to finish.
