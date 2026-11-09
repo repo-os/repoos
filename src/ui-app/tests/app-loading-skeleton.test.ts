@@ -78,7 +78,9 @@ describe("repo loading skeleton", () => {
     );
     expect(appCss).toMatch(/\.main\s*\{[^}]*position:\s*relative;/s);
     expect(appCss).toMatch(/\.main\s*\{[^}]*padding:\s*22px 26px 0;/s);
-    expect(appCss).toMatch(/\.main\s*>\s*\.main-route:not\(\.page-loading\)\s*\{[^}]*z-index:\s*1;/s);
+    expect(appCss).toMatch(
+      /\.main\s*>\s*\.main-route:not\(\.page-loading\)\s*\{[^}]*z-index:\s*1;/s,
+    );
     (wrapper.vm.finishLeave as () => void)();
     await wrapper.vm.$nextTick();
     expect(document.querySelector(".page-loading")).toBeNull();
