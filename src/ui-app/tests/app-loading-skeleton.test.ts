@@ -24,6 +24,9 @@ describe("repo loading skeleton", () => {
       /v-if="repo\.loading \|\| showRepoSkeleton \|\| forcedLoadingShot"\s+class="main-route page-loading"/,
     );
     expect(appVue).toMatch(
+      /:aria-busy="showRepoSkeleton \|\| forcedLoadingShot \? 'true' : undefined"/,
+    );
+    expect(appVue).toMatch(
       /<PageSkeleton v-if="showRepoSkeleton \|\| forcedLoadingShot" :kind="loadingKind"\s*\/>/,
     );
     expect(appVue).toMatch(
