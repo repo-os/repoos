@@ -579,3 +579,4 @@ Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositori
 - 2026-11-09T13:37:32Z · body
 - 2026-11-09T13:55:39Z · body
 - 2026-11-09T13:57:10Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T13:57:10Z · message_queued at 2026-11-09T13:57:10.824Z
