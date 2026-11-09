@@ -1,0 +1,33 @@
+---
+id: "1076"
+title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
+type: bug
+status: inbox
+priority: p2
+area: [core, server]
+assigned_to: ""
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-11-09T08:36:18Z"
+updated_at: "2026-11-09T08:36:18Z"
+---
+## Problem
+Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
+
+## Desired UX
+A task branch's diff against main only ever contains that task's own files. Other tasks' bookkeeping never appears in a task worktree's commits, and an engineer never has to fix this by hand.
+
+## Acceptance criteria
+1. Find and document which server paths write other tasks' `work/*.md` (and `work/reports/<other id>`) into a task worktree (task sync, activity/CTO notes, merge-of-main bookkeeping); stop them from touching a task worktree except for that task's own file, or write them only to main.
+2. The self-check WIP checkpoint commit stages only the task's own files plus its source changes, and explicitly excludes `work/*.md` for other ids and `work/reports/<other id>/**`.
+3. Handoff, before the review lock, runs a guarded cleanup that restores any other task's work files from main (via a normal commit that the review tolerates as bookkeeping), and reports it instead of failing landing.
+4. `repoos landable` and the handoff report name the offending files and the cause in plain English.
+5. Tests: a worktree with dirty other-task work files produces a checkpoint commit with none of them; a branch with such files is cleaned at handoff; the landing preflight passes afterwards.
+6. Docs: agent-workflow-rules / close-out docs updated to describe the rule.
+
+## Notes for AI
+Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/git.ts`, the server's task-file sync (`ensureWorktree`, bookkeeping commits in `src/server/handoff.ts`), and the landing preflight (`repoos landable`, `src/server/conflict-resolution.ts`). Coordinate with #1061 (bookkeeping deferral during checks); do not duplicate it. Do not edit repoos.toml.
+
+## Activity
+
+- 2026-11-09T08:36:18Z · created · njachowski@gmail.com
