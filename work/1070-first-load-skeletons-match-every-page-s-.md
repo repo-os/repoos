@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T14:13:25Z"
+updated_at: "2026-11-09T14:13:52Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1
@@ -45,20 +45,7 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 
 ## Shots
 ```json
-[
-{
-"label": "Mission Control loading skeleton",
-"target": "default",
-"route": "/",
-"highlight": ".page-skeleton--dashboard"
-},
-{
-"label": "Stories loading skeleton",
-"target": "default",
-"route": "/stories",
-"highlight": ".page-skeleton--rows"
-}
-]
+[]
 ```
 
 ## Accepted scope: no loading-state screenshots
@@ -259,3 +246,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T14:09:10Z · note: handoff requested (cli)
 - 2026-11-09T14:11:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T14:13:25Z · message_delivered: 3 message(s)
+- 2026-11-09T14:13:52Z · body
