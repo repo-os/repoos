@@ -160,7 +160,7 @@ async function copyCommand(): Promise<void> {
         <p class="release-update-eyebrow">A fresh build has landed</p>
         <DialogTitle>Upgrade to RepoOS {{ release.latestVersion }}</DialogTitle>
         <DialogDescription class="release-update-description">
-          Review the changes, then open the release instructions when you’re ready.
+          Copy the command to upgrade, or read what changed in the release notes.
         </DialogDescription>
         <div class="release-update-versions">
           <div>
