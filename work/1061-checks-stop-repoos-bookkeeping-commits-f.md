@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-09T01:18:16Z"
-review_passes: 9
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — Source writes, failed queue replay and direct-check drift can invalidate results."
@@ -16,6 +14,8 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
+updated_at: "2026-11-09T01:35:46Z"
+review_passes: 9
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -349,4 +349,5 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T01:17:34Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-09T01:18:16Z · note: review pass 9: needs some work
 - 2026-11-09T01:18:16Z · needs_input
-
+- 2026-11-09T01:35:46Z · status review→active
+- 2026-11-09T01:35:46Z · note: send-back — returned to active for engineer follow-up
