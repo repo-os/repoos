@@ -3,6 +3,9 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the uncommitted worktree edits would regress Mission Control to six blocks, and board breakpoints and motion settings a…"
 priority: p3
 area: web
 assigned_to: ai
@@ -209,3 +212,4 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 - 2026-11-09T12:34:58Z · status active→review
 - 2026-11-09T12:34:58Z · message_queued at 2026-11-09T12:34:58.337Z
 - 2026-11-09T12:37:12Z · note: review pass 5: needs some work
+- 2026-11-09T12:37:12Z · needs_input
