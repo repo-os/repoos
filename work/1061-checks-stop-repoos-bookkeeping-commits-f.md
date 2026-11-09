@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -558,3 +558,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T13:01:50Z · message_queued at 2026-11-09T13:01:50.155Z
 - 2026-11-09T13:01:50Z · ↻ resuming engineer to read queued message
 - 2026-11-09T13:01:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The requested gate completed with exit code 0 after RepoOS’s fallback ran the full local suite. I’m adding the required engineer-authored report draft now, including the two accepted limits and the remote-runner outage/fallback as observed… · stderr: Reading additional input from stdin... 2026-11-09T12:54:19.443891Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses 2026-11-09T12:54:19.951555Z…
+- 2026-11-09T13:01:50Z · status active→review
