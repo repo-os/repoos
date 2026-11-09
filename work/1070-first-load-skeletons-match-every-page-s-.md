@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -395,4 +395,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T22:27:00Z · message_delivered: 2 message(s)
 - 2026-11-09T22:28:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T22:31:11Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-09T22:31:13Z · engineer stopped by request
+- 2026-11-09T22:31:13Z · status active→review
