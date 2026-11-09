@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -115,3 +115,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T17:15:28Z · body
 - 2026-11-09T17:20:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T17:24:03Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T17:24:03Z · status active→review
