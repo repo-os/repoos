@@ -107,20 +107,28 @@ export function installTooltips(): void {
   document.addEventListener("focusin", enter);
   document.addEventListener("mouseout", leave);
   document.addEventListener("focusout", hide);
-  document.addEventListener("pointerdown", (event) => {
-    const pointer = event as PointerEvent;
-    if (pointer.pointerType === "touch") {
-      touchStart(pointer);
-      return;
-    }
-    if (!target || !(event.target instanceof Node) || !target.contains(event.target)) hide();
-  }, true);
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      const pointer = event as PointerEvent;
+      if (pointer.pointerType === "touch") {
+        touchStart(pointer);
+        return;
+      }
+      if (!target || !(event.target instanceof Node) || !target.contains(event.target)) hide();
+    },
+    true,
+  );
   document.addEventListener("pointerup", touchEnd, true);
-  document.addEventListener("pointercancel", (event) => {
-    if ((event as PointerEvent).pointerType !== "touch") return;
-    window.clearTimeout(touchTimer);
-    touchTarget = null;
-  }, true);
+  document.addEventListener(
+    "pointercancel",
+    (event) => {
+      if ((event as PointerEvent).pointerType !== "touch") return;
+      window.clearTimeout(touchTimer);
+      touchTarget = null;
+    },
+    true,
+  );
   document.addEventListener("scroll", hide, true);
   window.addEventListener("blur", hide);
 }
