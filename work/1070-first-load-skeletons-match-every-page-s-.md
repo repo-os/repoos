@@ -100,3 +100,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T06:29:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T06:43:44Z · body
 - 2026-11-09T06:46:16Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)
+- 2026-11-09T06:46:16Z · message_queued at 2026-11-09T06:46:16.907Z
