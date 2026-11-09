@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-09T23:35:40Z"
+updated_at: "2026-11-09T23:40:49Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -37,3 +37,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-09T23:28:17Z · status ready→active, branch
 - 2026-11-09T23:33:32Z · message_queued at 2026-11-09T23:33:32.955Z
 - 2026-11-09T23:35:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T23:40:49Z · message_queued at 2026-11-09T23:40:49.745Z
