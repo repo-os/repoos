@@ -25,7 +25,15 @@ import {
  */
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  readFileSync,
+  readlinkSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { processGroupAlive, terminateProcessGroupAndWait } from "../core/process-group.js";
 import type { RepoOSConfig, Status, Task } from "../core/types.js";
@@ -488,11 +496,23 @@ async function worktreeState(workdir: string, config: RepoOSConfig): Promise<Wor
   const files: Record<string, string> = {};
   for (const path of paths) {
     try {
-      files[path] = createHash("sha256")
-        .update(readFileSync(join(workdir, path)))
-        .digest("hex");
-    } catch {
-      files[path] = "<unreadable>";
+      const absolute = join(workdir, path);
+      const stat = lstatSync(absolute);
+      if (stat.isSymbolicLink()) {
+        files[path] = `symlink:${readlinkSync(absolute)}`;
+      } else if (stat.isDirectory()) {
+        const submodule = await runGit(absolute, ["rev-parse", "HEAD"], 10_000);
+        if (submodule.status !== 0) {
+          throw new Error(`could not read tracked directory ${path}: ${concise(submodule)}`);
+        }
+        files[path] = `directory:${submodule.stdout.trim()}`;
+      } else if (stat.isFile()) {
+        files[path] = createHash("sha256").update(readFileSync(absolute)).digest("hex");
+      } else {
+        files[path] = `non-regular:${stat.mode}:${stat.size}:${stat.mtimeMs}`;
+      }
+    } catch (error) {
+      throw new Error(`could not read worktree path ${path}: ${(error as Error).message}`);
     }
   }
   return { head: head.stdout.trim(), files };
