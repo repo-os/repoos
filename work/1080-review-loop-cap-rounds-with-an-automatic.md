@@ -11,7 +11,7 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T18:25:50Z"
+updated_at: "2026-11-09T19:03:54Z"
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 review_passes: 2
@@ -122,3 +122,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T17:27:12Z · note: review pass 3: incomplete — no verdict in report
 - 2026-11-09T17:30:29Z · note: review pass 4: incomplete — no verdict in report
 - 2026-11-09T18:25:50Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T19:03:54Z · message_overdue: still queued after 60m without being delivered
