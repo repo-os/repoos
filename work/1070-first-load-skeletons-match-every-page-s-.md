@@ -3,9 +3,6 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — The shell cross-fade temporarily compresses the incoming page and causes a layout shift.
 priority: p3
 area: web
 assigned_to: ai
@@ -316,3 +313,4 @@ Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under
 - 2026-11-09T19:21:54Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-09T19:21:56Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T19:22:01Z · message_delivered: 2 message(s)
+- 2026-11-09T19:22:01Z · needs_input
