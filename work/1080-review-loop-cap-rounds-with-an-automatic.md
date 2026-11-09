@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,12 +11,12 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T17:03:14Z"
-check_retry_count: 1
+updated_at: "2026-11-09T18:25:50Z"
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
+incomplete_review_retries: 1
 ---
 ## Problem
 Tasks routinely take 10-15 review rounds (#1058, #1060, #1061 each took 15; #1070 is at 4+). Each round is 20-40 minutes. Rounds are dominated by narrow edge cases found one at a time, reviewer bars that drift between rounds, and housekeeping failures, not by real defects in the change. The review prompt (`src/server/review.ts`) already says to report the whole bug class in one pass and never hold an instance back, and `review.humanFlagAfterPasses` (default 5) only flags needs-input; neither stops the loop.
@@ -113,3 +113,12 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T17:02:14Z · note: shots: failed — browser capture cancelled
 - 2026-11-09T17:02:15Z · message_queued at 2026-11-09T17:02:15.656Z
 - 2026-11-09T17:03:14Z · message_delivered: 2 message(s)
+- 2026-11-09T17:15:28Z · body
+- 2026-11-09T17:20:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T17:24:03Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T17:24:03Z · status active→review
+- 2026-11-09T17:24:03Z · message_queued at 2026-11-09T17:24:03.805Z
+- 2026-11-09T17:26:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c0f61bb8c) during finalization (#0734)
+- 2026-11-09T17:27:12Z · note: review pass 3: incomplete — no verdict in report
+- 2026-11-09T17:30:29Z · note: review pass 4: incomplete — no verdict in report
+- 2026-11-09T18:25:50Z · message_overdue: still queued after 60m without being delivered
