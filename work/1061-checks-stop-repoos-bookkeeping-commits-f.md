@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -327,3 +327,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T00:35:52Z · needs_input
 - 2026-11-09T00:35:53Z · message_queued at 2026-11-09T00:35:53.871Z
 - 2026-11-09T00:36:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I can’t safely continue editing this worktree yet. `repoos landable 1061` reports that the task is in review with blocking findings, and the repo instructions prohibit editing a task worktree while it is in review. Although `repoos list` s… · stderr: Reading additional input from stdin...
+- 2026-11-09T00:36:37Z · status active→review
