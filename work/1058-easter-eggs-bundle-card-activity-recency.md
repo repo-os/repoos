@@ -528,3 +528,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T04:39:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T04:40:21Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline coding row with activity popup (target "default"): highlight .app-tooltip.show matched nothing on /work?tab=pipeline (http://127.0.0.1:41235/work?tab=pipeline&shotState=board%3Apipeline)
 - 2026-11-09T04:40:21Z · message_queued at 2026-11-09T04:40:21.720Z
+- 2026-11-09T04:40:21Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Pipeline coding row with activity popup (target "default"): highlight .app-tooltip.show matched nothing on /work?tab=pipeline (http://127.0.0.1:41235/work?tab=pipeline&shotState=board%3Apipeline)
