@@ -3,9 +3,6 @@ id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — Landing scope and conflicts remain unresolved; both required coding captures show paused cards.
 priority: p3
 area: web
 assigned_to: ai
@@ -599,3 +596,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T08:36:09Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-09T08:36:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T08:36:14Z · message_delivered: 1 message(s)
+- 2026-11-09T08:36:14Z · needs_input
