@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T10:42:25Z"
+updated_at: "2026-11-09T10:46:49Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -158,3 +158,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T10:09:21Z · message_delivered: 3 message(s)
 - 2026-11-09T10:41:50Z · note: adopted orphaned engineer pid 99014
 - 2026-11-09T10:42:25Z · message_queued at 2026-11-09T10:42:25.569Z
+- 2026-11-09T10:46:49Z · CTO nudge: held — an undelivered message is already queued
