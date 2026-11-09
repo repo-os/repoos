@@ -125,3 +125,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T19:03:54Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-09T19:22:03Z · status review→active
 - 2026-11-09T19:22:06Z · CTO nudge: held — review is running
+- 2026-11-09T19:22:10Z · note: handoff requested (cli)
