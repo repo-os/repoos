@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T19:15:04Z"
+updated_at: "2026-11-09T21:01:37Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -121,3 +121,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T18:51:40Z · body
 - 2026-11-09T19:00:14Z · note: adopted orphaned engineer pid 13123
 - 2026-11-09T19:15:04Z · body
+- 2026-11-09T21:01:37Z · status active→review
