@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — The outgoing shell shifts position and width when its fade begins.
@@ -336,3 +336,5 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T20:02:44Z · note: review pass 11: needs some work
 - 2026-11-09T20:02:44Z · needs_input
 - 2026-11-09T20:04:14Z · body: Accepted scope: no shell cross-fade (final) (added)
+- 2026-11-09T20:04:14Z · status review→active
+- 2026-11-09T20:04:14Z · note: send-back — returned to active for engineer follow-up
