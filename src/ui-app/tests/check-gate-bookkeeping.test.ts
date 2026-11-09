@@ -137,7 +137,7 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     }
   });
 
-  it("allows source commits when the final checked tree is unchanged", async () => {
+  it("rejects a source change followed by a revert during the gate", async () => {
     const { wt } = initRepo();
     const before = git(wt, ["rev-parse", "HEAD"]);
     writeFileSync(join(wt, "src", "app.ts"), "intermediate\n");
@@ -148,7 +148,12 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     git(wt, ["commit", "-qm", "revert: restore source"]);
     const after = git(wt, ["rev-parse", "HEAD"]);
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
-    expect(result).toEqual({ ok: true });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toContain('"feat: temporary source change"');
+      expect(result.reason).toContain("src/app.ts");
+      expect(result.reason).toContain('"revert: restore source"');
+    }
     expect(git(wt, ["show", `${before}:src/app.ts`])).toBe(
       git(wt, ["show", `${after}:src/app.ts`]),
     );
