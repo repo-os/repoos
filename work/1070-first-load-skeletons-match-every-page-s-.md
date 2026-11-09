@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -132,3 +132,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:17:22Z · message_queued at 2026-11-09T08:17:22.493Z
 - 2026-11-09T08:17:22Z · ↻ resuming engineer to read queued message
 - 2026-11-09T08:17:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
+- 2026-11-09T08:17:22Z · status active→review
