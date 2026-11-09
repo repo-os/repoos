@@ -2,14 +2,20 @@
 id: "1067"
 title: "Easter eggs bundle: Muse usage row messages and dashboard link, needs-input flag after body fix"
 type: chore
-status: active
+status: done
 priority: p3
 area: [web, server]
+merged_commit: 629bb67d85453e104bdc44555affd4e9f735f7a6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-08T18:52:21Z"
+updated_at: "2026-11-09T03:05:42Z"
+last_close_out_gate_ms: 129626
+last_close_out_gate_at: "2026-11-09T03:04:05.844Z"
+review_passes: 2
+review_rounds: 1
+routing_switches: 1
 last_check_failure: "repoos check at 2026-11-08T18:29:31.454Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 502 for http://127.0.0.1:36953/api/model-providers/muse/usage (http://127.0.0.1:36953/api/model-providers/muse/usage); [request] Failed to load resource: the server responded with a status of 502 (Bad Gateway) (http://127.0.0.1:36953/api/model-providers/muse/usage)"
 handoff_signal_retry_count: 2
 ---
@@ -136,4 +142,20 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T18:41:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: (empty)
 - 2026-11-08T18:41:33Z · message_delivered: 2 message(s)
 - 2026-11-08T18:52:21Z · body
-
+- 2026-11-08T18:54:06Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T18:55:14Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-08T18:55:15Z · status active→review
+- 2026-11-08T18:55:15Z · message_queued at 2026-11-08T18:55:15.214Z
+- 2026-11-08T18:56:57Z · note: review pass 1: needs some work
+- 2026-11-08T18:56:58Z · status review→active
+- 2026-11-08T18:57:00Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T18:57:46Z · message_delivered: 1 message(s)
+- 2026-11-08T19:09:45Z · body
+- 2026-11-08T19:12:37Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-08T19:12:38Z · status active→review
+- 2026-11-08T19:12:38Z · message_queued at 2026-11-08T19:12:38.515Z
+- 2026-11-08T19:14:17Z · note: review pass 2: good to go
+- 2026-11-08T20:15:59Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T03:04:05Z · close-out gate completed in 130s
+- 2026-11-09T03:04:49Z · status done→done, release:success
+- 2026-11-09T03:05:42Z · message_dropped: 1 queued message(s) discarded — task is done

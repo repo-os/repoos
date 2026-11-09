@@ -2,23 +2,25 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: done
 needs_merge: true
 priority: p1
 area: server
+merged_commit: 04b38076a831e1c0c6054706630b5b8d6022f25e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-browser-capture-runner-never-exit
-cli_override: cursor
-model_override: composer-2.5
-review_cli_override: github copilot
-review_model_override: default
+model_override: gpt-6.1-terra
+review_cli_override: codex
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T18:50:01Z"
-review_passes: 12
+updated_at: "2026-11-09T05:03:11Z"
+last_close_out_gate_ms: 562281
+last_close_out_gate_at: "2026-11-09T04:56:41.135Z"
+review_passes: 14
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 8
+dev_error_count: 9
 ---
 ## Problem
 Remote browser captures (shots / UI verification on thinkpad, bee, mini) keep stalling. Observed 2026-11-08 on #1048, #1050, #1054, #1056, #1057, #1058, #0963: the runner container writes its result, logs `[browser-capture] runner browser capture completed` (or `reported failures`), and then **stays alive for 15-25+ minutes at ~0% CPU**. The Mac side waits for the run to finish, hits "timed out waiting for the task's browser capture", fails the handoff at verify and retries, which queues another capture. Each failed handoff leaves another stale capture behind, so a task's retries queue behind its own duplicates (queue times of 25-33 minutes with free runner slots). This is the biggest source of wasted time across all tasks today.
@@ -43,6 +45,9 @@ Likely root cause: `scripts/remote-runner/capture-browser.ts` (`if (import.meta.
 
 ## Notes for AI
 Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/server/remote-validation.ts (remote capture collection, watchdog, reaper from #1049), src/server/ui-handoff-gate.ts ("timed out waiting for the task's browser capture"). Do NOT edit repoos.toml. Do not widen scope beyond capture lifecycle. Context: filed from live diagnosis on thinkpad/bee/mini containers.
+
+## Accepted scope and known limitations
+Owner decision (2026-11-09): this task lands once the core fix is sound for the Tailscale runner (the runner that matters now): captures exit, finished captures are reaped and force-collected, and a failed handoff cancels its own captures. Review rounds that only find further Docker/ssh failure-handling variants, or provider-parity gaps for non-Tailscale runners, are NOT blockers for this task; they are tracked in a follow-up task. A reviewer should report them as suggestions, not blocking bugs.
 
 ## Activity
 
@@ -307,3 +312,52 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T18:49:53Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-08T18:49:55Z · message_queued at 2026-11-08T18:49:55.797Z
 - 2026-11-08T18:50:01Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T18:55:35Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
+- 2026-11-08T19:04:43Z · cli_override, model_override
+- 2026-11-08T19:04:43Z · model_override
+- 2026-11-08T19:04:53Z · needs_input
+- 2026-11-08T19:05:04Z · message_delivered: 1 message(s)
+- 2026-11-08T19:09:02Z · review_cli_override, review_model_override
+- 2026-11-08T19:27:52Z · body
+- 2026-11-08T19:38:20Z · body
+- 2026-11-08T19:39:05Z · status active→review
+- 2026-11-08T19:40:07Z · note: review pass 14: needs some work
+- 2026-11-08T19:40:07Z · needs_input
+- 2026-11-08T19:41:47Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-08T19:41:48Z · message_queued at 2026-11-08T19:41:48.793Z
+- 2026-11-08T20:53:18Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T03:05:26Z · body: Accepted scope and known limitations (added)
+- 2026-11-09T03:05:37Z · status review→active
+- 2026-11-09T03:05:37Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T03:05:39Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T03:05:43Z · message_delivered: 1 message(s)
+- 2026-11-09T03:05:43Z · needs_input
+- 2026-11-09T03:05:44Z · message_queued at 2026-11-09T03:05:44.308Z
+- 2026-11-09T03:18:01Z · body
+- 2026-11-09T03:18:59Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T03:18:59Z · message_queued at 2026-11-09T03:18:59.360Z
+- 2026-11-09T03:18:59Z · ↻ resuming engineer to read queued message
+- 2026-11-09T03:18:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
+- 2026-11-09T03:19:00Z · status active→review
+- 2026-11-09T03:19:00Z · message_delivered: 2 message(s)
+- 2026-11-09T03:19:01Z · note: handoff requested (cli)
+- 2026-11-09T03:19:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T03:30:40Z · message_queued at 2026-11-09T03:30:40.034Z
+- 2026-11-09T03:30:40Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 1aa4a1e6 to b34fb50d) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-09T03:34:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T03:41:27Z · body
+- 2026-11-09T03:42:11Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T03:42:11Z · message_queued at 2026-11-09T03:42:11.395Z
+- 2026-11-09T03:42:11Z · ↻ resuming engineer to read queued message
+- 2026-11-09T03:42:11Z · message_delivered: 2 message(s)
+- 2026-11-09T03:44:08Z · message_queued at 2026-11-09T03:44:08.882Z
+- 2026-11-09T03:44:08Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T03:49:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T03:52:16Z · body
+- 2026-11-09T03:53:17Z · status active→review
+- 2026-11-09T03:53:17Z · message_queued at 2026-11-09T03:53:17.821Z
+- 2026-11-09T03:53:18Z · note: shots: skipped — the diff (40 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-09T03:53:56Z · note: review pass 15: good to go
+- 2026-11-09T04:56:41Z · close-out gate completed in 562s
+- 2026-11-09T04:57:58Z · status done→done, release:success
+- 2026-11-09T05:03:11Z · message_dropped: 1 queued message(s) discarded — task is done
