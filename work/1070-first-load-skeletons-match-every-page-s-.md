@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T10:59:44Z"
+updated_at: "2026-11-09T10:59:45Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -168,3 +168,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T10:58:51Z · message_delivered: 2 message(s)
 - 2026-11-09T10:58:51Z · note: handoff requested (cli)
 - 2026-11-09T10:59:44Z · message_queued at 2026-11-09T10:59:44.829Z
+- 2026-11-09T10:59:45Z · handoff failed · task-file handoff failed at check · repoos check failed: rendered-contrast — · div#setting-localChecks.reclaimGraceMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] "Wait this long after marking a live holder wedged before ter"
