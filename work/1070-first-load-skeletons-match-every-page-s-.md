@@ -356,3 +356,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T20:57:54Z · message_delivered: 5 message(s)
 - 2026-11-09T21:00:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T21:01:25Z · message_queued at 2026-11-09T21:01:25.515Z
+- 2026-11-09T21:01:25Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)
