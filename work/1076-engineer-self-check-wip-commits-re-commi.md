@@ -58,3 +58,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T13:21:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T13:31:11Z · status active→review
 - 2026-11-09T13:31:12Z · message_queued at 2026-11-09T13:31:12.026Z
+- 2026-11-09T13:31:12Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
