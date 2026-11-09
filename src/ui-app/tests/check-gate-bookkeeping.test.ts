@@ -195,19 +195,23 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     expect(result).toEqual({ ok: true });
   });
 
-  it("does not classify source commits from a side branch when the merge tree adds no source delta", async () => {
+  it("accepts a bookkeeping-only merge when the side branch source matches the check-start tree", async () => {
     const { root, wt } = initRepo();
     git(root, ["checkout", "-b", "side-old-source"]);
     writeFileSync(join(root, "src", "app.ts"), "side content\n");
     git(root, ["add", "src/app.ts"]);
     git(root, ["commit", "-qm", "feat: old side source"]);
+    writeFileSync(join(root, "work", "side-report.md"), "bookkeeping\n");
+    git(root, ["add", "work/side-report.md"]);
+    git(root, ["commit", "-qm", "docs: side bookkeeping"]);
     git(wt, ["checkout", "-b", "feat/checked-equivalent"]);
     writeFileSync(join(wt, "src", "app.ts"), "side content\n");
     git(wt, ["add", "src/app.ts"]);
     git(wt, ["commit", "-qm", "feat: equivalent source already checked"]);
     const before = git(wt, ["rev-parse", "HEAD"]);
-    git(wt, ["merge", "--no-ff", "-s", "ours", "side-old-source", "-m", "merge bookkeeping only"]);
+    git(wt, ["merge", "--no-ff", "side-old-source", "-m", "merge bookkeeping only"]);
     const after = git(wt, ["rev-parse", "HEAD"]);
+    expect(git(wt, ["diff", "--name-only", `${before}..${after}`])).toBe("work/side-report.md");
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
     expect(result).toEqual({ ok: true });
   });

@@ -68,10 +68,11 @@ async function formatNonBookkeepingCommitDrift(
       paths: ["<paths unavailable>"],
     };
   }
-  // Inspect only commits on the checked branch's first-parent timeline. A
-  // merge's resulting tree delta captures what actually landed; scanning all
-  // side-branch commits can falsely report old changes already present at
-  // check start (or absent from the merge result).
+  // Inspect only commits on the checked branch's first-parent timeline. For
+  // an ordinary commit, inspect its own delta so a source edit followed by a
+  // revert still invalidates the check. For a merge, inspect the merge result
+  // against the check-start tree: side-branch commits are not part of the
+  // checked branch's work unless their content changes that resulting tree.
   const list = await runGit(
     wt,
     ["rev-list", "--first-parent", "--reverse", `${from}..${to}`],
@@ -98,7 +99,9 @@ async function formatNonBookkeepingCommitDrift(
       const parents = await runGit(wt, ["rev-list", "--parents", "-n", "1", sha], 10_000);
       const parentShas = parents.status === 0 ? parents.stdout.trim().split(/\s+/).slice(1) : [];
       const firstParent = parentShas[0];
-      const paths = firstParent ? await pathsChangedBetweenCommits(wt, firstParent, sha) : null;
+      const mergeCommit = parentShas.length > 1;
+      const diffBase = mergeCommit ? from : firstParent;
+      const paths = diffBase ? await pathsChangedBetweenCommits(wt, diffBase, sha) : null;
       if (paths === null) {
         parts.push(
           `commit ${sha.slice(0, 8)} "${subject}" touched source paths (paths unavailable)`,
