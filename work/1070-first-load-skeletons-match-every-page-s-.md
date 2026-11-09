@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T20:01:57Z"
+updated_at: "2026-11-09T20:02:44Z"
 review_passes: 10
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -327,3 +327,4 @@ Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under
 - 2026-11-09T20:01:54Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-09T20:01:56Z · status active→review
 - 2026-11-09T20:01:57Z · message_queued at 2026-11-09T20:01:57.163Z
+- 2026-11-09T20:02:44Z · note: review pass 11: needs some work
