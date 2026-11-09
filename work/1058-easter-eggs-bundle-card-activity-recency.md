@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T05:04:09Z"
+updated_at: "2026-11-09T05:09:09Z"
 review_passes: 8
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -55,13 +55,13 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "board:activeCoding"
@@ -74,13 +74,13 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+"waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-  "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+"hover": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ],
 "state": "board:pipeline"
@@ -538,3 +538,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T05:03:50Z · body
 - 2026-11-09T05:04:09Z · message_queued at 2026-11-09T05:04:09.299Z
 - 2026-11-09T05:04:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T05:09:09Z · CTO nudge: held — an undelivered message is already queued
