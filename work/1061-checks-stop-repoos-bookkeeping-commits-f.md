@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-09T09:03:03Z"
-review_passes: 13
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -19,6 +17,8 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
+updated_at: "2026-11-09T09:04:33Z"
+review_passes: 13
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -50,7 +50,7 @@ Today none of those edits can change the result of the check (bookkeeping lives 
 Start from src/server/handoff.ts (the "worktree changed while the gate was running" refusal), the WIP checkpoint commit code, and the bookkeeping writers (activity/report/status commits, `docs(<id>): ...`). Reuse the review-lock machinery if it fits. Keep the scope to these four behaviors. Related: #0598 (protect a task worktree from edits after handoff) landed earlier; read it first and extend rather than duplicate.
 
 ## Accepted scope and known limitations
-Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING engineer during a check is out of scope and not enforceable (an agent process can always write to its worktree). The protection this task delivers is: bookkeeping commits and RepoOS-controlled operations are deferred while a check runs, new engineer turns are refused during a check, and any source change that lands during a check is DETECTED afterwards by drift detection and invalidates the result with the commit subject and paths. A reviewer must not raise 'running engineer can still write source' as a blocking bug; report it as a suggestion. The task must document this limitation in docs and in the engineering report.
+Owner decision (2026-11-09): this task lands once bookkeeping commits are deferred during a check, new engineer turns are refused during a check, and any NET source change that exists when the check ends is detected and invalidates the result (with commit subject and paths when they can be determined; an unexplained non-empty source delta must still invalidate, fail closed). Out of scope, tracked in a follow-up task: (a) blocking filesystem writes by an already-running engineer (not enforceable), (b) a source change that is committed and then reverted within the same check window (endpoint diff is empty; the transient state is not caught). A reviewer must report (a) and (b) as suggestions, not blocking bugs. Docs and the report must state both limitations.
 
 ## Activity
 
@@ -467,4 +467,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T09:02:19Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-09T09:02:44Z · message_queued at 2026-11-09T09:02:44.202Z
 - 2026-11-09T09:03:02Z · note: review pass 13: needs some work
-
+- 2026-11-09T09:04:33Z · body: Accepted scope and known limitations (added 1, removed 1)
