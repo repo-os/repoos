@@ -4,7 +4,6 @@ import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import AgentsView from "../src/views/AgentsView.vue";
 import { useConfigStore } from "../src/stores/config";
-import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 async function flush(): Promise<void> {
   await flushPromises();
@@ -32,6 +31,7 @@ describe("AgentsView agent cards", () => {
         stubs: { teleport: true, Transition: true, VoiceDictate: true },
       },
     });
+    await flush();
 
     expect(wrapper.find(".agents-page-title").text()).toBe("Agents");
     expect(wrapper.find(".agent-tabs").exists()).toBe(true);
@@ -39,8 +39,6 @@ describe("AgentsView agent cards", () => {
     expect(wrapper.findAll(".agent-tabs .tab-btn").map((tab) => tab.text())).not.toContain(
       "Custom Agents",
     );
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    await new Promise((resolve) => setTimeout(resolve, SKELETON_SHOW_DELAY_MS));
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
     vi.unstubAllGlobals();

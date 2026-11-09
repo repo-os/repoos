@@ -21,7 +21,6 @@ import { useConfigStore } from "../src/stores/config";
 import { fmtDate, fmtTime } from "../src/lib/time";
 import { DEV_NAV, NAV, navFor, navFromConfig } from "../src/nav";
 import { invalidatePageData } from "../src/composables/page-data-cache";
-import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 import { flush, json } from "./component-test-helpers";
 import type { DevFailureView, DevTargetView, Health } from "../src/types";
 
@@ -190,8 +189,6 @@ describe("Dev loading shot", () => {
     vi.stubGlobal("fetch", fetchSpy);
     const wrapper = mountView();
     await flush();
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    await new Promise((resolve) => setTimeout(resolve, SKELETON_SHOW_DELAY_MS));
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
     wrapper.unmount();

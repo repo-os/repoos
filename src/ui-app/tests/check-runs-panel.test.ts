@@ -10,7 +10,6 @@ import { nextTick } from "vue";
 import * as apiMod from "../src/api";
 import CheckRunsPanel from "../src/components/CheckRunsPanel.vue";
 import { invalidatePageDataPrefix } from "../src/composables/page-data-cache";
-import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 const api = vi.spyOn(apiMod, "api");
 
@@ -67,9 +66,8 @@ describe("CheckRunsPanel loading (#0950)", () => {
   it("shows a skeleton instead of a bare loading line on first load", async () => {
     api.mockImplementation(() => new Promise(() => {}));
     const wrapper = mount(CheckRunsPanel);
+    await flushPromises();
 
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    await new Promise((resolve) => setTimeout(resolve, SKELETON_SHOW_DELAY_MS));
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     expect(wrapper.text()).not.toContain("Loading run history");
     expect(wrapper.find(".cr-table").exists()).toBe(false);

@@ -13,7 +13,6 @@ import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
 import ModelProvidersPanel from "../src/components/ModelProvidersPanel.vue";
 import { useConfigStore } from "../src/stores/config";
 import { invalidatePageData, invalidatePageDataPrefix } from "../src/composables/page-data-cache";
-import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 const json = (body: unknown): Response =>
   ({
@@ -122,8 +121,6 @@ describe("AgentsView detected-tab loading (#0950)", () => {
 
     expect(wrapper.text()).not.toContain("Probing PATH");
     expect(wrapper.find(".detect-loading").exists()).toBe(false);
-    expect(detectedPanel(wrapper).find(".page-skeleton").exists()).toBe(false);
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(detectedPanel(wrapper).find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
   });
@@ -234,8 +231,6 @@ describe("Agents page panels share the skeleton (#0950)", () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("Loading reminders");
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
     vi.unstubAllGlobals();
@@ -258,8 +253,6 @@ describe("Agents page panels share the skeleton (#0950)", () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("Loading schedules");
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
     vi.unstubAllGlobals();
@@ -277,8 +270,6 @@ describe("Agents page panels share the skeleton (#0950)", () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("Loading providers");
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
     vi.unstubAllGlobals();

@@ -10,7 +10,6 @@ import { nextTick } from "vue";
 import * as apiMod from "../src/api";
 import ReleasesView from "../src/views/ReleasesView.vue";
 import { invalidatePageData } from "../src/composables/page-data-cache";
-import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 const api = vi.spyOn(apiMod, "api");
 
@@ -359,8 +358,6 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     const wrapper = await mountView();
 
     expect(wrapper.find(".rel-dist").exists()).toBe(true);
-    expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(false);
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     // Card-shaped skeleton, not a lone spinner or a text line.
     expect(wrapper.find(".rel-dist .page-skeleton").exists()).toBe(true);
     expect(wrapper.find(".rel-dist-refreshing").exists()).toBe(false);

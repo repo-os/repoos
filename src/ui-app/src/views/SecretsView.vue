@@ -27,7 +27,11 @@ import { useRepoStore } from "../stores/repo";
 import { useConfigStore } from "../stores/config";
 import { readShotPreviewFixtureFromLocation } from "../lib/shot-preview-fixtures";
 import PageSkeleton from "../components/PageSkeleton.vue";
-import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
+import {
+  getCachedPageData,
+  invalidatePageData,
+  refreshPageData,
+} from "../composables/page-data-cache";
 
 type Environment = {
   id: string;
@@ -44,11 +48,18 @@ type KeyRow = {
   restartNeeded: boolean;
 };
 type Snapshot = { environment: string; version: string; keys: KeyRow[] };
-const environments = ref<Environment[]>([]);
+const cachedEnvironments = getCachedPageData<{ environments: Environment[] }>(
+  "project-environments",
+);
+const environmentsLoaded = ref(cachedEnvironments !== undefined);
+const environments = ref<Environment[]>(cachedEnvironments?.environments ?? []);
 const selected = ref("");
 const snapshot = ref<Snapshot | null>(null);
-const loading = ref(true);
+const loading = ref(!environmentsLoaded.value);
 const error = ref("");
+const showSecretsSkeleton = computed(
+  () => (loading.value || !!selected.value) && !snapshot.value && !error.value,
+);
 const snapshotRefreshError = ref("");
 const query = ref("");
 const createOpen = ref(false);
@@ -238,13 +249,14 @@ async function openEnvInEditor(): Promise<void> {
 // server cannot open an editor from, so config is faked rather than read.
 
 async function loadEnvironments(): Promise<void> {
-  loading.value = true;
+  loading.value = !environmentsLoaded.value;
   error.value = "";
   try {
     await refreshPageData(
       "project-environments",
       () => api<{ environments: Environment[] }>("/api/project-environments"),
       (data) => {
+        environmentsLoaded.value = true;
         environments.value = data.environments;
         loading.value = false;
         if (!selected.value || !data.environments.some((env) => env.id === selected.value))
@@ -255,6 +267,7 @@ async function loadEnvironments(): Promise<void> {
         void loadSnapshot();
       },
       (e) => {
+        environmentsLoaded.value = true;
         if (environments.value.length) snapshotRefreshError.value = safeError(e);
         else error.value = safeError(e);
       },
@@ -525,7 +538,7 @@ onBeforeUnmount(() => {
         <Button variant="accent" @click="createOpen = true">Create environment</Button>
       </section>
       <PageSkeleton
-        :loading="(loading || selected) && !snapshot && !error"
+        :loading="showSecretsSkeleton"
         kind="table"
         :count="snapshot?.keys.length ?? 0"
       />
