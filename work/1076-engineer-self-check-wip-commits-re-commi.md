@@ -3,6 +3,9 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the handoff engineering-report commit (`handoff.ts:1134`) is still a bare commit that can sweep a sibling file in after…"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -143,3 +146,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T21:01:38Z · message_queued at 2026-11-09T21:01:38.414Z
 - 2026-11-09T21:01:38Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-09T21:03:57Z · note: review pass 3: needs some work
+- 2026-11-09T21:03:57Z · needs_input
