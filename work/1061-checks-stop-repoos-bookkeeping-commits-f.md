@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T00:35:53Z"
+updated_at: "2026-11-09T00:36:37Z"
 review_passes: 8
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -326,3 +326,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T00:35:52Z · message_delivered: 1 message(s)
 - 2026-11-09T00:35:52Z · needs_input
 - 2026-11-09T00:35:53Z · message_queued at 2026-11-09T00:35:53.871Z
+- 2026-11-09T00:36:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I can’t safely continue editing this worktree yet. `repoos landable 1061` reports that the task is in review with blocking findings, and the repo instructions prohibit editing a task worktree while it is in review. Although `repoos list` s… · stderr: Reading additional input from stdin...
