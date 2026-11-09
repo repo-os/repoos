@@ -20,18 +20,13 @@ const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
 describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
     expect(appVue).not.toMatch(/v-if="repo\.loading"[^>]*class="spin"/);
-    expect(appVue).toMatch(
-      /v-if="repo\.loading \|\| showRepoSkeleton \|\| forcedLoadingShot"\s+class="main-route page-loading"/,
+    expect(appVue).toMatch(/v-if="showLoadingShell"\s+class="main-route page-loading"/);
+    expect(appVue).toContain(
+      "const showLoadingShell = computed(() => repo.loading || showRepoSkeleton.value);",
     );
-    expect(appVue).toMatch(
-      /:aria-busy="showRepoSkeleton \|\| forcedLoadingShot \? 'true' : undefined"/,
-    );
-    expect(appVue).toMatch(
-      /<PageSkeleton v-if="showRepoSkeleton \|\| forcedLoadingShot" :kind="loadingKind"\s*\/>/,
-    );
-    expect(appVue).toMatch(
-      /<RouterView\s+v-if="!repo\.loading && !showRepoSkeleton && !forcedLoadingShot"\s+class="main-route"\s*\/>/,
-    );
+    expect(appVue).toMatch(/:aria-busy="showRepoSkeleton \? 'true' : undefined"/);
+    expect(appVue).toMatch(/<PageSkeleton v-if="showRepoSkeleton" :kind="loadingKind"\s*\/>/);
+    expect(appVue).toMatch(/<RouterView v-else class="main-route"\s*\/>/);
   });
 
   it("picks a board for /work and rows for list pages", () => {
@@ -103,13 +98,11 @@ describe("repo loading skeleton", () => {
     expect(skeleton).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/);
   });
 
-  it("registers deterministic loading fixtures for the two corrected pages", () => {
+  it("does not force loading-state shots through the production app shell", () => {
     const fixtures = readFileSync(resolve(__dirname, "../../core/shot-fixtures.ts"), "utf8");
-    const app = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
-    expect(fixtures).toContain('"loading:dashboard"');
-    expect(fixtures).toContain('"loading:stories"');
-    expect(app).toContain('route.query.shotState === "loading:dashboard"');
-    expect(app).toContain('route.query.shotState === "loading:stories"');
+    expect(fixtures).not.toContain('"loading:dashboard"');
+    expect(fixtures).not.toContain('"loading:stories"');
+    expect(appVue).not.toContain("forcedLoadingShot");
   });
 
   it("gives every standard page a title to keep above its skeleton", () => {
