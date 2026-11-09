@@ -157,17 +157,10 @@ const matrixCount = (): number => props.matrixCount ?? DEPLOYMENT_BRANCH_PLACEHO
   gap: 12px;
   width: 100%;
 }
-.page-skeleton-enter-active,
-.page-skeleton-leave-active {
+.page-skeleton-enter-active {
   transition: opacity 140ms ease;
 }
-.page-skeleton-leave-active {
-  position: absolute;
-  inset-inline: 0;
-  pointer-events: none;
-}
-.page-skeleton-enter-from,
-.page-skeleton-leave-to {
+.page-skeleton-enter-from {
   opacity: 0;
 }
 .page-skeleton--reduced-motion,
@@ -279,8 +272,7 @@ const matrixCount = (): number => props.matrixCount ?? DEPLOYMENT_BRANCH_PLACEHO
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .page-skeleton-enter-active,
-  .page-skeleton-leave-active {
+  .page-skeleton-enter-active {
     transition: none;
   }
   .page-skeleton__item i {

@@ -21,7 +21,6 @@ import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../src/lib/wo
 import { GENERAL_FIELD_SECTIONS } from "../src/settings-location";
 
 const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
-const appCss = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
 const LoadingHarness = defineComponent({
   components: { PageSkeleton },
   props: { loading: { type: Boolean, required: true } },
@@ -32,19 +31,6 @@ const ImmediateSkeletonHarness = defineComponent({
   props: { loading: { type: Boolean, required: true } },
   template: '<PageSkeleton kind="rows" :loading="loading" />',
 });
-const LoadingShellTransitionHarness = defineComponent({
-  props: { loading: { type: Boolean, required: true } },
-  setup() {
-    const finishLeave = ref<(() => void) | null>(null);
-    const holdLeave = (_element: Element, done: () => void) => {
-      finishLeave.value = done;
-    };
-    return { finishLeave, holdLeave };
-  },
-  template:
-    '<Transition name="page-loading-shell" :css="false" @leave="holdLeave"><div v-if="loading" class="page-loading">Loading</div><div v-else class="page-content">Content</div></Transition>',
-});
-
 describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
     expect(appVue).not.toMatch(/v-if="repo\.loading"[^>]*class="spin"/);
@@ -56,35 +42,8 @@ describe("repo loading skeleton", () => {
     expect(appVue).toContain('@visibility-change="showRepoSkeleton = $event"');
     expect(appVue).toMatch(/:loading="repo\.loading"\s+defer/);
     expect(appVue).not.toContain("skeletonDelay");
-    expect(appVue).toContain('<Transition name="page-loading-shell">');
+    expect(appVue).not.toContain("page-loading-shell");
     expect(appVue).toMatch(/<RouterView v-else class="main-route"\s*\/>/);
-  });
-
-  it("keeps the loading shell in its leave transition until content enters", async () => {
-    const wrapper = mount(LoadingShellTransitionHarness, {
-      props: { loading: true },
-      attachTo: document.body,
-      global: { stubs: { transition: false } },
-    });
-    await wrapper.setProps({ loading: false });
-    const leavingShell = document.querySelector(".page-loading");
-    expect(leavingShell).not.toBeNull();
-    expect(wrapper.vm.finishLeave).toBeTypeOf("function");
-    expect(wrapper.find(".page-content").exists()).toBe(true);
-    // The incoming route owns the pane's flex height. The outgoing loading
-    // shell overlays it during the fade instead of sharing that flex space.
-    expect(appCss).toMatch(
-      /\.page-loading-shell-leave-active\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*22px 26px 0;[^}]*flex:\s*none;[^}]*pointer-events:\s*none;[^}]*z-index:\s*0;/s,
-    );
-    expect(appCss).toMatch(/\.main\s*\{[^}]*position:\s*relative;/s);
-    expect(appCss).toMatch(/\.main\s*\{[^}]*padding:\s*22px 26px 0;/s);
-    expect(appCss).toMatch(
-      /\.main\s*>\s*\.main-route:not\(\.page-loading\)\s*\{[^}]*z-index:\s*1;/s,
-    );
-    (wrapper.vm.finishLeave as () => void)();
-    await wrapper.vm.$nextTick();
-    expect(document.querySelector(".page-loading")).toBeNull();
-    wrapper.unmount();
   });
 
   it("picks a board for /work and rows for list pages", () => {
@@ -276,17 +235,6 @@ describe("repo loading skeleton", () => {
       12,
     );
     planSized.unmount();
-    vi.useRealTimers();
-  });
-
-  it("takes leaving view skeletons out of flow while they fade", async () => {
-    vi.useFakeTimers();
-    const wrapper = mount(ImmediateSkeletonHarness, { props: { loading: true } });
-    await wrapper.setProps({ loading: false });
-    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
-    const source = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
-    expect(source).toMatch(/\.page-skeleton-leave-active\s*\{\s*position:\s*absolute/);
-    wrapper.unmount();
     vi.useRealTimers();
   });
 
