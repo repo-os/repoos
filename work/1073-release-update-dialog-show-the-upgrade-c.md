@@ -3,9 +3,6 @@ id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1073 --fresh`."
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T18:06:51Z"
+updated_at: "2026-11-09T18:16:51Z"
 last_check_failure: "repoos check at 2026-11-09T16:54:34.079Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — the page at / did not apply the fixture (is this the app target?) (http://127.0.0.1:53313/?shotState=release%3AupdateAvailable)"
 handoff_signal_retry_count: 2
 dev_error_count: 11
@@ -163,3 +160,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T18:05:21Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-09T18:06:51Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
 - 2026-11-09T18:06:51Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-09T18:16:51Z · watchdog: restarting engineer after 10m with no live process
