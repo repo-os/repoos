@@ -80,7 +80,6 @@ async function formatNonBookkeepingCommitDrift(
     };
   }
   const netAffecting = netPaths.filter((path) => !isCheckGateBookkeepingPath(path, config));
-  if (netAffecting.length === 0) return { kind: "clean" };
 
   // Walk commits only to explain the already-established source delta.
   // Ignore commits that were part of the checked tree's history.
@@ -97,7 +96,8 @@ async function formatNonBookkeepingCommitDrift(
       paths: [],
     };
   }
-  const allAffecting = new Set<string>(netAffecting);
+  const allAffecting = new Set<string>();
+  let explainedSourceChange = false;
   {
     const shas = list.stdout
       .split("\n")
@@ -122,20 +122,40 @@ async function formatNonBookkeepingCommitDrift(
       const parentShas = parents.status === 0 ? parents.stdout.trim().split(/\s+/).slice(1) : [];
       const firstParent = parentShas[0];
       const mergeCommit = parentShas.length > 1;
+      // A merge can make the first-parent walk include commits from before
+      // the gate began. Those commits are not drift unless the merge result
+      // itself changes source relative to its first parent.
+      if (!mergeCommit && firstParent) {
+        const parentInCheckedTree = await runGit(
+          wt,
+          ["merge-base", "--is-ancestor", from, firstParent],
+          10_000,
+        );
+        if (parentInCheckedTree.status !== 0) continue;
+      }
       const diffBase = mergeCommit ? from : firstParent;
       const paths = diffBase ? await pathsChangedBetweenCommits(wt, diffBase, sha) : null;
       if (paths === null) {
         parts.push(
-          `commit ${sha.slice(0, 8)} "${subject}" touched source paths (paths unavailable)`,
+          `commit ${sha.slice(0, 8)} "${subject}" changed paths could not be computed`,
         );
         allAffecting.add("<paths unavailable>");
+        explainedSourceChange = true;
         continue;
       }
-      const affecting = paths.filter((p) => netAffecting.includes(p));
+      const affecting = paths.filter((p) => !isCheckGateBookkeepingPath(p, config));
       if (affecting.length === 0) continue;
+      explainedSourceChange = true;
       affecting.forEach((p) => allAffecting.add(p));
       parts.push(`commit "${subject}" touched ${affecting.join(", ")}`);
     }
+  }
+  if (!explainedSourceChange && netAffecting.length > 0) {
+    return {
+      kind: "changed",
+      reason: `${parts[0]}; source diff could not be associated with an inspected commit (source change; paths unavailable)`,
+      paths: [...netAffecting],
+    };
   }
   return parts.length === 1
     ? { kind: "clean" }
