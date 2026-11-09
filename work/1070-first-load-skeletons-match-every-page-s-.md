@@ -375,3 +375,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T21:34:58Z · body
 - 2026-11-09T21:40:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T21:43:51Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T21:43:51Z · message_queued at 2026-11-09T21:43:51.266Z
