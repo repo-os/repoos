@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T13:33:42Z"
+updated_at: "2026-11-09T13:35:49Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1
@@ -248,3 +248,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T13:31:47Z · note: handoff requested (cli)
 - 2026-11-09T13:31:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T13:33:42Z · message_delivered: 2 message(s)
+- 2026-11-09T13:35:49Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:42667/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:42667/stories)
