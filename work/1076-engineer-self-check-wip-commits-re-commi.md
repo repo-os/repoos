@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed."
@@ -14,7 +14,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T14:40:15Z"
+updated_at: "2026-11-09T14:40:18Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -83,4 +83,3 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T14:34:32Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-09T14:34:33Z · message_delivered: 1 message(s)
 - 2026-11-09T14:40:15Z · agent exited with an error (opencode) · ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.
-- 2026-11-09T14:40:15Z · status active→review
