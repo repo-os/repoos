@@ -3,6 +3,9 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (1 in 30m): a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1076 --fresh`."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +14,9 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T09:11:35Z"
+updated_at: "2026-11-09T09:15:28Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-09T09:15:28.830Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
@@ -37,3 +42,5 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T09:08:11Z · status inbox→ready
 - 2026-11-09T09:08:12Z · status ready→active, branch
 - 2026-11-09T09:11:35Z · model_override
+- 2026-11-09T09:15:28Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T09:15:28Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + opencode-go/deepseek-v4.1-flash) is pinned, so RepoOS did not replace it (1/3 crashes in 30m)
