@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -410,4 +410,3 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T23:38:54Z · message_queued at 2026-11-09T23:38:54.816Z
 - 2026-11-09T23:38:55Z · ↻ resuming engineer to read queued message
 - 2026-11-09T23:38:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin... 2026-11-09T22:56:58.409223Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses 2026-11-09T22:56:58.994318Z…
-- 2026-11-09T23:38:56Z · status active→review
