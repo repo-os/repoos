@@ -11,8 +11,8 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T19:00:23Z"
-review_passes: 9
+updated_at: "2026-11-09T19:22:03Z"
+review_passes: 10
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -301,3 +301,17 @@ Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under
 - 2026-11-09T18:45:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T19:00:14Z · note: adopted orphaned engineer pid 3069
 - 2026-11-09T19:00:23Z · body
+- 2026-11-09T19:00:57Z · watchdog: check wait escalated · waiting: waiting for a local check slot (3 ahead, position 4); waiting behind #1073 check (pid 4626, alive), #1073 check (pid 63507, alive), #1076 check (pid 56708, alive); slot holder 56708 is dead for 32s · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-09T19:01:57Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-09T19:05:39Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T19:06:43Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T19:06:46Z · status active→review
+- 2026-11-09T19:06:47Z · message_queued at 2026-11-09T19:06:47.497Z
+- 2026-11-09T19:07:51Z · note: review pass 10: needs some work
+- 2026-11-09T19:07:52Z · needs_input
+- 2026-11-09T19:21:54Z · status review→active
+- 2026-11-09T19:21:54Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T19:21:56Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T19:22:01Z · message_delivered: 2 message(s)
+- 2026-11-09T19:22:01Z · needs_input
+- 2026-11-09T19:22:03Z · message_queued at 2026-11-09T19:22:03.164Z
