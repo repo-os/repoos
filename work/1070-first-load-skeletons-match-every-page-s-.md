@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -206,4 +206,4 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 - 2026-11-09T12:32:44Z · message_delivered: 2 message(s)
 - 2026-11-09T12:32:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T12:34:57Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-09T12:34:58Z · engineer stopped by request
+- 2026-11-09T12:34:58Z · status active→review
