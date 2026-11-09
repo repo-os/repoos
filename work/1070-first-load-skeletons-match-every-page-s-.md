@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -45,3 +46,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T03:54:56Z · status inbox→ready
 - 2026-11-09T03:56:06Z · status ready→active, branch
 - 2026-11-09T04:26:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The layout fixes are in [PageSkeleton.vue](/Users/nick/code/nick/repoos-worktrees/feat/first-load-skeletons-match-every-page-s-/src/ui-app/src/components/PageSkeleton.vue): Mission Control now has one full-width block, and Stories one repr… · stderr: Reading additional input from stdin... 2026-11-09T04:05:17.989467Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: Network is unreachable (os error 51), url: wss://chatgpt.com/backend-api/codex/responses 2026-11-09T04:05:18.046309Z ERROR codex_models_manager::manager: failed t…
+
