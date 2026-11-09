@@ -125,3 +125,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T19:46:07Z · body
 - 2026-11-09T19:51:44Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-09T19:56:45Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T19:56:45Z · note: handoff requested (cli)
