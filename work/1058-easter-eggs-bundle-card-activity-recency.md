@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T06:40:56Z"
+updated_at: "2026-11-09T06:56:08Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/debugger-integration.test.ts > debugger agent integration > does not re-broadcast a turn the panel already drew optimistically (#0443) on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: abab38560543ef8b2c776e875315f491fc5a3e6b
 review_passes: 9
@@ -564,3 +564,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T06:31:44Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/debugger-integration.test.ts > debugger agent integration > does not re-broadcast a turn the panel already drew optimistically (#0443) on bee — fix it in the feature branch and re-run the gate
 - 2026-11-09T06:34:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T06:40:56Z · body
+- 2026-11-09T06:56:08Z · message_queued at 2026-11-09T06:56:08.462Z
