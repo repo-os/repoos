@@ -84,9 +84,7 @@ export type CheckGateAcquireResult =
   | { ok: false; reason: string };
 
 let checkGateFlushInProgress = false;
-let activeReplayCommit:
-  | { commitRoot: string; message: string; absPaths: string[] }
-  | undefined;
+let activeReplayCommit: { commitRoot: string; message: string; absPaths: string[] } | undefined;
 
 export function isCheckGateFlushInProgress(): boolean {
   return checkGateFlushInProgress;
