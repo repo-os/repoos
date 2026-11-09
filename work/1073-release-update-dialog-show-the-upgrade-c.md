@@ -175,3 +175,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T20:20:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T20:21:35Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-09T20:21:38Z · status active→review
+- 2026-11-09T20:21:38Z · message_queued at 2026-11-09T20:21:38.431Z
