@@ -1439,6 +1439,20 @@
   min-height: 0;
   height: auto;
 }
+.page-loading-shell-enter-active,
+.page-loading-shell-leave-active {
+  transition: opacity 140ms ease;
+}
+.page-loading-shell-enter-from,
+.page-loading-shell-leave-to {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-loading-shell-enter-active,
+  .page-loading-shell-leave-active {
+    transition: none;
+  }
+}
 .page-header-actions {
   display: flex;
   align-items: center;
