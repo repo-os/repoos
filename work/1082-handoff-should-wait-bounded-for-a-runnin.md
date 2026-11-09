@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
@@ -35,3 +36,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-09T23:28:14Z · status inbox→ready
 - 2026-11-09T23:28:17Z · status ready→active, branch
 - 2026-11-09T23:33:32Z · message_queued at 2026-11-09T23:33:32.955Z
+
