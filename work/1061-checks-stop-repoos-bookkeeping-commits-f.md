@@ -368,3 +368,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T02:00:03Z · message_queued at 2026-11-09T02:00:03.532Z
 - 2026-11-09T02:00:03Z · ↻ resuming engineer to read queued message
 - 2026-11-09T02:00:04Z · status active→review
+- 2026-11-09T02:00:04Z · message_delivered: 2 message(s)
