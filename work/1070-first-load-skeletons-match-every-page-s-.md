@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)"
+last_handoff_failure_sha: 8af881db99489688c2299b217eabe93b92349fe6
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -357,3 +359,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T21:00:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T21:01:25Z · message_queued at 2026-11-09T21:01:25.515Z
 - 2026-11-09T21:01:25Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — [queue] waiting for a Playwright slot — position 2 (1 ahead)
+
