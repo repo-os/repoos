@@ -2480,9 +2480,10 @@ export async function dirtyFiles(root: string, opts: DirtyFilesOptions = {}): Pr
 export async function commitDirtyFiles(root: string, message: string): Promise<string[]> {
   const files = await dirtyFiles(root);
   if (files.length === 0) return [];
-  // `add -A` then a pathspec-scoped commit of exactly these files: the index is
-  // cleared first so a path that was already staged by someone else cannot be
-  // swept into this commit under our message (#0353, #1076).
+  // Stage and commit exactly the dirty paths: the pathspec on BOTH commands
+  // means a path that was already staged by someone else (#0353) — or another
+  // task's bookkeeping a board write left staged (#1076) — cannot be swept into
+  // this commit under our message.
   const add = await runGit(root, ["add", "-A", "--", ...files], 15_000);
   if (add.status !== 0) return [];
   const commit = await runGit(root, ["commit", "-m", message, "--", ...files], 15_000);

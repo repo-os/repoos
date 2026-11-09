@@ -15,6 +15,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ensureWorktree, restoreForeignTaskBookkeepingFromMain } from "../../core/git.js";
 import { evaluateTaskScopeCheck } from "../../core/landable.js";
+import { parseTask } from "../../core/task.js";
+import type { RepoOSConfig, Task } from "../../core/types.js";
+import { seedEngineeringReport } from "./engineering-report-fixture.js";
 import { rmFixture } from "./helpers";
 
 const BRANCH = "feat/handoff-foreign-1076";
@@ -230,4 +233,134 @@ describe("restoreForeignTaskBookkeepingFromMain (#1076)", () => {
       fx.clean();
     }
   });
+});
+
+/**
+ * Integration: the restore is wired into the ONE handoff finalization every
+ * route into `review` runs (`finalizeReviewHandoff`), not just callable by
+ * itself. A branch that already carries a sibling's bookkeeping is healed at
+ * handoff and still reaches `review` — the engineer is never bounced to
+ * "restore unrelated bookkeeping" by hand (#1076).
+ */
+describe("finalizeReviewHandoff heals foreign bookkeeping (#1076)", () => {
+  interface HandoffFixture {
+    root: string;
+    wt: string;
+    config: RepoOSConfig;
+    task: Task;
+    clean: () => void;
+  }
+
+  function handoffFixture(): HandoffFixture {
+    const root = mkdtempSync(join(tmpdir(), "repoos-handoff-foreign-final-"));
+    const workDir = join(root, "work");
+    const branch = "feat/handoff-foreign-final-1076";
+    const wt = join(`${root}-worktrees`, branch);
+    mkdirSync(workDir, { recursive: true });
+    mkdirSync(join(root, "work", "reports", TASK_ID), { recursive: true });
+    mkdirSync(join(root, "work", "reports", "2000"), { recursive: true });
+    const taskText = `---
+id: "1076"
+title: Heal foreign bookkeeping at handoff
+type: bug
+status: active
+priority: p2
+area: server
+assigned_to: ai
+branch: ${branch}
+---
+## Problem
+
+A sibling task's bookkeeping is committed on this branch by an earlier WIP
+checkpoint, and handoff must restore main's copy instead of failing landing.
+`;
+    const taskPath = join(workDir, "1076-handoff-foreign.md");
+    writeFileSync(taskPath, taskText);
+    writeFileSync(join(root, "work", "2000-other.md"), '---\nid: "2000"\n---\nMAIN copy\n');
+    writeFileSync(join(root, "work", "reports", "2000", "review-1.md"), "main report\n");
+    writeFileSync(join(root, "source.txt"), "base\n");
+
+    git(root, ["init", "-q", "-b", "main"]);
+    git(root, ["config", "user.email", "t@example.com"]);
+    git(root, ["config", "user.name", "Test"]);
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-q", "-m", "init"]);
+    git(root, ["worktree", "add", "-q", "-b", branch, wt]);
+
+    // A provisioned worktree carries its own task-file copy; the finalization
+    // reads THAT one.
+    writeFileSync(join(wt, "work", "1076-handoff-foreign.md"), taskText);
+    // The engineer's real work, plus a sibling's bookkeeping the branch must
+    // not carry — the exact drift a WIP checkpoint commits.
+    writeFileSync(join(wt, "source.txt"), "implemented\n");
+    mkdirSync(join(wt, "work", "reports", "2000"), { recursive: true });
+    writeFileSync(join(wt, "work", "2000-other.md"), '---\nid: "2000"\n---\nSTALE DRIFT\n');
+    writeFileSync(join(wt, "work", "reports", "2000", "review-1.md"), "stale report\n");
+    git(wt, ["add", "-A"]);
+    git(wt, ["commit", "-q", "-m", "feat(1076): work + stray sibling bookkeeping"]);
+
+    seedEngineeringReport(wt, TASK_ID);
+    const config: RepoOSConfig = {
+      root,
+      workDir: "work",
+      docsDir: "docs",
+      skillsDir: "skills",
+      taskExtensions: [".md"],
+      defaultStatus: "inbox",
+      defaultAssignee: "unassigned",
+      cacheDir: ".repoos",
+      pressureGuard: { enabled: false },
+      agents: [{ name: "engineer", cli: "qwen", model: "test", enabled: true }],
+    } as RepoOSConfig;
+    const task = parseTask({
+      content: readFileSync(taskPath, "utf8"),
+      absPath: taskPath,
+      root,
+      defaultStatus: config.defaultStatus,
+      defaultAssignee: config.defaultAssignee,
+    });
+    return { root, wt, config, task, clean: () => rmFixture(root) };
+  }
+
+  it("restores the sibling file and still lands the task in review", async () => {
+    const fx = handoffFixture();
+    try {
+      const { finalizeReviewHandoff } = await import("../../server/handoff.js");
+      const logs: { id: string; level: string; message: string }[] = [];
+      const result = await finalizeReviewHandoff(fx.config, fx.task, {
+        origin: "ui-review",
+        skipChecks: true,
+        actor: "test@repoos.org",
+        onTaskLog: (id, level, message) => logs.push({ id, level, message }),
+      });
+
+      expect(result.ok).toBe(true);
+      // Main's copy of the sibling's file is back on the branch; the diff
+      // against main no longer names it, so the landing preflight passes.
+      const changed = git(fx.wt, ["diff", "--name-only", "main...HEAD"])
+        .split("\n")
+        .filter(Boolean);
+      expect(changed).not.toContain("work/2000-other.md");
+      expect(changed).not.toContain("work/reports/2000/review-1.md");
+      expect(changed).toContain("source.txt");
+      expect(evaluateTaskScopeCheck({
+        changedPaths: changed,
+        ownTaskFile: "work/1076-handoff-foreign.md",
+        taskId: TASK_ID,
+        bookkeeping: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
+      }).status).toBe("pass");
+
+      // The handoff reported the restore in plain English instead of failing.
+      expect(
+        logs.some(
+          (l) =>
+            l.level === "info" &&
+            l.message.includes("restored main's copy of another task's bookkeeping"),
+        ),
+      ).toBe(true);
+      expect(git(fx.wt, ["status", "--porcelain"])).toBe("");
+    } finally {
+      fx.clean();
+    }
+  }, 60_000);
 });
