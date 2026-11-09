@@ -108,7 +108,11 @@ async function formatNonBookkeepingCommitDrift(
       // its first-parent chain. In that case rev-list --first-parent can
       // include commits that were already present in the checked tree. They
       // cannot represent drift that happened during this gate.
-      const alreadyInCheckedTree = await runGit(wt, ["merge-base", "--is-ancestor", sha, from], 10_000);
+      const alreadyInCheckedTree = await runGit(
+        wt,
+        ["merge-base", "--is-ancestor", sha, from],
+        10_000,
+      );
       if (alreadyInCheckedTree.status === 0) continue;
 
       const subj = await runGit(wt, ["show", "-s", "--format=%s", sha], 10_000);
