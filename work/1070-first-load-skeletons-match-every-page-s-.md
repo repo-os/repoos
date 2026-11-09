@@ -107,3 +107,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T06:46:16Z · message_queued at 2026-11-09T06:46:16.907Z
 - 2026-11-09T06:46:19Z · message_delivered: 1 message(s)
 - 2026-11-09T06:56:04Z · body: Accepted scope: no loading-state screenshots (added)
+- 2026-11-09T06:56:04Z · message_queued at 2026-11-09T06:56:04.962Z
