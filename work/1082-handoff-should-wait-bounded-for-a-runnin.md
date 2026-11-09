@@ -2,16 +2,16 @@
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
-status: ready
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-09T23:28:14Z"
+updated_at: "2026-11-09T23:28:17Z"
 ---
 ## Problem
 Since #1061 landed (check-gate lock), a handoff whose commit step runs while the engineer's own `repoos check` still holds the lock fails immediately with "git add failed: A check is running; wait for it to finish." (seen on #1073 and #1076 on 2026-11-10 around 03:00). The handoff does not wait or retry, so the task looks stuck until an engineer notices and re-requests handoff. Several tasks hit this at the same time and sat for 40+ minutes.
@@ -33,3 +33,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-09T20:11:19Z · created · njachowski@gmail.com
 - 2026-11-09T23:28:11Z · cli_override, model_override
 - 2026-11-09T23:28:14Z · status inbox→ready
+- 2026-11-09T23:28:17Z · status ready→active, branch
