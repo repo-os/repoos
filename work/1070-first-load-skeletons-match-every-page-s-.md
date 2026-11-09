@@ -163,3 +163,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T10:57:15Z · body
 - 2026-11-09T10:58:50Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-09T10:58:50Z · message_queued at 2026-11-09T10:58:50.787Z
+- 2026-11-09T10:58:50Z · ↻ resuming engineer to read queued message
