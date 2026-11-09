@@ -332,3 +332,4 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-09T03:05:44Z · message_queued at 2026-11-09T03:05:44.308Z
 - 2026-11-09T03:18:01Z · body
 - 2026-11-09T03:18:59Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T03:18:59Z · message_queued at 2026-11-09T03:18:59.360Z
