@@ -3,9 +3,6 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Gated checks fail in repos with submodules, and protection can chmod files outside the worktree."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -554,3 +551,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:36:33Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-09T12:36:36Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T12:36:38Z · message_delivered: 1 message(s)
+- 2026-11-09T12:36:38Z · needs_input
