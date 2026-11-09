@@ -103,7 +103,11 @@ export async function commitWipCheckpointForRemoteGate(
   const foreign = foreignTaskBookkeepingPaths(dirty, { ...workFileFilter(config), taskId });
   const toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL && !foreign.includes(p));
   if (foreign.length > 0) {
-    const unstage = await runGit(worktreePath, ["reset", "--quiet", "HEAD", "--", ...foreign], 30_000);
+    const unstage = await runGit(
+      worktreePath,
+      ["reset", "--quiet", "HEAD", "--", ...foreign],
+      30_000,
+    );
     if (unstage.status !== 0) {
       return `could not unstage another task's bookkeeping (${foreign.slice(0, 5).join(", ")}) before the remote self-check`;
     }

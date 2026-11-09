@@ -116,11 +116,10 @@ describe("commitWipCheckpointForRemoteGate (#0695)", () => {
     writeFileSync(join(root, "src.txt"), "edit\n");
     writeFileSync(join(root, "work", "9999-other.md"), '---\nid: "9999"\n---\nchanged\n');
     writeFileSync(join(root, "work", "reports", "9999", "review-1.md"), "r2\n");
-    execFileSync(
-      "git",
-      ["add", "--", "work/9999-other.md", "work/reports/9999/review-1.md"],
-      { cwd: root, stdio: "ignore" },
-    );
+    execFileSync("git", ["add", "--", "work/9999-other.md", "work/reports/9999/review-1.md"], {
+      cwd: root,
+      stdio: "ignore",
+    });
 
     const err = await commitWipCheckpointForRemoteGate(root, relConfig(root), "1076");
     expect(err).toBeNull();
