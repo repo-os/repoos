@@ -1,0 +1,110 @@
+---
+updated_at: "2026-11-09T07:16:06Z"
+review_passes: 2
+id: "1070"
+title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
+type: bug
+status: review
+priority: p3
+area: web
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: feat/first-load-skeletons-match-every-page-s-
+created_at: "2026-11-09T03:37:29Z"
+last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
+review_rounds: 1
+routing_switches: 1
+handoff_signal_retry_count: 2
+engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+---
+## Problem
+First-load skeletons are jarring and in places wrong. On Mission Control (`/`) the `dashboard` skeleton draws six tall cards in an `auto-fit` grid (`PageSkeleton.vue`), so on a wide window they wrap into one row of four plus a stray card on a second row, and none of it resembles the real page (which is not a board of cards like Work and Inputs). Stories shows the same kind of mismatch. Other pages use `board`, `inputBoard`, `cards`, `table`, `rows`, `targets` and `deployments` shapes picked by route in `src/ui-app/src/lib/loading-skeleton.ts`, and nobody has checked each one against its real content.
+
+## Desired UX
+A first load should feel calm and predictable: the skeleton is the same shape as the page that replaces it, so nothing jumps when data arrives. Follow modern practice:
+- Skeleton mirrors the real layout (same header, same grid, same row heights, same column count at the same breakpoints) and is only a placeholder for the data parts. Static chrome (page title, subtitle, tabs, buttons) renders immediately and is never skeletonised.
+- One row or one realistic block is better than a fake full page; never draw more placeholders than the real page would show at that width (derive the count from the same constants/breakpoints as the real content, not a hard-coded number).
+- Delay showing the skeleton by about 150-250 ms so fast loads show nothing, and once shown keep it for a minimum of about 300-400 ms so it does not flash. No skeleton at all when cached data exists (stale-while-revalidate); background refreshes never bring a skeleton back.
+- Subtle motion only: a slow, low-contrast shimmer or pulse, honouring `prefers-reduced-motion` (static placeholder) and the existing animation settings; never a busy or fast animation.
+- Content cross-fades in; no layout shift. Accessible: a single `aria-busy` region with a polite label, not dozens of announced elements.
+
+## Acceptance criteria
+1. Fix Mission Control (`/`) and Stories now: each skeleton matches its real page layout, in a single block/row where the real page is a single block/row, with no stray second row at wide, medium and narrow widths.
+2. Audit every route listed in `LOADING_SKELETON_ROUTES` plus the per-view `PageSkeleton` uses (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings, Work, Inputs): for each, record the real layout vs the skeleton in a short table in the task report and fix the mismatches. Where a page has no sensible skeleton shape, prefer a minimal one over a wrong one.
+3. Placeholder counts and sizes come from the same constants as the real content (for example column counts), not magic numbers.
+4. Show-delay and minimum-visible-time behaviour is implemented once (in `PageSkeleton`/the shell), not per view, with tests (fake timers): fast load shows no skeleton; slow load shows it for at least the minimum time; cached data shows none.
+5. Reduced motion: no animation; tests assert it. A test per skeleton kind asserts the item count against the real layout constants.
+6. Declared shots (`repoos update <id> --shots`) show the loading state of Mission Control and Stories after the fix (use a state fixture, not click steps).
+7. Anything too big for this task (for example a full redesign of the dashboard page itself) is filed as a follow-up, not folded in.
+
+## Notes for AI
+Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading-skeleton.ts`, `src/ui-app/src/App.vue` (the shell-level skeleton, line ~171), `DashboardView.vue`, `StoriesView.vue`, and the `PageSkeleton` call sites in the other views. Reuse the existing animation settings (see `ActivityIndicator.vue`) rather than inventing new motion settings. No native `title` tooltips; custom dialogs only. Do not edit repoos.toml. Rebuild the UI (`bun run build:ui`) after changes.
+
+## Shots
+```json
+[]
+```
+
+## Accepted scope: no loading-state screenshots
+Owner-side decision (2026-11-09): the handoff capture tool deliberately treats any page showing aria-busy / a loading indicator as a FAILED shot ('loading state detected', src/core/shot-page.ts), so declared shots of the skeleton itself cannot pass. Acceptance criterion 6 (shots of the loading state) is therefore replaced by: precise component tests that assert the skeleton structure and item counts against the real layout constants, plus optional shots of the SETTLED Mission Control and Stories pages to show the real layout the skeleton must match. A reviewer must not require loading-state screenshots.
+
+## Screenshots
+
+![Mission Control first load: 4 tall skeleton cards plus 1 wrapped onto a second row, nothing like the real page](/api/tasks/1070/attachments/att_a8a74fca-9dad-4cb2-bb73-bf85bfff1f4b.webp)
+
+## Activity
+
+- 2026-11-09T03:37:29Z · created · njachowski@gmail.com
+- 2026-11-09T03:37:30Z · screenshots
+- 2026-11-09T03:54:56Z · status inbox→ready
+- 2026-11-09T03:56:06Z · status ready→active, branch
+- 2026-11-09T04:26:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The layout fixes are in [PageSkeleton.vue](/Users/nick/code/nick/repoos-worktrees/feat/first-load-skeletons-match-every-page-s-/src/ui-app/src/components/PageSkeleton.vue): Mission Control now has one full-width block, and Stories one repr… · stderr: Reading additional input from stdin... 2026-11-09T04:05:17.989467Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: Network is unreachable (os error 51), url: wss://chatgpt.com/backend-api/codex/responses 2026-11-09T04:05:18.046309Z ERROR codex_models_manager::manager: failed t…
+- 2026-11-09T04:38:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The shell-level loader now delays its skeleton by 180 ms and keeps it visible for at least 350 ms once shown. The focused skeleton tests pass, and formatting completed. I can’t emit the handoff signal: this task is still incomplete. Per-vi… · stderr: 2026-11-09T04:38:08.246607Z ERROR codex_core::session: failed to record rollout items: thread 01a1be73-01d2-7e62-81a2-025af3368adc not found
+- 2026-11-09T04:43:58Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The worktree is clean at checkpoint `ec23c8d6b`, but the task is still incomplete. The shell loader has delay and minimum-visible timing, and its focused tests pass. The per-view skeleton call sites still bypass that timing, and the loadin… · stderr: 2026-11-09T04:09:51.030088Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request 2026-11-09T04:14:24.118892Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request 2026-11-09T04:18:58.723420Z ERROR c…
+- 2026-11-09T04:49:00Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
+- 2026-11-09T05:02:21Z · body
+- 2026-11-09T05:13:52Z · body
+- 2026-11-09T05:15:50Z · body
+- 2026-11-09T05:24:09Z · message_queued at 2026-11-09T05:24:09.159Z
+- 2026-11-09T05:24:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T05:29:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T05:41:32Z · body
+- 2026-11-09T05:44:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T05:46:28Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /?shotState=loading:dashboard (http://127.0.0.1:45271/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories?shotState=loading:stories (http://127.0.0.1:45271/stories?shotState=loading%3
+- 2026-11-09T05:46:28Z · message_queued at 2026-11-09T05:46:28.463Z
+- 2026-11-09T05:46:31Z · message_delivered: 1 message(s)
+- 2026-11-09T05:47:23Z · body
+- 2026-11-09T06:06:30Z · body
+- 2026-11-09T06:09:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T06:09:10Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-09T06:09:10Z · status active→review
+- 2026-11-09T06:09:10Z · message_queued at 2026-11-09T06:09:10.901Z
+- 2026-11-09T06:11:26Z · note: review pass 1: needs some work
+- 2026-11-09T06:11:28Z · message_delivered: 1 message(s)
+- 2026-11-09T06:11:28Z · status review→active
+- 2026-11-09T06:12:49Z · body
+- 2026-11-09T06:24:09Z · message_queued at 2026-11-09T06:24:09.181Z
+- 2026-11-09T06:24:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T06:29:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T06:43:44Z · body
+- 2026-11-09T06:46:16Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)
+- 2026-11-09T06:46:16Z · message_queued at 2026-11-09T06:46:16.907Z
+- 2026-11-09T06:46:19Z · message_delivered: 1 message(s)
+- 2026-11-09T06:56:04Z · body: Accepted scope: no loading-state screenshots (added)
+- 2026-11-09T06:56:04Z · message_queued at 2026-11-09T06:56:04.962Z
+- 2026-11-09T06:56:06Z · message_queued at 2026-11-09T06:56:06.830Z
+- 2026-11-09T06:59:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T06:59:49Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T06:59:49Z · message_queued at 2026-11-09T06:59:49.726Z
+- 2026-11-09T06:59:49Z · ↻ resuming engineer to read queued message
+- 2026-11-09T06:59:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped `repoos check` passed after falling back to the local gate: build, lint, contrast audit, all 364 test files, and UI smoke are green. I’m doing the required review-report and worktree-state check, then I’ll send the handoff reque… · stderr: 2026-11-09T06:55:28.308805Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-09T06:59:50Z · message_delivered: 3 message(s)
+- 2026-11-09T07:00:25Z · body
+- 2026-11-09T07:04:09Z · message_queued at 2026-11-09T07:04:09.261Z
+- 2026-11-09T07:04:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T07:09:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T07:14:05Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T07:14:05Z · status active→review
+- 2026-11-09T07:14:05Z · message_queued at 2026-11-09T07:14:05.742Z
+- 2026-11-09T07:16:06Z · note: review pass 2: good to go
+

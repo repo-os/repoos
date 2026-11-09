@@ -5,6 +5,26 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.79] - 2026-11-09
+
+## Highlights
+
+- **Remote browser captures no longer stall.** The runner now exits as soon as a capture finishes, finished captures are collected and cleaned up automatically, and a failed handoff cancels its own outstanding captures. This removes the 15-30 minute waits and the pile-up of stale capture containers that slowed every task's handoff (#1060).
+- **Faster checks for bookkeeping-only changes.** When a diff only touches task bookkeeping or docs, the check skips the full test suite (#1059).
+
+## Improvements and fixes
+
+- Review card no longer says "ready to finish" while checks are still running or failing (#1065).
+- Pipeline view: card text uses a readable colour in every theme (#1066).
+- Muse usage row: clearer messages and a better dashboard link (#1067).
+
+## Known issues
+
+- Cancelling remote captures is verified on the Tailscale runner. Parity for the other remote provider (for example Hetzner) and a few rarer Docker/ssh failure-handling edge cases are tracked in #1068.
+- Two further items are still in review and are not in this release: bookkeeping commits invalidating a running check (#1061) and hover-only "last active" details on cards (#1058).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.79)
+
 ## [v0.5.78] - 2026-11-08
 
 ### Reviewed work now lands on repos with no remote

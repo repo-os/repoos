@@ -39,6 +39,7 @@ export const getModelProviders: RouteHandler = async (ctx, _req, res) => {
     label: p.label,
     kind: p.kind,
     dashboardUrl: p.dashboardUrl,
+    dashboardLabel: p.dashboardLabel,
     note: p.note,
     hasKey: readProviderKey(ctx.config, p).length > 0,
     // A live row with no key variable reads the coding agent's own login on
@@ -60,8 +61,25 @@ export const getModelProviderUsage: RouteHandler = async (ctx, _req, res, params
     // Muse reads the local `muse login` session, not a pasted key — it must
     // run before the key lookup below, which is always empty for this row.
     if (row.id === "muse") {
-      const usage = await fetchMuseUsage();
-      return json(res, 200, { kind: row.id, ...usage, at: new Date().toISOString() });
+      try {
+        const usage = await fetchMuseUsage();
+        return json(res, 200, { kind: row.id, ...usage, at: new Date().toISOString() });
+      } catch (err) {
+        // Missing CLI or an unconfigured local login is an expected empty row
+        // state, not an HTTP failure. Keep it in the usage payload so the UI
+        // can show the actionable message and Retry without a failed request.
+        const message = err instanceof Error ? err.message : String(err);
+        return json(res, 200, {
+          kind: row.id,
+          tier: null,
+          windows: [],
+          unrecognized: false,
+          reason: "usage_unavailable",
+          hint: message,
+          message,
+          at: new Date().toISOString(),
+        });
+      }
     }
     const apiKey = readProviderKey(ctx.config, row);
     if (!apiKey) {
