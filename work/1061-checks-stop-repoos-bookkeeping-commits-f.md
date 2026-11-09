@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T10:26:01Z"
+updated_at: "2026-11-09T10:26:04Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 9b3b5702a323d31a7fe553ff8cd481f2a70915ef
 review_passes: 13
