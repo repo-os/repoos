@@ -138,6 +138,7 @@ enforces four rules:
 - **Accepted scope is authoritative.** A `## Accepted scope and known limitations`
   section (any heading starting `Accepted scope`) is quoted into the prompt; the
   items it lists, and anything it explicitly supersedes, are not blocking.
+
 Slice 1 covers only the rules above. Enumeration closers, engineer self-review,
 auto-filed follow-ups, the `Land anyway` override and the `round N of ~4`
 convergence display are slice 2, tracked as a follow-up task. Housekeeping

@@ -415,6 +415,78 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
     expect(mission).not.toContain("AUTHORITATIVE");
   });
 
+  it("keeps the full-bar enumeration wording out of the frozen and light prompts", () => {
+    const full = reviewMission(task({ review_passes: 0 }), reviewer, root, "main", config(root));
+    const light = reviewMission(
+      { ...task({ review_passes: 0 }), priority: "p3" },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    const frozen = reviewMission(task({ review_passes: 4 }), reviewer, root, "main", config(root));
+    expect(full).toContain("list them all under ## Bugs");
+    for (const mission of [light, frozen]) {
+      expect(mission).not.toContain("list them all under ## Bugs");
+      expect(mission).toContain("list every instance that meets the blocking bar");
+    }
+  });
+
+  it("names the suggestions heading that matches the bar in the accepted-scope quote", () => {
+    const body = acceptedBody;
+    const frozen = reviewMission(
+      { ...task({ review_passes: 4 }), body },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    const light = reviewMission(
+      { ...task(), priority: "p3", body },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    expect(frozen).toContain("`## Suggestions (non-blocking)` at most, never under `## Bugs`");
+    expect(light).toContain("`## Suggestions` at most, never under `## Bugs`");
+  });
+
+  it("does not end the accepted-scope section at a heading inside a fenced block", () => {
+    const body = [
+      "## Accepted scope and known limitations",
+      "",
+      "```md",
+      "## not a heading",
+      "```",
+      "",
+      "- The guard is out of scope.",
+      "",
+      "## Notes for AI",
+      "",
+      "x",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toContain("## not a heading");
+    expect(section).toContain("- The guard is out of scope.");
+    expect(section).not.toContain("## Notes for AI");
+  });
+
+  it("marks a truncated accepted-scope quote instead of dropping items silently", () => {
+    const body = ["## Accepted scope and known limitations", "", "- item ".repeat(1000)].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toMatch(
+      /\[truncated: the accepted-scope section is longer than 4000 characters/,
+    );
+    expect(section.length).toBeLessThan(4200);
+  });
+
+  it("keeps the engineer handoff sentence well formed", () => {
+    const engineer = promptFor("engineer");
+    expect(engineer).toMatch(/instead of patching one\. A new config key needs a Settings control/);
+    expect(engineer).not.toMatch(/Before handoff, A new/);
+  });
+
   it("parses the frozen suggestions heading as the Suggestions section", () => {
     const sections = extractReviewReportSections(
       "## Bugs\nNone found\n\n## Suggestions (non-blocking)\n- Add a helper for the retry.\n",
