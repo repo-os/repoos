@@ -297,7 +297,7 @@ function flushAndClearCheckGateLock(
 }
 
 /** Make tracked source files read-only while a gate is running. */
-function protectTrackedSourceFiles(
+function trackedSourceFileModes(
   worktree: string,
   config: Pick<RepoOSConfig, "workDir" | "cacheDir">,
 ): Record<string, number> {
@@ -311,13 +311,23 @@ function protectTrackedSourceFiles(
       const mode = statSync(abs).mode & 0o777;
       if (mode & 0o222) {
         modes[abs] = mode;
-        chmodSync(abs, mode & ~0o222);
       }
     } catch {
       // Deleted or unreadable tracked files are not writable source files.
     }
   }
   return modes;
+}
+
+/** Apply protection only after the recovery record is durably written. */
+function applyTrackedSourceProtection(modes: Record<string, number>): void {
+  for (const [path, mode] of Object.entries(modes)) {
+    try {
+      chmodSync(path, mode & ~0o222);
+    } catch {
+      // Missing files need no protection; the gate drift check catches changes.
+    }
+  }
 }
 
 function restoreProtectedFileModes(lock: CheckGateLock): void {
@@ -411,7 +421,7 @@ export async function acquireCheckGateLock(args: {
         };
         atomicWriteJson(path, merged);
       } else {
-        const protectedFileModes = protectTrackedSourceFiles(
+        const protectedFileModes = trackedSourceFileModes(
           args.worktree,
           args.config ?? { workDir: "work", cacheDir: args.cacheDir },
         );
@@ -425,9 +435,10 @@ export async function acquireCheckGateLock(args: {
           protectedFileModes,
         };
         atomicWriteJson(path, fresh);
+        applyTrackedSourceProtection(protectedFileModes);
       }
     } else {
-      const protectedFileModes = protectTrackedSourceFiles(
+      const protectedFileModes = trackedSourceFileModes(
         args.worktree,
         args.config ?? { workDir: "work", cacheDir: args.cacheDir },
       );
@@ -441,6 +452,7 @@ export async function acquireCheckGateLock(args: {
         protectedFileModes,
       };
       atomicWriteJson(path, lock);
+      applyTrackedSourceProtection(protectedFileModes);
     }
   } finally {
     releaseState();

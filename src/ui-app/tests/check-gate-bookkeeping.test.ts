@@ -341,6 +341,26 @@ describe("check gate lock and deferred commits (#1061)", () => {
     expect(activeCheckGateForCommitRoot(root, ".repoos", wt)).toBeNull();
   });
 
+  it("persists original source modes in the lock before making files read-only", async () => {
+    const { root, wt, branch } = initRepo();
+    const source = join(wt, "src", "app.ts");
+    const originalMode = statSync(source).mode & 0o777;
+    const acquired = await acquireCheckGateLock({
+      boardRoot: root,
+      cacheDir: ".repoos",
+      taskId: "0001",
+      branch,
+      worktree: wt,
+      kind: "handoff-finalize",
+    });
+    expect(acquired.ok).toBe(true);
+    const lock = readFileSync(join(root, ".repoos", "check-gate-locks", "0001.json"), "utf8");
+    expect(JSON.parse(lock).protectedFileModes[source]).toBe(originalMode);
+    expect(statSync(source).mode & 0o222).toBe(0);
+    if (acquired.ok) await acquired.release();
+    expect(statSync(source).mode & 0o777).toBe(originalMode);
+  });
+
   it("keeps concurrent gate holders when they acquire from separate calls", async () => {
     const { root, wt, branch } = initRepo();
     const args = {

@@ -39,7 +39,8 @@ import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.
  * agent pre-review.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { cpus, totalmem } from "node:os";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { c } from "../cli/colors.js";
@@ -1920,35 +1921,35 @@ export function changedPathsSince(repoRoot: string, ref: string): string[] | nul
 type TrackedSourceSnapshot = Map<string, string>;
 
 /** Snapshot tracked worktree changes relative to HEAD, ignoring bookkeeping roots. */
-async function trackedSourceSnapshot(
+export async function trackedSourceSnapshot(
   repoRoot: string,
   cfg: RepoOSConfig,
 ): Promise<TrackedSourceSnapshot | null> {
   const { work, cache } = checkGateBookkeepingPrefix(cfg);
   const result = await runGit(
     repoRoot,
-    [
-      "diff",
-      "--raw",
-      "--no-abbrev",
-      "--no-renames",
-      "-z",
-      "HEAD",
-      "--",
-      ".",
-      `:(exclude)${work}**`,
-      `:(exclude)${cache}**`,
-    ],
+    ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
     15_000,
   );
   if (result.status !== 0) return null;
   const fields = result.stdout.split("\0");
   const snapshot = new Map<string, string>();
-  for (let i = 0; i + 1 < fields.length && fields[i]; i += 2) {
-    const metadata = fields[i]!;
-    const path = fields[i + 1]!;
-    if (!metadata.startsWith(":") || !path) return null;
-    snapshot.set(path, metadata);
+  for (const path of fields.filter(Boolean)) {
+    if (path.startsWith(work) || path.startsWith(cache)) continue;
+    const absolute = join(repoRoot, path);
+    try {
+      const stat = statSync(absolute);
+      const content = readFileSync(absolute);
+      snapshot.set(
+        path,
+        `${stat.mode & 0o777}:${createHash("sha256").update(content).digest("hex")}`,
+      );
+    } catch (error) {
+      // A tracked file deleted during the check remains in the snapshot as a
+      // missing marker, so creation/deletion and content changes are visible.
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") snapshot.set(path, "<missing>");
+      else return null;
+    }
   }
   return snapshot;
 }
