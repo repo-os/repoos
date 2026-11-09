@@ -5,6 +5,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import App from "../src/App.vue";
+import { useRepoStore } from "../src/stores/repo";
 import {
   loadingPageHeader,
   loadingSkeletonKind,
@@ -17,9 +18,13 @@ const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
 describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
     expect(appVue).not.toMatch(/v-if="repo\.loading"[^>]*class="spin"/);
-    expect(appVue).toMatch(/v-if="repo\.loading" class="main-route page-loading"/);
-    expect(appVue).toMatch(/<PageSkeleton :kind="loadingKind"\s*\/>/);
-    expect(appVue).toMatch(/<RouterView v-else class="main-route"\s*\/>/);
+    expect(appVue).toMatch(
+      /v-if="repo\.loading \|\| showRepoSkeleton" class="main-route page-loading"/,
+    );
+    expect(appVue).toMatch(/<PageSkeleton v-if="showRepoSkeleton" :kind="loadingKind"\s*\/>/);
+    expect(appVue).toMatch(
+      /<RouterView v-if="!repo\.loading && !showRepoSkeleton" class="main-route"\s*\/>/,
+    );
   });
 
   it("picks a board for /work and rows for list pages", () => {
@@ -82,6 +87,7 @@ describe("repo loading skeleton", () => {
   });
 
   it("shows a board skeleton in the main pane and no spinner while the repo loads", async () => {
+    vi.useFakeTimers();
     const pinia = createPinia();
     setActivePinia(pinia);
     const router = createRouter({
@@ -114,6 +120,9 @@ describe("repo loading skeleton", () => {
       },
     });
     const main = wrapper.find(".main");
+    expect(main.find(".page-skeleton").exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(180);
+    await wrapper.vm.$nextTick();
     const title = main.find(".page-header .page-title");
     expect(title.text()).toBe("Work Queue");
     expect(
@@ -126,5 +135,54 @@ describe("repo loading skeleton", () => {
     expect(main.find(".page-skeleton--board").exists()).toBe(true);
     expect(main.find(".spin").exists()).toBe(false);
     wrapper.unmount();
+    vi.useRealTimers();
+  });
+
+  it("keeps the shell skeleton out of fast loads and retains a shown one for 350ms", async () => {
+    vi.useFakeTimers();
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: "/", component: { template: "<div>dashboard</div>" } }],
+    });
+    await router.push("/");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise(() => {})),
+    );
+    const wrapper = mount(App, {
+      global: {
+        plugins: [pinia, router],
+        stubs: {
+          TopBar: true,
+          Sidebar: true,
+          MobileTabs: true,
+          TaskDrawer: true,
+          TunnelDrawer: true,
+          RemoteValidationDrawer: true,
+          ToastPanel: true,
+          FloatingHeads: true,
+          NewInputPanel: true,
+          UiRecoveryBanner: true,
+          CopyInspectorOverlay: true,
+          ReleaseUpdateNotification: true,
+          DependencyOverrideDialog: true,
+        },
+      },
+    });
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(180);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    useRepoStore().loading = false;
+    await wrapper.vm.$nextTick();
+    await vi.advanceTimersByTimeAsync(349);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+    vi.useRealTimers();
   });
 });
