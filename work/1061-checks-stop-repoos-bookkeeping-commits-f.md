@@ -358,3 +358,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T01:36:18Z · note: handoff requested (cli)
 - 2026-11-09T01:39:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T01:47:10Z · message_queued at 2026-11-09T01:47:10.822Z
+- 2026-11-09T01:47:10Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 8eab7241 to ed3f0a39) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
