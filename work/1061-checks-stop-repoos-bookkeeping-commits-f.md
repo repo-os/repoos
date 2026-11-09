@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -561,4 +561,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T13:01:50Z · message_delivered: 2 message(s)
 - 2026-11-09T13:01:51Z · note: handoff requested (cli)
 - 2026-11-09T13:01:55Z · CTO nudge: held — handoff gate is running
-- 2026-11-09T13:02:29Z · engineer stopped by request
+- 2026-11-09T13:02:29Z · status active→review
