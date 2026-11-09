@@ -850,6 +850,29 @@ describe("shot preview board fixtures (#0743)", () => {
     vi.unstubAllGlobals();
   });
 
+  it("keeps fixture-seeded running cards when fetchRunning runs during a capture (#1058)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState({}, "", "/work?shotState=board%3AactiveCoding");
+    applyShotPreviewFixture(repo, "board:activeCoding");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ tasks: [], pausedTasks: [SHOT_PREVIEW_FIXTURE_TASK_ID] }),
+      })),
+    );
+
+    await repo.fetchRunning();
+
+    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+    expect(repo.isPaused(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
+    vi.unstubAllGlobals();
+    window.history.replaceState({}, "", "/");
+  });
+
   it("seeds captured shots, handoff verdicts and a docs-skip note for viewer shots (#0819)", () => {
     const pinia = createPinia();
     setActivePinia(pinia);
