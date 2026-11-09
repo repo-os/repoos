@@ -332,3 +332,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T00:36:37Z · note: handoff requested (cli)
 - 2026-11-09T00:39:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T00:45:33Z · message_queued at 2026-11-09T00:45:33.445Z
+- 2026-11-09T00:45:33Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
