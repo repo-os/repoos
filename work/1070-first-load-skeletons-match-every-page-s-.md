@@ -155,3 +155,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T10:02:27Z · body
 - 2026-11-09T10:02:27Z · body
 - 2026-11-09T10:09:21Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T10:09:21Z · message_delivered: 3 message(s)
