@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T12:32:19Z"
+updated_at: "2026-11-09T12:32:20Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -203,4 +203,3 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 - 2026-11-09T12:32:19Z · message_queued at 2026-11-09T12:32:19.514Z
 - 2026-11-09T12:32:19Z · ↻ resuming engineer to read queued message
 - 2026-11-09T12:32:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check is fully green now, including the local format/lint/build guards, rendered contrast, and UI smoke. I’m writing the engineer report with the page-by-page layout audit and the two fixes from this review, then I’ll confirm th… · stderr: Reading additional input from stdin...
-- 2026-11-09T12:32:19Z · status active→review
