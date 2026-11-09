@@ -3,6 +3,9 @@ id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection failed repeatedly"
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +16,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-09T23:07:33Z"
+updated_at: "2026-11-09T23:43:50Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-09T23:43:50.075Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -45,30 +50,30 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 ```json
 [
 {
-  "label": "Pipeline card activity animation",
-  "target": "default",
-  "route": "/work?tab=pipeline&shotState=board:activeCoding",
-  "highlight": ".pipeline-card .pl-activity"
+"label": "Pipeline card activity animation",
+"target": "default",
+"route": "/work?tab=pipeline&shotState=board:activeCoding",
+"highlight": ".pipeline-card .pl-activity"
 },
 {
-  "label": "Compact activity animation settings (On)",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": ".activity-animation-controls"
+"label": "Compact activity animation settings (On)",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": ".activity-animation-controls"
 },
 {
-  "label": "Activity animation Motion Off",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": "#setting-activityAnimationEnabled",
-  "steps": [
-    {
-      "click": "#setting-activityAnimationEnabled [role=switch]"
-    },
-    {
-      "waitMs": 300
-    }
-  ]
+"label": "Activity animation Motion Off",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": "#setting-activityAnimationEnabled",
+"steps": [
+{
+  "click": "#setting-activityAnimationEnabled [role=switch]"
+},
+{
+  "waitMs": 300
+}
+]
 }
 ]
 ```
@@ -88,3 +93,5 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-09T22:51:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T23:07:17Z · body
 - 2026-11-09T23:07:33Z · body
+- 2026-11-09T23:43:50Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-09T23:43:50Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
