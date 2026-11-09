@@ -3,9 +3,6 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — Direct checks can miss net source changes, and a crash can leave source files read-only."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -521,3 +518,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T11:55:26Z · status review→active
 - 2026-11-09T11:55:26Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-09T11:55:29Z · message_delivered: 1 message(s)
+- 2026-11-09T11:55:29Z · needs_input
