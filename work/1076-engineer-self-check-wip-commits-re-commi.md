@@ -89,3 +89,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T15:13:20Z · note: review pass 2: needs some work
 - 2026-11-09T15:13:20Z · status review→active
 - 2026-11-09T15:52:58Z · body: Accepted scope (criterion 1) (added)
+- 2026-11-09T15:52:58Z · message_queued at 2026-11-09T15:52:58.690Z
