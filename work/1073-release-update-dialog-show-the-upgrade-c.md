@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -216,4 +216,3 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T22:46:26Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: There's no dedicated test exercising the `getAvailableRelease` route handler. The review asked for route-level tests. Let me add tests to `releases.test.ts` that call `getAvailableRelease` with a fake request/response, covering the source-… · stderr: (empty)
 - 2026-11-09T22:48:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T22:48:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Now let me address the review's smaller findings: (a) failed copy silent, (b) timer not cleared on unmount. Let me add a `copyFailed` state with feedback text and clear the timer on unmount. Let me check the `copyToClipboard` signature, th… · stderr: (empty)
-- 2026-11-09T22:48:37Z · status active→review
