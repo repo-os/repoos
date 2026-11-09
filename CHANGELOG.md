@@ -5,6 +5,22 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.80] - 2026-11-09
+
+## Highlights
+
+- **Checks are no longer invalidated by RepoOS's own bookkeeping commits.** While a task's check runs, RepoOS now holds a short-lived check lock: its own bookkeeping commits wait until the check finishes, new engineer turns are refused, and any real source change that lands during a check is detected and fails the check with the commit and paths named. This removes a major source of "the worktree changed while the check ran" handoff failures (#1061).
+- **Calmer task cards.** A healthy running card no longer shows "active just now / N minutes ago"; the last-activity time appears in a popover on hover and keyboard focus. Silent and stuck cards still show their recency (#1058).
+
+## Known issues
+
+- Source edits made by an already-running engineer during a check are detected after the fact, not blocked, and git submodules or nested repositories are not covered by that detection. A source change that is committed and then reverted within the same check window is not caught yet (follow-up #1077).
+- Hover details on cards are mouse and keyboard only; touch support is planned as part of the mobile work (#1069).
+- A handoff that arrives while the engineer's own check is still running can fail with "A check is running" instead of waiting; fix in progress (#1082).
+- Remaining Docker/ssh failure-handling edge cases in remote validation are tracked in #1068.
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.80)
+
 ## [v0.5.79] - 2026-11-09
 
 ## Highlights
