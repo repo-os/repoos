@@ -127,8 +127,8 @@ afterEach(() => {
 describe("Settings activity animation size (#0813, pixels #0816)", () => {
   it("hides style controls when motion is off", async () => {
     const wrapper = await mountSettings();
-    const config = useConfigStore();
-    config.form.activityAnimationEnabled = false;
+    const motionSwitch = wrapper.get("#setting-activityAnimationEnabled [role='switch']");
+    await motionSwitch.trigger("click");
     await wrapper.vm.$nextTick();
     expect(wrapper.find("#setting-activityAnimationStyle").exists()).toBe(false);
     expect(wrapper.find(".activity-animation-preview").exists()).toBe(false);

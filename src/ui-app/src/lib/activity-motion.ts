@@ -44,7 +44,7 @@ function detachMotionListener(): void {
 /** Vitest-only: drop the singleton observer and listener refcount between cases. */
 export function resetActivityMotionCoordinatorForTests(): void {
   entries.clear();
-  observer?.disconnect();
+  if (observer && typeof observer.disconnect === "function") observer.disconnect();
   observer = null;
   while (visibilityListenerCount > 0) detachVisibilityListener();
   while (motionListenerCount > 0) detachMotionListener();
@@ -115,7 +115,7 @@ export function useActivityMotion(
     }
     refresh();
     if (entries.size === 0) {
-      observer?.disconnect();
+      if (observer && typeof observer.disconnect === "function") observer.disconnect();
       observer = null;
     }
   });
