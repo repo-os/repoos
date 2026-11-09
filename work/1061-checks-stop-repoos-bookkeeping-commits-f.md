@@ -3,6 +3,9 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 17 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -565,3 +568,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T13:02:29Z · message_queued at 2026-11-09T13:02:29.354Z
 - 2026-11-09T13:02:29Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-09T13:04:13Z · note: review pass 17: needs some work
+- 2026-11-09T13:04:13Z · needs_input
