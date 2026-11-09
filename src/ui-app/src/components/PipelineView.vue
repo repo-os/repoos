@@ -37,6 +37,7 @@ import PipelineCard, { type PipelineCardAction } from "./PipelineCard.vue";
 import { activeTaskChecksBusy } from "../lib/checks-card-status";
 import type { SharedTaskCardStatusInput } from "../lib/task-card-status.js";
 import { toCheckProgress, type CheckProgress } from "../lib/check-progress";
+import { firstValidActivityTimestamp } from "../lib/card-activity-recency";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -73,10 +74,11 @@ interface Lane {
   host: string;
   action: PipelineCardAction | null;
   checkProgress: CheckProgress | null;
+  lastActivityAt: string | null;
 }
 
 function lastActivityFor(taskId: string): string | undefined {
-  return repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  return firstValidActivityTimestamp(repo.agentActivityAt[taskId], repo.runningSince[taskId]);
 }
 
 function laneFor(task: Task, nowMs: number): Lane | null {
@@ -244,6 +246,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
     statusSignals,
     chipText,
     stateSince: model.state === "merged" ? (task.releasedAt ?? task.updated_at) : task.updated_at,
+    lastActivityAt: lastActivityFor(task.id) ?? null,
     roundsLabel: pipelineRoundLabel(rounds, {
       tone: verdict?.tone ?? null,
       reviewRunning,
@@ -348,6 +351,7 @@ function stageCells(stage: PipelineStage): string {
               :step-label="lane.model.stepLabel"
               :chip-text="lane.chipText"
               :state-since="lane.stateSince"
+              :last-activity-at="lane.lastActivityAt"
               :now-ms="now"
               :rounds-label="lane.roundsLabel"
               :reviewer-tone="lane.reviewerTone"
