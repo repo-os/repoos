@@ -17,6 +17,7 @@ import {
   writeFileSync,
   appendFileSync,
   copyFileSync,
+  chmodSync,
 } from "node:fs";
 import * as nodeFs from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -52,6 +53,8 @@ export interface CheckGateLock {
   holders: CheckGateHolder[];
   /** The last holder exited, but deferred bookkeeping still needs replay. */
   flushPending?: boolean;
+  /** Original modes for tracked non-bookkeeping files made read-only for gates. */
+  protectedFileModes?: Record<string, number>;
 }
 
 export interface DeferredBranchCommit {
@@ -227,6 +230,9 @@ function parseLock(parsed: unknown): CheckGateLock | null {
     headAtStart: o.headAtStart,
     at: o.at,
     holders,
+    ...(o.protectedFileModes && typeof o.protectedFileModes === "object"
+      ? { protectedFileModes: o.protectedFileModes as Record<string, number> }
+      : {}),
     ...(o.flushPending === true ? { flushPending: true } : {}),
   };
 }
@@ -280,12 +286,47 @@ function flushAndClearCheckGateLock(
   lock: CheckGateLock,
 ): boolean {
   const flushed = flushDeferredBranchCommitsLocked(boardRoot, cacheDir, taskId);
+  restoreProtectedFileModes(lock);
   if (!flushed.ok) {
     persistPendingQueueFence(boardRoot, cacheDir, taskId, lock);
     return false;
   }
   clearCheckGateLockUnlocked(boardRoot, cacheDir, taskId);
   return true;
+}
+
+/** Make tracked source files read-only while a gate is running. */
+function protectTrackedSourceFiles(
+  worktree: string,
+  config: Pick<RepoOSConfig, "workDir" | "cacheDir">,
+): Record<string, number> {
+  const result = gitCapture(worktree, ["ls-files", "-z"], 10_000);
+  if (result.status !== 0) throw new Error("could not enumerate tracked files for check gate");
+  const modes: Record<string, number> = {};
+  for (const rel of result.stdout.split("\0").filter(Boolean)) {
+    if (isBookkeepingPath(rel, config)) continue;
+    const abs = join(worktree, rel);
+    try {
+      const mode = statSync(abs).mode & 0o777;
+      if (mode & 0o222) {
+        modes[abs] = mode;
+        chmodSync(abs, mode & ~0o222);
+      }
+    } catch {
+      // Deleted or unreadable tracked files are not writable source files.
+    }
+  }
+  return modes;
+}
+
+function restoreProtectedFileModes(lock: CheckGateLock): void {
+  for (const [path, mode] of Object.entries(lock.protectedFileModes ?? {})) {
+    try {
+      chmodSync(path, mode);
+    } catch {
+      // A removed file needs no permission restoration.
+    }
+  }
 }
 
 export function readCheckGateLock(
@@ -330,6 +371,7 @@ export async function acquireCheckGateLock(args: {
   branch: string;
   worktree: string;
   kind: CheckGateKind;
+  config?: Pick<RepoOSConfig, "workDir" | "cacheDir">;
 }): Promise<CheckGateAcquireResult> {
   const head = await runGit(args.worktree, ["rev-parse", "HEAD"], 10_000);
   if (head.status !== 0) {
@@ -368,6 +410,7 @@ export async function acquireCheckGateLock(args: {
         };
         atomicWriteJson(path, merged);
       } else {
+        const protectedFileModes = protectTrackedSourceFiles(args.worktree, args.config ?? { workDir: "work", cacheDir: args.cacheDir });
         const fresh: CheckGateLock = {
           taskId: args.taskId,
           branch: args.branch,
@@ -375,10 +418,12 @@ export async function acquireCheckGateLock(args: {
           headAtStart,
           at: holder.at,
           holders: [holder],
+          protectedFileModes,
         };
         atomicWriteJson(path, fresh);
       }
     } else {
+      const protectedFileModes = protectTrackedSourceFiles(args.worktree, args.config ?? { workDir: "work", cacheDir: args.cacheDir });
       const lock: CheckGateLock = {
         taskId: args.taskId,
         branch: args.branch,
@@ -386,6 +431,7 @@ export async function acquireCheckGateLock(args: {
         headAtStart,
         at: holder.at,
         holders: [holder],
+        protectedFileModes,
       };
       atomicWriteJson(path, lock);
     }
@@ -762,6 +808,13 @@ function enqueueDeferredBranchCommitLocked(
     enqueuedAt: new Date().toISOString(),
     fileSnapshots: snapshotAbsPaths(absPaths),
   });
+  // Once replay has made partial progress, subsequent bookkeeping writes are
+  // the new live worktree contents. Advance the recovery fence to those bytes
+  // so a restart does not compare the disk against an obsolete intermediate
+  // snapshot and strand the remaining queue forever.
+  if (state.replayExpected) {
+    Object.assign(state.replayExpected, state.entries.at(-1)!.fileSnapshots);
+  }
   writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
 }
 

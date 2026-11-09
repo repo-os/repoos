@@ -2414,6 +2414,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
       branch: branch.stdout.trim(),
       worktree: repoRoot,
       kind: "engineer-self-check",
+      config: gateConfig,
     });
     if (!selfCheckLock.ok) throw new Error(selfCheckLock.reason);
   }

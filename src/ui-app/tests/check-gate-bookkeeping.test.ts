@@ -3,7 +3,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../../core/types.js";
@@ -256,10 +256,13 @@ describe("check gate lock and deferred commits (#1061)", () => {
       kind: "handoff-finalize",
     });
     const src = join(wt, "src", "app.ts");
-    writeFileSync(src, "v3\n");
+    expect(statSync(src).mode & 0o222).toBe(0);
+    expect(() => writeFileSync(src, "v3\n")).toThrow();
     const ok = commitFiles(wt, [src], "feat: blocked");
     expect(ok).toBe(false);
     expect(git(wt, ["show", "HEAD:src/app.ts"])).toBe("v1");
+    await releaseCheckGateLock(root, ".repoos", "0001");
+    expect(statSync(src).mode & 0o222).not.toBe(0);
   });
 
   it("preserves queue entries across flush after stale lock recovery", async () => {
@@ -320,14 +323,21 @@ describe("check gate lock and deferred commits (#1061)", () => {
     expect(readFileSync(taskFile, "utf8")).toBe(`${original}\nfirst`);
     expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(1);
 
+    // A later RepoOS write may arrive after partial replay. It replaces the
+    // on-disk task file with the latest queued content; recovery must fence on
+    // that content while still replaying the older entry first.
+    writeFileSync(taskFile, `${original}\nfirst\nsecond\nthird`);
+    enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): third");
+
     setCheckGateCommitHook(null);
     const resumed = await flushDeferredBranchCommits(root, ".repoos", "0001");
     expect(resumed).toEqual({ ok: true, remaining: 0 });
-    expect(git(wt, ["log", "-2", "--format=%s"]).split("\n")).toEqual([
+    expect(git(wt, ["log", "-3", "--format=%s"]).split("\n")).toEqual([
+      "docs(0001): third",
       "docs(0001): second",
       "docs(0001): first",
     ]);
-    expect(readFileSync(taskFile, "utf8")).toBe(`${original}\nfirst\nsecond`);
+    expect(readFileSync(taskFile, "utf8")).toBe(`${original}\nfirst\nsecond\nthird`);
   });
 
   it("restores queued deletions as absent files", async () => {
@@ -364,7 +374,7 @@ describe("check gate lock and deferred commits (#1061)", () => {
       kind: "handoff-finalize",
     });
     expect(aliveCheckGateLockForWorktree(root, ".repoos", wt)?.taskId).toBe("0001");
-    writeFileSync(join(wt, "src", "app.ts"), "mid-gate\n");
+    expect(() => writeFileSync(join(wt, "src", "app.ts"), "mid-gate\n")).toThrow();
     const denied = await runGit(wt, ["add", "src/app.ts"], 10_000);
     expect(denied.stderr).toMatch(/check is running/i);
     expect(denied.status).not.toBe(0);
