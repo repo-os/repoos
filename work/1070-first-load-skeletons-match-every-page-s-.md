@@ -2,14 +2,14 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: ready
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T03:54:56Z"
+updated_at: "2026-11-09T03:56:06Z"
 ---
 ## Problem
 First-load skeletons are jarring and in places wrong. On Mission Control (`/`) the `dashboard` skeleton draws six tall cards in an `auto-fit` grid (`PageSkeleton.vue`), so on a wide window they wrap into one row of four plus a stray card on a second row, and none of it resembles the real page (which is not a board of cards like Work and Inputs). Stories shows the same kind of mismatch. Other pages use `board`, `inputBoard`, `cards`, `table`, `rows`, `targets` and `deployments` shapes picked by route in `src/ui-app/src/lib/loading-skeleton.ts`, and nobody has checked each one against its real content.
@@ -43,3 +43,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T03:37:29Z · created · njachowski@gmail.com
 - 2026-11-09T03:37:30Z · screenshots
 - 2026-11-09T03:54:56Z · status inbox→ready
+- 2026-11-09T03:56:06Z · status ready→active, branch
