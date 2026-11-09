@@ -1,11 +1,19 @@
 ---
+id: review-18
+title: review-18
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/checks-stop-repoos-bookkeeping-commits-f
 task: "1061"
 pass: 18
 at: "2026-11-09T13:58:48.984Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/checks-stop-repoos-bookkeeping-commits-f
 state: ok
 tree_identity: "a8244ef73:a434d494b"
 ---
@@ -31,9 +39,9 @@ None found
 ## Suggestions
 - **Scope mismatch (final decision):** the owner's final scope says gitlinks and nested repos are skipped entirely. `gitDirectorySnapshot` still fingerprints them and runs git inside them. Either align the code with skip-entirely or record in the docs why the stricter fingerprint stays. Either way, the docs should state that submodule contents are not covered. `docs/check-run-history.md:28-32` and `user-docs/check.md:293-297` currently say they are covered.
 - **Same class, inside the helper (submodule scope):**
-  - `git-directory-snapshot.ts:44`: `ls-files -s` without `-z` quotes non-ASCII or special paths, so the `endsWith` match misses them.
-  - `git-directory-snapshot.ts:46`: a lookup miss with no `.git` returns a constant `directory:…:not-a-gitlink`. A parent-side pointer change is then invisible, and this branch does not fail closed.
-  - `git-directory-snapshot.ts:37-38`: `git status --porcelain` lists names, not content, so a second edit to an already-dirty file inside an initialized submodule is not detected.
+- `git-directory-snapshot.ts:44`: `ls-files -s` without `-z` quotes non-ASCII or special paths, so the `endsWith` match misses them.
+- `git-directory-snapshot.ts:46`: a lookup miss with no `.git` returns a constant `directory:…:not-a-gitlink`. A parent-side pointer change is then invisible, and this branch does not fail closed.
+- `git-directory-snapshot.ts:37-38`: `git status --porcelain` lists names, not content, so a second edit to an already-dirty file inside an initialized submodule is not detected.
 - Symlink and revert limitations are documented (`docs/check-run-history.md:17,42`; `user-docs/check.md:302-309`). Limitations (a) and (b) are stated.
 - No UI capture applies. The `src/ui-app/**` auto-shot matches a test-only diff, so the STALE note is not a blocker.
 
