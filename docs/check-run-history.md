@@ -25,6 +25,14 @@ tree differs from the check-start tree but the available commit history cannot
 account for a changed source path, the check fails closed and names that path
 with a `history could not be explained` reason.
 
+Tracked gitlinks are fingerprinted from their own repository boundary: an
+initialized submodule includes its checked-out commit and porcelain status,
+while an uninitialized gitlink uses the object id in the parent index. Nested
+repositories without commits are recorded as unborn repositories plus their
+status, rather than inheriting the parent repository's `HEAD`. Symlinks record
+their link text; changes to a symlink target outside the worktree are not
+followed or detected.
+
 An already-running engineer can still edit source files directly during a
 check; filesystem writes cannot be reliably fenced. RepoOS compares hashes of
 tracked and non-ignored untracked source files before and after validation, so
@@ -99,16 +107,3 @@ projects with different layouts (root cache vs nested `repoos/.repoos`), runs
 from one project's linked worktree with the other project's
 `REPOOS_CHECK_STORE_ROOT` / `REPOOS_TASK_ID` / `REPOOS_ROOT` set, and asserts
 that only the owning project's cache gains rows.
-# Check-gate worktree protection
-
-During handoff, close-out, and managed self-check gates, RepoOS holds a task
-worktree lock. RepoOS bookkeeping in `work/` and the configured cache directory
-is queued and replayed in order after the last gate holder exits. Source changes
-remain gate-invalidating: the handoff reports the commit subject and changed
-paths. If Git cannot determine the paths or commit ancestry, the gate fails
-closed. RepoOS refuses new managed engineer turns and its own source commits
-while the lock is active. An engineer that was already running can still write
-source files directly; RepoOS cannot fence those filesystem writes. Drift
-detection catches committed source edits after the check and refuses the result
-with the commit subject and paths. Dead holders are reconciled on server startup
-and their durable bookkeeping queue is replayed.

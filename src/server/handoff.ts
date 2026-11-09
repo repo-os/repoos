@@ -57,6 +57,7 @@ import {
   pathsChangedBetweenCommits,
   getChangedFilePaths,
 } from "../core/git.js";
+import { gitDirectorySnapshot } from "../core/git-directory-snapshot.js";
 import { getGitWorker } from "./git-worker.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
@@ -501,11 +502,9 @@ async function worktreeState(workdir: string, config: RepoOSConfig): Promise<Wor
       if (stat.isSymbolicLink()) {
         files[path] = `symlink:${readlinkSync(absolute)}`;
       } else if (stat.isDirectory()) {
-        const submodule = await runGit(absolute, ["rev-parse", "HEAD"], 10_000);
-        if (submodule.status !== 0) {
-          throw new Error(`could not read tracked directory ${path}: ${concise(submodule)}`);
-        }
-        files[path] = `directory:${submodule.stdout.trim()}`;
+        const directory = await gitDirectorySnapshot(workdir, path, stat.mode & 0o777);
+        if (directory === null) throw new Error(`could not fingerprint tracked directory ${path}`);
+        files[path] = directory;
       } else if (stat.isFile()) {
         files[path] = createHash("sha256").update(readFileSync(absolute)).digest("hex");
       } else {
