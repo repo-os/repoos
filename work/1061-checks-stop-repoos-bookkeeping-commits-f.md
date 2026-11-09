@@ -364,3 +364,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T01:49:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T01:57:55Z · body
 - 2026-11-09T02:00:03Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T02:00:03Z · message_queued at 2026-11-09T02:00:03.532Z
