@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T21:21:54Z"
+updated_at: "2026-11-09T22:09:50Z"
 ---
 ## Problem
 Tasks routinely take 10-15 review rounds (#1058, #1060, #1061 each took 15; #1070 is at 4+). Each round is 20-40 minutes. Rounds are dominated by narrow edge cases found one at a time, reviewer bars that drift between rounds, and housekeeping failures, not by real defects in the change. The review prompt (`src/server/review.ts`) already says to report the whole bug class in one pass and never hold an instance back, and `review.humanFlagAfterPasses` (default 5) only flags needs-input; neither stops the loop.
@@ -42,3 +42,4 @@ Start from `src/server/review.ts` (prompt around the "Earlier passes and the who
 - 2026-11-09T19:22:04Z · status review→active
 - 2026-11-09T20:51:44Z · status active→review
 - 2026-11-09T21:21:54Z · status review→active
+- 2026-11-09T22:09:50Z · status active→review
