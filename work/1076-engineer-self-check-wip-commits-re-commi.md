@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The task stays active — fix the failure and ask again."
@@ -14,7 +14,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T23:46:37Z"
+updated_at: "2026-11-09T23:46:38Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 7acb7acb0353d1640a3ab26f488ff34f36ec1465
 review_passes: 4
@@ -188,4 +188,3 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T23:20:40Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T23:38:54Z · message_delivered: 1 message(s)
 - 2026-11-09T23:46:37Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The task stays active — fix the failure and ask again.
-- 2026-11-09T23:46:37Z · status active→review
