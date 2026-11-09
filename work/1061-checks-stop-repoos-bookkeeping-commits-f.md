@@ -563,3 +563,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T13:01:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T13:02:29Z · status active→review
 - 2026-11-09T13:02:29Z · message_queued at 2026-11-09T13:02:29.354Z
+- 2026-11-09T13:02:29Z · note: shots: skipped — Docs site skipped: no docs shot declared
