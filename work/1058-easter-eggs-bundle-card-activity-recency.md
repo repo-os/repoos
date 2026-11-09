@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -55,13 +55,13 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+"hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "board:activeCoding"
@@ -74,13 +74,13 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "highlight": "[role=\"tooltip\"].show",
 "steps": [
 {
-  "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+"waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-  "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+"hover": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-  "waitMs": 500
+"waitMs": 500
 }
 ],
 "state": "board:pipeline"
@@ -618,3 +618,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T09:38:43Z · message_delivered: 1 message(s)
 - 2026-11-09T09:40:44Z · body
 - 2026-11-09T10:05:53Z · engineer stopped by request
+- 2026-11-09T10:05:53Z · status active→review
