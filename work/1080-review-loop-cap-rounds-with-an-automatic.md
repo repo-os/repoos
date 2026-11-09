@@ -11,7 +11,7 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T16:35:15Z"
+updated_at: "2026-11-09T16:35:31Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-09T15:23:19.003Z: repoos check failed: ui verification failed (3 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: The Internet connection appears to be offline.; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: The Internet connection appears to be offline.; [request] Failed to load resource: The Internet connection appears to be offline. (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=P… (truncated)"
@@ -38,6 +38,11 @@ Start from `src/server/review.ts` (prompt around the "Earlier passes and the who
 
 ## Priority and slicing (owner, 2026-11-09 night)
 The owner wants tasks to converge in a few rounds. Ship in two slices and hand off the FIRST slice as fast as possible, small and low-risk: SLICE 1 = acceptance criteria 1, 2 and 3 only (automatic freeze after review.freezeAfterPasses passes, lighter bar for p3 and easter-egg tasks, accepted-scope sections are authoritative) as a prompt-and-setting change in src/server/review.ts and src/core/config.ts with its Settings control and tests; no UI beyond that control. SLICE 2 (a separate follow-up task, file it) = criteria 4-7 plus a NEW criterion: an explicit owner override, 'Land anyway' in the Move-to-done flow with a confirmation dialog and a recorded reason, that is allowed only when the remaining review findings are NOT landing blockers (verdict needs-work but landing checks pass), so the human can accept known risk instead of looping; it never bypasses landing checks, tests or the close-out pipeline. Do not start slice 2 here.
+
+## Shots
+```json
+[]
+```
 
 ## Activity
 
@@ -96,3 +101,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T16:34:21Z · message_delivered: 5 message(s)
 - 2026-11-09T16:35:15Z · message_queued at 2026-11-09T16:35:15.048Z
 - 2026-11-09T16:35:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T16:35:31Z · body
