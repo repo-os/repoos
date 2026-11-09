@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
@@ -14,7 +16,6 @@ created_at: "2026-11-09T12:14:25Z"
 updated_at: "2026-11-09T17:02:15Z"
 review_rounds: 2
 review_passes: 2
-last_check_failure: "repoos check at 2026-11-09T15:23:19.003Z: repoos check failed: ui verification failed (3 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: The Internet connection appears to be offline.; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: The Internet connection appears to be offline.; [request] Failed to load resource: The Internet connection appears to be offline. (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=P… (truncated)"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -111,3 +112,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T17:00:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T17:02:14Z · note: shots: failed — browser capture cancelled
 - 2026-11-09T17:02:15Z · message_queued at 2026-11-09T17:02:15.656Z
+
