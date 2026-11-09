@@ -3,6 +3,9 @@ id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
 status: active
+hold: true
+hold_reason: "Paused until after the v0.5.80 release so reviews and checks for #1070/#1061/#1058 run faster; resume with repoos unhold 1073 --start"
+hold_at: "2026-11-09T09:38:43.765Z"
 priority: p3
 area: web
 assigned_to: ai
@@ -63,3 +66,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T09:31:26Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T09:38:39Z · needs_input
 - 2026-11-09T09:38:43Z · engineer stopped by request
+- 2026-11-09T09:38:43Z · held, held-reason, held-at
