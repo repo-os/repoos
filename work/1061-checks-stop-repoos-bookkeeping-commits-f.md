@@ -3,6 +3,9 @@ id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 8 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -319,3 +322,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T00:31:52Z · message_queued at 2026-11-09T00:31:52.075Z
 - 2026-11-09T00:31:52Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-09T00:32:32Z · note: review pass 8: needs some work
+- 2026-11-09T00:32:32Z · needs_input
