@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-09T10:38:59Z"
+review_passes: 15
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
@@ -11,8 +13,6 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T10:38:59Z"
-review_passes: 14
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 56
@@ -635,3 +635,4 @@ Owner decision (2026-11-09, release deadline): the screenshot framing of the Pip
 - 2026-11-09T10:38:26Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-09T10:38:59Z · note: review pass 15: good to go
 - 2026-11-09T10:38:59Z · needs_input
+
