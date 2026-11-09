@@ -14,7 +14,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T04:40:21Z"
+updated_at: "2026-11-09T05:56:06Z"
 review_passes: 11
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -45,6 +45,9 @@ Today none of those edits can change the result of the check (bookkeeping lives 
 
 ## Notes for AI
 Start from src/server/handoff.ts (the "worktree changed while the gate was running" refusal), the WIP checkpoint commit code, and the bookkeeping writers (activity/report/status commits, `docs(<id>): ...`). Reuse the review-lock machinery if it fits. Keep the scope to these four behaviors. Related: #0598 (protect a task worktree from edits after handoff) landed earlier; read it first and extend rather than duplicate.
+
+## Accepted scope and known limitations
+Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING engineer during a check is out of scope and not enforceable (an agent process can always write to its worktree). The protection this task delivers is: bookkeeping commits and RepoOS-controlled operations are deferred while a check runs, new engineer turns are refused during a check, and any source change that lands during a check is DETECTED afterwards by drift detection and invalidates the result with the commit subject and paths. A reviewer must not raise 'running engineer can still write source' as a blocking bug; report it as a suggestion. The task must document this limitation in docs and in the engineering report.
 
 ## Activity
 
@@ -407,3 +410,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T03:37:47Z · note: review pass 11: needs some work
 - 2026-11-09T03:37:47Z · needs_input
 - 2026-11-09T04:40:21Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T05:56:06Z · body: Accepted scope and known limitations (added)
