@@ -11,7 +11,7 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T13:51:14Z"
+updated_at: "2026-11-09T13:52:04Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -48,3 +48,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T13:21:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T13:27:04Z · message_queued at 2026-11-09T13:27:04.740Z
 - 2026-11-09T13:51:14Z · body
+- 2026-11-09T13:52:04Z · handoff_deferred: 3 queued message(s) must be read before review
