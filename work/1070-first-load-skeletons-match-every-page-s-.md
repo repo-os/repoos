@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -19,7 +21,6 @@ review_passes: 6
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -266,3 +267,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T14:27:55Z · needs_input
 - 2026-11-09T14:40:13Z · message_queued at 2026-11-09T14:40:13.918Z
 - 2026-11-09T14:40:17Z · message_delivered: 1 message(s)
+
