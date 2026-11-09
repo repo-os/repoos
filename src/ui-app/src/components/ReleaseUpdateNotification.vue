@@ -72,6 +72,10 @@ onMounted(async () => {
   } catch {
     // Update checks are optional and must never interrupt the application.
   }
+  // A capture can mount before `/api/health` reports the preview build, so the
+  // real fetch above may have landed first with `available: false`. Re-check
+  // the fixture here; the health watch below catches the rest (#1073).
+  if (applyShotFixture()) return;
   // Stay dismissed until a *newer* version appears: only re-show when the
   // available version differs from the one the user dismissed (#1073).
   if (release.value?.available) {
@@ -81,7 +85,10 @@ onMounted(async () => {
 
 // The preview capture may mount before `/api/health` has reported the preview
 // build, so re-check the fixture once health arrives — otherwise the dialog
-// would never open for the shot (#1073). Returns true when it seeded.
+// would never open for the shot (#1073). Returns true when it seeded. The
+// fixture must override whatever the real `/api/release/available` returned
+// (the preview build usually reports no update), so this runs on every health
+// change rather than only while `release` is still empty.
 function applyShotFixture(): boolean {
   const fixture = repo.health?.isPreviewBuild
     ? shotFixtureAvailableRelease(readShotPreviewFixtureFromLocation(window.location))
@@ -97,7 +104,7 @@ function applyShotFixture(): boolean {
 watch(
   () => repo.health?.isPreviewBuild,
   (isPreview) => {
-    if (isPreview && !release.value) applyShotFixture();
+    if (isPreview) applyShotFixture();
   },
 );
 

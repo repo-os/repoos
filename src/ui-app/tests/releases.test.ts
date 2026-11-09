@@ -200,6 +200,53 @@ describe("feature releases", () => {
     }
   });
 
+  it("applies the release:updateAvailable shot fixture once health reports the preview build (#1073)", async () => {
+    // Regression: the component mounts before App's `repo.init()` loads
+    // `/api/health`, so the real (no-update) release payload lands first. The
+    // capture then showed the applied marker but no open dialog, and the shot's
+    // highlight matched nothing. The fixture must win once health arrives.
+    const { useRepoStore } = await import("../src/stores/repo");
+    const repo = useRepoStore();
+    window.history.replaceState({}, "", "/?shotState=release%3AupdateAvailable");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            currentVersion: "0.6.0",
+            latestVersion: null,
+            available: false,
+            releaseNotes: null,
+            releaseUrl: "https://github.com/repo-os/repoos/releases",
+            installKind: "standalone",
+            upgradeCommand: "repoos upgrade",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      // Health is not loaded yet, so the real payload won and no dialog shows.
+      expect(document.body.querySelector(".release-update-banner")).toBeNull();
+
+      // `/api/health` arrives reporting a preview build: the fixture now wins.
+      repo.health = { ok: true, isPreviewBuild: true } as typeof repo.health;
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-code")?.textContent?.trim()).toBe(
+        "repoos upgrade",
+      );
+      expect(document.body.querySelector('[data-test-id="release-upgrade-command"]')).not.toBeNull();
+    } finally {
+      wrapper.unmount();
+      repo.health = null;
+      window.history.replaceState({}, "", "/");
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("remembers a dismissed version in localStorage until a newer one appears (#1073)", async () => {
     const payload = {
       currentVersion: "0.5.46",
