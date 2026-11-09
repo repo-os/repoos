@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 9b3b5702a323d31a7fe553ff8cd481f2a70915ef
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -476,3 +478,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T09:54:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T10:05:04Z · message_queued at 2026-11-09T10:05:04.415Z
 - 2026-11-09T10:05:04Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate
+
