@@ -15,7 +15,6 @@ updated_at: "2026-11-09T16:35:09Z"
 handoff_signal_retry_count: 2
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T14:40:15.096Z\",\"kind\":\"dev-error\"}]"
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 The dashboard already tells users when a newer RepoOS is available (`ReleaseUpdateNotification.vue`, data from `GET /api/release/available`): a banner, then a dialog with installed vs available version and the release notes. But the dialog's only action is an "Upgrade" button that just opens the GitHub release page. It never says how to actually upgrade, even though the answer is a single command.
