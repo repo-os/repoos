@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-09T03:53:56Z"
+review_passes: 14
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
@@ -13,8 +15,6 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-09T03:53:56Z"
-review_passes: 13
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 9
@@ -355,3 +355,4 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-09T03:53:17Z · message_queued at 2026-11-09T03:53:17.821Z
 - 2026-11-09T03:53:18Z · note: shots: skipped — the diff (40 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-09T03:53:56Z · note: review pass 15: good to go
+
