@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T09:09:31Z"
+updated_at: "2026-11-09T09:38:35Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -48,6 +48,9 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 
 ## Accepted scope: no loading-state screenshots
 Owner-side decision (2026-11-09): the handoff capture tool deliberately treats any page showing aria-busy / a loading indicator as a FAILED shot ('loading state detected', src/core/shot-page.ts), so declared shots of the skeleton itself cannot pass. Acceptance criterion 6 (shots of the loading state) is therefore replaced by: precise component tests that assert the skeleton structure and item counts against the real layout constants, plus optional shots of the SETTLED Mission Control and Stories pages to show the real layout the skeleton must match. A reviewer must not require loading-state screenshots.
+
+## Accepted scope and known limitations
+Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and minimum-visible-time (about 350 ms) are applied at the SHELL level in App.vue only. Applying the same gate inside every individual view that renders its own PageSkeleton (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) is out of scope here and is tracked in a follow-up task; a reviewer must report it as a suggestion, not a blocking bug. Still required: fix the Settings row-count regression, and replace the magic placeholder counts for non-board kinds with named constants documented next to the real layout they mirror.
 
 ## Screenshots
 
@@ -146,3 +149,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T09:09:09Z · message_queued at 2026-11-09T09:09:09.254Z
 - 2026-11-09T09:09:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T09:09:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T09:38:35Z · body: Accepted scope and known limitations (added)
