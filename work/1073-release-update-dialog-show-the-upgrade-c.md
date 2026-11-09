@@ -15,7 +15,6 @@ updated_at: "2026-11-09T19:00:14Z"
 last_check_failure: "repoos check at 2026-11-09T16:54:34.079Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — the page at / did not apply the fixture (is this the app target?) (http://127.0.0.1:53313/?shotState=release%3AupdateAvailable)"
 handoff_signal_retry_count: 2
 dev_error_count: 11
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:43:38.290Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:55:20.214Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T18:06:51.403Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The dashboard already tells users when a newer RepoOS is available (`ReleaseUpdateNotification.vue`, data from `GET /api/release/available`): a banner, then a dialog with installed vs available version and the release notes. But the dialog's only action is an "Upgrade" button that just opens the GitHub release page. It never says how to actually upgrade, even though the answer is a single command.
