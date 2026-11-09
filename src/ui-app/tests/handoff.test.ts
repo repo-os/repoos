@@ -480,17 +480,16 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     }
   });
 
-  it("fails loudly when the worktree changes during the check (#0512)", async () => {
-    // Deterministic stand-in for the #0506 writer: a check that rewrites a
-    // source file. A green result then describes a tree that no longer exists,
-    // so the handoff must refuse instead of moving the task to review.
+  it("blocks a source write attempt while the check is running (#1061)", async () => {
+    // The write attempt happens in a separate shell process, like an already
+    // running engineer. The check gate makes tracked source files read-only.
     const fx = makeFixture(0);
     const oldPath = process.env.PATH ?? "";
     process.env.PATH = `${fx.bin}:${oldPath}`;
     try {
       writeFileSync(
         join(fx.bin, "repoos"),
-        "#!/bin/sh\nprintf 'rewritten\\n' > source.txt\nexit 0\n",
+        "#!/bin/sh\nprintf 'rewritten\\n' > source.txt 2>/dev/null || true\nexit 0\n",
         {
           mode: 0o755,
         },
@@ -498,12 +497,9 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
 
       const result = await handoffTask(fx.config, readTask(fx), request(fx));
 
-      expect(result).toMatchObject({ ok: false, step: "check" });
-      expect(result.detail).toMatch(/changed while the gate was running/);
-      expect(result.detail).toContain("source.txt");
-      expect(readTask(fx).status).toBe("active");
-      // The rewrite is still on disk — the guard refuses, it never reverts.
-      expect(readFileSync(join(fx.worktree, "source.txt"), "utf8")).toBe("rewritten\n");
+      expect(result).toMatchObject({ ok: true, step: "done" });
+      expect(readTask(fx).status).toBe("review");
+      expect(readFileSync(join(fx.worktree, "source.txt"), "utf8")).toBe("implemented\n");
     } finally {
       process.env.PATH = oldPath;
       fx.clean();
