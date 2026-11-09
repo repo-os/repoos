@@ -47,9 +47,11 @@ describe("repo loading skeleton", () => {
       /<Transition name="shell-fade">[\s\S]*<RouterView v-else class="main-route"\s*\/>[\s\S]*<\/Transition>/,
     );
     const styles = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
-    expect(styles).toMatch(/\.main\s*\{[^}]*position:\s*relative/s);
     expect(styles).toMatch(
-      /\.main\s*>\s*\.shell-fade-leave-active\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;/s,
+      /\.main\s*\{[^}]*--main-top-inset:\s*22px;[^}]*--main-inline-inset:\s*26px;[^}]*position:\s*relative/s,
+    );
+    expect(styles).toMatch(
+      /\.main\s*>\s*\.shell-fade-leave-active\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*var\(--main-top-inset\) var\(--main-inline-inset\) 0;/s,
     );
     expect(styles).toMatch(
       /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.shell-fade-enter-active,[\s\S]*?transition-duration:\s*0ms;/,

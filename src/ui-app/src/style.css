@@ -1374,6 +1374,8 @@
 }
 
 .main {
+  --main-top-inset: 22px;
+  --main-inline-inset: 26px;
   position: relative;
   flex: 1;
   display: flex;
@@ -1384,7 +1386,7 @@
   /* Full-height views own their scrollports and put the shared end inset on
      that scroller. Padding here would instead recreate an empty bottom band. */
   /* The agent heads float over content like on /work: no blank right lane. */
-  padding: 22px 26px 0;
+  padding: var(--main-top-inset) var(--main-inline-inset) 0;
   min-width: 0;
 }
 /* Routed shells fill the pane so height:100% / nested flex scrollports resolve (#0951). */
@@ -1451,7 +1453,7 @@
 /* The outgoing shell fades over the incoming route without sharing its height. */
 .main > .shell-fade-leave-active {
   position: absolute;
-  inset: 0;
+  inset: var(--main-top-inset) var(--main-inline-inset) 0;
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
