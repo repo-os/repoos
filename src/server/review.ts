@@ -324,9 +324,16 @@ export function acceptedScopeSection(body: string): string | null {
   const start = lines.findIndex((line) => /^##\s+Accepted scope/i.test(line.trim()));
   if (start < 0) return null;
   let end = start + 1;
-  while (end < lines.length && !/^##\s/.test(lines[end]!.trim())) end++;
+  let fenced = false;
+  for (; end < lines.length; end++) {
+    const trimmed = lines[end]!.trim();
+    if (trimmed.startsWith("```")) fenced = !fenced;
+    if (!fenced && /^##\s/.test(trimmed)) break;
+  }
   const text = lines.slice(start, end).join("\n").trim();
-  return text ? text.slice(0, ACCEPTED_SCOPE_CHARS) : null;
+  if (!text) return null;
+  if (text.length <= ACCEPTED_SCOPE_CHARS) return text;
+  return `${text.slice(0, ACCEPTED_SCOPE_CHARS)}\n\n[truncated: the accepted-scope section is longer than ${ACCEPTED_SCOPE_CHARS} characters; the rest is not quoted]`;
 }
 
 const now = (): string => new Date().toISOString();
@@ -621,7 +628,7 @@ export function blockingBarSection(
       "The task body has an accepted-scope section. It is AUTHORITATIVE: the items it lists, and",
       "anything it explicitly supersedes (for example an acceptance criterion it narrows or",
       "replaces), are accepted limitations and are NOT blocking. Quote them under",
-      "`## Suggestions` at most, never under `## Bugs`. Quoted from the task body:",
+      `\`${bar === "frozen" ? "## Suggestions (non-blocking)" : "## Suggestions"}\` at most, never under \`## Bugs\`. Quoted from the task body:`,
       "",
       acceptedScope,
     );
@@ -802,8 +809,16 @@ export function reviewMission(
     "  registration, import/export path rewriting, fallback handling, and the",
     "  like), then grep the diff and the files it touches for every other",
     "  instance — sibling paths, callers, config/schema/docs/test registrations,",
-    "  both sides of a fallback — and list them all under ## Bugs. Never hold an",
-    "  instance back for a later pass.",
+    ...(blockingBar === "full"
+      ? [
+          "  both sides of a fallback — and list them all under ## Bugs. Never hold an",
+          "  instance back for a later pass.",
+        ]
+      : [
+          "  both sides of a fallback — list every instance that meets the blocking bar",
+          "  under ## Bugs and the rest under `## Suggestions (non-blocking)`. Never hold a",
+          "  blocking instance back for a later pass.",
+        ]),
     "- Separate code defects from evidence-only gaps: when the code is sound but a",
     "  capture is wrong or stale, use `EVIDENCE-GAP-ONLY` / `STALE-EVIDENCE-ONLY`",
     "  and check that each declared shot's target and route can really render its",
