@@ -172,7 +172,7 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.reason).toContain('"feat: side branch source"');
+      expect(result.reason).toContain('"merge side source"');
       expect(result.reason).toContain("src/app.ts");
     }
   });
