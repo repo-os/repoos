@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-09T21:03:57Z"
+review_passes: 3
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -14,9 +16,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T21:03:57Z"
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
 dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T19:51:44.422Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -147,3 +147,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T21:01:38Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-09T21:03:57Z · note: review pass 3: needs some work
 - 2026-11-09T21:03:57Z · needs_input
+
