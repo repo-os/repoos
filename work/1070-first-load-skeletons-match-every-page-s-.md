@@ -388,3 +388,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T22:23:55Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-09T22:26:04Z · body
 - 2026-11-09T22:26:38Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T22:26:38Z · message_queued at 2026-11-09T22:26:38.255Z
