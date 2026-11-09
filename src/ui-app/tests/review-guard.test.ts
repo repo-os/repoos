@@ -303,10 +303,12 @@ describe("guardReviewTransition (0210)", () => {
       expect(committed).toContain("source.txt");
       expect(committed).not.toContain("work/reports/0299/round-1.json");
       // Left in the worktree untouched, and not staged.
-      expect(readFileSync(join(fx.worktree, "work", "reports", "0299", "round-1.json"), "utf8")).toBe(
-        '{"x":1}\n',
-      );
-      const staged = git(fx.worktree, ["diff", "--cached", "--name-only"]).split("\n").filter(Boolean);
+      expect(
+        readFileSync(join(fx.worktree, "work", "reports", "0299", "round-1.json"), "utf8"),
+      ).toBe('{"x":1}\n');
+      const staged = git(fx.worktree, ["diff", "--cached", "--name-only"])
+        .split("\n")
+        .filter(Boolean);
       expect(staged).not.toContain("work/reports/0299/round-1.json");
     } finally {
       fx.clean();

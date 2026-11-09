@@ -34,6 +34,9 @@ import {
   runGit,
   mainDirtyFilesForCloseOut,
   GitDirtyCheckError,
+  stagedForeignBookkeepingPaths,
+  workFileFilter,
+  type WorkFileFilter,
 } from "../core/git.js";
 import { CLOSEOUT_CHECK_ARGS } from "../core/check-plan.js";
 import { markTaskReleased } from "./write.js";
@@ -605,10 +608,22 @@ async function completeTaskLocked(
     const r1 = await runGit(wt, ["ls-files", "dist/"], 5000);
     if (r1.status === 0 && r1.stdout.trim().length > 0) {
       await runGit(wt, ["rm", "-r", "--cached", "--", "dist/"], 15_000);
-      // Pathspec-scoped: commit only the `dist/` removal, never whatever else
-      // the task worktree index holds (a sibling's bookkeeping a board write
-      // left staged) — a bare commit would fold it into the branch (#1076).
-      await runGit(wt, ["commit", "-m", "chore: drop dist before merge", "--", "dist/"], 15_000);
+      // Drop any OTHER task's bookkeeping from the index before the commit
+      // (#1076). This commit must stay bare: a pathspec commit cannot carry the
+      // `git rm --cached` deletion above (the paths are untracked in the
+      // working tree, so `git commit -- dist/` is a no-op), and a bare commit
+      // folds WHATEVER is staged into the branch. Unstaging a sibling's
+      // `work/<other-id>-*.md` (a board write a prior `git add -A` staged)
+      // keeps it off the branch; the dist removal and this task's own work are
+      // untouched, exactly as before.
+      const foreign = await stagedForeignBookkeepingPaths(wt, {
+        ...workFileFilter(config),
+        taskId: task.id,
+      });
+      if (foreign.length > 0) {
+        await runGit(wt, ["reset", "--quiet", "HEAD", "--", ...foreign], 15_000);
+      }
+      await runGit(wt, ["commit", "-m", "chore: drop dist before merge"], 15_000);
     }
   }
   const autoResolve = [rel, "dist/"];

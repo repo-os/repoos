@@ -194,13 +194,7 @@ export async function guardReviewTransition(
     const commit = stagedPaths.length
       ? await runGit(
           registered,
-          [
-            "commit",
-            "-m",
-            `feat(${task.id}): implement ${task.title}`,
-            "--",
-            ...stagedPaths,
-          ],
+          ["commit", "-m", `feat(${task.id}): implement ${task.title}`, "--", ...stagedPaths],
           30_000,
         )
       : await runGit(

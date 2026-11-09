@@ -233,15 +233,18 @@ cannot tell from the code alone:
   ("the diff changes another task's bookkeeping"), and an engineer then has to
   restore them by hand, round after round. The rule and the code paths:
   - **Where siblings leak in.** The server does NOT deliberately write a
-    sibling's file into a worktree (activity, CTO notes and watchdog writes go to
-    `config.root`/main). They arrive indirectly: the engineer's self-check WIP
-    checkpoint (`commitWipCheckpointForRemoteGate`,
-    `src/server/engineer-remote-self-check.ts`) used to run a bare `git commit`,
-    which folds WHATEVER is staged — including a sibling file a board write left
-    dirty-and-staged — into the branch; a `git add -A` sweep in the worktree
-    (`review-guard.ts`) can do the same; and a merge of main into the branch can
-    carry a sibling's newer copy. It then compounds: the WIP loop re-commits it
-    every check.
+    sibling's file into a worktree. An audit of the write sites that can target a
+    worktree — `patchTaskFile` callers (`routes/tasks.ts` `:1194`,
+    `server.ts` `:3432` in `syncTaskBranch`) each write only THIS task's own file
+    (`task.path`) into its worktree, never a sibling's; activity, CTO notes and
+    watchdog writes go to `config.root`/main. Siblings arrive indirectly: the
+    engineer's self-check WIP checkpoint
+    (`commitWipCheckpointForRemoteGate`, `src/server/engineer-remote-self-check.ts`)
+    used to run a bare `git commit`, which folds WHATEVER is staged — including a
+    sibling file a board write left dirty-and-staged — into the branch; a
+    `git add -A` sweep in the worktree (`review-guard.ts`) can do the same; and a
+    merge of main into the branch can carry a sibling's newer copy. It then
+    compounds: the WIP loop re-commits it every check.
   - **The guardrails.** The WIP checkpoint commits only the paths it intended
     (`git commit -- <paths>`) and resets any foreign bookkeeping first.
     `guardReviewTransition` unstages foreign `work/` files before its implement
@@ -251,6 +254,11 @@ cannot tell from the code alone:
     deleted files get main's version back, branch-added siblings are removed —
     and lands the restore as one plain bookkeeping commit the review tolerates.
     It reports what it restored in the task log; it never fails a handoff.
+    A commit made WHILE a merge is in progress (`lockfile-conflict.ts`,
+    `integration-orchestrator.ts`'s narrow resolution, `done.ts`'s drop-`dist`)
+    cannot use a pathspec — git refuses (`cannot do a partial commit during a
+    merge`) — so those keep a bare `git commit` and instead scope the preceding
+    `git add` to their own paths; do not "fix" them into a partial commit.
   - **What an engineer sees.** `repoos landable` and the handoff report name the
     offending files and the cause in plain English ("the diff changes another
     task's bookkeeping: work/<id>-*.md"), with the fix spelled out. An engineer

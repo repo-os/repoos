@@ -2193,6 +2193,10 @@ export class CloseOutOrchestrator {
         return { ok: false };
       }
     }
+    // A bare `--no-edit` is required here: this runs while the merge is in
+    // progress, and git refuses a pathspec commit then ("cannot do a partial
+    // commit during a merge"). The scoped `add -A -- ...remaining` above already
+    // keeps a dirty sibling out of the index (#1076).
     const commit = await runGit(
       wtPath,
       ["commit", "--no-edit", "-m", "chore: resolve integration conflict by union (#0692)"],

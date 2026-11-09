@@ -1257,10 +1257,15 @@ function healMissingTaskFile(root: string, worktreePath: string, taskRelPath: st
     mkdirSync(dirname(worktreeFile), { recursive: true });
     copyFileSync(mainFile, worktreeFile);
     if (git(worktreePath, ["add", "--", taskRelPath]) === null) return;
+    // Pathspec-scoped: commit ONLY the healed task file, never another task's
+    // bookkeeping a board write left staged in this worktree (#1076) — a bare
+    // commit would fold it into the branch.
     git(worktreePath, [
       "commit",
       "-m",
       `chore: restore task file missing from worktree (self-heal)`,
+      "--",
+      taskRelPath,
     ]);
   } catch {
     /* best-effort; handoff validation still catches an unhealed worktree */
@@ -2783,15 +2788,12 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
   // checkout is only a fallback: if main is checked out on another branch the
   // merge-base would be computed from the wrong tip and a foreign file present
   // in both trees could be missed.
-  const branchName = (await runGit(opts.worktree, ["branch", "--show-current"], 10_000)).stdout
-    .trim();
+  const branchName = (
+    await runGit(opts.worktree, ["branch", "--show-current"], 10_000)
+  ).stdout.trim();
   const configuredBase = branchName
     ? (
-        await runGit(
-          opts.worktree,
-          ["config", "--get", `branch.${branchName}.merge-base`],
-          5_000,
-        )
+        await runGit(opts.worktree, ["config", "--get", `branch.${branchName}.merge-base`], 5_000)
       ).stdout.trim()
     : "";
   const baseFull =

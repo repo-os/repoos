@@ -78,12 +78,19 @@ export async function tryCompleteMergeByRegeneratingLockfile(
   // `add -A` would also sweep in whatever else the task worktree holds dirty
   // (another task's bookkeeping from a board write), and the following bare
   // commit would publish it to the branch (#1076).
+  //
+  // A sibling's file that was ALREADY staged before this merge never reaches
+  // here: git refuses to start a merge over a dirty index ("Your local changes
+  // would be overwritten"), so by the time a conflict exists the index holds
+  // only this merge's own conflicted paths. The `add -- <conflicts>` scoping is
+  // therefore sufficient; the merge commit must stay a bare `--no-edit` (git
+  // rejects a pathspec commit mid-merge).
   const add = await runGit(worktreePath, ["add", "--", ...conflicts], 30_000);
   if (add.status !== 0) {
     await runGit(worktreePath, ["merge", "--abort"], 4000);
     return { ok: false, reason: "could not stage regenerated lockfile" };
   }
-  const commit = await runGit(worktreePath, ["commit", "--no-edit", "--", ...conflicts], 30_000);
+  const commit = await runGit(worktreePath, ["commit", "--no-edit"], 30_000);
   if (commit.status !== 0) {
     await runGit(worktreePath, ["merge", "--abort"], 4000);
     return {

@@ -2,6 +2,7 @@
  * #0679 — adaptive close-out timeout, monotonic budget, repair handback, review messages.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,6 +15,7 @@ import {
   recordCloseOutGateTimingStats,
 } from "../../core/close-out-timing.js";
 import { isLockfileOnlyConflicts } from "../../core/lockfile-conflict.js";
+import { mergeBranch } from "../../core/git.js";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { scheduleCloseOutRepairHandback } from "../../server/close-out-repair.js";
 import {
@@ -107,6 +109,71 @@ describe("lockfile-only conflicts (#0679)", () => {
     expect(isLockfileOnlyConflicts(["bun.lock", "package-lock.json"])).toBe(true);
     expect(isLockfileOnlyConflicts(["bun.lock", "src/a.ts"])).toBe(false);
   });
+});
+
+describe("lockfile-only conflict completes the merge commit (#1076)", () => {
+  function sh(cwd: string, args: string[]): string {
+    return execFileSync("git", args, { cwd, encoding: "utf8" });
+  }
+
+  it("completes a lockfile-only merge and keeps a dirty sibling out of the commit", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-0679-lockfile-"));
+    // A fake `bun` so `bun install` returns 0 without a network call.
+    const bin = join(root, "bin");
+    mkdirSync(bin, { recursive: true });
+    writeFileSync(
+      join(bin, "bun"),
+      '#!/bin/sh\nprintf "regenerated lock\\n" > bun.lock\nexit 0\n',
+      {
+        mode: 0o755,
+      },
+    );
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${bin}:${oldPath}`;
+    try {
+      sh(root, ["init", "-q", "-b", "main"]);
+      sh(root, ["config", "user.email", "t@example.com"]);
+      sh(root, ["config", "user.name", "T"]);
+      mkdirSync(join(root, "work"), { recursive: true });
+      writeFileSync(join(root, "package.json"), '{"name":"x","version":"1.0.0"}\n');
+      writeFileSync(join(root, "bun.lock"), "main lock\n");
+      writeFileSync(join(root, "src.ts"), "base\n");
+      writeFileSync(join(root, "work/2000-other.md"), '---\nid: "2000"\n---\nMAIN\n');
+      sh(root, ["add", "-A"]);
+      sh(root, ["commit", "-q", "-m", "init"]);
+
+      // A feature branch that changes the lockfile, and a main that changes it
+      // differently — a lockfile-only conflict.
+      sh(root, ["checkout", "-q", "-b", "feat/t"]);
+      writeFileSync(join(root, "bun.lock"), "feature lock\n");
+      sh(root, ["commit", "-qam", "feature lock"]);
+      sh(root, ["checkout", "-q", "main"]);
+      writeFileSync(join(root, "bun.lock"), "main lock v2\n");
+      sh(root, ["commit", "-qam", "main lock"]);
+      // A sibling task's bookkeeping appears in the worktree (an untracked
+      // board write) while the lockfile merge completes. The scoped `add`
+      // must not sweep it into the merge commit.
+      writeFileSync(join(root, "work", "2001-sibling.md"), '---\nid: "2001"\n---\nBOARD\n');
+
+      const conflict = await mergeBranch(root, "feat/t", { regenerateLockfileConflicts: true });
+      expect(conflict.merged).toBe(true);
+
+      const committed = sh(root, ["show", "--name-only", "--format=", "HEAD"])
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      // The sibling file is never folded into the merge commit.
+      expect(committed).not.toContain("work/2001-sibling.md");
+      // The merge is a real merge commit (two parents), not a partial commit.
+      const parents = sh(root, ["log", "-1", "--format=%P"]).trim().split(/\s+/).filter(Boolean);
+      expect(parents.length).toBe(2);
+      // The sibling is still an uncommitted working-tree change.
+      expect(sh(root, ["status", "--porcelain"])).toContain("work/2001-sibling.md");
+    } finally {
+      process.env.PATH = oldPath;
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 60_000);
 });
 
 describe("scheduleCloseOutRepairHandback (#0679)", () => {

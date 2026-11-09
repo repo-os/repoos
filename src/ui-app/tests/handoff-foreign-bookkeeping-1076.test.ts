@@ -166,7 +166,9 @@ describe("restoreForeignTaskBookkeepingFromMain (#1076)", () => {
       expect(restored).toEqual(["work/2002-stray.md"]);
       expect(existsSync(join(fx.wt, "work", "2002-stray.md"))).toBe(false);
       expect(git(fx.wt, ["status", "--porcelain"])).toBe("");
-      const changed = git(fx.wt, ["diff", "--name-only", "main...HEAD"]).split("\n").filter(Boolean);
+      const changed = git(fx.wt, ["diff", "--name-only", "main...HEAD"])
+        .split("\n")
+        .filter(Boolean);
       expect(changed).not.toContain("work/2002-stray.md");
     } finally {
       fx.clean();
@@ -343,12 +345,14 @@ checkpoint, and handoff must restore main's copy instead of failing landing.
       expect(changed).not.toContain("work/2000-other.md");
       expect(changed).not.toContain("work/reports/2000/review-1.md");
       expect(changed).toContain("source.txt");
-      expect(evaluateTaskScopeCheck({
-        changedPaths: changed,
-        ownTaskFile: "work/1076-handoff-foreign.md",
-        taskId: TASK_ID,
-        bookkeeping: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
-      }).status).toBe("pass");
+      expect(
+        evaluateTaskScopeCheck({
+          changedPaths: changed,
+          ownTaskFile: "work/1076-handoff-foreign.md",
+          taskId: TASK_ID,
+          bookkeeping: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
+        }).status,
+      ).toBe("pass");
 
       // The handoff reported the restore in plain English instead of failing.
       expect(
