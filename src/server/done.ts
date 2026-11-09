@@ -605,7 +605,10 @@ async function completeTaskLocked(
     const r1 = await runGit(wt, ["ls-files", "dist/"], 5000);
     if (r1.status === 0 && r1.stdout.trim().length > 0) {
       await runGit(wt, ["rm", "-r", "--cached", "--", "dist/"], 15_000);
-      await runGit(wt, ["commit", "-m", "chore: drop dist before merge"], 15_000);
+      // Pathspec-scoped: commit only the `dist/` removal, never whatever else
+      // the task worktree index holds (a sibling's bookkeeping a board write
+      // left staged) — a bare commit would fold it into the branch (#1076).
+      await runGit(wt, ["commit", "-m", "chore: drop dist before merge", "--", "dist/"], 15_000);
     }
   }
   const autoResolve = [rel, "dist/"];

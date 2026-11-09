@@ -74,12 +74,16 @@ export async function tryCompleteMergeByRegeneratingLockfile(
     await runGit(worktreePath, ["merge", "--abort"], 4000);
     return { ok: false, reason: "bun install failed after lockfile conflict" };
   }
-  const add = await runGit(worktreePath, ["add", "-A"], 30_000);
+  // Stage only the conflicted lockfiles this function is completing — a bare
+  // `add -A` would also sweep in whatever else the task worktree holds dirty
+  // (another task's bookkeeping from a board write), and the following bare
+  // commit would publish it to the branch (#1076).
+  const add = await runGit(worktreePath, ["add", "--", ...conflicts], 30_000);
   if (add.status !== 0) {
     await runGit(worktreePath, ["merge", "--abort"], 4000);
     return { ok: false, reason: "could not stage regenerated lockfile" };
   }
-  const commit = await runGit(worktreePath, ["commit", "--no-edit"], 30_000);
+  const commit = await runGit(worktreePath, ["commit", "--no-edit", "--", ...conflicts], 30_000);
   if (commit.status !== 0) {
     await runGit(worktreePath, ["merge", "--abort"], 4000);
     return {

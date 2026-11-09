@@ -133,6 +133,60 @@ describe("commitWipCheckpointForRemoteGate (#0695)", () => {
     expect(committed).toContain("src.txt");
     expect(committed).not.toContain("work/9999-other.md");
     expect(committed).not.toContain("work/reports/9999/review-1.md");
+    // The foreign bookkeeping is unstaged from the index, so the next bare
+    // commit cannot re-add it; the checkpoint leaves nothing of it staged.
+    const staged = execFileSync("git", ["diff", "--cached", "--name-only"], {
+      cwd: root,
+      encoding: "utf8",
+    })
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    expect(staged).not.toContain("work/9999-other.md");
+    expect(staged).not.toContain("work/reports/9999/review-1.md");
+  });
+
+  it("unstages a foreign sibling that is staged but not dirty (#1076 round 2)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-wip-foreign-staged-"));
+    cleanups.push(root);
+    gitInit(root);
+    mkdirSync(join(root, "work", "reports", "9999"), { recursive: true });
+    writeFileSync(join(root, "work", "1076-mine.md"), '---\nid: "1076"\n---\n');
+    writeFileSync(join(root, "work", "9999-other.md"), '---\nid: "9999"\n---\norig\n');
+    writeFileSync(join(root, "work", "reports", "9999", "round-1.json"), '{"r":1}\n');
+    execFileSync("git", ["add", "."], { cwd: root, stdio: "ignore" });
+    execFileSync("git", ["commit", "-qm", "seed"], { cwd: root, stdio: "ignore" });
+
+    // The engineer's own edit is dirty but NOT staged; a sibling's bookkeeping
+    // is `git add`ed (still byte-identical to HEAD, so it never appears in the
+    // dirty list). Only reading the index can find it.
+    writeFileSync(join(root, "src.txt"), "edit\n");
+    execFileSync("git", ["add", "--", "work/9999-other.md", "work/reports/9999/round-1.json"], {
+      cwd: root,
+      stdio: "ignore",
+    });
+
+    const err = await commitWipCheckpointForRemoteGate(root, relConfig(root), "1076");
+    expect(err).toBeNull();
+    const committed = execFileSync("git", ["show", "--name-only", "--format=", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+    })
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    expect(committed).toContain("src.txt");
+    expect(committed).not.toContain("work/9999-other.md");
+    expect(committed).not.toContain("work/reports/9999/round-1.json");
+    const staged = execFileSync("git", ["diff", "--cached", "--name-only"], {
+      cwd: root,
+      encoding: "utf8",
+    })
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    expect(staged).not.toContain("work/9999-other.md");
+    expect(staged).not.toContain("work/reports/9999/round-1.json");
   });
 });
 
