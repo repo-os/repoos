@@ -746,8 +746,8 @@ command = "just macos-build && exec env LLVM_PROFILE_FILE=/dev/null 'macos/.deri
 
 [[budget.allowlist]]
 cli = "opencode"
-models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/mimo-v2.6-flash"]
-pausedModels = [{ model = "opencode-go/mimo-v2.6-flash" }, { model = "opencode-go/glm-5.3-flash" }]
+models = ["opencode-go/deepseek-v4.1-flash", "opencode-go/glm-5.3-flash", "opencode-go/mimo-v2.6-flash", "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash"]
+pausedModels = [{ model = "opencode-go/mimo-v2.6-flash" }, { model = "opencode-go/glm-5.3-flash" }, { model = "opencode-go/deepseek-v4.1-flash" }]
 [[budget.allowlist]]
 cli = "github copilot"
 models = ["default"]
