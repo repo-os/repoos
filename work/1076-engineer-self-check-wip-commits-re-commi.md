@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -65,3 +66,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T13:32:29Z · status review→active
 - 2026-11-09T13:32:32Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T13:37:49Z · message_queued at 2026-11-09T13:37:49.877Z
+
