@@ -14,6 +14,13 @@ export function cardHintDataTip(title: string, activityTip?: string | null): str
   return title;
 }
 
+/** Prefer the newest usable timestamp; malformed telemetry must not mask a fallback. */
+export function firstValidActivityTimestamp(
+  ...timestamps: Array<string | null | undefined>
+): string | undefined {
+  return timestamps.find((value) => !!value && Number.isFinite(Date.parse(value)));
+}
+
 /** Last engineer output — "Active 3m ago" plus the local timestamp. */
 export function agentLastActivityTip(lastAt: string | undefined, nowMs: number): string | null {
   const activity = formatActivity(nowMs, lastAt);

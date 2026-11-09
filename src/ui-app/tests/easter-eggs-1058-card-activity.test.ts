@@ -121,7 +121,7 @@ describe("TaskCard activity recency (#1058)", () => {
     document.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
 
-  it("opens the shared recency popup on a touch tap", async () => {
+  it("does not intercept a touch tap to show a tooltip", async () => {
     const repo = useRepoStore();
     repo.runningIds = ["1058"];
     repo.runningSince = { "1058": "2026-11-08T02:59:00.000Z" };
@@ -140,7 +140,7 @@ describe("TaskCard activity recency (#1058)", () => {
     };
     pointer("pointerdown");
     pointer("pointerup");
-    expect(document.querySelector(".app-tooltip.show")?.textContent).toMatch(/Active .*ago/i);
+    expect(document.querySelector(".app-tooltip.show")).toBeNull();
     wrapper.unmount();
     document.dispatchEvent(new Event("scroll", { bubbles: true }));
   });

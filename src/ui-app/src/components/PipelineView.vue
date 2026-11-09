@@ -37,6 +37,7 @@ import PipelineCard, { type PipelineCardAction } from "./PipelineCard.vue";
 import { activeTaskChecksBusy } from "../lib/checks-card-status";
 import type { SharedTaskCardStatusInput } from "../lib/task-card-status.js";
 import { toCheckProgress, type CheckProgress } from "../lib/check-progress";
+import { firstValidActivityTimestamp } from "../lib/card-activity-recency";
 
 const repo = useRepoStore();
 const ui = useUiStore();
@@ -77,7 +78,7 @@ interface Lane {
 }
 
 function lastActivityFor(taskId: string): string | undefined {
-  return repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  return firstValidActivityTimestamp(repo.agentActivityAt[taskId], repo.runningSince[taskId]);
 }
 
 function laneFor(task: Task, nowMs: number): Lane | null {

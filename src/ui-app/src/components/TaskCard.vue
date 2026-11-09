@@ -40,7 +40,11 @@ import {
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { activeEngineerCardHint, activeEngineerCardBlocksInterrupt } from "../lib/active-task-card";
-import { agentLastActivityTip, cardHintDataTip } from "../lib/card-activity-recency";
+import {
+  agentLastActivityTip,
+  cardHintDataTip,
+  firstValidActivityTimestamp,
+} from "../lib/card-activity-recency";
 import { resolveSharedTaskCardStatus } from "../lib/task-card-status.js";
 import {
   AWAITING_FRESH_REVIEW_LABEL,
@@ -655,7 +659,7 @@ onUnmounted(() => {
 
 /** The task's most recent agent activity timestamp, if known. */
 function lastActivityFor(taskId: string): string | undefined {
-  return repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  return firstValidActivityTimestamp(repo.agentActivityAt[taskId], repo.runningSince[taskId]);
 }
 
 /** Diff stats for this task. */
