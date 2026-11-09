@@ -14,7 +14,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T09:02:18Z"
+updated_at: "2026-11-09T09:02:19Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -461,3 +461,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T09:02:12Z · note: handoff requested (cli)
 - 2026-11-09T09:02:18Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
 - 2026-11-09T09:02:18Z · status active→review
+- 2026-11-09T09:02:19Z · note: shots: skipped — Docs site skipped: no docs shot declared
