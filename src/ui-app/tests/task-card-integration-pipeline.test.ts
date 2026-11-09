@@ -89,6 +89,30 @@ describe("TaskCard integration pipeline (#0740)", () => {
     expect(hint.text()).not.toContain("queued for close-out");
   });
 
+  it("shows task state time when close-out timing fields are invalid", async () => {
+    const repo = useRepoStore();
+    repo.integration = pipeline({
+      active: {
+        taskId: "0730",
+        stage: "check",
+        failed: false,
+        startedAt: "invalid",
+        lastProgressAt: "also invalid",
+      },
+    });
+    const wrapper = mount(TaskCard, {
+      props: {
+        task: { ...task("0730"), updated_at: "2026-10-07T13:00:00.000Z" },
+        dragEnabled: false,
+      },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    expect(wrapper.get('[data-test-id="task-card-agent-hint"]').attributes("data-tip")).toMatch(
+      /In this state for 2m/i,
+    );
+  });
+
   it("shows queue position for a task waiting behind the active job", async () => {
     const repo = useRepoStore();
     repo.integration = pipeline();

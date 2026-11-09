@@ -40,6 +40,12 @@ import {
 import { remotePoolQueueHintForTaskChecks } from "../lib/remote-pool-queue";
 import { localQueueHintForTask } from "../lib/local-queue-hint";
 import { activeEngineerCardHint, activeEngineerCardBlocksInterrupt } from "../lib/active-task-card";
+import {
+  agentLastActivityTip,
+  cardHintDataTip,
+  firstValidActivityTimestamp,
+  stateElapsedTip,
+} from "../lib/card-activity-recency";
 import { resolveSharedTaskCardStatus } from "../lib/task-card-status.js";
 import {
   AWAITING_FRESH_REVIEW_LABEL,
@@ -654,7 +660,22 @@ onUnmounted(() => {
 
 /** The task's most recent agent activity timestamp, if known. */
 function lastActivityFor(taskId: string): string | undefined {
-  return repo.agentActivityAt[taskId] ?? repo.runningSince[taskId];
+  return firstValidActivityTimestamp(repo.agentActivityAt[taskId], repo.runningSince[taskId]);
+}
+
+/** Use the task's state time when activity telemetry and running start are unusable. */
+function activityTipFor(taskId: string): string | null {
+  const actualActivity = firstValidActivityTimestamp(
+    repo.agentActivityAt[taskId],
+    repo.runningSince[taskId],
+  );
+  return actualActivity
+    ? agentLastActivityTip(actualActivity, Math.max(now.value, Date.now()))
+    : stateElapsedTip(
+        "In this state",
+        props.task.id === taskId ? props.task.updated_at : null,
+        Math.max(now.value, Date.now()),
+      );
 }
 
 /** Diff stats for this task. */
@@ -752,6 +773,8 @@ interface CardHint {
   cls: string;
   /** Full integrating copy for Status details (#0995); card `label` may be reordered. */
   fullLabel?: string;
+  /** Last-activity or elapsed popover line when omitted from `label` (#1058). */
+  activityTip?: string;
 }
 
 /** True once Move to done has been clicked and the close-out job for this
@@ -861,15 +884,20 @@ const sharedActiveStatus = computed(() => {
   });
 });
 
+const activeActivityTip = computed(() => activityTipFor(props.task.id));
+
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. Check progress,
  *  remote validation, and queue waits suppress a false stuck label (#1000). */
-function codingOrStuckHint(_taskId: string): CardHint {
+function codingOrStuckHint(taskId: string): CardHint {
   const resolved = activeEngineerEvidence.value;
+  const activityTip =
+    resolved.cls === "tc-coding" ? (activityTipFor(taskId) ?? undefined) : undefined;
   return {
     label: resolved.label,
     title: resolved.title,
     cls: resolved.cls,
+    activityTip,
   };
 }
 
@@ -1068,6 +1096,11 @@ const hint = computed<CardHint | null>(() => {
               ? "Close-out is taking longer than usual — focus the slow badge for timing details"
               : copy.title,
           cls: copy.stalled ? "tc-stuck" : "tc-moving",
+          activityTip: copy.stalled
+            ? undefined
+            : (copy.elapsedTip ??
+              stateElapsedTip("In this state", t.updated_at, now.value) ??
+              undefined),
         };
       }
       const queued = integrationQueuedCopy(snap, t.id);
@@ -1114,6 +1147,7 @@ const hint = computed<CardHint | null>(() => {
           lastActivity: lastActivityFor(t.id),
           now: now.value,
           suppressAgentStuck: suppressAgentStuckHint.value,
+          activityFallback: activityTipFor(t.id) ?? undefined,
         }) ?? codingOrStuckHint(t.id)
       );
     }
@@ -1177,12 +1211,27 @@ const hint = computed<CardHint | null>(() => {
   }
   if (t.status === "active") {
     if (showCardCheckProgress.value) return null;
+    const evidence = activeEngineerEvidence.value;
+    // Check / remote / telemetry stalls outrank the generic "Coding" lifecycle
+    // label while the engineer slot is still held (#1000). Pure agent silence
+    // stays on the coding path when `running` is true (see task-card-stuck test).
+    if (
+      evidence.cls === "tc-stuck" &&
+      (activeEngineerCardBlocksInterrupt(evidence) || evidence.label.startsWith("stuck · silent"))
+    ) {
+      return {
+        label: evidence.label,
+        title: evidence.title,
+        cls: "tc-stuck",
+      };
+    }
     const lifecycle = sharedActiveStatus.value;
     if (lifecycle.kind === "checks") {
       return {
         label: lifecycle.label,
         title: "RepoOS is committing and running checks before moving this to review",
         cls: "tc-reviewing",
+        activityTip: activeActivityTip.value ?? undefined,
       };
     }
     if (lifecycle.kind === "queued") {
@@ -1195,16 +1244,19 @@ const hint = computed<CardHint | null>(() => {
     }
     if (lifecycle.kind === "stuck") {
       return {
-        label: lifecycle.label,
-        title: activeEngineerEvidence.value.title,
+        label: evidence.label,
+        title: evidence.title,
         cls: "tc-stuck",
       };
     }
     if (lifecycle.kind === "coding") {
+      const activityTip =
+        evidence.cls === "tc-coding" ? (activityTipFor(t.id) ?? undefined) : undefined;
       return {
         label: lifecycle.label,
-        title: activeEngineerEvidence.value.title,
+        title: evidence.title,
         cls: "tc-coding",
+        activityTip,
       };
     }
     // 0381: the engineer is idle (paused) but the PM is chatting about this
@@ -1815,18 +1867,24 @@ async function openDebuggerFromError(): Promise<void> {
             />
           </svg>
         </span>
-        <ChecksProgressDisplay
+        <div
           v-if="showCardCheckProgress"
-          class="task-card-check-progress"
-          variant="card"
-          test-id="task-card-check-progress"
-          :progress="cardChecksDisplay.progress"
-          :elapsed="cardChecksDisplay.elapsed"
-          :reused="cardChecksDisplay.reused"
-          :slow="cardChecksDisplay.slow"
-          :handoff-step="cardChecksDisplay.handoffStep"
-          :status-line="props.task.status === 'active' ? sharedActiveStatus.label : null"
-        />
+          class="task-card-check-progress-tip"
+          :data-tip="activeActivityTip ?? undefined"
+          :tabindex="activeActivityTip ? 0 : undefined"
+        >
+          <ChecksProgressDisplay
+            class="task-card-check-progress"
+            variant="card"
+            test-id="task-card-check-progress"
+            :progress="cardChecksDisplay.progress"
+            :elapsed="cardChecksDisplay.elapsed"
+            :reused="cardChecksDisplay.reused"
+            :slow="cardChecksDisplay.slow"
+            :handoff-step="cardChecksDisplay.handoffStep"
+            :status-line="props.task.status === 'active' ? sharedActiveStatus.label : null"
+          />
+        </div>
         <Teleport to="body">
           <div
             v-if="agentPreviewOpen"
@@ -1884,7 +1942,7 @@ async function openDebuggerFromError(): Promise<void> {
           class="tc-hint"
           data-test-id="task-card-agent-hint"
           :class="[hint.cls, cardHintUsesLineClamp(hint) ? 'tc-hint--progress-clamp' : '']"
-          :data-tip="hint.title"
+          :data-tip="cardHintDataTip(hint.title, hint.activityTip)"
           tabindex="0"
           role="button"
           @click.stop="onCardHintClick"

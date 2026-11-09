@@ -107,9 +107,11 @@ describe("PipelineCard", () => {
       priority: "p2",
       title: "Pipeline view for the work page",
       state: "ok",
+      statusSignals: null,
       stepLabel: "Coding",
       chipText: null,
       stateSince: new Date(Date.now() - 12 * 60_000).toISOString(),
+      lastActivityAt: new Date(Date.now() - 60_000).toISOString(),
       nowMs: Date.now(),
       roundsLabel: "D2 · R1 ✓",
       reviewerTone: "green",
@@ -331,10 +333,26 @@ describe("PipelineView", () => {
 
     const boardStatus = board.find('[data-test-id="task-card-agent-hint"]').text();
     const pipelineCard = pipeline.find(`[data-task-id="${task.id}"]`);
-    expect(boardStatus).toBe("Stuck");
-    expect(pipelineCard.find(".pl-status-chip").text()).toBe(boardStatus);
+    expect(boardStatus).toMatch(/^remote validation stalled/);
+    expect(pipelineCard.find(".pl-status-chip").text()).toBe("Stuck");
     expect(board.find('[data-test-id="task-card-action-footer"]').text()).toContain("Restart work");
     expect(pipelineCard.find(".pl-action").attributes("aria-label")).toContain("Restart work");
+  });
+
+  it("shows a quiet running agent as Stuck in Pipeline, like the Board", async () => {
+    setActivePinia(createPinia());
+    seedBoard();
+    const repo = useRepoStore();
+    const silentAt = new Date(Date.now() - 6 * 60_000).toISOString();
+    repo.agentActivityAt = { "1001": silentAt };
+    repo.runningSince = { "1001": silentAt };
+    repo.tasks = repo.tasks.map((task) =>
+      task.id === "1001" ? { ...task, updated_at: silentAt } : task,
+    ) as never;
+    const wrapper = track(mount(PipelineView, { attachTo: document.body }));
+    const card = wrapper.get('[data-task-id="1001"]');
+    expect(card.find(".pl-status-chip").text()).toBe("Stuck");
+    expect(card.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("6m");
   });
 
   it("places active and review tasks on the track and opens the panel on click", async () => {
@@ -352,6 +370,44 @@ describe("PipelineView", () => {
     await cards[0].trigger("click");
     expect(openSpy).toHaveBeenCalledTimes(1);
     expect(openSpy.mock.calls[0][0]).toMatchObject({ id: "1001" });
+  });
+
+  it("uses agent last activity for the pipeline tooltip, not task updated_at", async () => {
+    setActivePinia(createPinia());
+    seedBoard();
+    const repo = useRepoStore();
+    const lastActivityAt = new Date(Date.now() - 60_000).toISOString();
+    repo.tasks = repo.tasks.map((task) =>
+      task.id === "1001"
+        ? { ...task, updated_at: new Date(Date.now() - 30 * 60_000).toISOString() }
+        : task,
+    ) as never;
+    repo.agentActivityAt = { "1001": lastActivityAt };
+    const wrapper = track(mount(PipelineView, { attachTo: document.body }));
+    const card = wrapper.get('[data-task-id="1001"]');
+    const tip = card.get(".pl-step").attributes("data-tip") ?? "";
+    expect(tip).toMatch(/Active 1m ago/i);
+    expect(tip).not.toContain("In this state");
+  });
+
+  it("falls back from invalid activity to running start, then to elapsed state time", async () => {
+    setActivePinia(createPinia());
+    seedBoard();
+    const repo = useRepoStore();
+    const stateSince = new Date(Date.now() - 30 * 60_000).toISOString();
+    repo.tasks = repo.tasks.map((task) =>
+      task.id === "1001" ? { ...task, updated_at: stateSince } : task,
+    ) as never;
+    repo.agentActivityAt = { "1001": "invalid" };
+    repo.runningSince = { "1001": new Date(Date.now() - 60_000).toISOString() };
+    const wrapper = track(mount(PipelineView));
+    const card = wrapper.get('[data-task-id="1001"]');
+    expect(card.get(".pl-step").attributes("data-tip")).toMatch(/Active 1m ago/i);
+
+    repo.runningSince = { "1001": "also invalid" };
+    await wrapper.vm.$nextTick();
+    expect(card.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("30m");
+    expect(card.get(".pl-step").attributes("data-tip")).toBeUndefined();
   });
 
   it("orders lanes by priority, then longest in flight", () => {

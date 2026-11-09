@@ -79,6 +79,20 @@ describe("retryHint", () => {
 });
 
 describe("autoRepairHint", () => {
+  it.each([
+    ["check retry", { checkRetryCount: 1 }],
+    ["merge-conflict retry", { mergeConflictRetryCount: 1 }],
+  ])("uses the state-time fallback for %s when activity is unavailable", (_name, retry) => {
+    const hint = autoRepairHint({
+      task: makeTask(retry),
+      running: true,
+      lastActivity: undefined,
+      now: NOW,
+      activityFallback: "In this state for 4m\nSep 17, 2026, 12:00 PM",
+    });
+    expect(hint?.activityTip).toBe("In this state for 4m\nSep 17, 2026, 12:00 PM");
+  });
+
   it("returns null when no agent is running (retries exhausted)", () => {
     const task = makeTask({ checkRetryCount: 2 });
     expect(autoRepairHint({ task, running: false, lastActivity: FRESH, now: NOW })).toBeNull();
