@@ -303,12 +303,17 @@ between channels always looks like a version change.
 Self-updates a **standalone (curl-installed)** build by downloading the release
 tarball and swapping it into place. No-ops with a helpful message for a
 package-manager install (`bun update` / `npm update` instead) or a source
-checkout (`git pull && bun run build`).
+checkout (`git pull && bun install && bun run build`).
 
 ```
 repoos upgrade                    # latest stable
 repoos upgrade --channel beta     # latest beta   (also: canary, rc)
 ```
+
+The same detection backs the dashboard update dialog's **How to upgrade** block
+(`upgradeInstruction` in `src/commands/upgrade.ts`, surfaced as `installKind` /
+`upgradeCommand` on `GET /api/release/available`), so the command the dialog
+shows always matches what `repoos upgrade` would print for this install.
 
 The channel value just has to match the `-<channel>.` in a tag, so any
 identifier you actually publish works, not only those three.

@@ -2133,3 +2133,19 @@ export interface DevTargetsResponse {
   /** `[[dev.targets]]` validation errors, so a config typo stays visible. */
   errors: string[];
 }
+
+/**
+ * Response of `GET /api/release/available` — the newer-release check behind the
+ * dashboard update banner/dialog (#1073). `installKind` and `upgradeCommand`
+ * come from the same detection `repoos upgrade` uses, so the dialog shows the
+ * command that actually upgrades this install.
+ */
+export interface AvailableRelease {
+  currentVersion: string | null;
+  latestVersion: string | null;
+  available: boolean;
+  releaseNotes: string | null;
+  releaseUrl: string | null;
+  installKind: "standalone" | "source" | "package-manager";
+  upgradeCommand: string;
+}
