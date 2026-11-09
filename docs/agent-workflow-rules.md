@@ -226,6 +226,35 @@ cannot tell from the code alone:
 - **Merging main into a task branch: take main's copy of work/<id>-*.md.** When manually merging main into an active task branch, git may stop on a conflict in `work/<id>-*.md` (the task file is pure bookkeeping, always superseded by main's version). Take main's copy: `git checkout --theirs work/<id>-*.md`, then stage and commit. Do not pause the merge to report this. RepoOS auto-resolves these inside close-out (#0754); manual merges need the same rule.
 - **A task's reports are its own bookkeeping.** Engineering rounds and review passes live together under `work/reports/<id>/` (`round-<n>.json`, `review-<n>.md`; see `user-docs/engineering-reports.md`). They are committed with the task, and handoff/landable/close-out treat this task's report files as bookkeeping rather than implementation drift — another task's reports still fail the task-scope check. Never hand-edit or delete a stored round or pass.
 
+- **A task branch's diff contains ONLY that task's own files (#1076).** Another
+  task's `work/<other-id>-*.md` file and `work/reports/<other-id>/**` must never
+  appear in a task branch's commits — the landing preflight rejects the branch
+  ("the diff changes another task's bookkeeping"), and an engineer then has to
+  restore them by hand, round after round. The rule and the code paths:
+  - **Where siblings leak in.** The server does NOT deliberately write a
+    sibling's file into a worktree (activity, CTO notes and watchdog writes go to
+    `config.root`/main). They arrive indirectly: the engineer's self-check WIP
+    checkpoint (`commitWipCheckpointForRemoteGate`,
+    `src/server/engineer-remote-self-check.ts`) used to run a bare `git commit`,
+    which folds WHATEVER is staged — including a sibling file a board write left
+    dirty-and-staged — into the branch; a `git add -A` sweep in the worktree
+    (`review-guard.ts`) can do the same; and a merge of main into the branch can
+    carry a sibling's newer copy. It then compounds: the WIP loop re-commits it
+    every check.
+  - **The guardrails.** The WIP checkpoint commits only the paths it intended
+    (`git commit -- <paths>`) and resets any foreign bookkeeping first.
+    `guardReviewTransition` unstage's foreign `work/` files before its implement
+    commit. Handoff, after that commit gate and before the review lock, runs
+    `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): it makes main's
+    copy authoritative for every foreign file the branch touched — modified or
+    deleted files get main's version back, branch-added siblings are removed —
+    and lands the restore as one plain bookkeeping commit the review tolerates.
+    It reports what it restored in the task log; it never fails a handoff.
+  - **What an engineer sees.** `repoos landable` and the handoff report name the
+    offending files and the cause in plain English ("the diff changes another
+    task's bookkeeping: work/<id>-*.md"), with the fix spelled out. An engineer
+    should never need to run `git checkout main -- <file>` by hand.
+
 - **`repoos mv <id> done` never merges code — it only flips the status
   frontmatter.** Confirmed live twice in one session (2026-09-17): #0389 and
   #0185 were both marked `done` this way while their actual branches sat

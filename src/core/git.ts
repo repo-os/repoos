@@ -2632,6 +2632,130 @@ export function isTaskBookkeepingPath(path: string, filter: WorkFileFilter = {})
 }
 
 /**
+ * The paths in `paths` that are ANOTHER task's board bookkeeping — a
+ * `work/<other-id>-*.md` task file, or a `work/reports/<other-id>/**` file
+ * (#1076). These are written into a task worktree by the server (activity/CTO
+ * notes, task sync, merges of main) and must never ride a commit made in that
+ * worktree: a bare `git commit` folds whatever is staged into the branch, so a
+ * checkpoint that only meant to capture the engineer's own work re-commits a
+ * sibling task's file, and the branch then fails the landing preflight
+ * ("the diff changes another task's bookkeeping").
+ *
+ * This task's own markdown (`work/<taskId>-*.md`) and its own report directory
+ * (`work/reports/<taskId>/**`) are NOT foreign and are never returned.
+ * `taskId` is required: without it the caller cannot tell its own file from a
+ * sibling's, and every `work/*.md` would look foreign.
+ */
+export function foreignTaskBookkeepingPaths(
+  paths: string[],
+  filter: WorkFileFilter & { taskId: string },
+): string[] {
+  const workDir = filter.workDir ?? "work";
+  const ownTaskPrefix = `${withTrailingSlash(workDir)}${filter.taskId}-`;
+  const reportsPrefixes = [
+    `${withTrailingSlash(workDir)}reports/`,
+    `${withTrailingSlash(workDir)}engineering-reports/`,
+  ];
+  const isUnderReports = (path: string): boolean =>
+    reportsPrefixes.some((prefix) => path.startsWith(prefix));
+  return paths.filter((path) => {
+    const isOwnTaskFile = path.startsWith(ownTaskPrefix) && path.endsWith(".md");
+    if (isOwnTaskFile) return false;
+    if (isOwnReportPath(path, { workDir }, filter.taskId)) return false;
+    // Another task's report lives under the reports dir but is not ours; the
+    // task markdown case is any `work/<other-id>-*.md`.
+    if (isUnderReports(path)) return true;
+    return isTaskMarkdownBookkeepingPath(path, workDir);
+  });
+}
+
+/**
+ * Restore main's copy of another task's `work/` bookkeeping that a task branch
+ * has committed or staged (#1076), so the branch's diff against main is only
+ * ever this task's own files.
+ *
+ * The engine is the same "make main authoritative for foreign task files" rule
+ * close-out applies (`resetForeignWorkFiles`): a foreign file the branch
+ * modified or deleted gets main's version back, and one the branch newly added
+ * is removed. The restore lands as one plain commit — a handoff bookkeeping
+ * commit the review tolerates — so a branch that already carries a sibling's
+ * file (from a self-check WIP checkpoint, a concurrent board write, or a
+ * partial merge of main) can be healed at handoff instead of failing landing.
+ *
+ * `baseBranch` is the branch the task diverged from (normally `main`). Returns
+ * the repo-relative foreign paths it restored, empty when there were none.
+ * Fails soft (`[]`) when the branch point cannot be resolved, so a handoff is
+ * never blocked by a repo with no common ancestor.
+ */
+export async function restoreForeignTaskBookkeepingFromMain(opts: {
+  worktree: string;
+  baseBranch: string;
+  taskId: string;
+  /** This task's own task file (repo-relative) — never restored or removed. */
+  ownTaskFile: string | null;
+  workDir?: string;
+}): Promise<string[]> {
+  const workDir = opts.workDir ?? "work";
+  const baseFull = (await runGit(opts.worktree, ["merge-base", opts.baseBranch, "HEAD"], 15_000))
+    .stdout.trim();
+  if (!baseFull) return [];
+  const changed = await runGit(
+    opts.worktree,
+    ["diff", "--name-only", `${baseFull}..HEAD`, "--", withTrailingSlash(workDir)],
+    15_000,
+  );
+  if (changed.status !== 0) return [];
+  const candidates = changed.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter((p) => p && p !== opts.ownTaskFile);
+  const foreign = foreignTaskBookkeepingPaths(candidates, { workDir, taskId: opts.taskId });
+  if (foreign.length === 0) return [];
+
+  // A foreign file that exists at the branch point is restored to that copy; a
+  // branch-added one has no main equivalent, so it is removed (a task never
+  // creates another task's bookkeeping). Only the branch's own commits are
+  // graded: a stray dirty copy in the working tree is left for the commit gate.
+  const onMain: string[] = [];
+  const addedByBranch: string[] = [];
+  for (const p of foreign) {
+    const exists = await runGit(opts.worktree, ["cat-file", "-e", `${baseFull}:${p}`], 5_000);
+    (exists.status === 0 ? onMain : addedByBranch).push(p);
+  }
+  if (onMain.length > 0) {
+    const restore = await runGit(opts.worktree, ["checkout", baseFull, "--", ...onMain], 15_000);
+    if (restore.status !== 0) {
+      throw new Error(
+        `could not restore main's copy of another task's bookkeeping: ${restore.stderr.trim()}`,
+      );
+    }
+    await runGit(opts.worktree, ["add", "--", ...onMain], 10_000);
+  }
+  if (addedByBranch.length > 0) {
+    const removed = await runGit(opts.worktree, ["rm", "-q", "--", ...addedByBranch], 10_000);
+    if (removed.status !== 0) {
+      throw new Error(`could not drop stray bookkeeping files: ${removed.stderr.trim()}`);
+    }
+  }
+  const staged = await runGit(opts.worktree, ["diff", "--cached", "--quiet"], 10_000);
+  if (staged.status !== 1) return [];
+  const commit = await runGit(
+    opts.worktree,
+    [
+      "commit",
+      "-m",
+      `chore(#${opts.taskId}): restore main's copy of ${foreign.length} other task's bookkeeping file(s)`,
+    ],
+    20_000,
+  );
+  if (commit.status !== 0) {
+    throw new Error(`could not commit bookkeeping restore: ${commit.stderr.trim()}`);
+  }
+  notifyGitMutation(opts.worktree, "commit");
+  return foreign;
+}
+
+/**
  * The dirty paths on `main` that must block close-out. Task markdown under the
  * work dir is excluded: the publish step checkpoint-commits it when the merge
  * leaves it untouched, and stashes/pops it when the merge would overwrite it,
