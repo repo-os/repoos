@@ -3,9 +3,6 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T09:29:56Z"
+updated_at: "2026-11-09T09:31:26Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-09T09:15:28.830Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T09:27:01.983Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T09:29:56.348Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -50,3 +47,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T09:28:31Z · needs_input
 - 2026-11-09T09:29:56Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T09:29:56Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T09:31:26Z · needs_input
