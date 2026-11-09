@@ -68,11 +68,11 @@ async function formatNonBookkeepingCommitDrift(
       paths: ["<paths unavailable>"],
     };
   }
-  // Inspect the complete newly reachable range, including commits carried by
-  // a merged side branch. Each merge's own tree delta is measured against its
-  // first parent (the checked branch), never against an unrelated second
-  // parent that may lack files already present when the gate began.
-  const list = await runGit(wt, ["rev-list", "--reverse", `${from}..${to}`], 15_000);
+  // Inspect only commits on the checked branch's first-parent timeline. A
+  // merge's resulting tree delta captures what actually landed; scanning all
+  // side-branch commits can falsely report old changes already present at
+  // check start (or absent from the merge result).
+  const list = await runGit(wt, ["rev-list", "--first-parent", "--reverse", `${from}..${to}`], 15_000);
   const parts: string[] = [`HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`];
   if (list.status !== 0) {
     return {
