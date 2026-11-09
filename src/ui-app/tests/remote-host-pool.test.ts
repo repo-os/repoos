@@ -488,6 +488,8 @@ function poolFixture(opts: {
   hangKillNeverCompletes?: boolean;
   /** Hang-kill SSH never resolves (ignores timeoutMs) — hard deadline must release (#0739). */
   hangKillNeverResolves?: boolean;
+  /** `docker rm -f` returns non-zero — hang/manual kill must report failure (#1060). */
+  hangKillFails?: boolean;
   /** Load idle probes always fail — hang must still be bounded (#0739). */
   loadProbeFails?: boolean;
   containerCpuOutput?: string;
@@ -565,7 +567,7 @@ function poolFixture(opts: {
         }
         // The hang kill (#0729): record the named container and let the pending
         // run resolve as if docker rm -f ended it.
-        if (cmd.startsWith("docker rm -f ") && cmd.includes("repoos-validate-")) {
+        if (cmd.startsWith("out=$(docker rm -f ") && cmd.includes("repoos-validate-")) {
           const name = cmd.split("'")[1] ?? cmd.split(" ").pop()!;
           killed.push(name);
           if (opts.hangKillNeverResolves) {
@@ -582,7 +584,10 @@ function poolFixture(opts: {
               killGate = { resolve };
             });
           }
-          return { code: 137, output: "", timedOut: false };
+          if (opts.hangKillFails) {
+            return { code: 1, output: "Error response from daemon: conflict", timedOut: false };
+          }
+          return { code: 0, output: "", timedOut: false };
         }
         if (cmd.includes("__HOST_LOCK__")) {
           const n = opts.hostLockOccupancy?.[host.ip] ?? 0;
@@ -613,7 +618,7 @@ function poolFixture(opts: {
         }
         // The periodic container reaper lists candidates independently of
         // validation jobs. Most dispatch fixtures have no stale containers.
-        if (cmd.startsWith("docker ps -aq --filter 'name=^/repoos-validate-")) {
+        if (cmd.startsWith("ids=$(docker ps -aq --filter 'name=^/repoos-validate-")) {
           return { code: 0, output: "", timedOut: false };
         }
         if (opts.timeoutRunOn?.includes(host.ip)) {
@@ -762,6 +767,116 @@ const opts = (taskId: string, extra: Record<string, unknown> = {}) => ({
   worktreePath: "/nonexistent",
   candidateSha: "abc123def456",
   ...extra,
+});
+
+describe("completed browser capture collection", () => {
+  it("records capture cancellation failed when remote ssh cannot kill the container", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    let started = false;
+    let killCmd: string | undefined;
+    const exec: RemoteExecDeps = {
+      ...f.exec,
+      runRemote: vi.fn(async (host, cmd, onChunk, timeout, remoteOpts) => {
+        if (cmd.includes("/browser-capture/result.json"))
+          return { code: 1, output: "", timedOut: false };
+        if (cmd.startsWith("out=$(docker rm -f")) {
+          killCmd = cmd;
+          return {
+            code: 255,
+            output: "ssh: connect to host port 22: Connection refused\n",
+            timedOut: false,
+          };
+        }
+        if (!cmd.includes("REPOOS_CONTAINER="))
+          return f.exec.runRemote(host, cmd, onChunk, timeout, remoteOpts);
+        started = true;
+        return new Promise<RemoteExecResult>((resolve) =>
+          remoteOpts?.registerAbort?.(() => resolve({ code: null, output: "", timedOut: false })),
+        );
+      }),
+    };
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec,
+      timings: { capturePollIntervalMs: 20, healthRetryMs: 40 },
+    });
+    const capture = {
+      kind: "shot" as const,
+      browserCapture: { taskId: "1060", branch: "feat/test", operation: "shots" as const },
+    };
+    try {
+      const running = runner.validate(opts("1060", capture));
+      await vi.waitFor(() => expect(started).toBe(true));
+      await runner.cancelBrowserCaptures("1060");
+      expect((await running).cancelled).toBe(true);
+      expect(killCmd).toBeDefined();
+      expect(killCmd).not.toContain("|| true");
+      expect(
+        runner
+          .remoteEvents("1060")
+          .some((event) => event.message.includes("browser capture cancellation failed")),
+      ).toBe(true);
+    } finally {
+      await runner.dispose();
+      await f.runner.dispose();
+    }
+  });
+
+  it("cancels both a running and queued capture after a failed handoff", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }], maxConcurrent: 1 });
+    const capture = {
+      kind: "shot",
+      browserCapture: { taskId: "1060", branch: "feat/test", operation: "shots" },
+    };
+    try {
+      const running = f.runner.validate(opts("1060", capture));
+      await vi.waitFor(() => expect(f.pending()).toHaveLength(1));
+      const queued = f.runner.validate(opts("1060", capture));
+      await vi.waitFor(() => expect(f.runner.queueStatus()).toHaveLength(1));
+      await f.runner.cancelBrowserCaptures("1060");
+      expect((await running).cancelled).toBe(true);
+      expect((await queued).cancelled).toBe(true);
+      expect(f.killed).toHaveLength(1);
+      expect(f.runner.queueStatus()).toHaveLength(0);
+    } finally {
+      await f.runner.dispose();
+    }
+  });
+
+  it("collects while the validation SSH is still running", async () => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    let collected = false;
+    const exec: RemoteExecDeps = {
+      ...f.exec,
+      runRemote: vi.fn(async (host, cmd, onChunk, timeout, remoteOpts) => {
+        if (cmd.includes("/browser-capture/result.json") && cmd.includes("docker rm -f")) {
+          collected = true;
+          return { code: 0, output: "", timedOut: false };
+        }
+        return f.exec.runRemote(host, cmd, onChunk, timeout, remoteOpts);
+      }),
+    };
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec,
+      timings: { capturePollIntervalMs: 20, healthRetryMs: 40 },
+    });
+    try {
+      const result = await runner.validate(
+        opts("1060", {
+          kind: "shot",
+          browserCapture: { taskId: "1060", branch: "feat/test", operation: "shots" },
+        }),
+      );
+      expect(result.ok).toBe(true);
+      expect(collected).toBe(true);
+      expect(exec.downloadDir).toHaveBeenCalled();
+      expect(
+        runner.remoteEvents("1060").some((event) => event.message.includes("force-collected")),
+      ).toBe(true);
+    } finally {
+      await runner.dispose();
+      await f.runner.dispose();
+    }
+  });
 });
 
 describe("remote gate profiles (#0970)", () => {
@@ -1643,6 +1758,22 @@ describe("pool LRU tie-break across idle hosts (#0890)", () => {
     slot.release();
     return host;
   }
+
+  it("cancels only the failed task's queued and running captures", async () => {
+    const pool = lruPool([{ host: "a" }]);
+    const active = await pool.acquire([], { taskId: "1060", kind: "shot" });
+    active.setContainer?.("repoos-validate-1060");
+    const waiting = pool.acquire([], { taskId: "1060", kind: "shot" });
+    const other = pool.acquire([], { taskId: "1061", kind: "shot" });
+    await vi.waitFor(() => expect(pool.queuedCount).toBe(2));
+    const cancelled = pool.cancelCaptureRuns("1060");
+    await expect(waiting).rejects.toThrow("cancelled");
+    expect(cancelled.map(({ run }) => run.container)).toEqual(["repoos-validate-1060"]);
+    expect(pool.queuedCount).toBe(1);
+    active.release();
+    (await other).release();
+    pool.dispose();
+  });
 
   it("rotates sequential single runs across three idle healthy hosts", async () => {
     const pool = lruPool([{ host: "a" }, { host: "b" }, { host: "c" }]);
@@ -3039,7 +3170,8 @@ describe("hung container cleanup (#0729)", () => {
 
   it("kills only the named container, never by a pattern", () => {
     const cmd = killContainerCommand("repoos-validate-0729-ab12cd34");
-    expect(cmd).toBe("docker rm -f 'repoos-validate-0729-ab12cd34' >/dev/null 2>&1 || true");
+    expect(cmd).toContain("docker rm -f 'repoos-validate-0729-ab12cd34'");
+    expect(cmd).not.toContain("|| true");
     // A hostile name cannot inject a second command.
     expect(killContainerCommand("bad; rm -rf /")).not.toContain("; rm -rf /");
   });
@@ -3186,6 +3318,40 @@ describe("pool hung-run bookkeeping (#0729)", () => {
     expect(result.ok).toBe(false);
     expect(result.detail).toMatch(/no in-flight remote validation run/);
   });
+
+  it.each([
+    {
+      failure: "nonzero exit",
+      response: { code: 1, output: "conflict", timedOut: false },
+      detail: /docker rm exited 1/,
+    },
+    {
+      failure: "timeout",
+      response: { code: null, output: "", timedOut: true },
+      detail: /removal timed out/,
+    },
+  ])("manual removal reports $failure and preserves run files", async ({ response, detail }) => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const original = vi.mocked(f.exec.runRemote).getMockImplementation()!;
+    vi.mocked(f.exec.runRemote).mockImplementation((host, cmd, ...args) =>
+      cmd.startsWith("out=$(docker rm -f ")
+        ? Promise.resolve(response)
+        : original(host, cmd, ...args),
+    );
+    for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const run = f.runner.validate(opts("1060-kill-fail"));
+    let attempts = 0;
+    while (attempts++ < 200 && (f.runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) {
+      await tick(5);
+    }
+    const result = await f.runner.killHungValidation!("1060-kill-fail");
+    expect(result.ok).toBe(false);
+    expect(result.detail).toMatch(detail);
+    expect(f.cleanupCmds).toHaveLength(0);
+    expect(f.runner.hostStatus()?.[0]?.healthy).toBe(false);
+    await run;
+    await f.runner.dispose();
+  });
 });
 
 describe("hung run recovery end to end (#0729)", () => {
@@ -3298,7 +3464,7 @@ describe("hung run recovery end to end (#0729)", () => {
     const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
     const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
     const removeAt = f.remoteOrder.findIndex((cmd) =>
-      cmd.startsWith("docker rm -f 'repoos-validate-"),
+      cmd.startsWith("out=$(docker rm -f 'repoos-validate-"),
     );
     expect(logsAt).toBeGreaterThanOrEqual(0);
     expect(inspectAt).toBeGreaterThan(logsAt);
@@ -3345,15 +3511,11 @@ describe("hung run recovery end to end (#0729)", () => {
     await resultPromise;
   });
 
-  it("releases the slot when hang kill SSH never resolves (hard deadline) (#0739)", async () => {
-    const f = poolFixture({
-      hosts: [{ host: "a" }],
-      fixedLoad: 0,
-      hangIdleMinutes: 0.0005,
-      hangCheckIntervalMs: 15,
-      loadSampleIntervalMs: 10,
-      hangKillNeverResolves: true,
-    });
+  it.each([
+    { failure: "nonzero exit", options: { hangKillFails: true } },
+    { failure: "timeout", options: { hangKillNeverResolves: true } },
+  ])("retains a hung run when watchdog removal fails: $failure", async ({ options }) => {
+    const f = poolFixture({ hosts: [{ host: "a" }], ...options });
     const runner = new TailscaleRunner(f.config, undefined, {
       exec: f.exec,
       timings: {
@@ -3366,15 +3528,33 @@ describe("hung run recovery end to end (#0729)", () => {
       },
     });
     for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
-    const resultPromise = runner.validate(opts("0739-never"));
-    let attempts = 0;
-    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
-    for (let i = 0; i < 40; i++) {
-      if ((runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) break;
-      await tick(10);
-    }
-    expect(runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
-    await resultPromise;
+    const result = runner.validate(opts("1060-hung-failure"));
+    let settled = false;
+    void result.then(() => {
+      settled = true;
+    });
+    for (
+      let i = 0;
+      i < 200 &&
+      !readRemoteValidationEvents(f.root, "1060-hung-failure").some((e) =>
+        e.message.includes("failed to kill"),
+      );
+      i++
+    )
+      await tick(5);
+    expect(
+      readRemoteValidationEvents(f.root, "1060-hung-failure").some((e) =>
+        e.message.includes("failed to kill"),
+      ),
+    ).toBe(true);
+    expect(f.cleanupCmds).toHaveLength(0);
+    expect(runner.hostStatus()?.[0]?.activeRuns).toHaveLength(1);
+    expect(runner.hostStatus()?.[0]?.healthy).toBe(false);
+    expect(settled).toBe(false);
+    f.release();
+    await result;
+    await runner.dispose();
+    await f.runner.dispose();
   });
 
   it("does not kill a stalled run when load probes never succeed (#1049)", async () => {
@@ -3422,39 +3602,6 @@ describe("hung run recovery end to end (#0729)", () => {
     const host = { ip: "a", user: "u" };
     const res = await execRemoteWithHardDeadline(exec, host, "true", () => {}, 40);
     expect(res.timedOut).toBe(true);
-  });
-
-  it("releases the slot when hang kill SSH times out and marks the host degraded (#0739)", async () => {
-    const f = poolFixture({
-      hosts: [{ host: "a" }],
-      fixedLoad: 0,
-      hangIdleMinutes: 0.0005,
-      hangCheckIntervalMs: 15,
-      loadSampleIntervalMs: 10,
-      hangKillNeverCompletes: true,
-    });
-    const runner = new TailscaleRunner(f.config, undefined, {
-      exec: f.exec,
-      timings: {
-        healthRetryMs: 40,
-        probeTimeoutMs: 1_000,
-        hangIdleMinutes: 0.0005,
-        hangCheckIntervalMs: 15,
-        loadSampleIntervalMs: 10,
-        hangKillTimeoutMs: 50,
-      },
-    });
-    for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
-    const resultPromise = runner.validate(opts("0739-timeout"));
-    let attempts = 0;
-    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
-    for (let i = 0; i < 40; i++) {
-      if ((runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) break;
-      await tick(10);
-    }
-    expect(runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
-    expect(runner.hostStatus()?.[0]?.healthy).toBe(false);
-    await resultPromise;
   });
 
   it("does not classify a run as hung after the gate has exited (#0739)", async () => {
@@ -3609,7 +3756,7 @@ describe("hung run recovery end to end (#0729)", () => {
       const logsAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker logs --tail 100"));
       const inspectAt = f.remoteOrder.findIndex((cmd) => cmd.startsWith("docker inspect "));
       const removeAt = f.remoteOrder.findIndex((cmd) =>
-        cmd.startsWith("docker rm -f 'repoos-validate-"),
+        cmd.startsWith("out=$(docker rm -f 'repoos-validate-"),
       );
       expect(logsAt).toBeGreaterThanOrEqual(0);
       expect(inspectAt).toBeGreaterThan(logsAt);

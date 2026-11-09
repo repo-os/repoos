@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 562281
-last_close_out_gate_at: "2026-11-09T04:56:41.135Z"
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: review
+status: done
 needs_merge: true
 priority: p1
 area: server
+merged_commit: 04b38076a831e1c0c6054706630b5b8d6022f25e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-browser-capture-runner-never-exit
@@ -16,6 +15,8 @@ review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
 updated_at: "2026-11-09T04:56:41Z"
+last_close_out_gate_ms: 562281
+last_close_out_gate_at: "2026-11-09T04:56:41.135Z"
 review_passes: 14
 review_rounds: 2
 handoff_signal_retry_count: 2

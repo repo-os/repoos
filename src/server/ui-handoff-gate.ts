@@ -696,6 +696,7 @@ export async function runUiHandoffGate(
       if (await waitForBrowserCapture(task.id)) {
         return runUiHandoffGate(config, task, previews, log, deps);
       }
+      await deps.remoteTransport?.cancel?.(task.id);
       const detail = "ui verification failed: timed out waiting for the task's browser capture";
       log(task.id, "error", detail);
       return { ok: false, detail };
