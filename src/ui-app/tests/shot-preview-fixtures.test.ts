@@ -464,9 +464,9 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(integrationPipelineStalled(repo.integration, now)).toBe(false);
     const copy = integrationActiveCopy(repo.integration!, now);
     expect(copy.stalled).toBe(false);
-    expect(copy.label).toContain("remote tests");
-    // A non-zero elapsed since the job started.
-    expect(copy.label).toMatch(/remote tests · \dm/);
+    expect(copy.label).toBe("integrating · remote tests");
+    // Elapsed close-out time moved to the hover popover (#1058).
+    expect(copy.elapsedTip).toMatch(/Close-out running \d+m/);
   });
 
   it("pins the runner pool and drawer remote activity for a queued validation (#0897)", () => {
@@ -848,6 +848,29 @@ describe("shot preview board fixtures (#0743)", () => {
     await repo.fetchQueued();
     expect(repo.queuedMessages["0821"]?.count).toBe(1);
     vi.unstubAllGlobals();
+  });
+
+  it("keeps fixture-seeded running cards when fetchRunning runs during a capture (#1058)", async () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const repo = useRepoStore();
+    window.history.replaceState({}, "", "/work?shotState=board%3AactiveCoding");
+    applyShotPreviewFixture(repo, "board:activeCoding");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ tasks: [], pausedTasks: [SHOT_PREVIEW_FIXTURE_TASK_ID] }),
+      })),
+    );
+
+    await repo.fetchRunning();
+
+    expect(repo.isRunning(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(true);
+    expect(repo.isPaused(SHOT_PREVIEW_FIXTURE_TASK_ID)).toBe(false);
+    vi.unstubAllGlobals();
+    window.history.replaceState({}, "", "/");
   });
 
   it("seeds captured shots, handoff verdicts and a docs-skip note for viewer shots (#0819)", () => {
