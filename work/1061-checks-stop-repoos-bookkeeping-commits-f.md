@@ -11,12 +11,14 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T05:59:09Z"
-review_passes: 11
+updated_at: "2026-11-09T10:26:06Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 9b3b5702a323d31a7fe553ff8cd481f2a70915ef
+review_passes: 13
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 40
+dev_error_count: 42
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -44,7 +46,7 @@ Today none of those edits can change the result of the check (bookkeeping lives 
 Start from src/server/handoff.ts (the "worktree changed while the gate was running" refusal), the WIP checkpoint commit code, and the bookkeeping writers (activity/report/status commits, `docs(<id>): ...`). Reuse the review-lock machinery if it fits. Keep the scope to these four behaviors. Related: #0598 (protect a task worktree from edits after handoff) landed earlier; read it first and extend rather than duplicate.
 
 ## Accepted scope and known limitations
-Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING engineer during a check is out of scope and not enforceable (an agent process can always write to its worktree). The protection this task delivers is: bookkeeping commits and RepoOS-controlled operations are deferred while a check runs, new engineer turns are refused during a check, and any source change that lands during a check is DETECTED afterwards by drift detection and invalidates the result with the commit subject and paths. A reviewer must not raise 'running engineer can still write source' as a blocking bug; report it as a suggestion. The task must document this limitation in docs and in the engineering report.
+Owner decision (2026-11-09): this task lands once bookkeeping commits are deferred during a check, new engineer turns are refused during a check, and any NET source change that exists when the check ends is detected and invalidates the result (with commit subject and paths when they can be determined; an unexplained non-empty source delta must still invalidate, fail closed). Out of scope, tracked in a follow-up task: (a) blocking filesystem writes by an already-running engineer (not enforceable), (b) a source change that is committed and then reverted within the same check window (endpoint diff is empty; the transient state is not caught). A reviewer must report (a) and (b) as suggestions, not blocking bugs. Docs and the report must state both limitations.
 
 ## Activity
 
@@ -414,3 +416,76 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T05:56:09Z · needs_input
 - 2026-11-09T05:56:11Z · message_queued at 2026-11-09T05:56:11.177Z
 - 2026-11-09T05:59:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T06:47:48Z · body
+- 2026-11-09T06:56:17Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T06:56:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The retry passed remote validation, including the full scoped suite and UI smoke. The local gate then found a formatting issue and skipped the build because formatting was not clean. I’m applying the repo formatter as instructed, then I’ll… · stderr: Reading additional input from stdin... 2026-11-09T06:15:21.380829Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 8063
+- 2026-11-09T06:56:17Z · status active→review
+- 2026-11-09T06:56:17Z · message_delivered: 1 message(s)
+- 2026-11-09T06:56:18Z · note: handoff requested (cli)
+- 2026-11-09T06:59:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T07:06:49Z · message_queued at 2026-11-09T07:06:49.226Z
+- 2026-11-09T07:06:49Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: docs/check-run-history.md, src/core/check-gate-bookkeeping.ts, src/ui-app/tests/check-gate-bookkeeping.test.ts, user-docs/check.md) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-09T07:09:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T07:18:01Z · body
+- 2026-11-09T07:35:35Z · body
+- 2026-11-09T07:37:46Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T07:37:46Z · message_queued at 2026-11-09T07:37:46.416Z
+- 2026-11-09T07:37:46Z · ↻ resuming engineer to read queued message
+- 2026-11-09T07:37:46Z · message_delivered: 2 message(s)
+- 2026-11-09T07:39:09Z · message_queued at 2026-11-09T07:39:09.182Z
+- 2026-11-09T07:39:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T07:39:26Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T07:54:37Z · body
+- 2026-11-09T07:55:47Z · status active→review
+- 2026-11-09T07:55:47Z · message_queued at 2026-11-09T07:55:47.620Z
+- 2026-11-09T07:55:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T07:56:32Z · note: review pass 12: needs some work
+- 2026-11-09T07:56:33Z · needs_input
+- 2026-11-09T08:15:50Z · status review→active
+- 2026-11-09T08:15:50Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T08:15:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T08:15:53Z · message_delivered: 1 message(s)
+- 2026-11-09T08:15:53Z · needs_input
+- 2026-11-09T08:15:54Z · message_queued at 2026-11-09T08:15:54.737Z
+- 2026-11-09T08:17:32Z · agent exited with an error (codex) · Reading additional input from stdin...
+- 2026-11-09T08:27:33Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T08:27:34Z · message_delivered: 1 message(s)
+- 2026-11-09T08:45:43Z · body
+- 2026-11-09T08:59:09Z · message_queued at 2026-11-09T08:59:09.264Z
+- 2026-11-09T08:59:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T09:00:38Z · body
+- 2026-11-09T09:02:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented net-tree drift classification, added coverage for second-parent merges and net-zero source changes, and updated the check documentation. The focused suite passed, and `REPOOS_CHECK_CHANGED=main repoos check` passed after format… · stderr: Reading additional input from stdin... 2026-11-09T09:02:00.011545Z ERROR codex_core::tools::router: error=failed to parse function arguments: unknown field `question`, expected `title` or `options` at line 1 column 189
+- 2026-11-09T09:02:12Z · status active→review
+- 2026-11-09T09:02:12Z · message_delivered: 1 message(s)
+- 2026-11-09T09:02:12Z · note: handoff requested (cli)
+- 2026-11-09T09:02:18Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
+- 2026-11-09T09:02:18Z · status active→review
+- 2026-11-09T09:02:19Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T09:02:44Z · message_queued at 2026-11-09T09:02:44.202Z
+- 2026-11-09T09:03:02Z · note: review pass 13: needs some work
+- 2026-11-09T09:04:33Z · body: Accepted scope and known limitations (added 1, removed 1)
+- 2026-11-09T09:04:35Z · status review→active
+- 2026-11-09T09:04:35Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T09:04:37Z · needs_input
+- 2026-11-09T09:04:37Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T09:04:38Z · message_delivered: 1 message(s)
+- 2026-11-09T09:04:39Z · message_queued at 2026-11-09T09:04:39.905Z
+- 2026-11-09T09:49:48Z · body
+- 2026-11-09T09:51:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The drift-classification fix is in place. A source commit followed by a revert now invalidates the check, and an unexplained source diff fails closed. The regression test passed. `REPOOS_CHECK_CHANGED=main repoos check` passed after format… · stderr: Reading additional input from stdin... 2026-11-09T09:13:46.052711Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request 2026-11-09T09:18:00.007026Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup add…
+- 2026-11-09T09:51:32Z · status active→review
+- 2026-11-09T09:51:32Z · message_delivered: 1 message(s)
+- 2026-11-09T09:51:33Z · note: handoff requested (cli)
+- 2026-11-09T09:54:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T10:05:04Z · message_queued at 2026-11-09T10:05:04.415Z
+- 2026-11-09T10:05:04Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate
+- 2026-11-09T10:09:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T10:11:57Z · body
+- 2026-11-09T10:13:31Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T10:13:31Z · message_queued at 2026-11-09T10:13:31.475Z
+- 2026-11-09T10:13:31Z · ↻ resuming engineer to read queued message
+- 2026-11-09T10:13:31Z · message_delivered: 2 message(s)
+- 2026-11-09T10:14:09Z · message_queued at 2026-11-09T10:14:09.255Z
+- 2026-11-09T10:14:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T10:19:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T10:26:00Z · engineer stopped by request
+- 2026-11-09T10:26:06Z · message_delivered: 1 message(s)

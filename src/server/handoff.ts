@@ -73,7 +73,11 @@ import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
 import { clearHandoffFailureLoopMetadata } from "./handoff-failure-loop.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
-import { DEFAULT_HOST_LOCK_WAIT_SECS, type RemoteValidator } from "./remote-validation.js";
+import {
+  DEFAULT_HOST_LOCK_WAIT_SECS,
+  cancelRemoteBrowserCaptures,
+  type RemoteValidator,
+} from "./remote-validation.js";
 import { remoteBrowserEvidenceTransport } from "./browser-capture-policy.js";
 import {
   remotePreReviewEnabled,
@@ -1265,6 +1269,7 @@ export async function handoffTask(
       return fail("validate", `unexpected error: ${message}`);
     }
   });
+  if (!result.ok) await cancelRemoteBrowserCaptures(config, remoteValidator, task.id);
   finishHandoffStatus(config, task.id, attemptKey, result);
   return result;
 }
@@ -1328,6 +1333,7 @@ export async function finalizeReviewHandoff(
       return fail("validate", `unexpected error: ${message}`);
     }
   });
+  if (!result.ok) await cancelRemoteBrowserCaptures(config, opts.remoteValidator, task.id);
   finishHandoffStatus(config, task.id, attemptKey, result);
   return result;
 }

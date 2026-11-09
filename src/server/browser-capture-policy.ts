@@ -2,7 +2,7 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import type { CanonicalCaptureContext } from "../core/remote-capture.js";
-import type { RemoteValidator } from "./remote-validation.js";
+import { cancelRemoteBrowserCaptures, type RemoteValidator } from "./remote-validation.js";
 
 export type BrowserCaptureMode = "local" | "runner-available" | "runner-only";
 export type BrowserEvidenceOperation = "shots" | "verify" | "both" | "single-shot";
@@ -57,6 +57,7 @@ export interface BrowserEvidenceArtifacts {
 
 export interface BrowserEvidenceTransport {
   capture(request: BrowserEvidenceRequest): Promise<BrowserEvidenceArtifacts>;
+  cancel?(taskId: string): Promise<void>;
 }
 
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
@@ -68,6 +69,7 @@ export function remoteBrowserEvidenceTransport(
 ): BrowserEvidenceTransport | undefined {
   if (!validator || config.remoteValidation?.enabled !== true) return undefined;
   return {
+    cancel: (taskId) => cancelRemoteBrowserCaptures(config, validator, taskId),
     async capture(request) {
       const artifactRoot = join(
         config.root,
@@ -92,6 +94,7 @@ export function remoteBrowserEvidenceTransport(
           ...(request.canonical ? { canonical: request.canonical } : {}),
         },
       });
+      if (summary.cancelled) throw new BrowserCaptureCancelledError("browser capture cancelled");
       const resultPath = join(artifactRoot, "result.json");
       if (!existsSync(resultPath)) {
         const detail =
@@ -170,6 +173,8 @@ export function validateBrowserEvidenceArtifacts(
   };
 }
 
+export class BrowserCaptureCancelledError extends Error {}
+
 export class BrowserEvidenceUnavailableError extends Error {
   readonly browserUnavailable: boolean;
 
@@ -238,6 +243,7 @@ export async function runBrowserCaptureWithPolicy<T>(
     }
   }
 
+  if (failure instanceof BrowserCaptureCancelledError) throw failure;
   const detail = failure instanceof Error ? failure.message : String(failure);
   if (mode === "runner-only") {
     throw new BrowserEvidenceUnavailableError(`runner-only browser capture failed: ${detail}`);

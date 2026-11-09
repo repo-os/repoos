@@ -26,6 +26,8 @@ import type { RepoOSConfig } from "../../core/types.js";
 import { getCheckStore, resetCheckStore } from "../../core/check-store.js";
 import {
   RemoteValidationRunner,
+  cancelRemoteBrowserCaptures,
+  readRemoteValidationEvents,
   classifyRemoteExecFailure,
   EMPTY_REMOTE_MIRROR,
   prepareCandidateUpload,
@@ -131,6 +133,7 @@ const FAST = {
   sshProbeIntervalMs: 1,
   sshWaitTimeoutMs: 50,
   remoteRunTimeoutMs: 5_000,
+  capturePollIntervalMs: 20,
 };
 
 describe("classifyRemoteExecFailure (#0745)", () => {
@@ -228,6 +231,151 @@ describe("RemoteValidationRunner", () => {
     candidateSha: headSha,
   });
   const opts = () => mkOpts();
+
+  it("cancels queued and running Hetzner captures without stopping other tasks", async () => {
+    const h = fakeHetzner();
+    let started = false;
+    const commands: string[] = [];
+    const exec = fakeExec({
+      runRemote: vi.fn(async (_host, cmd, _out, _timeout, options) => {
+        commands.push(cmd);
+        if (isValidateScriptMirrorProbe(cmd))
+          return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1`, timedOut: false };
+        if (cmd.includes("/browser-capture/result.json"))
+          return { code: 1, output: "", timedOut: false };
+        if (cmd.startsWith("out=$(docker rm -f")) return { code: 0, output: "", timedOut: false };
+        if (!cmd.includes("REPOOS_CONTAINER=")) return { code: 0, output: "ok", timedOut: false };
+        started = true;
+        return new Promise<RemoteExecResult>((resolve) =>
+          options?.registerAbort?.(() => resolve({ code: null, output: "", timedOut: false })),
+        );
+      }),
+    });
+    const runner = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    const capture = {
+      kind: "shot" as const,
+      browserCapture: { taskId: "0999", branch: "feat/test", operation: "shots" as const },
+    };
+    try {
+      const running = runner.validate({ ...opts(), ...capture });
+      await vi.waitFor(() => expect(started).toBe(true));
+      const queued = runner.validate({ ...opts(), ...capture });
+      await vi.waitFor(() =>
+        expect(readFileSync(runner.logPath("0999"), "utf8")).toContain("queued behind"),
+      );
+      const other = runner.validate(mkOpts("1001"));
+      await vi.waitFor(() =>
+        expect(readFileSync(runner.logPath("1001"), "utf8")).toContain("queued behind"),
+      );
+      await runner.cancelBrowserCaptures("0999");
+      expect((await running).cancelled).toBe(true);
+      expect((await queued).cancelled).toBe(true);
+      expect((await other).ok).toBe(true);
+      expect(commands.filter((cmd) => cmd.startsWith("out=$(docker rm -f"))).toHaveLength(1);
+      expect(commands.filter((cmd) => cmd.includes("REPOOS_CONTAINER="))).toHaveLength(1);
+    } finally {
+      await runner.dispose();
+    }
+  });
+
+  it("force-collects a Hetzner capture when result.json is present", async () => {
+    const h = fakeHetzner();
+    let collected = false;
+    const exec = fakeExec({
+      runRemote: vi.fn(async (host, cmd, onChunk, timeout, remoteOpts) => {
+        if (cmd.includes("/browser-capture/result.json") && cmd.includes("docker rm -f")) {
+          collected = true;
+          return { code: 0, output: "", timedOut: false };
+        }
+        if (isValidateScriptMirrorProbe(cmd)) {
+          return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1\n`, timedOut: false };
+        }
+        if (cmd.includes("REPOOS_CONTAINER=")) {
+          return new Promise<RemoteExecResult>((resolve) =>
+            remoteOpts?.registerAbort?.(() => resolve({ code: 0, output: "ok", timedOut: false })),
+          );
+        }
+        onChunk("build ok\ntest ok\n");
+        return { code: 0, output: "build ok\ntest ok\n", timedOut: false };
+      }),
+    });
+    const runner = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    const capture = {
+      browserCapture: { taskId: "1060", branch: "feat/test", operation: "shots" as const },
+    };
+    try {
+      const result = await runner.validate({ ...mkOpts("1060"), ...capture });
+      expect(result.ok).toBe(true);
+      expect(collected).toBe(true);
+      expect(exec.downloadDir).toHaveBeenCalled();
+      expect(
+        readRemoteValidationEvents(root, "1060").some((event) =>
+          event.message.includes("force-collected"),
+        ),
+      ).toBe(true);
+    } finally {
+      await runner.dispose();
+    }
+  });
+
+  it("does not claim Hetzner cancellation succeeded when the container kill fails", async () => {
+    const h = fakeHetzner();
+    let started = false;
+    const exec = fakeExec({
+      runRemote: vi.fn(async (_host, cmd, _out, _timeout, options) => {
+        if (isValidateScriptMirrorProbe(cmd))
+          return { code: 0, output: `${RUNNER_SCRIPT_MIRROR_TOKEN}=1`, timedOut: false };
+        if (cmd.startsWith("out=$(docker rm -f"))
+          return { code: 1, output: "ssh broken", timedOut: false };
+        if (cmd.includes("/browser-capture/result.json"))
+          return { code: 1, output: "", timedOut: false };
+        if (!cmd.includes("REPOOS_CONTAINER=")) return { code: 0, output: "ok", timedOut: false };
+        started = true;
+        return new Promise<RemoteExecResult>((resolve) =>
+          options?.registerAbort?.(() => resolve({ code: null, output: "", timedOut: false })),
+        );
+      }),
+    });
+    const runner = new RemoteValidationRunner(config, undefined, {
+      hetzner: h.client,
+      exec,
+      timings: FAST,
+    });
+    const capture = {
+      browserCapture: { taskId: "1060", branch: "feat/test", operation: "shots" as const },
+    };
+    try {
+      const running = runner.validate({ ...mkOpts("1060"), ...capture });
+      await vi.waitFor(() => expect(started).toBe(true));
+      await runner.cancelBrowserCaptures("1060");
+      expect((await running).cancelled).toBe(true);
+      expect(
+        readRemoteValidationEvents(root, "1060").some((event) =>
+          event.message.includes("browser capture cancellation failed"),
+        ),
+      ).toBe(true);
+    } finally {
+      await runner.dispose();
+    }
+  });
+
+  it("records a debug event when a provider lacks capture cancellation", async () => {
+    const validator = { validate: vi.fn(), reconcile: vi.fn(), dispose: vi.fn(), logPath: vi.fn() };
+    await cancelRemoteBrowserCaptures(config, validator, "0999");
+    expect(
+      readRemoteValidationEvents(root, "0999").some((event) =>
+        event.message.includes("does not implement browser capture cancellation"),
+      ),
+    ).toBe(true);
+  });
 
   it("passes when the remote gate exits 0, and writes a per-task log", async () => {
     const h = fakeHetzner();

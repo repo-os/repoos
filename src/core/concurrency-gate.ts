@@ -5,6 +5,7 @@ export class QueueDeadlineError extends Error {}
 interface GateWaiter {
   resolve: () => void;
   timer?: ReturnType<typeof setTimeout>;
+  cleanup?: () => void;
 }
 
 /**
@@ -28,8 +29,9 @@ export class ConcurrencyGate {
 
   async acquire(
     onQueued?: (ahead: number) => void,
-    opts: { deadlineAt?: number } = {},
+    opts: { deadlineAt?: number; signal?: AbortSignal } = {},
   ): Promise<() => void> {
+    if (opts.signal?.aborted) throw new QueueDeadlineError("the queued run was cancelled");
     if (this.active < this.limit) {
       this.active++;
     } else {
@@ -40,11 +42,22 @@ export class ConcurrencyGate {
           return;
         }
         const waiter: GateWaiter = { resolve };
+        const abort = (): void => {
+          const i = this.waiters.indexOf(waiter);
+          if (i === -1) return;
+          this.waiters.splice(i, 1);
+          if (waiter.timer) clearTimeout(waiter.timer);
+          waiter.cleanup?.();
+          reject(new QueueDeadlineError("the queued run was cancelled"));
+        };
+        opts.signal?.addEventListener("abort", abort, { once: true });
+        waiter.cleanup = () => opts.signal?.removeEventListener("abort", abort);
         if (opts.deadlineAt !== undefined) {
           waiter.timer = setTimeout(() => {
             const i = this.waiters.indexOf(waiter);
             if (i === -1) return;
             this.waiters.splice(i, 1);
+            waiter.cleanup?.();
             reject(
               new QueueDeadlineError(
                 "the caller's deadline passed while this run was queued — it was cancelled",
@@ -54,6 +67,7 @@ export class ConcurrencyGate {
           waiter.timer.unref?.();
         }
         this.waiters.push(waiter);
+        if (opts.signal?.aborted) abort();
       });
     }
     let released = false;
@@ -63,6 +77,7 @@ export class ConcurrencyGate {
       const next = this.waiters.shift();
       if (next) {
         if (next.timer) clearTimeout(next.timer);
+        next.cleanup?.();
         next.resolve();
       } else this.active--;
     };

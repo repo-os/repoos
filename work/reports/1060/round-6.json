@@ -1,0 +1,12 @@
+{
+  "taskId": "1060",
+  "round": 6,
+  "at": "2026-11-08T13:30:55.236Z",
+  "agent": "cursor",
+  "model": "composer-2.5",
+  "branch": "feat/remote-browser-capture-runner-never-exit",
+  "baseSha": "1d2c800e511155a63179cbf9ea72a1688cdbc3c9",
+  "sourceSha": "ebac53ce0e003b9d92f7420a1afe0eebf56c094b",
+  "wordCount": 228,
+  "markdown": "## TL;DR\n\nReview pass 6: the `validate.sh` completed-capture startup sweep now emits `[reaper] removed …` only after `docker rm -f` and the container is gone, and `[reaper] failed to remove … reason=…` when removal fails. `recordValidateStartupReapedCaptures` maps failures to warn/infra task events. Earlier passes already added shared collection/reaping on both providers. Handoff tree: local HEAD at commit time of this draft.\n\n## Work and rationale\n\nReporting success before removal was observability debt: the Mac parser treated any reaper-shaped line as success even if the container survived. The shell block now captures `rm_out` and `rm_code`, verifies the id is gone on success, and never prints “removed” on failure. Failures stay on the validate stream (stdout) so the existing SSH emit path can parse them.\n\nThe non-running startup sweep (`xargs docker rm`) remains silent and best-effort — it does not emit success markers, so there is no false-success path there.\n\n## Approaches tried\n\nKept `[reaper]` as a distinct prefix from `[validate] gate exit` so log parsing stays unambiguous. Extended `newlySeenValidateFailedReapCaptures` with an exported parser test rather than scraping full integration output.\n\n## Challenges and blockers\n\nLive runner confirmation on thinkpad/bee/mini remains human-owned; unit tests cover marker order, parse rules, and event levels.\n\n## Key learnings\n\nAny host-side cleanup that drives Debug events must couple markers to command outcomes, not intentions. A suppressed `|| true` on `docker rm` is fine for liveness; claiming success is not.\n\n## Generated change summary\n\nBase tree: `1d2c800e511155a63179cbf9ea72a1688cdbc3c9`\nSource tree: `70075d047fe4662f17d611c7fe61f5285cf574a0`\n\n- M docs/remote-validation.md: +4 / −3\n- M scripts/remote-runner/validate.sh: +9 / −4\n- M src/server/__tests__/finished-capture-collection.test.ts: +40 / −0\n- M src/server/remote-validation.ts: +53 / −3\n- M src/ui-app/tests/remote-capture-script.test.ts: +9 / −2"
+}

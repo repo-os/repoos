@@ -131,6 +131,28 @@ function request(fx: Fixture, overrides: Record<string, string> = {}) {
 }
 
 describe("trusted server-side handoff", { timeout: 15_000 }, () => {
+  it("cancels outstanding task captures when handoff fails", async () => {
+    const fx = makeFixture();
+    const cancelBrowserCaptures = vi.fn(async () => {});
+    const validator = { cancelBrowserCaptures } as unknown as RemoteValidator;
+    try {
+      const result = await handoffTask(
+        fx.config,
+        readTask(fx),
+        request(fx, { taskId: "wrong" }),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        validator,
+      );
+      expect(result.ok).toBe(false);
+      expect(cancelBrowserCaptures).toHaveBeenCalledWith("0001");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it.each(["missing", "deleted"])("blocks a %s report draft after checks", async (state) => {
     const fx = makeFixture();
     const oldPath = process.env.PATH;
