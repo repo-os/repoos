@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 7acb7acb0353d1640a3ab26f488ff34f36ec1465
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T23:19:59Z"
+updated_at: "2026-11-09T23:20:40Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 7acb7acb0353d1640a3ab26f488ff34f36ec1465
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -182,4 +182,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T23:00:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T23:19:58Z · message_queued at 2026-11-09T23:19:58.825Z
 - 2026-11-09T23:19:59Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-11-09T23:20:40Z · CTO nudge: held — an undelivered message is already queued
