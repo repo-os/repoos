@@ -425,7 +425,7 @@ const RESULT_ICON: Record<string, string> = {
       </div>
 
       <template v-else-if="activeTab === 'plan'">
-        <PageSkeleton :loading="loading && !plan" kind="table" :count="steps.length" />
+        <PageSkeleton :loading="loading && !plan" kind="table" />
         <p v-if="error && plan" class="ck-err" role="status">Refresh failed: {{ error }}</p>
         <p v-else-if="error" class="ck-err">{{ error }}</p>
 

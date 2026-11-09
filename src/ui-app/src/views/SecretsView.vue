@@ -537,11 +537,7 @@ onBeforeUnmount(() => {
         </p>
         <Button variant="accent" @click="createOpen = true">Create environment</Button>
       </section>
-      <PageSkeleton
-        :loading="showSecretsSkeleton"
-        kind="table"
-        :count="snapshot?.keys.length ?? 0"
-      />
+      <PageSkeleton :loading="showSecretsSkeleton" kind="table" />
       <section v-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
         <p v-if="environmentFile" class="secrets-file">
           <code>{{ environmentFile }}</code>
