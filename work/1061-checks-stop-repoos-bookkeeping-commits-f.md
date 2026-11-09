@@ -507,3 +507,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T11:08:51Z · note: handoff requested (cli)
 - 2026-11-09T11:11:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T11:21:55Z · message_queued at 2026-11-09T11:21:55.769Z
+- 2026-11-09T11:21:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
