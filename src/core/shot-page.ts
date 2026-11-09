@@ -567,12 +567,7 @@ export async function captureShotPage(
   // state (a placeholder-selector step timed out and the content never
   // rendered). Probe BEFORE the highlight/selector miss checks so a loading page
   // is recorded even when a declared selector happens to match the spinner.
-  // A declared `loading:*` state is an intentional first-load skeleton shot.
-  // Keep aria-busy on the UI for assistive technology, but don't reject the
-  // screenshot for capturing that explicitly requested state. Other loading
-  // fixtures and ordinary routes still go through the stuck-loading check.
-  const intentionalLoadingShot = entry.state?.startsWith("loading:") === true;
-  if (onLoadingState && !intentionalLoadingShot) {
+  if (onLoadingState) {
     const loading = await detectLoadingState(page);
     if (loading) onLoadingState(`loading state detected: ${loading}`, entry.route);
   }
