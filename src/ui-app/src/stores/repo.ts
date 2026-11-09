@@ -3814,6 +3814,10 @@ export const useRepoStore = defineStore("repo", () => {
 
   /** Hydrate the running marker on reload so a running agent is never phantom. */
   async function fetchRunning(): Promise<void> {
+    // Preview fixtures seed the exact running/paused state a handoff shot
+    // needs. A real runner snapshot would replace that seed during capture,
+    // making healthy coding cards appear Paused (#1058).
+    if (typeof window !== "undefined" && isShotPreviewCaptureActive(window.location)) return;
     try {
       const r = await api<{
         tasks: { id: string; startedAt: string; lastOutputAt?: string | null }[];
