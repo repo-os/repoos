@@ -410,7 +410,10 @@ export async function acquireCheckGateLock(args: {
         };
         atomicWriteJson(path, merged);
       } else {
-        const protectedFileModes = protectTrackedSourceFiles(args.worktree, args.config ?? { workDir: "work", cacheDir: args.cacheDir });
+        const protectedFileModes = protectTrackedSourceFiles(
+          args.worktree,
+          args.config ?? { workDir: "work", cacheDir: args.cacheDir },
+        );
         const fresh: CheckGateLock = {
           taskId: args.taskId,
           branch: args.branch,
@@ -423,7 +426,10 @@ export async function acquireCheckGateLock(args: {
         atomicWriteJson(path, fresh);
       }
     } else {
-      const protectedFileModes = protectTrackedSourceFiles(args.worktree, args.config ?? { workDir: "work", cacheDir: args.cacheDir });
+      const protectedFileModes = protectTrackedSourceFiles(
+        args.worktree,
+        args.config ?? { workDir: "work", cacheDir: args.cacheDir },
+      );
       const lock: CheckGateLock = {
         taskId: args.taskId,
         branch: args.branch,
