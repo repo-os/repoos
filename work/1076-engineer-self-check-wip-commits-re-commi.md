@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,11 +11,14 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T21:01:37Z"
+updated_at: "2026-11-09T22:11:10Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 9fae0c3d8660c3abcb0b50c4b7f68c1f626eaaaa
+review_passes: 3
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
 dev_error_count: 12
+engineer_stall_resume_log: "[{\"at\":\"2026-11-09T19:51:44.422Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
 Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
@@ -121,4 +124,42 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T18:51:40Z · body
 - 2026-11-09T19:00:14Z · note: adopted orphaned engineer pid 13123
 - 2026-11-09T19:15:04Z · body
-- 2026-11-09T21:01:37Z · status active→review
+- 2026-11-09T19:46:07Z · body
+- 2026-11-09T19:51:44Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
+- 2026-11-09T19:56:45Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T19:56:45Z · note: handoff requested (cli)
+- 2026-11-09T19:57:01Z · message_queued at 2026-11-09T19:57:01.800Z
+- 2026-11-09T19:57:02Z · handoff failed · task-file handoff failed at commit · git add failed: A check is running; wait for it to finish.
+- 2026-11-09T19:57:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T20:02:33Z · body
+- 2026-11-09T20:21:29Z · message_queued at 2026-11-09T20:21:29.216Z
+- 2026-11-09T20:29:44Z · body
+- 2026-11-09T20:46:02Z · body
+- 2026-11-09T20:46:37Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T20:46:37Z · message_queued at 2026-11-09T20:46:37.350Z
+- 2026-11-09T20:46:37Z · ↻ resuming engineer to read queued message
+- 2026-11-09T20:46:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check passes. The tests step is deferred to the remote validation runner (which is the normal path — RepoOS runs the full suite server-side). I've already run the task's own tests directly and all pass (34 + 11). Let me do a final stat… · stderr: (empty)
+- 2026-11-09T20:57:42Z · message_delivered: 3 message(s)
+- 2026-11-09T21:00:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T21:01:38Z · status active→review
+- 2026-11-09T21:01:38Z · message_queued at 2026-11-09T21:01:38.414Z
+- 2026-11-09T21:01:38Z · note: shots: skipped — the diff (19 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-09T21:03:57Z · note: review pass 3: needs some work
+- 2026-11-09T21:03:57Z · needs_input
+- 2026-11-09T21:21:38Z · status review→active
+- 2026-11-09T21:21:38Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T21:21:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T21:21:47Z · needs_input
+- 2026-11-09T21:21:47Z · message_queued at 2026-11-09T21:21:47.685Z
+- 2026-11-09T21:26:52Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at commit · git add failed: A check is running; wait for it to finish. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T21:26:53Z · note: handoff requested (cli)
+- 2026-11-09T21:30:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T21:44:12Z · message_delivered: 1 message(s)
+- 2026-11-09T21:56:53Z · message_queued at 2026-11-09T21:56:53.461Z
+- 2026-11-09T21:56:53Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-09T22:00:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T22:09:08Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T22:09:08Z · message_queued at 2026-11-09T22:09:08.551Z
+- 2026-11-09T22:09:08Z · ↻ resuming engineer to read queued message
+- 2026-11-09T22:09:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Only task #1076's own files. The branch is clean. Let me do a final review of the three fixes to confirm correctness, then write a concise summary. Let me re-read the final state of the three edited source regions. · stderr: (empty)
+- 2026-11-09T22:11:10Z · message_delivered: 3 message(s)

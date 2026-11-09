@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T19:25:40Z"
+updated_at: "2026-11-09T22:09:50Z"
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 review_passes: 2
@@ -127,3 +127,41 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T19:22:06Z · CTO nudge: held — review is running
 - 2026-11-09T19:22:10Z · note: handoff requested (cli)
 - 2026-11-09T19:25:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T19:33:59Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T19:33:59Z · message_queued at 2026-11-09T19:33:59.853Z
+- 2026-11-09T19:34:00Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
+- 2026-11-09T19:35:39Z · CTO nudge: held — review is running
+- 2026-11-09T19:40:46Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T19:40:46Z · note: handoff requested (cli)
+- 2026-11-09T19:45:39Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T19:56:18Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T19:56:19Z · message_queued at 2026-11-09T19:56:19.490Z
+- 2026-11-09T19:56:19Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
+- 2026-11-09T19:57:06Z · CTO nudge: held — review is running
+- 2026-11-09T19:58:03Z · message_delivered: 2 message(s)
+- 2026-11-09T20:11:18Z · message_queued at 2026-11-09T20:11:18.151Z
+- 2026-11-09T20:15:23Z · body
+- 2026-11-09T20:18:05Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T20:18:06Z · message_queued at 2026-11-09T20:18:06.167Z
+- 2026-11-09T20:18:06Z · ↻ resuming engineer to read queued message
+- 2026-11-09T20:18:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The earlier handoff failed because the engineering report draft was missing. I've written a fresh draft at `.repoos/engineering-report-drafts/1080.md`, re-run the scoped check (exit 0, no failed steps), and requested handoff again with `re… · stderr: (empty)
+- 2026-11-09T20:46:36Z · message_delivered: 3 message(s)
+- 2026-11-09T20:50:39Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T20:51:40Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T20:51:45Z · status active→review
+- 2026-11-09T20:51:45Z · message_queued at 2026-11-09T20:51:45.580Z
+- 2026-11-09T20:51:58Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (71147bb40) during finalization (#0734)
+- 2026-11-09T21:21:54Z · status review→active
+- 2026-11-09T21:21:56Z · CTO nudge: held — review is running
+- 2026-11-09T21:22:01Z · note: handoff requested (cli)
+- 2026-11-09T21:25:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T21:36:00Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T21:36:00Z · message_queued at 2026-11-09T21:36:00.879Z
+- 2026-11-09T21:36:01Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
+- 2026-11-09T21:40:40Z · CTO nudge: held — review is running
+- 2026-11-09T21:45:44Z · message_delivered: 2 message(s)
+- 2026-11-09T21:59:15Z · body
+- 2026-11-09T22:05:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T22:09:48Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T22:09:50Z · status active→review
+- 2026-11-09T22:09:50Z · message_queued at 2026-11-09T22:09:50.594Z
