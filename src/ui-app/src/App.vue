@@ -200,7 +200,7 @@ onUnmounted(() => {
           <div
             v-if="repo.loading || showRepoSkeleton || forcedLoadingShot"
             class="main-route page-loading"
-            :aria-busy="showRepoSkeleton || forcedLoadingShot ? 'true' : undefined"
+            :aria-busy="showRepoSkeleton ? 'true' : undefined"
           >
             <header v-if="loadingHeader" class="page-header">
               <div>
