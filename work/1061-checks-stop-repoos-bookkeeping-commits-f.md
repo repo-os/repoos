@@ -541,3 +541,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:31:50Z · body
 - 2026-11-09T12:32:09Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-09T12:32:10Z · message_queued at 2026-11-09T12:32:10.072Z
+- 2026-11-09T12:32:10Z · ↻ resuming engineer to read queued message
