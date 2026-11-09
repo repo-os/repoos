@@ -56,6 +56,7 @@ export interface ModelProviderRow {
   label: string;
   kind: "live" | "link";
   dashboardUrl: string;
+  dashboardLabel?: string;
   /** One line under the label explaining what the row shows and why. */
   note: string;
   envVar: string | null;
@@ -164,6 +165,7 @@ export const MODEL_PROVIDERS: ModelProviderRow[] = [
     label: "Muse",
     kind: "live",
     dashboardUrl: "https://dev.meta.ai/docs/muse-code",
+    dashboardLabel: "Muse docs",
     note: "Subscription allowance from your `muse login` session on this machine — no API key to paste.",
     envVar: null,
     configKey: null,
@@ -743,6 +745,12 @@ export interface MuseUsage {
   windows: OpenCodeGoWindow[];
   /** True when the response parsed but no allowance window was recognized. */
   unrecognized: boolean;
+  /** Provider refusal classification when no allowance is available. */
+  reason?: string | null;
+  /** Provider-provided explanation for an unavailable allowance. */
+  hint?: string | null;
+  /** Provider explanation when a successful response contains no windows. */
+  message: string | null;
 }
 
 const MUSE_WINDOW_LABELS: Record<string, string> = {
@@ -768,7 +776,23 @@ export function parseMuseUsage(body: unknown): MuseUsage {
   const allowance =
     typeof body === "object" && body !== null ? (body as { allowance?: unknown }).allowance : null;
   if (typeof allowance !== "object" || allowance === null || Array.isArray(allowance)) {
-    return { tier: null, windows: [], unrecognized: true };
+    const refusal = museRefusal(body);
+    const reason =
+      typeof body === "object" && body !== null ? (body as Record<string, unknown>).reason : null;
+    const hint =
+      typeof body === "object" && body !== null ? (body as Record<string, unknown>).hint : null;
+    const message =
+      typeof reason === "string" && reason.trim() && typeof hint === "string" && hint.trim()
+        ? hint.trim()
+        : refusal;
+    return {
+      tier: null,
+      windows: [],
+      unrecognized: !message,
+      reason: typeof reason === "string" ? reason : null,
+      hint: typeof hint === "string" ? hint : null,
+      message,
+    };
   }
   const rec = allowance as Record<string, unknown>;
   const windows: OpenCodeGoWindow[] = [];
@@ -788,8 +812,8 @@ export function parseMuseUsage(body: unknown): MuseUsage {
       resetsAt,
     });
   }
-  if (!windows.length) return { tier: str(rec.tier), windows, unrecognized: true };
-  return { tier: str(rec.tier), windows, unrecognized: false };
+  if (!windows.length) return { tier: str(rec.tier), windows, unrecognized: true, message: null };
+  return { tier: str(rec.tier), windows, unrecognized: false, message: null };
 }
 
 /** Actionable error text from a Muse response that carries no windows. */

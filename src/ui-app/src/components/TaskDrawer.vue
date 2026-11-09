@@ -5661,7 +5661,12 @@ watch(
                   ui.saving ||
                   review?.running ||
                   awaitingFreshReview ||
-                  repo.isRunning(ui.active.id)
+                  repo.isRunning(ui.active.id) ||
+                  !landable?.landable ||
+                  activeCheckRun ||
+                  localCheckWait ||
+                  localCheckSlot ||
+                  handoffBusy
                 "
                 :title="
                   review?.running
@@ -5670,7 +5675,9 @@ watch(
                       ? 'Waiting for a fresh review of the latest engineering handoff.'
                       : repo.isRunning(ui.active.id)
                         ? 'The engineer is still coding; Move to done becomes available when the turn ends.'
-                        : landableFailureTitle
+                        : activeCheckRun || localCheckWait || localCheckSlot || handoffBusy
+                          ? 'Checks are still running.'
+                          : (landableFailureTitle ?? 'Merge readiness has not passed.')
                 "
                 @click="moveToDone"
               >
