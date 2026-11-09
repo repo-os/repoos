@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -202,3 +202,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T21:21:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T21:43:50Z · message_delivered: 1 message(s)
 - 2026-11-09T21:45:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The branch has the full implementation (the earlier commits were recovered). My `upgrade.ts` fix is in. Now I need to find the test failure. Let me run the affected tests locally. Let me run the releases test and the release-route tests. L… · stderr: (empty)
+- 2026-11-09T21:45:45Z · status active→review
