@@ -254,3 +254,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T14:16:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T14:23:57Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-09T14:23:57Z · message_queued at 2026-11-09T14:23:57.299Z
+- 2026-11-09T14:23:57Z · ↻ resuming engineer to read queued message
