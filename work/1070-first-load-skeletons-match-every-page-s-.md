@@ -273,3 +273,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T15:02:19Z · message_delivered: 1 message(s)
 - 2026-11-09T15:30:15Z · CTO nudge: held — machine under pressure (system load is high (14.1× per CPU, limit 3×) — waiting for headroom before starting more work)
 - 2026-11-09T15:40:15Z · message_queued at 2026-11-09T15:40:15.025Z
+- 2026-11-09T15:40:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
