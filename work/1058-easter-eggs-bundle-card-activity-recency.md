@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 130520
-last_close_out_gate_at: "2026-11-09T10:41:27.791Z"
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 96a582a9794e8e27481fd50043859e806f19cbb6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-activity-recency
@@ -14,6 +13,8 @@ review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
 updated_at: "2026-11-09T10:41:27Z"
+last_close_out_gate_ms: 130520
+last_close_out_gate_at: "2026-11-09T10:41:27.791Z"
 review_passes: 15
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"

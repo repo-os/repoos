@@ -38,7 +38,8 @@ export interface SharedTaskCardStatus {
 
 /**
  * Shared Board/Pipeline lifecycle state for an active task. Live server work
- * wins over stale telemetry, and only an idle task can surface as stuck.
+ * wins over stale telemetry, while prolonged silence can surface as stuck
+ * even when the agent process still appears to be running.
  */
 export function resolveSharedTaskCardStatus(
   input: SharedTaskCardStatusInput,
@@ -91,6 +92,11 @@ export function resolveSharedTaskCardStatus(
     };
   }
 
+  const quietPastThreshold = input.quietForMs != null && input.quietForMs >= DEFAULT_CHECK_STALL_MS;
+  if (!input.paused && input.stuckSignal && quietPastThreshold) {
+    return { kind: "stuck", label: "Stuck", inFlight: false, stuck: true, action: "restart" };
+  }
+
   if (input.running) {
     return {
       kind: "coding",
@@ -119,11 +125,6 @@ export function resolveSharedTaskCardStatus(
       stuck: false,
       action: null,
     };
-  }
-
-  const quietPastThreshold = input.quietForMs != null && input.quietForMs >= DEFAULT_CHECK_STALL_MS;
-  if (!input.paused && input.stuckSignal && quietPastThreshold) {
-    return { kind: "stuck", label: "Stuck", inFlight: false, stuck: true, action: "restart" };
   }
 
   // An active task with no live, queued or check work is idle. The explicit
