@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-muse-usage-row-messag
 created_at: "2026-11-08T14:01:07Z"
-updated_at: "2026-11-09T03:04:49Z"
+updated_at: "2026-11-09T03:05:42Z"
 last_close_out_gate_ms: 129626
 last_close_out_gate_at: "2026-11-09T03:04:05.844Z"
 review_passes: 2
@@ -158,3 +158,4 @@ Verify the behaviour first: reproduce with `repoos new` using a short body, then
 - 2026-11-08T20:15:59Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-09T03:04:05Z · close-out gate completed in 130s
 - 2026-11-09T03:04:49Z · status done→done, release:success
+- 2026-11-09T03:05:42Z · message_dropped: 1 queued message(s) discarded — task is done
