@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T04:44:09Z"
+updated_at: "2026-11-09T05:03:11Z"
 review_passes: 8
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -54,15 +54,15 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "waitMs": 500
+}
 ],
 "state": "board:activeCoding"
 },
@@ -73,15 +73,15 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "selector": "[data-task-id=\"pipe-coding\"]",
 "highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
-  },
-  {
-    "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+},
+{
+  "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+},
+{
+  "waitMs": 500
+}
 ],
 "state": "board:pipeline"
 }
@@ -531,3 +531,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T04:40:21Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Pipeline coding row with activity popup (target "default"): highlight .app-tooltip.show matched nothing on /work?tab=pipeline (http://127.0.0.1:41235/work?tab=pipeline&shotState=board%3Apipeline)
 - 2026-11-09T04:43:21Z · body
 - 2026-11-09T04:44:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T05:03:11Z · handoff_deferred: 1 queued message(s) must be read before review
