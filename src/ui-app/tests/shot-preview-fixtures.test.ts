@@ -11,6 +11,7 @@ import {
   applyShotPreviewFixture,
   isShotPreviewConfigFixture,
   readShotPreviewFixtureFromLocation,
+  shotFixturePinnedAvailableRelease,
   shotFixturePinnedIntegration,
   shotFixturePinnedRemoteStatus,
   shotFixturePinnedTaskRemoteActivity,
@@ -31,6 +32,21 @@ import { activeEngineerCardHint } from "../src/lib/active-task-card";
 import { makeTask } from "./component-test-helpers";
 
 describe("shot preview board fixtures (#0743)", () => {
+  it("pins a newer-release payload for the release:updateAvailable dialog shot (#1073)", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    expect(shotFixturePinnedAvailableRelease()).toBeNull();
+    applyShotPreviewFixture(repo, "release:updateAvailable");
+    const pinned = shotFixturePinnedAvailableRelease();
+    expect(pinned?.available).toBe(true);
+    expect(pinned?.upgradeCommand).toBe("repoos upgrade");
+    expect(pinned?.installKind).toBe("standalone");
+    // A subsequent fixture resets the pin so a non-release capture keeps its
+    // real `/api/release/available` data.
+    applyShotPreviewFixture(repo, "board:withReviewTask");
+    expect(shotFixturePinnedAvailableRelease()).toBeNull();
+  });
+
   it("seeds a done task for the post-merge summary capture (#1044)", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();

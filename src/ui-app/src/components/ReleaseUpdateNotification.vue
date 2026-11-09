@@ -15,6 +15,7 @@ import { useRepoStore } from "../stores/repo";
 import {
   readShotPreviewFixtureFromLocation,
   shotFixtureAvailableRelease,
+  shotFixturePinnedAvailableReleaseRef,
 } from "../lib/shot-preview-fixtures";
 import type { AvailableRelease } from "../types";
 
@@ -83,16 +84,18 @@ onMounted(async () => {
   }
 });
 
-// The preview capture may mount before `/api/health` has reported the preview
-// build, so re-check the fixture once health arrives — otherwise the dialog
-// would never open for the shot (#1073). Returns true when it seeded. The
-// fixture must override whatever the real `/api/release/available` returned
-// (the preview build usually reports no update), so this runs on every health
-// change rather than only while `release` is still empty.
+// The preview capture mounts this component before App's own fixture pass runs
+// (children mount first), so health alone is not enough — a capture that waited
+// on it lost the race against the live `/api/release/available` fetch and never
+// opened the dialog (#1073). Read the fixture both from the URL (when health
+// already knows it is a preview build) and from the App-pinned payload, which
+// arrives reactively. Returns true when it seeded.
 function applyShotFixture(): boolean {
-  const fixture = repo.health?.isPreviewBuild
-    ? shotFixtureAvailableRelease(readShotPreviewFixtureFromLocation(window.location))
-    : null;
+  const fixture =
+    shotFixturePinnedAvailableReleaseRef.value ??
+    (repo.health?.isPreviewBuild
+      ? shotFixtureAvailableRelease(readShotPreviewFixtureFromLocation(window.location))
+      : null);
   if (!fixture) return false;
   release.value = fixture;
   // A capture needs the dialog already open: the fixture stands in for the
@@ -100,6 +103,12 @@ function applyShotFixture(): boolean {
   open.value = true;
   return true;
 }
+
+// The App applies `?shotState=` fixtures after this component mounts, so watch
+// the pinned payload rather than depending on `/api/health` timing.
+watch(shotFixturePinnedAvailableReleaseRef, (pinned) => {
+  if (pinned) applyShotFixture();
+});
 
 watch(
   () => repo.health?.isPreviewBuild,

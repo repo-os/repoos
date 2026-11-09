@@ -1,6 +1,7 @@
 /**
  * Preview-only board fixtures driven by `?shotState=` on the capture URL (#0743).
  */
+import { ref } from "vue";
 import {
   SHOT_PREVIEW_FIXTURE_QUERY,
   SHOT_PREVIEW_FIXTURE_TASK_ID,
@@ -670,6 +671,34 @@ export function shotFixtureAvailableRelease(
 }
 
 /**
+ * The release payload a `release:updateAvailable` fixture pinned (#1073), or
+ * null when none.
+ *
+ * `applyShotPreviewFixture` seeds this when the App applies the capture fixture,
+ * and the component reads it synchronously on mount. Without the pin the
+ * component had to out-race its own `/api/release/available` fetch (which
+ * reports no update on the preview build): the capture mounted before
+ * `/api/health` reported `isPreviewBuild`, the real payload landed first, and
+ * the fixture never rendered — the shot then showed the applied marker with no
+ * open dialog. A pin the component can read unconditionally removes the race.
+ * Only `applyShotPreviewFixture` writes it, and that runs solely on preview
+ * builds with `?shotState=` (plus tests).
+ */
+const pinnedAvailableRelease = ref<ShotPreviewAvailableRelease | null>(null);
+
+/** The fixture-pinned release payload, or null when nothing is pinned (#1073). */
+export function shotFixturePinnedAvailableRelease(): ShotPreviewAvailableRelease | null {
+  return pinnedAvailableRelease.value;
+}
+
+/**
+ * The reactive pin, so the update notification can open its dialog the moment
+ * the App applies the fixture — even though the component mounts before the
+ * App's own fixture pass runs (#1073).
+ */
+export const shotFixturePinnedAvailableReleaseRef = pinnedAvailableRelease;
+
+/**
  * Two deterministic schedules for the `agents:scheduledSeeded` capture fixture
  * (#1005). Returns null for any other fixture, so the panel keeps its real
  * server data. One weekly row (with a last result, so the outcome detail and
@@ -857,6 +886,23 @@ function setNarrowDrawerWidth(): void {
   }
 }
 
+/**
+ * Drop every fixture pin. Called at the start of `applyShotPreviewFixture` (a
+ * fixture that seeds nothing must not inherit a previous fixture's pinned
+ * state) and by tests between mounts, since the pins are module-level.
+ */
+export function resetShotFixturePins(): void {
+  pinnedIntegration = null;
+  pinnedSystemStats = null;
+  pinnedCheckRuns = null;
+  pinnedTestCasesByRun = null;
+  pinnedRemoteStatus = null;
+  pinnedGitStatus = null;
+  pinnedWorkingDiff = null;
+  pinnedAvailableRelease.value = null;
+  for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
+}
+
 /** Apply a named fixture to the live board (preview builds only). */
 export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFixtureId): void {
   // #0866: record that the app actually applied the fixture, so a capture can
@@ -868,19 +914,18 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   }
   // Reset first: a fixture that seeds no pipeline must not leave a previous
   // pin freezing the live snapshot (#0782).
-  pinnedIntegration = null;
-  pinnedSystemStats = null;
-  pinnedCheckRuns = null;
-  pinnedTestCasesByRun = null;
-  pinnedRemoteStatus = null;
-  pinnedGitStatus = null;
-  pinnedWorkingDiff = null;
-  for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
+  resetShotFixturePins();
   switch (fixture) {
     case "secrets:populated":
     case "secrets:removeDialog":
       // SecretsView reads this registered fixture and seeds fake metadata
       // locally, without fetching a project's actual environment data.
+      break;
+    case "release:updateAvailable":
+      // #1073 — pin a newer-release payload so the update dialog opens with its
+      // upgrade command block. The preview build reports no update of its own,
+      // so the component reads this pin instead of racing its live fetch.
+      pinnedAvailableRelease.value = shotFixtureAvailableRelease(fixture);
       break;
     case "system:worktreeGc":
       repo.systemStats = {

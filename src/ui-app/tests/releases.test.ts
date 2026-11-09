@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetShotFixturePins } from "../src/lib/shot-preview-fixtures";
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { parseTask, releasedAtFromActivity } from "../../core/task";
@@ -46,6 +47,12 @@ function task(root: string, id: string, body = "## Activity\n"): Task {
 describe("feature releases", () => {
   beforeEach(() => {
     setActivePinia(createPinia());
+  });
+
+  // The shot-fixture pins are module-level; a fixture set by one test must not
+  // leak its seeded release dialog into the next mount.
+  afterEach(() => {
+    resetShotFixturePins();
   });
 
   it("accepts only stable semantic-version release tags", () => {
@@ -200,12 +207,14 @@ describe("feature releases", () => {
     }
   });
 
-  it("applies the release:updateAvailable shot fixture once health reports the preview build (#1073)", async () => {
-    // Regression: the component mounts before App's `repo.init()` loads
-    // `/api/health`, so the real (no-update) release payload lands first. The
-    // capture then showed the applied marker but no open dialog, and the shot's
-    // highlight matched nothing. The fixture must win once health arrives.
+  it("opens the update dialog when the App applies the release:updateAvailable fixture (#1073)", async () => {
+    // Regression: the component mounts before App's fixture pass runs, and the
+    // live `/api/release/available` reports no update on the preview build, so
+    // the seeded dialog never opened — the capture showed the applied marker
+    // with no dialog and its highlight matched nothing. The App now pins the
+    // payload, which the component opens reactively.
     const { useRepoStore } = await import("../src/stores/repo");
+    const { applyShotPreviewFixture } = await import("../src/lib/shot-preview-fixtures");
     const repo = useRepoStore();
     window.history.replaceState({}, "", "/?shotState=release%3AupdateAvailable");
     vi.stubGlobal(
@@ -229,11 +238,12 @@ describe("feature releases", () => {
     const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
     try {
       await flushPromises();
-      // Health is not loaded yet, so the real payload won and no dialog shows.
+      // Health is not loaded yet, so the real (no-update) payload won.
       expect(document.body.querySelector(".release-update-banner")).toBeNull();
 
-      // `/api/health` arrives reporting a preview build: the fixture now wins.
+      // App's fixture pass: with `/api/health` now reporting a preview build.
       repo.health = { ok: true, isPreviewBuild: true } as typeof repo.health;
+      applyShotPreviewFixture(repo, "release:updateAvailable");
       await flushPromises();
       expect(document.body.querySelector(".release-update-code")?.textContent?.trim()).toBe(
         "repoos upgrade",
