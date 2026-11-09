@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ Server finalization skipped: the branch tip is unchanged since the last identical check failure — fix the code or wait for an engineer recovery turn"
@@ -227,4 +227,3 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T23:21:38Z · message_queued at 2026-11-09T23:21:38.605Z
 - 2026-11-09T23:25:40Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T23:46:39Z · agent exited with an error (opencode) · ✗ Server finalization skipped: the branch tip is unchanged since the last identical check failure — fix the code or wait for an engineer recovery turn
-- 2026-11-09T23:46:39Z · status active→review
