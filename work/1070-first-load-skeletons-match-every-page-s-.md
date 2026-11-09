@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -136,4 +136,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:35:05Z · note: handoff requested (cli)
 - 2026-11-09T08:36:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T08:37:15Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-09T08:37:16Z · engineer stopped by request
+- 2026-11-09T08:37:16Z · status active→review
