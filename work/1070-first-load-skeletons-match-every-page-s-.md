@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-09T05:46:31.592Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /?shotState=loading:dashboard (http://127.0.0.1:45271/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories?shotState=loading:stories (http://127.0.0.1:45271/stories?shotState=loading%3Ast… (truncated)"
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -81,3 +83,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T05:46:28Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /?shotState=loading:dashboard (http://127.0.0.1:45271/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories?shotState=loading:stories (http://127.0.0.1:45271/stories?shotState=loading%3
 - 2026-11-09T05:46:28Z · message_queued at 2026-11-09T05:46:28.463Z
 - 2026-11-09T05:46:31Z · message_delivered: 1 message(s)
+
