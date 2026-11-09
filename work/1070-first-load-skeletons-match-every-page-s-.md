@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-09T20:02:44Z"
-review_passes: 11
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
+updated_at: "2026-11-09T20:04:14Z"
+review_passes: 11
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -66,6 +66,9 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 
 ## Review report format (final)
 Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under '## Bugs', and the landing check treats any entry under '## Bugs' as a blocking bug. For the next pass: put every non-blocking observation (shell exit transition, one-row contrast selector, source-text assertions) under '## Suggestions', leave '## Bugs' EMPTY ('None found') when nothing blocks, and give a clear verdict. The code needs no further change.
+
+## Accepted scope: no shell cross-fade (final)
+Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade of the loading skeleton is NOT required for this task. Replace it with an instant swap (no leave transition, no out-of-flow positioning); a smooth fade-out is part of follow-up #1078. A reviewer must not raise missing cross-fade, transition geometry or exit animation as blocking; report it as a suggestion. Keep: shell show-delay and minimum-visible time, Mission Control single block, Stories, named counts, reduced-motion.
 
 ## Screenshots
 
@@ -332,4 +335,4 @@ Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under
 - 2026-11-09T20:01:57Z · message_queued at 2026-11-09T20:01:57.163Z
 - 2026-11-09T20:02:44Z · note: review pass 11: needs some work
 - 2026-11-09T20:02:44Z · needs_input
-
+- 2026-11-09T20:04:14Z · body: Accepted scope: no shell cross-fade (final) (added)
