@@ -11,13 +11,12 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T19:29:06Z"
-review_passes: 4
+updated_at: "2026-11-09T05:31:10Z"
+review_passes: 8
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 56
 engineer_stall_resume_log: "[{\"at\":\"2026-11-08T13:35:54.682Z\",\"reason\":\"handoff-deferred\"}]"
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:40.337Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:49.541Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:58.880Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:56:08.551Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:57:53.016Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:06.923Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:18.556Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:29.518Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:40.838Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:51.664Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:02.646Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:13.345Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:24.905Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:36.217Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:47.291Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:59.207Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:12.924Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:28.243Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:40.546Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:52.891Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:22.930Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:37.124Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:50.017Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:03.286Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:35.770Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:51.107Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:03.186Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:15.637Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:28.288Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:41.224Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:52.092Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:04.628Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:16.673Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:28.810Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:42.152Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:05:04.298Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:05:14.669Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:05:32.145Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:11:03.257Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Items
@@ -50,7 +49,7 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 ```json
 [
 {
-"label": "Board hint: coding line and hover recency",
+"label": "Board coding status with activity popup",
 "target": "default",
 "route": "/work",
 "highlight": ".app-tooltip.show",
@@ -62,29 +61,35 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-"waitMs": 700
+"waitMs": 500
 }
 ],
 "state": "board:activeCoding"
 },
 {
-"label": "Pipeline coding card hides inline elapsed",
+"label": "Pipeline coding row with activity popup",
 "target": "default",
 "route": "/work?tab=pipeline",
 "selector": "[data-task-id=\"pipe-coding\"]",
-"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+"highlight": ".app-tooltip.show",
 "steps": [
 {
-"waitFor": "[data-task-id=\"pipe-coding\"]"
+"waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-"waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+"hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+},
+{
+"waitMs": 500
 }
 ],
 "state": "board:pipeline"
 }
 ]
 ```
+
+## Accepted scope and known limitations (owner decision, supersedes any touch wording above)
+Owner decision (2026-11-09): touch support (tap or long-press to show the last-activity popover) is OUT OF SCOPE for this bundle, because mobile will get a larger rewrite soon. The popover is shown on mouse hover and keyboard focus only, and touch taps behave exactly as before (the element's normal click action). Any touch-related wording in the items above, including acceptance criteria and review feedback, is superseded by this section; a reviewer must not raise missing touch support as a blocking bug. Still required: the timing fallback (when lastActivityAt is missing or invalid, show elapsed/state-since instead of nothing) and declared shots that actually show a coding (running) card.
 
 ## Activity
 
@@ -431,4 +436,97 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T19:11:03Z · agent exited with an error (cursor) · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
 - 2026-11-08T19:11:03Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 39/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
 - 2026-11-08T19:11:04Z · needs_input
+- 2026-11-08T19:26:06Z · body
+- 2026-11-08T19:29:06Z · note: ui verification passed: 2 of 2 shots captured with clean console
 - 2026-11-08T19:29:06Z · status active→review
+- 2026-11-08T19:29:06Z · message_queued at 2026-11-08T19:29:06.926Z
+- 2026-11-08T19:29:49Z · note: review pass 5: needs some work
+- 2026-11-08T19:29:49Z · needs_input
+- 2026-11-08T19:55:58Z · status review→active
+- 2026-11-08T19:55:58Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T19:56:00Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T19:56:03Z · message_delivered: 1 message(s)
+- 2026-11-08T19:56:04Z · needs_input
+- 2026-11-08T19:56:05Z · message_queued at 2026-11-08T19:56:05.187Z
+- 2026-11-08T20:25:25Z · body
+- 2026-11-08T20:26:58Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T20:26:59Z · message_queued at 2026-11-08T20:26:59.087Z
+- 2026-11-08T20:26:59Z · ↻ resuming engineer to read queued message
+- 2026-11-08T20:26:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required scoped check is green: the remote changed-path suite passed after the fixture fix, and local format, lint, build, CSS/theme checks, rendered contrast, and UI smoke all passed. I’m writing the engineer-authored report draft now… · stderr: Reading additional input from stdin... 2026-11-08T20:26:18.890974Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 68844
+- 2026-11-08T20:26:59Z · status active→review
+- 2026-11-08T20:26:59Z · message_delivered: 2 message(s)
+- 2026-11-08T20:27:00Z · note: handoff requested (cli)
+- 2026-11-08T20:29:07Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T20:29:43Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T20:29:44Z · status active→review
+- 2026-11-08T20:29:44Z · message_queued at 2026-11-08T20:29:44.363Z
+- 2026-11-08T20:30:30Z · note: review pass 6: needs some work
+- 2026-11-08T20:30:31Z · needs_input
+- 2026-11-08T20:35:54Z · status review→active
+- 2026-11-08T20:35:54Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T20:35:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T20:35:59Z · message_delivered: 1 message(s)
+- 2026-11-08T20:36:00Z · needs_input
+- 2026-11-08T20:36:01Z · message_queued at 2026-11-08T20:36:01.473Z
+- 2026-11-08T21:03:48Z · body
+- 2026-11-08T21:05:16Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T21:05:16Z · message_queued at 2026-11-08T21:05:16.827Z
+- 2026-11-08T21:05:17Z · ↻ resuming engineer to read queued message
+- 2026-11-08T21:05:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The rerun passed: all 5,088 scoped tests passed (with one skipped), and RepoOS’s local format, lint, build, contrast, and UI smoke checks passed. I’m writing the required engineer report draft now; the declared Board and Pipeline shots wil… · stderr: Reading additional input from stdin...
+- 2026-11-08T21:05:17Z · status active→review
+- 2026-11-08T21:05:17Z · message_delivered: 2 message(s)
+- 2026-11-08T21:05:18Z · note: handoff requested (cli)
+- 2026-11-08T21:08:32Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T21:08:32Z · status active→review
+- 2026-11-08T21:08:33Z · message_queued at 2026-11-08T21:08:33.083Z
+- 2026-11-08T21:09:24Z · note: review pass 7: needs some work
+- 2026-11-08T21:09:24Z · needs_input
+- 2026-11-08T21:15:56Z · status review→active
+- 2026-11-08T21:15:56Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T21:15:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T21:16:01Z · message_delivered: 1 message(s)
+- 2026-11-08T21:16:01Z · needs_input
+- 2026-11-08T21:16:03Z · message_queued at 2026-11-08T21:16:03.568Z
+- 2026-11-08T21:30:43Z · body
+- 2026-11-08T21:32:20Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T21:32:21Z · message_queued at 2026-11-08T21:32:21.010Z
+- 2026-11-08T21:32:21Z · ↻ resuming engineer to read queued message
+- 2026-11-08T21:32:21Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required check has now passed end to end: remote build and scoped suite, rendered contrast, UI smoke, and local format/lint/build guards are green. I’m adding the requested engineer-authored report draft and doing a final worktree stat… · stderr: Reading additional input from stdin...
+- 2026-11-08T21:32:21Z · status active→review
+- 2026-11-08T21:32:21Z · message_delivered: 2 message(s)
+- 2026-11-08T21:32:23Z · note: handoff requested (cli)
+- 2026-11-08T21:33:05Z · message_queued at 2026-11-08T21:33:05.292Z
+- 2026-11-08T21:33:05Z · handoff failed · task-file handoff failed at check · reused check inputs changed during handoff — run the check again
+- 2026-11-08T21:47:21Z · body
+- 2026-11-08T21:49:11Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-08T21:49:11Z · message_queued at 2026-11-08T21:49:11.415Z
+- 2026-11-08T21:49:11Z · ↻ resuming engineer to read queued message
+- 2026-11-08T21:49:11Z · status active→review
+- 2026-11-08T21:49:12Z · message_delivered: 2 message(s)
+- 2026-11-08T21:49:12Z · note: handoff requested (cli)
+- 2026-11-08T21:51:11Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-08T21:51:12Z · status active→review
+- 2026-11-08T21:51:13Z · message_queued at 2026-11-08T21:51:13.431Z
+- 2026-11-08T21:51:54Z · note: review pass 8: needs some work
+- 2026-11-08T21:51:54Z · needs_input
+- 2026-11-08T23:07:50Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T03:34:02Z · body: Accepted scope and known limitations (owner decision, supersedes any touch wording above) (added)
+- 2026-11-09T03:34:07Z · status review→active
+- 2026-11-09T03:34:07Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T03:34:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T03:34:13Z · message_delivered: 1 message(s)
+- 2026-11-09T03:34:14Z · needs_input
+- 2026-11-09T03:34:15Z · message_queued at 2026-11-09T03:34:15.762Z
+- 2026-11-09T03:36:25Z · body
+- 2026-11-09T03:49:40Z · body
+- 2026-11-09T04:03:59Z · body
+- 2026-11-09T04:34:29Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T04:34:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The targeted retry also invokes RepoOS’s remote validation before the requested local step, and that runner is silent again. I’m letting RepoOS’s own timeout and fallback logic handle it; this retry is only to clear the sole local smoke fa… · stderr: Reading additional input from stdin... 2026-11-09T04:05:54.325739Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request 2026-11-09T04:06:38.694718Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: Network is unreachab…
+- 2026-11-09T04:34:30Z · status active→review
+- 2026-11-09T04:34:30Z · message_delivered: 1 message(s)
+- 2026-11-09T04:34:30Z · note: handoff requested (cli)
+- 2026-11-09T04:39:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T04:40:21Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Pipeline coding row with activity popup (target "default"): highlight .app-tooltip.show matched nothing on /work?tab=pipeline (http://127.0.0.1:41235/work?tab=pipeline&shotState=board%3Apipeline)
+- 2026-11-09T04:40:21Z · message_queued at 2026-11-09T04:40:21.720Z
+- 2026-11-09T04:40:21Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Pipeline coding row with activity popup (target "default"): highlight .app-tooltip.show matched nothing on /work?tab=pipeline (http://127.0.0.1:41235/work?tab=pipeline&shotState=board%3Apipeline)
+- 2026-11-09T05:31:10Z · status active→review
