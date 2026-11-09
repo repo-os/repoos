@@ -11,6 +11,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -39,6 +40,7 @@ import {
 } from "../../server/check-gate-lock.js";
 import { commitFiles, setCheckGateCommitHook } from "../../core/git.js";
 import { installCheckGateCommitHook } from "../../server/check-gate-lock.js";
+import { trackedSourceSnapshot } from "../../commands/check.js";
 
 const roots: string[] = [];
 
@@ -314,6 +316,39 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
   });
 });
 
+describe("tracked source snapshots for non-regular entries (#1061)", () => {
+  it("snapshots a tracked gitlink directory by its checked-out commit", async () => {
+    const { wt } = initRepo();
+    const dependency = join(wt, "src", "dependency");
+    mkdirSync(dependency);
+    git(dependency, ["init", "-q"]);
+    git(dependency, ["config", "user.email", "t@example.com"]);
+    git(dependency, ["config", "user.name", "Test"]);
+    writeFileSync(join(dependency, "lib.ts"), "export {};\n");
+    git(dependency, ["add", "lib.ts"]);
+    git(dependency, ["commit", "-qm", "dependency"]);
+    git(wt, ["add", "src/dependency"]);
+    git(wt, ["commit", "-qm", "add dependency"]);
+
+    const snapshot = await trackedSourceSnapshot(wt, cfg(wt));
+    expect(snapshot?.get("src/dependency")).toBe(
+      `directory:${statSync(dependency).mode & 0o777}:${git(dependency, ["rev-parse", "HEAD"])}`,
+    );
+  });
+
+  it("snapshots a tracked symlink without following its target", async () => {
+    const { wt } = initRepo();
+    const outside = join(wt, "..", "outside-target.ts");
+    writeFileSync(outside, "outside\n");
+    symlinkSync(outside, join(wt, "src", "outside-link.ts"));
+    git(wt, ["add", "src/outside-link.ts"]);
+    git(wt, ["commit", "-qm", "add outside link"]);
+
+    const snapshot = await trackedSourceSnapshot(wt, cfg(wt));
+    expect(snapshot?.get("src/outside-link.ts")).toBe(`symlink:${outside}`);
+  });
+});
+
 describe("check gate lock and deferred commits (#1061)", () => {
   it("defers bookkeeping commits and flushes after release", async () => {
     const { root, wt, branch } = initRepo();
@@ -360,6 +395,30 @@ describe("check gate lock and deferred commits (#1061)", () => {
     expect(statSync(source).mode & 0o222).toBe(0);
     if (acquired.ok) await acquired.release();
     expect(statSync(source).mode & 0o777).toBe(originalMode);
+  });
+
+  it("does not chmod a tracked symlink target outside the worktree", async () => {
+    const { root, wt, branch } = initRepo();
+    const outside = join(root, "outside.ts");
+    writeFileSync(outside, "outside\n", { mode: 0o644 });
+    const link = join(wt, "src", "outside.ts");
+    symlinkSync(outside, link);
+    git(wt, ["add", "src/outside.ts"]);
+    git(wt, ["commit", "-qm", "add outside symlink"]);
+    const originalMode = statSync(outside).mode & 0o777;
+
+    const acquired = await acquireCheckGateLock({
+      boardRoot: root,
+      cacheDir: ".repoos",
+      taskId: "0001",
+      branch,
+      worktree: wt,
+      kind: "handoff-finalize",
+    });
+    expect(acquired.ok).toBe(true);
+    expect(statSync(outside).mode & 0o777).toBe(originalMode);
+    if (acquired.ok) await acquired.release();
+    expect(statSync(outside).mode & 0o777).toBe(originalMode);
   });
 
   it("restores source modes if protection fails after the durable lock write", async () => {

@@ -40,7 +40,7 @@ import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readlinkSync, readdirSync } from "node:fs";
 import { cpus, totalmem } from "node:os";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { c } from "../cli/colors.js";
@@ -1938,12 +1938,24 @@ export async function trackedSourceSnapshot(
     if (path.startsWith(work) || path.startsWith(cache)) continue;
     const absolute = join(repoRoot, path);
     try {
-      const stat = statSync(absolute);
-      const content = readFileSync(absolute);
-      snapshot.set(
-        path,
-        `${stat.mode & 0o777}:${createHash("sha256").update(content).digest("hex")}`,
-      );
+      const stat = lstatSync(absolute);
+      if (stat.isSymbolicLink()) {
+        snapshot.set(path, `symlink:${readlinkSync(absolute)}`);
+      } else if (stat.isDirectory()) {
+        // A tracked submodule is a gitlink directory; compare its checked-out
+        // commit without trying to read the directory as a regular file.
+        const submodule = await runGit(absolute, ["rev-parse", "HEAD"], 10_000);
+        if (submodule.status !== 0) return null;
+        snapshot.set(path, `directory:${stat.mode & 0o777}:${submodule.stdout.trim()}`);
+      } else if (stat.isFile()) {
+        const content = readFileSync(absolute);
+        snapshot.set(
+          path,
+          `${stat.mode & 0o777}:${createHash("sha256").update(content).digest("hex")}`,
+        );
+      } else {
+        snapshot.set(path, `non-regular:${stat.mode & 0o777}:${stat.size}:${stat.mtimeMs}`);
+      }
     } catch (error) {
       // A tracked file deleted during the check remains in the snapshot as a
       // missing marker, so creation/deletion and content changes are visible.

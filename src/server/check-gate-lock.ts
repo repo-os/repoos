@@ -9,6 +9,7 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
+  lstatSync,
   readFileSync,
   renameSync,
   statSync,
@@ -323,7 +324,11 @@ function trackedSourceFileModes(
     if (isBookkeepingPath(rel, config)) continue;
     const abs = join(worktree, rel);
     try {
-      const mode = statSync(abs).mode & 0o777;
+      const stat = lstatSync(abs);
+      // chmod follows symlinks; only protect regular files so a tracked link
+      // can never change permissions on a target outside this worktree.
+      if (!stat.isFile()) continue;
+      const mode = stat.mode & 0o777;
       if (mode & 0o222) {
         modes[abs] = mode;
       }
@@ -341,6 +346,7 @@ function applyTrackedSourceProtection(
 ): void {
   for (const [path, mode] of Object.entries(modes)) {
     try {
+      if (!lstatSync(path).isFile()) continue;
       chmod(path, mode & ~0o222);
     } catch (error) {
       // Missing files need no protection; the gate drift check catches changes.
@@ -371,6 +377,7 @@ function persistLockAndProtect(
 function restoreProtectedFileModes(lock: CheckGateLock): void {
   for (const [path, mode] of Object.entries(lock.protectedFileModes ?? {})) {
     try {
+      if (!lstatSync(path).isFile()) continue;
       chmodSync(path, mode);
     } catch {
       // A removed file needs no permission restoration.
