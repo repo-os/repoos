@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T13:57:11Z"
+updated_at: "2026-11-09T13:57:41Z"
 review_passes: 17
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -584,3 +584,4 @@ Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositori
 - 2026-11-09T13:57:10Z · ↻ resuming engineer to read queued message
 - 2026-11-09T13:57:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The second changed-main check is green: remote build and scoped test suite passed on `bee` after the `thinkpad` runner timed out; local format, lint, build, safety guards, UI smoke, rendered contrast, and user-docs build also passed. I’m w… · stderr: Reading additional input from stdin... 2026-11-09T13:15:49.488617Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeeping-commits-f/src/server/handoff.ts: import { runGit, 2026-11-09T13:56:18.35…
 - 2026-11-09T13:57:11Z · note: handoff requested (cli)
+- 2026-11-09T13:57:41Z · status active→review
