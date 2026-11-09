@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -366,3 +366,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T21:18:48Z · message_queued at 2026-11-09T21:18:48.787Z
 - 2026-11-09T21:18:49Z · ↻ resuming engineer to read queued message
 - 2026-11-09T21:18:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: 2026-11-09T20:59:53.505319Z ERROR codex_core::tools::router: error=Exit code: 1 Wall time: 0 seconds Output: Failed to write file /Users/nick/code/nick/repoos-worktrees/feat/first-load-skeletons-match-every-page-s-/src/ui-app/src/App.vue
+- 2026-11-09T21:18:49Z · status active→review
