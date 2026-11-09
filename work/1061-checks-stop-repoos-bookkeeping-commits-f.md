@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: Reading additional input from stdin...
+debug_tldr: The agent hit an unexpected stdin read — inspect the command awaiting input and rerun it non-interactively.
+debug_tldr_at: "2026-11-09T08:17:55Z"
+debug_tldr_key: dev-error|Reading additional input from stdin...
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T08:17:33Z"
+updated_at: "2026-11-09T08:17:55Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
