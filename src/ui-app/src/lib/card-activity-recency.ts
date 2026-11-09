@@ -39,7 +39,7 @@ export function stateElapsedTip(
   sinceIso: string | null | undefined,
   nowMs: number,
 ): string | null {
-  if (!sinceIso || Number.isNaN(Date.parse(sinceIso))) return null;
+  if (!sinceIso || !Number.isFinite(Date.parse(sinceIso))) return null;
   const compact = formatPipelineElapsed(sinceIso, nowMs);
   if (compact === "—") return null;
   const headline = compact === "just now" ? `${prefix} just now` : `${prefix} for ${compact}`;

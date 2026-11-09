@@ -28,6 +28,26 @@ describe("card activity recency (#1058)", () => {
       expect(firstValidActivityTimestamp(preferred, fallback)).toBe(expected);
     },
   );
+  it.each([
+    {
+      activity: "invalid",
+      runningSince: "2026-11-08T02:59:00.000Z",
+      stateSince: "2026-11-08T02:48:00.000Z",
+      expected: "2026-11-08T02:59:00.000Z",
+    },
+    {
+      activity: null,
+      runningSince: "invalid",
+      stateSince: "2026-11-08T02:48:00.000Z",
+      expected: "2026-11-08T02:48:00.000Z",
+    },
+    { activity: "invalid", runningSince: null, stateSince: "invalid", expected: undefined },
+  ] as const)(
+    "falls back through activity, running start, then state time ($activity / $runningSince)",
+    ({ activity, runningSince, stateSince, expected }) => {
+      expect(firstValidActivityTimestamp(activity, runningSince, stateSince)).toBe(expected);
+    },
+  );
   it("builds agent activity tip with compact age and timestamp", () => {
     const at = new Date(NOW - 3 * 60_000).toISOString();
     const tip = agentLastActivityTip(at, NOW);

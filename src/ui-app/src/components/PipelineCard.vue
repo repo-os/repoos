@@ -73,16 +73,16 @@ const displayAction = computed<PipelineCardAction | null>(() => {
 const showInlineCheckBar = computed(
   () => props.checkProgress != null && checkProgressPercent(props.checkProgress) != null,
 );
+const validLastActivityAt = computed(() =>
+  Number.isFinite(Date.parse(props.lastActivityAt ?? "")) ? props.lastActivityAt : null,
+);
 
 /** Hide elapsed only while live work is healthy; idle review/close-out rows keep state time. */
 const showElapsedInline = computed(
-  () =>
-    !(sharedStatus.value?.inFlight && !sharedStatus.value.stuck) ||
-    !props.lastActivityAt ||
-    Number.isNaN(Date.parse(props.lastActivityAt)),
+  () => !(sharedStatus.value?.inFlight && !sharedStatus.value.stuck) || !validLastActivityAt.value,
 );
 const elapsedTip = computed(() =>
-  agentLastActivityTip(props.lastActivityAt ?? undefined, props.nowMs),
+  agentLastActivityTip(validLastActivityAt.value ?? undefined, props.nowMs),
 );
 
 function open(): void {

@@ -44,6 +44,7 @@ import {
   agentLastActivityTip,
   cardHintDataTip,
   firstValidActivityTimestamp,
+  stateElapsedTip,
 } from "../lib/card-activity-recency";
 import { resolveSharedTaskCardStatus } from "../lib/task-card-status.js";
 import {
@@ -662,6 +663,21 @@ function lastActivityFor(taskId: string): string | undefined {
   return firstValidActivityTimestamp(repo.agentActivityAt[taskId], repo.runningSince[taskId]);
 }
 
+/** Use the task's state time when activity telemetry and running start are unusable. */
+function activityTipFor(taskId: string): string | null {
+  const actualActivity = firstValidActivityTimestamp(
+    repo.agentActivityAt[taskId],
+    repo.runningSince[taskId],
+  );
+  return actualActivity
+    ? agentLastActivityTip(actualActivity, Math.max(now.value, Date.now()))
+    : stateElapsedTip(
+        "In this state",
+        props.task.id === taskId ? props.task.updated_at : null,
+        Math.max(now.value, Date.now()),
+      );
+}
+
 /** Diff stats for this task. */
 const diffStats = computed(() => {
   return repo.diffStatsFor(props.task.id);
@@ -868,9 +884,7 @@ const sharedActiveStatus = computed(() => {
   });
 });
 
-const activeActivityTip = computed(() =>
-  agentLastActivityTip(lastActivityFor(props.task.id), Math.max(now.value, Date.now())),
-);
+const activeActivityTip = computed(() => activityTipFor(props.task.id));
 
 /** A live agent process that has gone silent past STUCK_SILENCE_MS, or the
  *  normal "coding" hint when it's still producing output. Check progress,
@@ -878,10 +892,7 @@ const activeActivityTip = computed(() =>
 function codingOrStuckHint(taskId: string): CardHint {
   const resolved = activeEngineerEvidence.value;
   const activityTip =
-    resolved.cls === "tc-coding"
-      ? (agentLastActivityTip(lastActivityFor(taskId), Math.max(now.value, Date.now())) ??
-        undefined)
-      : undefined;
+    resolved.cls === "tc-coding" ? (activityTipFor(taskId) ?? undefined) : undefined;
   return {
     label: resolved.label,
     title: resolved.title,
@@ -1085,7 +1096,11 @@ const hint = computed<CardHint | null>(() => {
               ? "Close-out is taking longer than usual — focus the slow badge for timing details"
               : copy.title,
           cls: copy.stalled ? "tc-stuck" : "tc-moving",
-          activityTip: copy.stalled ? undefined : copy.elapsedTip,
+          activityTip: copy.stalled
+            ? undefined
+            : (copy.elapsedTip ??
+              stateElapsedTip("In this state", t.updated_at, now.value) ??
+              undefined),
         };
       }
       const queued = integrationQueuedCopy(snap, t.id);
@@ -1235,10 +1250,7 @@ const hint = computed<CardHint | null>(() => {
     }
     if (lifecycle.kind === "coding") {
       const activityTip =
-        evidence.cls === "tc-coding"
-          ? (agentLastActivityTip(lastActivityFor(t.id), Math.max(now.value, Date.now())) ??
-            undefined)
-          : undefined;
+        evidence.cls === "tc-coding" ? (activityTipFor(t.id) ?? undefined) : undefined;
       return {
         label: lifecycle.label,
         title: evidence.title,

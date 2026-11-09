@@ -390,6 +390,26 @@ describe("PipelineView", () => {
     expect(tip).not.toContain("In this state");
   });
 
+  it("falls back from invalid activity to running start, then to elapsed state time", async () => {
+    setActivePinia(createPinia());
+    seedBoard();
+    const repo = useRepoStore();
+    const stateSince = new Date(Date.now() - 30 * 60_000).toISOString();
+    repo.tasks = repo.tasks.map((task) =>
+      task.id === "1001" ? { ...task, updated_at: stateSince } : task,
+    ) as never;
+    repo.agentActivityAt = { "1001": "invalid" };
+    repo.runningSince = { "1001": new Date(Date.now() - 60_000).toISOString() };
+    const wrapper = track(mount(PipelineView));
+    const card = wrapper.get('[data-task-id="1001"]');
+    expect(card.get(".pl-step").attributes("data-tip")).toMatch(/Active 1m ago/i);
+
+    repo.runningSince = { "1001": "also invalid" };
+    await wrapper.vm.$nextTick();
+    expect(card.get('[data-test-id="pipeline-card-elapsed"]').text()).toBe("30m");
+    expect(card.get(".pl-step").attributes("data-tip")).toBeUndefined();
+  });
+
   it("orders lanes by priority, then longest in flight", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();

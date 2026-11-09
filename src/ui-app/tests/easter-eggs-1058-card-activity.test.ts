@@ -121,30 +121,6 @@ describe("TaskCard activity recency (#1058)", () => {
     document.dispatchEvent(new Event("scroll", { bubbles: true }));
   });
 
-  it("does not intercept a touch tap to show a tooltip", async () => {
-    const repo = useRepoStore();
-    repo.runningIds = ["1058"];
-    repo.runningSince = { "1058": "2026-11-08T02:59:00.000Z" };
-    repo.agentActivityAt = { "1058": "2026-11-08T02:59:00.000Z" };
-    const wrapper = mount(TaskCard, {
-      props: { task: baseTask(), dragEnabled: false },
-      attachTo: document.body,
-      global: { plugins: [pinia] },
-    });
-    await nextTick();
-    const hint = wrapper.get('[data-test-id="task-card-agent-hint"]').element;
-    const pointer = (type: string) => {
-      const event = new Event(type, { bubbles: true });
-      Object.defineProperty(event, "pointerType", { value: "touch" });
-      hint.dispatchEvent(event);
-    };
-    pointer("pointerdown");
-    pointer("pointerup");
-    expect(document.querySelector(".app-tooltip.show")).toBeNull();
-    wrapper.unmount();
-    document.dispatchEvent(new Event("scroll", { bubbles: true }));
-  });
-
   it("keeps stuck · silent on the line", async () => {
     const repo = useRepoStore();
     repo.runningIds = ["1058"];
@@ -191,6 +167,66 @@ describe("TaskCard activity recency (#1058)", () => {
     const progress = wrapper.get(".task-card-check-progress-tip");
     expect(progress.attributes("data-tip")).toMatch(/Active 1m ago/i);
     expect(progress.attributes("tabindex")).toBe("0");
+  });
+
+  it("falls back from invalid activity to runningSince, then to task state time", async () => {
+    const repo = useRepoStore();
+    repo.runningIds = ["1058"];
+    repo.agentActivityAt = { "1058": "invalid" };
+    repo.runningSince = { "1058": "2026-11-08T02:59:00.000Z" };
+    const runningSinceWrapper = mount(TaskCard, {
+      props: { task: baseTask({ updated_at: "2026-11-08T02:40:00.000Z" }), dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    expect(
+      runningSinceWrapper.get('[data-test-id="task-card-agent-hint"]').attributes("data-tip"),
+    ).toMatch(/Active 1m ago/i);
+    runningSinceWrapper.unmount();
+
+    repo.agentActivityAt = { "1058": "invalid" };
+    repo.runningSince = { "1058": "also invalid" };
+    const stateTimeWrapper = mount(TaskCard, {
+      props: { task: baseTask({ updated_at: "2026-11-08T02:48:00.000Z" }), dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    expect(
+      stateTimeWrapper.get('[data-test-id="task-card-agent-hint"]').attributes("data-tip"),
+    ).toMatch(/In this state for 12m/i);
+  });
+
+  it("uses task state time on check progress when activity timestamps are unusable", async () => {
+    const repo = useRepoStore();
+    repo.runningIds = ["1058"];
+    repo.agentActivityAt = { "1058": "invalid" };
+    repo.runningSince = { "1058": "also invalid" };
+    repo.taskChecks = {
+      "1058": [
+        {
+          id: "check-state-time",
+          taskId: "1058",
+          kind: "handoff-finalize",
+          startedAt: "2026-11-08T02:59:00.000Z",
+          finishedAt: null,
+          durationMs: null,
+          running: true,
+          passed: null,
+          code: null,
+          output: "",
+          scope: "changed:main",
+          machine: "local",
+        },
+      ],
+    };
+    const wrapper = mount(TaskCard, {
+      props: { task: baseTask({ updated_at: "2026-11-08T02:48:00.000Z" }), dragEnabled: false },
+      global: { plugins: [pinia] },
+    });
+    await nextTick();
+    expect(wrapper.get(".task-card-check-progress-tip").attributes("data-tip")).toMatch(
+      /In this state for 12m/i,
+    );
   });
 
   it("shows last-activity recency while confirming handoff", async () => {

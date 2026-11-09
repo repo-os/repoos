@@ -21,6 +21,7 @@ export function installTooltips(): void {
 
   let target: HTMLElement | null = null;
   let timer: number | undefined;
+
   const hide = () => {
     window.clearTimeout(timer);
     target = null;
@@ -77,13 +78,7 @@ export function installTooltips(): void {
   document.addEventListener("focusin", enter);
   document.addEventListener("mouseout", leave);
   document.addEventListener("focusout", hide);
-  document.addEventListener(
-    "pointerdown",
-    (event) => {
-      if (!target || !(event.target instanceof Node) || !target.contains(event.target)) hide();
-    },
-    true,
-  );
+  document.addEventListener("pointerdown", hide, true);
   document.addEventListener("scroll", hide, true);
   window.addEventListener("blur", hide);
 }
