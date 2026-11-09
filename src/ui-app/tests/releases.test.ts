@@ -212,14 +212,13 @@ describe("feature releases", () => {
     };
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockImplementation(
-        () =>
-          Promise.resolve(
-            new Response(JSON.stringify(payload), {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            }),
-          ),
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
       ),
     );
 
