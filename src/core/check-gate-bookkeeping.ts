@@ -159,7 +159,8 @@ async function formatNonBookkeepingCommitDrift(
       paths: [...netAffecting],
     };
   }
-  if (parts.length > 1) return { kind: "changed", reason: parts.join("; "), paths: [...allAffecting] };
+  if (parts.length > 1)
+    return { kind: "changed", reason: parts.join("; "), paths: [...allAffecting] };
   if (netAffecting.length > 0) {
     return {
       kind: "changed",
