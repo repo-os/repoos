@@ -16,7 +16,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-08T20:53:18Z"
+updated_at: "2026-11-09T03:05:26Z"
 review_passes: 13
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -45,6 +45,9 @@ Likely root cause: `scripts/remote-runner/capture-browser.ts` (`if (import.meta.
 
 ## Notes for AI
 Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/server/remote-validation.ts (remote capture collection, watchdog, reaper from #1049), src/server/ui-handoff-gate.ts ("timed out waiting for the task's browser capture"). Do NOT edit repoos.toml. Do not widen scope beyond capture lifecycle. Context: filed from live diagnosis on thinkpad/bee/mini containers.
+
+## Accepted scope and known limitations
+Owner decision (2026-11-09): this task lands once the core fix is sound for the Tailscale runner (the runner that matters now): captures exit, finished captures are reaped and force-collected, and a failed handoff cancels its own captures. Review rounds that only find further Docker/ssh failure-handling variants, or provider-parity gaps for non-Tailscale runners, are NOT blockers for this task; they are tracked in a follow-up task. A reviewer should report them as suggestions, not blocking bugs.
 
 ## Activity
 
@@ -323,3 +326,4 @@ Files: scripts/remote-runner/capture-browser.ts (entry at the bottom), src/serve
 - 2026-11-08T19:41:47Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-08T19:41:48Z · message_queued at 2026-11-08T19:41:48.793Z
 - 2026-11-08T20:53:18Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T03:05:26Z · body: Accepted scope and known limitations (added)
