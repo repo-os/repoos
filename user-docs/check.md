@@ -287,18 +287,15 @@ reliably fenced from that process. Such source changes are detected by the
 post-check drift comparison and invalidate the result. A server restart clears
 stale locks and flushes any deferred queue so nothing is lost.
 
-Drift inspection compares the net tree difference from the commit where the
-check started to the resulting tree. Each net source path must be explained by
-an inspected commit; if history cannot account for a path, the check fails
-closed and reports that path. Commit history is used to name the commits and
-paths behind a real source delta; this also handles merges where the checked
-commit is the second parent without blaming older first-parent history. A
-source commit followed by a revert that restores the starting content leaves
-no net tree difference and is accepted. Detecting such transient committed
-content is an accepted limitation tracked separately; the check does not
-inspect every intermediate tree for net-zero changes. An engineer who was
-already running can still write source files directly during a check. RepoOS
-cannot reliably fence those filesystem writes; committed source drift is
+Drift inspection examines intervening commits as well as the net tree
+difference from the commit where the check started to the resulting tree. Any
+intervening commit that touches a source path invalidates the result, even if a
+later commit reverts it, and the refusal names the commit subjects and paths.
+If Git cannot compute changed paths or inspect the commit history, the check
+fails closed. The inspection handles merges where the checked commit is the
+second parent without blaming older first-parent history. An engineer who was
+already running can still write source files directly during a check; RepoOS
+cannot reliably fence those filesystem writes. Committed source drift is
 detected after the check and invalidates its result.
 
 The internal server environment variable `REPOOS_HANDOFF_CHECK_MAX_AGE_MS`
