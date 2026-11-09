@@ -3,6 +3,9 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — every non-Settings placeholder count is dead (always 1), and per-view skeletons overlap content for 140 ms on exit"
 priority: p3
 area: web
 assigned_to: ai
@@ -183,3 +186,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T11:36:04Z · status active→review
 - 2026-11-09T11:36:04Z · message_queued at 2026-11-09T11:36:04.305Z
 - 2026-11-09T11:37:32Z · note: review pass 4: needs some work
+- 2026-11-09T11:37:32Z · needs_input
