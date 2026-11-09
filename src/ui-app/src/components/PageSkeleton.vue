@@ -74,12 +74,12 @@ onMounted(() => {
   if (typeof window.matchMedia === "function") {
     motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     updateMotionPreference();
-    motionQuery.addEventListener("change", updateMotionPreference);
+    motionQuery.addEventListener?.("change", updateMotionPreference);
   }
 });
 onUnmounted(() => {
   clearTimers();
-  motionQuery?.removeEventListener("change", updateMotionPreference);
+  motionQuery?.removeEventListener?.("change", updateMotionPreference);
 });
 
 const columnCount = (): number => {

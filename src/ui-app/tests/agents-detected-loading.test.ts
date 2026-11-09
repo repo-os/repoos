@@ -13,6 +13,7 @@ import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
 import ModelProvidersPanel from "../src/components/ModelProvidersPanel.vue";
 import { useConfigStore } from "../src/stores/config";
 import { invalidatePageData, invalidatePageDataPrefix } from "../src/composables/page-data-cache";
+import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 const json = (body: unknown): Response =>
   ({
@@ -108,17 +109,21 @@ class QuietEventSource {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
   invalidatePageData("agents:detect");
   invalidatePageDataPrefix("reminders");
 });
 
 describe("AgentsView detected-tab loading (#0950)", () => {
   it("shows the shared skeleton instead of a Probing PATH line", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal("EventSource", QuietEventSource);
     const wrapper = await mountAgents();
 
     expect(wrapper.text()).not.toContain("Probing PATH");
     expect(wrapper.find(".detect-loading").exists()).toBe(false);
+    expect(detectedPanel(wrapper).find(".page-skeleton").exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(detectedPanel(wrapper).find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
   });
@@ -218,6 +223,7 @@ describe("AgentsView detected-tab loading (#0950)", () => {
 
 describe("Agents page panels share the skeleton (#0950)", () => {
   it("RemindersPanel shows the skeleton, not a loading line", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),
@@ -228,12 +234,15 @@ describe("Agents page panels share the skeleton (#0950)", () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("Loading reminders");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
     vi.unstubAllGlobals();
   });
 
   it("ScheduledTasksPanel shows the skeleton, not a loading line", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),
@@ -249,12 +258,15 @@ describe("Agents page panels share the skeleton (#0950)", () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("Loading schedules");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
     vi.unstubAllGlobals();
   });
 
   it("ModelProvidersPanel shows the skeleton, not a loading line", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),
@@ -265,6 +277,8 @@ describe("Agents page panels share the skeleton (#0950)", () => {
     await flushPromises();
 
     expect(wrapper.text()).not.toContain("Loading providers");
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     wrapper.unmount();
     vi.unstubAllGlobals();
