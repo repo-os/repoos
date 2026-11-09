@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1aa4a1e6 to b34fb50d) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 1aa4a1e62cfbccd72390015586c13f42b14b854e
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
@@ -15,7 +13,9 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-09T03:30:40Z"
+updated_at: "2026-11-09T03:34:09Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 1aa4a1e6 to b34fb50d) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: 1aa4a1e62cfbccd72390015586c13f42b14b854e
 review_passes: 13
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -343,4 +343,4 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-09T03:19:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T03:30:40Z · message_queued at 2026-11-09T03:30:40.034Z
 - 2026-11-09T03:30:40Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 1aa4a1e6 to b34fb50d) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-11-09T03:34:09Z · CTO nudge: held — an undelivered message is already queued
