@@ -121,3 +121,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T15:19:34Z · watchdog: restarting engineer after 12m with no live process
 - 2026-11-09T15:49:42Z · body
 - 2026-11-09T16:05:15Z · message_queued at 2026-11-09T16:05:15.327Z
+- 2026-11-09T16:05:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
