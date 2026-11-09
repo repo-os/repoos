@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-09T10:25:25Z"
-review_passes: 13
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
@@ -16,6 +14,8 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
+updated_at: "2026-11-09T10:30:16Z"
+review_passes: 13
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 56
@@ -93,6 +93,9 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 
 ## Accepted scope and known limitations (owner decision, supersedes any touch wording above)
 Owner decision (2026-11-09): touch support (tap or long-press to show the last-activity popover) is OUT OF SCOPE for this bundle, because mobile will get a larger rewrite soon. The popover is shown on mouse hover and keyboard focus only, and touch taps behave exactly as before (the element's normal click action). Any touch-related wording in the items above, including acceptance criteria and review feedback, is superseded by this section; a reviewer must not raise missing touch support as a blocking bug. Still required: the timing fallback (when lastActivityAt is missing or invalid, show elapsed/state-since instead of nothing) and declared shots that actually show a coding (running) card.
+
+## Accepted scope and known limitations (final)
+Owner decision (2026-11-09, release deadline): the screenshot framing of the Pipeline popup capture (cropping of the tooltip in the declared shot) is a visual-proof nicety and is NOT a blocking bug for this task; report it as a suggestion. Touch support remains out of scope (see #1069). Landing scope was cleaned by hand: the branch diff contains only this task's own files. Everything else in the code (hover/focus popover, timing fallbacks) is as reviewed in passes 9-13.
 
 ## Activity
 
@@ -628,4 +631,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T10:24:57Z · message_queued at 2026-11-09T10:24:57.309Z
 - 2026-11-09T10:25:25Z · note: review pass 13: needs some work
 - 2026-11-09T10:25:25Z · needs_input
-
+- 2026-11-09T10:30:16Z · body: Accepted scope and known limitations (final) (added)
