@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -10,7 +11,6 @@ created_by: njachowski@gmail.com
 branch: feat/require-a-step-by-step-guide-on-every-hu
 created_at: "2026-11-09T07:52:08Z"
 updated_at: "2026-11-09T20:09:33Z"
-handoff_signal_retry_count: 1
 ---
 ## Problem
 Tasks assigned to a human (`--assigned-to human`, usually held, e.g. an account sign-up, a signing key, a real-device check) are often filed as a few lines of acceptance criteria. The human then has to decode what to do. Concrete case: in the Tiao project, tasks #0032 (create and back up a release keystore) and #0033 (sign up for a flight-status provider, set the key, verify a real lookup) were filed with two-line outcomes, and the human (Nick) asked for exact steps. The step-by-step guides had to be written afterwards by hand. Human tasks are the one place where the reader is the least able to infer missing detail, and nothing in RepoOS asks for it.
@@ -39,3 +39,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-09T20:02:17Z · message_queued at 2026-11-09T20:02:17.663Z
 - 2026-11-09T20:04:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T20:09:33Z · message_queued at 2026-11-09T20:09:33.278Z
+
