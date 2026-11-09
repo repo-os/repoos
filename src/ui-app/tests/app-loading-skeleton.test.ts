@@ -85,12 +85,17 @@ describe("repo loading skeleton", () => {
     expect(INPUT_BOARD_COLUMN_COUNT).toBe(3);
   });
 
-  it("matches the board's medium breakpoint and uses named minimal counts", () => {
+  it("matches the board breakpoint and names each page layout count", () => {
     const css = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
     expect(css).toContain(`@media (max-width: ${BOARD_MEDIUM_BREAKPOINT_PX}px)`);
-    for (const kind of ["dashboard", "cards", "table", "rows", "targets", "deployments"] as const) {
-      expect(LOADING_SKELETON_ITEM_COUNTS[kind], kind).toBe(1);
-    }
+    expect(LOADING_SKELETON_ITEM_COUNTS).toMatchObject({
+      dashboard: 1,
+      cards: 1,
+      table: 5,
+      rows: 1,
+      targets: 2,
+      deployments: 3,
+    });
   });
 
   it("keeps Mission Control and Stories to one content block", () => {
