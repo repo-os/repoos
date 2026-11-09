@@ -50,6 +50,8 @@ export interface CheckGateLock {
   headAtStart: string;
   at: string;
   holders: CheckGateHolder[];
+  /** The last holder exited, but deferred bookkeeping still needs replay. */
+  flushPending?: boolean;
 }
 
 export interface DeferredBranchCommit {
@@ -217,7 +219,7 @@ function parseLock(parsed: unknown): CheckGateLock | null {
       },
     ];
   }
-  if (holders.length === 0) return null;
+  if (holders.length === 0 && o.flushPending !== true) return null;
   return {
     taskId: o.taskId,
     branch: o.branch,
@@ -225,6 +227,7 @@ function parseLock(parsed: unknown): CheckGateLock | null {
     headAtStart: o.headAtStart,
     at: o.at,
     holders,
+    ...(o.flushPending === true ? { flushPending: true } : {}),
   };
 }
 
@@ -233,11 +236,56 @@ function aliveHolders(lock: CheckGateLock): CheckGateHolder[] {
 }
 
 function lockHasLiveHolder(lock: CheckGateLock): boolean {
-  return aliveHolders(lock).length > 0;
+  return lock.flushPending === true || aliveHolders(lock).length > 0;
 }
 
 function newHolderToken(): string {
   return `${process.pid}.${Date.now().toString(36)}.${Math.random().toString(16).slice(2)}`;
+}
+
+function persistPendingQueueFence(
+  boardRoot: string,
+  cacheDir: string,
+  taskId: string,
+  existing?: CheckGateLock,
+): void {
+  if (existing) {
+    atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), {
+      ...existing,
+      at: new Date().toISOString(),
+      holders: [],
+      flushPending: true,
+    });
+    return;
+  }
+  const first = readDeferredBranchQueueState(boardRoot, cacheDir, taskId).entries[0];
+  if (!first) return;
+  const branch = gitCapture(first.commitRoot, ["branch", "--show-current"], 10_000);
+  const head = awaitHead(first.commitRoot) ?? "unknown";
+  atomicWriteJson(lockPath(boardRoot, cacheDir, taskId), {
+    taskId,
+    branch: branch.status === 0 ? branch.stdout.trim() : "unknown",
+    worktree: first.commitRoot,
+    headAtStart: head,
+    at: new Date().toISOString(),
+    holders: [],
+    flushPending: true,
+  } satisfies CheckGateLock);
+}
+
+function flushAndClearCheckGateLock(
+  boardRoot: string,
+  cacheDir: string,
+  taskId: string,
+  lock: CheckGateLock,
+): boolean {
+  const flushed = flushDeferredBranchCommitsLocked(boardRoot, cacheDir, taskId);
+  if (!flushed.ok) {
+    persistPendingQueueFence(boardRoot, cacheDir, taskId, lock);
+    return false;
+  }
+  clearCheckGateLockUnlocked(boardRoot, cacheDir, taskId);
+  return true;
 }
 
 export function readCheckGateLock(
@@ -300,6 +348,12 @@ export async function acquireCheckGateLock(args: {
   try {
     const existing = readCheckGateLock(args.boardRoot, args.cacheDir, args.taskId);
     if (existing) {
+      if (existing.flushPending) {
+        return {
+          ok: false,
+          reason: `check-gate bookkeeping replay for #${args.taskId} is pending; retry after recovery`,
+        };
+      }
       if (!samePath(existing.worktree, args.worktree)) {
         return {
           ok: false,
@@ -366,8 +420,7 @@ async function releaseCheckGateHolder(
     }
     // Keep the lock visible and its state mutex held until queued commits are
     // flushed. A concurrent gate cannot acquire into the release window.
-    flushDeferredBranchCommitsLocked(boardRoot, cacheDir, taskId);
-    clearCheckGateLockUnlocked(boardRoot, cacheDir, taskId);
+    flushAndClearCheckGateLock(boardRoot, cacheDir, taskId, existing);
   } finally {
     releaseState();
   }
@@ -385,9 +438,9 @@ export async function releaseCheckGateLock(
   const releaseState = acquireStateMutex(boardRoot, cacheDir, taskId);
   try {
     const existing = readCheckGateLock(boardRoot, cacheDir, taskId);
-    if (!existing || !lockHasLiveHolder(existing)) {
-      flushDeferredBranchCommitsLocked(boardRoot, cacheDir, taskId);
-      clearCheckGateLockUnlocked(boardRoot, cacheDir, taskId);
+    if (!existing) {
+      const flushed = flushDeferredBranchCommitsLocked(boardRoot, cacheDir, taskId);
+      if (!flushed.ok) persistPendingQueueFence(boardRoot, cacheDir, taskId);
       return;
     }
     const liveRemaining = existing.holders.filter((holder) => holder.pid !== process.pid);
@@ -398,8 +451,7 @@ export async function releaseCheckGateLock(
       });
       return;
     }
-    flushDeferredBranchCommitsLocked(boardRoot, cacheDir, taskId);
-    clearCheckGateLockUnlocked(boardRoot, cacheDir, taskId);
+    flushAndClearCheckGateLock(boardRoot, cacheDir, taskId, existing);
   } finally {
     releaseState();
   }
@@ -444,9 +496,9 @@ export async function reconcileDeadCheckGateLock(
       return;
     }
     // Serialize recovery with acquisition, flush the durable queue first, and
-    // only then remove the stale protection record.
-    flushDeferredBranchCommitsLocked(boardRoot, cacheDir, lock.taskId);
-    clearCheckGateLockUnlocked(boardRoot, cacheDir, lock.taskId);
+    // only then remove the stale protection record. On failure the empty
+    // pending holder keeps the bookkeeping fence active for the next retry.
+    flushAndClearCheckGateLock(boardRoot, cacheDir, lock.taskId, current);
   } finally {
     releaseState();
   }
@@ -809,9 +861,11 @@ function flushDeferredBranchCommitsLocked(
         beforeSnapshots: { ...expectedCurrent },
         fileSnapshots: item.fileSnapshots,
       };
+      const priorReplayExpected = state.replayExpected;
       state.pending = pending;
       state.entries = queue;
-      state.replayExpected = expectedCurrent;
+      if (priorReplayExpected) state.replayExpected = priorReplayExpected;
+      else delete state.replayExpected;
       writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
       try {
         restoreSnapshots(item.fileSnapshots);
@@ -819,6 +873,8 @@ function flushDeferredBranchCommitsLocked(
         if (!committed) {
           restoreSnapshotsIfUnchanged(expectedCurrent, item.fileSnapshots);
           state.pending = undefined;
+          if (priorReplayExpected) state.replayExpected = priorReplayExpected;
+          else delete state.replayExpected;
           writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
           return { ok: false, remaining: queue.length };
         }
@@ -831,6 +887,8 @@ function flushDeferredBranchCommitsLocked(
       } catch {
         restoreSnapshotsIfUnchanged(pending.beforeSnapshots, item.fileSnapshots);
         state.pending = undefined;
+        if (priorReplayExpected) state.replayExpected = priorReplayExpected;
+        else delete state.replayExpected;
         writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
         return { ok: false, remaining: queue.length };
       }
@@ -902,8 +960,13 @@ export async function recoverStaleCheckGateLocks(
       try {
         const lock = readCheckGateLock(boardRoot, cacheDir, taskId);
         if (!lock || !lockHasLiveHolder(lock)) {
-          flushDeferredBranchCommitsLocked(boardRoot, cacheDir, taskId);
-          if (lock) clearCheckGateLockUnlocked(boardRoot, cacheDir, taskId);
+          const flushed = flushDeferredBranchCommitsLocked(boardRoot, cacheDir, taskId);
+          if (lock) {
+            if (flushed.ok) clearCheckGateLockUnlocked(boardRoot, cacheDir, taskId);
+            else persistPendingQueueFence(boardRoot, cacheDir, taskId, lock);
+          } else if (!flushed.ok) {
+            persistPendingQueueFence(boardRoot, cacheDir, taskId);
+          }
         }
       } finally {
         releaseState();

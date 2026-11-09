@@ -6,6 +6,7 @@ import {
   compatibleCheckSnapshots,
   type CheckSnapshot,
 } from "../core/check-reuse.js";
+import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
 import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.js";
 /**
  * `repoos check` — the definition-of-done gate.
@@ -2392,6 +2393,12 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   const gateTaskId = isManagedEngineerCheck(process.env)
     ? runContext.taskId
     : taskIdFromWorktreeBranch(repoRoot, cfg.workDir);
+  const checkHeadAtStartResult = await runGit(repoRoot, ["rev-parse", "HEAD"], 10_000);
+  const checkHeadAtStart =
+    checkHeadAtStartResult.status === 0 ? checkHeadAtStartResult.stdout.trim() : null;
+  if (gateTaskId && !checkHeadAtStart) {
+    throw new Error("could not read HEAD before task self-check");
+  }
   let selfCheckLock: Awaited<ReturnType<typeof acquireCheckGateLock>> | null = null;
   if (gateTaskId) {
     const branch = await runGit(repoRoot, ["branch", "--show-current"], 10_000);
@@ -2632,6 +2639,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
   const completedSteps: CheckStepTiming[] = [];
   let results: StepRunResult[];
   let finalProgress: { stepsDone: number; stepsTotal: number } | undefined;
+  let gateDriftResult: Awaited<ReturnType<typeof checkGateHeadDriftAllowed>> = { ok: true };
   try {
     if (process.env.REPOOS_AGENT === "1") {
       applyEngineerResourceEnv(checkEnv, cfg);
@@ -2675,6 +2683,29 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         }
       },
     });
+    if (gateTaskId && checkHeadAtStart) {
+      const endHead = await runGit(repoRoot, ["rev-parse", "HEAD"], 10_000);
+      gateDriftResult = await checkGateHeadDriftAllowed(
+        repoRoot,
+        cfg,
+        gateTaskId,
+        checkHeadAtStart,
+        endHead.status === 0 ? endHead.stdout.trim() : "<HEAD unavailable>",
+      );
+      if (!gateDriftResult.ok) {
+        const result: StepRunResult = {
+          name: "worktree-drift",
+          status: "failed",
+          detail: gateDriftResult.reason,
+          output: gateDriftResult.reason,
+          durationMs: 0,
+          required: true,
+        };
+        results.push(result);
+        completedSteps.push({ name: result.name, status: result.status, durationMs: 0 });
+        console.log(c.red(`  ✗ ${result.name} — ${result.detail}`));
+      }
+    }
   } catch (e) {
     // The plan runner is not expected to throw, but if it does the normal
     // end-of-run record below never runs — and the server-side check manager
@@ -2802,6 +2833,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     !opts.steps?.length &&
     profile === (plan.defaultProfile || DEFAULT_PROFILE) &&
     testsProven &&
+    gateDriftResult.ok &&
     (await compatibleCheckSnapshots(repoRoot, validationStart, validationEnd))
       ? validationStart
       : null;
