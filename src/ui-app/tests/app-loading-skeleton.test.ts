@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
-import { defineComponent } from "vue";
+import { defineComponent, ref } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import App from "../src/App.vue";
@@ -33,8 +33,15 @@ const ImmediateSkeletonHarness = defineComponent({
 });
 const LoadingShellTransitionHarness = defineComponent({
   props: { loading: { type: Boolean, required: true } },
+  setup() {
+    const finishLeave = ref<(() => void) | null>(null);
+    const holdLeave = (_element: Element, done: () => void) => {
+      finishLeave.value = done;
+    };
+    return { finishLeave, holdLeave };
+  },
   template:
-    '<Transition name="page-loading-shell"><div v-if="loading" class="page-loading">Loading</div><div v-else class="page-content">Content</div></Transition>',
+    '<Transition name="page-loading-shell" :css="false" @leave="holdLeave"><div v-if="loading" class="page-loading">Loading</div><div v-else class="page-content">Content</div></Transition>',
 });
 
 describe("repo loading skeleton", () => {
@@ -56,12 +63,16 @@ describe("repo loading skeleton", () => {
     const wrapper = mount(LoadingShellTransitionHarness, {
       props: { loading: true },
       attachTo: document.body,
+      global: { stubs: { transition: false } },
     });
     await wrapper.setProps({ loading: false });
     const leavingShell = document.querySelector(".page-loading");
     expect(leavingShell).not.toBeNull();
-    expect(leavingShell?.classList.contains("page-loading-shell-leave-active")).toBe(true);
+    expect(wrapper.vm.finishLeave).toBeTypeOf("function");
     expect(wrapper.find(".page-content").exists()).toBe(true);
+    (wrapper.vm.finishLeave as () => void)();
+    await wrapper.vm.$nextTick();
+    expect(document.querySelector(".page-loading")).toBeNull();
     wrapper.unmount();
   });
 
