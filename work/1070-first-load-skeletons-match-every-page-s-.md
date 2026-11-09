@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -258,4 +258,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T14:23:57Z · note: handoff requested (cli)
 - 2026-11-09T14:24:31Z · message_delivered: 2 message(s)
 - 2026-11-09T14:26:29Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-09T14:26:29Z · engineer stopped by request
+- 2026-11-09T14:26:29Z · status active→review
