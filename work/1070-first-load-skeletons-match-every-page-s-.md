@@ -8,12 +8,14 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
+review_cli_override: claude code
+review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T08:38:07Z"
+updated_at: "2026-11-09T13:02:35Z"
+review_passes: 5
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 3
 last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"}]"
@@ -43,11 +45,33 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 
 ## Shots
 ```json
-[]
+[
+{
+  "label": "Mission Control loading skeleton",
+  "target": "default",
+  "route": "/",
+  "highlight": ".page-skeleton--dashboard"
+},
+{
+  "label": "Stories loading skeleton",
+  "target": "default",
+  "route": "/stories",
+  "highlight": ".page-skeleton--rows"
+}
+]
 ```
 
 ## Accepted scope: no loading-state screenshots
 Owner-side decision (2026-11-09): the handoff capture tool deliberately treats any page showing aria-busy / a loading indicator as a FAILED shot ('loading state detected', src/core/shot-page.ts), so declared shots of the skeleton itself cannot pass. Acceptance criterion 6 (shots of the loading state) is therefore replaced by: precise component tests that assert the skeleton structure and item counts against the real layout constants, plus optional shots of the SETTLED Mission Control and Stories pages to show the real layout the skeleton must match. A reviewer must not require loading-state screenshots.
+
+## Accepted scope and known limitations
+Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and minimum-visible-time (about 350 ms) are applied at the SHELL level in App.vue only. Applying the same gate inside every individual view that renders its own PageSkeleton (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) is out of scope here and is tracked in a follow-up task; a reviewer must report it as a suggestion, not a blocking bug. Still required: fix the Settings row-count regression, and replace the magic placeholder counts for non-board kinds with named constants documented next to the real layout they mirror.
+
+## Accepted scope: per-view exit timing
+Per-view skeleton exit timing (the brief overlap of a per-view skeleton with content when it leaves) belongs to follow-up #1078 together with the per-view show-delay gate; a reviewer must report it as a suggestion, not a blocking bug.
+
+## Accepted scope: items moved to #1078 (final)
+Owner decision (2026-11-09, release night): review 5 items 3 (board responsive breakpoints), 4 (reuse of motion settings) and 5 (cache seeding) are accepted follow-up work tracked in #1078, not blockers for this task. Only these remain required: (1) discard the uncommitted edits in the worktree (they regress Mission Control to six blocks); (2) the named placeholder counts for the non-board kinds must be real named constants that the render and the test both use, with Mission Control (dashboard) staying a SINGLE block (value 1) and a comment explaining what real layout each constant mirrors. A reviewer must report everything else as suggestions.
 
 ## Screenshots
 
@@ -143,3 +167,70 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:38:05Z · message_delivered: 1 message(s)
 - 2026-11-09T08:38:05Z · status review→active
 - 2026-11-09T08:38:07Z · CTO nudge: held — remote validation is running
+- 2026-11-09T09:09:09Z · message_queued at 2026-11-09T09:09:09.254Z
+- 2026-11-09T09:09:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T09:09:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T09:38:35Z · body: Accepted scope and known limitations (added)
+- 2026-11-09T09:38:35Z · message_queued at 2026-11-09T09:38:35.958Z
+- 2026-11-09T09:38:39Z · message_queued at 2026-11-09T09:38:39.224Z
+- 2026-11-09T10:02:27Z · body
+- 2026-11-09T10:02:27Z · body
+- 2026-11-09T10:09:21Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T10:09:21Z · message_delivered: 3 message(s)
+- 2026-11-09T10:41:50Z · note: adopted orphaned engineer pid 99014
+- 2026-11-09T10:42:25Z · message_queued at 2026-11-09T10:42:25.569Z
+- 2026-11-09T10:46:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T10:57:15Z · body
+- 2026-11-09T10:58:50Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T10:58:50Z · message_queued at 2026-11-09T10:58:50.787Z
+- 2026-11-09T10:58:50Z · ↻ resuming engineer to read queued message
+- 2026-11-09T10:58:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: The full changed-path check passed on the retry host, and local formatting, lint, build, contrast, asset, and UI smoke guards all passed. I’m doing the final worktree/report/task-state check now, then I’ll submit the review handoff. · stderr: 2026-11-09T10:09:39.571836Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 78606 2026-11-09T10:11:15.867393Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/first-load-skeletons-match-eve…
+- 2026-11-09T10:58:51Z · status active→review
+- 2026-11-09T10:58:51Z · message_delivered: 2 message(s)
+- 2026-11-09T10:58:51Z · note: handoff requested (cli)
+- 2026-11-09T10:59:44Z · message_queued at 2026-11-09T10:59:44.829Z
+- 2026-11-09T10:59:45Z · handoff failed · task-file handoff failed at check · repoos check failed: rendered-contrast — · div#setting-localChecks.reclaimGraceMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] "Wait this long after marking a live holder wedged before ter"
+- 2026-11-09T11:06:47Z · message_queued at 2026-11-09T11:06:47.885Z
+- 2026-11-09T11:21:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T11:33:34Z · body
+- 2026-11-09T11:33:40Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T11:33:41Z · message_queued at 2026-11-09T11:33:41.020Z
+- 2026-11-09T11:33:41Z · ↻ resuming engineer to read queued message
+- 2026-11-09T11:33:41Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: The second scoped check passed. The first runner host timed out and RepoOS retried on another host; on that retry, all scoped tests and rendered contrast passed. I’m checking the final worktree/report, then I’ll request review. · stderr: 2026-11-09T11:15:29.560756Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: Network is unreachable (os error 51), url: wss://chatgpt.com/backend-api/codex/responses 2026-11-09T11:17:02.575138Z ERROR codex_models_manager::manager: failed to refresh available models: request tim…
+- 2026-11-09T11:33:41Z · status active→review
+- 2026-11-09T11:33:41Z · message_delivered: 3 message(s)
+- 2026-11-09T11:33:41Z · note: handoff requested (cli)
+- 2026-11-09T11:36:03Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T11:36:04Z · status active→review
+- 2026-11-09T11:36:04Z · message_queued at 2026-11-09T11:36:04.305Z
+- 2026-11-09T11:37:32Z · note: review pass 4: needs some work
+- 2026-11-09T11:37:32Z · needs_input
+- 2026-11-09T11:55:21Z · body: Accepted scope: per-view exit timing (added)
+- 2026-11-09T11:55:22Z · status review→active
+- 2026-11-09T11:55:22Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T11:55:24Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T11:55:25Z · message_delivered: 1 message(s)
+- 2026-11-09T11:55:25Z · needs_input
+- 2026-11-09T11:55:26Z · message_queued at 2026-11-09T11:55:26.397Z
+- 2026-11-09T12:14:05Z · review_cli_override, review_model_override
+- 2026-11-09T12:30:31Z · body
+- 2026-11-09T12:32:19Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T12:32:19Z · message_queued at 2026-11-09T12:32:19.514Z
+- 2026-11-09T12:32:19Z · ↻ resuming engineer to read queued message
+- 2026-11-09T12:32:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check is fully green now, including the local format/lint/build guards, rendered contrast, and UI smoke. I’m writing the engineer report with the page-by-page layout audit and the two fixes from this review, then I’ll confirm th… · stderr: Reading additional input from stdin...
+- 2026-11-09T12:32:20Z · note: handoff requested (cli)
+- 2026-11-09T12:32:44Z · message_delivered: 2 message(s)
+- 2026-11-09T12:32:49Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T12:34:57Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-09T12:34:58Z · status active→review
+- 2026-11-09T12:34:58Z · message_queued at 2026-11-09T12:34:58.337Z
+- 2026-11-09T12:37:12Z · note: review pass 5: needs some work
+- 2026-11-09T12:37:12Z · needs_input
+- 2026-11-09T12:59:04Z · body: Accepted scope: items moved to #1078 (final) (added)
+- 2026-11-09T12:59:06Z · status review→active
+- 2026-11-09T12:59:06Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T12:59:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T12:59:15Z · message_delivered: 1 message(s)
+- 2026-11-09T12:59:16Z · needs_input
+- 2026-11-09T12:59:17Z · message_queued at 2026-11-09T12:59:17.992Z
+- 2026-11-09T13:02:35Z · body

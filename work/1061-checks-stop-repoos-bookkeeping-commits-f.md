@@ -8,11 +8,11 @@ area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/checks-stop-repoos-bookkeeping-commits-f
-review_cli_override: codex
-review_model_override: gpt-6.1-terra
+review_cli_override: claude code
+review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T09:04:39Z"
-review_passes: 13
+updated_at: "2026-11-09T13:14:39Z"
+review_passes: 17
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -45,6 +45,9 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 
 ## Accepted scope and known limitations
 Owner decision (2026-11-09): this task lands once bookkeeping commits are deferred during a check, new engineer turns are refused during a check, and any NET source change that exists when the check ends is detected and invalidates the result (with commit subject and paths when they can be determined; an unexplained non-empty source delta must still invalidate, fail closed). Out of scope, tracked in a follow-up task: (a) blocking filesystem writes by an already-running engineer (not enforceable), (b) a source change that is committed and then reverted within the same check window (endpoint diff is empty; the transient state is not caught). A reviewer must report (a) and (b) as suggestions, not blocking bugs. Docs and the report must state both limitations.
+
+## Accepted scope: submodules (final)
+Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositories are OUT OF SCOPE for the drift snapshot. Gitlink (mode 160000) entries and nested repos are skipped entirely (not fingerprinted, not read, not chmod'ed) and the docs state plainly that submodule contents are not covered by drift detection or protection. A reviewer must report anything about submodule contents, uninitialized submodules, nested repos or dirty submodule edits as a suggestion, never as a blocking bug. Real source files, regular files and tracked symlinks (by link target, never followed) remain in scope.
 
 ## Activity
 
@@ -468,3 +471,108 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T09:04:37Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T09:04:38Z · message_delivered: 1 message(s)
 - 2026-11-09T09:04:39Z · message_queued at 2026-11-09T09:04:39.905Z
+- 2026-11-09T09:49:48Z · body
+- 2026-11-09T09:51:32Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The drift-classification fix is in place. A source commit followed by a revert now invalidates the check, and an unexplained source diff fails closed. The regression test passed. `REPOOS_CHECK_CHANGED=main repoos check` passed after format… · stderr: Reading additional input from stdin... 2026-11-09T09:13:46.052711Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request 2026-11-09T09:18:00.007026Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup add…
+- 2026-11-09T09:51:32Z · status active→review
+- 2026-11-09T09:51:32Z · message_delivered: 1 message(s)
+- 2026-11-09T09:51:33Z · note: handoff requested (cli)
+- 2026-11-09T09:54:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T10:05:04Z · message_queued at 2026-11-09T10:05:04.415Z
+- 2026-11-09T10:05:04Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate
+- 2026-11-09T10:09:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T10:11:57Z · body
+- 2026-11-09T10:13:31Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T10:13:31Z · message_queued at 2026-11-09T10:13:31.475Z
+- 2026-11-09T10:13:31Z · ↻ resuming engineer to read queued message
+- 2026-11-09T10:13:31Z · message_delivered: 2 message(s)
+- 2026-11-09T10:14:09Z · message_queued at 2026-11-09T10:14:09.255Z
+- 2026-11-09T10:14:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T10:19:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T10:26:00Z · engineer stopped by request
+- 2026-11-09T10:26:06Z · message_delivered: 1 message(s)
+- 2026-11-09T10:41:50Z · note: adopted orphaned engineer pid 26641
+- 2026-11-09T10:43:11Z · body
+- 2026-11-09T11:00:31Z · body
+- 2026-11-09T11:04:31Z · status active→review
+- 2026-11-09T11:04:33Z · message_queued at 2026-11-09T11:04:33.059Z
+- 2026-11-09T11:04:33Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T11:05:47Z · note: review pass 14: needs some work
+- 2026-11-09T11:05:48Z · needs_input
+- 2026-11-09T11:06:28Z · status review→active
+- 2026-11-09T11:06:28Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T11:06:30Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T11:06:39Z · message_delivered: 1 message(s)
+- 2026-11-09T11:06:39Z · needs_input
+- 2026-11-09T11:06:42Z · message_queued at 2026-11-09T11:06:42.986Z
+- 2026-11-09T11:08:45Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I can’t safely edit this branch yet: task #1061 is still in `review`, and RepoOS rules prohibit changing a reviewed branch tip. The `repoos mv 1061 active` attempt stopped with a warning that the CLI reads the main checkout’s board, which … · stderr: Reading additional input from stdin...
+- 2026-11-09T11:08:46Z · status active→review
+- 2026-11-09T11:08:47Z · message_delivered: 1 message(s)
+- 2026-11-09T11:08:51Z · note: handoff requested (cli)
+- 2026-11-09T11:11:49Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T11:21:55Z · message_queued at 2026-11-09T11:21:55.769Z
+- 2026-11-09T11:21:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T11:26:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T11:38:13Z · body
+- 2026-11-09T11:39:40Z · status active→review
+- 2026-11-09T11:39:41Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T11:40:20Z · message_queued at 2026-11-09T11:40:20.773Z
+- 2026-11-09T11:40:57Z · note: review pass 15: needs some work
+- 2026-11-09T11:40:57Z · needs_input
+- 2026-11-09T11:55:26Z · status review→active
+- 2026-11-09T11:55:26Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T11:55:29Z · message_delivered: 1 message(s)
+- 2026-11-09T11:55:29Z · needs_input
+- 2026-11-09T11:55:30Z · message_queued at 2026-11-09T11:55:30.728Z
+- 2026-11-09T11:55:59Z · note: Resuming to address review findings: dirty-file snapshot and crash-safe mode persistence.
+- 2026-11-09T11:56:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T12:14:04Z · review_cli_override, review_model_override
+- 2026-11-09T12:14:19Z · body
+- 2026-11-09T12:15:21Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T12:15:21Z · message_queued at 2026-11-09T12:15:21.824Z
+- 2026-11-09T12:15:21Z · ↻ resuming engineer to read queued message
+- 2026-11-09T12:15:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The remote validation retry passed, followed by local format/lint, build, contrast audit, UI smoke, and user-docs build. The scoped check ended with “All checks passed.” I’m doing a final worktree/status inspection and confirming the repor… · stderr: Reading additional input from stdin... 2026-11-09T12:14:58.997214Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 61568
+- 2026-11-09T12:15:22Z · status active→review
+- 2026-11-09T12:15:22Z · message_delivered: 2 message(s)
+- 2026-11-09T12:15:22Z · note: handoff requested (cli)
+- 2026-11-09T12:16:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T12:25:07Z · message_queued at 2026-11-09T12:25:07.617Z
+- 2026-11-09T12:25:07Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from ff405c9d to 8a1f6321) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-09T12:26:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T12:31:50Z · body
+- 2026-11-09T12:32:09Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T12:32:10Z · message_queued at 2026-11-09T12:32:10.072Z
+- 2026-11-09T12:32:10Z · ↻ resuming engineer to read queued message
+- 2026-11-09T12:32:10Z · status active→review
+- 2026-11-09T12:32:10Z · message_delivered: 2 message(s)
+- 2026-11-09T12:32:10Z · note: handoff requested (cli)
+- 2026-11-09T12:32:47Z · status active→review
+- 2026-11-09T12:32:47Z · message_queued at 2026-11-09T12:32:47.324Z
+- 2026-11-09T12:32:47Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T12:34:23Z · note: review pass 16: needs some work
+- 2026-11-09T12:34:23Z · needs_input
+- 2026-11-09T12:36:33Z · status review→active
+- 2026-11-09T12:36:33Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T12:36:36Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T12:36:38Z · message_delivered: 1 message(s)
+- 2026-11-09T12:36:38Z · needs_input
+- 2026-11-09T12:36:39Z · message_queued at 2026-11-09T12:36:39.611Z
+- 2026-11-09T13:01:50Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T13:01:50Z · message_queued at 2026-11-09T13:01:50.155Z
+- 2026-11-09T13:01:50Z · ↻ resuming engineer to read queued message
+- 2026-11-09T13:01:50Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The requested gate completed with exit code 0 after RepoOS’s fallback ran the full local suite. I’m adding the required engineer-authored report draft now, including the two accepted limits and the remote-runner outage/fallback as observed… · stderr: Reading additional input from stdin... 2026-11-09T12:54:19.443891Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: failed to lookup address information: nodename nor servname provided, or not known, url: wss://chatgpt.com/backend-api/codex/responses 2026-11-09T12:54:19.951555Z…
+- 2026-11-09T13:01:50Z · status active→review
+- 2026-11-09T13:01:50Z · message_delivered: 2 message(s)
+- 2026-11-09T13:01:51Z · note: handoff requested (cli)
+- 2026-11-09T13:01:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T13:02:29Z · status active→review
+- 2026-11-09T13:02:29Z · message_queued at 2026-11-09T13:02:29.354Z
+- 2026-11-09T13:02:29Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T13:04:13Z · note: review pass 17: needs some work
+- 2026-11-09T13:04:13Z · needs_input
+- 2026-11-09T13:14:16Z · body: Accepted scope: submodules (final) (added)
+- 2026-11-09T13:14:17Z · status review→active
+- 2026-11-09T13:14:17Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T13:14:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T13:14:20Z · message_delivered: 1 message(s)
+- 2026-11-09T13:14:21Z · needs_input
+- 2026-11-09T13:14:22Z · message_queued at 2026-11-09T13:14:22.418Z

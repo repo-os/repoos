@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { formatPipelineElapsed, type PipelineCardState } from "../../../core/pipeline-view.js";
+import { agentLastActivityTip } from "../lib/card-activity-recency";
 import { checkProgressPercent, type CheckProgress } from "../lib/check-progress";
 import {
   resolveSharedTaskCardStatus,
@@ -26,6 +27,7 @@ const props = defineProps<{
   chipText: string | null;
   /** ISO timestamp the current state began (updated_at; releasedAt once merged). */
   stateSince: string | null;
+  lastActivityAt: string | null;
   nowMs: number;
   roundsLabel: string;
   reviewerTone: "green" | "amber" | "red" | null;
@@ -70,6 +72,17 @@ const displayAction = computed<PipelineCardAction | null>(() => {
 
 const showInlineCheckBar = computed(
   () => props.checkProgress != null && checkProgressPercent(props.checkProgress) != null,
+);
+const validLastActivityAt = computed(() =>
+  Number.isFinite(Date.parse(props.lastActivityAt ?? "")) ? props.lastActivityAt : null,
+);
+
+/** Hide elapsed only while live work is healthy; idle review/close-out rows keep state time. */
+const showElapsedInline = computed(
+  () => !(sharedStatus.value?.inFlight && !sharedStatus.value.stuck) || !validLastActivityAt.value,
+);
+const elapsedTip = computed(() =>
+  agentLastActivityTip(validLastActivityAt.value ?? undefined, props.nowMs),
 );
 
 function open(): void {
@@ -149,13 +162,24 @@ function onKey(e: KeyboardEvent): void {
         test-id="pipeline-card-check-progress"
         :progress="checkProgress"
         :pipeline-status-text="displayStepLabel"
+        :data-tip="!showElapsedInline && elapsedTip ? elapsedTip : undefined"
+        :tabindex="!showElapsedInline && elapsedTip ? 0 : undefined"
       />
       <template v-else>
         <span class="pl-dot" aria-hidden="true"></span>
-        <span class="pl-step">{{ displayStepLabel }}</span>
+        <span
+          class="pl-step"
+          :class="{ 'pl-step--recency-tip': !showElapsedInline && elapsedTip }"
+          :tabindex="!showElapsedInline && elapsedTip ? 0 : undefined"
+          :data-tip="!showElapsedInline && elapsedTip ? elapsedTip : undefined"
+        >
+          {{ displayStepLabel }}
+        </span>
       </template>
       <span class="pl-spacer"></span>
-      <span class="pl-elapsed">{{ elapsed }}</span>
+      <span v-if="showElapsedInline" class="pl-elapsed" data-test-id="pipeline-card-elapsed">
+        {{ elapsed }}
+      </span>
     </div>
     <!-- Row 4: rounds, models, host -->
     <div class="pl-row pl-row-4">

@@ -51,7 +51,8 @@ describe("integration-pipeline-ui (#0740)", () => {
   it("renders integrating · starting… when the active job has no stage yet", () => {
     const now = Date.parse("2026-10-07T13:02:27.000Z");
     const copy = integrationActiveCopy(snap(), now);
-    expect(copy.label).toBe("integrating · starting… · 2m 27s");
+    expect(copy.label).toBe("integrating · starting…");
+    expect(copy.elapsedTip).toMatch(/Close-out running/);
     expect(copy.stalled).toBe(false);
   });
 
