@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import {
   mkdtempSync,
   mkdirSync,
+  chmodSync,
   readFileSync,
   rmSync,
   statSync,
@@ -31,6 +32,7 @@ import {
   flushDeferredBranchCommits,
   readDeferredBranchCommits,
   reconcileDeadCheckGateLock,
+  recoverStaleCheckGateLocks,
   releaseCheckGateLock,
   CHECK_GATE_WRITE_REFUSAL,
 } from "../../server/check-gate-lock.js";
@@ -340,6 +342,63 @@ describe("check gate lock and deferred commits (#1061)", () => {
     setCheckGateCommitHook(null);
     const resumed = await flushDeferredBranchCommits(root, ".repoos", "0001");
     expect(resumed).toEqual({ ok: true, remaining: 0 });
+    expect(git(wt, ["log", "-3", "--format=%s"]).split("\n")).toEqual([
+      "docs(0001): third",
+      "docs(0001): second",
+      "docs(0001): first",
+    ]);
+    expect(readFileSync(taskFile, "utf8")).toBe(`${original}\nfirst\nsecond\nthird`);
+  });
+
+  it("queues new production bookkeeping writes behind entries left after partial replay", async () => {
+    const { root, wt, branch } = initRepo();
+    const config = cfg(root);
+    installCheckGateCommitHook(config);
+    process.env.REPOOS_CHECK_STORE_ROOT = root;
+    const taskFile = join(wt, "work", "0001-task.md");
+    const original = readFileSync(taskFile, "utf8");
+    const acquired = await acquireCheckGateLock({
+      boardRoot: root,
+      cacheDir: ".repoos",
+      taskId: "0001",
+      branch,
+      worktree: wt,
+      kind: "handoff-finalize",
+    });
+    expect(acquired.ok).toBe(true);
+
+    writeFileSync(taskFile, `${original}\nfirst`);
+    expect(commitFiles(wt, [taskFile], "docs(0001): first")).toBe(true);
+    writeFileSync(taskFile, `${original}\nfirst\nsecond`);
+    expect(commitFiles(wt, [taskFile], "docs(0001): second")).toBe(true);
+
+    // Fail only the second actual replayed git commit, after the first one has
+    // committed and the holder release has converted the lock into a pending
+    // replay fence.
+    const hooks = join(root, "failing-hooks");
+    mkdirSync(hooks, { recursive: true });
+    const preCommit = join(hooks, "pre-commit");
+    writeFileSync(
+      preCommit,
+      "#!/bin/sh\nif grep -q 'second$' work/0001-task.md; then exit 1; fi\nexit 0\n",
+    );
+    chmodSync(preCommit, 0o755);
+    git(wt, ["config", "core.hooksPath", hooks]);
+
+    if (acquired.ok) await acquired.release();
+    expect(git(wt, ["log", "-1", "--format=%s"])).toBe("docs(0001): first");
+    expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(1);
+
+    // A fresh server bookkeeping write must be deferred behind the failed
+    // entry; it cannot commit around the pending replay fence.
+    writeFileSync(taskFile, `${original}\nfirst\nsecond\nthird`);
+    expect(commitFiles(wt, [taskFile], "docs(0001): third")).toBe(true);
+    expect(git(wt, ["log", "-1", "--format=%s"])).toBe("docs(0001): first");
+    expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(2);
+
+    git(wt, ["config", "--unset", "core.hooksPath"]);
+    await recoverStaleCheckGateLocks(root, ".repoos");
+    expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(0);
     expect(git(wt, ["log", "-3", "--format=%s"]).split("\n")).toEqual([
       "docs(0001): third",
       "docs(0001): second",
