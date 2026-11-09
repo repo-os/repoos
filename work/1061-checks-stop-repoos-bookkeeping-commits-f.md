@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -312,3 +312,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T00:14:14Z · body
 - 2026-11-09T00:29:02Z · body
 - 2026-11-09T00:31:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required scoped check passed after I ran `bun run fmt`. Remote validation passed on the retry host; the local build, lint, UI smoke, and docs build also passed. I updated the local check lock lifetime, bookkeeping enqueue/release synch… · stderr: Reading additional input from stdin...
+- 2026-11-09T00:31:00Z · status active→review
