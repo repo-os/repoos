@@ -2,7 +2,10 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T23:46:41Z"
+updated_at: "2026-11-09T23:47:01Z"
 review_passes: 12
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -19,6 +22,7 @@ routing_switches: 1
 routing_escalations: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-09T15:02:18.464Z\",\"reason\":\"handoff-deferred\"}]"
+dev_error_count: 1
 ---
 ## Problem
 First-load skeletons are jarring and in places wrong. On Mission Control (`/`) the `dashboard` skeleton draws six tall cards in an `auto-fit` grid (`PageSkeleton.vue`), so on a wide window they wrap into one row of four plus a stray card on a second row, and none of it resembles the real page (which is not a board of cards like Work and Inputs). Stories shows the same kind of mismatch. Other pages use `board`, `inputBoard`, `cards`, `table`, `rows`, `targets` and `deployments` shapes picked by route in `src/ui-app/src/lib/loading-skeleton.ts`, and nobody has checked each one against its real content.
@@ -412,3 +416,5 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T23:38:56Z · note: handoff requested (cli)
 - 2026-11-09T23:40:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T23:46:41Z · message_delivered: 2 message(s)
+- 2026-11-09T23:47:01Z · agent exited with an error (codex) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
+- 2026-11-09T23:47:01Z · status active→review
