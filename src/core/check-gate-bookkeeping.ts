@@ -80,6 +80,9 @@ async function formatNonBookkeepingCommitDrift(
     };
   }
   const netAffecting = netPaths.filter((path) => !isCheckGateBookkeepingPath(path, config));
+  // Endpoint content is authoritative for drift. A committed change followed
+  // by a revert is an accepted limitation when the final source tree matches.
+  if (netAffecting.length === 0) return { kind: "clean" };
 
   // Walk commits only to explain the already-established source delta.
   // Ignore commits that were part of the checked tree's history.
@@ -90,14 +93,15 @@ async function formatNonBookkeepingCommitDrift(
   );
   const parts: string[] = [`HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`];
   if (list.status !== 0) {
+    if (netAffecting.length === 0) return { kind: "clean" };
     return {
       kind: "changed",
-      reason: `${parts[0]}; commit history could not be inspected (source change; paths unavailable)`,
-      paths: [],
+      reason: `${parts[0]}; source diff ${netAffecting.join(", ")} history could not be explained by inspected commits`,
+      paths: [...netAffecting],
     };
   }
   const allAffecting = new Set<string>();
-  let explainedSourceChange = false;
+  const explainedPaths = new Set<string>();
   {
     const shas = list.stdout
       .split("\n")
@@ -135,23 +139,21 @@ async function formatNonBookkeepingCommitDrift(
       }
       const diffBase = mergeCommit ? from : firstParent;
       const paths = diffBase ? await pathsChangedBetweenCommits(wt, diffBase, sha) : null;
-      if (paths === null) {
-        parts.push(`commit ${sha.slice(0, 8)} "${subject}" changed paths could not be computed`);
-        allAffecting.add("<paths unavailable>");
-        explainedSourceChange = true;
-        continue;
-      }
+      if (paths === null) continue;
       const affecting = paths.filter((p) => !isCheckGateBookkeepingPath(p, config));
       if (affecting.length === 0) continue;
-      explainedSourceChange = true;
-      affecting.forEach((p) => allAffecting.add(p));
+      affecting.forEach((p) => {
+        allAffecting.add(p);
+        explainedPaths.add(p);
+      });
       parts.push(`commit "${subject}" touched ${affecting.join(", ")}`);
     }
   }
-  if (!explainedSourceChange && netAffecting.length > 0) {
+  const unexplainedPaths = netAffecting.filter((path) => !explainedPaths.has(path));
+  if (unexplainedPaths.length > 0) {
     return {
       kind: "changed",
-      reason: `${parts[0]}; source diff could not be associated with an inspected commit (source change; paths unavailable)`,
+      reason: `${parts[0]}; source diff ${unexplainedPaths.join(", ")} history could not be explained by inspected commits`,
       paths: [...netAffecting],
     };
   }

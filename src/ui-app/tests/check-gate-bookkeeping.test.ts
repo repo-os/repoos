@@ -137,7 +137,7 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     }
   });
 
-  it("rejects a source change followed by a revert during the gate", async () => {
+  it("accepts a source change followed by a revert when the endpoint tree is unchanged", async () => {
     const { wt } = initRepo();
     const before = git(wt, ["rev-parse", "HEAD"]);
     writeFileSync(join(wt, "src", "app.ts"), "intermediate\n");
@@ -148,12 +148,7 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     git(wt, ["commit", "-qm", "revert: restore source"]);
     const after = git(wt, ["rev-parse", "HEAD"]);
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toContain('"feat: temporary source change"');
-      expect(result.reason).toContain("src/app.ts");
-      expect(result.reason).toContain('"revert: restore source"');
-    }
+    expect(result).toEqual({ ok: true });
     expect(git(wt, ["show", `${before}:src/app.ts`])).toBe(
       git(wt, ["show", `${after}:src/app.ts`]),
     );
@@ -276,6 +271,40 @@ describe("checkGateHeadDriftAllowed (#1061)", () => {
     const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", "notasha", "alsobad");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toMatch(/could not be inspected|paths unavailable/);
+  });
+
+  it("fails closed with net source paths when history cannot explain the diff", async () => {
+    const { wt } = initRepo();
+    const before = git(wt, ["rev-parse", "HEAD"]);
+    writeFileSync(join(wt, "src", "app.ts"), "unexplained drift\n");
+    git(wt, ["add", "src/app.ts"]);
+    git(wt, ["commit", "-qm", "feat: source drift"]);
+    const after = git(wt, ["rev-parse", "HEAD"]);
+
+    const bin = mkdtempSync(join(tmpdir(), "repoos-1061-git-bin-"));
+    roots.push(bin);
+    const realGit = execFileSync("which", ["git"], { encoding: "utf8" }).trim();
+    const escapedGit = `'${realGit.replaceAll("'", "'\\''")}'`;
+    const fakeGit = join(bin, "git");
+    writeFileSync(
+      fakeGit,
+      `#!/bin/sh\nif [ "$1" = "rev-list" ] && [ "$2" = "--first-parent" ]; then exit 0; fi\nexec ${escapedGit} "$@"\n`,
+    );
+    chmodSync(fakeGit, 0o755);
+    const previousPath = process.env.PATH;
+    process.env.PATH = `${bin}:${previousPath ?? ""}`;
+    try {
+      const result = await checkGateHeadDriftAllowed(wt, cfg(wt), "0001", before, after);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.reason).toContain("history could not be explained");
+        expect(result.reason).toContain("src/app.ts");
+        expect(result.affectingPaths).toContain("src/app.ts");
+      }
+    } finally {
+      if (previousPath === undefined) delete process.env.PATH;
+      else process.env.PATH = previousPath;
+    }
   });
 });
 

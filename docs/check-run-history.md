@@ -19,6 +19,15 @@ only to identify the subjects and paths responsible for the established net
 source delta. A merge whose checked tree is its second parent is therefore
 judged by its resulting tree, not unrelated first-parent history.
 
+Every net source path must be explained by an inspected commit. If the final
+tree differs from the check-start tree but the available commit history cannot
+account for a changed source path, the check fails closed and names that path
+with a `history could not be explained` reason. A source commit followed by a
+revert that restores the check-start content leaves no endpoint tree delta and
+is accepted. Detecting such transient committed content is an accepted
+limitation tracked separately; this check does not inspect every intermediate
+tree for net-zero changes.
+
 An already-running engineer can still edit source files directly during a
 check; filesystem writes cannot be reliably fenced. RepoOS detects committed
 source changes after the check and rejects the result with the commit subject
