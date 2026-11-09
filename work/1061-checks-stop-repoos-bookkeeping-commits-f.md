@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
+last_handoff_failure_sha: fa20c585ba45a8cf93d82ea6795d814f978165e2
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -390,3 +392,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T03:09:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T03:16:50Z · message_queued at 2026-11-09T03:16:50.941Z
 - 2026-11-09T03:16:51Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
+
