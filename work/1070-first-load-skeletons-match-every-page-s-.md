@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T06:43:44Z"
+updated_at: "2026-11-09T06:46:16Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -99,3 +99,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T06:24:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T06:29:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T06:43:44Z · body
+- 2026-11-09T06:46:16Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)
