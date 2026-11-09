@@ -23,7 +23,7 @@ const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
 const LoadingHarness = defineComponent({
   components: { PageSkeleton },
   props: { loading: { type: Boolean, required: true } },
-  template: '<PageSkeleton kind="rows" :loading="loading" />',
+  template: '<PageSkeleton kind="rows" :loading="loading" defer />',
 });
 
 describe("repo loading skeleton", () => {
@@ -35,6 +35,7 @@ describe("repo loading skeleton", () => {
     );
     expect(appVue).toMatch(/:loading="repo\.loading"/);
     expect(appVue).toContain('@visibility-change="showRepoSkeleton = $event"');
+    expect(appVue).toMatch(/:loading="repo\.loading"\s+defer/);
     expect(appVue).not.toContain("skeletonDelay");
     expect(appVue).toMatch(/<RouterView v-else class="main-route"\s*\/>/);
   });
@@ -130,7 +131,7 @@ describe("repo loading skeleton", () => {
     expect(providers).toMatch(/kind="rows"\s+:count="rows\.length"/);
   });
 
-  it("routes every per-view loading condition through the shared timing component", () => {
+  it("keeps per-view skeletons immediate and reserves the timing gate for the shell", () => {
     const callsitePaths = [
       "../src/views/ChecksView.vue",
       "../src/views/SecretsView.vue",
@@ -148,7 +149,10 @@ describe("repo loading skeleton", () => {
       const source = readFileSync(resolve(__dirname, path), "utf8");
       const tags = [...source.matchAll(/<PageSkeleton\b[\s\S]*?\/>/g)].map((match) => match[0]);
       expect(tags.length, path).toBeGreaterThan(0);
-      for (const tag of tags) expect(tag, path).toContain(":loading=");
+      for (const tag of tags) {
+        expect(tag, path).toContain(":loading=");
+        expect(tag, path).not.toMatch(/\bdefer\b/);
+      }
     }
   });
 
@@ -165,6 +169,10 @@ describe("repo loading skeleton", () => {
       "deployments",
     ] as const;
     const wrappers = kinds.map((kind) => mount(PageSkeleton, { props: { kind, loading: true } }));
+    await vi.advanceTimersByTimeAsync(0);
+    for (const wrapper of wrappers) {
+      expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    }
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     for (const [index, wrapper] of wrappers.entries()) {
       const expected =
@@ -187,7 +195,6 @@ describe("repo loading skeleton", () => {
         count: GENERAL_FIELD_SECTIONS.length,
       },
     });
-    expect(settings.find(".page-skeleton").exists()).toBe(false);
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(settings.find(".page-skeleton").findAll(":scope > .page-skeleton__item")).toHaveLength(
       GENERAL_FIELD_SECTIONS.length,
@@ -214,7 +221,7 @@ describe("repo loading skeleton", () => {
     vi.useRealTimers();
   });
 
-  it("delays all per-view skeletons and suppresses fast and cached loads", async () => {
+  it("suppresses fast and cached shell loads", async () => {
     vi.useFakeTimers();
     const wrapper = mount(LoadingHarness, { props: { loading: true } });
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS - 1);
@@ -229,7 +236,7 @@ describe("repo loading skeleton", () => {
     vi.useRealTimers();
   });
 
-  it("keeps every shown per-view skeleton visible for the minimum interval", async () => {
+  it("keeps the shell skeleton visible for the minimum interval", async () => {
     vi.useFakeTimers();
     const wrapper = mount(LoadingHarness, { props: { loading: true } });
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);

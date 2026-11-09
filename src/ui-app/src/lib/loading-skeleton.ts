@@ -14,6 +14,8 @@ export const SKELETON_SHOW_DELAY_MS = 180;
 export const SKELETON_MIN_VISIBLE_MS = 350;
 
 /** One representative block for layouts whose real collection is not loaded yet. */
+// Pages with a live collection bind its count at the PageSkeleton call site.
+// Simple shell shapes (Mission Control and Stories) use one representative block.
 export const REPRESENTATIVE_SKELETON_BLOCKS = ["representative"] as const;
 
 /** Every routed path the app shell can open while the repo index loads. */
