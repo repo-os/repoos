@@ -77,12 +77,17 @@ describe("repo loading skeleton", () => {
   });
 
   it("renders the declared count for every skeleton kind from the layout definitions", () => {
-    const kinds = Object.keys(LOADING_SKELETON_ITEM_COUNTS) as Array<keyof typeof LOADING_SKELETON_ITEM_COUNTS>;
+    const kinds = Object.keys(LOADING_SKELETON_ITEM_COUNTS) as Array<
+      keyof typeof LOADING_SKELETON_ITEM_COUNTS
+    >;
     for (const kind of kinds) {
       const wrapper = mount(PageSkeleton, { props: { kind } });
-      const expected = kind === "board" ? WORK_BOARD_COLUMN_COUNT
-        : kind === "inputBoard" ? INPUT_BOARD_COLUMN_COUNT
-          : LOADING_SKELETON_ITEM_COUNTS[kind];
+      const expected =
+        kind === "board"
+          ? WORK_BOARD_COLUMN_COUNT
+          : kind === "inputBoard"
+            ? INPUT_BOARD_COLUMN_COUNT
+            : LOADING_SKELETON_ITEM_COUNTS[kind];
       expect(wrapper.findAll(":scope > .page-skeleton__item"), kind).toHaveLength(expected);
       wrapper.unmount();
     }
