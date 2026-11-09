@@ -2,7 +2,7 @@
 id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
-status: active
+status: review
 needs_merge: true
 priority: p1
 area: server
@@ -13,7 +13,7 @@ model_override: gpt-6.1-terra
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T07:43:30Z"
-updated_at: "2026-11-09T03:19:08Z"
+updated_at: "2026-11-09T03:53:17Z"
 review_passes: 13
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -339,3 +339,4 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-09T03:19:00Z · message_delivered: 2 message(s)
 - 2026-11-09T03:19:01Z · note: handoff requested (cli)
 - 2026-11-09T03:19:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T03:53:17Z · status active→review
