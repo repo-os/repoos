@@ -452,6 +452,35 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
     expect(light).toContain("`## Suggestions` at most, never under `## Bugs`");
   });
 
+  it("names ## Suggestions, not the frozen heading, on a P3 mission", () => {
+    const mission = reviewMission(
+      { ...task(), priority: "p3" },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    expect(mission).not.toContain("(non-blocking)");
+    expect(mission).toContain("under `## Suggestions` and must not change the verdict");
+    expect(mission).toContain("the rest under `## Suggestions`. Never hold a");
+  });
+
+  it("quotes the real accepted-scope section, not a fenced example of one", () => {
+    const body = [
+      "```md",
+      "## Accepted scope and known limitations",
+      "- example only",
+      "```",
+      "",
+      "## Accepted scope and known limitations",
+      "",
+      "- real item",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toContain("- real item");
+    expect(section).not.toContain("- example only");
+  });
+
   it("does not end the accepted-scope section at a heading inside a fenced block", () => {
     const body = [
       "## Accepted scope and known limitations",

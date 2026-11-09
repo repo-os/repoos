@@ -321,10 +321,19 @@ const ACCEPTED_SCOPE_CHARS = 4000;
  */
 export function acceptedScopeSection(body: string): string | null {
   const lines = body.split("\n");
-  const start = lines.findIndex((line) => /^##\s+Accepted scope/i.test(line.trim()));
+  let start = -1;
+  let fenced = false;
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i]!.trim();
+    if (trimmed.startsWith("```")) fenced = !fenced;
+    else if (!fenced && /^##\s+Accepted scope/i.test(trimmed)) {
+      start = i;
+      break;
+    }
+  }
   if (start < 0) return null;
   let end = start + 1;
-  let fenced = false;
+  fenced = false;
   for (; end < lines.length; end++) {
     const trimmed = lines[end]!.trim();
     if (trimmed.startsWith("```")) fenced = !fenced;
@@ -590,6 +599,11 @@ export async function engineeringReportMatchesReviewTree(
     .every((path) => isOwnReportPath(path, config, task.id) || path === task.path);
 }
 
+/** The heading non-blocking suggestions go under for a bar (#1080). */
+export function suggestionsHeadingFor(bar: ReviewBlockingBar): string {
+  return bar === "frozen" ? "## Suggestions (non-blocking)" : "## Suggestions";
+}
+
 /**
  * The blocking-bar and accepted-scope section of the reviewer prompt (#1080).
  * Full and light bars block on every Bugs item; the frozen bar narrows what
@@ -608,13 +622,13 @@ export function blockingBarSection(
       "Blocking = exactly (a) a defect in behaviour this task introduced that breaks its own",
       "acceptance criteria, (b) a regression of existing behaviour, (c) a landing blocker.",
       "Everything else, including further edge cases of an already-fixed class and hardening",
-      "ideas, goes under `## Suggestions (non-blocking)` and must not change the verdict.",
+      `ideas, goes under \`${suggestionsHeadingFor(bar)}\` and must not change the verdict.`,
     );
   } else if (bar === "light") {
     lines.push(
       "This task uses the LIGHT bar (P3 or an Easter eggs bundle). Blocking = correctness bugs",
       "and landing blockers only. Everything else (edge cases, hardening, naming, style) goes",
-      "under `## Suggestions (non-blocking)` and must not change the verdict.",
+      `under \`${suggestionsHeadingFor(bar)}\` and must not change the verdict.`,
     );
   } else {
     lines.push(
@@ -628,7 +642,7 @@ export function blockingBarSection(
       "The task body has an accepted-scope section. It is AUTHORITATIVE: the items it lists, and",
       "anything it explicitly supersedes (for example an acceptance criterion it narrows or",
       "replaces), are accepted limitations and are NOT blocking. Quote them under",
-      `\`${bar === "frozen" ? "## Suggestions (non-blocking)" : "## Suggestions"}\` at most, never under \`## Bugs\`. Quoted from the task body:`,
+      `\`${suggestionsHeadingFor(bar)}\` at most, never under \`## Bugs\`. Quoted from the task body:`,
       "",
       acceptedScope,
     );
@@ -657,8 +671,7 @@ export function reviewMission(
   const blockingBar = reviewBlockingBar(task, config);
   const freezeAfter = reviewFreezeThreshold(config);
   const acceptedScope = acceptedScopeSection(task.body);
-  const suggestionsHeading =
-    blockingBar === "frozen" ? "## Suggestions (non-blocking)" : "## Suggestions";
+  const suggestionsHeading = suggestionsHeadingFor(blockingBar);
   const earlierReportsDir = trackedReviewsDir({ ...config, root: workdir }, task.id);
   const legacyEarlierReportsDir = join(
     config.root,
@@ -816,7 +829,7 @@ export function reviewMission(
         ]
       : [
           "  both sides of a fallback — list every instance that meets the blocking bar",
-          "  under ## Bugs and the rest under `## Suggestions (non-blocking)`. Never hold a",
+          `  under ## Bugs and the rest under \`${suggestionsHeading}\`. Never hold a`,
           "  blocking instance back for a later pass.",
         ]),
     "- Separate code defects from evidence-only gaps: when the code is sound but a",
