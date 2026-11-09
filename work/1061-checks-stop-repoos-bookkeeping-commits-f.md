@@ -314,3 +314,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T00:31:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required scoped check passed after I ran `bun run fmt`. Remote validation passed on the retry host; the local build, lint, UI smoke, and docs build also passed. I updated the local check lock lifetime, bookkeeping enqueue/release synch… · stderr: Reading additional input from stdin...
 - 2026-11-09T00:31:00Z · status active→review
 - 2026-11-09T00:31:01Z · message_delivered: 1 message(s)
+- 2026-11-09T00:31:01Z · note: handoff requested (cli)
