@@ -25,6 +25,11 @@ const LoadingHarness = defineComponent({
   props: { loading: { type: Boolean, required: true } },
   template: '<PageSkeleton kind="rows" :loading="loading" defer />',
 });
+const ImmediateSkeletonHarness = defineComponent({
+  components: { PageSkeleton },
+  props: { loading: { type: Boolean, required: true } },
+  template: '<PageSkeleton kind="rows" :loading="loading" />',
+});
 
 describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
@@ -219,7 +224,7 @@ describe("repo loading skeleton", () => {
 
   it("takes leaving view skeletons out of flow while they fade", async () => {
     vi.useFakeTimers();
-    const wrapper = mount(PageSkeleton, { props: { kind: "rows", loading: true } });
+    const wrapper = mount(ImmediateSkeletonHarness, { props: { loading: true } });
     await wrapper.setProps({ loading: false });
     await vi.advanceTimersByTimeAsync(0);
     expect(wrapper.find(".page-skeleton-leave-active").exists()).toBe(true);
