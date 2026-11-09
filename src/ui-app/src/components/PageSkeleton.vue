@@ -14,7 +14,9 @@ const columnCount = (): number => {
 
 const itemCount = (): number => {
   if (props.kind === "board" || props.kind === "inputBoard") return columnCount();
-  if (props.kind === "dashboard") return 6;
+  // Mission Control's data arrives as one continuous dashboard, not a card
+  // collection. Stories is a vertical list, so one representative row suffices.
+  if (props.kind === "dashboard" || props.kind === "rows") return 1;
   if (props.kind === "cards" || props.kind === "deployments") return 3;
   if (props.kind === "targets") return 2;
   return 5;
@@ -27,6 +29,8 @@ const itemCount = (): number => {
     :class="`page-skeleton--${kind}`"
     :style="columnCount() ? { '--skeleton-cols': String(columnCount()) } : undefined"
     aria-label="Loading page content"
+    role="status"
+    aria-live="polite"
   >
     <span v-for="i in itemCount()" :key="i" class="page-skeleton__item">
       <i></i><i></i><i></i>
@@ -44,9 +48,12 @@ const itemCount = (): number => {
   width: 100%;
 }
 .page-skeleton--cards,
-.page-skeleton--deployments,
-.page-skeleton--dashboard {
+.page-skeleton--deployments {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.page-skeleton--dashboard,
+.page-skeleton--rows {
+  grid-template-columns: minmax(0, 1fr);
 }
 .page-skeleton--board,
 .page-skeleton--inputBoard {
@@ -82,7 +89,12 @@ const itemCount = (): number => {
   padding: 20px;
 }
 .page-skeleton--dashboard .page-skeleton__item {
-  min-height: 72px;
+  min-height: 220px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+.page-skeleton--rows .page-skeleton__item {
+  min-height: 74px;
 }
 .page-skeleton__matrix {
   grid-column: 1 / -1;
@@ -106,7 +118,7 @@ const itemCount = (): number => {
   width: 72%;
   border-radius: 4px;
   background: var(--bg-2);
-  animation: page-skeleton-pulse 1.3s ease-in-out infinite alternate;
+  animation: page-skeleton-pulse 2.4s ease-in-out infinite alternate;
 }
 .page-skeleton__item i:first-child {
   width: 42%;

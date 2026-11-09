@@ -61,6 +61,14 @@ describe("repo loading skeleton", () => {
     expect(INPUT_BOARD_COLUMN_COUNT).toBe(3);
   });
 
+  it("uses a single dashboard block and one representative row for Stories", () => {
+    const skeleton = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
+    expect(skeleton).toMatch(/kind === "dashboard" \|\| props\.kind === "rows"\) return 1/);
+    expect(skeleton).toMatch(/page-skeleton--dashboard,\s*\.page-skeleton--rows/);
+    expect(loadingSkeletonKind("/")).toBe("dashboard");
+    expect(loadingSkeletonKind("/stories")).toBe("rows");
+  });
+
   it("gives every standard page a title to keep above its skeleton", () => {
     for (const path of ["/", "/work", "/inputs", "/stories", "/checks", "/releases"]) {
       expect(loadingPageHeader(path)?.title, path).toBeTruthy();
