@@ -15,6 +15,15 @@ After validation, HEAD drift is evaluated from the exact commit range. Changes
 under those bookkeeping roots are allowed; all other paths invalidate the
 result. If Git cannot enumerate the changed commits or their paths, validation
 fails closed because it cannot prove the checked tree remained equivalent.
+Ordinary first-parent commits are inspected individually, so a source change
+followed by a revert still invalidates the check. A merge is classified by its
+net tree delta against the check-start commit; source commits on its side branch
+whose content was already present at check start do not count as drift.
+
+An already-running engineer can still edit source files directly during a
+check; filesystem writes cannot be reliably fenced. RepoOS detects committed
+source changes after the check and rejects the result with the commit subject
+and paths. This is an accepted limitation, not a write-blocking guarantee.
 
 Every `repoos check` execution records one row in `<project>/.repoos/checks.db`
 (cacheDir from that project's `repoos.toml`). The store is how the server's

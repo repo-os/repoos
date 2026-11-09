@@ -287,6 +287,15 @@ reliably fenced from that process. Such source changes are detected by the
 post-check drift comparison and invalidate the result. A server restart clears
 stale locks and flushes any deferred queue so nothing is lost.
 
+Drift inspection checks each ordinary commit on the checked branch, so a source
+change followed by a revert still invalidates the check. Merge commits are
+judged by their net tree difference from the commit where the check started;
+an older side-branch source commit whose content was already present at check
+start does not count as a new change. An engineer who was already running can
+still write source files directly during a check. RepoOS cannot reliably fence
+those filesystem writes; committed source drift is detected after the check
+and invalidates its result.
+
 The internal server environment variable `REPOOS_HANDOFF_CHECK_MAX_AGE_MS`
 limits reuse age (default one hour; zero disables it; invalid values disable
 reuse). This deployment knob is deliberately not a `repoos.toml` feature key.
