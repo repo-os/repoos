@@ -11,6 +11,7 @@ import {
   channelFromVersion,
   upgradeInstruction,
 } from "../../commands/upgrade";
+import { SHOT_PREVIEW_APPLIED_ATTR } from "../../core/shot-fixtures.js";
 import ReleaseUpdateNotification from "../src/components/ReleaseUpdateNotification.vue";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -252,9 +253,9 @@ describe("feature releases", () => {
       // (#0866): the applied-state marker, an open dialog, and the declared
       // highlight resolving on the page. Asserting them here means a regression
       // that would fail the capture fails the test first.
-      expect(
-        document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR),
-      ).toBe("release:updateAvailable");
+      expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
+        "release:updateAvailable",
+      );
       expect(document.querySelector('[role="dialog"]')).not.toBeNull();
       const highlight = document.querySelector('[data-test-id="release-upgrade-command"]');
       expect(highlight).not.toBeNull();
@@ -262,6 +263,7 @@ describe("feature releases", () => {
     } finally {
       wrapper.unmount();
       repo.health = null;
+      document.documentElement.removeAttribute(SHOT_PREVIEW_APPLIED_ATTR);
       window.history.replaceState({}, "", "/");
       vi.unstubAllGlobals();
     }
