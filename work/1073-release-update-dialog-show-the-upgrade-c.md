@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 4cc2017b8af4b40ddf3523864e326e05ac10e3c3
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
@@ -197,3 +199,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T21:20:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T21:20:51Z · message_queued at 2026-11-09T21:20:51.038Z
 - 2026-11-09T21:20:51Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate
+
