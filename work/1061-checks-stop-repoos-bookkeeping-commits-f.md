@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T11:39:40Z"
+updated_at: "2026-11-09T11:39:41Z"
 review_passes: 14
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -511,3 +511,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T11:26:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T11:38:13Z · body
 - 2026-11-09T11:39:40Z · status active→review
+- 2026-11-09T11:39:41Z · note: shots: skipped — Docs site skipped: no docs shot declared
