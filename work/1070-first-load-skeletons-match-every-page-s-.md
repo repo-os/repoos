@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T07:00:25Z"
+updated_at: "2026-11-09T07:04:09Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
 review_rounds: 1
@@ -101,3 +101,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T06:59:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped `repoos check` passed after falling back to the local gate: build, lint, contrast audit, all 364 test files, and UI smoke are green. I’m doing the required review-report and worktree-state check, then I’ll send the handoff reque… · stderr: 2026-11-09T06:55:28.308805Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-11-09T06:59:50Z · message_delivered: 3 message(s)
 - 2026-11-09T07:00:25Z · body
+- 2026-11-09T07:04:09Z · message_queued at 2026-11-09T07:04:09.261Z
