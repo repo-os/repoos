@@ -21,11 +21,13 @@ describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
     expect(appVue).not.toMatch(/v-if="repo\.loading"[^>]*class="spin"/);
     expect(appVue).toMatch(
-      /v-if="repo\.loading \|\| showRepoSkeleton"\s+class="main-route page-loading"/,
+      /v-if="repo\.loading \|\| showRepoSkeleton \|\| forcedLoadingShot"\s+class="main-route page-loading"/,
     );
-    expect(appVue).toMatch(/<PageSkeleton v-if="showRepoSkeleton" :kind="loadingKind"\s*\/>/);
     expect(appVue).toMatch(
-      /<RouterView v-if="!repo\.loading && !showRepoSkeleton" class="main-route"\s*\/>/,
+      /<PageSkeleton v-if="showRepoSkeleton \|\| forcedLoadingShot" :kind="loadingKind"\s*\/>/,
+    );
+    expect(appVue).toMatch(
+      /<RouterView\s+v-if="!repo\.loading && !showRepoSkeleton && !forcedLoadingShot"\s+class="main-route"\s*\/>/,
     );
   });
 
@@ -96,6 +98,15 @@ describe("repo loading skeleton", () => {
   it("uses a static placeholder animation under reduced motion", () => {
     const skeleton = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
     expect(skeleton).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/);
+  });
+
+  it("registers deterministic loading fixtures for the two corrected pages", () => {
+    const fixtures = readFileSync(resolve(__dirname, "../../core/shot-fixtures.ts"), "utf8");
+    const app = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
+    expect(fixtures).toContain('"loading:dashboard"');
+    expect(fixtures).toContain('"loading:stories"');
+    expect(app).toContain('route.query.shotState === "loading:dashboard"');
+    expect(app).toContain('route.query.shotState === "loading:stories"');
   });
 
   it("gives every standard page a title to keep above its skeleton", () => {
