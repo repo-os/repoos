@@ -238,3 +238,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T13:21:58Z · body
 - 2026-11-09T13:23:10Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-09T13:23:10Z · message_queued at 2026-11-09T13:23:10.640Z
+- 2026-11-09T13:23:10Z · ↻ resuming engineer to read queued message
