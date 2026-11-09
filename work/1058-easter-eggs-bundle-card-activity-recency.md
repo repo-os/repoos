@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -583,3 +583,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T07:52:53Z · message_queued at 2026-11-09T07:52:53.746Z
 - 2026-11-09T08:11:17Z · body
 - 2026-11-09T08:13:02Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented the timing fallback for automatic check-failure and merge-conflict retries in [TaskCard.vue](/Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-activity-recency/src/ui-app/src/components/TaskCard.vue) and [retr… · stderr: Reading additional input from stdin...
+- 2026-11-09T08:13:02Z · status active→review
