@@ -475,3 +475,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T09:51:33Z · note: handoff requested (cli)
 - 2026-11-09T09:54:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T10:05:04Z · message_queued at 2026-11-09T10:05:04.415Z
+- 2026-11-09T10:05:04Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate
