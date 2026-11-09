@@ -1,5 +1,47 @@
 # Check-run history: which project owns a row (#0870)
 
+## Check-gate bookkeeping and drift (#1061)
+
+The server holds a per-task worktree lock during gated validation. RepoOS
+bookkeeping commits under `work/**` and `.repoos/**` are deferred until the gate
+releases that lock; queued writes retain individual file snapshots so repeated
+updates are replayed as separate commits in enqueue order. Server restart
+reconciles dead holders and drains their durable queues. RepoOS refuses to
+start another managed engineer turn with `A check is running; wait for it to
+finish.` and rejects source commits. Edits that bypass those managed paths are
+detected by the post-check drift comparison.
+
+After validation, drift inspection examines the intervening commits as well as
+the net tree difference between the check-start commit and resulting HEAD.
+Changes under those bookkeeping roots are allowed; any other path touched by an
+intervening commit invalidates the result, even if a later commit reverts it.
+The refusal names the commit subjects and paths. If Git cannot compute the
+changed paths or inspect the commit history, validation fails closed. A merge
+whose checked tree is its second parent is judged against that checked tree,
+not unrelated first-parent history.
+
+Every net source path must be explained by an inspected commit. If the final
+tree differs from the check-start tree but the available commit history cannot
+account for a changed source path, the check fails closed and names that path
+with a `history could not be explained` reason.
+
+Tracked gitlinks are fingerprinted from their own repository boundary: an
+initialized submodule includes its checked-out commit and porcelain status,
+while an uninitialized gitlink uses the object id in the parent index. Nested
+repositories without commits are recorded as unborn repositories plus their
+status, rather than inheriting the parent repository's `HEAD`. Symlinks record
+their link text; changes to a symlink target outside the worktree are not
+followed or detected.
+
+An already-running engineer can still edit source files directly during a
+check; filesystem writes cannot be reliably fenced. RepoOS compares hashes of
+tracked and non-ignored untracked source files before and after validation, so
+an edit to an already-dirty file or a newly created source file invalidates the
+result. A direct, uncommitted edit that is restored before the final snapshot
+is outside the guarantee; committed source changes, including a commit and
+revert, are detected from history. This is an accepted limitation, not a
+write-blocking guarantee.
+
 Every `repoos check` execution records one row in `<project>/.repoos/checks.db`
 (cacheDir from that project's `repoos.toml`). The store is how the server's
 Checks → Runs surface, slow-run detection and the next run's failed-test

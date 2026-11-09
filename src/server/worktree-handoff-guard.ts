@@ -696,6 +696,12 @@ export async function discardWorktreeHandoffChanges(
  * Runner gate: refuse engineer/helper spawns in a locked worktree (#0598).
  * Review agents and tasks already `active` are unaffected.
  */
+export {
+  checkGateEngineerBusyRefusal,
+  checkGateSourceWriteRefusal,
+  refuseCheckGateSourcePaths,
+} from "./check-gate-lock.js";
+
 export function worktreeReviewLockRefusal(
   root: string,
   cacheDir: string,
