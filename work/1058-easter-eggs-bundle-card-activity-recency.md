@@ -14,7 +14,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-08T23:07:50Z"
+updated_at: "2026-11-09T03:34:02Z"
 review_passes: 8
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -87,6 +87,9 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 }
 ]
 ```
+
+## Accepted scope and known limitations (owner decision, supersedes any touch wording above)
+Owner decision (2026-11-09): touch support (tap or long-press to show the last-activity popover) is OUT OF SCOPE for this bundle, because mobile will get a larger rewrite soon. The popover is shown on mouse hover and keyboard focus only, and touch taps behave exactly as before (the element's normal click action). Any touch-related wording in the items above, including acceptance criteria and review feedback, is superseded by this section; a reviewer must not raise missing touch support as a blocking bug. Still required: the timing fallback (when lastActivityAt is missing or invalid, show elapsed/state-since instead of nothing) and declared shots that actually show a coding (running) card.
 
 ## Activity
 
@@ -507,3 +510,4 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 - 2026-11-08T21:51:54Z · note: review pass 8: needs some work
 - 2026-11-08T21:51:54Z · needs_input
 - 2026-11-08T23:07:50Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T03:34:02Z · body: Accepted scope and known limitations (owner decision, supersedes any touch wording above) (added)
