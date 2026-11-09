@@ -81,10 +81,12 @@ function remoteWipFixture(): string {
   return root;
 }
 
-function unmanagedTaskCheckFixture(): string {
+function unmanagedTaskCheckFixture(command = "test -f .repoos/check-gate-locks/0695.json"): string {
   const root = mkdtempSync(join(tmpdir(), "repoos-unmanaged-task-check-"));
   cleanups.push(root);
   gitInit(root);
+  mkdirSync(join(root, "src"), { recursive: true });
+  writeFileSync(join(root, "src", "app.ts"), "initial\n");
   execFileSync("git", ["branch", "-m", "feat/0695"], { cwd: root, stdio: "ignore" });
   mkdirSync(join(root, "work"), { recursive: true });
   writeFileSync(
@@ -99,7 +101,7 @@ function unmanagedTaskCheckFixture(): string {
       "enabled = false",
       "[[check.steps]]",
       'name = "gate-lock"',
-      'command = "test -f .repoos/check-gate-locks/0695.json"',
+      `command = ${JSON.stringify(command)}`,
       "",
     ].join("\n"),
   );
@@ -244,6 +246,19 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     const { code, logs: out } = await runManagedCheck(root, false);
     expect(code).toBe(0);
     expect(out).toContain("gate-lock");
+    expect(existsSync(join(root, ".repoos", "check-gate-locks", "0695.json"))).toBe(false);
+  });
+
+  it("fails a direct task self-check when a source commit lands during the plan (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture(
+      "printf changed >> src/app.ts && git add src/app.ts && git commit -m 'source changed during check'",
+    );
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(1);
+    expect(out).toContain("worktree-drift");
+    expect(out).toContain("source changed during check");
+    expect(out).toContain("src/app.ts");
+    expect(out).toContain("1 check(s) failed");
     expect(existsSync(join(root, ".repoos", "check-gate-locks", "0695.json"))).toBe(false);
   });
 });

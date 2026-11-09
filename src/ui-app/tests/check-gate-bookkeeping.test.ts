@@ -428,6 +428,59 @@ describe("check gate lock and deferred commits (#1061)", () => {
     }
   });
 
+  it.each(["holder release", "process release", "stale-lock recovery"] as const)(
+    "keeps the lock fence and queued commits when %s cannot flush",
+    async (releasePath) => {
+      const { root, wt, branch } = initRepo();
+      const acquired = await acquireCheckGateLock({
+        boardRoot: root,
+        cacheDir: ".repoos",
+        taskId: "0001",
+        branch,
+        worktree: wt,
+        kind: "handoff-finalize",
+      });
+      expect(acquired.ok).toBe(true);
+      const taskFile = join(wt, "work", "0001-task.md");
+      writeFileSync(taskFile, `${readFileSync(taskFile, "utf8")}queued\n`);
+      enqueueDeferredBranchCommit(root, ".repoos", "0001", wt, [taskFile], "docs(0001): queued");
+      let staleLock: Awaited<ReturnType<typeof aliveCheckGateLockForWorktree>> | null = null;
+      if (releasePath === "stale-lock recovery") {
+        const current = aliveCheckGateLockForWorktree(root, ".repoos", wt);
+        expect(current).not.toBeNull();
+        if (!current) return;
+        staleLock = {
+          ...current,
+          holders: current.holders.map((holder) => ({ ...holder, pid: 2_147_483_647 })),
+        };
+        const lockFile = join(root, ".repoos", "check-gate-locks", "0001.json");
+        writeFileSync(lockFile, `${JSON.stringify(staleLock, null, 2)}\n`);
+      }
+      setCheckGateCommitHook(() => "refuse");
+      if (releasePath === "holder release" && acquired.ok) await acquired.release();
+      else if (releasePath === "process release")
+        await releaseCheckGateLock(root, ".repoos", "0001");
+      else if (staleLock) await reconcileDeadCheckGateLock(root, ".repoos", staleLock);
+
+      const pending = aliveCheckGateLockForWorktree(root, ".repoos", wt);
+      expect(pending?.flushPending).toBe(true);
+      expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(1);
+
+      // The empty pending holder still fences the worktree: new RepoOS
+      // bookkeeping joins the durable queue instead of passing through.
+      setCheckGateCommitHook(null);
+      process.env.REPOOS_CHECK_STORE_ROOT = root;
+      installCheckGateCommitHook(cfg(root));
+      writeFileSync(taskFile, `${readFileSync(taskFile, "utf8")}later\n`);
+      expect(commitFiles(wt, [taskFile], "docs(0001): later")).toBe(true);
+      expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(2);
+
+      await reconcileDeadCheckGateLock(root, ".repoos", pending!);
+      expect(aliveCheckGateLockForWorktree(root, ".repoos", wt)).toBeNull();
+      expect(readDeferredBranchCommits(root, ".repoos", "0001")).toHaveLength(0);
+    },
+  );
+
   it("reconciles a dead lock holder and flushes deferred commits", async () => {
     const { root, wt, branch } = initRepo();
     await acquireCheckGateLock({
