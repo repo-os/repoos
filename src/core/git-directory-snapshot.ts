@@ -19,7 +19,11 @@ export async function gitDirectorySnapshot(
     }
     if (isOwnRepository) {
       const head = await runGit(absolute, ["rev-parse", "HEAD"], 10_000);
-      const status = await runGit(absolute, ["status", "--porcelain", "--untracked-files=all"], 10_000);
+      const status = await runGit(
+        absolute,
+        ["status", "--porcelain", "--untracked-files=all"],
+        10_000,
+      );
       if (status.status !== 0) return null;
       let revision = head.stdout.trim();
       if (head.status !== 0) {
@@ -36,7 +40,8 @@ export async function gitDirectorySnapshot(
   const index = await runGit(repoRoot, ["ls-files", "-s", "--", relativePath], 10_000);
   if (index.status !== 0) return null;
   const entry = index.stdout.split(/\r?\n/).find((line) => line.endsWith(`\t${relativePath}`));
-  if (!entry) return existsSync(resolve(absolute, ".git")) ? null : `directory:${mode ?? ""}:not-a-gitlink`;
+  if (!entry)
+    return existsSync(resolve(absolute, ".git")) ? null : `directory:${mode ?? ""}:not-a-gitlink`;
   const match = entry.match(/^(\d+) ([0-9a-f]+) 0\t/);
   if (!match) return null;
   const [_, fileMode, objectId] = match;
