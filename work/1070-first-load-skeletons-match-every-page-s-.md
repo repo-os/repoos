@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: rendered-contrast — · div#setting-localChecks.reclaimGraceMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] \"Wait this long after marking a live holder wedged before ter\""
+last_handoff_failure_sha: f8a55864b24af4e3f89646b67b314a0b119dbd06
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -169,3 +171,4 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 - 2026-11-09T10:58:51Z · note: handoff requested (cli)
 - 2026-11-09T10:59:44Z · message_queued at 2026-11-09T10:59:44.829Z
 - 2026-11-09T10:59:45Z · handoff failed · task-file handoff failed at check · repoos check failed: rendered-contrast — · div#setting-localChecks.reclaimGraceMs.setting-row > div.setting-info > div.setting-desc — #958ab0 on #ffffff = 3.21 (need ≥4.5, 11px) [settings] "Wait this long after marking a live holder wedged before ter"
+
