@@ -1,9 +1,85 @@
 <script setup lang="ts">
-import { LOADING_SKELETON_ITEM_COUNTS, type LoadingSkeletonKind } from "../lib/loading-skeleton";
+import { onMounted, onUnmounted, ref, watch } from "vue";
+import {
+  REPRESENTATIVE_SKELETON_BLOCKS,
+  SKELETON_MIN_VISIBLE_MS,
+  SKELETON_SHOW_DELAY_MS,
+  type LoadingSkeletonKind,
+} from "../lib/loading-skeleton";
 import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../lib/work-board-columns";
 
-const props = withDefaults(defineProps<{ kind?: LoadingSkeletonKind }>(), {
-  kind: "rows",
+const props = withDefaults(
+  defineProps<{
+    kind?: LoadingSkeletonKind;
+    loading?: boolean;
+    count?: number;
+    matrixCount?: number;
+  }>(),
+  { kind: "rows", loading: true },
+);
+const emit = defineEmits<{ "visibility-change": [visible: boolean] }>();
+
+const visible = ref(false);
+const prefersReducedMotion = ref(false);
+let showTimer: ReturnType<typeof setTimeout> | null = null;
+let hideTimer: ReturnType<typeof setTimeout> | null = null;
+let shownAt = 0;
+let motionQuery: MediaQueryList | null = null;
+
+function updateMotionPreference(): void {
+  prefersReducedMotion.value = motionQuery?.matches ?? false;
+}
+
+function clearTimers(): void {
+  if (showTimer) clearTimeout(showTimer);
+  if (hideTimer) clearTimeout(hideTimer);
+  showTimer = null;
+  hideTimer = null;
+}
+
+function setVisible(next: boolean): void {
+  if (visible.value === next) return;
+  visible.value = next;
+  emit("visibility-change", next);
+  if (next) shownAt = Date.now();
+}
+
+function updateLoading(loading: boolean): void {
+  if (showTimer) clearTimeout(showTimer);
+  showTimer = null;
+
+  if (loading) {
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = null;
+    if (!visible.value) {
+      showTimer = setTimeout(() => {
+        showTimer = null;
+        setVisible(true);
+      }, SKELETON_SHOW_DELAY_MS);
+    }
+    return;
+  }
+
+  if (!visible.value) return;
+  const remaining = Math.max(0, SKELETON_MIN_VISIBLE_MS - (Date.now() - shownAt));
+  hideTimer = setTimeout(() => {
+    hideTimer = null;
+    setVisible(false);
+  }, remaining);
+}
+
+watch(() => props.loading, updateLoading);
+onMounted(() => {
+  updateLoading(props.loading);
+  if (typeof window.matchMedia === "function") {
+    motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    updateMotionPreference();
+    motionQuery.addEventListener("change", updateMotionPreference);
+  }
+});
+onUnmounted(() => {
+  clearTimers();
+  motionQuery?.removeEventListener("change", updateMotionPreference);
 });
 
 const columnCount = (): number => {
@@ -14,29 +90,35 @@ const columnCount = (): number => {
 
 const itemCount = (): number => {
   if (props.kind === "board" || props.kind === "inputBoard") return columnCount();
-  // Mission Control's data arrives as one continuous dashboard, not a card
-  // collection. Stories is a vertical list, so one representative row suffices.
-  if (props.kind === "dashboard" || props.kind === "rows") return 1;
-  return LOADING_SKELETON_ITEM_COUNTS[props.kind];
+  return Math.max(REPRESENTATIVE_SKELETON_BLOCKS.length, props.count ?? 0);
 };
+
+const matrixCount = (): number =>
+  Math.max(REPRESENTATIVE_SKELETON_BLOCKS.length, props.matrixCount ?? 0);
 </script>
 
 <template>
-  <div
-    class="page-skeleton"
-    :class="`page-skeleton--${kind}`"
-    :style="columnCount() ? { '--skeleton-cols': String(columnCount()) } : undefined"
-    aria-label="Loading page content"
-    role="status"
-    aria-live="polite"
-  >
-    <span v-for="i in itemCount()" :key="i" class="page-skeleton__item">
-      <i></i><i></i><i></i>
-    </span>
-    <div v-if="kind === 'deployments'" class="page-skeleton__matrix">
-      <span v-for="i in 4" :key="i" class="page-skeleton__item"><i></i><i></i><i></i></span>
+  <Transition name="page-skeleton">
+    <div
+      v-if="visible"
+      class="page-skeleton"
+      :class="[`page-skeleton--${kind}`, { 'page-skeleton--reduced-motion': prefersReducedMotion }]"
+      :style="columnCount() ? { '--skeleton-cols': String(columnCount()) } : undefined"
+      aria-label="Loading page content"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <span v-for="i in itemCount()" :key="i" class="page-skeleton__item">
+        <i></i><i></i><i></i>
+      </span>
+      <div v-if="kind === 'deployments'" class="page-skeleton__matrix">
+        <span v-for="i in matrixCount()" :key="i" class="page-skeleton__item">
+          <i></i><i></i><i></i>
+        </span>
+      </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -44,6 +126,19 @@ const itemCount = (): number => {
   display: grid;
   gap: 12px;
   width: 100%;
+}
+.page-skeleton-enter-active,
+.page-skeleton-leave-active {
+  transition: opacity 140ms ease;
+}
+.page-skeleton-enter-from,
+.page-skeleton-leave-to {
+  opacity: 0;
+}
+.page-skeleton--reduced-motion,
+.page-skeleton--reduced-motion .page-skeleton__item i {
+  animation: none;
+  transition: none;
 }
 .page-skeleton--cards,
 .page-skeleton--deployments {
@@ -141,6 +236,10 @@ const itemCount = (): number => {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .page-skeleton-enter-active,
+  .page-skeleton-leave-active {
+    transition: none;
+  }
   .page-skeleton__item i {
     animation: none;
   }

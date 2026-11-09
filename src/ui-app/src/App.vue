@@ -46,34 +46,6 @@ const loadingKind = computed(() => loadingSkeletonKind(route.path));
 const loadingHeader = computed(() => loadingPageHeader(route.path));
 const showRepoSkeleton = ref(false);
 const showLoadingShell = computed(() => repo.loading || showRepoSkeleton.value);
-let skeletonDelay: ReturnType<typeof setTimeout> | null = null;
-let skeletonMinTime: ReturnType<typeof setTimeout> | null = null;
-let skeletonShownAt = 0;
-watch(
-  () => repo.loading,
-  (loading) => {
-    if (skeletonDelay) clearTimeout(skeletonDelay);
-    if (skeletonMinTime) clearTimeout(skeletonMinTime);
-    skeletonDelay = null;
-    skeletonMinTime = null;
-    if (loading) {
-      // Avoid flashing a placeholder for a fast initial response.
-      skeletonDelay = setTimeout(() => {
-        skeletonShownAt = Date.now();
-        showRepoSkeleton.value = true;
-        skeletonDelay = null;
-      }, 180);
-      return;
-    }
-    if (!showRepoSkeleton.value) return;
-    const remaining = Math.max(0, 350 - (Date.now() - skeletonShownAt));
-    skeletonMinTime = setTimeout(() => {
-      showRepoSkeleton.value = false;
-      skeletonMinTime = null;
-    }, remaining);
-  },
-  { immediate: true },
-);
 
 const onApiTimeout = (event: Event): void => {
   const detail = (event as CustomEvent<string>).detail;
@@ -173,8 +145,6 @@ watch(
 );
 
 onUnmounted(() => {
-  if (skeletonDelay) clearTimeout(skeletonDelay);
-  if (skeletonMinTime) clearTimeout(skeletonMinTime);
   window.removeEventListener("focus", checkUiBuild);
   window.removeEventListener("repoos:api-timeout", onApiTimeout);
   document.removeEventListener("visibilitychange", syncDocumentVisibility);
@@ -193,18 +163,18 @@ onUnmounted(() => {
         <Sidebar />
 
         <div class="main">
-          <div
-            v-if="showLoadingShell"
-            class="main-route page-loading"
-            :aria-busy="showRepoSkeleton ? 'true' : undefined"
-          >
+          <div v-if="showLoadingShell" class="main-route page-loading">
             <header v-if="loadingHeader" class="page-header">
               <div>
                 <div class="page-title">{{ loadingHeader.title }}</div>
                 <div class="page-desc">{{ loadingHeader.desc }}</div>
               </div>
             </header>
-            <PageSkeleton v-if="showRepoSkeleton" :kind="loadingKind" />
+            <PageSkeleton
+              :kind="loadingKind"
+              :loading="repo.loading"
+              @visibility-change="showRepoSkeleton = $event"
+            />
           </div>
           <RouterView v-else class="main-route" />
         </div>

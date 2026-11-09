@@ -278,7 +278,11 @@ onMounted(() => {
     </nav>
 
     <div v-if="loadError" class="mp-error">{{ loadError }}</div>
-    <PageSkeleton v-else-if="loading && !rows.length" kind="rows" />
+    <PageSkeleton
+      :loading="!loadError && loading && !rows.length"
+      kind="rows"
+      :count="rows.length"
+    />
 
     <div
       v-for="row in rows"

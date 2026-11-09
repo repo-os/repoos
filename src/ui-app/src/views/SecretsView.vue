@@ -524,8 +524,12 @@ onBeforeUnmount(() => {
         </p>
         <Button variant="accent" @click="createOpen = true">Create environment</Button>
       </section>
-      <PageSkeleton v-else-if="(loading || selected) && !snapshot && !error" kind="table" />
-      <section v-else-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
+      <PageSkeleton
+        :loading="(loading || selected) && !snapshot && !error"
+        kind="table"
+        :count="snapshot?.keys.length ?? 0"
+      />
+      <section v-if="snapshot" class="secrets-ledger" aria-label="Environment keys">
         <p v-if="environmentFile" class="secrets-file">
           <code>{{ environmentFile }}</code>
           <button

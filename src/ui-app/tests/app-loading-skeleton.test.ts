@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { mount } from "@vue/test-utils";
+import { defineComponent } from "vue";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import App from "../src/App.vue";
@@ -11,11 +12,19 @@ import {
   loadingPageHeader,
   loadingSkeletonKind,
   LOADING_SKELETON_ROUTES,
-  LOADING_SKELETON_ITEM_COUNTS,
+  REPRESENTATIVE_SKELETON_BLOCKS,
+  SKELETON_MIN_VISIBLE_MS,
+  SKELETON_SHOW_DELAY_MS,
 } from "../src/lib/loading-skeleton";
 import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../src/lib/work-board-columns";
+import { GENERAL_FIELD_SECTIONS } from "../src/settings-location";
 
 const appVue = readFileSync(resolve(__dirname, "../src/App.vue"), "utf8");
+const LoadingHarness = defineComponent({
+  components: { PageSkeleton },
+  props: { loading: { type: Boolean, required: true } },
+  template: '<PageSkeleton kind="rows" :loading="loading" />',
+});
 
 describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
@@ -24,8 +33,9 @@ describe("repo loading skeleton", () => {
     expect(appVue).toContain(
       "const showLoadingShell = computed(() => repo.loading || showRepoSkeleton.value);",
     );
-    expect(appVue).toMatch(/:aria-busy="showRepoSkeleton \? 'true' : undefined"/);
-    expect(appVue).toMatch(/<PageSkeleton v-if="showRepoSkeleton" :kind="loadingKind"\s*\/>/);
+    expect(appVue).toMatch(/:loading="repo\.loading"/);
+    expect(appVue).toContain('@visibility-change="showRepoSkeleton = $event"');
+    expect(appVue).not.toContain("skeletonDelay");
     expect(appVue).toMatch(/<RouterView v-else class="main-route"\s*\/>/);
   });
 
@@ -68,34 +78,169 @@ describe("repo loading skeleton", () => {
     expect(INPUT_BOARD_COLUMN_COUNT).toBe(3);
   });
 
-  it("uses a single dashboard block and one representative row for Stories", () => {
-    const skeleton = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
-    expect(skeleton).toMatch(/kind === "dashboard" \|\| props\.kind === "rows"\) return 1/);
-    expect(skeleton).toMatch(/page-skeleton--dashboard,\s*\.page-skeleton--rows/);
+  it("keeps Mission Control and Stories to one content block", () => {
+    const dashboard = readFileSync(resolve(__dirname, "../src/views/DashboardView.vue"), "utf8");
+    const stories = readFileSync(resolve(__dirname, "../src/views/StoriesView.vue"), "utf8");
+    expect(dashboard.match(/class="page-scroll-body"/g)).toHaveLength(1);
+    expect(stories).toMatch(/v-for="story in visibleStories"/);
     expect(loadingSkeletonKind("/")).toBe("dashboard");
     expect(loadingSkeletonKind("/stories")).toBe("rows");
   });
 
-  it("renders the declared count for every skeleton kind from the layout definitions", () => {
-    const kinds = Object.keys(LOADING_SKELETON_ITEM_COUNTS) as Array<
-      keyof typeof LOADING_SKELETON_ITEM_COUNTS
-    >;
-    for (const kind of kinds) {
-      const wrapper = mount(PageSkeleton, { props: { kind } });
-      const expected =
-        kind === "board"
-          ? WORK_BOARD_COLUMN_COUNT
-          : kind === "inputBoard"
-            ? INPUT_BOARD_COLUMN_COUNT
-            : LOADING_SKELETON_ITEM_COUNTS[kind];
-      expect(wrapper.findAll(":scope > .page-skeleton__item"), kind).toHaveLength(expected);
-      wrapper.unmount();
+  it("binds page skeleton counts to the same collections as each page layout", () => {
+    const settings = readFileSync(resolve(__dirname, "../src/views/SettingsView.vue"), "utf8");
+    const agents = readFileSync(resolve(__dirname, "../src/views/AgentsView.vue"), "utf8");
+    const checks = readFileSync(resolve(__dirname, "../src/views/ChecksView.vue"), "utf8");
+    const releases = readFileSync(resolve(__dirname, "../src/views/ReleasesView.vue"), "utf8");
+    const deployments = readFileSync(
+      resolve(__dirname, "../src/views/DeploymentsView.vue"),
+      "utf8",
+    );
+    const dev = readFileSync(resolve(__dirname, "../src/views/DevView.vue"), "utf8");
+    const checkRuns = readFileSync(
+      resolve(__dirname, "../src/components/CheckRunsPanel.vue"),
+      "utf8",
+    );
+    const secrets = readFileSync(resolve(__dirname, "../src/views/SecretsView.vue"), "utf8");
+    const reminders = readFileSync(
+      resolve(__dirname, "../src/components/RemindersPanel.vue"),
+      "utf8",
+    );
+    const schedules = readFileSync(
+      resolve(__dirname, "../src/components/ScheduledTasksPanel.vue"),
+      "utf8",
+    );
+    const providers = readFileSync(
+      resolve(__dirname, "../src/components/ModelProvidersPanel.vue"),
+      "utf8",
+    );
+    expect(GENERAL_FIELD_SECTIONS).toHaveLength(6);
+    expect(settings).toMatch(/kind="rows" :count="GENERAL_FIELD_SECTIONS\.length"/);
+    expect(agents).toMatch(/kind="cards" :count="localAgents\.length"/);
+    expect(agents).toMatch(/kind="rows"\s+:count="detectRows\.length"/);
+    expect(checks).toMatch(/kind="table" :count="steps\.length"/);
+    expect(secrets).toMatch(/kind="table"\s+:count="snapshot\?\.keys\.length \?\? 0"/);
+    expect(releases).toMatch(/:count="distribution\.length"/);
+    expect(deployments).toMatch(/:count="services\.length"/);
+    expect(deployments).toMatch(/:matrix-count="status\?\.branches\.length \?\? 0"/);
+    expect(dev).toMatch(/kind="targets" :count="targets\.length"/);
+    expect(checkRuns).toMatch(/kind="table" :count="runs\.length"/);
+    expect(reminders).toMatch(/kind="rows"\s+:count="store\.reminders\.length"/);
+    expect(schedules).toMatch(/kind="rows"\s+:count="schedules\.length"/);
+    expect(providers).toMatch(/kind="rows"\s+:count="rows\.length"/);
+  });
+
+  it("routes every per-view loading condition through the shared timing component", () => {
+    const callsitePaths = [
+      "../src/views/ChecksView.vue",
+      "../src/views/SecretsView.vue",
+      "../src/views/SettingsView.vue",
+      "../src/views/AgentsView.vue",
+      "../src/views/ReleasesView.vue",
+      "../src/views/DeploymentsView.vue",
+      "../src/views/DevView.vue",
+      "../src/components/CheckRunsPanel.vue",
+      "../src/components/RemindersPanel.vue",
+      "../src/components/ScheduledTasksPanel.vue",
+      "../src/components/ModelProvidersPanel.vue",
+    ];
+    for (const path of callsitePaths) {
+      const source = readFileSync(resolve(__dirname, path), "utf8");
+      const tags = [...source.matchAll(/<PageSkeleton\b[\s\S]*?\/>/g)].map((match) => match[0]);
+      expect(tags.length, path).toBeGreaterThan(0);
+      for (const tag of tags) expect(tag, path).toContain(":loading=");
     }
   });
 
-  it("uses a static placeholder animation under reduced motion", () => {
-    const skeleton = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
-    expect(skeleton).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/);
+  it("renders each skeleton kind from the real column or representative-block layout", async () => {
+    vi.useFakeTimers();
+    const kinds = [
+      "board",
+      "inputBoard",
+      "dashboard",
+      "cards",
+      "table",
+      "rows",
+      "targets",
+      "deployments",
+    ] as const;
+    const wrappers = kinds.map((kind) => mount(PageSkeleton, { props: { kind, loading: true } }));
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
+    for (const [index, wrapper] of wrappers.entries()) {
+      const expected =
+        kinds[index] === "board"
+          ? WORK_BOARD_COLUMN_COUNT
+          : kinds[index] === "inputBoard"
+            ? INPUT_BOARD_COLUMN_COUNT
+            : REPRESENTATIVE_SKELETON_BLOCKS.length;
+      expect(
+        wrapper.find(".page-skeleton").findAll(":scope > .page-skeleton__item"),
+        kinds[index],
+      ).toHaveLength(expected);
+      wrapper.unmount();
+    }
+    expect(GENERAL_FIELD_SECTIONS.length).toBe(6);
+    const settings = mount(PageSkeleton, {
+      props: {
+        kind: "rows",
+        loading: true,
+        count: GENERAL_FIELD_SECTIONS.length,
+      },
+    });
+    expect(settings.find(".page-skeleton").exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
+    expect(settings.find(".page-skeleton").findAll(":scope > .page-skeleton__item")).toHaveLength(
+      GENERAL_FIELD_SECTIONS.length,
+    );
+    settings.unmount();
+    vi.useRealTimers();
+  });
+
+  it("honors reduced motion when the platform preference is active", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const wrapper = mount(LoadingHarness, { props: { loading: true } });
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
+    expect(wrapper.find(".page-skeleton").classes()).toContain("page-skeleton--reduced-motion");
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("delays all per-view skeletons and suppresses fast and cached loads", async () => {
+    vi.useFakeTimers();
+    const wrapper = mount(LoadingHarness, { props: { loading: true } });
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS - 1);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    await wrapper.setProps({ loading: false });
+    await vi.advanceTimersByTimeAsync(SKELETON_MIN_VISIBLE_MS);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    const cached = mount(LoadingHarness, { props: { loading: false } });
+    expect(cached.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+    cached.unmount();
+    vi.useRealTimers();
+  });
+
+  it("keeps every shown per-view skeleton visible for the minimum interval", async () => {
+    vi.useFakeTimers();
+    const wrapper = mount(LoadingHarness, { props: { loading: true } });
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    await wrapper.setProps({ loading: false });
+    await vi.advanceTimersByTimeAsync(SKELETON_MIN_VISIBLE_MS - 1);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
+    vi.useRealTimers();
   });
 
   it("does not force loading-state shots through the production app shell", () => {
