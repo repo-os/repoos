@@ -217,7 +217,9 @@ describe("repo loading skeleton", () => {
       props: { kind: "table", loading: true, count: 12 },
     });
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
-    expect(planSized.findAll(":scope > .page-skeleton__item")).toHaveLength(12);
+    expect(planSized.find(".page-skeleton").findAll(":scope > .page-skeleton__item")).toHaveLength(
+      12,
+    );
     planSized.unmount();
     vi.useRealTimers();
   });
@@ -226,8 +228,7 @@ describe("repo loading skeleton", () => {
     vi.useFakeTimers();
     const wrapper = mount(ImmediateSkeletonHarness, { props: { loading: true } });
     await wrapper.setProps({ loading: false });
-    await vi.advanceTimersByTimeAsync(0);
-    expect(wrapper.find(".page-skeleton-leave-active").exists()).toBe(true);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
     const source = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
     expect(source).toMatch(/\.page-skeleton-leave-active\s*\{\s*position:\s*absolute/);
     wrapper.unmount();
