@@ -144,3 +144,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:38:05Z · status review→active
 - 2026-11-09T08:38:07Z · CTO nudge: held — remote validation is running
 - 2026-11-09T09:09:09Z · message_queued at 2026-11-09T09:09:09.254Z
+- 2026-11-09T09:09:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
