@@ -14,7 +14,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T12:59:08Z"
+updated_at: "2026-11-09T12:59:11Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1
