@@ -3,9 +3,6 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T17:41:19Z"
+updated_at: "2026-11-09T17:41:23Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -107,3 +104,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T17:39:53Z · message_delivered: 1 message(s)
 - 2026-11-09T17:41:19Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T17:41:19Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:41:23Z · needs_input
