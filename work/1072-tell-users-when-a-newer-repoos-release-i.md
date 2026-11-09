@@ -5,11 +5,12 @@ type: feature
 status: inbox
 priority: p2
 area: [cli, server, web]
+depends_on: ["1073"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-09T07:50:32Z"
+updated_at: "2026-11-09T07:50:34Z"
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
@@ -43,3 +44,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-09T05:34:00Z · created · njachowski@gmail.com
 - 2026-11-09T05:50:45Z · body: Correction: what already exists (added)
 - 2026-11-09T07:50:32Z · body: Correction: what already exists (added 1, removed 1)
+- 2026-11-09T07:50:34Z · depends_on
