@@ -91,3 +91,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T10:43:19Z · body
 - 2026-11-09T13:15:56Z · released
 - 2026-11-09T13:26:55Z · message_queued at 2026-11-09T13:26:55.716Z
+- 2026-11-09T13:26:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
