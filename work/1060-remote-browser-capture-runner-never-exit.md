@@ -3,9 +3,6 @@ id: "1060"
 title: "Remote browser capture: runner never exits after completing; reap and force-collect finished captures"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — failed watchdog removal still triggers cleanup and is reported as a successful removal.
 needs_merge: true
 priority: p1
 area: server
@@ -331,3 +328,4 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-09T03:05:37Z · note: send-back — returned to active for engineer follow-up
 - 2026-11-09T03:05:39Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T03:05:43Z · message_delivered: 1 message(s)
+- 2026-11-09T03:05:43Z · needs_input
