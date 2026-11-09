@@ -1066,6 +1066,36 @@ describe("captureShotPage loading-state detection (#0755)", () => {
     expect(misses).toEqual([]);
   });
 
+  it("allows an explicitly declared first-load skeleton fixture", async () => {
+    const page = fakePage('loading indicator [aria-busy="true"]');
+    const misses: string[] = [];
+    const png = await captureShotPage(
+      page,
+      "http://x/",
+      { route: "/", state: "loading:dashboard" },
+      { waitMs: 0, fullPage: false },
+      { onLoadingState: (message) => misses.push(message) },
+    );
+    expect(png).toBeInstanceOf(Buffer);
+    expect(misses).toEqual([]);
+    // The fixture still presents its accessible aria-busy region; only this
+    // explicitly requested loading-state capture bypasses stuck-load reporting.
+    expect(page.__loadingCalls).toHaveLength(0);
+  });
+
+  it("still reports loading in non-loading fixtures", async () => {
+    const page = fakePage('loading indicator [aria-busy="true"]');
+    const misses: string[] = [];
+    await captureShotPage(
+      page,
+      "http://x/",
+      { route: "/", state: "dev:loading" },
+      { waitMs: 0, fullPage: false },
+      { onLoadingState: (message) => misses.push(message) },
+    );
+    expect(misses).toEqual(['loading state detected: loading indicator [aria-busy="true"]']);
+  });
+
   it("captures without probing when no loading handler is supplied", async () => {
     const page = fakePage('loading text "Loading changes…"');
     const png = await captureShotPage(
