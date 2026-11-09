@@ -57,6 +57,7 @@ import {
   type MergeBranchResult,
 } from "../core/git.js";
 import { getGitWorker, sweepAndWarnAsync } from "./git-worker.js";
+import { acquireCheckGateLock } from "./check-gate-lock.js";
 import {
   candidateMissingDependenciesAdvice,
   hasDependencyInputChange,
@@ -2554,7 +2555,28 @@ export class CloseOutOrchestrator {
    * the point. Everything else defaults to retryable: build and check failures
    * are where genuine flakiness lives.
    */
-  private async validateCandidate(job: IntegrationJob): Promise<{
+  private async validateCandidate(job: IntegrationJob) {
+    const branch = job.branch ?? job.taskId;
+    const worktree = await getGitWorker(this.config.root).worktreePath(branch);
+    if (!worktree) return this.validateCandidateUnlocked(job);
+    const gate = await acquireCheckGateLock({
+      boardRoot: this.config.root,
+      cacheDir: this.config.cacheDir ?? ".repoos",
+      taskId: job.taskId,
+      branch,
+      worktree,
+      kind: "merge-gate",
+      config: this.config,
+    });
+    if (!gate.ok) return { ok: false, retryable: true, reason: gate.reason };
+    try {
+      return await this.validateCandidateUnlocked(job);
+    } finally {
+      await gate.release();
+    }
+  }
+
+  private async validateCandidateUnlocked(job: IntegrationJob): Promise<{
     ok: boolean;
     reason?: string;
     candidateSha?: string;

@@ -3,7 +3,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cmdCheck } from "../../commands/check.js";
@@ -71,13 +71,47 @@ function remoteWipFixture(): string {
       "enabled = false",
       "[[check.steps]]",
       'name = "noop"',
-      'command = "true"',
+      'command = "test -f .repoos/check-gate-locks/0695.json"',
       "",
     ].join("\n"),
   );
   execFileSync("git", ["add", "repoos.toml"], { cwd: root, stdio: "ignore" });
   execFileSync("git", ["commit", "-qm", "cfg"], { cwd: root, stdio: "ignore" });
   writeFileSync(join(root, "dirty.txt"), "x\n");
+  return root;
+}
+
+function unmanagedTaskCheckFixture(command = "test -f .repoos/check-gate-locks/0695.json"): string {
+  const root = mkdtempSync(join(tmpdir(), "repoos-unmanaged-task-check-"));
+  cleanups.push(root);
+  gitInit(root);
+  mkdirSync(join(root, "src"), { recursive: true });
+  writeFileSync(join(root, "src", "app.ts"), "initial\n");
+  execFileSync("git", ["add", "src/app.ts"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["commit", "-qm", "source fixture"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["branch", "-m", "feat/0695"], { cwd: root, stdio: "ignore" });
+  mkdirSync(join(root, "work"), { recursive: true });
+  writeFileSync(
+    join(root, "work", "0695-task.md"),
+    "---\nid: '0695'\nbranch: feat/0695\n---\nTask fixture.\n",
+  );
+  writeFileSync(
+    join(root, "repoos.toml"),
+    [
+      'workDir = "work"',
+      "[pressureGuard]",
+      "enabled = false",
+      "[[check.steps]]",
+      'name = "gate-lock"',
+      `command = ${JSON.stringify(command)}`,
+      "",
+    ].join("\n"),
+  );
+  execFileSync("git", ["add", "repoos.toml", "work/0695-task.md"], {
+    cwd: root,
+    stdio: "ignore",
+  });
+  execFileSync("git", ["commit", "-qm", "task fixture"], { cwd: root, stdio: "ignore" });
   return root;
 }
 
@@ -103,6 +137,7 @@ describe("commitWipCheckpointForRemoteGate (#0695)", () => {
 describe("managed engineer dirty-tree fallback (#0695)", () => {
   async function runManagedCheck(
     root: string,
+    managed = true,
   ): Promise<{ code: number | undefined; logs: string }> {
     logs = [];
     const logSpy = vi.spyOn(console, "log").mockImplementation((...parts: unknown[]) => {
@@ -127,8 +162,13 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     // managed WIP path is skipped, or the check offloads browser steps and
     // never reaches the checkpoint warning (#0905).
     clearValidateInjectedEnv();
-    process.env.REPOOS_AGENT = "1";
-    process.env.REPOOS_TASK_ID = "0695";
+    if (managed) {
+      process.env.REPOOS_AGENT = "1";
+      process.env.REPOOS_TASK_ID = "0695";
+    } else {
+      delete process.env.REPOOS_AGENT;
+      delete process.env.REPOOS_TASK_ID;
+    }
     delete process.env.REPOOS_CHECK_STORE_ROOT;
     delete process.env.REPOOS_SKIP_TESTS;
     delete process.env.REPOOS_REMOTE_VALIDATION_DONE;
@@ -189,4 +229,66 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
       for (const key of Object.keys(offloadEnv)) delete process.env[key];
     }
   });
+
+  it("keeps the managed remote self-check lock through the local check plan (#1061)", async () => {
+    const root = remoteWipFixture();
+    vi.spyOn(preReview, "shouldRunCliRemotePreReviewGate").mockReturnValue(true);
+    vi.spyOn(engineerRemote, "commitWipCheckpointForRemoteGate").mockResolvedValue(null);
+    vi.spyOn(engineerRemote, "runEngineerRemoteSelfCheckGate").mockResolvedValue({
+      kind: "local-only",
+      skipTests: true,
+    });
+    const { code } = await runManagedCheck(root);
+    expect(code).toBe(0);
+    expect(existsSync(join(root, ".repoos", "check-gate-locks", "0695.json"))).toBe(false);
+  });
+
+  it("holds a lock during a direct CLI check in an unmanaged task worktree (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture();
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(0);
+    expect(out).toContain("gate-lock");
+    expect(existsSync(join(root, ".repoos", "check-gate-locks", "0695.json"))).toBe(false);
+  });
+
+  it("fails a direct task self-check when a source commit lands during the plan (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture(
+      "chmod u+w src/app.ts && printf changed >> src/app.ts && git add src/app.ts && git commit -m 'source changed during check'",
+    );
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(1);
+    expect(out).toContain("worktree-drift");
+    expect(out).toContain("source changed during check");
+    expect(out).toContain("src/app.ts");
+    expect(out).toContain("1 check(s) failed");
+    expect(existsSync(join(root, ".repoos", "check-gate-locks", "0695.json"))).toBe(false);
+  }, 30_000);
+
+  it("fails a direct task check when tracked source is edited without a commit (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture("chmod u+w src/app.ts && printf changed >> src/app.ts");
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(1);
+    expect(out).toContain("Tracked source files changed in the working tree during the check");
+    expect(out).toContain("src/app.ts");
+    expect(out).not.toContain("All checks passed");
+  }, 30_000);
+
+  it("detects a source file changed again when it was already dirty at check start (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture(
+      "chmod u+w src/app.ts && printf second-edit >> src/app.ts",
+    );
+    writeFileSync(join(root, "src", "app.ts"), "already dirty\n");
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(1);
+    expect(out).toContain("Tracked source files changed in the working tree during the check");
+    expect(out).toContain("src/app.ts");
+    expect(out).not.toContain("All checks passed");
+  }, 30_000);
+
+  it("allows a bookkeeping-only tracked edit during a direct task check (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture("printf bookkeeping >> work/0695-task.md");
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(0);
+    expect(out).toContain("All checks passed");
+  }, 30_000);
 });

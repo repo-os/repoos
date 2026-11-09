@@ -222,6 +222,7 @@ import { applyPipelineDetail, buildIntegrationSnapshot } from "./integration-sta
 import { resolvePipelineCheckPlan } from "./check-plan-info.js";
 import { createRepositoryLock, createRootLock } from "./repo-lock.js";
 import { clearWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
+import { installCheckGateCommitHook, recoverStaleCheckGateLocks } from "./check-gate-lock.js";
 import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
 import {
   handoffTask,
@@ -1154,6 +1155,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     bindHost = "127.0.0.1";
   }
   const logger = createLogger(config.root);
+  installCheckGateCommitHook(config);
+  const gateCacheDir = config.cacheDir ?? ".repoos";
+  void recoverStaleCheckGateLocks(config.root, gateCacheDir);
+  const CHECK_GATE_RECONCILE_MS = 60_000;
+  const gateReconcile = { inFlight: false };
+  const gateReconcileTimer = setInterval(() => {
+    if (gateReconcile.inFlight) return;
+    gateReconcile.inFlight = true;
+    void recoverStaleCheckGateLocks(config.root, gateCacheDir)
+      .catch(() => {})
+      .finally(() => {
+        gateReconcile.inFlight = false;
+      });
+  }, CHECK_GATE_RECONCILE_MS);
+  gateReconcileTimer.unref?.();
   setGitLockFailureSink((root, commitMessage, detail) => {
     const context = { root, commitMessage, detail };
     logger.system("warn", `git write failed because index.lock is present: ${detail}`, context);
