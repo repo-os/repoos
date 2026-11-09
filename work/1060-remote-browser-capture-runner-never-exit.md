@@ -352,4 +352,4 @@ Owner decision (2026-11-09): this task lands once the core fix is sound for the 
 - 2026-11-09T03:49:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T03:52:16Z · body
 - 2026-11-09T03:53:17Z · status active→review
-
+- 2026-11-09T03:53:17Z · message_queued at 2026-11-09T03:53:17.821Z
