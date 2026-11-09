@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T16:32:17Z"
+updated_at: "2026-11-09T16:34:22Z"
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_passes: 6
 review_rounds: 2
@@ -275,4 +275,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T15:40:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T15:40:49Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T16:32:17Z · status active→review
-
+- 2026-11-09T16:34:22Z · note: review pass 7: good to go
