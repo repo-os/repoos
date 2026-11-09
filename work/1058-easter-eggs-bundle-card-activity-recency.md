@@ -54,15 +54,15 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "route": "/work",
 "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "waitFor": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
+},
+{
+  "waitMs": 500
+}
 ],
 "state": "board:activeCoding"
 },
@@ -73,15 +73,15 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "selector": "[data-task-id=\"pipe-coding\"]",
 "highlight": "[role=\"tooltip\"].show",
 "steps": [
-  {
-    "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
-  },
-  {
-    "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
-  },
-  {
-    "waitMs": 500
-  }
+{
+  "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
+},
+{
+  "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
+},
+{
+  "waitMs": 500
+}
 ],
 "state": "board:pipeline"
 }
