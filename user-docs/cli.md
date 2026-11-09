@@ -121,6 +121,8 @@ is never silently defaulted. The same check applies to `repoos update` and the
 HTTP API. Task files that already carry a legacy value (`priority: high`,
 `type: ux`) still load and display as-is — only new writes are checked.
 
+A human-assigned task needs a `## Step-by-step guide` with numbered steps, exact commands or click paths, where to enter information, safe secret storage (never chat, task text or git), likely failures, how to know it worked, and what to report back. `repoos new --human` includes a scaffold heading; create/update warn when it is missing, and the task drawer shows the warning. Fill the section without replacing other task details with `repoos update <id> --section "Step-by-step guide" --section-body "1. ..."`.
+
 A task assigned to a human is created with a `## Human task` note saying so, and
 skips the agent task-body checks: `## Notes for AI` is optional and the task is
 not flagged `underspecified` or `needs-human-step`. This is the one-command way

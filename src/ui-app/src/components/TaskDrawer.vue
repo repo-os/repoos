@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { randomId } from "../lib/random-id";
+import { humanTaskGuideWarning } from "../../../core/task-underspecified.js";
 import { useRouter } from "vue-router";
 import {
   X,
@@ -338,6 +339,9 @@ const selectableStatuses = computed(() => {
   );
 });
 const isHumanTask = computed(() => ui.active?.assignee === "human");
+const humanGuideWarning = computed(() =>
+  ui.active ? humanTaskGuideWarning(ui.active.assignee, ui.active.body) : null,
+);
 /**
  * The status control must always name the current status (#1023): during a
  * close-out the selected item can be unmounted, and an empty trigger reads as
@@ -5455,6 +5459,9 @@ watch(
           </DialogClose>
         </div>
         <div v-show="!fullscreen" class="drawer-pre-tabs">
+          <p v-if="humanGuideWarning" class="hotfix-note hotfix-banner" role="status" data-test-id="human-guide-warning">
+            {{ humanGuideWarning }}
+          </p>
           <p v-if="ui.active.hotfix" class="hotfix-note hotfix-banner" role="status">
             {{ hotfixBannerText(ui.active.hotfixTarget, ui.active.branch) }}
           </p>
