@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T06:12:49Z"
+updated_at: "2026-11-09T06:24:09Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -44,18 +44,18 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 ```json
 [
 {
-  "label": "Mission Control first-load skeleton",
-  "target": "default",
-  "route": "/",
-  "highlight": ".page-skeleton",
-  "state": "loading:dashboard"
+"label": "Mission Control first-load skeleton",
+"target": "default",
+"route": "/",
+"highlight": ".page-skeleton",
+"state": "loading:dashboard"
 },
 {
-  "label": "Stories first-load skeleton",
-  "target": "default",
-  "route": "/stories",
-  "highlight": ".page-skeleton",
-  "state": "loading:stories"
+"label": "Stories first-load skeleton",
+"target": "default",
+"route": "/stories",
+"highlight": ".page-skeleton",
+"state": "loading:stories"
 }
 ]
 ```
@@ -95,3 +95,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T06:11:28Z · message_delivered: 1 message(s)
 - 2026-11-09T06:11:28Z · status review→active
 - 2026-11-09T06:12:49Z · body
+- 2026-11-09T06:24:09Z · message_queued at 2026-11-09T06:24:09.181Z
