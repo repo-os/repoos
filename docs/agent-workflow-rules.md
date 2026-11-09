@@ -255,10 +255,12 @@ cannot tell from the code alone:
     and lands the restore as one plain bookkeeping commit the review tolerates.
     It reports what it restored in the task log; it never fails a handoff.
     A commit made WHILE a merge is in progress (`lockfile-conflict.ts`,
-    `integration-orchestrator.ts`'s narrow resolution, `done.ts`'s drop-`dist`)
-    cannot use a pathspec — git refuses (`cannot do a partial commit during a
-    merge`) — so those keep a bare `git commit` and instead scope the preceding
-    `git add` to their own paths; do not "fix" them into a partial commit.
+    `integration-orchestrator.ts`'s narrow resolution) cannot use a pathspec —
+    git refuses (`cannot do a partial commit during a merge`) — so those keep a
+    bare `git commit` and instead scope the preceding `git add` to their own
+    paths AND unstage any foreign bookkeeping the index holds first (`done.ts`'s
+    drop-`dist` uses the same unstage-then-bare-commit shape); do not "fix" them
+    into a partial commit.
   - **What an engineer sees.** `repoos landable` and the handoff report name the
     offending files and the cause in plain English ("the diff changes another
     task's bookkeeping: work/<id>-*.md"), with the fix spelled out. An engineer

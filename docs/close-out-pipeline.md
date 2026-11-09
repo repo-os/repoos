@@ -768,8 +768,10 @@ real pollution of another task's record.
 
 **Guards** (both added `be3acd3f`, 2026-08-29; extended to all five bookkeeping
 dirs in #0726 and #0860):
-- `guardReviewTransition` (`review-guard.ts`) unstages every `work/*.md` that
-  isn't the task's own after `git add -A`, so drift never reaches the branch.
+- `guardReviewTransition` (`review-guard.ts`) unstages every foreign
+  `work/<other-id>-*.md` AND `work/reports/<other-id>/**` (`.json` as well as
+  `.md`) that isn't the task's own after `git add -A`, so drift never reaches the
+  branch (#1076).
 - The engineer self-check WIP checkpoint
   (`commitWipCheckpointForRemoteGate`, `engineer-remote-self-check.ts`) commits
   only the paths it intended (`git commit -- <paths>`) and resets any foreign
