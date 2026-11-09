@@ -559,3 +559,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T06:18:40Z · note: handoff requested (cli)
 - 2026-11-09T06:19:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T06:31:44Z · message_queued at 2026-11-09T06:31:44.754Z
+- 2026-11-09T06:31:44Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/debugger-integration.test.ts > debugger agent integration > does not re-broadcast a turn the panel already drew optimistically (#0443) on bee — fix it in the feature branch and re-run the gate
