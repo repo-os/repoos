@@ -7,6 +7,14 @@ export const PAGE_DATA_MAX_AGE_MS = 5 * 60_000;
 /** Upper bound on cached resources, so long sessions cannot grow the cache without limit. */
 const MAX_ENTRIES = 64;
 
+/** Return fresh cached page data so a view can seed its first render before revalidation. */
+export function getCachedPageData<T>(key: string): T | undefined {
+  const entry = entries.get(key);
+  if (!entry || entry.value === undefined || Date.now() - entry.updatedAt > PAGE_DATA_MAX_AGE_MS)
+    return undefined;
+  return entry.value as T;
+}
+
 function trimEntries(): void {
   // Never evict an entry with a request in flight: its caller would drop the
   // response (identity check) and an initial-load view would be left without data.
