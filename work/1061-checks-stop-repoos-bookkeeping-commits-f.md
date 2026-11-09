@@ -512,3 +512,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T11:38:13Z · body
 - 2026-11-09T11:39:40Z · status active→review
 - 2026-11-09T11:39:41Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T11:40:20Z · message_queued at 2026-11-09T11:40:20.773Z
