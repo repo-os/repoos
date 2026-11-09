@@ -3,12 +3,6 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Model busy, retry later"
-debug_tldr: The run hit a temporary model-capacity error; retry it and investigate why the end-to-end test left the feature branch behind.
-debug_tldr_at: "2026-11-09T14:24:51Z"
-debug_tldr_key: "dev-error|error: Model busy, retry later"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T14:24:51Z"
+updated_at: "2026-11-09T14:34:32Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -83,3 +77,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T14:16:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T14:21:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T14:24:32Z · agent exited with an error (opencode) · error: Model busy, retry later
+- 2026-11-09T14:34:32Z · watchdog: restarting engineer after 10m with no live process
