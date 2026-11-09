@@ -3,6 +3,9 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "engineer keeps crashing (3 in 30m): a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1076 --fresh`."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,12 +14,12 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T17:41:23Z"
+updated_at: "2026-11-09T17:42:49Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
-dev_error_count: 8
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:39:49.593Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:41:19.775Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 9
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:39:49.593Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:41:19.775Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:42:49.776Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
@@ -105,3 +108,5 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T17:41:19Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T17:41:19Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
 - 2026-11-09T17:41:23Z · needs_input
+- 2026-11-09T17:42:49Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:42:49Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
