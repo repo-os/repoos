@@ -52,3 +52,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-08T09:19:43Z · body: Desired UX (added 4, removed 1); Acceptance criteria (added 3, removed 1)
 - 2026-11-09T22:28:23Z · status ready→active, branch
 - 2026-11-09T22:50:40Z · message_queued at 2026-11-09T22:50:40.314Z
+- 2026-11-09T22:50:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
