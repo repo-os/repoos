@@ -956,7 +956,7 @@ onUnmounted(() => {
             kind="rows"
             :count="detectRows.length"
           />
-          <div v-if="!detected.length && !detectLoading" class="agent-empty">
+          <div v-if="!detected.length && (!detectLoading || detectHasSnapshot)" class="agent-empty">
             No known coding agents detected on PATH.
           </div>
 
