@@ -11,13 +11,12 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-08T19:09:04Z"
-review_passes: 3
+updated_at: "2026-11-09T05:59:09Z"
+review_passes: 11
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 40
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:23.664Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:43.735Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:55:52.301Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:56:01.414Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:56:11.081Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:57:52.744Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:04.432Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:16.308Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:25.907Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:36.510Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:47.861Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:58:58.805Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:10.094Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:22.349Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:33.280Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:44.585Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T18:59:56.669Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:08.965Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:21.563Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:33.262Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:46.541Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:00:58.138Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:19.548Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:32.940Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:45.255Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:01:58.974Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:35.149Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:47.946Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:02:59.124Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:12.128Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:24.318Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:35.871Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:03:48.779Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:01.294Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:13.165Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:23.903Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:35.340Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:04:55.676Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:05:06.891Z\",\"kind\":\"usage-limit\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-08T19:05:23.769Z\",\"kind\":\"usage-limit\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\"}"
 ---
 ## Problem
@@ -43,6 +42,9 @@ Today none of those edits can change the result of the check (bookkeeping lives 
 
 ## Notes for AI
 Start from src/server/handoff.ts (the "worktree changed while the gate was running" refusal), the WIP checkpoint commit code, and the bookkeeping writers (activity/report/status commits, `docs(<id>): ...`). Reuse the review-lock machinery if it fits. Keep the scope to these four behaviors. Related: #0598 (protect a task worktree from edits after handoff) landed earlier; read it first and extend rather than duplicate.
+
+## Accepted scope and known limitations
+Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING engineer during a check is out of scope and not enforceable (an agent process can always write to its worktree). The protection this task delivers is: bookkeeping commits and RepoOS-controlled operations are deferred while a check runs, new engineer turns are refused during a check, and any source change that lands during a check is DETECTED afterwards by drift detection and invalidates the result with the commit subject and paths. A reviewer must not raise 'running engineer can still write source' as a blocking bug; report it as a suggestion. The task must document this limitation in docs and in the engineering report.
 
 ## Activity
 
@@ -233,3 +235,182 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-08T19:05:23Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + opencode-go/deepseek-v4.1-flash after 40/3 crashes in 30m · ActionRequiredError: Weekly usage limit reached. It resets in 2 days. Buy credits to keep going now, or upgrade your plan for more weekly usage.
 - 2026-11-08T19:05:32Z · needs_input
 - 2026-11-08T19:09:04Z · review_cli_override, review_model_override
+- 2026-11-08T19:28:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The task is **not ready for handoff**. The scoped check failed on two tests in `tests/check-gate-bookkeeping.test.ts`: queued snapshots were not being committed in the test setup, and stale-lock recovery still treated a live holder as acti… · stderr: Reading additional input from stdin...
+- 2026-11-08T19:29:07Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-08T19:44:08Z · body
+- 2026-11-08T19:59:18Z · body
+- 2026-11-08T20:01:20Z · status active→review
+- 2026-11-08T20:01:20Z · message_queued at 2026-11-08T20:01:20.227Z
+- 2026-11-08T20:01:20Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-08T20:02:02Z · note: review pass 4: needs some work
+- 2026-11-08T20:02:02Z · needs_input
+- 2026-11-08T20:15:54Z · status review→active
+- 2026-11-08T20:15:54Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T20:15:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T20:15:59Z · message_delivered: 1 message(s)
+- 2026-11-08T20:15:59Z · needs_input
+- 2026-11-08T20:16:01Z · message_queued at 2026-11-08T20:16:01.123Z
+- 2026-11-08T20:50:12Z · body
+- 2026-11-08T20:52:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed after a remote retry, and the focused check-gate suite passed all 14 tests. The report draft is at [.repoos/engineering-report-drafts/1061.md](/Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeepi… · stderr: Reading additional input from stdin... 2026-11-08T20:17:32.205738Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeeping-commits-f/src/server/handoff.ts: async function runCheck( 2026-11-08T20:…
+- 2026-11-08T20:52:31Z · status active→review
+- 2026-11-08T20:52:31Z · message_delivered: 1 message(s)
+- 2026-11-08T20:52:32Z · note: handoff requested (cli)
+- 2026-11-08T20:53:18Z · status active→review
+- 2026-11-08T20:53:19Z · message_queued at 2026-11-08T20:53:19.007Z
+- 2026-11-08T20:53:19Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-08T20:54:06Z · note: review pass 5: needs some work
+- 2026-11-08T20:54:07Z · needs_input
+- 2026-11-08T21:16:04Z · status review→active
+- 2026-11-08T21:16:04Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T21:16:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T21:16:09Z · message_delivered: 1 message(s)
+- 2026-11-08T21:16:09Z · needs_input
+- 2026-11-08T21:16:10Z · message_queued at 2026-11-08T21:16:10.786Z
+- 2026-11-08T21:35:18Z · body
+- 2026-11-08T21:37:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I did **not** request handoff. The review findings are still open: managed self-check and close-out lifecycle coverage, protection against direct source-file writes, and process-safe lock and queue updates. The scoped check passed on the c… · stderr: Reading additional input from stdin... 2026-11-08T21:36:30.916306Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 17448
+- 2026-11-08T21:37:04Z · status active→review
+- 2026-11-08T21:37:05Z · message_delivered: 1 message(s)
+- 2026-11-08T21:37:05Z · note: handoff requested (cli)
+- 2026-11-08T21:37:52Z · status active→review
+- 2026-11-08T21:37:52Z · message_queued at 2026-11-08T21:37:52.692Z
+- 2026-11-08T21:37:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-08T21:38:38Z · note: review pass 6: needs some work
+- 2026-11-08T21:38:38Z · needs_input
+- 2026-11-08T21:56:06Z · status review→active
+- 2026-11-08T21:56:06Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T21:56:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T21:56:10Z · message_delivered: 1 message(s)
+- 2026-11-08T21:56:10Z · needs_input
+- 2026-11-08T21:56:12Z · message_queued at 2026-11-08T21:56:12.256Z
+- 2026-11-08T22:22:24Z · body
+- 2026-11-08T22:39:27Z · body
+- 2026-11-08T22:56:23Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-08T22:56:23Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The final scoped check has uploaded the formatted, synchronized branch snapshot and is still running its remote build/test suite. Earlier runs showed this repository’s remote suite can take several minutes; no failure has been reported in … · stderr: Reading additional input from stdin... 2026-11-08T21:58:31.050088Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/checks-stop-repoos-bookkeeping-commits-f/src/server/check-gate-lock.ts: restoreSnapshots(finalSnapshots…
+- 2026-11-08T22:56:23Z · status active→review
+- 2026-11-08T22:56:23Z · message_delivered: 1 message(s)
+- 2026-11-08T22:56:24Z · note: handoff requested (cli)
+- 2026-11-08T22:59:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-08T23:07:50Z · message_queued at 2026-11-08T23:07:50.630Z
+- 2026-11-08T23:07:50Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1061.md
+- 2026-11-08T23:09:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T23:15:58Z · message_queued at 2026-11-08T23:15:58.274Z
+- 2026-11-08T23:35:04Z · body
+- 2026-11-08T23:37:18Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-08T23:37:18Z · message_queued at 2026-11-08T23:37:18.922Z
+- 2026-11-08T23:37:19Z · ↻ resuming engineer to read queued message
+- 2026-11-08T23:37:19Z · status active→review
+- 2026-11-08T23:37:19Z · message_delivered: 3 message(s)
+- 2026-11-08T23:37:19Z · note: handoff requested (cli)
+- 2026-11-08T23:38:04Z · status active→review
+- 2026-11-08T23:38:05Z · message_queued at 2026-11-08T23:38:05.192Z
+- 2026-11-08T23:38:05Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-08T23:38:59Z · note: review pass 7: needs some work
+- 2026-11-08T23:38:59Z · needs_input
+- 2026-11-08T23:55:49Z · status review→active
+- 2026-11-08T23:55:49Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-08T23:55:51Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-08T23:55:54Z · message_delivered: 1 message(s)
+- 2026-11-08T23:55:54Z · needs_input
+- 2026-11-08T23:55:55Z · message_queued at 2026-11-08T23:55:55.612Z
+- 2026-11-09T00:14:14Z · body
+- 2026-11-09T00:29:02Z · body
+- 2026-11-09T00:31:00Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The required scoped check passed after I ran `bun run fmt`. Remote validation passed on the retry host; the local build, lint, UI smoke, and docs build also passed. I updated the local check lock lifetime, bookkeeping enqueue/release synch… · stderr: Reading additional input from stdin...
+- 2026-11-09T00:31:00Z · status active→review
+- 2026-11-09T00:31:01Z · message_delivered: 1 message(s)
+- 2026-11-09T00:31:01Z · note: handoff requested (cli)
+- 2026-11-09T00:31:51Z · status active→review
+- 2026-11-09T00:31:52Z · message_queued at 2026-11-09T00:31:52.075Z
+- 2026-11-09T00:31:52Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T00:32:32Z · note: review pass 8: needs some work
+- 2026-11-09T00:32:32Z · needs_input
+- 2026-11-09T00:35:47Z · status review→active
+- 2026-11-09T00:35:47Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T00:35:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T00:35:52Z · message_delivered: 1 message(s)
+- 2026-11-09T00:35:52Z · needs_input
+- 2026-11-09T00:35:53Z · message_queued at 2026-11-09T00:35:53.871Z
+- 2026-11-09T00:36:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I can’t safely continue editing this worktree yet. `repoos landable 1061` reports that the task is in review with blocking findings, and the repo instructions prohibit editing a task worktree while it is in review. Although `repoos list` s… · stderr: Reading additional input from stdin...
+- 2026-11-09T00:36:37Z · status active→review
+- 2026-11-09T00:36:37Z · message_delivered: 1 message(s)
+- 2026-11-09T00:36:37Z · note: handoff requested (cli)
+- 2026-11-09T00:39:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T00:45:33Z · message_queued at 2026-11-09T00:45:33.445Z
+- 2026-11-09T00:45:33Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+- 2026-11-09T00:49:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T01:14:14Z · body
+- 2026-11-09T01:16:43Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T01:16:43Z · message_queued at 2026-11-09T01:16:43.499Z
+- 2026-11-09T01:16:43Z · ↻ resuming engineer to read queued message
+- 2026-11-09T01:16:43Z · status active→review
+- 2026-11-09T01:16:44Z · message_delivered: 2 message(s)
+- 2026-11-09T01:16:45Z · note: handoff requested (cli)
+- 2026-11-09T01:17:33Z · status active→review
+- 2026-11-09T01:17:33Z · message_queued at 2026-11-09T01:17:33.547Z
+- 2026-11-09T01:17:34Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T01:18:16Z · note: review pass 9: needs some work
+- 2026-11-09T01:18:16Z · needs_input
+- 2026-11-09T01:35:46Z · status review→active
+- 2026-11-09T01:35:46Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T01:35:48Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T01:35:51Z · message_delivered: 1 message(s)
+- 2026-11-09T01:35:52Z · needs_input
+- 2026-11-09T01:35:53Z · message_queued at 2026-11-09T01:35:53.663Z
+- 2026-11-09T01:36:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1061’s handoff passed, and it is now in **review**. The repo instructions say not to edit a task worktree while it’s in review; it must first be sent back to **active** through RepoOS. I haven’t changed any files or written the repor… · stderr: Reading additional input from stdin...
+- 2026-11-09T01:36:17Z · status active→review
+- 2026-11-09T01:36:18Z · message_delivered: 1 message(s)
+- 2026-11-09T01:36:18Z · note: handoff requested (cli)
+- 2026-11-09T01:39:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T01:47:10Z · message_queued at 2026-11-09T01:47:10.822Z
+- 2026-11-09T01:47:10Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 8eab7241 to ed3f0a39) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
+- 2026-11-09T01:49:08Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T01:57:55Z · body
+- 2026-11-09T02:00:03Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T02:00:03Z · message_queued at 2026-11-09T02:00:03.532Z
+- 2026-11-09T02:00:03Z · ↻ resuming engineer to read queued message
+- 2026-11-09T02:00:04Z · status active→review
+- 2026-11-09T02:00:04Z · message_delivered: 2 message(s)
+- 2026-11-09T02:00:05Z · note: handoff requested (cli)
+- 2026-11-09T02:00:54Z · status active→review
+- 2026-11-09T02:00:54Z · message_queued at 2026-11-09T02:00:54.626Z
+- 2026-11-09T02:00:55Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T02:01:47Z · note: review pass 10: needs some work
+- 2026-11-09T02:01:47Z · needs_input
+- 2026-11-09T02:15:47Z · status review→active
+- 2026-11-09T02:15:47Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T02:15:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T02:15:53Z · message_delivered: 1 message(s)
+- 2026-11-09T02:15:53Z · needs_input
+- 2026-11-09T02:15:55Z · message_queued at 2026-11-09T02:15:55.028Z
+- 2026-11-09T02:50:16Z · body
+- 2026-11-09T03:05:41Z · body
+- 2026-11-09T03:07:16Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T03:07:16Z · message_queued at 2026-11-09T03:07:16.799Z
+- 2026-11-09T03:07:16Z · ↻ resuming engineer to read queued message
+- 2026-11-09T03:07:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The final `REPOOS_CHECK_CHANGED=main repoos check` is green: remote validation passed, then local format, lint, build, UI smoke, contrast, and user-docs checks passed. I’m writing the required engineering report draft now, including the va… · stderr: Reading additional input from stdin...
+- 2026-11-09T03:07:17Z · status active→review
+- 2026-11-09T03:07:17Z · message_delivered: 2 message(s)
+- 2026-11-09T03:07:17Z · note: handoff requested (cli)
+- 2026-11-09T03:09:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T03:16:50Z · message_queued at 2026-11-09T03:16:50.941Z
+- 2026-11-09T03:16:51Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
+- 2026-11-09T03:19:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T03:34:44Z · body
+- 2026-11-09T03:36:18Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T03:36:18Z · message_queued at 2026-11-09T03:36:18.567Z
+- 2026-11-09T03:36:18Z · ↻ resuming engineer to read queued message
+- 2026-11-09T03:36:18Z · status active→review
+- 2026-11-09T03:36:19Z · message_delivered: 2 message(s)
+- 2026-11-09T03:36:19Z · note: handoff requested (cli)
+- 2026-11-09T03:37:03Z · status active→review
+- 2026-11-09T03:37:03Z · message_queued at 2026-11-09T03:37:03.887Z
+- 2026-11-09T03:37:04Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-09T03:37:47Z · note: review pass 11: needs some work
+- 2026-11-09T03:37:47Z · needs_input
+- 2026-11-09T04:40:21Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T05:56:06Z · body: Accepted scope and known limitations (added)
+- 2026-11-09T05:56:07Z · status review→active
+- 2026-11-09T05:56:07Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T05:56:09Z · message_delivered: 1 message(s)
+- 2026-11-09T05:56:09Z · needs_input
+- 2026-11-09T05:56:11Z · message_queued at 2026-11-09T05:56:11.177Z
+- 2026-11-09T05:59:09Z · CTO nudge: held — an undelivered message is already queued
