@@ -53,6 +53,7 @@ import {
 } from "../core/review-verdict.js";
 import {
   extractReviewReportSections,
+  NO_FURTHER_FINDINGS_PREFIX,
   reviewReportIsEnvironmentOnly,
 } from "../core/review-report-sections.js";
 import type { LandableResult } from "../core/landable.js";
@@ -276,6 +277,60 @@ export function reviewHumanFlagThreshold(config: Pick<RepoOSConfig, "review">): 
   return typeof raw === "number" && Number.isFinite(raw) && raw >= 1
     ? Math.floor(raw)
     : DEFAULT_REVIEW_HUMAN_FLAG_PASSES;
+}
+
+/** Default completed passes before the blocking bar freezes (#1080). */
+export const DEFAULT_REVIEW_FREEZE_AFTER_PASSES = 4;
+
+/** Completed passes after which only real defects, regressions and landing blockers block (#1080). */
+export function reviewFreezeThreshold(config: Pick<RepoOSConfig, "review">): number {
+  const raw = config.review?.freezeAfterPasses;
+  return typeof raw === "number" && Number.isFinite(raw) && raw >= 1
+    ? Math.floor(raw)
+    : DEFAULT_REVIEW_FREEZE_AFTER_PASSES;
+}
+
+/**
+ * Lighter bar from pass 1 (#1080): P3 tasks and Easter-eggs bundles only block
+ * on correctness bugs and landing blockers.
+ */
+export function reviewUsesLightBar(task: Pick<Task, "title" | "priority">): boolean {
+  return task.priority === "p3" || /^easter eggs bundle/i.test(task.title.trim());
+}
+
+/**
+ * Which blocking bar a pass applies (#1080). `full` is the default for p1/p2;
+ * `light` is the P3 / Easter-eggs bar; `frozen` takes over from pass N+1.
+ */
+export type ReviewBlockingBar = "full" | "light" | "frozen";
+
+export function reviewBlockingBar(
+  task: Pick<Task, "extra" | "title" | "priority">,
+  config: Pick<RepoOSConfig, "review">,
+): ReviewBlockingBar {
+  if (reviewPassesSoFar(task) >= reviewFreezeThreshold(config)) return "frozen";
+  return reviewUsesLightBar(task) ? "light" : "full";
+}
+
+/** The enumeration closer the Bugs section must end with (#1080). */
+const NO_FURTHER_LINE_TEMPLATE = `${NO_FURTHER_FINDINGS_PREFIX}: <the grep patterns and paths you searched>`;
+
+/** Cap on the quoted accepted-scope section (#1080). */
+const ACCEPTED_SCOPE_CHARS = 4000;
+
+/**
+ * The `## Accepted scope and known limitations` section of a task body, from
+ * its heading through the next `##` heading, or null when the body has none
+ * (#1080). Any heading starting with "Accepted scope" counts.
+ */
+export function acceptedScopeSection(body: string): string | null {
+  const lines = body.split("\n");
+  const start = lines.findIndex((line) => /^##\s+Accepted scope/i.test(line.trim()));
+  if (start < 0) return null;
+  let end = start + 1;
+  while (end < lines.length && !/^##\s/.test(lines[end]!.trim())) end++;
+  const text = lines.slice(start, end).join("\n").trim();
+  return text ? text.slice(0, ACCEPTED_SCOPE_CHARS) : null;
 }
 
 const now = (): string => new Date().toISOString();
@@ -532,6 +587,52 @@ export async function engineeringReportMatchesReviewTree(
     .every((path) => isOwnReportPath(path, config, task.id) || path === task.path);
 }
 
+/**
+ * The blocking-bar and accepted-scope section of the reviewer prompt (#1080).
+ * Full and light bars block on every Bugs item; the frozen bar narrows what
+ * may block and sends the rest to `## Suggestions (non-blocking)`.
+ */
+export function blockingBarSection(
+  bar: ReviewBlockingBar,
+  pass: number,
+  freezeAfter: number,
+  acceptedScope: string | null,
+): string[] {
+  const lines = ["## Blocking bar (#1080)", ""];
+  if (bar === "frozen") {
+    lines.push(
+      `This is pass ${pass}, after ${freezeAfter} earlier passes, so the blocking bar is FROZEN.`,
+      "Blocking = exactly (a) a defect in behaviour this task introduced that breaks its own",
+      "acceptance criteria, (b) a regression of existing behaviour, (c) a landing blocker.",
+      "Everything else, including further edge cases of an already-fixed class and hardening",
+      "ideas, goes under `## Suggestions (non-blocking)` and must not change the verdict.",
+    );
+  } else if (bar === "light") {
+    lines.push(
+      "This task uses the LIGHT bar (P3 or an Easter eggs bundle). Blocking = correctness bugs",
+      "and landing blockers only. Everything else (edge cases, hardening, naming, style) goes",
+      "under `## Suggestions (non-blocking)` and must not change the verdict.",
+    );
+  } else {
+    lines.push(
+      "The FULL bar applies until the freeze. Every item under `## Bugs` blocks; edge cases and",
+      "suggestions never change the verdict.",
+    );
+  }
+  if (acceptedScope) {
+    lines.push(
+      "",
+      "The task body has an accepted-scope section. It is AUTHORITATIVE: the items it lists, and",
+      "anything it explicitly supersedes (for example an acceptance criterion it narrows or",
+      "replaces), are accepted limitations and are NOT blocking. Quote them under",
+      "`## Suggestions` at most, never under `## Bugs`. Quoted from the task body:",
+      "",
+      acceptedScope,
+    );
+  }
+  return [...lines, ""];
+}
+
 export function reviewMission(
   task: Task,
   agent: Agent,
@@ -550,6 +651,11 @@ export function reviewMission(
   const priorPasses = reviewPassesSoFar(task);
   const repeatedClassThreshold = reviewHumanFlagThreshold(config);
   const repeatedClasses = priorPasses >= repeatedClassThreshold;
+  const blockingBar = reviewBlockingBar(task, config);
+  const freezeAfter = reviewFreezeThreshold(config);
+  const acceptedScope = acceptedScopeSection(task.body);
+  const suggestionsHeading =
+    blockingBar === "frozen" ? "## Suggestions (non-blocking)" : "## Suggestions";
   const earlierReportsDir = trackedReviewsDir({ ...config, root: workdir }, task.id);
   const legacyEarlierReportsDir = join(
     config.root,
@@ -649,6 +755,7 @@ export function reviewMission(
     "",
     ...landablePromptSection(task.id, options.landable),
     "",
+    ...blockingBarSection(blockingBar, priorPasses + 1, freezeAfter, acceptedScope),
     "## How to inspect it",
     "",
     `- \`git diff ${baseBranch}...HEAD\` and \`git log ${baseBranch}..HEAD --oneline\` in the`,
@@ -700,7 +807,8 @@ export function reviewMission(
     "  like), then grep the diff and the files it touches for every other",
     "  instance — sibling paths, callers, config/schema/docs/test registrations,",
     "  both sides of a fallback — and list them all under ## Bugs. Never hold an",
-    "  instance back for a later pass.",
+    "  instance back for a later pass. Do not stop at the first instance you find:",
+    "  a class is only enumerated once the grep has run over every path it can reach.",
     "- Separate code defects from evidence-only gaps: when the code is sound but a",
     "  capture is wrong or stale, use `EVIDENCE-GAP-ONLY` / `STALE-EVIDENCE-ONLY`",
     "  and check that each declared shot's target and route can really render its",
@@ -778,12 +886,14 @@ export function reviewMission(
     "(route/label) on its own line. Write `None` when not applicable.",
     "",
     "## Bugs",
-    "Concrete defects, each with the file and what goes wrong.",
+    "Concrete defects, each with the file and what goes wrong. After any bug listed,",
+    "end this section with one line, exactly:",
+    `\`${NO_FURTHER_LINE_TEMPLATE}\``,
     "",
     "## Edge cases",
     "Cases worth checking that the change may not handle.",
     "",
-    "## Suggestions",
+    suggestionsHeading,
     "Improvements worth making. Say so plainly when there are none.",
   );
   return parts.join("\n");

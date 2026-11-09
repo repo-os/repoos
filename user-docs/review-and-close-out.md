@@ -116,6 +116,16 @@ to break that loop:
 - Before `` `good to go` `` it checks the branch still merges cleanly with its
   base and names any conflicting files.
 
+**The blocking bar narrows after a few passes.** From pass 5 (Settings →
+General → **Freeze the blocking bar after**, `review.freezeAfterPasses`, default
+4) the reviewer blocks only on a defect that breaks the task's own acceptance
+criteria, a regression of existing behaviour, or a landing blocker. Everything
+else, including further edge cases of a class already fixed and hardening
+ideas, is listed under **Suggestions (non-blocking)** and does not change the
+verdict. P3 tasks and `Easter eggs bundle` tasks use this lighter bar from pass
+1. A task's `## Accepted scope and known limitations` section is quoted to the
+reviewer as authoritative: the limitations it lists are not blocking.
+
 After **5 completed review passes** on one task (Settings → General →
 **Flag repeated review classes after**, `review.humanFlagAfterPasses`), the next
 report opens with a `Repeated review classes:` summary, and the task is flagged

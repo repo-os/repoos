@@ -18,7 +18,19 @@ import {
 } from "../../core/config.js";
 import type { Agent, RepoOSConfig, Task } from "../../core/types.js";
 import type { LandableResult } from "../../core/landable.js";
-import { reviewHumanFlagThreshold, reviewMission, reviewPassesSoFar } from "../../server/review.js";
+import {
+  acceptedScopeSection,
+  reviewBlockingBar,
+  reviewFreezeThreshold,
+  reviewHumanFlagThreshold,
+  reviewMission,
+  reviewPassesSoFar,
+  reviewUsesLightBar,
+} from "../../server/review.js";
+import {
+  extractReviewReportSections,
+  reviewReportHasBlockingBugs,
+} from "../../core/review-report-sections.js";
 import {
   needsInputClearsOnNewEngineerRun,
   needsInputClearsOnSuccessfulReview,
@@ -305,5 +317,171 @@ describe("review.humanFlagAfterPasses config (#0872)", () => {
       }),
     ).toBe(true);
     expect(needsInputClearsOnNewEngineerRun("review-human-attention")).toBe(true);
+  });
+});
+
+describe("review blocking bar, freeze and accepted scope (#1080)", () => {
+  const root = mkdtempSync(join(tmpdir(), "repoos-review-freeze-"));
+  const acceptedBody = [
+    "## Problem",
+    "",
+    "The loop never converges.",
+    "",
+    "## Acceptance criteria",
+    "",
+    "- Every pass re-reports the whole class.",
+    "",
+    "## Accepted scope and known limitations",
+    "",
+    "- The freeze does not auto-file follow-ups; that is a separate task.",
+    "- Acceptance criterion 5 is superseded: follow-ups are manual in this change.",
+    "",
+    "## Notes for AI",
+    "",
+    "Start in src/server/review.ts.",
+  ].join("\n");
+
+  it("freezes after four passes by default and honours a configured threshold", () => {
+    expect(reviewFreezeThreshold(config(root))).toBe(4);
+    expect(reviewFreezeThreshold(config(root, { freezeAfterPasses: 2 }))).toBe(2);
+    expect(reviewBlockingBar(task({ review_passes: 3 }), config(root))).toBe("full");
+    expect(reviewBlockingBar(task({ review_passes: 4 }), config(root))).toBe("frozen");
+  });
+
+  it("uses the lighter bar from pass 1 for p3 and Easter eggs bundles only", () => {
+    const p3 = { ...task(), priority: "p3" };
+    const bundle = { ...task(), priority: "p2", title: "Easter eggs bundle: hover, toasts" };
+    const p2 = { ...task(), priority: "p2" };
+    expect(reviewUsesLightBar(p3)).toBe(true);
+    expect(reviewUsesLightBar(bundle)).toBe(true);
+    expect(reviewUsesLightBar(p2)).toBe(false);
+    expect(reviewBlockingBar(p3, config(root))).toBe("light");
+    expect(reviewBlockingBar(bundle, config(root))).toBe("light");
+    expect(reviewBlockingBar(p2, config(root))).toBe("full");
+  });
+
+  it("names the frozen blocking definition and the non-blocking suggestions heading", () => {
+    const mission = reviewMission(task({ review_passes: 4 }), reviewer, root, "main", config(root));
+    expect(mission).toContain("FROZEN");
+    expect(mission).toContain("a regression of existing behaviour");
+    expect(mission).toContain("a landing blocker");
+    expect(mission).toContain("## Suggestions (non-blocking)");
+    expect(mission).toContain("must not change the verdict");
+  });
+
+  it("keeps the full bar and plain Suggestions heading before the freeze", () => {
+    const mission = reviewMission(task({ review_passes: 1 }), reviewer, root, "main", config(root));
+    expect(mission).not.toContain("FROZEN");
+    expect(mission).toContain("The FULL bar applies until the freeze");
+    expect(mission).not.toContain("## Suggestions (non-blocking)");
+  });
+
+  it("applies the light bar text to a P3 task on pass 1", () => {
+    const mission = reviewMission(
+      { ...task(), priority: "p3" },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    expect(mission).toContain("LIGHT bar");
+    expect(mission).toContain("correctness bugs");
+  });
+
+  it("quotes an accepted-scope section from a fixture body and says it is not blocking", () => {
+    expect(acceptedScopeSection(acceptedBody)).toBe(
+      [
+        "## Accepted scope and known limitations",
+        "",
+        "- The freeze does not auto-file follow-ups; that is a separate task.",
+        "- Acceptance criterion 5 is superseded: follow-ups are manual in this change.",
+      ].join("\n"),
+    );
+    expect(acceptedScopeSection("## Problem\n\nx")).toBeNull();
+
+    const mission = reviewMission(
+      { ...task({ review_passes: 0 }), body: acceptedBody },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    expect(mission).toContain("## Accepted scope and known limitations");
+    expect(mission).toContain("The freeze does not auto-file follow-ups");
+    expect(mission).toContain("Acceptance criterion 5 is superseded");
+    expect(mission).toMatch(/AUTHORITATIVE/);
+    expect(mission).toMatch(/NOT blocking/);
+  });
+
+  it("omits the accepted-scope block when the body has no such section", () => {
+    const mission = reviewMission(task(), reviewer, root, "main", config(root));
+    expect(mission).not.toContain("AUTHORITATIVE");
+  });
+
+  it("asks for the enumeration closer at the end of the Bugs section", () => {
+    const mission = reviewMission(task(), reviewer, root, "main", config(root));
+    expect(mission).toContain(
+      "No further findings of this class were found after grepping: <the grep patterns and paths you searched>",
+    );
+    expect(mission).toMatch(/Do not stop at the first instance/);
+  });
+
+  it("does not count the enumeration closer as a blocking bug", () => {
+    const report = [
+      "## Verdict",
+      "`needs some work` — one bug",
+      "",
+      "## Bugs",
+      "- **src/a.ts**: the guard is missing.",
+      "No further findings of this class were found after grepping: src/**/*.ts",
+      "",
+      "## Suggestions (non-blocking)",
+      "Consider a helper.",
+    ].join("\n");
+    expect(reviewReportHasBlockingBugs(report)).toBe(true);
+    const clean = [
+      "## Bugs",
+      "None found",
+      "No further findings of this class were found after grepping: src/**/*.ts",
+    ].join("\n");
+    expect(reviewReportHasBlockingBugs(clean)).toBe(false);
+  });
+
+  it("parses the frozen suggestions heading as the Suggestions section", () => {
+    const sections = extractReviewReportSections(
+      "## Bugs\nNone found\n\n## Suggestions (non-blocking)\n- Add a helper for the retry.\n",
+    );
+    expect(sections.suggestions).toContain("Add a helper for the retry.");
+  });
+
+  it("asks the engineer to self-review against the reviewer checklist before handoff", () => {
+    const engineer = promptFor("engineer");
+    expect(engineer).toMatch(/self-review your diff against the reviewer's checklist/);
+    expect(engineer).toMatch(/accepted-scope/);
+  });
+
+  it("exposes the freeze setting in the schema, supported keys and loader", () => {
+    const field = getConfigSchema().find((f) => f.key === "review.freezeAfterPasses");
+    expect(field).toMatchObject({
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 4,
+    });
+    expect(SUPPORTED_TOML_KEYS).toContain("review.freezeAfterPasses");
+
+    const dir = mkdtempSync(join(tmpdir(), "repoos-review-freeze-config-"));
+    try {
+      writeFileSync(join(dir, "repoos.toml"), "[review]\nfreezeAfterPasses = 3\n");
+      expect(loadConfig(dir).review?.freezeAfterPasses).toBe(3);
+      writeFileSync(join(dir, "repoos.toml"), "");
+      expect(loadConfig(dir).review?.freezeAfterPasses).toBe(4);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true });
   });
 });
