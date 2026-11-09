@@ -3,9 +3,6 @@ id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection failed repeatedly"
 priority: p2
 area: web
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-09T23:43:50Z"
+updated_at: "2026-11-09T23:47:01Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-09T23:43:50.075Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -68,10 +65,10 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 "highlight": "#setting-activityAnimationEnabled",
 "steps": [
 {
-  "click": "#setting-activityAnimationEnabled [role=switch]"
+"click": "#setting-activityAnimationEnabled [role=switch]"
 },
 {
-  "waitMs": 300
+"waitMs": 300
 }
 ]
 }
@@ -95,3 +92,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-09T23:07:33Z · body
 - 2026-11-09T23:43:50Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
 - 2026-11-09T23:43:50Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-11-09T23:47:01Z · needs_input
