@@ -406,3 +406,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T23:14:04Z · body
 - 2026-11-09T23:33:39Z · body
 - 2026-11-09T23:38:54Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-09T23:38:54Z · message_queued at 2026-11-09T23:38:54.816Z
