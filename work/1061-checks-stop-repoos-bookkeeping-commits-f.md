@@ -12,8 +12,6 @@ review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
 updated_at: "2026-11-09T02:00:54Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 8eab7241 to ed3f0a39) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: 8eab72418d65c6003b13281d424f9b05d43edb29
 review_passes: 9
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -370,3 +368,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T02:00:04Z · message_delivered: 2 message(s)
 - 2026-11-09T02:00:05Z · note: handoff requested (cli)
 - 2026-11-09T02:00:54Z · status active→review
+
