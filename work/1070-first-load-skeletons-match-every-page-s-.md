@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T13:31:55Z"
+updated_at: "2026-11-09T13:33:42Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1
@@ -247,3 +247,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T13:31:47Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /?shotState=loading:dashboard (http://127.0.0.1:45643/?shotState=loading:dashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories?shotState=loading:stories (http://127.0.0.1:45643/stories?shotState=loading:stories) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-09T13:31:47Z · note: handoff requested (cli)
 - 2026-11-09T13:31:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T13:33:42Z · message_delivered: 2 message(s)
