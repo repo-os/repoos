@@ -87,12 +87,13 @@ export async function tryCompleteMergeByRegeneratingLockfile(
   //
   // A sibling staged BEFORE this merge cannot reach here: git refuses to start
   // a merge over a dirty index ("Your local changes would be overwritten by
-  // merge"). But `bun install` below can run for minutes, and a concurrent
-  // board write during that window CAN leave a sibling's `work/<other-id>-*.md`
-  // staged. The merge commit must stay a bare `--no-edit` (git rejects a
-  // pathspec commit mid-merge), so we do not rely on the merge-start guard:
-  // any foreign bookkeeping the index holds is unstaged first, so a sibling's
-  // file can never ride the merge commit onto the branch (#1076).
+  // merge"). But the `bun install` step above can run for minutes, and a
+  // concurrent board write during that window CAN leave a sibling's
+  // `work/<other-id>-*.md` staged. The merge commit must stay a bare
+  // `--no-edit` (git rejects a pathspec commit mid-merge), so we do not rely on
+  // the merge-start guard: any foreign bookkeeping the index holds is unstaged
+  // first, so a sibling's file can never ride the merge commit onto the branch
+  // (#1076).
   if (opts.taskId) {
     const filter = opts.filter ?? workFileFilter({});
     const foreign = await stagedForeignBookkeepingPaths(worktreePath, {
