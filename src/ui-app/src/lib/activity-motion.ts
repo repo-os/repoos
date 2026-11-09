@@ -5,6 +5,7 @@ const entries = new Set<Entry>();
 const pageVisible = ref(typeof document === "undefined" || document.visibilityState !== "hidden");
 const reduced = ref(false);
 let observer: IntersectionObserver | null = null;
+let observerConstructor: typeof IntersectionObserver | null = null;
 let media: MediaQueryList | null = null;
 
 function refresh(): void {
@@ -30,6 +31,7 @@ export function useActivityMotion(element: Ref<HTMLElement | null>, max: Ref<num
   let entry: Entry | null = null;
   let mounted = false;
   const bindElement = (el: HTMLElement | null): void => {
+    if (entry?.el === el) return;
     if (entry) {
       observer?.unobserve(entry.el);
       entries.delete(entry);
@@ -49,20 +51,27 @@ export function useActivityMotion(element: Ref<HTMLElement | null>, max: Ref<num
   onMounted(() => {
     mounted = true;
     pageVisible.value = document.visibilityState !== "hidden";
-    if (!media && typeof matchMedia !== "undefined") {
-      media = matchMedia("(prefers-reduced-motion: reduce)");
-      media.addEventListener?.("change", onMotion);
+    if (typeof matchMedia !== "undefined") {
+      const currentMedia = matchMedia("(prefers-reduced-motion: reduce)");
+      if (!media) {
+        media = currentMedia;
+        media.addEventListener?.("change", onMotion);
+      }
+      reduced.value = currentMedia.matches;
     }
-    reduced.value = media?.matches ?? false;
     document.addEventListener("visibilitychange", onVisibility);
     if (typeof IntersectionObserver !== "undefined") {
-      observer ??= new IntersectionObserver((records) => {
-        for (const record of records) {
-          const found = [...entries].find((candidate) => candidate.el === record.target);
-          if (found) found.visible = record.isIntersecting;
-        }
-        refresh();
-      });
+      if (observerConstructor !== IntersectionObserver) {
+        observer?.disconnect();
+        observerConstructor = IntersectionObserver;
+        observer = new IntersectionObserver((records) => {
+          for (const record of records) {
+            const found = [...entries].find((candidate) => candidate.el === record.target);
+            if (found) found.visible = record.isIntersecting;
+          }
+          refresh();
+        });
+      }
     }
     bindElement(element.value);
     refresh();
