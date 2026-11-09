@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -36,3 +37,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-09T07:58:10Z · status inbox→ready
 - 2026-11-09T19:57:02Z · status ready→active, branch
 - 2026-11-09T20:02:17Z · message_queued at 2026-11-09T20:02:17.663Z
+
