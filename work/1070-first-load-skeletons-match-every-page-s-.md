@@ -1,13 +1,8 @@
 ---
-updated_at: "2026-11-09T17:09:22Z"
-review_passes: 9
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — The shell removes its skeleton before the required content cross-fade can run.
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -16,6 +11,8 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
+updated_at: "2026-11-09T19:00:23Z"
+review_passes: 9
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -289,4 +286,18 @@ Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under
 - 2026-11-09T17:08:38Z · review_cli_override, review_model_override
 - 2026-11-09T17:09:21Z · note: review pass 9: needs some work
 - 2026-11-09T17:09:21Z · needs_input
-
+- 2026-11-09T17:21:47Z · status review→active
+- 2026-11-09T17:21:47Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T17:21:50Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T17:21:56Z · message_delivered: 1 message(s)
+- 2026-11-09T17:21:56Z · needs_input
+- 2026-11-09T17:21:57Z · message_queued at 2026-11-09T17:21:57.460Z
+- 2026-11-09T17:22:32Z · note: Returning to active to address review finding: shell skeleton unmounts before leave transition completes.
+- 2026-11-09T18:25:42Z · watchdog: restarting engineer after 63m with no live process
+- 2026-11-09T18:25:50Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T18:26:58Z · message_delivered: 1 message(s)
+- 2026-11-09T18:40:11Z · message_queued at 2026-11-09T18:40:11.262Z
+- 2026-11-09T18:40:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T18:45:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T19:00:14Z · note: adopted orphaned engineer pid 3069
+- 2026-11-09T19:00:23Z · body

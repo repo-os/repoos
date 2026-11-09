@@ -11,11 +11,11 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T17:12:50Z"
+updated_at: "2026-11-09T19:00:14Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
-dev_error_count: 6
+dev_error_count: 12
 ---
 ## Problem
 Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
@@ -96,3 +96,27 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T17:10:15Z · message_queued at 2026-11-09T17:10:15.129Z
 - 2026-11-09T17:10:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T17:12:50Z · body
+- 2026-11-09T17:15:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T17:39:49Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:39:49Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:39:53Z · needs_input
+- 2026-11-09T17:39:53Z · message_delivered: 1 message(s)
+- 2026-11-09T17:41:19Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:41:19Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:41:23Z · needs_input
+- 2026-11-09T17:42:49Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:42:49Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-09T17:52:49Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T17:54:19Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:54:19Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
+- 2026-11-09T18:04:20Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T18:05:56Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T18:05:56Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (5/3 crashes in 30m)
+- 2026-11-09T18:16:06Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T18:17:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T18:17:34Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-09T18:27:39Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T18:30:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The handoff wiring is correct and does run the restore inside `runHandoffFinalization`, before the check gate and review lock. The test does exercise it via `finalizeReviewHandoff`. Now let me assess the actual remaining work. Let me focus… · stderr: (empty)
+- 2026-11-09T18:35:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T18:51:40Z · body
+- 2026-11-09T19:00:14Z · note: adopted orphaned engineer pid 13123

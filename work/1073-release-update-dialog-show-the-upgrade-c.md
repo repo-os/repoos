@@ -11,10 +11,11 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T17:14:16Z"
+updated_at: "2026-11-09T19:00:14Z"
 last_check_failure: "repoos check at 2026-11-09T16:54:34.079Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — the page at / did not apply the fixture (is this the app target?) (http://127.0.0.1:53313/?shotState=release%3AupdateAvailable)"
 handoff_signal_retry_count: 2
-dev_error_count: 5
+dev_error_count: 11
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:43:38.290Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:55:20.214Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T18:06:51.403Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The dashboard already tells users when a newer RepoOS is available (`ReleaseUpdateNotification.vue`, data from `GET /api/release/available`): a banner, then a dialog with installed vs available version and the release notes. But the dialog's only action is an "Upgrade" button that just opens the GitHub release page. It never says how to actually upgrade, even though the answer is a single command.
@@ -139,3 +140,26 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T17:10:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T17:14:14Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-09T17:14:16Z · message_queued at 2026-11-09T17:14:16.120Z
+- 2026-11-09T17:15:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T17:20:17Z · message_delivered: 1 message(s)
+- 2026-11-09T17:20:20Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (light) (target "default"): highlight [data-test-id="release-upgrade-command"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target "default"): highlight [data-test-id="release-upgrade-command"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable)
+- 2026-11-09T17:25:40Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-09T17:25:40Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-09T17:27:09Z · needs_input
+- 2026-11-09T17:28:38Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-09T17:28:38Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (2/3 crashes in 30m) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-09T17:30:26Z · needs_input
+- 2026-11-09T17:32:01Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-09T17:32:01Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-09T17:42:03Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T17:43:38Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-09T17:43:38Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
+- 2026-11-09T17:53:49Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T17:55:20Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-09T17:55:20Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (5/3 crashes in 30m)
+- 2026-11-09T18:05:21Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T18:06:51Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report narrative is 1229 words; the hard limit is 1,200 words of narrative. Shorten it and request handoff again.. The same worktree can be resumed and retried.
+- 2026-11-09T18:06:51Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-09T18:16:51Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T18:26:54Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T19:00:14Z · note: adopted orphaned engineer pid 3045
