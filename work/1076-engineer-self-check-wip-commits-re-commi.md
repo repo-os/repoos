@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Model busy, retry later"
@@ -80,4 +80,3 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T14:16:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T14:21:55Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T14:24:32Z · agent exited with an error (opencode) · error: Model busy, retry later
-- 2026-11-09T14:24:32Z · status active→review
