@@ -2073,7 +2073,10 @@ export function gitInit(root: string): boolean {
  */
 export function gitCommitAll(root: string, message: string): string | null {
   if (git(root, ["add", "-A"]) === null) return null;
-  if (git(root, ["commit", "-m", message]) === null) return null;
+  // Pathspec `.` scopes the commit to the whole worktree (this is the scaffold
+  // flow, everything is being committed) while still excluding anything staged
+  // outside the working tree (#1076).
+  if (git(root, ["commit", "-m", message, "--", "."]) === null) return null;
   notifyGitMutation(root, "commit");
   return git(root, ["rev-parse", "--short", "HEAD"]);
 }
@@ -2477,9 +2480,12 @@ export async function dirtyFiles(root: string, opts: DirtyFilesOptions = {}): Pr
 export async function commitDirtyFiles(root: string, message: string): Promise<string[]> {
   const files = await dirtyFiles(root);
   if (files.length === 0) return [];
-  const add = await runGit(root, ["add", "-A"], 15_000);
+  // `add -A` then a pathspec-scoped commit of exactly these files: the index is
+  // cleared first so a path that was already staged by someone else cannot be
+  // swept into this commit under our message (#0353, #1076).
+  const add = await runGit(root, ["add", "-A", "--", ...files], 15_000);
   if (add.status !== 0) return [];
-  const commit = await runGit(root, ["commit", "-m", message], 15_000);
+  const commit = await runGit(root, ["commit", "-m", message, "--", ...files], 15_000);
   if (commit.status !== 0) return [];
   notifyGitMutation(root, "commit");
   return files;
@@ -2670,6 +2676,28 @@ export function foreignTaskBookkeepingPaths(
 }
 
 /**
+ * Another task's bookkeeping paths already STAGED in `worktree`'s index (#1076).
+ *
+ * The dirty-file list (`uncommittedWorkFiles`) discounts every `work/` path as
+ * generated/runtime, so a foreign `work/<other-id>-*.md` left staged by an
+ * earlier `git add -A` is invisible there and survives into the next bare
+ * commit. This reads the index directly (`git diff --cached --name-only`), so a
+ * commit boundary can reset exactly the foreign paths the index holds.
+ */
+export async function stagedForeignBookkeepingPaths(
+  worktree: string,
+  filter: WorkFileFilter & { taskId: string },
+): Promise<string[]> {
+  const res = await runGit(worktree, ["diff", "--cached", "--name-only"], 15_000);
+  if (res.status !== 0) return [];
+  const staged = res.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return foreignTaskBookkeepingPaths(staged, filter);
+}
+
+/**
  * Restore main's copy of another task's `work/` bookkeeping that a task branch
  * has committed or staged (#1076), so the branch's diff against main is only
  * ever this task's own files.
@@ -2696,9 +2724,25 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
   workDir?: string;
 }): Promise<string[]> {
   const workDir = opts.workDir ?? "work";
-  const baseFull = (
-    await runGit(opts.worktree, ["merge-base", opts.baseBranch, "HEAD"], 15_000)
-  ).stdout.trim();
+  // Prefer the branch's recorded base (`branch.<name>.merge-base`, written when
+  // RepoOS cut the worktree). The caller's `currentBranch()` of the MAIN
+  // checkout is only a fallback: if main is checked out on another branch the
+  // merge-base would be computed from the wrong tip and a foreign file present
+  // in both trees could be missed.
+  const branchName = (await runGit(opts.worktree, ["branch", "--show-current"], 10_000)).stdout
+    .trim();
+  const configuredBase = branchName
+    ? (
+        await runGit(
+          opts.worktree,
+          ["config", "--get", `branch.${branchName}.merge-base`],
+          5_000,
+        )
+      ).stdout.trim()
+    : "";
+  const baseFull =
+    configuredBase ||
+    (await runGit(opts.worktree, ["merge-base", opts.baseBranch, "HEAD"], 15_000)).stdout.trim();
   if (!baseFull) return [];
   const changed = await runGit(
     opts.worktree,
@@ -2733,19 +2777,33 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
     await runGit(opts.worktree, ["add", "--", ...onMain], 10_000);
   }
   if (addedByBranch.length > 0) {
-    const removed = await runGit(opts.worktree, ["rm", "-q", "--", ...addedByBranch], 10_000);
+    // `-f`: a branch-added sibling can also have a dirty working-tree copy (a
+    // board write lands after the branch added it). Plain `git rm` refuses
+    // ("has local modifications") and would abort the handoff on the very drift
+    // this restores — force it, since a task never keeps another task's
+    // bookkeeping anyway.
+    const removed = await runGit(opts.worktree, ["rm", "-qf", "--", ...addedByBranch], 10_000);
     if (removed.status !== 0) {
       throw new Error(`could not drop stray bookkeeping files: ${removed.stderr.trim()}`);
     }
   }
-  const staged = await runGit(opts.worktree, ["diff", "--cached", "--quiet"], 10_000);
+  const staged = await runGit(
+    opts.worktree,
+    ["diff", "--cached", "--quiet", "--", ...foreign],
+    10_000,
+  );
   if (staged.status !== 1) return [];
+  // Pathspec-scoped commit: only the foreign paths are committed, so anything
+  // else the index happened to hold (the task's own staged work, a stray
+  // `git add -A`) is left exactly as it was for the commit gate to handle.
   const commit = await runGit(
     opts.worktree,
     [
       "commit",
       "-m",
       `chore(#${opts.taskId}): restore main's copy of ${foreign.length} other task's bookkeeping file(s)`,
+      "--",
+      ...foreign,
     ],
     20_000,
   );

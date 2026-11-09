@@ -16,6 +16,7 @@ import { loadConfig } from "../core/config.js";
 import {
   foreignTaskBookkeepingPaths,
   runGit,
+  stagedForeignBookkeepingPaths,
   uncommittedWorkFiles,
   workFileFilter,
 } from "../core/git.js";
@@ -94,13 +95,25 @@ export async function commitWipCheckpointForRemoteGate(
   } catch {
     return "could not read git status before remote self-check";
   }
-  if (dirty.length === 0) return null;
   // #1076: a sibling task's `work/<other-id>-*.md` / `work/reports/<other-id>/**`
   // can be dirty (or already staged) in this worktree because the server writes
   // board bookkeeping here. A bare `git commit` would fold whatever is staged
   // into this branch and the landing preflight then rejects it. Drop those paths
   // from the index and never name them in the commit.
-  const foreign = foreignTaskBookkeepingPaths(dirty, { ...workFileFilter(config), taskId });
+  //
+  // The staged set must be read from the INDEX, not the dirty list:
+  // `uncommittedWorkFiles` filters every `work/` path out as generated/runtime,
+  // so `dirty` never contains one and a foreign path left staged by an earlier
+  // `git add -A` would stay in the index for the next bare commit to sweep in.
+  const foreignFromDirty = foreignTaskBookkeepingPaths(dirty, {
+    ...workFileFilter(config),
+    taskId,
+  });
+  const foreignStaged = await stagedForeignBookkeepingPaths(worktreePath, {
+    ...workFileFilter(config),
+    taskId,
+  });
+  const foreign = [...new Set([...foreignFromDirty, ...foreignStaged])];
   const toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL && !foreign.includes(p));
   if (foreign.length > 0) {
     const unstage = await runGit(

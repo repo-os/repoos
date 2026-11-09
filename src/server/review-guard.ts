@@ -23,7 +23,7 @@
 import { existsSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import { runGit, agentTouchedFiles } from "../core/git.js";
+import { runGit, agentTouchedFiles, foreignTaskBookkeepingPaths } from "../core/git.js";
 import { REPOOS_TOML_REL, taskDeclaresRepoosTomlWork } from "../core/repoos-toml-branch-guard.js";
 import { isOwnReportPath } from "../core/report-paths.js";
 import { getGitWorker } from "./git-worker.js";
@@ -145,21 +145,27 @@ export async function guardReviewTransition(
       };
     }
   }
-  // Drop any OTHER task's work/*.md from this commit. A concurrent board write,
-  // a `repoos` CLI call, or a stale merge can leave a sibling task file dirty in
-  // the worktree, and the `git add -A` above folds it into this task's
-  // "implement" commit — which then publishes to main on close-out (observed:
-  // #0319 landed #0202/#0275 frontmatter drift). Only this task's own file
-  // (already unstaged above) and its own report files (#1013) are the handoff's
-  // to carry.
-  const stagedWorkFiles = (
+  // Drop any OTHER task's bookkeeping from this commit. A concurrent board
+  // write, a `repoos` CLI call, or a stale merge can leave a sibling task file
+  // (or report — `.json` as well as `.md`) dirty in the worktree, and the
+  // `git add -A` above folds it into this task's "implement" commit — which
+  // then publishes to main on close-out (observed: #0319 landed #0202/#0275
+  // frontmatter drift). Only this task's own file (already unstaged above) and
+  // its own report files (#1013) are the handoff's to carry. Use the shared
+  // `foreignTaskBookkeepingPaths` rule so `.json` reports and legacy report dirs
+  // are covered, not just `work/*.md` (#1076).
+  const stagedInWork = (
     await runGit(registered, ["diff", "--cached", "--name-only", "--", config.workDir], 10_000)
   ).stdout
     .split("\n")
     .map((s) => s.trim())
-    .filter(
-      (p) => p && p.endsWith(".md") && p !== task.path && !isOwnReportPath(p, config, task.id),
-    );
+    .filter(Boolean)
+    .filter((p) => p !== task.path && !isOwnReportPath(p, config, task.id));
+  const stagedWorkFiles = foreignTaskBookkeepingPaths(stagedInWork, {
+    workDir: config.workDir,
+    cacheDir: config.cacheDir,
+    taskId: task.id,
+  });
   if (stagedWorkFiles.length > 0) {
     const unstageForeign = await runGit(
       registered,
@@ -175,11 +181,33 @@ export async function guardReviewTransition(
   }
   const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
   if (staged.status === 1) {
-    const commit = await runGit(
-      registered,
-      ["commit", "-m", `feat(${task.id}): implement ${task.title}`],
-      30_000,
-    );
+    // Pathspec-scoped: commit only the tracked implementation paths the index
+    // holds, so a foreign bookkeeping path that slipped in between the reset
+    // and here can still never ride this commit (#1076). `dist` and the task's
+    // own file were already unstaged above.
+    const stagedPaths = (
+      await runGit(registered, ["diff", "--cached", "--name-only"], 10_000)
+    ).stdout
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const commit = stagedPaths.length
+      ? await runGit(
+          registered,
+          [
+            "commit",
+            "-m",
+            `feat(${task.id}): implement ${task.title}`,
+            "--",
+            ...stagedPaths,
+          ],
+          30_000,
+        )
+      : await runGit(
+          registered,
+          ["commit", "-m", `feat(${task.id}): implement ${task.title}`],
+          30_000,
+        );
     if (commit.status !== 0) return { ok: false, detail: `git commit failed: ${concise(commit)}` };
   } else if (staged.status !== 0) {
     return { ok: false, detail: `could not inspect staged changes: ${concise(staged)}` };

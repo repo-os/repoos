@@ -9,7 +9,7 @@
  * diff changes another task's bookkeeping".
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -135,6 +135,76 @@ describe("restoreForeignTaskBookkeepingFromMain (#1076)", () => {
           bookkeeping: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
         }).status,
       ).toBe("pass");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("removes a dirty branch-added sibling without throwing (#1076 round 2)", async () => {
+    const fx = repoWithTaskBranch();
+    try {
+      // The branch ADDED a sibling file (so it is not at the base) and the
+      // server then wrote it again, leaving a dirty working-tree copy. Plain
+      // `git rm` refuses on a dirty copy; the restore must force it.
+      writeFileSync(join(fx.wt, "src.ts"), "export const v = 5;\n");
+      writeFileSync(join(fx.wt, "work", "2002-stray.md"), '---\nid: "2002"\n---\nbranch copy\n');
+      git(fx.wt, ["add", "work/2002-stray.md", "src.ts"]);
+      git(fx.wt, ["commit", "-q", "-m", "feat(1076): add stray sibling"]);
+      writeFileSync(join(fx.wt, "work", "2002-stray.md"), '---\nid: "2002"\n---\nboard write\n');
+
+      const restored = await restoreForeignTaskBookkeepingFromMain({
+        worktree: fx.wt,
+        baseBranch: "main",
+        taskId: TASK_ID,
+        ownTaskFile: OWN_FILE,
+        workDir: "work",
+      });
+
+      expect(restored).toEqual(["work/2002-stray.md"]);
+      expect(existsSync(join(fx.wt, "work", "2002-stray.md"))).toBe(false);
+      expect(git(fx.wt, ["status", "--porcelain"])).toBe("");
+      const changed = git(fx.wt, ["diff", "--name-only", "main...HEAD"]).split("\n").filter(Boolean);
+      expect(changed).not.toContain("work/2002-stray.md");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("leaves the task's own staged work untouched while restoring committed drift (#1076 round 2)", async () => {
+    const fx = repoWithTaskBranch();
+    try {
+      // The branch committed a sibling's bookkeeping (the drift the restore
+      // heals) AND the task's own source change is left staged-but-uncommitted
+      // — the pathspec-scoped restore commit must not sweep it in.
+      writeFileSync(join(fx.wt, "src.ts"), "export const v = 6;\n");
+      git(fx.wt, ["add", "src.ts"]);
+      git(fx.wt, ["commit", "-q", "-m", "feat(1076): own work in progress"]);
+      writeFileSync(join(fx.wt, "work", "2000-other.md"), '---\nid: "2000"\n---\nDRIFT\n');
+      git(fx.wt, ["add", "work/2000-other.md"]);
+      git(fx.wt, ["commit", "-q", "-m", "feat(1076): stray sibling committed"]);
+      // A further own-work edit stays staged while the restore runs.
+      writeFileSync(join(fx.wt, "src.ts"), "export const v = 7;\n");
+      git(fx.wt, ["add", "src.ts"]);
+
+      const restored = await restoreForeignTaskBookkeepingFromMain({
+        worktree: fx.wt,
+        baseBranch: "main",
+        taskId: TASK_ID,
+        ownTaskFile: OWN_FILE,
+        workDir: "work",
+      });
+
+      expect(restored).toEqual(["work/2000-other.md"]);
+      // The restore commit carries only the foreign path; the task's own staged
+      // source edit is still staged, not committed by the restore.
+      const committed = git(fx.wt, ["show", "--name-only", "--format=", "HEAD"])
+        .split("\n")
+        .filter(Boolean);
+      expect(committed).toEqual(["work/2000-other.md"]);
+      const stillStaged = git(fx.wt, ["diff", "--cached", "--name-only"])
+        .split("\n")
+        .filter(Boolean);
+      expect(stillStaged).toContain("src.ts");
     } finally {
       fx.clean();
     }
