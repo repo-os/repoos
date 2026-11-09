@@ -6,7 +6,10 @@ import {
   compatibleCheckSnapshots,
   type CheckSnapshot,
 } from "../core/check-reuse.js";
-import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
+import {
+  checkGateBookkeepingPrefix,
+  checkGateHeadDriftAllowed,
+} from "../core/check-gate-bookkeeping.js";
 import { STEP_TIMING_MARKER, type CheckStepTiming } from "../core/check-timings.js";
 /**
  * `repoos check` — the definition-of-done gate.
@@ -1914,6 +1917,64 @@ export function changedPathsSince(repoRoot: string, ref: string): string[] | nul
   return [...new Set(lists.flatMap((list) => list ?? []))];
 }
 
+type TrackedSourceSnapshot = Map<string, string>;
+
+/** Snapshot tracked worktree changes relative to HEAD, ignoring bookkeeping roots. */
+async function trackedSourceSnapshot(
+  repoRoot: string,
+  cfg: RepoOSConfig,
+): Promise<TrackedSourceSnapshot | null> {
+  const { work, cache } = checkGateBookkeepingPrefix(cfg);
+  const result = await runGit(
+    repoRoot,
+    [
+      "diff",
+      "--raw",
+      "--no-abbrev",
+      "--no-renames",
+      "-z",
+      "HEAD",
+      "--",
+      ".",
+      `:(exclude)${work}**`,
+      `:(exclude)${cache}**`,
+    ],
+    15_000,
+  );
+  if (result.status !== 0) return null;
+  const fields = result.stdout.split("\0");
+  const snapshot = new Map<string, string>();
+  for (let i = 0; i + 1 < fields.length && fields[i]; i += 2) {
+    const metadata = fields[i]!;
+    const path = fields[i + 1]!;
+    if (!metadata.startsWith(":") || !path) return null;
+    snapshot.set(path, metadata);
+  }
+  return snapshot;
+}
+
+function trackedSourceSnapshotDrift(
+  before: TrackedSourceSnapshot | null,
+  after: TrackedSourceSnapshot | null,
+): { ok: true } | { ok: false; reason: string; paths: string[] } {
+  if (!before || !after) {
+    return {
+      ok: false,
+      reason: "Could not compare tracked source files before and after the check.",
+      paths: ["<paths unavailable>"],
+    };
+  }
+  const changedPaths = [...new Set([...before.keys(), ...after.keys()])].filter(
+    (path) => before.get(path) !== after.get(path),
+  );
+  if (changedPaths.length === 0) return { ok: true };
+  return {
+    ok: false,
+    reason: `Tracked source files changed in the working tree during the check: ${changedPaths.join(", ")}`,
+    paths: changedPaths,
+  };
+}
+
 function planSourceLabel(plan: CheckPlan): string {
   switch (plan.source) {
     case "declared":
@@ -2418,6 +2479,7 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
     });
     if (!selfCheckLock.ok) throw new Error(selfCheckLock.reason);
   }
+  const trackedSourceAtStart = gateTaskId ? await trackedSourceSnapshot(repoRoot, cfg) : null;
   let remoteTestsPassed = false;
   // The plan never runs when the remote gate fails, so the normal end-of-run
   // record is never written: persist the failure for the Checks surface too,
@@ -2693,6 +2755,24 @@ export async function cmdCheck(argv: string[] = []): Promise<void> {
         checkHeadAtStart,
         endHead.status === 0 ? endHead.stdout.trim() : "<HEAD unavailable>",
       );
+      const sourceTreeDrift = trackedSourceSnapshotDrift(
+        trackedSourceAtStart,
+        await trackedSourceSnapshot(repoRoot, cfg),
+      );
+      if (!sourceTreeDrift.ok) {
+        gateDriftResult = {
+          ok: false,
+          reason: [!gateDriftResult.ok ? gateDriftResult.reason : "", sourceTreeDrift.reason]
+            .filter(Boolean)
+            .join("; "),
+          affectingPaths: [
+            ...new Set([
+              ...(!gateDriftResult.ok ? (gateDriftResult.affectingPaths ?? []) : []),
+              ...sourceTreeDrift.paths,
+            ]),
+          ],
+        };
+      }
       if (!gateDriftResult.ok) {
         const result: StepRunResult = {
           name: "worktree-drift",

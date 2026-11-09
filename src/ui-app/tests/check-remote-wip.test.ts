@@ -87,6 +87,8 @@ function unmanagedTaskCheckFixture(command = "test -f .repoos/check-gate-locks/0
   gitInit(root);
   mkdirSync(join(root, "src"), { recursive: true });
   writeFileSync(join(root, "src", "app.ts"), "initial\n");
+  execFileSync("git", ["add", "src/app.ts"], { cwd: root, stdio: "ignore" });
+  execFileSync("git", ["commit", "-qm", "source fixture"], { cwd: root, stdio: "ignore" });
   execFileSync("git", ["branch", "-m", "feat/0695"], { cwd: root, stdio: "ignore" });
   mkdirSync(join(root, "work"), { recursive: true });
   writeFileSync(
@@ -251,7 +253,7 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
 
   it("fails a direct task self-check when a source commit lands during the plan (#1061)", async () => {
     const root = unmanagedTaskCheckFixture(
-      "printf changed >> src/app.ts && git add src/app.ts && git commit -m 'source changed during check'",
+      "chmod u+w src/app.ts && printf changed >> src/app.ts && git add src/app.ts && git commit -m 'source changed during check'",
     );
     const { code, logs: out } = await runManagedCheck(root, false);
     expect(code).toBe(1);
@@ -260,5 +262,21 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     expect(out).toContain("src/app.ts");
     expect(out).toContain("1 check(s) failed");
     expect(existsSync(join(root, ".repoos", "check-gate-locks", "0695.json"))).toBe(false);
-  });
+  }, 30_000);
+
+  it("fails a direct task check when tracked source is edited without a commit (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture("chmod u+w src/app.ts && printf changed >> src/app.ts");
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(1);
+    expect(out).toContain("Tracked source files changed in the working tree during the check");
+    expect(out).toContain("src/app.ts");
+    expect(out).not.toContain("All checks passed");
+  }, 30_000);
+
+  it("allows a bookkeeping-only tracked edit during a direct task check (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture("printf bookkeeping >> work/0695-task.md");
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(0);
+    expect(out).toContain("All checks passed");
+  }, 30_000);
 });
