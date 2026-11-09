@@ -31,6 +31,11 @@ const ImmediateSkeletonHarness = defineComponent({
   props: { loading: { type: Boolean, required: true } },
   template: '<PageSkeleton kind="rows" :loading="loading" />',
 });
+const LoadingShellTransitionHarness = defineComponent({
+  props: { loading: { type: Boolean, required: true } },
+  template:
+    '<Transition name="page-loading-shell"><div v-if="loading" class="page-loading">Loading</div><div v-else class="page-content">Content</div></Transition>',
+});
 
 describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
@@ -43,7 +48,21 @@ describe("repo loading skeleton", () => {
     expect(appVue).toContain('@visibility-change="showRepoSkeleton = $event"');
     expect(appVue).toMatch(/:loading="repo\.loading"\s+defer/);
     expect(appVue).not.toContain("skeletonDelay");
+    expect(appVue).toContain('<Transition name="page-loading-shell">');
     expect(appVue).toMatch(/<RouterView v-else class="main-route"\s*\/>/);
+  });
+
+  it("keeps the loading shell in its leave transition until content enters", async () => {
+    const wrapper = mount(LoadingShellTransitionHarness, {
+      props: { loading: true },
+      attachTo: document.body,
+    });
+    await wrapper.setProps({ loading: false });
+    const leavingShell = document.querySelector(".page-loading");
+    expect(leavingShell).not.toBeNull();
+    expect(leavingShell?.classList.contains("page-loading-shell-leave-active")).toBe(true);
+    expect(wrapper.find(".page-content").exists()).toBe(true);
+    wrapper.unmount();
   });
 
   it("picks a board for /work and rows for list pages", () => {
