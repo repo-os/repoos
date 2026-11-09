@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -12,7 +11,8 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-09T23:33:02Z"
+updated_at: "2026-11-09T23:35:40Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -55,4 +55,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-09T23:27:41Z · cli_override, model_override
 - 2026-11-09T23:27:46Z · status ready→active, branch
 - 2026-11-09T23:33:02Z · message_queued at 2026-11-09T23:33:02.755Z
-
+- 2026-11-09T23:35:40Z · CTO nudge: held — an undelivered message is already queued
