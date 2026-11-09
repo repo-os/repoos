@@ -6483,7 +6483,7 @@ export class TailscaleRunner implements RemoteValidator {
     if (killTimedOut) {
       this.pool.markUnhealthy(
         opts.host.ip,
-        `hang kill for #${opts.taskId} timed out after ${this.timings.hangKillTimeoutMs / 1000}s — slot released`,
+        `hang kill for #${opts.taskId} timed out after ${this.timings.hangKillTimeoutMs / 1000}s`,
       );
       this.logger?.system(
         "warn",
@@ -6499,9 +6499,10 @@ export class TailscaleRunner implements RemoteValidator {
         `remote validation hang kill for #${opts.taskId} on ${opts.host.ip} failed (exit ${killCode})`,
       );
     }
+    if (!removed) return;
     opts.abortMain();
     opts.releaseSlot();
-    opts.settleMain(removed);
+    opts.settleMain(true);
   }
 
   /**
