@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-09T22:50:40Z"
+updated_at: "2026-11-09T22:51:41Z"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -53,3 +53,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-09T22:28:23Z · status ready→active, branch
 - 2026-11-09T22:50:40Z · message_queued at 2026-11-09T22:50:40.314Z
 - 2026-11-09T22:50:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T22:51:41Z · CTO nudge: held — an undelivered message is already queued
