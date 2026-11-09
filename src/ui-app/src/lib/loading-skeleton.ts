@@ -13,25 +13,20 @@ export type LoadingSkeletonKind =
 export const SKELETON_SHOW_DELAY_MS = 180;
 export const SKELETON_MIN_VISIBLE_MS = 350;
 
-/** Minimal representative blocks for content that is not available yet. */
-export const MISSION_CONTROL_PLACEHOLDER_COUNT = 1;
-export const PAGE_CARD_PLACEHOLDER_COUNT = 1;
-export const PAGE_TABLE_PLACEHOLDER_COUNT = 1;
-export const PAGE_ROW_PLACEHOLDER_COUNT = 1;
-export const DEV_TARGET_PLACEHOLDER_COUNT = 1;
-export const DEPLOYMENT_SERVICE_PLACEHOLDER_COUNT = 1;
+/** Default placeholder counts mirror each route's real content shape. */
+export const LOADING_SKELETON_ITEM_COUNTS = {
+  dashboard: 1, // Mission Control uses one full-width representative content block.
+  cards: 1, // Agents and Releases use one representative card before data loads.
+  table: 5, // Checks and Secrets show compact table-like rows.
+  rows: 1, // Stories uses one representative story row before its list loads.
+  targets: 2, // Dev targets use a two-column card layout at desktop widths.
+  deployments: 3, // Deployments use service rows beside their branch matrix.
+} as const satisfies Partial<Record<LoadingSkeletonKind, number>>;
+
+/** One representative branch column for the deployment matrix. */
 export const DEPLOYMENT_BRANCH_PLACEHOLDER_COUNT = 1;
 /** Must stay aligned with `.board` in style.css. */
 export const BOARD_MEDIUM_BREAKPOINT_PX = 1250;
-
-export const LOADING_SKELETON_ITEM_COUNTS = {
-  dashboard: MISSION_CONTROL_PLACEHOLDER_COUNT,
-  cards: PAGE_CARD_PLACEHOLDER_COUNT,
-  table: PAGE_TABLE_PLACEHOLDER_COUNT,
-  rows: PAGE_ROW_PLACEHOLDER_COUNT,
-  targets: DEV_TARGET_PLACEHOLDER_COUNT,
-  deployments: DEPLOYMENT_SERVICE_PLACEHOLDER_COUNT,
-} as const satisfies Partial<Record<LoadingSkeletonKind, number>>;
 
 /** Every routed path the app shell can open while the repo index loads. */
 export const LOADING_SKELETON_ROUTES = [
