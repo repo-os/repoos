@@ -3355,41 +3355,6 @@ describe("pool hung-run bookkeeping (#0729)", () => {
 });
 
 describe("hung run recovery end to end (#0729)", () => {
-  it.each([
-    { code: 1, output: "docker error", timedOut: false },
-    { code: null, output: "", timedOut: true },
-  ])("keeps a hung run and its files when watchdog removal fails: $code", async (response) => {
-    const f = poolFixture({ hosts: [{ host: "a" }] });
-    const original = vi.mocked(f.exec.runRemote).getMockImplementation()!;
-    vi.mocked(f.exec.runRemote).mockImplementation((host, cmd, ...args) =>
-      cmd.startsWith("out=$(docker rm -f ")
-        ? Promise.resolve(response)
-        : original(host, cmd, ...args),
-    );
-    const abortMain = vi.fn();
-    const releaseSlot = vi.fn();
-    const settleMain = vi.fn();
-    await f.runner["finalizeHungKill"]({
-      host: { ip: "a", user: "nick" },
-      containerName: "repoos-validate-1060-test",
-      paths: remoteRunPaths("1060", "test"),
-      taskId: "1060",
-      abortMain,
-      releaseSlot,
-      settleMain,
-    });
-    expect(f.cleanupCmds).toHaveLength(0);
-    expect(abortMain).not.toHaveBeenCalled();
-    expect(releaseSlot).not.toHaveBeenCalled();
-    expect(settleMain).not.toHaveBeenCalled();
-    expect(
-      readRemoteValidationEvents(f.root, "1060").some((event) =>
-        event.message.includes("failed to kill"),
-      ),
-    ).toBe(true);
-    await f.runner.dispose();
-  });
-
   it("shows hung · killing on the active run while the kill SSH is still pending (#0735)", async () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
@@ -3546,42 +3511,10 @@ describe("hung run recovery end to end (#0729)", () => {
     await resultPromise;
   });
 
-  it("releases the slot when hang kill SSH never resolves (hard deadline) (#0739)", async () => {
-    const f = poolFixture({
-      hosts: [{ host: "a" }],
-      fixedLoad: 0,
-      hangIdleMinutes: 0.0005,
-      hangCheckIntervalMs: 15,
-      loadSampleIntervalMs: 10,
-      hangKillNeverResolves: true,
-    });
-    const runner = new TailscaleRunner(f.config, undefined, {
-      exec: f.exec,
-      timings: {
-        healthRetryMs: 40,
-        probeTimeoutMs: 1_000,
-        hangIdleMinutes: 0.0005,
-        hangCheckIntervalMs: 15,
-        loadSampleIntervalMs: 10,
-        hangKillTimeoutMs: 50,
-      },
-    });
-    for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
-    const resultPromise = runner.validate(opts("0739-never"));
-    let attempts = 0;
-    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
-    for (let i = 0; i < 40; i++) {
-      if ((runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) break;
-      await tick(10);
-    }
-    expect(runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
-    await resultPromise;
-  });
-
   it.each([
     { failure: "nonzero exit", options: { hangKillFails: true } },
     { failure: "timeout", options: { hangKillNeverResolves: true } },
-  ])("preserves run files and reports a failed hung removal: $failure", async ({ options }) => {
+  ])("retains a hung run when watchdog removal fails: $failure", async ({ options }) => {
     const f = poolFixture({ hosts: [{ host: "a" }], ...options });
     const runner = new TailscaleRunner(f.config, undefined, {
       exec: f.exec,
@@ -3595,12 +3528,31 @@ describe("hung run recovery end to end (#0729)", () => {
       },
     });
     for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
-    const result = await runner.validate(opts("1060-hung-failure"));
-    expect(result.hung).toBe(true);
-    expect(result.detail).toMatch(/could not be confirmed removed/);
-    expect(result.detail).not.toMatch(/was removed/);
+    const result = runner.validate(opts("1060-hung-failure"));
+    let settled = false;
+    void result.then(() => {
+      settled = true;
+    });
+    for (
+      let i = 0;
+      i < 200 &&
+      !readRemoteValidationEvents(f.root, "1060-hung-failure").some((e) =>
+        e.message.includes("failed to kill"),
+      );
+      i++
+    )
+      await tick(5);
+    expect(
+      readRemoteValidationEvents(f.root, "1060-hung-failure").some((e) =>
+        e.message.includes("failed to kill"),
+      ),
+    ).toBe(true);
     expect(f.cleanupCmds).toHaveLength(0);
+    expect(runner.hostStatus()?.[0]?.activeRuns).toHaveLength(1);
     expect(runner.hostStatus()?.[0]?.healthy).toBe(false);
+    expect(settled).toBe(false);
+    f.release();
+    await result;
     await runner.dispose();
     await f.runner.dispose();
   });
@@ -3650,39 +3602,6 @@ describe("hung run recovery end to end (#0729)", () => {
     const host = { ip: "a", user: "u" };
     const res = await execRemoteWithHardDeadline(exec, host, "true", () => {}, 40);
     expect(res.timedOut).toBe(true);
-  });
-
-  it("releases the slot when hang kill SSH times out and marks the host degraded (#0739)", async () => {
-    const f = poolFixture({
-      hosts: [{ host: "a" }],
-      fixedLoad: 0,
-      hangIdleMinutes: 0.0005,
-      hangCheckIntervalMs: 15,
-      loadSampleIntervalMs: 10,
-      hangKillNeverCompletes: true,
-    });
-    const runner = new TailscaleRunner(f.config, undefined, {
-      exec: f.exec,
-      timings: {
-        healthRetryMs: 40,
-        probeTimeoutMs: 1_000,
-        hangIdleMinutes: 0.0005,
-        hangCheckIntervalMs: 15,
-        loadSampleIntervalMs: 10,
-        hangKillTimeoutMs: 50,
-      },
-    });
-    for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
-    const resultPromise = runner.validate(opts("0739-timeout"));
-    let attempts = 0;
-    while (attempts++ < 200 && f.killed.length === 0) await tick(5);
-    for (let i = 0; i < 40; i++) {
-      if ((runner.hostStatus()?.[0]?.activeRuns ?? []).length === 0) break;
-      await tick(10);
-    }
-    expect(runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
-    expect(runner.hostStatus()?.[0]?.healthy).toBe(false);
-    await resultPromise;
   });
 
   it("does not classify a run as hung after the gate has exited (#0739)", async () => {
