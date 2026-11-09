@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T14:56:48Z"
+updated_at: "2026-11-09T15:12:31Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
@@ -81,3 +81,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T14:34:33Z · message_delivered: 1 message(s)
 - 2026-11-09T14:40:15Z · agent exited with an error (opencode) · ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.
 - 2026-11-09T14:56:48Z · watchdog: restarting engineer after 17m with no live process
+- 2026-11-09T15:12:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: PID 20806 (`claude -p --resume`, haiku) is STILL running (14:25 elapsed). This is the **reviewer agent** for #1076, and it's concurrently active in this worktree. That's very likely what modified `done.ts` (as part of its review, it may ha… · stderr: (empty)
