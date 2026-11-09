@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T21:00:40Z"
+updated_at: "2026-11-09T21:01:38Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -139,3 +139,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T20:46:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check passes. The tests step is deferred to the remote validation runner (which is the normal path — RepoOS runs the full suite server-side). I've already run the task's own tests directly and all pass (34 + 11). Let me do a final stat… · stderr: (empty)
 - 2026-11-09T20:57:42Z · message_delivered: 3 message(s)
 - 2026-11-09T21:00:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T21:01:38Z · status active→review
