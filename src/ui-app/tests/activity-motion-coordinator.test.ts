@@ -19,6 +19,9 @@ class FakeIntersectionObserver {
   unobserve(target: Element): void {
     this.targets.delete(target);
   }
+  disconnect(): void {
+    this.targets.clear();
+  }
   trigger(target: Element, isIntersecting: boolean): void {
     this.callback([{ target, isIntersecting }]);
   }
