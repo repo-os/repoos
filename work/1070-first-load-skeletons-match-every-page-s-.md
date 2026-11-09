@@ -193,3 +193,4 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 - 2026-11-09T11:55:21Z · body: Accepted scope: per-view exit timing (added)
 - 2026-11-09T11:55:22Z · status review→active
 - 2026-11-09T11:55:22Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T11:55:24Z · CTO nudge: held — an undelivered message is already queued
