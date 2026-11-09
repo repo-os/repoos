@@ -419,3 +419,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T06:56:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The retry passed remote validation, including the full scoped suite and UI smoke. The local gate then found a formatting issue and skipped the build because formatting was not clean. I’m applying the repo formatter as instructed, then I’ll… · stderr: Reading additional input from stdin... 2026-11-09T06:15:21.380829Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 8063
 - 2026-11-09T06:56:17Z · status active→review
 - 2026-11-09T06:56:17Z · message_delivered: 1 message(s)
+- 2026-11-09T06:56:18Z · note: handoff requested (cli)
