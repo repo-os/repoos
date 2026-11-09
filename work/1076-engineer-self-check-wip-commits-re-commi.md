@@ -11,9 +11,11 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T13:15:58Z"
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-09T09:15:28.830Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T09:27:01.983Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T09:29:56.348Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-09T15:13:20Z"
+review_rounds: 2
+review_passes: 2
+handoff_signal_retry_count: 2
+dev_error_count: 6
 ---
 ## Problem
 Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
@@ -53,3 +55,33 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T10:09:40Z · body
 - 2026-11-09T10:43:15Z · body
 - 2026-11-09T13:15:58Z · released
+- 2026-11-09T13:21:01Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T13:21:02Z · note: handoff requested (cli)
+- 2026-11-09T13:21:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T13:31:11Z · status active→review
+- 2026-11-09T13:31:12Z · message_queued at 2026-11-09T13:31:12.026Z
+- 2026-11-09T13:31:12Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-09T13:32:29Z · note: review pass 1: needs some work
+- 2026-11-09T13:32:29Z · status review→active
+- 2026-11-09T13:32:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T13:37:49Z · message_queued at 2026-11-09T13:37:49.877Z
+- 2026-11-09T13:42:15Z · body
+- 2026-11-09T13:47:34Z · message_queued at 2026-11-09T13:47:34.906Z
+- 2026-11-09T13:52:03Z · message_delivered: 1 message(s)
+- 2026-11-09T13:58:41Z · agent exited with an error (opencode) · error: Model busy, retry later
+- 2026-11-09T13:58:41Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · error: Model busy, retry later
+- 2026-11-09T14:02:24Z · needs_input
+- 2026-11-09T14:02:24Z · message_delivered: 2 message(s)
+- 2026-11-09T14:16:55Z · message_queued at 2026-11-09T14:16:55.723Z
+- 2026-11-09T14:16:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T14:21:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T14:24:32Z · agent exited with an error (opencode) · error: Model busy, retry later
+- 2026-11-09T14:34:32Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T14:34:33Z · message_delivered: 1 message(s)
+- 2026-11-09T14:40:15Z · agent exited with an error (opencode) · ✗ Review request ignored: the last engineer turn exited with an error and never emitted its handoff signal. The task stays active and the engineer is resumed.
+- 2026-11-09T14:56:48Z · watchdog: restarting engineer after 17m with no live process
+- 2026-11-09T15:12:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: PID 20806 (`claude -p --resume`, haiku) is STILL running (14:25 elapsed). This is the **reviewer agent** for #1076, and it's concurrently active in this worktree. That's very likely what modified `done.ts` (as part of its review, it may ha… · stderr: (empty)
+- 2026-11-09T15:12:31Z · status active→review
+- 2026-11-09T15:12:31Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-09T15:13:20Z · note: review pass 2: needs some work
+- 2026-11-09T15:13:20Z · status review→active

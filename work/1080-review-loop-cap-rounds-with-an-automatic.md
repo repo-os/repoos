@@ -11,7 +11,8 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T13:16:58Z"
+updated_at: "2026-11-09T15:15:14Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 Tasks routinely take 10-15 review rounds (#1058, #1060, #1061 each took 15; #1070 is at 4+). Each round is 20-40 minutes. Rounds are dominated by narrow edge cases found one at a time, reviewer bars that drift between rounds, and housekeeping failures, not by real defects in the change. The review prompt (`src/server/review.ts`) already says to report the whole bug class in one pass and never hold an instance back, and `review.humanFlagAfterPasses` (default 5) only flags needs-input; neither stops the loop.
@@ -44,3 +45,22 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T13:16:58Z · body: Priority and slicing (owner, 2026-11-09 night) (added)
 - 2026-11-09T13:16:58Z · message_queued at 2026-11-09T13:16:58.461Z
 - 2026-11-09T13:16:58Z · message_queued at 2026-11-09T13:16:58.782Z
+- 2026-11-09T13:21:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T13:27:04Z · message_queued at 2026-11-09T13:27:04.740Z
+- 2026-11-09T13:51:14Z · body
+- 2026-11-09T13:52:04Z · handoff_deferred: 3 queued message(s) must be read before review
+- 2026-11-09T13:52:04Z · message_queued at 2026-11-09T13:52:04.078Z
+- 2026-11-09T13:52:04Z · ↻ resuming engineer to read queued message
+- 2026-11-09T13:52:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check is still running its tests. I'll wait for the background job to report completion. · stderr: (empty)
+- 2026-11-09T13:57:19Z · message_queued at 2026-11-09T13:57:19.914Z
+- 2026-11-09T13:58:48Z · message_delivered: 4 message(s)
+- 2026-11-09T14:37:10Z · body
+- 2026-11-09T14:40:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T14:57:33Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T14:57:48Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The step re-run is in progress. I'll wait for its completion notification. · stderr: (empty)
+- 2026-11-09T14:57:48Z · message_delivered: 1 message(s)
+- 2026-11-09T15:05:15Z · message_queued at 2026-11-09T15:05:15.021Z
+- 2026-11-09T15:05:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T15:10:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T15:13:53Z · body
+- 2026-11-09T15:15:14Z · CTO nudge: held — handoff gate is running
