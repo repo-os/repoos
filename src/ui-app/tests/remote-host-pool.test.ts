@@ -3319,8 +3319,25 @@ describe("pool hung-run bookkeeping (#0729)", () => {
     expect(result.detail).toMatch(/no in-flight remote validation run/);
   });
 
-  it("killHungRun reports when docker rm returns non-zero (#1060)", async () => {
-    const f = poolFixture({ hosts: [{ host: "a" }], hangKillFails: true });
+  it.each([
+    {
+      failure: "nonzero exit",
+      response: { code: 1, output: "conflict", timedOut: false },
+      detail: /docker rm exited 1/,
+    },
+    {
+      failure: "timeout",
+      response: { code: null, output: "", timedOut: true },
+      detail: /removal timed out/,
+    },
+  ])("manual removal reports $failure and preserves run files", async ({ response, detail }) => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const original = vi.mocked(f.exec.runRemote).getMockImplementation()!;
+    vi.mocked(f.exec.runRemote).mockImplementation((host, cmd, ...args) =>
+      cmd.startsWith("out=$(docker rm -f ")
+        ? Promise.resolve(response)
+        : original(host, cmd, ...args),
+    );
     for (let i = 0; i < 40 && !f.runner.hostStatus()?.every((h) => h.probed); i++) await tick();
     const run = f.runner.validate(opts("1060-kill-fail"));
     let attempts = 0;
@@ -3329,7 +3346,9 @@ describe("pool hung-run bookkeeping (#0729)", () => {
     }
     const result = await f.runner.killHungValidation!("1060-kill-fail");
     expect(result.ok).toBe(false);
-    expect(result.detail).toMatch(/docker rm exited 1/);
+    expect(result.detail).toMatch(detail);
+    expect(f.cleanupCmds).toHaveLength(0);
+    expect(f.runner.hostStatus()?.[0]?.healthy).toBe(false);
     await run;
     await f.runner.dispose();
   });
@@ -3522,6 +3541,33 @@ describe("hung run recovery end to end (#0729)", () => {
     }
     expect(runner.hostStatus()?.[0]?.activeRuns ?? []).toHaveLength(0);
     await resultPromise;
+  });
+
+  it.each([
+    { failure: "nonzero exit", options: { hangKillFails: true } },
+    { failure: "timeout", options: { hangKillNeverResolves: true } },
+  ])("preserves run files and reports a failed hung removal: $failure", async ({ options }) => {
+    const f = poolFixture({ hosts: [{ host: "a" }], ...options });
+    const runner = new TailscaleRunner(f.config, undefined, {
+      exec: f.exec,
+      timings: {
+        healthRetryMs: 40,
+        probeTimeoutMs: 1_000,
+        hangIdleMinutes: 0.0005,
+        hangCheckIntervalMs: 15,
+        loadSampleIntervalMs: 10,
+        hangKillTimeoutMs: 50,
+      },
+    });
+    for (let i = 0; i < 40 && !runner.hostStatus()?.every((h) => h.probed); i++) await tick();
+    const result = await runner.validate(opts("1060-hung-failure"));
+    expect(result.hung).toBe(true);
+    expect(result.detail).toMatch(/could not be confirmed removed/);
+    expect(result.detail).not.toMatch(/was removed/);
+    expect(f.cleanupCmds).toHaveLength(0);
+    expect(runner.hostStatus()?.[0]?.healthy).toBe(false);
+    await runner.dispose();
+    await f.runner.dispose();
   });
 
   it("does not kill a stalled run when load probes never succeed (#1049)", async () => {
