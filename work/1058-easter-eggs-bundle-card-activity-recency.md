@@ -555,3 +555,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T06:17:18Z · body
 - 2026-11-09T06:18:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented the review fixes: - Board and Pipeline now skip invalid activity timestamps and fall back to `runningSince`. - The shared tooltip no longer opens on touch taps or long presses; hover and keyboard focus remain supported. - Added… · stderr: Reading additional input from stdin... 2026-11-09T05:57:00.184847Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in /Users/nick/code/nick/repoos-worktrees/feat/easter-eggs-bundle-card-activity-recency/src/ui-app/src/components/PipelineView.vue: import { useNow } …
 - 2026-11-09T06:18:40Z · status active→review
+- 2026-11-09T06:18:40Z · message_delivered: 1 message(s)
