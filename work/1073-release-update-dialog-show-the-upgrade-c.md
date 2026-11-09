@@ -3,9 +3,6 @@ id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ Server finalization stopped at verify: ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (light) (target \"default\"): highlight [data-test-id=\"release-upgrade-command\"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target \"default\"): highlight [data-test-id=\"release-upgrade-command\"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable). The task stays active — fix the failure and ask again."
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T14:40:15Z"
+updated_at: "2026-11-09T14:40:17Z"
 handoff_signal_retry_count: 2
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T14:40:15.096Z\",\"kind\":\"dev-error\"}]"
@@ -115,3 +112,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T14:16:56Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T14:40:15Z · agent exited with an error (opencode) · ✗ Server finalization stopped at verify: ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (light) (target "default"): highlight [data-test-id="release-upgrade-command"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target "default"): highlight [data-test-id="release-upgrade-command"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable). The task stays active — fix the failure and ask again.
 - 2026-11-09T14:40:15Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at verify: ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no…
+- 2026-11-09T14:40:17Z · needs_input
