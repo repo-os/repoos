@@ -14,7 +14,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T09:38:43Z"
+updated_at: "2026-11-09T09:48:41Z"
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"opencode-go/deepseek-v4.1-flash\",\"at\":\"2026-11-09T09:16:50.216Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T09:28:32.005Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T09:31:26.359Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -42,6 +42,28 @@ Files: `src/ui-app/src/components/ReleaseUpdateNotification.vue`, the `/api/rele
 ## Scope boundary with #1072
 This task owns the install-kind detection and the upgrade command text (server: installKind and upgradeCommand on GET /api/release/available, as a reusable helper in src/commands/upgrade.ts or a small module) and the dismissed-version persistence. #1072 (CLI notice and Settings toggle) will reuse that helper, so expose it as a plain exported function with tests, not as UI-only code.
 
+## Shots
+```json
+[
+{
+  "label": "Update dialog: upgrade command block (light)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"release-upgrade-command\"]",
+  "state": "release:updateAvailable",
+  "theme": "light"
+},
+{
+  "label": "Update dialog: upgrade command block (dark)",
+  "target": "default",
+  "route": "/",
+  "highlight": "[data-test-id=\"release-upgrade-command\"]",
+  "state": "release:updateAvailable",
+  "theme": "dark"
+}
+]
+```
+
 ## Screenshots
 
 ![Update banner: RepoOS 0.5.79 is ready](/api/tasks/1073/attachments/att_b0660367-12b4-4966-a9f2-e46d4de77e1d.png)
@@ -67,3 +89,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T09:38:39Z · needs_input
 - 2026-11-09T09:38:43Z · engineer stopped by request
 - 2026-11-09T09:38:43Z · held, held-reason, held-at
+- 2026-11-09T09:48:41Z · body
