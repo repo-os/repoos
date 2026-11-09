@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-09T23:07:17Z"
+updated_at: "2026-11-09T23:07:33Z"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -47,9 +47,8 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 {
   "label": "Pipeline card activity animation",
   "target": "default",
-  "route": "/work?tab=pipeline&shotState=board:pipeline",
-  "highlight": ".pipeline-card .pl-activity",
-  "state": "board:activeCoding"
+  "route": "/work?tab=pipeline&shotState=board:activeCoding",
+  "highlight": ".pipeline-card .pl-activity"
 },
 {
   "label": "Compact activity animation settings (On)",
@@ -60,8 +59,16 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 {
   "label": "Activity animation Motion Off",
   "target": "default",
-  "route": "/settings?tab=general&section=activity-animation&shotState=settings:motionOff",
-  "highlight": "#setting-activityAnimationEnabled"
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": "#setting-activityAnimationEnabled",
+  "steps": [
+    {
+      "click": "#setting-activityAnimationEnabled [role=switch]"
+    },
+    {
+      "waitMs": 300
+    }
+  ]
 }
 ]
 ```
@@ -80,3 +87,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-09T22:50:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T22:51:41Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T23:07:17Z · body
+- 2026-11-09T23:07:33Z · body
