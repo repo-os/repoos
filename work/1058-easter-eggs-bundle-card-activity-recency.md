@@ -2,17 +2,20 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: done
 priority: p3
 area: web
+merged_commit: 96a582a9794e8e27481fd50043859e806f19cbb6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T09:08:15Z"
-review_passes: 11
+updated_at: "2026-11-09T10:42:25Z"
+last_close_out_gate_ms: 130520
+last_close_out_gate_at: "2026-11-09T10:41:27.791Z"
+review_passes: 15
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 56
@@ -61,17 +64,17 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "hover": "[data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]"
 },
 {
-"waitMs": 300
+"waitMs": 500
 }
 ],
 "state": "board:activeCoding"
 },
 {
-"label": "Pipeline coding row with activity popup",
+"label": "Pipeline coding row with full activity popup",
 "target": "default",
 "route": "/work?tab=pipeline",
 "selector": "[data-task-id=\"pipe-coding\"]",
-"highlight": "[data-task-id=\"pipe-coding\"] .pl-step",
+"highlight": "[role=\"tooltip\"].show",
 "steps": [
 {
 "waitFor": "[data-task-id=\"pipe-coding\"] .pl-step"
@@ -80,7 +83,7 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 "hover": "[data-task-id=\"pipe-coding\"] .pl-step"
 },
 {
-"waitMs": 300
+"waitMs": 500
 }
 ],
 "state": "board:pipeline"
@@ -90,6 +93,9 @@ Find where the card hint appends "· ACTIVE <time> AGO" (the `tc-*` hint builder
 
 ## Accepted scope and known limitations (owner decision, supersedes any touch wording above)
 Owner decision (2026-11-09): touch support (tap or long-press to show the last-activity popover) is OUT OF SCOPE for this bundle, because mobile will get a larger rewrite soon. The popover is shown on mouse hover and keyboard focus only, and touch taps behave exactly as before (the element's normal click action). Any touch-related wording in the items above, including acceptance criteria and review feedback, is superseded by this section; a reviewer must not raise missing touch support as a blocking bug. Still required: the timing fallback (when lastActivityAt is missing or invalid, show elapsed/state-since instead of nothing) and declared shots that actually show a coding (running) card.
+
+## Accepted scope and known limitations (final)
+Owner decision (2026-11-09, release deadline): the screenshot framing of the Pipeline popup capture (cropping of the tooltip in the declared shot) is a visual-proof nicety and is NOT a blocking bug for this task; report it as a suggestion. Touch support remains out of scope (see #1069). Landing scope was cleaned by hand: the branch diff contains only this task's own files. Everything else in the code (hover/focus popover, timing fallbacks) is as reviewed in passes 9-13.
 
 ## Activity
 
@@ -605,3 +611,33 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T09:07:20Z · message_delivered: 1 message(s)
 - 2026-11-09T09:07:20Z · note: handoff requested (cli)
 - 2026-11-09T09:08:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T09:09:29Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-09T09:09:29Z · status active→review
+- 2026-11-09T09:09:29Z · message_queued at 2026-11-09T09:09:29.659Z
+- 2026-11-09T09:09:59Z · note: review pass 12: needs some work
+- 2026-11-09T09:09:59Z · needs_input
+- 2026-11-09T09:35:42Z · status review→active
+- 2026-11-09T09:35:42Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T09:35:45Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T09:35:50Z · needs_input
+- 2026-11-09T09:35:51Z · message_queued at 2026-11-09T09:35:51.371Z
+- 2026-11-09T09:38:43Z · message_delivered: 1 message(s)
+- 2026-11-09T09:40:44Z · body
+- 2026-11-09T10:05:53Z · engineer stopped by request
+- 2026-11-09T10:05:53Z · note: handoff requested (cli)
+- 2026-11-09T10:05:59Z · message_queued at 2026-11-09T10:05:59.076Z
+- 2026-11-09T10:24:56Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-09T10:24:57Z · status active→review
+- 2026-11-09T10:24:57Z · message_queued at 2026-11-09T10:24:57.309Z
+- 2026-11-09T10:25:25Z · note: review pass 13: needs some work
+- 2026-11-09T10:25:25Z · needs_input
+- 2026-11-09T10:30:16Z · body: Accepted scope and known limitations (final) (added)
+- 2026-11-09T10:30:16Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-09T10:36:15Z · note: review pass 14: needs some work
+- 2026-11-09T10:36:15Z · needs_input
+- 2026-11-09T10:38:26Z · note: ui verification passed: 2 of 2 shots captured with clean console
+- 2026-11-09T10:38:59Z · note: review pass 15: good to go
+- 2026-11-09T10:38:59Z · needs_input
+- 2026-11-09T10:41:27Z · close-out gate completed in 131s
+- 2026-11-09T10:41:48Z · status done→done, release:success
+- 2026-11-09T10:42:25Z · message_dropped: 3 queued message(s) discarded — task is done
