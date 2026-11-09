@@ -12,7 +12,8 @@ import {
   loadingPageHeader,
   loadingSkeletonKind,
   LOADING_SKELETON_ROUTES,
-  REPRESENTATIVE_SKELETON_BLOCKS,
+  LOADING_SKELETON_ITEM_COUNTS,
+  BOARD_MEDIUM_BREAKPOINT_PX,
   SKELETON_MIN_VISIBLE_MS,
   SKELETON_SHOW_DELAY_MS,
 } from "../src/lib/loading-skeleton";
@@ -82,6 +83,14 @@ describe("repo loading skeleton", () => {
   it("uses six work columns and three input columns", () => {
     expect(WORK_BOARD_COLUMN_COUNT).toBe(6);
     expect(INPUT_BOARD_COLUMN_COUNT).toBe(3);
+  });
+
+  it("matches the board's medium breakpoint and uses named minimal counts", () => {
+    const css = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
+    expect(css).toContain(`@media (max-width: ${BOARD_MEDIUM_BREAKPOINT_PX}px)`);
+    for (const kind of ["dashboard", "cards", "table", "rows", "targets", "deployments"] as const) {
+      expect(LOADING_SKELETON_ITEM_COUNTS[kind], kind).toBe(1);
+    }
   });
 
   it("keeps Mission Control and Stories to one content block", () => {
@@ -193,7 +202,7 @@ describe("repo loading skeleton", () => {
           ? WORK_BOARD_COLUMN_COUNT
           : kinds[index] === "inputBoard"
             ? INPUT_BOARD_COLUMN_COUNT
-            : REPRESENTATIVE_SKELETON_BLOCKS.length;
+            : LOADING_SKELETON_ITEM_COUNTS[kinds[index]!];
       expect(
         wrapper.find(".page-skeleton").findAll(":scope > .page-skeleton__item"),
         kinds[index],
@@ -248,6 +257,7 @@ describe("repo loading skeleton", () => {
     const wrapper = mount(LoadingHarness, { props: { loading: true } });
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").classes()).toContain("page-skeleton--reduced-motion");
+    expect(wrapper.find(".page-skeleton").classes()).not.toContain("page-skeleton--motion-active");
     wrapper.unmount();
     vi.unstubAllGlobals();
     vi.useRealTimers();

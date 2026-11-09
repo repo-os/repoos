@@ -13,10 +13,25 @@ export type LoadingSkeletonKind =
 export const SKELETON_SHOW_DELAY_MS = 180;
 export const SKELETON_MIN_VISIBLE_MS = 350;
 
-/** One representative block for layouts whose real collection is not loaded yet. */
-// Pages with a live collection bind its count at the PageSkeleton call site.
-// Simple shell shapes (Mission Control and Stories) use one representative block.
-export const REPRESENTATIVE_SKELETON_BLOCKS = ["representative"] as const;
+/** Minimal representative blocks for content that is not available yet. */
+export const MISSION_CONTROL_PLACEHOLDER_COUNT = 1;
+export const PAGE_CARD_PLACEHOLDER_COUNT = 1;
+export const PAGE_TABLE_PLACEHOLDER_COUNT = 1;
+export const PAGE_ROW_PLACEHOLDER_COUNT = 1;
+export const DEV_TARGET_PLACEHOLDER_COUNT = 1;
+export const DEPLOYMENT_SERVICE_PLACEHOLDER_COUNT = 1;
+export const DEPLOYMENT_BRANCH_PLACEHOLDER_COUNT = 1;
+/** Must stay aligned with `.board` in style.css. */
+export const BOARD_MEDIUM_BREAKPOINT_PX = 1250;
+
+export const LOADING_SKELETON_ITEM_COUNTS = {
+  dashboard: MISSION_CONTROL_PLACEHOLDER_COUNT,
+  cards: PAGE_CARD_PLACEHOLDER_COUNT,
+  table: PAGE_TABLE_PLACEHOLDER_COUNT,
+  rows: PAGE_ROW_PLACEHOLDER_COUNT,
+  targets: DEV_TARGET_PLACEHOLDER_COUNT,
+  deployments: DEPLOYMENT_SERVICE_PLACEHOLDER_COUNT,
+} as const satisfies Partial<Record<LoadingSkeletonKind, number>>;
 
 /** Every routed path the app shell can open while the repo index loads. */
 export const LOADING_SKELETON_ROUTES = [

@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { getActivePinia } from "pinia";
+import { useActivityMotion } from "../lib/activity-motion";
+import { useConfigStore } from "../stores/config";
 import {
-  REPRESENTATIVE_SKELETON_BLOCKS,
+  DEPLOYMENT_BRANCH_PLACEHOLDER_COUNT,
+  LOADING_SKELETON_ITEM_COUNTS,
   SKELETON_MIN_VISIBLE_MS,
   SKELETON_SHOW_DELAY_MS,
   type LoadingSkeletonKind,
@@ -21,6 +25,14 @@ const props = withDefaults(
 const emit = defineEmits<{ "visibility-change": [visible: boolean] }>();
 
 const visible = ref(false);
+const root = ref<HTMLElement | null>(null);
+const pinia = getActivePinia();
+const config = pinia ? useConfigStore(pinia) : null;
+const animationLimit = computed(() => {
+  const limit = config?.form.activityAnimationConcurrency;
+  return typeof limit === "number" ? limit : 6;
+});
+const animate = useActivityMotion(root, animationLimit);
 const prefersReducedMotion = ref(false);
 let showTimer: ReturnType<typeof setTimeout> | null = null;
 let hideTimer: ReturnType<typeof setTimeout> | null = null;
@@ -101,19 +113,26 @@ const columnCount = (): number => {
 
 const itemCount = (): number => {
   if (props.kind === "board" || props.kind === "inputBoard") return columnCount();
-  return Math.max(REPRESENTATIVE_SKELETON_BLOCKS.length, props.count ?? 0);
+  const layoutCount = LOADING_SKELETON_ITEM_COUNTS[props.kind] ?? 1;
+  return props.count ?? layoutCount;
 };
 
-const matrixCount = (): number =>
-  Math.max(REPRESENTATIVE_SKELETON_BLOCKS.length, props.matrixCount ?? 0);
+const matrixCount = (): number => props.matrixCount ?? DEPLOYMENT_BRANCH_PLACEHOLDER_COUNT;
 </script>
 
 <template>
   <Transition name="page-skeleton">
     <div
       v-if="visible"
+      ref="root"
       class="page-skeleton"
-      :class="[`page-skeleton--${kind}`, { 'page-skeleton--reduced-motion': prefersReducedMotion }]"
+      :class="[
+        `page-skeleton--${kind}`,
+        {
+          'page-skeleton--reduced-motion': prefersReducedMotion,
+          'page-skeleton--motion-active': animate,
+        },
+      ]"
       :style="columnCount() ? { '--skeleton-cols': String(columnCount()) } : undefined"
       aria-label="Loading page content"
       role="status"
@@ -169,6 +188,11 @@ const matrixCount = (): number =>
   grid-template-columns: repeat(var(--skeleton-cols, 6), minmax(0, 1fr));
   align-content: start;
   height: 100%;
+}
+@media (max-width: 1250px) {
+  .page-skeleton--board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 .page-skeleton--board .page-skeleton__item,
 .page-skeleton--inputBoard .page-skeleton__item {
@@ -227,6 +251,9 @@ const matrixCount = (): number =>
   width: 72%;
   border-radius: 4px;
   background: var(--bg-2);
+  animation: none;
+}
+.page-skeleton--motion-active .page-skeleton__item i {
   animation: page-skeleton-pulse 2.4s ease-in-out infinite alternate;
 }
 .page-skeleton__item i:first-child {
