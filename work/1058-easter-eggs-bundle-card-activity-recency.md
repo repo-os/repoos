@@ -2,7 +2,7 @@
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -601,3 +601,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T08:51:04Z · body
 - 2026-11-09T09:06:06Z · body
 - 2026-11-09T09:07:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The card activity UI implementation is already in place. I fixed the capture race where live runner data replaced the Board and Pipeline fixtures with paused state, and added a regression test. `REPOOS_CHECK_CHANGED=main repoos check` pass… · stderr: Reading additional input from stdin...
+- 2026-11-09T09:07:20Z · status active→review
