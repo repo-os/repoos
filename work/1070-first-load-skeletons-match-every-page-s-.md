@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T08:19:25Z"
+updated_at: "2026-11-09T08:19:34Z"
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-09T06:46:20.064Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on / (http://127.0.0.1:33813/?shotState=loading%3Adashboard); [missing-target] Stories first-load skeleton (target \"default\"): loading state detected: loading indicator [aria-busy=\"true\"] on /stories (http://127.0.0.1:33813/stories?shotState=loading%3Astories)"
 review_rounds: 1
@@ -123,3 +123,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:17:23Z · note: handoff requested (cli)
 - 2026-11-09T08:19:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T08:19:25Z · body
+- 2026-11-09T08:19:34Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /?shotState=loading:dashboard (http://127.0.0.1:45643/?shotState=loading:dashboard); [missing-target] Stories first-load skeleton (target "default"): loading state detected: loading indicator [aria-busy="true"] on /stories?shotState=loading:stories (http://127.0.0.1:45643/stories?shotState=loading:sto
