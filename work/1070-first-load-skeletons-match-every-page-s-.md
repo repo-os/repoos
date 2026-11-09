@@ -207,3 +207,4 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 - 2026-11-09T12:32:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T12:34:57Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-09T12:34:58Z · status active→review
+- 2026-11-09T12:34:58Z · message_queued at 2026-11-09T12:34:58.337Z
