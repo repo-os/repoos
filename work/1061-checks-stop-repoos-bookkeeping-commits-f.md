@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ff405c9d to 8a1f6321) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: ff405c9d4cb5152e5391e24aa3601571709c5557
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T12:25:07Z"
+updated_at: "2026-11-09T12:26:55Z"
+last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from ff405c9d to 8a1f6321) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
+last_handoff_failure_sha: ff405c9d4cb5152e5391e24aa3601571709c5557
 review_passes: 15
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -536,4 +536,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:16:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T12:25:07Z · message_queued at 2026-11-09T12:25:07.617Z
 - 2026-11-09T12:25:07Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from ff405c9d to 8a1f6321) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
-
+- 2026-11-09T12:26:55Z · CTO nudge: held — an undelivered message is already queued
