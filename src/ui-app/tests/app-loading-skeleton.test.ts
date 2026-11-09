@@ -268,6 +268,26 @@ describe("repo loading skeleton", () => {
     vi.useRealTimers();
   });
 
+  it("activates the shared pulse when reduced motion is off", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    const wrapper = mount(LoadingHarness, { props: { loading: true } });
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
+    expect(wrapper.find(".page-skeleton").classes()).toContain("page-skeleton--motion-active");
+    const source = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
+    expect(source).toMatch(/\.page-skeleton--motion-active \.page-skeleton__item i\s*\{\s*animation: page-skeleton-pulse/);
+    wrapper.unmount();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
   it("suppresses fast and cached shell loads", async () => {
     vi.useFakeTimers();
     const wrapper = mount(LoadingHarness, { props: { loading: true } });
@@ -294,6 +314,7 @@ describe("repo loading skeleton", () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(wrapper.find(".page-skeleton").exists()).toBe(false);
     wrapper.unmount();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
@@ -365,6 +386,7 @@ describe("repo loading skeleton", () => {
     expect(main.find(".page-skeleton--board").exists()).toBe(true);
     expect(main.find(".spin").exists()).toBe(false);
     wrapper.unmount();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
@@ -413,6 +435,7 @@ describe("repo loading skeleton", () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.find(".page-skeleton").exists()).toBe(false);
     wrapper.unmount();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 });

@@ -28,8 +28,26 @@ function onMotion(e: MediaQueryListEvent): void {
 export function useActivityMotion(element: Ref<HTMLElement | null>, max: Ref<number>) {
   const active = ref(false);
   let entry: Entry | null = null;
+  let mounted = false;
+  const bindElement = (el: HTMLElement | null): void => {
+    if (entry) {
+      observer?.unobserve(entry.el);
+      entries.delete(entry);
+      entry = null;
+    }
+    if (!mounted || !el) {
+      active.value = false;
+      refresh();
+      return;
+    }
+    entry = { el, visible: typeof IntersectionObserver === "undefined", active, limit: max };
+    entries.add(entry);
+    observer?.observe(el);
+    refresh();
+  };
   const enabled = computed(() => active.value);
   onMounted(() => {
+    mounted = true;
     pageVisible.value = document.visibilityState !== "hidden";
     if (!media && typeof matchMedia !== "undefined") {
       media = matchMedia("(prefers-reduced-motion: reduce)");
@@ -45,19 +63,14 @@ export function useActivityMotion(element: Ref<HTMLElement | null>, max: Ref<num
         }
         refresh();
       });
-      if (element.value) {
-        entry = { el: element.value, visible: false, active, limit: max };
-        entries.add(entry);
-        observer.observe(element.value);
-      }
-    } else if (element.value) {
-      entry = { el: element.value, visible: true, active, limit: max };
-      entries.add(entry);
     }
+    bindElement(element.value);
     refresh();
   });
+  watch(element, bindElement);
   watch(max, refresh);
   onUnmounted(() => {
+    mounted = false;
     document.removeEventListener("visibilitychange", onVisibility);
     if (entry) {
       observer?.unobserve(entry.el);
