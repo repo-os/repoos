@@ -72,3 +72,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T13:58:41Z · agent exited with an error (opencode) · error: Model busy, retry later
 - 2026-11-09T13:58:41Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · error: Model busy, retry later
 - 2026-11-09T14:02:24Z · needs_input
+- 2026-11-09T14:02:24Z · message_delivered: 2 message(s)
