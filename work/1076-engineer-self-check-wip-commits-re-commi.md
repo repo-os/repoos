@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 9fae0c3d8660c3abcb0b50c4b7f68c1f626eaaaa
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -155,3 +157,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T21:44:12Z · message_delivered: 1 message(s)
 - 2026-11-09T21:56:53Z · message_queued at 2026-11-09T21:56:53.461Z
 - 2026-11-09T21:56:53Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
