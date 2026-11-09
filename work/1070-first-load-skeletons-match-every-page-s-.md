@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T13:21:58Z"
+updated_at: "2026-11-09T13:23:10Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1
@@ -235,3 +235,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T12:59:17Z · message_queued at 2026-11-09T12:59:17.992Z
 - 2026-11-09T13:02:35Z · body
 - 2026-11-09T13:21:58Z · body
+- 2026-11-09T13:23:10Z · handoff_deferred: 1 queued message(s) must be read before review
