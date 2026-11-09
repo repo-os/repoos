@@ -74,9 +74,11 @@ describe("repo loading skeleton", () => {
     // The incoming route owns the pane's flex height. The outgoing loading
     // shell overlays it during the fade instead of sharing that flex space.
     expect(appCss).toMatch(
-      /\.page-loading-shell-leave-active\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*flex:\s*none;/s,
+      /\.page-loading-shell-leave-active\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*22px 26px 0;[^}]*flex:\s*none;[^}]*pointer-events:\s*none;[^}]*z-index:\s*0;/s,
     );
     expect(appCss).toMatch(/\.main\s*\{[^}]*position:\s*relative;/s);
+    expect(appCss).toMatch(/\.main\s*\{[^}]*padding:\s*22px 26px 0;/s);
+    expect(appCss).toMatch(/\.main\s*>\s*\.main-route:not\(\.page-loading\)\s*\{[^}]*z-index:\s*1;/s);
     (wrapper.vm.finishLeave as () => void)();
     await wrapper.vm.$nextTick();
     expect(document.querySelector(".page-loading")).toBeNull();
