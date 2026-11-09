@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -392,4 +392,3 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-09T22:26:38Z · message_queued at 2026-11-09T22:26:38.255Z
 - 2026-11-09T22:26:38Z · ↻ resuming engineer to read queued message
 - 2026-11-09T22:26:38Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check passed, including the remote changed-path test run, contrast audit, and UI smoke. The declared shot highlights still target skeleton elements on settled pages, which caused prior verification failures; I’m clearing those l… · stderr: (empty)
-- 2026-11-09T22:26:39Z · status active→review
