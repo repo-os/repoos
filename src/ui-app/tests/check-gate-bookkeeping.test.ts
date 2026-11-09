@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import {
+  existsSync,
   mkdtempSync,
   mkdirSync,
   chmodSync,
@@ -359,6 +360,40 @@ describe("check gate lock and deferred commits (#1061)", () => {
     expect(statSync(source).mode & 0o222).toBe(0);
     if (acquired.ok) await acquired.release();
     expect(statSync(source).mode & 0o777).toBe(originalMode);
+  });
+
+  it("restores source modes if protection fails after the durable lock write", async () => {
+    const { root, wt, branch } = initRepo();
+    const source = join(wt, "src", "app.ts");
+    const secondSource = join(wt, "src", "second.ts");
+    writeFileSync(secondSource, "v1\n");
+    git(wt, ["add", "src/second.ts"]);
+    git(wt, ["commit", "-qm", "second source"]);
+    const originalMode = statSync(source).mode & 0o777;
+    const secondOriginalMode = statSync(secondSource).mode & 0o777;
+    let injected = false;
+    const protectionChmod: typeof chmodSync = (path, mode) => {
+      if (!injected && String(path) === secondSource) {
+        injected = true;
+        throw Object.assign(new Error("simulated crash window"), { code: "EIO" });
+      }
+      return chmodSync(path, mode);
+    };
+    await expect(
+      acquireCheckGateLock({
+        boardRoot: root,
+        cacheDir: ".repoos",
+        taskId: "0001",
+        branch,
+        worktree: wt,
+        kind: "handoff-finalize",
+        protectionChmod,
+      }),
+    ).rejects.toThrow("simulated crash window");
+    expect(injected).toBe(true);
+    expect(statSync(source).mode & 0o777).toBe(originalMode);
+    expect(statSync(secondSource).mode & 0o777).toBe(secondOriginalMode);
+    expect(existsSync(join(root, ".repoos", "check-gate-locks", "0001.json"))).toBe(false);
   });
 
   it("keeps concurrent gate holders when they acquire from separate calls", async () => {
