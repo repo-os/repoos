@@ -160,6 +160,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "deployments:environmentBinding",
   // #0950 — pin the Deployments first-load skeleton for deterministic shots.
   "deployments:loading",
+  "loading:dashboard",
+  "loading:stories",
   // #0805 — clears the configured editor so the fallback "Set editor in
   // Settings → General" hint renders instead of the "Open in editor" button.
   "editor:unconfigured",
