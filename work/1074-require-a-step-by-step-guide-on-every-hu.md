@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/require-a-step-by-step-guide-on-every-hu
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-09T21:05:12Z"
+updated_at: "2026-11-09T21:21:09Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -43,3 +43,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-09T20:46:54Z · message_delivered: 2 message(s)
 - 2026-11-09T21:04:41Z · body
 - 2026-11-09T21:05:12Z · body
+- 2026-11-09T21:21:09Z · body
