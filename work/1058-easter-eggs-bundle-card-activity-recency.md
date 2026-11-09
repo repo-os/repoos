@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T09:06:06Z"
+updated_at: "2026-11-09T09:07:20Z"
 review_passes: 11
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -600,3 +600,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T08:36:16Z · message_queued at 2026-11-09T08:36:16.253Z
 - 2026-11-09T08:51:04Z · body
 - 2026-11-09T09:06:06Z · body
+- 2026-11-09T09:07:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The card activity UI implementation is already in place. I fixed the capture race where live runner data replaced the Board and Pipeline fixtures with paused state, and added a regression test. `REPOOS_CHECK_CHANGED=main repoos check` pass… · stderr: Reading additional input from stdin...
