@@ -68,9 +68,9 @@ async function formatNonBookkeepingCommitDrift(
       paths: ["<paths unavailable>"],
     };
   }
-  // Determine whether check-relevant content changed from the checked tree.
-  // Commit ancestry alone is insufficient here: a merge can have the checked
-  // commit as its second parent while its first-parent history predates it.
+  // Keep the endpoint diff as a fail-closed fallback, but do not treat it as
+  // the full drift test: a source commit followed by a revert can leave the
+  // endpoint tree unchanged even though the check may have observed it.
   const netPaths = await pathsChangedBetweenCommits(wt, from, to);
   if (netPaths === null) {
     return {
@@ -80,11 +80,8 @@ async function formatNonBookkeepingCommitDrift(
     };
   }
   const netAffecting = netPaths.filter((path) => !isCheckGateBookkeepingPath(path, config));
-  // Endpoint content is authoritative for drift. A committed change followed
-  // by a revert is an accepted limitation when the final source tree matches.
-  if (netAffecting.length === 0) return { kind: "clean" };
-
-  // Walk commits only to explain the already-established source delta.
+  // Walk commits to detect source changes at any point in the gate and explain
+  // them with their subjects and paths.
   // Ignore commits that were part of the checked tree's history.
   const list = await runGit(
     wt,
@@ -93,11 +90,10 @@ async function formatNonBookkeepingCommitDrift(
   );
   const parts: string[] = [`HEAD moved from ${from.slice(0, 8)} to ${to.slice(0, 8)}`];
   if (list.status !== 0) {
-    if (netAffecting.length === 0) return { kind: "clean" };
     return {
       kind: "changed",
-      reason: `${parts[0]}; source diff ${netAffecting.join(", ")} history could not be explained by inspected commits`,
-      paths: [...netAffecting],
+      reason: `${parts[0]}; commit history could not be inspected${netAffecting.length ? `; source diff ${netAffecting.join(", ")}` : ""}`,
+      paths: netAffecting.length ? [...netAffecting] : ["<paths unavailable>"],
     };
   }
   const allAffecting = new Set<string>();
@@ -139,7 +135,13 @@ async function formatNonBookkeepingCommitDrift(
       }
       const diffBase = mergeCommit ? from : firstParent;
       const paths = diffBase ? await pathsChangedBetweenCommits(wt, diffBase, sha) : null;
-      if (paths === null) continue;
+      if (paths === null) {
+        return {
+          kind: "changed",
+          reason: `${parts[0]}; paths for commit "${subject}" could not be computed`,
+          paths: ["<paths unavailable>"],
+        };
+      }
       const affecting = paths.filter((p) => !isCheckGateBookkeepingPath(p, config));
       if (affecting.length === 0) continue;
       affecting.forEach((p) => {
@@ -157,7 +159,13 @@ async function formatNonBookkeepingCommitDrift(
       paths: [...netAffecting],
     };
   }
-  return parts.length === 1
-    ? { kind: "clean" }
-    : { kind: "changed", reason: parts.join("; "), paths: [...allAffecting] };
+  if (parts.length > 1) return { kind: "changed", reason: parts.join("; "), paths: [...allAffecting] };
+  if (netAffecting.length > 0) {
+    return {
+      kind: "changed",
+      reason: `${parts[0]}; source diff ${netAffecting.join(", ")} history could not be explained by inspected commits`,
+      paths: [...netAffecting],
+    };
+  }
+  return { kind: "clean" };
 }
