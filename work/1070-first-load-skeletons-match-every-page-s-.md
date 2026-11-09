@@ -131,3 +131,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:33:54Z · body
 - 2026-11-09T08:35:03Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-09T08:35:04Z · message_queued at 2026-11-09T08:35:04.172Z
+- 2026-11-09T08:35:04Z · ↻ resuming engineer to read queued message
