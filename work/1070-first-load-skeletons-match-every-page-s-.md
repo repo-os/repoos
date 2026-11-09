@@ -137,3 +137,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:36:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T08:37:15Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-09T08:37:16Z · status active→review
+- 2026-11-09T08:37:16Z · message_queued at 2026-11-09T08:37:16.314Z
