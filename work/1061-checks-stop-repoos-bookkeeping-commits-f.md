@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -385,3 +385,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T03:07:16Z · message_queued at 2026-11-09T03:07:16.799Z
 - 2026-11-09T03:07:16Z · ↻ resuming engineer to read queued message
 - 2026-11-09T03:07:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The final `REPOOS_CHECK_CHANGED=main repoos check` is green: remote validation passed, then local format, lint, build, UI smoke, contrast, and user-docs checks passed. I’m writing the required engineering report draft now, including the va… · stderr: Reading additional input from stdin...
+- 2026-11-09T03:07:17Z · status active→review
