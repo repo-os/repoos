@@ -196,3 +196,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T21:20:10Z · note: handoff requested (cli)
 - 2026-11-09T21:20:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T21:20:51Z · message_queued at 2026-11-09T21:20:51.038Z
+- 2026-11-09T21:20:51Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate
