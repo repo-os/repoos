@@ -238,7 +238,9 @@ describe("feature releases", () => {
       expect(document.body.querySelector(".release-update-code")?.textContent?.trim()).toBe(
         "repoos upgrade",
       );
-      expect(document.body.querySelector('[data-test-id="release-upgrade-command"]')).not.toBeNull();
+      expect(
+        document.body.querySelector('[data-test-id="release-upgrade-command"]'),
+      ).not.toBeNull();
     } finally {
       wrapper.unmount();
       repo.health = null;
