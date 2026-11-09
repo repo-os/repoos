@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: review
+status: active
 priority: p3
 area: web
 assigned_to: ai
@@ -193,4 +193,3 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T20:57:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The review is correct. Let me look at the current `upgradeInstruction` and `installRoot` to design the fix. The detection order currently: 1. package-manager path → package manager 2. `version === null` → source 3. else → standalone The bu… · stderr: (empty)
 - 2026-11-09T21:18:48Z · message_delivered: 2 message(s)
 - 2026-11-09T21:20:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Now update the `cmdUpgrade` body to use `readInstallVersion` (rename) and pass `sourceCheckout`. Let me view the current cmdUpgrade section. Let me check the call site inside cmdUpgrade. The function `readVersion` is now `readInstallVersio… · stderr: (empty)
-- 2026-11-09T21:20:10Z · status active→review
