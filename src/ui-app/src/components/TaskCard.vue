@@ -1147,6 +1147,7 @@ const hint = computed<CardHint | null>(() => {
           lastActivity: lastActivityFor(t.id),
           now: now.value,
           suppressAgentStuck: suppressAgentStuckHint.value,
+          activityFallback: activityTipFor(t.id) ?? undefined,
         }) ?? codingOrStuckHint(t.id)
       );
     }
