@@ -9,9 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
-model_override: opencode-go/deepseek-v4.1-flash
+model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T09:08:18Z"
+updated_at: "2026-11-09T09:11:35Z"
 ---
 ## Problem
 The dashboard already tells users when a newer RepoOS is available (`ReleaseUpdateNotification.vue`, data from `GET /api/release/available`): a banner, then a dialog with installed vs available version and the release notes. But the dialog's only action is an "Upgrade" button that just opens the GitHub release page. It never says how to actually upgrade, even though the answer is a single command.
@@ -50,3 +50,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T09:08:06Z · cli_override, model_override
 - 2026-11-09T09:08:17Z · status inbox→ready
 - 2026-11-09T09:08:18Z · status ready→active, branch
+- 2026-11-09T09:11:35Z · model_override
