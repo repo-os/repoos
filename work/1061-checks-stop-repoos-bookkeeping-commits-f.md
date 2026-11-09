@@ -562,3 +562,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T13:01:51Z · note: handoff requested (cli)
 - 2026-11-09T13:01:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T13:02:29Z · status active→review
+- 2026-11-09T13:02:29Z · message_queued at 2026-11-09T13:02:29.354Z
