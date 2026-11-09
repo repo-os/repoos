@@ -290,6 +290,12 @@ it catches edits to an already-dirty file and newly created source files. A
 server restart clears stale locks and flushes any deferred queue so nothing is
 lost.
 
+Tracked submodules are checked at their own repository boundary: an initialized
+submodule's commit and working-tree status are included, and an uninitialized
+gitlink is represented by the object id in the parent index. Nested repositories
+without commits are supported. Symlinks are compared by link text; changes to
+the target of a symlink outside the worktree are not followed.
+
 Drift inspection examines intervening commits as well as the net tree
 difference from the commit where the check started to the resulting tree. Any
 intervening commit that touches a source path invalidates the result, even if a

@@ -1,6 +1,7 @@
 import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
 import { buildIndex } from "../core/indexer.js";
 import { runGit } from "../core/git.js";
+import { gitDirectorySnapshot } from "../core/git-directory-snapshot.js";
 import {
   checkSnapshot,
   compatibleCheckSnapshots,
@@ -1942,11 +1943,9 @@ export async function trackedSourceSnapshot(
       if (stat.isSymbolicLink()) {
         snapshot.set(path, `symlink:${readlinkSync(absolute)}`);
       } else if (stat.isDirectory()) {
-        // A tracked submodule is a gitlink directory; compare its checked-out
-        // commit without trying to read the directory as a regular file.
-        const submodule = await runGit(absolute, ["rev-parse", "HEAD"], 10_000);
-        if (submodule.status !== 0) return null;
-        snapshot.set(path, `directory:${stat.mode & 0o777}:${submodule.stdout.trim()}`);
+        const directory = await gitDirectorySnapshot(repoRoot, path, stat.mode & 0o777);
+        if (directory === null) return null;
+        snapshot.set(path, directory);
       } else if (stat.isFile()) {
         const content = readFileSync(absolute);
         snapshot.set(

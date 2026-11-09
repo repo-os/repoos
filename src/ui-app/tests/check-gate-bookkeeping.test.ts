@@ -24,6 +24,7 @@ import {
 } from "../../core/check-gate-bookkeeping.js";
 import { engineerSelfCheckCheckpointMessage } from "../../core/engineer-checkpoint-commit.js";
 import { runGit, setCheckGateGitRefusal } from "../../core/git.js";
+import { gitDirectorySnapshot } from "../../core/git-directory-snapshot.js";
 import {
   acquireCheckGateLock,
   activeCheckGateForCommitRoot,
@@ -332,8 +333,63 @@ describe("tracked source snapshots for non-regular entries (#1061)", () => {
 
     const snapshot = await trackedSourceSnapshot(wt, cfg(wt));
     expect(snapshot?.get("src/dependency")).toBe(
-      `directory:${statSync(dependency).mode & 0o777}:${git(dependency, ["rev-parse", "HEAD"])}`,
+      `repository:${statSync(dependency).mode & 0o777}:${git(dependency, ["rev-parse", "HEAD"])}:`,
     );
+  });
+
+  it("uses the index gitlink SHA when the submodule is uninitialized", async () => {
+    const { wt } = initRepo();
+    const dependency = join(wt, "src", "dependency");
+    mkdirSync(dependency);
+    git(dependency, ["init", "-q"]);
+    git(dependency, ["config", "user.email", "t@example.com"]);
+    git(dependency, ["config", "user.name", "Test"]);
+    writeFileSync(join(dependency, "lib.ts"), "export {};\n");
+    git(dependency, ["add", "lib.ts"]);
+    git(dependency, ["commit", "-qm", "dependency"]);
+    const expected = git(dependency, ["rev-parse", "HEAD"]);
+    git(wt, ["add", "src/dependency"]);
+    git(wt, ["commit", "-qm", "add dependency"]);
+    rmSync(join(dependency, ".git"), { recursive: true, force: true });
+
+    const snapshot = await trackedSourceSnapshot(wt, cfg(wt));
+    expect(snapshot?.get("src/dependency")).toBe(`gitlink:${expected}`);
+    writeFileSync(join(wt, "work", "bookkeeping.md"), "ok\n");
+    git(wt, ["add", "work/bookkeeping.md"]);
+    git(wt, ["commit", "-qm", "record bookkeeping"]);
+    expect(await trackedSourceSnapshot(wt, cfg(wt))).toEqual(snapshot);
+  });
+
+  it("detects dirty files inside an initialized submodule", async () => {
+    const { wt } = initRepo();
+    const dependency = join(wt, "src", "dependency");
+    mkdirSync(dependency);
+    git(dependency, ["init", "-q"]);
+    git(dependency, ["config", "user.email", "t@example.com"]);
+    git(dependency, ["config", "user.name", "Test"]);
+    writeFileSync(join(dependency, "lib.ts"), "export {};\n");
+    git(dependency, ["add", "lib.ts"]);
+    git(dependency, ["commit", "-qm", "dependency"]);
+    git(wt, ["add", "src/dependency"]);
+    git(wt, ["commit", "-qm", "add dependency"]);
+
+    const before = await trackedSourceSnapshot(wt, cfg(wt));
+    writeFileSync(join(dependency, "lib.ts"), "export const changed = true;\n");
+    const after = await trackedSourceSnapshot(wt, cfg(wt));
+    expect(after?.get("src/dependency")).not.toBe(before?.get("src/dependency"));
+  });
+
+  it("snapshots an untracked nested repository with no commits", async () => {
+    const { wt } = initRepo();
+    const nested = join(wt, "src", "nested");
+    mkdirSync(nested);
+    git(nested, ["init", "-q"]);
+    writeFileSync(join(nested, "new.ts"), "export {};\n");
+
+    const snapshot = await trackedSourceSnapshot(wt, cfg(wt));
+    expect(snapshot).not.toBeNull();
+    expect([...snapshot!.keys()].some((path) => path.startsWith("src/nested"))).toBe(true);
+    expect(await gitDirectorySnapshot(wt, "src/nested")).toMatch(/^repository::unborn:/);
   });
 
   it("snapshots a tracked symlink without following its target", async () => {
