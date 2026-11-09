@@ -280,9 +280,8 @@ export function resolveActiveEngineerCardHint(input: ActiveTaskCardInput): Activ
     };
   }
 
-  const activity = input.agentSilentMs !== null ? formatCardDuration(input.agentSilentMs) : null;
   return {
-    label: activity ? `coding · active ${activity} ago` : "coding",
+    label: "coding",
     title: "Agent is making code changes — click to watch the session",
     cls: "tc-coding",
     blocksAgentInterrupt: false,

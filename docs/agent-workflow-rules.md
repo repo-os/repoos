@@ -225,6 +225,7 @@ cannot tell from the code alone:
 
 - **Merging main into a task branch: take main's copy of work/<id>-*.md.** When manually merging main into an active task branch, git may stop on a conflict in `work/<id>-*.md` (the task file is pure bookkeeping, always superseded by main's version). Take main's copy: `git checkout --theirs work/<id>-*.md`, then stage and commit. Do not pause the merge to report this. RepoOS auto-resolves these inside close-out (#0754); manual merges need the same rule.
 - **A task's reports are its own bookkeeping.** Engineering rounds and review passes live together under `work/reports/<id>/` (`round-<n>.json`, `review-<n>.md`; see `user-docs/engineering-reports.md`). They are committed with the task, and handoff/landable/close-out treat this task's report files as bookkeeping rather than implementation drift — another task's reports still fail the task-scope check. Never hand-edit or delete a stored round or pass.
+- **Check gate bookkeeping (#1061).** While a handoff or in-flight check runs, `work/**` and `.repoos/**` commits on the task branch are deferred (not invalidating), RepoOS refuses new engineer turns and source commits, and source changes that bypass those controls are detected by post-check drift inspection. Already-running engineers can still write files directly; this cannot be reliably prevented. See `user-docs/check.md` § "Bookkeeping during a running gate".
 
 - **A task branch's diff contains ONLY that task's own files (#1076).** Another
   task's `work/<other-id>-*.md` file and `work/reports/<other-id>/**` must never
@@ -426,4 +427,3 @@ cannot tell from the code alone:
   `git checkout main -- <them>` before merging. Anything but the task's own
   file is drift that will pollute another task's record. Background:
   `docs/close-out-pipeline.md`.
-
