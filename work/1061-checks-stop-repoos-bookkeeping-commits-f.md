@@ -2,7 +2,7 @@
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -453,3 +453,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T08:59:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T09:00:38Z · body
 - 2026-11-09T09:02:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implemented net-tree drift classification, added coverage for second-parent merges and net-zero source changes, and updated the check documentation. The focused suite passed, and `REPOOS_CHECK_CHANGED=main repoos check` passed after format… · stderr: Reading additional input from stdin... 2026-11-09T09:02:00.011545Z ERROR codex_core::tools::router: error=failed to parse function arguments: unknown field `question`, expected `title` or `options` at line 1 column 189
+- 2026-11-09T09:02:12Z · status active→review
