@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-09T15:13:20Z"
-review_passes: 2
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -13,8 +11,10 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
+updated_at: "2026-11-09T15:13:20Z"
+review_rounds: 2
+review_passes: 2
 handoff_signal_retry_count: 2
-review_rounds: 1
 dev_error_count: 6
 ---
 ## Problem
@@ -84,4 +84,4 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T15:12:31Z · status active→review
 - 2026-11-09T15:12:31Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-09T15:13:20Z · note: review pass 2: needs some work
-
+- 2026-11-09T15:13:20Z · status review→active
