@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-09T12:37:12Z"
-review_passes: 5
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T03:37:29Z"
+updated_at: "2026-11-09T12:59:04Z"
+review_passes: 5
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -59,6 +59,9 @@ Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and
 
 ## Accepted scope: per-view exit timing
 Per-view skeleton exit timing (the brief overlap of a per-view skeleton with content when it leaves) belongs to follow-up #1078 together with the per-view show-delay gate; a reviewer must report it as a suggestion, not a blocking bug.
+
+## Accepted scope: items moved to #1078 (final)
+Owner decision (2026-11-09, release night): review 5 items 3 (board responsive breakpoints), 4 (reuse of motion settings) and 5 (cache seeding) are accepted follow-up work tracked in #1078, not blockers for this task. Only these remain required: (1) discard the uncommitted edits in the worktree (they regress Mission Control to six blocks); (2) the named placeholder counts for the non-board kinds must be real named constants that the render and the test both use, with Mission Control (dashboard) staying a SINGLE block (value 1) and a comment explaining what real layout each constant mirrors. A reviewer must report everything else as suggestions.
 
 ## Screenshots
 
@@ -213,4 +216,4 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 - 2026-11-09T12:34:58Z · message_queued at 2026-11-09T12:34:58.337Z
 - 2026-11-09T12:37:12Z · note: review pass 5: needs some work
 - 2026-11-09T12:37:12Z · needs_input
-
+- 2026-11-09T12:59:04Z · body: Accepted scope: items moved to #1078 (final) (added)
