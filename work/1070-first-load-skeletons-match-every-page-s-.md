@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T05:13:52Z"
+updated_at: "2026-11-09T05:15:50Z"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
@@ -36,6 +36,26 @@ A first load should feel calm and predictable: the skeleton is the same shape as
 ## Notes for AI
 Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading-skeleton.ts`, `src/ui-app/src/App.vue` (the shell-level skeleton, line ~171), `DashboardView.vue`, `StoriesView.vue`, and the `PageSkeleton` call sites in the other views. Reuse the existing animation settings (see `ActivityIndicator.vue`) rather than inventing new motion settings. No native `title` tooltips; custom dialogs only. Do not edit repoos.toml. Rebuild the UI (`bun run build:ui`) after changes.
 
+## Shots
+```json
+[
+{
+  "label": "Mission Control first-load skeleton",
+  "target": "default",
+  "route": "/?shotState=loading:dashboard",
+  "highlight": ".page-skeleton--dashboard",
+  "state": "loading:dashboard"
+},
+{
+  "label": "Stories first-load skeleton",
+  "target": "default",
+  "route": "/stories?shotState=loading:stories",
+  "highlight": ".page-skeleton--rows",
+  "state": "loading:stories"
+}
+]
+```
+
 ## Screenshots
 
 ![Mission Control first load: 4 tall skeleton cards plus 1 wrapped onto a second row, nothing like the real page](/api/tasks/1070/attachments/att_a8a74fca-9dad-4cb2-bb73-bf85bfff1f4b.webp)
@@ -52,3 +72,4 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 - 2026-11-09T04:49:00Z · watchdog: auto-resumed engineer after a clean exit without a handoff · resume 1/3
 - 2026-11-09T05:02:21Z · body
 - 2026-11-09T05:13:52Z · body
+- 2026-11-09T05:15:50Z · body
