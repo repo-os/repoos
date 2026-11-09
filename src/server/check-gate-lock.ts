@@ -84,6 +84,9 @@ export type CheckGateAcquireResult =
   | { ok: false; reason: string };
 
 let checkGateFlushInProgress = false;
+let activeReplayCommit:
+  | { commitRoot: string; message: string; absPaths: string[] }
+  | undefined;
 
 export function isCheckGateFlushInProgress(): boolean {
   return checkGateFlushInProgress;
@@ -893,8 +896,6 @@ function flushDeferredBranchCommitsLocked(
   }
 
   checkGateFlushInProgress = true;
-  const prev = process.env.REPOOS_CHECK_GATE_INTERNAL;
-  process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
   try {
     while (queue.length > 0) {
       const item = queue[0]!;
@@ -928,7 +929,21 @@ function flushDeferredBranchCommitsLocked(
       writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
       try {
         restoreSnapshots(item.fileSnapshots);
-        const committed = commitFiles(item.commitRoot, item.absPaths, item.message);
+        const prevInternal = process.env.REPOOS_CHECK_GATE_INTERNAL;
+        process.env.REPOOS_CHECK_GATE_INTERNAL = "1";
+        activeReplayCommit = {
+          commitRoot: item.commitRoot,
+          message: item.message,
+          absPaths: [...item.absPaths],
+        };
+        let committed: boolean;
+        try {
+          committed = commitFiles(item.commitRoot, item.absPaths, item.message);
+        } finally {
+          activeReplayCommit = undefined;
+          if (prevInternal === undefined) delete process.env.REPOOS_CHECK_GATE_INTERNAL;
+          else process.env.REPOOS_CHECK_GATE_INTERNAL = prevInternal;
+        }
         if (!committed) {
           restoreSnapshotsIfUnchanged(expectedCurrent, item.fileSnapshots);
           state.pending = undefined;
@@ -955,8 +970,6 @@ function flushDeferredBranchCommitsLocked(
     writeDeferredBranchQueueState(boardRoot, cacheDir, taskId, state);
     return { ok: true, remaining: 0 };
   } finally {
-    if (prev === undefined) delete process.env.REPOOS_CHECK_GATE_INTERNAL;
-    else process.env.REPOOS_CHECK_GATE_INTERNAL = prev;
     checkGateFlushInProgress = false;
   }
 }
@@ -1141,7 +1154,15 @@ function resolveCommitHook(
   message: string,
   config: Pick<RepoOSConfig, "workDir" | "cacheDir">,
 ): CheckGateCommitVerdict {
-  if (checkGateFlushInProgress || process.env.REPOOS_CHECK_GATE_INTERNAL === "1") return "proceed";
+  if (
+    activeReplayCommit &&
+    samePath(activeReplayCommit.commitRoot, commitRoot) &&
+    activeReplayCommit.message === message &&
+    activeReplayCommit.absPaths.length === absPaths.length &&
+    activeReplayCommit.absPaths.every((path) => absPaths.includes(path))
+  ) {
+    return "proceed";
+  }
   // Check the holder and enqueue under the same mutex as release/flush. This
   // closes the race where release cleared the lock after lookup but before the
   // queue write, leaving a late bookkeeping entry stranded out of order.
