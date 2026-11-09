@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 9fae0c3d8660c3abcb0b50c4b7f68c1f626eaaaa
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T21:56:53Z"
+updated_at: "2026-11-09T22:00:40Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 9fae0c3d8660c3abcb0b50c4b7f68c1f626eaaaa
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -157,4 +157,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T21:44:12Z · message_delivered: 1 message(s)
 - 2026-11-09T21:56:53Z · message_queued at 2026-11-09T21:56:53.461Z
 - 2026-11-09T21:56:53Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-09T22:00:40Z · CTO nudge: held — an undelivered message is already queued
