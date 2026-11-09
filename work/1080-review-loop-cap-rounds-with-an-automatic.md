@@ -136,3 +136,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T19:45:39Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T19:56:18Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-09T19:56:19Z · message_queued at 2026-11-09T19:56:19.490Z
+- 2026-11-09T19:56:19Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
