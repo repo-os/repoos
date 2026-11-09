@@ -4,12 +4,12 @@ title: "Release emails: any project with email configured can email its team whe
 type: feature
 status: inbox
 priority: p2
-area: infra
+area: [server, web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-09T04:52:36Z"
+updated_at: "2026-11-09T04:52:39Z"
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -47,3 +47,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 
 - 2026-11-09T04:42:41Z · created · njachowski@gmail.com
 - 2026-11-09T04:52:36Z · title, body: Problem (added 1, removed 1); How other projects do this (added); Desired UX (added 4, removed 1); Design (added); Acceptance criteria (added 8, removed 7); Notes for AI (added 1, removed 1); Design note (why not a git hook) (removed)
+- 2026-11-09T04:52:39Z · area
