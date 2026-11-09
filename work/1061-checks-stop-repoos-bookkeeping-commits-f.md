@@ -4,8 +4,8 @@ title: "Checks: stop RepoOS bookkeeping commits from invalidating a running chec
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 12 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — Configuration changes block landing, and a bookkeeping-only merge can still be rejected."
 priority: p2
 area: [core, server]
 assigned_to: ai
