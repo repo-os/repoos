@@ -6,6 +6,9 @@ status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "error: Model busy, retry later"
+debug_tldr: The run hit a temporary model-capacity error; retry it and investigate why the end-to-end test left the feature branch behind.
+debug_tldr_at: "2026-11-09T14:24:51Z"
+debug_tldr_key: "dev-error|error: Model busy, retry later"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +17,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T14:24:32Z"
+updated_at: "2026-11-09T14:24:51Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 1
