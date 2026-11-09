@@ -543,4 +543,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T12:32:10Z · message_delivered: 2 message(s)
 - 2026-11-09T12:32:10Z · note: handoff requested (cli)
 - 2026-11-09T12:32:47Z · status active→review
-
+- 2026-11-09T12:32:47Z · message_queued at 2026-11-09T12:32:47.324Z
