@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -210,3 +210,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T22:11:11Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Now let me build/typecheck to catch remaining errors, then run the tests. Let me run the build. Let me run `bun run build` and the release tests. Let me do it. Let me run. Running the build. OK. (I'll issue the tool call now.) Let me run t… · stderr: (empty)
 - 2026-11-09T22:15:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T22:27:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Wait, the build output looks like it only built the UI — the TS compile likely happened. Let me verify by checking the full output for tsc errors. Let me re-run and look for errors specifically. Let me check with a typecheck. Actually `bun… · stderr: (empty)
+- 2026-11-09T22:27:01Z · status active→review
