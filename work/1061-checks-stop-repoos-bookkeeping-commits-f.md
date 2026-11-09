@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T07:37:46Z"
+updated_at: "2026-11-09T07:39:09Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: docs/check-run-history.md, src/core/check-gate-bookkeeping.ts, src/ui-app/tests/check-gate-bookkeeping.test.ts, user-docs/check.md) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 0f8997fdb73e748ccda585a141de29f4f8dd272f
 review_passes: 11
@@ -432,3 +432,4 @@ Owner decision (2026-11-09): blocking filesystem writes by an ALREADY-RUNNING en
 - 2026-11-09T07:37:46Z · message_queued at 2026-11-09T07:37:46.416Z
 - 2026-11-09T07:37:46Z · ↻ resuming engineer to read queued message
 - 2026-11-09T07:37:46Z · message_delivered: 2 message(s)
+- 2026-11-09T07:39:09Z · message_queued at 2026-11-09T07:39:09.182Z
