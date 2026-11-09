@@ -18,7 +18,10 @@ export function cardHintDataTip(title: string, activityTip?: string | null): str
 export function firstValidActivityTimestamp(
   ...timestamps: Array<string | null | undefined>
 ): string | undefined {
-  return timestamps.find((value) => !!value && Number.isFinite(Date.parse(value)));
+  for (const value of timestamps) {
+    if (value && Number.isFinite(Date.parse(value))) return value;
+  }
+  return undefined;
 }
 
 /** Last engineer output — "Active 3m ago" plus the local timestamp. */
