@@ -186,3 +186,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T20:30:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T20:42:04Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-09T20:42:05Z · message_queued at 2026-11-09T20:42:05.517Z
+- 2026-11-09T20:42:05Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1073.md
