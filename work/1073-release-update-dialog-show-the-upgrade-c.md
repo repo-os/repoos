@@ -205,3 +205,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T21:45:46Z · note: handoff requested (cli)
 - 2026-11-09T21:50:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T22:08:42Z · message_queued at 2026-11-09T22:08:42.509Z
+- 2026-11-09T22:08:42Z · handoff failed · task-file handoff failed at check · repoos check failed: build — src/commands/upgrade.ts(237,14): error TS2304: Cannot find name 'readVersion'.
