@@ -31,7 +31,13 @@ function installRoot(): string {
   return dirname(dirname(fileURLToPath(import.meta.url)));
 }
 
-function readVersion(root: string): string | null {
+/**
+ * The version in the install's own `.build-info.json`, or null when there is
+ * none — the same read `cmdUpgrade` uses. Exported so the server's install
+ * detection passes identical input to `upgradeInstruction` and never disagrees
+ * with the CLI on the same checkout (#1073 review).
+ */
+export function readInstallVersion(root: string): string | null {
   try {
     const info = JSON.parse(readFileSync(join(root, ".build-info.json"), "utf8")) as {
       version?: string;
@@ -63,6 +69,27 @@ export interface UpgradeInstruction {
 export const SOURCE_UPGRADE_COMMAND = "git pull && bun install && bun run build";
 
 /**
+ * Whether `root` is a source checkout's build output rather than a standalone
+ * install (#1073 review).
+ *
+ * The version alone cannot tell them apart: `scripts/copy-assets.mjs` writes
+ * `package.json`'s version into `dist/.build-info.json` on every source build,
+ * so a built checkout looks exactly like a curl install. The reliable signal is
+ * structure: a checkout's install root is `<repo>/dist` (or `<repo>/src` for a
+ * `bun src/...` run), and its parent holds `src/` + `package.json`, or a `.git`
+ * directory. A standalone install's parent holds neither.
+ */
+export function isSourceCheckout(root: string): boolean {
+  const parent = dirname(root);
+  try {
+    if (existsSync(join(parent, ".git"))) return true;
+    return existsSync(join(parent, "src")) && existsSync(join(parent, "package.json"));
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The prerelease channel a version belongs to (`0.6.0-beta.1` → `"beta"`), or
  * null for a stable version. Release tags carry the channel as the prerelease
  * identifier, so an installed channel build is how the update dialog knows to
@@ -82,14 +109,19 @@ export function channelFromVersion(version: string | null): string | null {
  *
  * Detection order mirrors `cmdUpgrade`:
  *   1. a recognized package-manager path → that manager's update command;
- *   2. no `.build-info.json` (`version` is null) → source checkout;
+ *   2. a source checkout (`isSourceCheckout`) or no `.build-info.json`
+ *      (`version` is null) → the source-checkout command;
  *   3. otherwise → standalone (curl) install, with the channel form when the
  *      installed version is a prerelease.
+ *
+ * `sourceCheckout` overrides the filesystem probe for tests; production callers
+ * omit it.
  */
 export function upgradeInstruction(input: {
   installRoot: string;
   version: string | null;
   channel?: string | null;
+  sourceCheckout?: boolean;
 }): UpgradeInstruction {
   const packageManager = packageManagerUpgrade(input.installRoot);
   if (packageManager) {
@@ -99,7 +131,8 @@ export function upgradeInstruction(input: {
       command: packageManager.command,
     };
   }
-  if (input.version === null) {
+  const source = input.sourceCheckout ?? isSourceCheckout(input.installRoot);
+  if (source || input.version === null) {
     return { installKind: "source", packageManager: null, command: SOURCE_UPGRADE_COMMAND };
   }
   const channel = input.channel ?? null;
