@@ -4,9 +4,9 @@
  * A self-check WIP checkpoint, a concurrent board write, or a partial merge of
  * main can leave a sibling task's `work/<other-id>-*.md` (or its report) on the
  * branch. `restoreForeignTaskBookkeepingFromMain` heals that at handoff — before
- * the review lock — by restoring main's copy as one bookkeeping commit, so the
- * landing preflight's "Task scope" check passes instead of failing with "the
- * diff changes another task's bookkeeping".
+ * the review lock — by restoring the branch point's copy as one bookkeeping
+ * commit, so the landing preflight's "Task scope" check passes instead of
+ * failing with "the diff changes another task's bookkeeping".
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
@@ -49,7 +49,7 @@ function repoWithTaskBranch(): { root: string; wt: string; clean: () => void } {
 }
 
 describe("restoreForeignTaskBookkeepingFromMain (#1076)", () => {
-  it("restores main's copy of a sibling's bookkeeping as one bookkeeping commit", async () => {
+  it("restores the branch point's copy of a sibling's bookkeeping as one bookkeeping commit", async () => {
     const fx = repoWithTaskBranch();
     try {
       // The branch committed its own source work, its own report, AND a
@@ -274,7 +274,8 @@ branch: ${branch}
 ## Problem
 
 A sibling task's bookkeeping is committed on this branch by an earlier WIP
-checkpoint, and handoff must restore main's copy instead of failing landing.
+checkpoint, and handoff must restore the branch point's copy instead of failing
+landing.
 `;
     const taskPath = join(workDir, "1076-handoff-foreign.md");
     writeFileSync(taskPath, taskText);
@@ -359,10 +360,65 @@ checkpoint, and handoff must restore main's copy instead of failing landing.
         logs.some(
           (l) =>
             l.level === "info" &&
-            l.message.includes("restored main's copy of another task's bookkeeping"),
+            l.message.includes("restored the branch point's copy of another task's bookkeeping"),
         ),
       ).toBe(true);
       expect(git(fx.wt, ["status", "--porcelain"])).toBe("");
+    } finally {
+      fx.clean();
+    }
+  }, 60_000);
+
+  // The report commit runs AFTER the check gate — which can be minutes long —
+  // and the foreign-bookkeeping restore runs only once, earlier. A bare commit
+  // there would fold a sibling staged in that window onto the branch; the
+  // pathspec scopes it to the report. A merely-staged sibling is the exact shape
+  // a concurrent board write / stray `git add -A` leaves at report time, and the
+  // committed-drift restore (which grades only `merge-base..HEAD`) never sees it.
+  it("keeps a sibling staged at report time out of the report commit", async () => {
+    const fx = handoffFixture();
+    try {
+      const { finalizeReviewHandoff } = await import("../../server/handoff.js");
+      // A sibling file that is staged but never committed: untouched by the
+      // committed-drift restore, so it is live in the index at report time.
+      writeFileSync(join(fx.wt, "work", "3000-staged-sibling.md"), '---\nid: "3000"\n---\nX\n');
+      git(fx.wt, ["add", "--", "work/3000-staged-sibling.md"]);
+      expect(git(fx.wt, ["diff", "--cached", "--name-only"])).toContain(
+        "work/3000-staged-sibling.md",
+      );
+
+      const result = await finalizeReviewHandoff(fx.config, fx.task, {
+        origin: "ui-review",
+        skipChecks: true,
+        actor: "test@repoos.org",
+        onTaskLog: () => {},
+        // "check" fires after the commit gate's blanket unstage and before the
+        // report commit — the real window a concurrent board write / `git add -A`
+        // can leave a sibling staged. Stage one there to prove the report commit
+        // is scoped to the report and can never sweep it.
+        onProgress: (step) => {
+          if (step !== "check") return;
+          writeFileSync(join(fx.wt, "work", "3000-staged-sibling.md"), '---\nid: "3000"\n---\nX\n');
+          git(fx.wt, ["add", "--", "work/3000-staged-sibling.md"]);
+        },
+      });
+      expect(result.ok).toBe(true);
+
+      // The report commit names the report, never the sibling.
+      const reportSha = git(fx.wt, [
+        "log",
+        "--format=%H",
+        "--grep=record engineering report",
+        "-1",
+      ]);
+      const reportFiles = git(fx.wt, ["show", "--name-only", "--pretty=format:", reportSha])
+        .split("\n")
+        .filter(Boolean);
+      expect(reportFiles).toContain("work/reports/1076/round-1.json");
+      expect(reportFiles).not.toContain("work/3000-staged-sibling.md");
+      expect(git(fx.wt, ["diff", "--name-only", "main...HEAD"])).not.toContain(
+        "work/3000-staged-sibling.md",
+      );
     } finally {
       fx.clean();
     }
