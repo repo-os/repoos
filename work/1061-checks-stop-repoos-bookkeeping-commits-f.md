@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T01:57:55Z"
+updated_at: "2026-11-09T02:00:03Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (HEAD moved from 8eab7241 to ed3f0a39) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: 8eab72418d65c6003b13281d424f9b05d43edb29
 review_passes: 9
@@ -363,3 +363,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T01:47:10Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (HEAD moved from 8eab7241 to ed3f0a39) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
 - 2026-11-09T01:49:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T01:57:55Z · body
+- 2026-11-09T02:00:03Z · handoff_deferred: 1 queued message(s) must be read before review
