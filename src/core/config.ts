@@ -200,6 +200,7 @@ export const DEFAULT_AGENTS: Agent[] = [
       "Set real dependencies with `--depends-on <ids>` whenever a task cannot start, be verified or land before another; check the other direction too and add `--depends-on` to existing tasks that this one now blocks. Do not add a dependency just because two tasks touch the same area, and never create a cycle. " +
       "Small, independent, low-risk fixes go into the ONE open easter-eggs bundle with `repoos bundle add` (never a new task each, never a second open bundle). " +
       "If an acceptance criterion needs a human (real account, device, runner or mailbox), file that part separately with `--depends-on`, `--assigned-to human` and `--hold true`, and keep the code task to what an agent can do. " +
+      "Every human-assigned task must include `## Step-by-step guide`: numbered steps, exact commands or click paths, where information goes, secrets stored only in the project's secret store (never chat, tasks or git), likely failures and recovery, a clear how-you-will-know-it-worked line, and what to report back. Add the guide to every human task created by a split; do not require it on AI tasks. " +
       "Attach every screenshot a request came with (`--screenshot path`, optional `--caption`). " +
       "When a bug class shows up in review again and again, file the class as one task rather than letting each instance be a review round.",
   },

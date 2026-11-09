@@ -14,7 +14,7 @@ import { STATUSES, type Status, type Task } from "../core/types.js";
 import { c, statusColor, priorityColor } from "../cli/colors.js";
 import { patchTaskFile, type TaskPatch } from "../server/write.js";
 import { flagTaskSpecFlagsIfNeededAsync } from "../server/task-underspecified-flag.js";
-import { needsHumanStepFingerprint } from "../core/task-underspecified.js";
+import { humanTaskGuideWarning, needsHumanStepFingerprint } from "../core/task-underspecified.js";
 import { splitHumanStepTask, HumanStepSplitError } from "../server/human-step-split.js";
 import { writeHandoffRequest, type HandoffRequest } from "../server/handoff-request.js";
 import { closingOutRefusal, isTaskClosingOut } from "../server/close-out-lock.js";
@@ -1001,6 +1001,8 @@ export function cmdUpdate(args: string[]): void {
   try {
     const updated = patchTaskFile(repoos.config, task.absPath, patch);
     console.log("  " + c.green("updated ") + c.dim("#" + updated.id) + "  " + updated.title);
+    const guideWarning = humanTaskGuideWarning(updated.assignee, updated.body);
+    if (guideWarning) console.log("  " + c.yellow("warning: ") + c.dim(guideWarning));
   } catch (e) {
     console.error(c.red("  " + (e as Error).message));
     process.exitCode = 1;
@@ -1211,6 +1213,8 @@ export async function cmdNew(args: string[]): Promise<void> {
   console.log(
     "  " + c.green("created ") + c.dim("#" + t.id) + "  " + t.title + c.dim("  → " + t.path),
   );
+  const guideWarning = humanTaskGuideWarning(t.assignee, t.body);
+  if (guideWarning) console.log("  " + c.yellow("warning: ") + c.dim(guideWarning));
   // #0763: store the supplied images under work/.attachments/<id>/ (gitignored)
   // and extend ## Screenshots before the task file is committed. A storage
   // failure is reported loudly — never silent — and the task minus images stays.
