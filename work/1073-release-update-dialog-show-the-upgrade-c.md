@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-09T19:00:14Z"
+updated_at: "2026-11-09T19:13:17Z"
 last_check_failure: "repoos check at 2026-11-09T16:54:34.079Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — the page at / did not apply the fixture (is this the app target?) (http://127.0.0.1:53313/?shotState=release%3AupdateAvailable)"
 handoff_signal_retry_count: 2
 dev_error_count: 11
@@ -162,3 +162,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T18:16:51Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-09T18:26:54Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-09T19:00:14Z · note: adopted orphaned engineer pid 3045
+- 2026-11-09T19:13:17Z · message_queued at 2026-11-09T19:13:17.162Z
