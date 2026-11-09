@@ -133,3 +133,4 @@ Owner-side decision (2026-11-09): the handoff capture tool deliberately treats a
 - 2026-11-09T08:17:22Z · ↻ resuming engineer to read queued message
 - 2026-11-09T08:17:22Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: no assistant message · stderr: Reading additional input from stdin...
 - 2026-11-09T08:17:22Z · status active→review
+- 2026-11-09T08:17:22Z · message_delivered: 2 message(s)
