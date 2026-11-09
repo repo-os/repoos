@@ -595,3 +595,4 @@ Owner decision (2026-11-09 night): git submodules/gitlinks and nested repositori
 - 2026-11-09T14:02:24Z · agent exited with an error (codex) · 2026-11-09T14:02:23.383432Z ERROR codex_core::util: Custom tool call output is missing for call id: call_4344452ce80e419089324beb390515d6
 - 2026-11-09T14:39:47Z · close-out gate completed in 602s
 - 2026-11-09T14:40:13Z · status done→done, release:success
+- 2026-11-09T14:40:13Z · message_dropped: 1 queued message(s) discarded — task is done
