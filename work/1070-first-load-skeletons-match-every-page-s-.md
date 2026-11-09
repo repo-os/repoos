@@ -248,3 +248,4 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T14:13:25Z · message_delivered: 3 message(s)
 - 2026-11-09T14:13:52Z · body
 - 2026-11-09T14:14:31Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Mission Control loading skeleton (target "default"): highlight .page-skeleton--dashboard matched nothing on / (http://127.0.0.1:42281/); [missing-target] Stories loading skeleton (target "default"): highlight .page-skeleton--rows matched nothing on /stories (http://127.0.0.1:42281/stories)
+- 2026-11-09T14:14:31Z · message_queued at 2026-11-09T14:14:31.508Z
