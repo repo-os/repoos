@@ -5,11 +5,13 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import App from "../src/App.vue";
+import PageSkeleton from "../src/components/PageSkeleton.vue";
 import { useRepoStore } from "../src/stores/repo";
 import {
   loadingPageHeader,
   loadingSkeletonKind,
   LOADING_SKELETON_ROUTES,
+  LOADING_SKELETON_ITEM_COUNTS,
 } from "../src/lib/loading-skeleton";
 import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../src/lib/work-board-columns";
 
@@ -19,7 +21,7 @@ describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
     expect(appVue).not.toMatch(/v-if="repo\.loading"[^>]*class="spin"/);
     expect(appVue).toMatch(
-      /v-if="repo\.loading \|\| showRepoSkeleton" class="main-route page-loading"/,
+      /v-if="repo\.loading \|\| showRepoSkeleton"\s+class="main-route page-loading"/,
     );
     expect(appVue).toMatch(/<PageSkeleton v-if="showRepoSkeleton" :kind="loadingKind"\s*\/>/);
     expect(appVue).toMatch(
@@ -72,6 +74,23 @@ describe("repo loading skeleton", () => {
     expect(skeleton).toMatch(/page-skeleton--dashboard,\s*\.page-skeleton--rows/);
     expect(loadingSkeletonKind("/")).toBe("dashboard");
     expect(loadingSkeletonKind("/stories")).toBe("rows");
+  });
+
+  it("renders the declared count for every skeleton kind from the layout definitions", () => {
+    const kinds = Object.keys(LOADING_SKELETON_ITEM_COUNTS) as Array<keyof typeof LOADING_SKELETON_ITEM_COUNTS>;
+    for (const kind of kinds) {
+      const wrapper = mount(PageSkeleton, { props: { kind } });
+      const expected = kind === "board" ? WORK_BOARD_COLUMN_COUNT
+        : kind === "inputBoard" ? INPUT_BOARD_COLUMN_COUNT
+          : LOADING_SKELETON_ITEM_COUNTS[kind];
+      expect(wrapper.findAll(":scope > .page-skeleton__item"), kind).toHaveLength(expected);
+      wrapper.unmount();
+    }
+  });
+
+  it("uses a static placeholder animation under reduced motion", () => {
+    const skeleton = readFileSync(resolve(__dirname, "../src/components/PageSkeleton.vue"), "utf8");
+    expect(skeleton).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/);
   });
 
   it("gives every standard page a title to keep above its skeleton", () => {

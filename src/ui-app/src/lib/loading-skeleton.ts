@@ -9,6 +9,18 @@ export type LoadingSkeletonKind =
   | "targets"
   | "deployments";
 
+/** The loading views intentionally show one data block until real data arrives. */
+export const LOADING_SKELETON_ITEM_COUNTS: Record<LoadingSkeletonKind, number> = {
+  board: 0, // computed from the work board's live column definition
+  inputBoard: 0, // computed from the input board's live column definition
+  dashboard: 1,
+  cards: 3,
+  table: 5,
+  rows: 1,
+  targets: 2,
+  deployments: 3,
+};
+
 /** Every routed path the app shell can open while the repo index loads. */
 export const LOADING_SKELETON_ROUTES = [
   "/",
