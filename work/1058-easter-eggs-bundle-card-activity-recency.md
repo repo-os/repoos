@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/debugger-integration.test.ts > debugger agent integration > does not re-broadcast a turn the panel already drew optimistically (#0443) on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: abab38560543ef8b2c776e875315f491fc5a3e6b
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
@@ -13,7 +11,9 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T06:31:44Z"
+updated_at: "2026-11-09T06:34:09Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/debugger-integration.test.ts > debugger agent integration > does not re-broadcast a turn the panel already drew optimistically (#0443) on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: abab38560543ef8b2c776e875315f491fc5a3e6b
 review_passes: 9
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -562,4 +562,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T06:19:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T06:31:44Z · message_queued at 2026-11-09T06:31:44.754Z
 - 2026-11-09T06:31:44Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/debugger-integration.test.ts > debugger agent integration > does not re-broadcast a turn the panel already drew optimistically (#0443) on bee — fix it in the feature branch and re-run the gate
-
+- 2026-11-09T06:34:09Z · CTO nudge: held — an undelivered message is already queued
