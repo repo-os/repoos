@@ -284,8 +284,11 @@ managed engineer turn while the lock is held (`A check is running; wait for it
 to finish.`), and RepoOS source commits are rejected. An engineer turn that was
 already running can still write files directly; filesystem writes cannot be
 reliably fenced from that process. Such source changes are detected by the
-post-check drift comparison and invalidate the result. A server restart clears
-stale locks and flushes any deferred queue so nothing is lost.
+post-check drift comparison and invalidate the result. That comparison hashes
+the actual tracked and non-ignored untracked source files at both endpoints, so
+it catches edits to an already-dirty file and newly created source files. A
+server restart clears stale locks and flushes any deferred queue so nothing is
+lost.
 
 Drift inspection examines intervening commits as well as the net tree
 difference from the commit where the check started to the resulting tree. Any
@@ -295,8 +298,9 @@ If Git cannot compute changed paths or inspect the commit history, the check
 fails closed. The inspection handles merges where the checked commit is the
 second parent without blaming older first-parent history. An engineer who was
 already running can still write source files directly during a check; RepoOS
-cannot reliably fence those filesystem writes. Committed source drift is
-detected after the check and invalidates its result.
+cannot reliably fence those filesystem writes. An uncommitted edit that is
+made and then restored before the end snapshots is outside the guarantee; a
+committed source change followed by a revert is detected from commit history.
 
 The internal server environment variable `REPOOS_HANDOFF_CHECK_MAX_AGE_MS`
 limits reuse age (default one hour; zero disables it; invalid values disable

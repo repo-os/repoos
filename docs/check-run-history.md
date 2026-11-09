@@ -26,9 +26,13 @@ account for a changed source path, the check fails closed and names that path
 with a `history could not be explained` reason.
 
 An already-running engineer can still edit source files directly during a
-check; filesystem writes cannot be reliably fenced. RepoOS detects committed
-source changes after the check and rejects the result with the commit subject
-and paths. This is an accepted limitation, not a write-blocking guarantee.
+check; filesystem writes cannot be reliably fenced. RepoOS compares hashes of
+tracked and non-ignored untracked source files before and after validation, so
+an edit to an already-dirty file or a newly created source file invalidates the
+result. A direct, uncommitted edit that is restored before the final snapshot
+is outside the guarantee; committed source changes, including a commit and
+revert, are detected from history. This is an accepted limitation, not a
+write-blocking guarantee.
 
 Every `repoos check` execution records one row in `<project>/.repoos/checks.db`
 (cacheDir from that project's `repoos.toml`). The store is how the server's
