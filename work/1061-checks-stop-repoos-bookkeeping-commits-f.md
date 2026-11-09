@@ -11,7 +11,7 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T03:19:09Z"
+updated_at: "2026-11-09T03:34:44Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: fa20c585ba45a8cf93d82ea6795d814f978165e2
 review_passes: 10
@@ -393,3 +393,4 @@ Start from src/server/handoff.ts (the "worktree changed while the gate was runni
 - 2026-11-09T03:16:50Z · message_queued at 2026-11-09T03:16:50.941Z
 - 2026-11-09T03:16:51Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
 - 2026-11-09T03:19:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T03:34:44Z · body
