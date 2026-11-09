@@ -109,3 +109,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-09T13:58:38Z · body
 - 2026-11-09T14:01:35Z · agent exited with an error (opencode) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
 - 2026-11-09T14:07:33Z · note: ui verification failed: ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (light) (target "default"): highlight [data-test-id="release-upgrade-comman
+- 2026-11-09T14:07:33Z · message_queued at 2026-11-09T14:07:33.633Z
