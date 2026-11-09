@@ -18,6 +18,9 @@ import {
   appendFileSync,
   copyFileSync,
   chmodSync,
+  closeSync,
+  fsyncSync,
+  openSync,
 } from "node:fs";
 import * as nodeFs from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -157,10 +160,22 @@ function acquireStateMutex(root: string, cacheDir: string, taskId: string): () =
 function atomicWriteJson(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
   const temp = `${path}.${process.pid}.${Math.random().toString(16).slice(2)}.tmp`;
+  let fd: number | undefined;
   try {
-    writeFileSync(temp, JSON.stringify(value, null, 2), "utf8");
+    fd = openSync(temp, "w", 0o600);
+    writeFileSync(fd, JSON.stringify(value, null, 2), "utf8");
+    fsyncSync(fd);
+    closeSync(fd);
+    fd = undefined;
     renameSync(temp, path);
+    const dirFd = openSync(dirname(path), "r");
+    try {
+      fsyncSync(dirFd);
+    } finally {
+      closeSync(dirFd);
+    }
   } finally {
+    if (fd !== undefined) closeSync(fd);
     if (existsSync(temp)) unlinkSync(temp);
   }
 }
@@ -320,13 +335,36 @@ function trackedSourceFileModes(
 }
 
 /** Apply protection only after the recovery record is durably written. */
-function applyTrackedSourceProtection(modes: Record<string, number>): void {
+function applyTrackedSourceProtection(
+  modes: Record<string, number>,
+  chmod: typeof chmodSync = chmodSync,
+): void {
   for (const [path, mode] of Object.entries(modes)) {
     try {
-      chmodSync(path, mode & ~0o222);
-    } catch {
+      chmod(path, mode & ~0o222);
+    } catch (error) {
       // Missing files need no protection; the gate drift check catches changes.
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     }
+  }
+}
+
+function persistLockAndProtect(
+  path: string,
+  lock: CheckGateLock,
+  chmod: typeof chmodSync = chmodSync,
+): void {
+  atomicWriteJson(path, lock);
+  try {
+    applyTrackedSourceProtection(lock.protectedFileModes ?? {}, chmod);
+  } catch (error) {
+    restoreProtectedFileModes(lock);
+    try {
+      unlinkSync(path);
+    } catch {
+      // Keep the original protection error; a stale lock can be recovered.
+    }
+    throw error;
   }
 }
 
@@ -383,6 +421,8 @@ export async function acquireCheckGateLock(args: {
   worktree: string;
   kind: CheckGateKind;
   config?: Pick<RepoOSConfig, "workDir" | "cacheDir">;
+  /** Injectable filesystem operation for deterministic protection failure tests. */
+  protectionChmod?: typeof chmodSync;
 }): Promise<CheckGateAcquireResult> {
   const head = await runGit(args.worktree, ["rev-parse", "HEAD"], 10_000);
   if (head.status !== 0) {
@@ -434,8 +474,7 @@ export async function acquireCheckGateLock(args: {
           holders: [holder],
           protectedFileModes,
         };
-        atomicWriteJson(path, fresh);
-        applyTrackedSourceProtection(protectedFileModes);
+        persistLockAndProtect(path, fresh, args.protectionChmod);
       }
     } else {
       const protectedFileModes = trackedSourceFileModes(
@@ -451,8 +490,7 @@ export async function acquireCheckGateLock(args: {
         holders: [holder],
         protectedFileModes,
       };
-      atomicWriteJson(path, lock);
-      applyTrackedSourceProtection(protectedFileModes);
+      persistLockAndProtect(path, lock, args.protectionChmod);
     }
   } finally {
     releaseState();

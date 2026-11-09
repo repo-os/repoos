@@ -273,6 +273,18 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     expect(out).not.toContain("All checks passed");
   }, 30_000);
 
+  it("detects a source file changed again when it was already dirty at check start (#1061)", async () => {
+    const root = unmanagedTaskCheckFixture(
+      "chmod u+w src/app.ts && printf second-edit >> src/app.ts",
+    );
+    writeFileSync(join(root, "src", "app.ts"), "already dirty\n");
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(1);
+    expect(out).toContain("Tracked source files changed in the working tree during the check");
+    expect(out).toContain("src/app.ts");
+    expect(out).not.toContain("All checks passed");
+  }, 30_000);
+
   it("allows a bookkeeping-only tracked edit during a direct task check (#1061)", async () => {
     const root = unmanagedTaskCheckFixture("printf bookkeeping >> work/0695-task.md");
     const { code, logs: out } = await runManagedCheck(root, false);
