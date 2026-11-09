@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
