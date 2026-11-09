@@ -199,7 +199,11 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   const root = installRoot();
   const channel = parseChannel(args);
 
-  const instruction = upgradeInstruction({ installRoot: root, version: readVersion(root), channel });
+  const instruction = upgradeInstruction({
+    installRoot: root,
+    version: readVersion(root),
+    channel,
+  });
   if (instruction.installKind === "package-manager") {
     console.log(c.yellow(`  repoos was installed with ${instruction.packageManager}.`));
     console.log(c.dim("  Update it with:"));

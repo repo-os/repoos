@@ -188,8 +188,8 @@ async function copyCommand(): Promise<void> {
             </Button>
           </div>
           <p class="release-update-muted">
-            Runs in your terminal. A server already running keeps the old version until you
-            restart it.
+            Runs in your terminal. A server already running keeps the old version until you restart
+            it.
           </p>
         </div>
         <div v-if="notesHtml" class="release-update-notes">
