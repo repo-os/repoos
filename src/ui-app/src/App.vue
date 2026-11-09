@@ -44,6 +44,11 @@ const notices = useNoticesStore();
 const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
 const loadingKind = computed(() => loadingSkeletonKind(route.path));
 const loadingHeader = computed(() => loadingPageHeader(route.path));
+const forcedLoadingShot = computed(
+  () =>
+    (route.query.shotState === "loading:dashboard" && route.path === "/") ||
+    (route.query.shotState === "loading:stories" && route.path === "/stories"),
+);
 const showRepoSkeleton = ref(false);
 let skeletonDelay: ReturnType<typeof setTimeout> | null = null;
 let skeletonMinTime: ReturnType<typeof setTimeout> | null = null;
@@ -193,9 +198,9 @@ onUnmounted(() => {
 
         <div class="main">
           <div
-            v-if="repo.loading || showRepoSkeleton"
+            v-if="repo.loading || showRepoSkeleton || forcedLoadingShot"
             class="main-route page-loading"
-            :aria-busy="showRepoSkeleton ? 'true' : undefined"
+            :aria-busy="showRepoSkeleton || forcedLoadingShot ? 'true' : undefined"
           >
             <header v-if="loadingHeader" class="page-header">
               <div>
@@ -203,9 +208,12 @@ onUnmounted(() => {
                 <div class="page-desc">{{ loadingHeader.desc }}</div>
               </div>
             </header>
-            <PageSkeleton v-if="showRepoSkeleton" :kind="loadingKind" />
+            <PageSkeleton v-if="showRepoSkeleton || forcedLoadingShot" :kind="loadingKind" />
           </div>
-          <RouterView v-if="!repo.loading && !showRepoSkeleton" class="main-route" />
+          <RouterView
+            v-if="!repo.loading && !showRepoSkeleton && !forcedLoadingShot"
+            class="main-route"
+          />
         </div>
       </div>
 
