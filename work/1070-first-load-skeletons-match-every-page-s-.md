@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — every non-Settings placeholder count is dead (always 1), and per-view skeletons overlap content for 140 ms on exit"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T11:55:21Z"
+updated_at: "2026-11-09T11:55:22Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -191,3 +191,5 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 - 2026-11-09T11:37:32Z · note: review pass 4: needs some work
 - 2026-11-09T11:37:32Z · needs_input
 - 2026-11-09T11:55:21Z · body: Accepted scope: per-view exit timing (added)
+- 2026-11-09T11:55:22Z · status review→active
+- 2026-11-09T11:55:22Z · note: send-back — returned to active for engineer follow-up
