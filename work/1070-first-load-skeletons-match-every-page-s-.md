@@ -8,13 +8,12 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
-review_cli_override: claude code
-review_model_override: haiku
+review_cli_override: codex
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-09T15:40:49Z"
-check_retry_count: 1
+updated_at: "2026-11-09T18:26:58Z"
+review_passes: 9
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-review_passes: 6
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -60,6 +59,9 @@ Per-view skeleton exit timing (the brief overlap of a per-view skeleton with con
 
 ## Accepted scope: items moved to #1078 (final)
 Owner decision (2026-11-09, release night): review 5 items 3 (board responsive breakpoints), 4 (reuse of motion settings) and 5 (cache seeding) are accepted follow-up work tracked in #1078, not blockers for this task. Only these remain required: (1) discard the uncommitted edits in the worktree (they regress Mission Control to six blocks); (2) the named placeholder counts for the non-board kinds must be real named constants that the render and the test both use, with Mission Control (dashboard) staying a SINGLE block (value 1) and a comment explaining what real layout each constant mirrors. A reviewer must report everything else as suggestions.
+
+## Review report format (final)
+Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under '## Bugs', and the landing check treats any entry under '## Bugs' as a blocking bug. For the next pass: put every non-blocking observation (shell exit transition, one-row contrast selector, source-text assertions) under '## Suggestions', leave '## Bugs' EMPTY ('None found') when nothing blocks, and give a clear verdict. The code needs no further change.
 
 ## Screenshots
 
@@ -275,3 +277,22 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 - 2026-11-09T15:40:15Z · message_queued at 2026-11-09T15:40:15.025Z
 - 2026-11-09T15:40:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-09T15:40:49Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T16:32:17Z · status active→review
+- 2026-11-09T16:34:22Z · note: review pass 7: good to go
+- 2026-11-09T16:35:13Z · note: loading state detected: loading indicator [aria-busy="true"] on /
+- 2026-11-09T16:38:06Z · message_queued at 2026-11-09T16:38:06.901Z
+- 2026-11-09T17:01:33Z · body: Review report format (final) (added)
+- 2026-11-09T17:03:14Z · note: review pass 8: good to go
+- 2026-11-09T17:08:38Z · review_cli_override, review_model_override
+- 2026-11-09T17:09:21Z · note: review pass 9: needs some work
+- 2026-11-09T17:09:21Z · needs_input
+- 2026-11-09T17:21:47Z · status review→active
+- 2026-11-09T17:21:47Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T17:21:50Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T17:21:56Z · message_delivered: 1 message(s)
+- 2026-11-09T17:21:56Z · needs_input
+- 2026-11-09T17:21:57Z · message_queued at 2026-11-09T17:21:57.460Z
+- 2026-11-09T17:22:32Z · note: Returning to active to address review finding: shell skeleton unmounts before leave transition completes.
+- 2026-11-09T18:25:42Z · watchdog: restarting engineer after 63m with no live process
+- 2026-11-09T18:25:50Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T18:26:58Z · message_delivered: 1 message(s)

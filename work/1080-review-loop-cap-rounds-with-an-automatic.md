@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,11 +11,12 @@ branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T15:50:14Z"
-review_rounds: 1
-review_passes: 1
-last_check_failure: "repoos check at 2026-11-09T15:23:19.003Z: repoos check failed: ui verification failed (3 issue(s)): [console] Failed to preconnect to https://fonts.googleapis.com/. Error: The Internet connection appears to be offline.; [console] Failed to preconnect to https://fonts.gstatic.com/. Error: The Internet connection appears to be offline.; [request] Failed to load resource: The Internet connection appears to be offline. (https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&family=P… (truncated)"
+updated_at: "2026-11-09T18:25:50Z"
+last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
+review_rounds: 2
+review_passes: 2
 handoff_signal_retry_count: 2
+incomplete_review_retries: 1
 ---
 ## Problem
 Tasks routinely take 10-15 review rounds (#1058, #1060, #1061 each took 15; #1070 is at 4+). Each round is 20-40 minutes. Rounds are dominated by narrow edge cases found one at a time, reviewer bars that drift between rounds, and housekeeping failures, not by real defects in the change. The review prompt (`src/server/review.ts`) already says to report the whole bug class in one pass and never hold an instance back, and `review.humanFlagAfterPasses` (default 5) only flags needs-input; neither stops the loop.
@@ -38,6 +39,11 @@ Start from `src/server/review.ts` (prompt around the "Earlier passes and the who
 
 ## Priority and slicing (owner, 2026-11-09 night)
 The owner wants tasks to converge in a few rounds. Ship in two slices and hand off the FIRST slice as fast as possible, small and low-risk: SLICE 1 = acceptance criteria 1, 2 and 3 only (automatic freeze after review.freezeAfterPasses passes, lighter bar for p3 and easter-egg tasks, accepted-scope sections are authoritative) as a prompt-and-setting change in src/server/review.ts and src/core/config.ts with its Settings control and tests; no UI beyond that control. SLICE 2 (a separate follow-up task, file it) = criteria 4-7 plus a NEW criterion: an explicit owner override, 'Land anyway' in the Move-to-done flow with a confirmation dialog and a recorded reason, that is allowed only when the remaining review findings are NOT landing blockers (verdict needs-work but landing checks pass), so the human can accept known risk instead of looping; it never bypasses landing checks, tests or the close-out pipeline. Do not start slice 2 here.
+
+## Shots
+```json
+[]
+```
 
 ## Activity
 
@@ -85,3 +91,34 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T15:48:07Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-09T15:48:07Z · note: handoff requested (cli)
 - 2026-11-09T15:50:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T16:06:06Z · message_queued at 2026-11-09T16:06:06.216Z
+- 2026-11-09T16:06:06Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
+- 2026-11-09T16:10:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T16:21:45Z · message_queued at 2026-11-09T16:21:45.969Z
+- 2026-11-09T16:30:17Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-09T16:32:17Z · message_delivered: 1 message(s)
+- 2026-11-09T16:34:07Z · queued message undelivered for 66m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T16:34:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The re-run is in progress, and I'll wait for its completion notification before re-requesting handoff. · stderr: (empty)
+- 2026-11-09T16:34:21Z · message_delivered: 5 message(s)
+- 2026-11-09T16:35:15Z · message_queued at 2026-11-09T16:35:15.048Z
+- 2026-11-09T16:35:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T16:35:31Z · body
+- 2026-11-09T16:40:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T16:58:08Z · body
+- 2026-11-09T16:59:11Z · status active→review
+- 2026-11-09T17:00:19Z · note: review pass 2: needs some work
+- 2026-11-09T17:00:19Z · message_queued at 2026-11-09T17:00:19.484Z
+- 2026-11-09T17:00:19Z · status review→active
+- 2026-11-09T17:00:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T17:02:14Z · note: shots: failed — browser capture cancelled
+- 2026-11-09T17:02:15Z · message_queued at 2026-11-09T17:02:15.656Z
+- 2026-11-09T17:03:14Z · message_delivered: 2 message(s)
+- 2026-11-09T17:15:28Z · body
+- 2026-11-09T17:20:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T17:24:03Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T17:24:03Z · status active→review
+- 2026-11-09T17:24:03Z · message_queued at 2026-11-09T17:24:03.805Z
+- 2026-11-09T17:26:41Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (c0f61bb8c) during finalization (#0734)
+- 2026-11-09T17:27:12Z · note: review pass 3: incomplete — no verdict in report
+- 2026-11-09T17:30:29Z · note: review pass 4: incomplete — no verdict in report
+- 2026-11-09T18:25:50Z · message_overdue: still queued after 60m without being delivered

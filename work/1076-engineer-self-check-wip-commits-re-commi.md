@@ -11,11 +11,12 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T15:13:20Z"
+updated_at: "2026-11-09T18:27:39Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
-dev_error_count: 6
+dev_error_count: 12
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T17:54:19.408Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T18:05:56.217Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-09T18:17:34.289Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
@@ -33,6 +34,9 @@ A task branch's diff against main only ever contains that task's own files. Othe
 
 ## Notes for AI
 Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/git.ts`, the server's task-file sync (`ensureWorktree`, bookkeeping commits in `src/server/handoff.ts`), and the landing preflight (`repoos landable`, `src/server/conflict-resolution.ts`). Coordinate with #1061 (bookkeeping deferral during checks); do not duplicate it. Do not edit repoos.toml.
+
+## Accepted scope (criterion 1)
+Owner/accepted interpretation: the server already writes only the LIVE task's own file into a task worktree — an audit of the write sites (activity, CTO/watchdog notes, `routes/tasks.ts` sync, `server.ts` `syncTaskBranch`) shows each targets `config.root`/main or this task's own `task.path`. No write site is changed. Enforcement lands at the commit boundary instead: every commit made in a task worktree is scoped (pathspec, or an explicit foreign-unstage before a bare commit) so a sibling's `work/<other-id>-*.md` / `work/reports/<other-id>/**` can never ride the branch, and handoff restores any that already did.
 
 ## Activity
 
@@ -85,3 +89,31 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 - 2026-11-09T15:12:31Z · note: shots: skipped — the diff (17 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-09T15:13:20Z · note: review pass 2: needs some work
 - 2026-11-09T15:13:20Z · status review→active
+- 2026-11-09T15:52:58Z · body: Accepted scope (criterion 1) (added)
+- 2026-11-09T15:52:58Z · message_queued at 2026-11-09T15:52:58.690Z
+- 2026-11-09T15:55:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T16:53:07Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-09T16:53:08Z · message_delivered: 1 message(s)
+- 2026-11-09T17:10:15Z · message_queued at 2026-11-09T17:10:15.129Z
+- 2026-11-09T17:10:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T17:12:50Z · body
+- 2026-11-09T17:15:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T17:39:49Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:39:49Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:39:53Z · needs_input
+- 2026-11-09T17:39:53Z · message_delivered: 1 message(s)
+- 2026-11-09T17:41:19Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:41:19Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (2/3 crashes in 30m) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:41:23Z · needs_input
+- 2026-11-09T17:42:49Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:42:49Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-09T17:52:49Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T17:54:19Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T17:54:19Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (4/3 crashes in 30m)
+- 2026-11-09T18:04:20Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T18:05:56Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T18:05:56Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (5/3 crashes in 30m)
+- 2026-11-09T18:16:06Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-09T18:17:34Z · agent exited with an error (opencode) · the agent process exited with an error — open the task to see the full output
+- 2026-11-09T18:17:34Z · engineer crash recovery: surfaced instead of switching — a human-set task override (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash) is pinned, so RepoOS did not replace it (3/3 crashes in 30m)
+- 2026-11-09T18:27:39Z · watchdog: restarting engineer after 10m with no live process
