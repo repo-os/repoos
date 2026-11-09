@@ -2757,17 +2757,22 @@ export async function stagedForeignBookkeepingPaths(
 }
 
 /**
- * Restore main's copy of another task's `work/` bookkeeping that a task branch
- * has committed or staged (#1076), so the branch's diff against main is only
- * ever this task's own files.
+ * Restore the branch point's copy of another task's `work/` bookkeeping that a
+ * task branch has committed or staged (#1076), so the branch's diff against main
+ * is only ever this task's own files.
  *
  * The engine is the same "make main authoritative for foreign task files" rule
  * close-out applies (`resetForeignWorkFiles`): a foreign file the branch
- * modified or deleted gets main's version back, and one the branch newly added
- * is removed. The restore lands as one plain commit — a handoff bookkeeping
- * commit the review tolerates — so a branch that already carries a sibling's
- * file (from a self-check WIP checkpoint, a concurrent board write, or a
- * partial merge of main) can be healed at handoff instead of failing landing.
+ * modified or deleted gets the branch point's version back, and one the branch
+ * newly added is removed. The restore lands as one plain commit — a handoff
+ * bookkeeping commit the review tolerates — so a branch that already carries a
+ * sibling's file (from a self-check WIP checkpoint, a concurrent board write, or
+ * a partial merge of main) can be healed at handoff instead of failing landing.
+ *
+ * The copy restored is the branch point (the merge-base with `baseBranch`), not
+ * `baseBranch`'s tip: the branch's own diff is graded `baseFull..HEAD`, so the
+ * branch-point copy is what removes the foreign file from that diff. A board
+ * write that landed on main after the branch point is a later, separate change.
  *
  * `baseBranch` is the branch the task diverged from (normally `main`). Returns
  * the repo-relative foreign paths it restored, empty when there were none.
@@ -2783,22 +2788,13 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
   workDir?: string;
 }): Promise<string[]> {
   const workDir = opts.workDir ?? "work";
-  // Prefer the branch's recorded base (`branch.<name>.merge-base`, written when
-  // RepoOS cut the worktree). The caller's `currentBranch()` of the MAIN
-  // checkout is only a fallback: if main is checked out on another branch the
-  // merge-base would be computed from the wrong tip and a foreign file present
-  // in both trees could be missed.
-  const branchName = (
-    await runGit(opts.worktree, ["branch", "--show-current"], 10_000)
+  // The branch point is the merge-base of the branch we diverged from and HEAD.
+  // The caller's `currentBranch()` of the MAIN checkout is deliberately not used:
+  // if main is checked out on another branch the merge-base would be computed
+  // from the wrong tip and a foreign file present in both trees could be missed.
+  const baseFull = (
+    await runGit(opts.worktree, ["merge-base", opts.baseBranch, "HEAD"], 15_000)
   ).stdout.trim();
-  const configuredBase = branchName
-    ? (
-        await runGit(opts.worktree, ["config", "--get", `branch.${branchName}.merge-base`], 5_000)
-      ).stdout.trim()
-    : "";
-  const baseFull =
-    configuredBase ||
-    (await runGit(opts.worktree, ["merge-base", opts.baseBranch, "HEAD"], 15_000)).stdout.trim();
   if (!baseFull) return [];
   const changed = await runGit(
     opts.worktree,
@@ -2827,7 +2823,7 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
     const restore = await runGit(opts.worktree, ["checkout", baseFull, "--", ...onMain], 15_000);
     if (restore.status !== 0) {
       throw new Error(
-        `could not restore main's copy of another task's bookkeeping: ${restore.stderr.trim()}`,
+        `could not restore the branch point's copy of another task's bookkeeping: ${restore.stderr.trim()}`,
       );
     }
     await runGit(opts.worktree, ["add", "--", ...onMain], 10_000);
@@ -2857,7 +2853,7 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
     [
       "commit",
       "-m",
-      `chore(#${opts.taskId}): restore main's copy of ${foreign.length} other task's bookkeeping file(s)`,
+      `chore(#${opts.taskId}): restore the branch point's copy of ${foreign.length} other task's bookkeeping file(s)`,
       "--",
       ...foreign,
     ],

@@ -249,10 +249,12 @@ cannot tell from the code alone:
     (`git commit -- <paths>`) and resets any foreign bookkeeping first.
     `guardReviewTransition` unstages foreign `work/` files before its implement
     commit. Handoff, after that commit gate and before the review lock, runs
-    `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): it makes main's
-    copy authoritative for every foreign file the branch touched — modified or
-    deleted files get main's version back, branch-added siblings are removed —
-    and lands the restore as one plain bookkeeping commit the review tolerates.
+    `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): it makes the
+    branch point's copy authoritative for every foreign file the branch touched
+    (modified or deleted files get that copy back, branch-added siblings are
+    removed; the branch point and not main's tip, because the branch's own diff is
+    graded `merge-base..HEAD`) and lands the restore as one plain bookkeeping
+    commit the review tolerates.
     It reports what it restored in the task log; it never fails a handoff.
     A commit made WHILE a merge is in progress (`lockfile-conflict.ts`,
     `integration-orchestrator.ts`'s narrow resolution) cannot use a pathspec —
@@ -263,8 +265,10 @@ cannot tell from the code alone:
     into a partial commit.
   - **What an engineer sees.** `repoos landable` and the handoff report name the
     offending files and the cause in plain English ("the diff changes another
-    task's bookkeeping: work/<id>-*.md"), with the fix spelled out. An engineer
-    should never need to run `git checkout main -- <file>` by hand.
+    task's bookkeeping: work/<id>-*.md"). When the drift is present, handoff
+    restores the branch point's copy automatically and reports it — an engineer
+    never needs to run `git checkout main -- <file>` by hand; re-requesting review
+    is enough.
 
 - **`repoos mv <id> done` never merges code — it only flips the status
   frontmatter.** Confirmed live twice in one session (2026-09-17): #0389 and
