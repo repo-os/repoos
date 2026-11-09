@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LoadingSkeletonKind } from "../lib/loading-skeleton";
+import { LOADING_SKELETON_ITEM_COUNTS, type LoadingSkeletonKind } from "../lib/loading-skeleton";
 import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../lib/work-board-columns";
 
 const props = withDefaults(defineProps<{ kind?: LoadingSkeletonKind }>(), {
@@ -17,9 +17,7 @@ const itemCount = (): number => {
   // Mission Control's data arrives as one continuous dashboard, not a card
   // collection. Stories is a vertical list, so one representative row suffices.
   if (props.kind === "dashboard" || props.kind === "rows") return 1;
-  if (props.kind === "cards" || props.kind === "deployments") return 3;
-  if (props.kind === "targets") return 2;
-  return 5;
+  return LOADING_SKELETON_ITEM_COUNTS[props.kind];
 };
 </script>
 
