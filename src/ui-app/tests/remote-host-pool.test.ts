@@ -3355,6 +3355,41 @@ describe("pool hung-run bookkeeping (#0729)", () => {
 });
 
 describe("hung run recovery end to end (#0729)", () => {
+  it.each([
+    { code: 1, output: "docker error", timedOut: false },
+    { code: null, output: "", timedOut: true },
+  ])("keeps a hung run and its files when watchdog removal fails: $code", async (response) => {
+    const f = poolFixture({ hosts: [{ host: "a" }] });
+    const original = vi.mocked(f.exec.runRemote).getMockImplementation()!;
+    vi.mocked(f.exec.runRemote).mockImplementation((host, cmd, ...args) =>
+      cmd.startsWith("out=$(docker rm -f ")
+        ? Promise.resolve(response)
+        : original(host, cmd, ...args),
+    );
+    const abortMain = vi.fn();
+    const releaseSlot = vi.fn();
+    const settleMain = vi.fn();
+    await f.runner["finalizeHungKill"]({
+      host: { ip: "a", user: "nick" },
+      containerName: "repoos-validate-1060-test",
+      paths: remoteRunPaths("1060", "test"),
+      taskId: "1060",
+      abortMain,
+      releaseSlot,
+      settleMain,
+    });
+    expect(f.cleanupCmds).toHaveLength(0);
+    expect(abortMain).not.toHaveBeenCalled();
+    expect(releaseSlot).not.toHaveBeenCalled();
+    expect(settleMain).not.toHaveBeenCalled();
+    expect(
+      readRemoteValidationEvents(f.root, "1060").some((event) =>
+        event.message.includes("failed to kill"),
+      ),
+    ).toBe(true);
+    await f.runner.dispose();
+  });
+
   it("shows hung · killing on the active run while the kill SSH is still pending (#0735)", async () => {
     const f = poolFixture({
       hosts: [{ host: "a" }],
