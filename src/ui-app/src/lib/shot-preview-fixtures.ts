@@ -635,6 +635,41 @@ export function shotFixtureDevTargets(
 }
 
 /**
+ * A deterministic "newer release available" payload for the
+ * `release:updateAvailable` capture fixture (#1073). The dialog only renders
+ * its upgrade command block when `available` is true, which the live preview
+ * board usually is not (the preview build tracks the version it was built
+ * from). Returns null for any other fixture, so the component keeps its real
+ * `/api/release/available` data. Also reports `standalone`, so the capture
+ * shows the plain `repoos upgrade` command the majority of users run.
+ */
+export interface ShotPreviewAvailableRelease {
+  currentVersion: string;
+  latestVersion: string;
+  available: boolean;
+  releaseNotes: string;
+  releaseUrl: string;
+  installKind: "standalone" | "source" | "package-manager";
+  upgradeCommand: string;
+}
+
+export function shotFixtureAvailableRelease(
+  fixture: ShotPreviewFixtureId | null,
+): ShotPreviewAvailableRelease | null {
+  if (fixture !== "release:updateAvailable") return null;
+  return {
+    currentVersion: "0.5.79",
+    latestVersion: "0.6.0",
+    available: true,
+    releaseNotes:
+      "## Highlights\n\n- Release update dialog now shows the upgrade command\n- The Copy button puts the exact command on your clipboard",
+    releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+    installKind: "standalone",
+    upgradeCommand: "repoos upgrade",
+  };
+}
+
+/**
  * Two deterministic schedules for the `agents:scheduledSeeded` capture fixture
  * (#1005). Returns null for any other fixture, so the panel keeps its real
  * server data. One weekly row (with a last result, so the outcome detail and

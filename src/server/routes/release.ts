@@ -33,6 +33,12 @@ import { redactSecrets } from "./debugger.js";
 import { readBuildMeta } from "../../core/build.js";
 import { compareSemver } from "../../core/agent-updates.js";
 import {
+  channelFromVersion,
+  resolveInstallRoot,
+  upgradeInstruction,
+  type InstallKind,
+} from "../../commands/upgrade.js";
+import {
   readCachedReleaseNotes,
   releaseNotesCacheKey,
   writeCachedReleaseNotes,
@@ -51,6 +57,25 @@ export interface AvailableRelease {
   available: boolean;
   releaseNotes: string | null;
   releaseUrl: string | null;
+  /**
+   * How this RepoOS was installed, and the command that actually upgrades it
+   * (#1073). Both come from `upgradeInstruction` — the same detection
+   * `repoos upgrade` uses — so the dialog never tells a package-manager or
+   * source install to run a command that would not work for it.
+   */
+  installKind: InstallKind;
+  upgradeCommand: string;
+}
+
+/** The install detection shared by every `AvailableRelease` we return (#1073). */
+function installInfo(): { installKind: InstallKind; upgradeCommand: string } {
+  const version = readBuildMeta().version;
+  const instruction = upgradeInstruction({
+    installRoot: resolveInstallRoot(),
+    version,
+    channel: channelFromVersion(version),
+  });
+  return { installKind: instruction.installKind, upgradeCommand: instruction.command };
 }
 
 function versionParts(version: string): [number, number, number] | null {
@@ -108,6 +133,7 @@ async function fetchAvailableRelease(): Promise<AvailableRelease | null> {
         typeof candidate.html_url === "string"
           ? candidate.html_url
           : "https://github.com/repo-os/repoos/releases",
+      ...installInfo(),
     };
   } catch {
     return null;
@@ -123,6 +149,7 @@ export const getAvailableRelease: RouteHandler = async (_ctx, _req, res) => {
     available: false,
     releaseNotes: null,
     releaseUrl: "https://github.com/repo-os/repoos/releases",
+    ...installInfo(),
   };
   if (releaseFailureUntil > now) return json(res, 200, fallback);
   releaseRequest ??= fetchAvailableRelease().finally(() => {
