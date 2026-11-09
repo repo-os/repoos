@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 9b3b5702a323d31a7fe553ff8cd481f2a70915ef
 id: "1061"
 title: "Checks: stop RepoOS bookkeeping commits from invalidating a running check"
 type: bug
@@ -13,7 +11,9 @@ branch: feat/checks-stop-repoos-bookkeeping-commits-f
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T08:18:13Z"
-updated_at: "2026-11-09T10:05:04Z"
+updated_at: "2026-11-09T10:09:09Z"
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 9b3b5702a323d31a7fe553ff8cd481f2a70915ef
 review_passes: 13
 last_check_failure: "repoos check at 2026-11-08T17:34:49.737Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from 476c60dd to 67f208ae) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -478,4 +478,4 @@ Owner decision (2026-11-09): this task lands once bookkeeping commits are deferr
 - 2026-11-09T09:54:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-09T10:05:04Z · message_queued at 2026-11-09T10:05:04.415Z
 - 2026-11-09T10:05:04Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/preview-request.test.ts > sandboxed preview request E2E (#0121) > a fake agent with no localhost access requests and receives a server-verified preview on bee — fix it in the feature branch and re-run the gate
-
+- 2026-11-09T10:09:09Z · CTO nudge: held — an undelivered message is already queued
