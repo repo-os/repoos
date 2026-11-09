@@ -243,7 +243,7 @@ cannot tell from the code alone:
     every check.
   - **The guardrails.** The WIP checkpoint commits only the paths it intended
     (`git commit -- <paths>`) and resets any foreign bookkeeping first.
-    `guardReviewTransition` unstage's foreign `work/` files before its implement
+    `guardReviewTransition` unstages foreign `work/` files before its implement
     commit. Handoff, after that commit gate and before the review lock, runs
     `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): it makes main's
     copy authoritative for every foreign file the branch touched — modified or
