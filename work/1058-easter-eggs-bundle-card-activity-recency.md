@@ -12,7 +12,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T10:41:48Z"
+updated_at: "2026-11-09T10:42:25Z"
 last_close_out_gate_ms: 130520
 last_close_out_gate_at: "2026-11-09T10:41:27.791Z"
 review_passes: 15
@@ -640,3 +640,4 @@ Owner decision (2026-11-09, release deadline): the screenshot framing of the Pip
 - 2026-11-09T10:38:59Z · needs_input
 - 2026-11-09T10:41:27Z · close-out gate completed in 131s
 - 2026-11-09T10:41:48Z · status done→done, release:success
+- 2026-11-09T10:42:25Z · message_dropped: 3 queued message(s) discarded — task is done
