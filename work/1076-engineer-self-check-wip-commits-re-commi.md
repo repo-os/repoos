@@ -159,3 +159,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T21:56:53Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-09T22:00:40Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T22:09:08Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T22:09:08Z · message_queued at 2026-11-09T22:09:08.551Z
