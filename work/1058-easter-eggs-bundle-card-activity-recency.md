@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-09T07:40:05Z"
-review_passes: 10
 id: "1058"
 title: "Easter eggs bundle: card activity recency on hover"
 type: chore
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — Retry timing fallback and landing scope need fixes; Pipeline visual proof is missing.
@@ -16,6 +14,8 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
+updated_at: "2026-11-09T07:52:49Z"
+review_passes: 10
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 dev_error_count: 56
@@ -578,4 +578,5 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T07:39:24Z · message_queued at 2026-11-09T07:39:24.111Z
 - 2026-11-09T07:40:05Z · note: review pass 10: needs some work
 - 2026-11-09T07:40:05Z · needs_input
-
+- 2026-11-09T07:52:49Z · status review→active
+- 2026-11-09T07:52:49Z · note: send-back — returned to active for engineer follow-up
