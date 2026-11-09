@@ -1374,6 +1374,7 @@
 }
 
 .main {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1438,6 +1439,26 @@
   flex: 1 1 auto;
   min-height: 0;
   height: auto;
+}
+.shell-fade-enter-active,
+.shell-fade-leave-active {
+  transition: opacity 160ms ease-out;
+}
+.shell-fade-enter-from,
+.shell-fade-leave-to {
+  opacity: 0;
+}
+/* The outgoing shell fades over the incoming route without sharing its height. */
+.main > .shell-fade-leave-active {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell-fade-enter-active,
+  .shell-fade-leave-active {
+    transition-duration: 0ms;
+  }
 }
 .page-header-actions {
   display: flex;
