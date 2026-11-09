@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-card-activity-recency
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-08T02:51:17Z"
-updated_at: "2026-11-09T09:35:51Z"
+updated_at: "2026-11-09T09:38:43Z"
 review_passes: 12
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-08T10:53:19.645Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
@@ -615,3 +615,4 @@ Owner decision (2026-11-09): touch support (tap or long-press to show the last-a
 - 2026-11-09T09:35:45Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T09:35:50Z · needs_input
 - 2026-11-09T09:35:51Z · message_queued at 2026-11-09T09:35:51.371Z
+- 2026-11-09T09:38:43Z · message_delivered: 1 message(s)
