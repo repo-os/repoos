@@ -15,7 +15,6 @@ review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
 updated_at: "2026-11-10T01:04:37Z"
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-10T00:39:53.164Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-10T00:42:28.009Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-10T00:46:31.959Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -47,32 +46,32 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 ```json
 [
 {
-  "label": "Pipeline coding lane with activity animation",
-  "target": "default",
-  "route": "/work?tab=pipeline&shotState=board:pipeline",
-  "highlight": "[data-task-id=\"pipe-coding\"] .pl-activity",
-  "state": "board:pipeline"
+"label": "Pipeline coding lane with activity animation",
+"target": "default",
+"route": "/work?tab=pipeline&shotState=board:pipeline",
+"highlight": "[data-task-id=\"pipe-coding\"] .pl-activity",
+"state": "board:pipeline"
 },
 {
-  "label": "Compact activity animation settings (motion on)",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation&shotState=settings:rgbKeystorm",
-  "highlight": "#settings-section-activity-animation",
-  "state": "settings:rgbKeystorm"
+"label": "Compact activity animation settings (motion on)",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation&shotState=settings:rgbKeystorm",
+"highlight": "#settings-section-activity-animation",
+"state": "settings:rgbKeystorm"
 },
 {
-  "label": "Activity animation motion off",
-  "target": "default",
-  "route": "/settings?tab=general&section=activity-animation",
-  "highlight": "#setting-activityAnimationEnabled",
-  "steps": [
-    {
-      "click": "#setting-activityAnimationEnabled [role=\"switch\"]"
-    },
-    {
-      "waitMs": 200
-    }
-  ]
+"label": "Activity animation motion off",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": "#setting-activityAnimationEnabled",
+"steps": [
+  {
+    "click": "#setting-activityAnimationEnabled [role=\"switch\"]"
+  },
+  {
+    "waitMs": 200
+  }
+]
 }
 ]
 ```
