@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/page-height-layout.test.ts > standard page height and floating controls > lets the shared page pane fill and scroll through the full app body, tests/page-height-layout.test.ts > standard page height and floating controls > uses a theme-token fade and shared end inset below fixed controls on bee — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 84dcf909cb1607de352d80d71cb7635ebb4a1430
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -428,3 +430,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T02:01:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T02:12:43Z · message_queued at 2026-11-10T02:12:43.744Z
 - 2026-11-10T02:12:44Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/page-height-layout.test.ts > standard page height and floating controls > lets the shared page pane fill and scroll through the full app body, tests/page-height-layout.test.ts > standard page height and floating controls > uses a theme-token fade and shared end inset below fixed controls on bee — fix it in the feature branch and re-run the gate
+
