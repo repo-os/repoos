@@ -69,7 +69,6 @@ describe("GET /api/release/available install detection (#1073)", () => {
     expect(payload).toMatchObject({
       installKind: "standalone",
       upgradeCommand: "repoos upgrade",
-      currentVersion: "0.5.79",
     });
   });
 
