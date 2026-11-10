@@ -2,7 +2,7 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -14,6 +14,7 @@ review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
 updated_at: "2026-11-10T07:22:33Z"
+review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
@@ -169,3 +170,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T07:16:21Z · message_queued at 2026-11-10T07:16:21.010Z
 - 2026-11-10T07:22:32Z · note: review pass 1: needs some work
 - 2026-11-10T07:22:33Z · message_delivered: 1 message(s)
+- 2026-11-10T07:22:33Z · status review→active
