@@ -868,7 +868,7 @@ async function runHandoffFinalization(
 
   // #1076: a self-check WIP checkpoint (or a concurrent board write, or a
   // partial merge of main) can leave ANOTHER task's `work/` bookkeeping on this
-  // branch. Restore the branch point's copy now, before the check snapshots the
+  // branch. Restore main's copy now, before the check snapshots the
   // tree and before the review lock — the restore lands as one bookkeeping
   // commit, so a branch that already drifted is healed here instead of failing
   // landing with "the diff changes another task's bookkeeping". Report it; never
@@ -888,7 +888,7 @@ async function runHandoffFinalization(
         opts.onTaskLog?.(
           task.id,
           "info",
-          `restored the branch point's copy of another task's bookkeeping on this branch: ${listed}${more}`,
+          `restored main's copy of another task's bookkeeping on this branch: ${listed}${more}`,
         );
       }
     } catch (error) {
@@ -896,7 +896,7 @@ async function runHandoffFinalization(
       // branch that still carries a sibling's files and cannot land.
       return fail(
         "commit",
-        `could not restore the branch point's copy of another task's bookkeeping on this branch: ${(error as Error).message}`,
+        `could not restore main's copy of another task's bookkeeping on this branch: ${(error as Error).message}`,
       );
     }
   }

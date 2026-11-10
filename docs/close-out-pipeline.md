@@ -777,13 +777,12 @@ dirs in #0726 and #0860):
   only the paths it intended (`git commit -- <paths>`) and resets any foreign
   `work/` bookkeeping first, so a board write left dirty-and-staged can no longer
   be folded into the branch by a bare `git commit` (#1076).
-- `restoreForeignTaskBookkeepingFromMain` (`git.ts`) runs at handoff, after the
-  commit gate and **before the review lock** (#1076): it makes the branch point's
-  copy authoritative for every foreign `work/` file the branch touched (modified
-  or deleted → that copy back; branch-added → removed) and lands the restore as
-  one plain bookkeeping commit the review tolerates. The copy is the branch point
-  (the merge-base with main), not main's tip, because the branch's own diff is
-  graded `merge-base..HEAD`. It reports what it restored;
+- `restoreForeignTaskBookkeepingFromMain` (`git.ts`) runs at handoff (and after a
+  successful **sync with main**, #1086), after the commit gate and **before the
+  review lock** (#1076): it makes **main's tip** authoritative for every foreign
+  `work/` file the branch touched (modified or deleted → main's copy back;
+  branch-added with no main equivalent → removed) and lands the restore as one
+  plain bookkeeping commit the review tolerates. It reports what it restored;
   it never fails the handoff. This heals a branch that already drifted (a sibling
   re-committed by an earlier WIP checkpoint) rather than bouncing it to the
   engineer again.
