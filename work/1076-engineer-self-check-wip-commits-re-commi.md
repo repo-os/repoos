@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-10T20:15:50Z"
+review_passes: 6
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -14,9 +16,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T20:15:50Z"
 close_out_repair_count: 1
-review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 13
@@ -311,3 +311,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T20:13:50Z · note: shots: skipped — the diff (30 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T20:15:50Z · note: review pass 6: needs some work
 - 2026-11-10T20:15:50Z · needs_input
+
