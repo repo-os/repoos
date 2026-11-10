@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T02:15:42Z"
-review_passes: 1
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
+updated_at: "2026-11-10T02:15:42Z"
+review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -75,4 +75,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T02:13:14Z · status active→review
 - 2026-11-10T02:13:15Z · message_queued at 2026-11-10T02:13:15.092Z
 - 2026-11-10T02:15:42Z · note: review pass 1: needs some work
-
+- 2026-11-10T02:15:42Z · message_queued at 2026-11-10T02:15:42.694Z
