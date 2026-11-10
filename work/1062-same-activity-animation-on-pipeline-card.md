@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
@@ -112,3 +114,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T01:31:19Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)
 - 2026-11-10T01:31:20Z · message_queued at 2026-11-10T01:31:20.449Z
 - 2026-11-10T01:31:21Z · CTO nudge: held — an undelivered message is already queued
+
