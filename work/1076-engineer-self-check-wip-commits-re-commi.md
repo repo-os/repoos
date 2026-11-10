@@ -14,7 +14,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T21:02:23Z"
+updated_at: "2026-11-10T21:02:24Z"
 review_passes: 6
 close_out_repair_count: 1
 review_rounds: 2
@@ -330,4 +330,4 @@ Non-blocking: isTaskMarkdownBookkeepingPath matching non-task markdown under wor
 - 2026-11-10T20:51:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T20:56:29Z · body
 - 2026-11-10T21:02:23Z · status active→review
-
+- 2026-11-10T21:02:24Z · message_queued at 2026-11-10T21:02:24.459Z
