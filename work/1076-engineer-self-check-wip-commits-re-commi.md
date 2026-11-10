@@ -293,3 +293,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T19:12:08Z · needs_input
 - 2026-11-10T19:12:22Z · status review→active, needs_input
 - 2026-11-10T19:12:22Z · note: close-out repair: merge-conflict
+- 2026-11-10T19:12:22Z · message_delivered: 1 message(s)
