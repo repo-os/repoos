@@ -787,6 +787,9 @@ dirs in #0726 and #0860):
   it never fails the handoff. This heals a branch that already drifted (a sibling
   re-committed by an earlier WIP checkpoint) rather than bouncing it to the
   engineer again.
+  A handoff is also refused on an unchanged branch tip with a recorded identical
+  check failure; a new commit (even a docs touch) is the way to request a fresh
+  validation after a failure that is no longer reproducible.
 - `resetForeignWorkFiles` (`integration-orchestrator.ts`) restores main's copy of
   every foreign bookkeeping file the candidate changed — under the work dir,
   `inputs/`, `stories/`, `reminders/` or `schedules/`, per
