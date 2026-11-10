@@ -12,8 +12,6 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
 updated_at: "2026-11-10T10:59:34Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 5676e8dde658b91c55ef42ee04a17cf8b0c40faf
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -219,3 +217,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T10:41:27Z · body
 - 2026-11-10T10:49:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T10:59:34Z · status active→review
+
