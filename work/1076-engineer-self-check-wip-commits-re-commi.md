@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T03:33:10Z"
+updated_at: "2026-11-10T03:33:12Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 7acb7acb0353d1640a3ab26f488ff34f36ec1465
 review_passes: 4
@@ -198,3 +198,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T03:31:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped `repoos check --changed main` for #1076 finished with `EXIT=1`, so it failed. I haven't written the report draft or handed off. - **Failing test:** `src/ui-app/tests/git-ref-watcher.test.ts > observes shared nested refs from a l… · stderr: (empty)
 - 2026-11-10T03:31:38Z · note: handoff requested (cli)
 - 2026-11-10T03:33:10Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T03:33:12Z · CTO nudge: held — handoff gate is running
