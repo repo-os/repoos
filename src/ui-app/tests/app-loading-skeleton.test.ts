@@ -34,7 +34,9 @@ const ImmediateSkeletonHarness = defineComponent({
 describe("repo loading skeleton", () => {
   it("renders a route skeleton instead of the centered spinner", () => {
     expect(appVue).not.toMatch(/v-if="repo\.loading"[^>]*class="spin"/);
-    expect(appVue).toMatch(/v-if="showLoadingShell"\s+class="main-route page-loading"/);
+    expect(appVue).toMatch(
+      /v-if="showLoadingShell"\s+key="loading"\s+class="main-route page-loading"/,
+    );
     expect(appVue).toContain(
       "const showLoadingShell = computed(() => repo.loading || showRepoSkeleton.value);",
     );
@@ -44,8 +46,9 @@ describe("repo loading skeleton", () => {
     expect(appVue).not.toContain("skeletonDelay");
     expect(appVue).not.toContain("page-loading-shell");
     expect(appVue).toMatch(
-      /<Transition name="page-fade" mode="out-in">[\s\S]*<RouterView v-else class="main-route"\s*\/>[\s\S]*<\/Transition>/,
+      /<RouterView v-slot="\{ Component \}">[\s\S]*<Transition name="page-fade">[\s\S]*<component :is="Component" v-else key="route" class="main-route" \/>[\s\S]*<\/Transition>[\s\S]*<\/RouterView>/,
     );
+    expect(appVue).not.toContain('mode="out-in"');
     const styles = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
     expect(styles).toMatch(/\.main\s*\{[^}]*padding:\s*22px 26px 0;/s);
     expect(styles).not.toMatch(/\.main\s*>\s*\.page-fade-leave-active\s*\{/);
