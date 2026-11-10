@@ -5,7 +5,14 @@
  * self-check checkpoint commit(s), re-run the handoff gate on the new tree,
  * review the delta since the approved SHA, then resume the authorized close-out.
  */
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import type { LogLevel } from "../core/logger.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -122,7 +129,10 @@ export interface CheckpointRecoveryDeps {
   remoteValidator?: RemoteValidator;
   previews?: PreviewManager;
   onTaskLog?: (taskId: string, level: LogLevel, message: string) => void;
-  runner?: Pick<AgentRunner, "markHandoffInFlight" | "releaseHandoffInFlight" | "isHandoffInFlight">;
+  runner?: Pick<
+    AgentRunner,
+    "markHandoffInFlight" | "releaseHandoffInFlight" | "isHandoffInFlight"
+  >;
 }
 
 /**
