@@ -784,21 +784,12 @@ async function runHandoffFinalization(
         path === reportPath || path === legacyReportPath;
       const ownTaskPath = `${(config.workDir ?? "work").replace(/\\/g, "/").replace(/\/+$/, "")}/${task.id}-`;
       const reportNarrative = report.markdown.split("\n\n## Generated change summary", 1)[0];
-      // A retry after the #1076 bookkeeping restore sees the restore commit
-      // between the report's source and HEAD; treat its foreign `work/` files as
-      // tolerated bookkeeping so the completed report is still recognized.
-      const tolerated = (path: string): boolean =>
-        isReportPath(path) ||
-        (path.startsWith(ownTaskPath) && path.endsWith(".md")) ||
-        foreignTaskBookkeepingPaths([path], {
-          workDir: config.workDir,
-          cacheDir: config.cacheDir,
-          taskId: task.id,
-        }).length > 0;
       if (
         paths.some(isReportPath) &&
         (!pendingNarrative || reportNarrative === pendingNarrative) &&
-        paths.every(tolerated)
+        paths.every(
+          (path) => isReportPath(path) || (path.startsWith(ownTaskPath) && path.endsWith(".md")),
+        )
       ) {
         return report;
       }
