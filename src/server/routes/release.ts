@@ -34,7 +34,8 @@ import { readBuildMeta } from "../../core/build.js";
 import { compareSemver } from "../../core/agent-updates.js";
 import {
   channelFromVersion,
-  resolveInstallRoot,
+  installRoot,
+  readInstallVersion,
   upgradeInstruction,
   type InstallKind,
 } from "../../commands/upgrade.js";
@@ -67,11 +68,21 @@ export interface AvailableRelease {
   upgradeCommand: string;
 }
 
-/** The install detection shared by every `AvailableRelease` we return (#1073). */
+/**
+ * The install detection shared by every `AvailableRelease` we return (#1073).
+ *
+ * The version passed here is the one in the *install's own* `.build-info.json`
+ * (`readInstallVersion`), not `readBuildMeta().version` — the latter falls back
+ * to `package.json`, so a bare source run and the CLI can otherwise disagree on
+ * the same checkout (#1073 review). `upgradeInstruction` also probes the install
+ * root structurally, so a built source checkout is never mistaken for a
+ * standalone install.
+ */
 function installInfo(): { installKind: InstallKind; upgradeCommand: string } {
-  const version = readBuildMeta().version;
+  const root = installRoot();
+  const version = readInstallVersion(root);
   const instruction = upgradeInstruction({
-    installRoot: resolveInstallRoot(),
+    installRoot: root,
     version,
     channel: channelFromVersion(version),
   });

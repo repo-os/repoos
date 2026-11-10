@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { ArrowUpRight, Check, Copy, Sparkles, X } from "lucide-vue-next";
 import Button from "./ui/button.vue";
 import Dialog from "./ui/dialog/root.vue";
@@ -27,6 +27,7 @@ const release = ref<AvailableRelease | null>(null);
 const dismissed = ref(false);
 const open = ref(false);
 const copied = ref(false);
+const copyFailed = ref(false);
 let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
 const visible = computed(() => !!release.value?.available && !dismissed.value);
@@ -129,11 +130,20 @@ function showDetails(): void {
 
 async function copyCommand(): Promise<void> {
   const ok = await copyToClipboard(upgradeCommand.value);
-  if (!ok) return;
-  copied.value = true;
   if (copiedTimer) clearTimeout(copiedTimer);
-  copiedTimer = setTimeout(() => (copied.value = false), 1500);
+  // A failed copy must say so — silently doing nothing looks like a dead button
+  // (#1073 review).
+  copied.value = ok;
+  copyFailed.value = !ok;
+  copiedTimer = setTimeout(() => {
+    copied.value = false;
+    copyFailed.value = false;
+  }, 2000);
 }
+
+onUnmounted(() => {
+  if (copiedTimer) clearTimeout(copiedTimer);
+});
 </script>
 
 <template>
@@ -195,14 +205,23 @@ async function copyCommand(): Promise<void> {
             <Button
               variant="ghost"
               size="sm"
-              :aria-label="copied ? 'Copied upgrade command' : 'Copy upgrade command'"
+              :aria-label="
+                copied
+                  ? 'Copied upgrade command'
+                  : copyFailed
+                    ? 'Copy failed — select the command and copy it manually'
+                    : 'Copy upgrade command'
+              "
               @click="void copyCommand()"
             >
               <Check v-if="copied" class="size-[14px]" />
               <Copy v-else class="size-[14px]" />
-              {{ copied ? "Copied" : "Copy" }}
+              {{ copied ? "Copied" : copyFailed ? "Copy failed" : "Copy" }}
             </Button>
           </div>
+          <p v-if="copyFailed" class="release-update-muted" role="status">
+            Couldn’t copy automatically — select the command above and copy it.
+          </p>
           <p class="release-update-muted">
             Runs in your terminal. A server already running keeps the old version until you restart
             it.

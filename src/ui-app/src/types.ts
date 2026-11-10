@@ -3,6 +3,7 @@
 import type { RepoCommit } from "../../core/repo-log.js";
 import type { DeclaredShot } from "../../core/shot-plan.js";
 import type { Input } from "../../core/input.js";
+import type { InstallKind } from "../../commands/upgrade.js";
 
 export type Status = "draft" | "inbox" | "ready" | "active" | "review" | "done";
 
@@ -2146,6 +2147,6 @@ export interface AvailableRelease {
   available: boolean;
   releaseNotes: string | null;
   releaseUrl: string | null;
-  installKind: "standalone" | "source" | "package-manager";
+  installKind: InstallKind;
   upgradeCommand: string;
 }

@@ -26,8 +26,12 @@ export { launcherScript } from "../core/launcher-runtime.js";
 
 const REPO = "repo-os/repoos";
 
-/** The directory containing cli/, core/, server/, ui/, .build-info.json — dist/ in a source checkout, or the whole install root for a standalone install. */
-function installRoot(): string {
+/**
+ * The directory containing cli/, core/, server/, ui/, .build-info.json — dist/
+ * in a source checkout, or the whole install root for a standalone install.
+ * Exported so the server's install detection starts from the same root.
+ */
+export function installRoot(): string {
   return dirname(dirname(fileURLToPath(import.meta.url)));
 }
 
@@ -143,11 +147,6 @@ export function upgradeInstruction(input: {
   };
 }
 
-/** The directory `repoos upgrade` treats as the install root (dist/ or the standalone root). */
-export function resolveInstallRoot(): string {
-  return installRoot();
-}
-
 /**
  * Infer the package manager from the installed package path. `root` is the
  * compiled dist/ directory, so it keeps enough of the global-install path to
@@ -234,7 +233,7 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
 
   const instruction = upgradeInstruction({
     installRoot: root,
-    version: readVersion(root),
+    version: readInstallVersion(root),
     channel,
   });
   if (instruction.installKind === "package-manager") {
@@ -254,7 +253,7 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
     return;
   }
 
-  const current = readVersion(root)!;
+  const current = readInstallVersion(root)!;
   console.log(c.dim(`  Current version: v${current}`));
   console.log(
     c.dim(channel ? `  Checking latest "${channel}" release…` : "  Checking latest release…"),
