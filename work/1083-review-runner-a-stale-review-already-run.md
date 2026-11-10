@@ -11,7 +11,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T18:02:07Z"
+updated_at: "2026-11-10T18:02:09Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -44,3 +44,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T17:59:42Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T18:02:07Z · note: review pass 1: needs some work
 - 2026-11-10T18:02:07Z · status review→active
+- 2026-11-10T18:02:09Z · CTO nudge: held — an undelivered message is already queued
