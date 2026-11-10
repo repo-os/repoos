@@ -16,7 +16,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-10T01:54:37Z"
+updated_at: "2026-11-10T01:54:38Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -185,3 +185,4 @@ The declared shot of the new Settings control is an evidence nicety: the capture
 - 2026-11-10T01:54:36Z · body: Accepted scope: Settings screenshot (final) (added)
 - 2026-11-10T01:54:36Z · status review→active
 - 2026-11-10T01:54:36Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-10T01:54:38Z · CTO nudge: held — an undelivered message is already queued
