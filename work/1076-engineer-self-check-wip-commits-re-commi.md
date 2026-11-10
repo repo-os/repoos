@@ -200,3 +200,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T03:33:10Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T03:33:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T04:01:39Z · message_queued at 2026-11-10T04:01:39.184Z
+- 2026-11-10T04:01:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
