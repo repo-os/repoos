@@ -3,6 +3,9 @@ id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: check-wait
+needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-10T03:33:29Z"
+updated_at: "2026-11-10T04:07:10Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -47,11 +50,11 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 ```json
 [
 {
-  "label": "Settings: Freeze the blocking bar after (new review.freezeAfterPasses control)",
-  "target": "default",
-  "route": "/settings?tab=automation",
-  "selector": "[data-config-key=\"review.freezeAfterPasses\"]",
-  "highlight": "[data-config-key=\"review.freezeAfterPasses\"]"
+"label": "Settings: Freeze the blocking bar after (new review.freezeAfterPasses control)",
+"target": "default",
+"route": "/settings?tab=automation",
+"selector": "[data-config-key=\"review.freezeAfterPasses\"]",
+"highlight": "[data-config-key=\"review.freezeAfterPasses\"]"
 }
 ]
 ```
@@ -207,3 +210,4 @@ The declared shot of the new Settings control is an evidence nicety: the capture
 - 2026-11-10T02:56:06Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T03:28:29Z · message_delivered: 2 message(s)
 - 2026-11-10T03:33:29Z · body
+- 2026-11-10T04:07:10Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
