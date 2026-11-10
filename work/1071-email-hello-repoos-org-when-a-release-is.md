@@ -64,3 +64,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T00:50:06Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
 - 2026-11-10T01:12:17Z · status ready→active, needs_input
 - 2026-11-10T01:36:21Z · message_queued at 2026-11-10T01:36:21.479Z
+- 2026-11-10T01:36:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
