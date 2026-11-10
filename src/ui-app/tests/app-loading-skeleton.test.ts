@@ -46,7 +46,7 @@ describe("repo loading skeleton", () => {
     expect(appVue).not.toContain("skeletonDelay");
     expect(appVue).not.toContain("page-loading-shell");
     expect(appVue).toMatch(
-      /<RouterView v-slot="\{ Component \}">[\s\S]*<Transition name="page-fade" mode="out-in">[\s\S]*<div v-if="showLoadingShell" key="loading" class="main-route page-loading">[\s\S]*<component :is="Component" v-else key="route" class="main-route" \/>[\s\S]*<\/Transition>[\s\S]*<\/RouterView>/,
+      /<Transition name="page-fade" mode="out-in">\s*<div v-if="showLoadingShell" key="loading" class="main-route page-loading">[\s\S]*<RouterView v-else class="main-route" \/>\s*<\/Transition>/,
     );
     const styles = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
     expect(styles).toMatch(/\.main\s*\{[^}]*padding:\s*22px 26px 0;/s);

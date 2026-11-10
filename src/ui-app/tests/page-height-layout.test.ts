@@ -24,7 +24,7 @@ describe("standard page height and floating controls", () => {
     expect(css).toMatch(/\.agents-page\s*\{[^}]*flex:\s*1 1 auto;/s);
     expect(css).toMatch(/\.ctx-page\s*\{[^}]*flex:\s*1 1 auto;/s);
     expect(appVue).toMatch(
-      /<RouterView v-slot="\{ Component \}">[\s\S]*<component :is="Component" v-else key="route" class="main-route" \/>/,
+      /<Transition name="page-fade" mode="out-in">[\s\S]*<div v-if="showLoadingShell" key="loading" class="main-route page-loading">[\s\S]*<RouterView v-else class="main-route" \/>[\s\S]*<\/Transition>/,
     );
     expect(inputsVue).toMatch(/\.inputs-board-page\s*\{[^}]*flex:\s*1 1 auto;/s);
   });
