@@ -31,6 +31,8 @@ function setup(runnerOverrides: Partial<AgentRunner> = {}) {
   } as RepoOSConfig;
   const runner = {
     isRunning: () => false,
+    reviewProcessLive: () => false,
+    abandonFinalizing: vi.fn(() => false),
     running: () => [],
     stop: vi.fn(() => ({ stopped: false, reason: "task is not running" })),
     startReview: vi.fn(() => ({ ok: true })),
@@ -170,6 +172,7 @@ describe("stale registration reaper (#1083)", () => {
   it("never clears an old registration whose reviewer process is still alive", () => {
     const { reviews, internal } = setup({
       isRunning: (key: string) => key === KEY,
+      reviewProcessLive: (key: string) => key === KEY,
       running: () =>
         [{ id: KEY, pid: 4242, startedAt: new Date(0).toISOString() }] as unknown as ReturnType<
           AgentRunner["running"]
@@ -193,11 +196,67 @@ describe("stale registration reaper (#1083)", () => {
   });
 });
 
+describe("finalizing review whose reviewer has exited (#1083)", () => {
+  it("does not count the exited reviewer as live, so the refusal says it is finalizing", async () => {
+    const { reviews, internal } = setup({
+      isRunning: (key: string) => key === KEY,
+      reviewProcessLive: () => false,
+    });
+    internal.runs.set(TASK_ID, { startedAt: Date.now(), cancelled: false, mode: "run" });
+    const gate = await reviews.canRun(task);
+    expect(gate.ok).toBe(false);
+    expect(gate.reason).toContain("reviewer exited, finalizing its report");
+    expect(gate.reason).not.toContain("pid");
+  });
+
+  it("clears a finalizing runner entry once it outlives the review timeout", () => {
+    // The fake runner holds one finalizing entry until it is abandoned.
+    let held = true;
+    const abandonFinalizing = vi.fn(() => {
+      held = false;
+      return true;
+    });
+    const { reviews, internal } = setup({
+      isRunning: (key: string) => held && key === KEY,
+      reviewProcessLive: () => false,
+      abandonFinalizing,
+    });
+    const stale = Date.now() - reviewTimeoutMs({} as RepoOSConfig) - 60_000;
+    internal.runs.set(TASK_ID, { startedAt: stale, cancelled: false, mode: "run" });
+    expect(reviews.isRunning(TASK_ID)).toBe(false);
+    expect(abandonFinalizing).toHaveBeenCalledWith(KEY);
+  });
+
+  it("keeps a finalizing runner entry that is still within the review timeout", () => {
+    const abandonFinalizing = vi.fn(() => true);
+    const { reviews } = setup({
+      isRunning: (key: string) => key === KEY,
+      reviewProcessLive: () => false,
+      abandonFinalizing,
+    });
+    expect(reviews.isRunning(TASK_ID)).toBe(true);
+    expect(abandonFinalizing).not.toHaveBeenCalled();
+  });
+
+  it("cancel drops the runner entry of a finalize whose child already exited", () => {
+    const abandonFinalizing = vi.fn(() => true);
+    const { reviews, internal } = setup({
+      isRunning: (key: string) => key === KEY,
+      reviewProcessLive: () => false,
+      abandonFinalizing,
+    });
+    internal.runs.set(TASK_ID, { startedAt: Date.now(), cancelled: false, mode: "run" });
+    reviews.cancel(TASK_ID);
+    expect(abandonFinalizing).toHaveBeenCalledWith(KEY);
+  });
+});
+
 describe("refusal names what is running (#1083)", () => {
   it("reports the live reviewer's pid and start time", async () => {
     const started = "2026-11-10T17:27:00.000Z";
     const { reviews, internal } = setup({
       isRunning: (key: string) => key === KEY,
+      reviewProcessLive: (key: string) => key === KEY,
       running: () =>
         [{ id: KEY, pid: 4242, startedAt: started }] as unknown as ReturnType<
           AgentRunner["running"]
