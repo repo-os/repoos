@@ -144,3 +144,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T06:26:19Z · note: handoff requested (cli)
 - 2026-11-10T06:26:35Z · held, held-reason, held-at
 - 2026-11-10T06:49:00Z · message_queued at 2026-11-10T06:49:00.201Z
+- 2026-11-10T06:49:00Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
