@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T04:24:33Z"
+updated_at: "2026-11-10T04:29:32Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -74,3 +74,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T04:24:12Z · message_queued at 2026-11-10T04:24:12.611Z
 - 2026-11-10T04:24:13Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-10T04:24:33Z · note: adopted orphaned engineer pid 58420
+- 2026-11-10T04:29:32Z · CTO nudge: held — an undelivered message is already queued
