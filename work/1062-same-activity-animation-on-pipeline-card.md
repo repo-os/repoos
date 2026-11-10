@@ -2,7 +2,7 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -178,3 +178,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T08:14:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T08:36:24Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T08:36:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Implementing the three review fixes. · stderr: (empty)
+- 2026-11-10T08:36:39Z · status active→review
