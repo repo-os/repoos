@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1083"
 title: "Review runner: a stale 'review already running' registration survives review cancel and blocks reviews until the server restarts (seen on #1080)"
 type: bug
@@ -60,3 +62,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T18:49:35Z · note: review pass 2: needs some work
 - 2026-11-10T18:49:36Z · status review→active
 - 2026-11-10T18:49:37Z · message_queued at 2026-11-10T18:49:37.164Z
+
