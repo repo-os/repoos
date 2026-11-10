@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
@@ -16,8 +18,6 @@ review_rounds: 2
 review_passes: 3
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5940508779628f831738901e07a5b681a2aa02d5
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-10T02:19:01.304Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 handoff_signal_retry_count: 2
 dev_error_count: 12
 ---
@@ -265,3 +265,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T04:20:23Z · status review→active
 - 2026-11-10T04:20:46Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T04:22:59Z · message_queued at 2026-11-10T04:22:59.664Z
+
