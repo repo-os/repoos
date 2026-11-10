@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T06:04:38Z"
+updated_at: "2026-11-10T10:59:34Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 5676e8dde658b91c55ef42ee04a17cf8b0c40faf
 review_passes: 4
@@ -209,3 +209,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T05:01:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T05:11:27Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at commit · git add failed: A check is running; wait for it to finish.
 - 2026-11-10T06:04:38Z · message_delivered: 2 message(s)
+- 2026-11-10T10:59:34Z · status active→review
