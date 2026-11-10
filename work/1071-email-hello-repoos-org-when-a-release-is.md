@@ -123,3 +123,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T03:41:58Z · note: handoff requested (cli)
 - 2026-11-10T03:46:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T04:04:34Z · message_queued at 2026-11-10T04:04:34.241Z
+- 2026-11-10T04:04:34Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
