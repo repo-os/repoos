@@ -72,6 +72,7 @@ import {
   finishHandoffStatus,
   updateHandoffStatusStep,
   updateHandoffStatusProgress,
+  readHandoffStatus,
   setHandoffWaitingReason,
 } from "./handoff-status.js";
 import { patchTaskFile } from "./write.js";
@@ -82,6 +83,7 @@ import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
 import {
   acquireCheckGateLock,
   checkGateBusyRun,
+  checkGateWaitBudgetMs,
   waitForCheckGateRelease,
 } from "./check-gate-lock.js";
 import { runFormatFixes } from "../core/check-format.js";
@@ -128,22 +130,27 @@ const CHECK_GATE_WAIT_LABEL = "Waiting for the running check to finish";
 async function runWhileCheckGateWait<T>(
   config: RepoOSConfig,
   taskId: string,
+  deadlineAt: number,
   attempt: () => Promise<T>,
   busy: (result: T) => boolean,
 ): Promise<T> {
+  // The label is keyed to the attempt that started the wait, so a late waiter
+  // cannot mark a newer handoff as waiting (#1082).
+  const attemptKey = readHandoffStatus(config, taskId).attemptKey;
   let waiting = false;
   try {
     const waited = await waitForCheckGateRelease(attempt, busy, {
       boardRoot: config.root,
       cacheDir: config.cacheDir ?? ".repoos",
+      timeoutMs: checkGateWaitBudgetMs(deadlineAt),
       onWait: () => {
         waiting = true;
-        setHandoffWaitingReason(config, taskId, CHECK_GATE_WAIT_LABEL);
+        setHandoffWaitingReason(config, taskId, CHECK_GATE_WAIT_LABEL, attemptKey);
       },
     });
     return waited.result;
   } finally {
-    if (waiting) setHandoffWaitingReason(config, taskId, null);
+    if (waiting) setHandoffWaitingReason(config, taskId, null, attemptKey);
   }
 }
 
@@ -818,6 +825,9 @@ async function runHandoffFinalization(
   // file edits through this path.
   // A self-check that still holds the worktree makes this step wait, not fail
   // (#1082); the handoff row says so in plain words while it waits.
+  // The wait stops before the handoff deadline, so it never outlives the
+  // handoff it belongs to (#1082).
+  const guardAttemptKey = readHandoffStatus(config, task.id).attemptKey;
   let waitingForCheck = false;
   let gate: Awaited<ReturnType<typeof guardReviewTransition>>;
   try {
@@ -825,14 +835,15 @@ async function runHandoffFinalization(
       config,
       { ...worktreeTask, branch: task.branch },
       {
+        checkGateWait: { timeoutMs: checkGateWaitBudgetMs(handoffDeadlineAt) },
         onCheckGateWait: () => {
           waitingForCheck = true;
-          setHandoffWaitingReason(config, task.id, CHECK_GATE_WAIT_LABEL);
+          setHandoffWaitingReason(config, task.id, CHECK_GATE_WAIT_LABEL, guardAttemptKey);
         },
       },
     );
   } finally {
-    if (waitingForCheck) setHandoffWaitingReason(config, task.id, null);
+    if (waitingForCheck) setHandoffWaitingReason(config, task.id, null, guardAttemptKey);
   }
   if (!gate.ok) {
     return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
@@ -1139,6 +1150,7 @@ async function runHandoffFinalization(
       const reportCommit = await runWhileCheckGateWait(
         config,
         task.id,
+        handoffDeadlineAt,
         () =>
           runGit(
             workdir,

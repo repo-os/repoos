@@ -284,9 +284,10 @@ managed engineer turn while the lock is held (`A check is running; wait for it
 to finish.`), and RepoOS source commits are rejected. A handoff that arrives
 while your own `repoos check` still holds the lock does not fail: it waits, and
 the task shows `Waiting for the running check to finish` until the check ends.
-It then commits and continues, so you do not need to request handoff again. If
-the check is still running after 45 minutes, the handoff fails with a timeout
-message and you can request handoff again once the check has finished. A lock
+It then commits and continues, so you do not need to request handoff again. The
+wait stops before the handoff's own deadline (30 minutes by default). If the
+check is still running by then, the handoff fails with a timeout message and you
+can request handoff again once the check has finished. A lock
 left behind by a check that has died is cleared first, so it never blocks a
 handoff. An engineer turn that was
 already running can still write files directly; filesystem writes cannot be
