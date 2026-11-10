@@ -305,3 +305,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T20:06:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T20:13:49Z · status active→review
 - 2026-11-10T20:13:50Z · message_queued at 2026-11-10T20:13:50.134Z
+- 2026-11-10T20:13:50Z · note: shots: skipped — the diff (30 changed paths) touches no capture target's globs — no UI change to capture
