@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T11:32:45Z"
+updated_at: "2026-11-10T11:32:46Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 0d2391a4d0da21d2b9b519d1e8c4506570c4b594
 review_rounds: 1
@@ -221,3 +221,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T11:32:30Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T11:32:45Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-10T11:32:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T11:32:46Z · message_queued at 2026-11-10T11:32:46.103Z
