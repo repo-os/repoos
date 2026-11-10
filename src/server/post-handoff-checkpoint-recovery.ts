@@ -108,7 +108,10 @@ export function sweepOrphanedPostHandoffCheckpointRecoveries(
     if (!name.endsWith(".json")) continue;
     const taskId = name.slice(0, -".json".length);
     const rec = readPostHandoffCheckpointRecovery(config, taskId);
-    if (!rec || rec.phase === "failed") continue;
+    // Only a `gate` marker is backed by a handoff process. A `review` marker
+    // means the delta review is still pending: close-out resumes from it when
+    // the review says good to go, so a restart must not delete it.
+    if (!rec || rec.phase !== "gate") continue;
     if (isHandoffLive(taskId)) continue;
     clearPostHandoffCheckpointRecovery(config, taskId);
     removed++;
@@ -150,6 +153,11 @@ export async function startPostHandoffCheckpointRecovery(
   if (existing && existing.phase !== "failed") {
     if (deps.runner?.isHandoffInFlight?.(task.id)) {
       return { ok: false, reason: "checkpoint recovery is already running for this task" };
+    }
+    // The `review` phase is not slot-backed, but its delta review may still be
+    // running: a second Move to done must not delete the marker and restart.
+    if (existing.phase === "review" && deps.reviews.isRunning(task.id)) {
+      return { ok: false, reason: "the delta review for this task is still running" };
     }
     clearPostHandoffCheckpointRecovery(config, task.id);
   }
