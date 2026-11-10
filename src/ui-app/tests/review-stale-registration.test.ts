@@ -89,11 +89,14 @@ describe("review registration release (#1083)", () => {
     expect(reviews.runningCount()).toBe(0);
   });
 
-  it("answers isRunning without the liveness probe when nothing holds the task", () => {
+  it("answers isRunning without reconciling dead agents when nothing holds the task", () => {
     const reviewProcessLive = vi.fn(() => false);
-    const { reviews } = setup({ reviewProcessLive });
+    const isRunning = vi.fn(() => false);
+    const { reviews } = setup({ reviewProcessLive, isRunning, hasEntry: () => false });
     expect(reviews.isRunning(TASK_ID)).toBe(false);
+    expect(reviews.runningCount()).toBe(0);
     expect(reviewProcessLive).not.toHaveBeenCalled();
+    expect(isRunning).not.toHaveBeenCalled();
   });
 
   it("does not throw out of a spawn that fails, so no unhandled rejection escapes", () => {
