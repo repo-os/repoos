@@ -502,6 +502,7 @@ export function readShotPreviewFixtureFromLocation(
 const TASK_CHECK_PROGRESS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set([
   "checks:progress",
   "card:checksProgress",
+  "card:handoffStaleActive",
   "drawer:checksProgress",
   "pipeline:checksProgress",
 ]);
@@ -2243,12 +2244,28 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "panel:defaultScreenshotPicker":
       useUiStore().openNewTask();
       break;
+    case "card:handoffStaleActive": {
+      applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
+      repo.runningIds = repo.runningIds.filter((id) => id !== SHOT_PREVIEW_FIXTURE_TASK_ID);
+      const startedAt = new Date(Date.now() - 45 * 60_000).toISOString();
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "validate",
+        startedAt,
+        updatedAt: new Date().toISOString(),
+        attempt: 1,
+        progress: null,
+        machine: "local",
+        stale: true,
+      };
+      break;
+    }
     case "drawer:checksProgress":
     case "card:checksProgress": {
       applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
       // #1057: engineer already exited; server-side handoff still running.
       repo.runningIds = repo.runningIds.filter((id) => id !== SHOT_PREVIEW_FIXTURE_TASK_ID);
-      const startedAt = new Date(Date.now() - 45 * 60_000).toISOString();
+      const startedAt = new Date(Date.now() - 133_000).toISOString();
       repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
         state: "running",
         step: "verify",
@@ -2257,7 +2274,6 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         attempt: 1,
         progress: null,
         machine: "remote host",
-        stale: true,
       };
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
         {
