@@ -39,3 +39,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T17:31:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T17:59:42Z · status active→review
 - 2026-11-10T17:59:42Z · message_queued at 2026-11-10T17:59:42.454Z
+- 2026-11-10T17:59:42Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
