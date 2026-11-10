@@ -3,6 +3,9 @@ id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection failed repeatedly"
 priority: p2
 area: web
 assigned_to: ai
@@ -16,8 +19,9 @@ created_at: "2026-11-08T09:13:53Z"
 updated_at: "2026-11-10T02:39:48Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
-dev_error_count: 5
+dev_error_count: 6
 deferred_handoff_resume_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-10T02:39:48.655Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -122,3 +126,5 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T02:39:46Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T02:39:47Z · message_queued at 2026-11-10T02:39:47.277Z
 - 2026-11-10T02:39:48Z · ↻ resuming engineer to read queued message
+- 2026-11-10T02:39:48Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-10T02:39:48Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
