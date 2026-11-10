@@ -2,7 +2,7 @@
 id: "1083"
 title: "Review runner: a stale 'review already running' registration survives review cancel and blocks reviews until the server restarts (seen on #1080)"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T19:41:11Z"
+updated_at: "2026-11-10T19:41:58Z"
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 review_passes: 2
@@ -74,4 +74,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T19:31:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T19:35:41Z · body
 - 2026-11-10T19:41:11Z · CTO nudge: held — handoff gate is running
-
+- 2026-11-10T19:41:58Z · status active→review
