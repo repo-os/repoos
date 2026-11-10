@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 821135
-last_close_out_gate_at: "2026-11-10T12:57:41.892Z"
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 2f931dd8f1e355ab6ce63130ed6b5a3026b197a4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-update-dialog-show-the-upgrade-c
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
 updated_at: "2026-11-10T12:57:41Z"
+last_close_out_gate_ms: 821135
+last_close_out_gate_at: "2026-11-10T12:57:41.892Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
