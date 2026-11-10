@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 5676e8dde658b91c55ef42ee04a17cf8b0c40faf
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -12,8 +14,6 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
 updated_at: "2026-11-10T04:01:39Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 7acb7acb0353d1640a3ab26f488ff34f36ec1465
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -201,3 +201,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T03:33:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T04:01:39Z · message_queued at 2026-11-10T04:01:39.184Z
 - 2026-11-10T04:01:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
