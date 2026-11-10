@@ -4,7 +4,7 @@
  * A self-check WIP checkpoint, a concurrent board write, or a partial merge of
  * main can leave a sibling task's `work/<other-id>-*.md` (or its report) on the
  * branch. `restoreForeignTaskBookkeepingFromMain` heals that at handoff — before
- * the review lock — by restoring the branch point's copy as one bookkeeping
+ * the review lock — by restoring main's copy as one bookkeeping
  * commit, so the landing preflight's "Task scope" check passes instead of
  * failing with "the diff changes another task's bookkeeping".
  */
@@ -49,7 +49,7 @@ function repoWithTaskBranch(): { root: string; wt: string; clean: () => void } {
 }
 
 describe("restoreForeignTaskBookkeepingFromMain (#1076)", () => {
-  it("restores the branch point's copy of a sibling's bookkeeping as one bookkeeping commit", async () => {
+  it("restores main's copy of a sibling's bookkeeping as one bookkeeping commit", async () => {
     const fx = repoWithTaskBranch();
     try {
       // The branch committed its own source work, its own report, AND a
@@ -274,7 +274,7 @@ branch: ${branch}
 ## Problem
 
 A sibling task's bookkeeping is committed on this branch by an earlier WIP
-checkpoint, and handoff must restore the branch point's copy instead of failing
+checkpoint, and handoff must restore main's copy instead of failing
 landing.
 `;
     const taskPath = join(workDir, "1076-handoff-foreign.md");
@@ -360,7 +360,7 @@ landing.
         logs.some(
           (l) =>
             l.level === "info" &&
-            l.message.includes("restored the branch point's copy of another task's bookkeeping"),
+            l.message.includes("restored main's copy of another task's bookkeeping"),
         ),
       ).toBe(true);
       expect(git(fx.wt, ["status", "--porcelain"])).toBe("");

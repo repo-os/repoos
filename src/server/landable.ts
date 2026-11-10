@@ -9,9 +9,12 @@
 import { bookkeepingDirs } from "../core/config.js";
 import {
   evaluateLandable,
+  isForbiddenTaskScopePath,
   reviewPredatesLatestHandoff,
   type LandableResult,
 } from "../core/landable.js";
+import { dropForeignBookkeepingPathsMatchingMain } from "../core/git.js";
+import { resolveDefaultBranch } from "../core/repo-log.js";
 import {
   reviewReportHasBlockingBugs,
   reviewReportIsEnvironmentOnly,
@@ -44,6 +47,19 @@ export async function gatherLandable(
       ? await getGitWorker(config.root).branchCommit(task.branch)
       : null);
 
+  const ownTaskFile = taskFilePath(task);
+  let changedPaths = preflight.changedPaths;
+  if (changedPaths && task.branch && !preflight.branchMissing) {
+    const baseBranch = await resolveDefaultBranch(config.root);
+    changedPaths = await dropForeignBookkeepingPathsMatchingMain(
+      config.root,
+      task.branch,
+      baseBranch,
+      changedPaths,
+      (p) => isForbiddenTaskScopePath(p, ownTaskFile, dirs, task.id),
+    );
+  }
+
   return evaluateLandable({
     taskId: task.id,
     branch: task.branch || null,
@@ -66,8 +82,8 @@ export async function gatherLandable(
           conflicts: preflight.mergeConflicts,
           ...(preflight.mergeReason ? { reason: preflight.mergeReason } : {}),
         },
-    ownTaskFile: taskFilePath(task),
-    changedPaths: preflight.changedPaths,
+    ownTaskFile,
+    changedPaths,
     bookkeeping: dirs,
     mainDirty: {
       files: preflight.mainDirtyFiles,

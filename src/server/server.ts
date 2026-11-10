@@ -137,11 +137,13 @@ import {
   commitFiles,
   resetWorktree,
   syncBranchWithMain,
+  restoreForeignTaskBookkeepingFromMain,
   shouldTuneRepoForScaleAtStartup,
   tuneRepoForScale,
   runGit,
   setGitLockFailureSink,
 } from "../core/git.js";
+import { resolveDefaultBranch } from "../core/repo-log.js";
 import { setGitMaintenanceLockSink } from "../core/git-maintenance.js";
 import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import {
@@ -3462,6 +3464,21 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
 
     await setNeedsMerge(false);
+    // A sync merge can leave committed sibling bookkeeping the branch should
+    // not carry; heal it the same way handoff does (#1086).
+    if (wtPath && task.branch) {
+      try {
+        await restoreForeignTaskBookkeepingFromMain({
+          worktree: wtPath,
+          baseBranch: await resolveDefaultBranch(config.root),
+          taskId: task.id,
+          ownTaskFile: task.path,
+          workDir: config.workDir,
+        });
+      } catch {
+        // Best-effort: sync already succeeded; handoff will retry the restore.
+      }
+    }
     return { ok: true, conflicts: [] };
   }
 
