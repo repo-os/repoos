@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 01972ec95500b32d83a57717df28767909417a5e
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -323,3 +325,4 @@ Non-blocking: isTaskMarkdownBookkeepingPath matching non-task markdown under wor
 - 2026-11-10T20:26:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T20:40:11Z · message_queued at 2026-11-10T20:40:11.077Z
 - 2026-11-10T20:40:11Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
+
