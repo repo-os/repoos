@@ -11,7 +11,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T17:47:46Z"
+updated_at: "2026-11-10T17:49:56Z"
 review_rounds: 1
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
@@ -30,6 +30,28 @@ The handoff record is only cleared by the handoff pipeline finishing. When the s
 
 ## Notes for AI
 Look at the handoff state store behind `repoos handoff-status` (src/server/handoff.ts), the watchdog (check-wait escalation) and the card state in the UI. Do not edit repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Review card with landable Move to done enabled after superseded handoff",
+  "target": "default",
+  "route": "/work",
+  "selector": "[data-task-id=\"9999\"]",
+  "highlight": "[data-task-id=\"9999\"] .tc-agent-btn",
+  "state": "card:reviewLandableReady"
+},
+{
+  "label": "Active handoff stale flag on checks line (long-running validate)",
+  "target": "default",
+  "route": "/work",
+  "selector": "[data-task-id=\"9999\"]",
+  "highlight": "[data-task-id=\"9999\"] .tc-status-line",
+  "state": "card:reviewChecksRunning"
+}
+]
+```
 
 ## Screenshots
 
@@ -59,3 +81,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T17:42:40Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T17:47:42Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-10T17:47:46Z · message_delivered: 2 message(s)
+- 2026-11-10T17:49:56Z · body
