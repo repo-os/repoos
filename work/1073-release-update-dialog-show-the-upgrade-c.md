@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T12:21:27Z"
+updated_at: "2026-11-10T12:21:29Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -323,3 +323,4 @@ FORMAT NOTE for the reviewer: pass 5 found no bugs ('None found.'). Under '## Bu
 - 2026-11-10T11:14:18Z · body: Accepted scope and known limitations (added)
 - 2026-11-10T11:15:43Z · note: review pass 6: good to go
 - 2026-11-10T12:21:27Z · status review→active
+- 2026-11-10T12:21:29Z · CTO nudge: held — an undelivered message is already queued
