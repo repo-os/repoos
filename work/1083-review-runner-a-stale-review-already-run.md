@@ -11,7 +11,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T18:02:10Z"
+updated_at: "2026-11-10T18:16:09Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -46,3 +46,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T18:02:07Z · status review→active
 - 2026-11-10T18:02:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T18:02:10Z · message_delivered: 1 message(s)
+- 2026-11-10T18:16:09Z · CTO nudge: held — handoff gate is running
