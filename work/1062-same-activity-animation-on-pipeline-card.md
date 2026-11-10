@@ -154,3 +154,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T06:30:59Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T06:33:17Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-10T06:33:21Z · needs_input
+- 2026-11-10T06:33:21Z · message_delivered: 1 message(s)
