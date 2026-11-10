@@ -2,7 +2,7 @@
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -102,3 +102,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T20:03:26Z · message_queued at 2026-11-10T20:03:26.826Z
 - 2026-11-10T20:03:27Z · ↻ resuming engineer to read queued message
 - 2026-11-10T20:03:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Stale on `card:checksProgress` broke the #1057 test expecting `handoffInFlight` true. Adding a dedicated stale fixture instead. · stderr: (empty)
+- 2026-11-10T20:03:27Z · status active→review
