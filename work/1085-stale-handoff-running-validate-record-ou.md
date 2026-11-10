@@ -113,3 +113,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T20:12:31Z · message_delivered: 1 message(s)
 - 2026-11-10T20:12:31Z · status review→active
 - 2026-11-10T20:21:11Z · message_queued at 2026-11-10T20:21:11.439Z
+- 2026-11-10T20:21:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
