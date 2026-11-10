@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -498,4 +498,4 @@ Pass 15: a brief layout shift while the old shell fades out and the new page ent
 - 2026-11-10T07:39:49Z · note: handoff requested (cli)
 - 2026-11-10T07:41:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T07:44:44Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-10T07:44:47Z · engineer stopped by request
+- 2026-11-10T07:44:47Z · status active→review
