@@ -331,3 +331,4 @@ Non-blocking: isTaskMarkdownBookkeepingPath matching non-task markdown under wor
 - 2026-11-10T20:56:29Z · body
 - 2026-11-10T21:02:23Z · status active→review
 - 2026-11-10T21:02:24Z · message_queued at 2026-11-10T21:02:24.459Z
+- 2026-11-10T21:02:24Z · note: shots: skipped — the diff (33 changed paths) touches no capture target's globs — no UI change to capture
