@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -283,4 +283,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T18:47:51Z · note: handoff requested (cli)
 - 2026-11-10T18:49:40Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T19:03:01Z · body
-- 2026-11-10T19:10:51Z · engineer stopped by request
+- 2026-11-10T19:10:51Z · status active→review
