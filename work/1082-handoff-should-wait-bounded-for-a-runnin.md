@@ -3,6 +3,9 @@ id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the drawer never renders the waiting label; the capture reads \"starting…\", so AC1's visible waiting state is unmet."
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -127,3 +130,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T08:56:10Z · status active→review
 - 2026-11-10T08:56:10Z · message_queued at 2026-11-10T08:56:10.576Z
 - 2026-11-10T08:58:19Z · note: review pass 3: needs some work
+- 2026-11-10T08:58:19Z · needs_input
