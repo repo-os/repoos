@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T01:56:21Z"
+updated_at: "2026-11-10T02:03:15Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -51,3 +51,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T01:51:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T01:53:10Z · body
 - 2026-11-10T01:56:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T02:03:15Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
