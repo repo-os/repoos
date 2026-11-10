@@ -135,3 +135,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T05:11:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-10T05:46:15Z · message_delivered: 2 message(s)
 - 2026-11-10T06:16:15Z · message_queued at 2026-11-10T06:16:15.371Z
+- 2026-11-10T06:16:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
