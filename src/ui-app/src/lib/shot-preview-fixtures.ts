@@ -1371,7 +1371,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         updatedAt: new Date().toISOString(),
         startedAt: new Date(Date.now() - 75 * 60_000).toISOString(),
         machine: null,
-        stale: false,
+        stale: true,
       };
       break;
     case "card:reviewLandableReady":
@@ -2248,15 +2248,16 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
       // #1057: engineer already exited; server-side handoff still running.
       repo.runningIds = repo.runningIds.filter((id) => id !== SHOT_PREVIEW_FIXTURE_TASK_ID);
-      const startedAt = new Date(Date.now() - 133_000).toISOString();
+      const startedAt = new Date(Date.now() - 45 * 60_000).toISOString();
       repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
         state: "running",
-        step: "verify",
+        step: "validate",
         startedAt,
         updatedAt: new Date().toISOString(),
         attempt: 1,
         progress: null,
         machine: "remote host",
+        stale: true,
       };
       repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID] = [
         {
