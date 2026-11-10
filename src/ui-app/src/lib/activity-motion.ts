@@ -48,8 +48,7 @@ export function resetActivityMotionCoordinatorForTests(): void {
   observer = null;
   while (visibilityListenerCount > 0) detachVisibilityListener();
   while (motionListenerCount > 0) detachMotionListener();
-  pageVisible.value =
-    typeof document === "undefined" || document.visibilityState !== "hidden";
+  pageVisible.value = typeof document === "undefined" || document.visibilityState !== "hidden";
   reduced.value = media?.matches ?? false;
 }
 
