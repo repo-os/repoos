@@ -313,7 +313,12 @@ repoos upgrade --channel beta     # latest beta   (also: canary, rc)
 The same detection backs the dashboard update dialog's **How to upgrade** block
 (`upgradeInstruction` in `src/commands/upgrade.ts`, surfaced as `installKind` /
 `upgradeCommand` on `GET /api/release/available`), so the command the dialog
-shows always matches what `repoos upgrade` would print for this install.
+shows matches what `repoos upgrade` would print for this install. The version
+the banner compares against follows the same channel as that command: a
+standalone channel install is checked against the newest build on its channel
+(the same lookup `fetchLatestRelease` in `src/commands/upgrade.ts` does), and
+everything else against the stable latest. A beta install is therefore never
+offered a stable release that `repoos upgrade --channel beta` would not install.
 
 The channel value just has to match the `-<channel>.` in a tag, so any
 identifier you actually publish works, not only those three.

@@ -69,6 +69,18 @@ describe("feature releases", () => {
     expect(isNewerVersion("0.5.48", null)).toBe(false);
   });
 
+  it.each([
+    ["0.5.81-beta.2", "0.5.81-beta.1", true],
+    ["0.5.81-beta.1", "0.5.81-beta.2", false],
+    ["0.5.81-beta.1", "0.5.80-beta.1", true],
+    ["0.5.81", "0.5.81-beta.2", true],
+    ["0.5.81-beta.2", "0.5.81", false],
+    ["0.5.81-beta.1", "0.5.81-beta.1", false],
+    ["not-a-version", "0.5.81", false],
+  ])("orders prerelease builds the way repoos upgrade takes them: %s vs %s", (latest, current, expected) => {
+    expect(isNewerVersion(latest, current)).toBe(expected);
+  });
+
   it("reads the prerelease channel from an installed version (#1073)", () => {
     expect(channelFromVersion("0.6.0-beta.1")).toBe("beta");
     expect(channelFromVersion("0.6.0-canary.12")).toBe("canary");

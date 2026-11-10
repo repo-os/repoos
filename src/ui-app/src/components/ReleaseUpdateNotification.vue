@@ -34,7 +34,7 @@ const visible = computed(() => !!release.value?.available && !dismissed.value);
 const notesHtml = computed(() =>
   release.value?.releaseNotes ? renderMarkdown(release.value.releaseNotes) : "",
 );
-const upgradeCommand = computed(() => release.value?.upgradeCommand ?? "repoos upgrade");
+const upgradeCommand = computed(() => release.value?.upgradeCommand ?? "");
 // How the command should be described in the dialog — names the actual action
 // for a package-manager/source install instead of implying `repoos upgrade` works.
 const upgradePrefix = computed(() => {
@@ -390,7 +390,7 @@ onUnmounted(() => {
   gap: 8px;
 }
 .release-update-code {
-  flex: 1 1 100%;
+  flex: 1 1 auto;
   display: block;
   min-width: 0;
   padding: 8px 10px;
