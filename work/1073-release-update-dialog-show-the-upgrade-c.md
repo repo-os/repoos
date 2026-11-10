@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T12:40:55Z"
+updated_at: "2026-11-10T12:40:57Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -327,3 +327,4 @@ FORMAT NOTE for the reviewer: pass 5 found no bugs ('None found.'). Under '## Bu
 - 2026-11-10T12:21:42Z · note: handoff requested (cli)
 - 2026-11-10T12:24:49Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T12:40:55Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-10T12:40:57Z · status active→review
