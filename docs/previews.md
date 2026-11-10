@@ -505,7 +505,8 @@ fixture the preview applies before capture (preview builds only, via
 - `drawer:statusReviewFailed`, `drawer:statusChecksRunning`,
   `drawer:statusHandoffFailed`, `drawer:statusConfirmingHandoff`, and
   `drawer:statusChecksFailed` — focused task drawer states for the compact
-  status summary and priority order.
+  status summary and priority order. `drawer:handoffWaiting` is a handoff
+  waiting on a running self-check, showing the plain-English wait in the drawer.
 - `board:cardChips` — multi-area human-assigned card with seeded diff stats,
   so the area, human and file chips all render (#0776, #0795)
 - `card:noChanges` — ready human-assigned card with a branch and zero diff
@@ -518,6 +519,10 @@ fixture the preview applies before capture (preview builds only, via
 - `budget:paused` — Agents → Budget Controls with one whole-agent pause and one
   per-model pause, each with a reason and a future resume date, so the Paused
   chip and Resume controls render (#0850)
+- `release:updateAvailable` — the release-update dialog pinned open with a newer
+  version available, so a capture shows its **How to upgrade** command block
+  (only rendered when `available` is true, which the preview board usually is
+  not, #1073)
 
 **Target support (#0866).** Fixtures and app routes only exist on the app
 target (`default` for the main RepoOS app), not on the Docs site or Landing

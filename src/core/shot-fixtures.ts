@@ -63,6 +63,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:statusChecksRunning",
   "drawer:statusChecksRunningNarrow",
   "drawer:statusConfirmingHandoff",
+  "drawer:handoffWaiting",
   "drawer:statusConfirmingHandoffNarrow",
   "drawer:statusChecksFailed",
   "drawer:statusChecksFailedNarrow",
@@ -146,7 +147,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0775 — a failed dev target on the Dev page, so a capture can show the
   // plain-language failure summary, its port holder and the Stop action.
   "dev:failed",
-  // #0950 — pin the shared loading skeleton for first-load captures.
+  // #0950 — hold the Dev targets request pending so the first-load skeleton
+  // stays visible while the real target cards are unavailable.
   "dev:loading",
   // #0801 — a started dev target beside a stopped one, so a capture can show
   // the running highlight (the same cyan glow an active remote runner uses).
@@ -184,6 +186,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // list screen whose steps open and close their own dialog.
   "agents:scheduledSeeded",
   "reminders:due",
+  // #1073 — the release-update dialog pinned open with a newer version
+  // available, so a capture shows the upgrade command block (which only
+  // renders when `available` is true on the live board).
+  "release:updateAvailable",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];
@@ -210,7 +216,9 @@ export function shotFixtureContainer(fixture: string): ShotFixtureContainer | nu
   if (
     fixture.startsWith("drawer:") ||
     fixture.startsWith("panel:") ||
-    fixture.startsWith("schedule:")
+    fixture.startsWith("schedule:") ||
+    // #1073 — `release:updateAvailable` pins the release-update modal open.
+    fixture.startsWith("release:")
   ) {
     return "dialog";
   }

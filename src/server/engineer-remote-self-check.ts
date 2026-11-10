@@ -29,7 +29,12 @@ import type { RemotePreReviewOutcome } from "./pre-review-remote-gate.js";
 import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import { createRemoteValidator } from "./remote-validation.js";
-import { acquireCheckGateLock, aliveCheckGateLockForWorktree } from "./check-gate-lock.js";
+import {
+  acquireCheckGateLock,
+  aliveCheckGateLockForWorktree,
+  checkGateBusyRun,
+  waitForCheckGateRelease,
+} from "./check-gate-lock.js";
 import { Logger } from "../core/logger.js";
 import { checkSnapshot } from "../core/check-reuse.js";
 
@@ -142,7 +147,15 @@ export async function commitWipCheckpointForRemoteGate(
   // Commit ONLY the paths this checkpoint intended, via pathspec form: even if
   // something slipped into the index between the staging loop and here, a
   // sibling task's bookkeeping can no longer be swept into the branch (#1076).
-  const commit = await runGit(worktreePath, ["commit", "-m", msg, "--", ...toCommit], 120_000);
+  // A checkpoint can land while an earlier self-check still holds the gate;
+  // wait it out instead of failing the remote gate (#1082).
+  const commit = (
+    await waitForCheckGateRelease(
+      () => runGit(worktreePath, ["commit", "-m", msg, "--", ...toCommit], 120_000),
+      checkGateBusyRun,
+      { boardRoot: config.root, cacheDir: config.cacheDir ?? ".repoos" },
+    )
+  ).result;
   if (commit.status !== 0) {
     return commit.stderr.trim() || "WIP checkpoint commit failed";
   }

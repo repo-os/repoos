@@ -27,11 +27,24 @@ import { runGit, agentTouchedFiles, foreignTaskBookkeepingPaths } from "../core/
 import { REPOOS_TOML_REL, taskDeclaresRepoosTomlWork } from "../core/repoos-toml-branch-guard.js";
 import { isOwnReportPath } from "../core/report-paths.js";
 import { getGitWorker } from "./git-worker.js";
+import { CHECK_GATE_WRITE_REFUSAL, waitForCheckGateRelease } from "./check-gate-lock.js";
 
 export interface ReviewGuardResult {
   ok: boolean;
   /** Human-readable failure reason when not ok. */
   detail?: string;
+}
+
+export interface ReviewGuardOptions {
+  /** Fired once when the commit step is waiting for a running self-check. */
+  onCheckGateWait?: () => void;
+  /** Wait bounds; default to the check-gate wait defaults (#1082). */
+  checkGateWait?: { timeoutMs?: number; pollMs?: number };
+  /**
+   * Wait for a running self-check (default). `false` keeps the fail-fast
+   * refusal for callers that cannot block, such as the PATCH close-out route.
+   */
+  waitForCheckGate?: boolean;
 }
 
 function samePath(a: string, b: string): boolean {
@@ -55,6 +68,35 @@ function isGeneratedOrTask(path: string, taskPath: string): boolean {
  * cannot be prepared or there is no source change without `no_source_change`.
  */
 export async function guardReviewTransition(
+  config: RepoOSConfig,
+  task: Task,
+  opts: ReviewGuardOptions = {},
+): Promise<ReviewGuardResult> {
+  if (opts.waitForCheckGate === false) return guardReviewTransitionOnce(config, task);
+  // The guard is idempotent (see the header), so a refused add/commit can be
+  // re-run whole once the self-check releases the gate (#1082). Recovery of a
+  // dead holder happens inside the wait, so a crashed check never blocks here.
+  const waited = await waitForCheckGateRelease(
+    () => guardReviewTransitionOnce(config, task),
+    (result) => !result.ok && (result.detail ?? "").includes(CHECK_GATE_WRITE_REFUSAL),
+    {
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      ...opts.checkGateWait,
+      onWait: opts.onCheckGateWait,
+    },
+  );
+  if (waited.timedOut) {
+    return {
+      ok: false,
+      detail:
+        "timed out after waiting for the running check to finish; the check still holds the task worktree. Request handoff again once it has finished",
+    };
+  }
+  return waited.result;
+}
+
+async function guardReviewTransitionOnce(
   config: RepoOSConfig,
   task: Task,
 ): Promise<ReviewGuardResult> {

@@ -158,11 +158,11 @@ onMounted(() => {
       </Button>
     </div>
     <p v-if="error || store.error" class="ff-error" role="alert">{{ error || store.error }}</p>
-    <PageSkeleton v-if="store.loading && !store.reminders.length" kind="rows" />
-    <p v-else-if="!store.reminders.length" class="ff-notice">
+    <PageSkeleton :loading="store.loading && !store.reminders.length" kind="rows" />
+    <p v-if="!store.loading && !store.reminders.length" class="ff-notice">
       No reminders yet. Add a date to check back on an agent, credit reset, or provider outage.
     </p>
-    <div v-else class="reminder-list">
+    <div v-if="store.reminders.length" class="reminder-list">
       <article
         v-for="row in store.sorted"
         :key="row.id"

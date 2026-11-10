@@ -1,0 +1,12 @@
+{
+  "taskId": "1073",
+  "round": 3,
+  "at": "2026-11-10T12:40:57.785Z",
+  "agent": "claude code",
+  "model": "haiku",
+  "branch": "feat/release-update-dialog-show-the-upgrade-c",
+  "baseSha": "95af4c55d27b2a8b846a4c7cf8a6b501404c9e8c",
+  "sourceSha": "8345674cc3e3d7e0da3197bfdd1bb3abb379c966",
+  "wordCount": 267,
+  "markdown": "## TL;DR\nThe release update dialog now shows the correct upgrade command with a Copy button, backed by `installKind` and `upgradeCommand` on `GET /api/release/available`, computed by one exported helper shared with `repoos upgrade`. The last fix removes a version assertion from a route test that broke when the repo version moved on.\n\n## Work and rationale\n`upgradeInstruction` in `src/commands/upgrade.ts` detects standalone, package-manager, source and channel installs, and the route feeds it the same root and version `repoos upgrade` uses. The dialog shows the command with a Copy button (keyboard accessible, empty command is a failed copy), the old button is relabelled \"Release notes\", and the dismissed version persists in localStorage. At close-out the standalone-install route test failed because it asserted `currentVersion: \"0.5.79\"`, but the offline payload reports the build's own version, which changed after v0.5.80. The assertion tested nothing about install detection, so it was removed; `installKind` and `upgradeCommand` are still asserted.\n\n## Approaches tried\nDetection by version alone cannot tell a built checkout from a curl install, so a structural probe (`.git` or `src` plus `package.json` beside the install root) is used. Package-manager paths are matched first.\n\n## Challenges and blockers\nFive review passes, mostly repeating edge cases of the same class, and a handoff collision with the engineer's own check. The close-out test failure only reproduced against the branch merged with main, because the version hard-coded in the test no longer matched.\n\n## Key learnings\nTests of install detection must not assert the repo's own version. Reproduce close-out failures on the branch merged with main, not the branch alone.\n\n## Generated change summary\n\nBase tree: `95af4c55d27b2a8b846a4c7cf8a6b501404c9e8c`\nSource tree: `3f377521c46ea9402dffc0a86009e7e814754f5f`\n\n- M src/ui-app/tests/release-install-route.test.ts: +0 / −1"
+}

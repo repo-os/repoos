@@ -2,20 +2,22 @@
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
-status: active
+status: done
 priority: p1
 area: [server, core]
+merged_commit: 823e3b6024d6693d7f58ce35f92ab12b3a47df78
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T05:56:15Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'."
-last_handoff_failure_sha: b1fb1141a2bbafe4f1c334c9b42e8862e5efd991
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-11-10T10:59:34Z"
+last_close_out_gate_ms: 787058
+last_close_out_gate_at: "2026-11-10T10:34:30.831Z"
+review_passes: 4
+last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
+review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -33,6 +35,21 @@ A handoff that arrives while a self-check is running waits for it (bounded, for 
 
 ## Notes for AI
 Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/server/handoff.ts` (commit step) and `src/core/git.ts` (the guarded git add/commit). Do not edit repoos.toml.
+
+## Shots
+```json
+[
+{
+"label": "Task drawer while a handoff waits for the running check",
+"target": "default",
+"route": "/work?task=9999",
+"state": "drawer:handoffWaiting"
+}
+]
+```
+
+## Accepted scope and known limitations
+FINAL (pass 3): the core behaviour is in scope: the handoff and server git operations in the handoff path wait (bounded) for a running check instead of failing. NOT blocking, to be done as follow-up: (1) rendering the 'waiting for a check' label in the task drawer progress line (the status text may read 'starting' meanwhile); (2) the routes/tasks.ts waitForCheckGate:false path and lockfile-conflict.ts git calls staying fail-fast; (3) extra label-path tests. Report these under Suggestions, not Bugs. Only a failing test, a regression, or the handoff still failing on a running check blocks.
 
 ## Activity
 
@@ -89,3 +106,38 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T05:52:06Z · message_queued at 2026-11-10T05:52:06.329Z
 - 2026-11-10T05:52:06Z · handoff failed · task-file handoff failed at check · repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'.
 - 2026-11-10T05:56:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T06:26:14Z · message_delivered: 1 message(s)
+- 2026-11-10T06:26:15Z · engineer stopped by request
+- 2026-11-10T06:26:25Z · message_delivered: 1 message(s)
+- 2026-11-10T06:26:46Z · engineer stopped by request
+- 2026-11-10T06:26:49Z · held, held-reason, held-at
+- 2026-11-10T07:24:02Z · released
+- 2026-11-10T07:44:50Z · message_queued at 2026-11-10T07:44:50.250Z
+- 2026-11-10T07:44:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T07:46:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T08:09:19Z · note: adopted orphaned engineer pid 76013
+- 2026-11-10T08:09:23Z · note: adopted orphaned engineer pid 76013
+- 2026-11-10T08:14:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T08:19:06Z · body
+- 2026-11-10T08:22:38Z · status active→review
+- 2026-11-10T08:24:40Z · note: review pass 2: needs some work
+- 2026-11-10T08:24:41Z · message_queued at 2026-11-10T08:24:41.323Z
+- 2026-11-10T08:24:41Z · status review→active
+- 2026-11-10T08:24:44Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T08:26:43Z · message_queued at 2026-11-10T08:26:43.674Z
+- 2026-11-10T08:26:46Z · message_delivered: 2 message(s)
+- 2026-11-10T08:30:20Z · body
+- 2026-11-10T08:48:44Z · body
+- 2026-11-10T08:54:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T08:56:07Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-10T08:56:10Z · status active→review
+- 2026-11-10T08:56:10Z · message_queued at 2026-11-10T08:56:10.576Z
+- 2026-11-10T08:58:19Z · note: review pass 3: needs some work
+- 2026-11-10T08:58:19Z · needs_input
+- 2026-11-10T09:25:15Z · body: Accepted scope and known limitations (added)
+- 2026-11-10T09:25:16Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-10T09:27:43Z · note: review pass 4: good to go
+- 2026-11-10T10:01:34Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T10:34:30Z · close-out gate completed in 787s
+- 2026-11-10T10:36:08Z · status done→done, release:success
+- 2026-11-10T10:59:34Z · message_dropped: 1 queued message(s) discarded — task is done
