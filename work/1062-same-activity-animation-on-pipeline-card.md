@@ -243,3 +243,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T12:36:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T12:41:32Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
 - 2026-11-10T12:41:33Z · message_queued at 2026-11-10T12:41:33.096Z
+- 2026-11-10T12:41:33Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1062.md
