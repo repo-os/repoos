@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T08:14:22Z"
+updated_at: "2026-11-10T08:36:24Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -176,3 +176,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T07:41:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T08:09:19Z · note: adopted orphaned engineer pid 72287
 - 2026-11-10T08:14:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T08:36:24Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
