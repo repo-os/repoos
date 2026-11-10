@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — pathspec commits split staged renames (checkpoint and review-guard), a regression from the bare commit they replaced."
@@ -331,4 +331,4 @@ Non-blocking: isTaskMarkdownBookkeepingPath matching non-task markdown under wor
 - 2026-11-10T20:49:33Z · note: handoff requested (cli)
 - 2026-11-10T20:51:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T20:56:29Z · body
-- 2026-11-10T21:02:23Z · engineer stopped by request
+- 2026-11-10T21:02:23Z · status active→review
