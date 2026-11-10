@@ -15,8 +15,6 @@ updated_at: "2026-11-10T09:46:16Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 5940508779628f831738901e07a5b681a2aa02d5
 handoff_signal_retry_count: 2
 dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T04:29:20.952Z\",\"reason\":\"handoff-deferred\"}]"
@@ -317,4 +315,5 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T09:42:01Z · message_queued at 2026-11-10T09:42:01.392Z
 - 2026-11-10T09:42:26Z · note: shots: failed — browser capture cancelled
 - 2026-11-10T09:46:10Z · note: review pass 5: good to go
+
 
