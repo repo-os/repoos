@@ -47,3 +47,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T01:11:57Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T01:12:10Z · message_delivered: 2 message(s)
 - 2026-11-10T01:46:21Z · message_queued at 2026-11-10T01:46:21.343Z
+- 2026-11-10T01:46:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
