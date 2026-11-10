@@ -4,8 +4,8 @@ title: "Engineer self-check WIP commits re-commit other tasks' work files, block
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — pathspec commits split staged renames (checkpoint and review-guard), a regression from the bare commit they replaced."
 priority: p2
 area: [core, server]
 assigned_to: ai
