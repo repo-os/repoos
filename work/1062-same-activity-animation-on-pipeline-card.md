@@ -201,3 +201,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T10:21:40Z · body
 - 2026-11-10T10:26:07Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-10T10:26:08Z · message_queued at 2026-11-10T10:26:08.027Z
+- 2026-11-10T10:26:08Z · ↻ resuming engineer to read queued message
