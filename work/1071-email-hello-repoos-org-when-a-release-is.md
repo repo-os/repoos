@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T03:25:31Z"
+updated_at: "2026-11-10T03:25:32Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 4edbf76a3cad42f35816f23ef678414f1aef8410
 review_rounds: 1
@@ -113,4 +113,3 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T03:25:30Z · message_queued at 2026-11-10T03:25:30.337Z
 - 2026-11-10T03:25:31Z · ↻ resuming engineer to read queued message
 - 2026-11-10T03:25:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check exited 0. I'll confirm no step failed and look at the working tree before handing off. · stderr: (empty)
-- 2026-11-10T03:25:31Z · status active→review
