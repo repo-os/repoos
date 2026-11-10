@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -16,7 +14,9 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T06:49:00Z"
+updated_at: "2026-11-10T06:49:01Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -145,4 +145,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T06:26:35Z · held, held-reason, held-at
 - 2026-11-10T06:49:00Z · message_queued at 2026-11-10T06:49:00.201Z
 - 2026-11-10T06:49:00Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
-
+- 2026-11-10T06:49:01Z · message_undelivered: 2 message(s) still queued — waiting for the next run
