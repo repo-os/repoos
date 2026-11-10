@@ -7,14 +7,22 @@ import { execFileSync } from "node:child_process";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { parseTask } from "../../core/task";
-import { setCheckGateGitRefusal, setCheckGateCommitHook } from "../../core/git";
+import { runGit, setCheckGateGitRefusal, setCheckGateCommitHook } from "../../core/git";
 import { guardReviewTransition } from "../../server/review-guard";
 import {
   acquireCheckGateLock,
+  checkGateBusyRun,
   installCheckGateCommitHook,
   readCheckGateLock,
   releaseCheckGateLock,
+  waitForCheckGateRelease,
 } from "../../server/check-gate-lock";
+import {
+  beginHandoffStatus,
+  finishHandoffStatus,
+  readHandoffStatus,
+  setHandoffWaitingReason,
+} from "../../server/handoff-status";
 import { patchTask } from "../../server/routes/tasks";
 import { LiveIndex } from "../../server/live-index";
 import type { RouteContext } from "../../server/routes/types";
@@ -574,6 +582,14 @@ describe("file-watch direct edit into review (0507: routed to the finalization)"
   });
 });
 
+/** Undo `installCheckGateCommitHook` so later tests see plain git. */
+function unhookGate(): void {
+  setCheckGateCommitHook(null);
+  setCheckGateGitRefusal(null);
+  delete process.env.REPOOS_BOARD_ROOT;
+  delete process.env.REPOOS_CACHE_DIR;
+}
+
 describe("guardReviewTransition waits for a running self-check (1082)", () => {
   /** Hold the gate the way a live `repoos check` does, so git refuses source writes. */
   async function holdGateForSelfCheck(fx: Fixture): Promise<void> {
@@ -587,13 +603,6 @@ describe("guardReviewTransition waits for a running self-check (1082)", () => {
       kind: "engineer-self-check",
     });
     expect(gate.ok).toBe(true);
-  }
-
-  function unhookGate(): void {
-    setCheckGateCommitHook(null);
-    setCheckGateGitRefusal(null);
-    delete process.env.REPOOS_BOARD_ROOT;
-    delete process.env.REPOOS_CACHE_DIR;
   }
 
   it("waits for the running check to finish, then commits and returns ok", async () => {
@@ -644,22 +653,54 @@ describe("guardReviewTransition waits for a running self-check (1082)", () => {
     }
   });
 
-  it("recovers a dead holder's lock first and does not wait", async () => {
+  /** Rewrite the gate lock's holders to a pid that is no longer alive. */
+  function killGateHolder(fx: Fixture): void {
+    const lock = readCheckGateLock(fx.root, ".repoos", fx.task.id);
+    expect(lock).not.toBeNull();
+    if (!lock) return;
+    const dead = {
+      ...lock,
+      holders: lock.holders.map((holder) => ({ ...holder, pid: 2_147_483_647 })),
+    };
+    writeFileSync(
+      join(fx.root, ".repoos", "check-gate-locks", `${fx.task.id}.json`),
+      `${JSON.stringify(dead, null, 2)}\n`,
+    );
+  }
+
+  it("recovers a holder that dies while the handoff is waiting", async () => {
     const fx = makeFixture();
     try {
       uncommittedChange(fx);
       await holdGateForSelfCheck(fx);
-      const lock = readCheckGateLock(fx.root, ".repoos", fx.task.id);
-      expect(lock).not.toBeNull();
-      if (!lock) return;
-      const dead = {
-        ...lock,
-        holders: lock.holders.map((holder) => ({ ...holder, pid: 2_147_483_647 })),
-      };
-      writeFileSync(
-        join(fx.root, ".repoos", "check-gate-locks", `${fx.task.id}.json`),
-        `${JSON.stringify(dead, null, 2)}\n`,
+      const wait = await waitForCheckGateRelease(
+        () => runGit(fx.worktree, ["add", "--", "source.txt"], 10_000),
+        checkGateBusyRun,
+        {
+          boardRoot: fx.root,
+          cacheDir: ".repoos",
+          pollMs: 20,
+          timeoutMs: 10_000,
+          // The check dies after the first refusal: the next poll must recover it.
+          onWait: () => killGateHolder(fx),
+        },
       );
+      expect(wait.waited).toBe(true);
+      expect(wait.timedOut).toBe(false);
+      expect(wait.result.status).toBe(0);
+      expect(readCheckGateLock(fx.root, ".repoos", fx.task.id)).toBeNull();
+    } finally {
+      unhookGate();
+      fx.clean();
+    }
+  });
+
+  it("does not wait when the holder is already dead", async () => {
+    const fx = makeFixture();
+    try {
+      uncommittedChange(fx);
+      await holdGateForSelfCheck(fx);
+      killGateHolder(fx);
       let waits = 0;
       const res = await guardReviewTransition(fx.config, fx.task, {
         onCheckGateWait: () => waits++,
@@ -671,6 +712,83 @@ describe("guardReviewTransition waits for a running self-check (1082)", () => {
     } finally {
       unhookGate();
       fx.clean();
+    }
+  });
+});
+
+describe("check-gate wait scope (1082)", () => {
+  it.each([
+    [
+      "a self-check refusal",
+      { status: 1, stderr: "A check is running; wait for it to finish.\n" },
+      true,
+    ],
+    ["an unrelated commit failure", { status: 1, stderr: "nothing to commit\n" }, false],
+    ["a successful command", { status: 0, stderr: "A check is running" }, false],
+    [
+      "a git lock contention",
+      { status: 128, stderr: "Unable to create index.lock: File exists" },
+      false,
+    ],
+  ])("classifies %s as busy=%s", (_label, run, busy) => {
+    expect(checkGateBusyRun(run)).toBe(busy);
+  });
+
+  it("fails fast on a running self-check when the caller cannot block", async () => {
+    const fx = makeFixture();
+    try {
+      uncommittedChange(fx);
+      installCheckGateCommitHook(fx.config);
+      const gate = await acquireCheckGateLock({
+        boardRoot: fx.root,
+        cacheDir: ".repoos",
+        taskId: fx.task.id,
+        branch: "feat/patch-bypass",
+        worktree: fx.worktree,
+        kind: "engineer-self-check",
+      });
+      expect(gate.ok).toBe(true);
+      let waits = 0;
+      const res = await guardReviewTransition(fx.config, fx.task, {
+        waitForCheckGate: false,
+        onCheckGateWait: () => waits++,
+      });
+      expect(res.ok).toBe(false);
+      expect(res.detail).toMatch(/A check is running/);
+      expect(waits).toBe(0);
+      await releaseCheckGateLock(fx.root, ".repoos", fx.task.id);
+    } finally {
+      unhookGate();
+      fx.clean();
+    }
+  });
+
+  it("shows the wait on the handoff only while it is running and clears it", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-1082-status-"));
+    try {
+      const cfg = config(root);
+      beginHandoffStatus(cfg, "1082", { attemptKey: "a1", origin: "agent", step: "commit" });
+      setHandoffWaitingReason(cfg, "1082", "Waiting for the running check to finish");
+      expect(readHandoffStatus(cfg, "1082").progress?.reason).toBe(
+        "Waiting for the running check to finish",
+      );
+      setHandoffWaitingReason(cfg, "1082", null);
+      expect(readHandoffStatus(cfg, "1082").progress).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not touch a handoff that is no longer running", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-1082-status-"));
+    try {
+      const cfg = config(root);
+      beginHandoffStatus(cfg, "1082", { attemptKey: "a1", origin: "agent", step: "commit" });
+      finishHandoffStatus(cfg, "1082", "a1", { ok: true, step: "done" });
+      setHandoffWaitingReason(cfg, "1082", "Waiting for the running check to finish");
+      expect(readHandoffStatus(cfg, "1082").progress?.reason).toBeUndefined();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 });

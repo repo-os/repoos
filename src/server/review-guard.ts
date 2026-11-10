@@ -9,6 +9,11 @@ export interface ReviewGuardOptions {
   onCheckGateWait?: () => void;
   /** Wait bounds; default to the check-gate wait defaults (#1082). */
   checkGateWait?: { timeoutMs?: number; pollMs?: number };
+  /**
+   * Wait for a running self-check (default). `false` keeps the fail-fast
+   * refusal for callers that cannot block, such as the PATCH close-out route.
+   */
+  waitForCheckGate?: boolean;
 }
 
 /**
@@ -73,6 +78,7 @@ export async function guardReviewTransition(
   task: Task,
   opts: ReviewGuardOptions = {},
 ): Promise<ReviewGuardResult> {
+  if (opts.waitForCheckGate === false) return guardReviewTransitionOnce(config, task);
   // The guard is idempotent (see the header), so a refused add/commit can be
   // re-run whole once the self-check releases the gate (#1082). Recovery of a
   // dead holder happens inside the wait, so a crashed check never blocks here.
