@@ -311,3 +311,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T09:30:04Z · ↻ resuming engineer to read queued message
 - 2026-11-10T09:30:05Z · status active→review
 - 2026-11-10T09:30:05Z · message_delivered: 2 message(s)
+- 2026-11-10T09:30:06Z · note: handoff requested (cli)
