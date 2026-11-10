@@ -301,6 +301,37 @@ describe("guardReviewTransition (0210)", () => {
     }
   });
 
+  it("never folds another task's report .json into the implement commit (#1076 round 2)", async () => {
+    const fx = makeFixture();
+    try {
+      uncommittedChange(fx);
+      // A sibling task's engineering report is `.json`, not `.md`: the old
+      // `.md`-only unstage filter left it staged, so the implement commit swept
+      // it into this branch.
+      mkdirSync(join(fx.worktree, "work", "reports", "0299"), { recursive: true });
+      writeFileSync(join(fx.worktree, "work", "reports", "0299", "round-1.json"), '{"x":1}\n');
+
+      const res = await guardReviewTransition(fx.config, fx.task);
+
+      expect(res.ok).toBe(true);
+      const committed = git(fx.worktree, ["show", "--name-only", "--format=", "HEAD"])
+        .split("\n")
+        .filter(Boolean);
+      expect(committed).toContain("source.txt");
+      expect(committed).not.toContain("work/reports/0299/round-1.json");
+      // Left in the worktree untouched, and not staged.
+      expect(
+        readFileSync(join(fx.worktree, "work", "reports", "0299", "round-1.json"), "utf8"),
+      ).toBe('{"x":1}\n');
+      const staged = git(fx.worktree, ["diff", "--cached", "--name-only"])
+        .split("\n")
+        .filter(Boolean);
+      expect(staged).not.toContain("work/reports/0299/round-1.json");
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("keeps this task's own review report but not another task's (#1013)", async () => {
     const fx = makeFixture();
     try {

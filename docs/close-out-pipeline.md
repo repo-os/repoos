@@ -768,8 +768,28 @@ real pollution of another task's record.
 
 **Guards** (both added `be3acd3f`, 2026-08-29; extended to all five bookkeeping
 dirs in #0726 and #0860):
-- `guardReviewTransition` (`review-guard.ts`) unstages every `work/*.md` that
-  isn't the task's own after `git add -A`, so drift never reaches the branch.
+- `guardReviewTransition` (`review-guard.ts`) unstages every foreign
+  `work/<other-id>-*.md` AND `work/reports/<other-id>/**` (`.json` as well as
+  `.md`) that isn't the task's own after `git add -A`, so drift never reaches the
+  branch (#1076).
+- The engineer self-check WIP checkpoint
+  (`commitWipCheckpointForRemoteGate`, `engineer-remote-self-check.ts`) commits
+  only the paths it intended (`git commit -- <paths>`) and resets any foreign
+  `work/` bookkeeping first, so a board write left dirty-and-staged can no longer
+  be folded into the branch by a bare `git commit` (#1076).
+- `restoreForeignTaskBookkeepingFromMain` (`git.ts`) runs at handoff, after the
+  commit gate and **before the review lock** (#1076): it makes the branch point's
+  copy authoritative for every foreign `work/` file the branch touched (modified
+  or deleted → that copy back; branch-added → removed) and lands the restore as
+  one plain bookkeeping commit the review tolerates. The copy is the branch point
+  (the merge-base with main), not main's tip, because the branch's own diff is
+  graded `merge-base..HEAD`. It reports what it restored;
+  it never fails the handoff. This heals a branch that already drifted (a sibling
+  re-committed by an earlier WIP checkpoint) rather than bouncing it to the
+  engineer again.
+  A handoff is also refused on an unchanged branch tip with a recorded identical
+  check failure; a new commit (even a docs touch) is the way to request a fresh
+  validation after a failure that is no longer reproducible.
 - `resetForeignWorkFiles` (`integration-orchestrator.ts`) restores main's copy of
   every foreign bookkeeping file the candidate changed — under the work dir,
   `inputs/`, `stories/`, `reminders/` or `schedules/`, per
