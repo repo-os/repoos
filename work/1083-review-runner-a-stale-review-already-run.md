@@ -16,7 +16,6 @@ check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 review_passes: 2
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 On 2026-11-10 #1080 sat in review with a passed handoff for 45+ minutes: `repoos review again 1080` answered "a review is already running for this task" (ReviewRunner.isRunning, src/server/review.ts ~1173), but no reviewer process or session existed (no `claude -p`, no reviewer row since 17:27Z, the last attempt errored with "Can't reach the API server" while the machine was offline). `repoos review cancel 1080` followed by `repoos mv 1080 review` did not clear it. The in-memory running registration leaked when the original reviewer run failed (API outage), so every later review request was refused.
