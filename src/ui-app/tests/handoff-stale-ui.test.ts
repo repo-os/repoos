@@ -1,12 +1,20 @@
 /**
  * Stale / superseded handoff records must not block Move to done (#1085).
+ * @vitest-environment jsdom
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { useRepoStore } from "../src/stores/repo";
+import { FakeEventSource, json } from "./component-test-helpers";
 
 beforeEach(() => {
   setActivePinia(createPinia());
+  vi.stubGlobal("EventSource", FakeEventSource);
+  vi.stubGlobal("fetch", vi.fn(async () => json({ ok: true })));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe("handoffInFlight ignores stale and superseded records (#1085)", () => {
