@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 7cc9ab95453d79085f1e1c4e3bd4d1303d42d9cf
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -124,3 +126,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T03:46:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T04:04:34Z · message_queued at 2026-11-10T04:04:34.241Z
 - 2026-11-10T04:04:34Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+
