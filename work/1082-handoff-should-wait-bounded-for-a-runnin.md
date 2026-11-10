@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T09:27:43Z"
-review_passes: 4
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
@@ -13,6 +11,8 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
+updated_at: "2026-11-10T10:01:34Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -134,4 +134,4 @@ FINAL (pass 3): the core behaviour is in scope: the handoff and server git opera
 - 2026-11-10T09:25:15Z · body: Accepted scope and known limitations (added)
 - 2026-11-10T09:25:16Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-10T09:27:43Z · note: review pass 4: good to go
-
+- 2026-11-10T10:01:34Z · message_overdue: still queued after 60m without being delivered
