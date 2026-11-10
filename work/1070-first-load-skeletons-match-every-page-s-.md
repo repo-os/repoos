@@ -485,3 +485,4 @@ Pass 15: a brief layout shift while the old shell fades out and the new page ent
 - 2026-11-10T07:16:20Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T07:19:41Z · queued message undelivered for 67m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T07:19:42Z · status active→review
+- 2026-11-10T07:19:42Z · message_delivered: 3 message(s)
