@@ -71,7 +71,8 @@ describe("shot-preview fixture task avoids server fetches (#0819)", () => {
       "",
       "/work?tab=pipeline&shotState=board%3Apipeline",
     );
-    const fetchMock = vi.fn(async () => json({ ok: true, landable: false, blockers: [] }));
+    const landableJson = { checks: [], summary: { pass: 0, warn: 0, fail: 0 }, landable: false };
+    const fetchMock = vi.fn(async (url: string) => json(landableJson));
     vi.stubGlobal("fetch", fetchMock);
     const repo = useRepoStore();
 
