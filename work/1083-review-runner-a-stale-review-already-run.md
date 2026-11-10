@@ -2,7 +2,7 @@
 id: "1083"
 title: "Review runner: a stale 'review already running' registration survives review cancel and blocks reviews until the server restarts (seen on #1080)"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — `isRunning` now runs a registry read and pid probes for every task on each board GET, and the AC1 rejection path has no…"
@@ -14,7 +14,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T21:46:12Z"
+updated_at: "2026-11-10T21:56:57Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -93,3 +93,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T21:44:40Z · note: handoff requested (cli)
 - 2026-11-10T21:44:55Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1083 is in review, and I made no changes this turn. The worktree has uncommitted edits that aren't in the reviewed commit (`1fcc5db93`, "record review pass 3"). They match the resume note: - **`src/server/review.ts`**: `registration(… · stderr: (empty)
 - 2026-11-10T21:46:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T21:56:57Z · status active→review
