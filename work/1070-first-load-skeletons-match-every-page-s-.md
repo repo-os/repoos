@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T02:12:43Z"
+updated_at: "2026-11-10T02:12:44Z"
 review_passes: 13
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -427,3 +427,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T02:00:00Z · note: handoff requested (cli)
 - 2026-11-10T02:01:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T02:12:43Z · message_queued at 2026-11-10T02:12:43.744Z
+- 2026-11-10T02:12:44Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/page-height-layout.test.ts > standard page height and floating controls > lets the shared page pane fill and scroll through the full app body, tests/page-height-layout.test.ts > standard page height and floating controls > uses a theme-token fade and shared end inset below fixed controls on bee — fix it in the feature branch and re-run the gate
