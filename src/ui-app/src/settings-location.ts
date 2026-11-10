@@ -346,6 +346,8 @@ const SETTING_SEARCH_ALIASES: Record<string, string> = {
     "guard test file globs swift python go non-javascript negative test evidence path match",
   "review.humanFlagAfterPasses":
     "repeated review classes passes human attention flag loop escalating needs some work rounds",
+  "review.freezeAfterPasses":
+    "freeze blocking bar scope suggestions non-blocking review rounds passes cap loop edge cases hardening",
   "review.timeoutMinutes":
     "review timeout minutes slow model large diff timed out no usable report retry reviewer killed",
   "shot.targets":

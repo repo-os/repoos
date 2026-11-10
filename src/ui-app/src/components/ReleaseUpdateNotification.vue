@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { ArrowUpRight, Sparkles, X } from "lucide-vue-next";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { ArrowUpRight, Check, Copy, Sparkles, X } from "lucide-vue-next";
 import Button from "./ui/button.vue";
 import Dialog from "./ui/dialog/root.vue";
 import DialogClose from "./ui/dialog/close.vue";
@@ -10,39 +10,141 @@ import DialogOverlay from "./ui/dialog/overlay.vue";
 import DialogTitle from "./ui/dialog/title.vue";
 import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { copyToClipboard } from "../lib/clipboard";
+import { useRepoStore } from "../stores/repo";
+import {
+  readShotPreviewFixtureFromLocation,
+  shotFixtureAvailableRelease,
+  shotFixturePinnedAvailableReleaseRef,
+} from "../lib/shot-preview-fixtures";
+import type { AvailableRelease } from "../types";
 
-interface AvailableRelease {
-  currentVersion: string | null;
-  latestVersion: string | null;
-  available: boolean;
-  releaseNotes: string | null;
-  releaseUrl: string | null;
-}
+/** localStorage key: the version the user dismissed, so the banner stays gone. */
+const DISMISSED_KEY = "repoos.releaseUpdate.dismissedVersion";
 
+const repo = useRepoStore();
 const release = ref<AvailableRelease | null>(null);
 const dismissed = ref(false);
 const open = ref(false);
+const copied = ref(false);
+const copyFailed = ref(false);
+let copiedTimer: ReturnType<typeof setTimeout> | null = null;
+
 const visible = computed(() => !!release.value?.available && !dismissed.value);
 const notesHtml = computed(() =>
   release.value?.releaseNotes ? renderMarkdown(release.value.releaseNotes) : "",
 );
+const upgradeCommand = computed(() => release.value?.upgradeCommand ?? "");
+// How the command should be described in the dialog — names the actual action
+// for a package-manager/source install instead of implying `repoos upgrade` works.
+const upgradePrefix = computed(() => {
+  switch (release.value?.installKind) {
+    case "package-manager":
+      return "Update it with the same tool you installed it with:";
+    case "source":
+      return "Update this checkout from source:";
+    default:
+      return "Run this in a terminal:";
+  }
+});
+
+/** Read the remembered dismissed version, tolerating disabled/blocked storage. */
+function readDismissedVersion(): string | null {
+  try {
+    return localStorage.getItem(DISMISSED_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** Remember (or clear) the dismissed version, ignoring storage failures. */
+function writeDismissedVersion(version: string | null): void {
+  try {
+    if (version) localStorage.setItem(DISMISSED_KEY, version);
+    else localStorage.removeItem(DISMISSED_KEY);
+  } catch {
+    // Private mode or a blocked store: dismissal then only lasts this page load.
+  }
+}
 
 onMounted(async () => {
+  if (applyShotFixture()) return;
   try {
     release.value = await api<AvailableRelease>("/api/release/available");
   } catch {
     // Update checks are optional and must never interrupt the application.
   }
+  // A capture can mount before `/api/health` reports the preview build, so the
+  // real fetch above may have landed first with `available: false`. Re-check
+  // the fixture here; the health watch below catches the rest (#1073).
+  if (applyShotFixture()) return;
+  // Stay dismissed until a *newer* version appears: only re-show when the
+  // available version differs from the one the user dismissed (#1073).
+  if (release.value?.available) {
+    dismissed.value = readDismissedVersion() === release.value.latestVersion;
+  }
 });
+
+// The preview capture mounts this component before App's own fixture pass runs
+// (children mount first), so health alone is not enough — a capture that waited
+// on it lost the race against the live `/api/release/available` fetch and never
+// opened the dialog (#1073). Read the fixture both from the URL (when health
+// already knows it is a preview build) and from the App-pinned payload, which
+// arrives reactively. Returns true when it seeded.
+function applyShotFixture(): boolean {
+  const fixture =
+    shotFixturePinnedAvailableReleaseRef.value ??
+    (repo.health?.isPreviewBuild
+      ? shotFixtureAvailableRelease(readShotPreviewFixtureFromLocation(window.location))
+      : null);
+  if (!fixture) return false;
+  release.value = fixture;
+  // A capture needs the dialog already open: the fixture stands in for the
+  // click that would otherwise open it.
+  open.value = true;
+  return true;
+}
+
+// The App applies `?shotState=` fixtures after this component mounts, so watch
+// the pinned payload rather than depending on `/api/health` timing.
+watch(shotFixturePinnedAvailableReleaseRef, (pinned) => {
+  if (pinned) applyShotFixture();
+});
+
+watch(
+  () => repo.health?.isPreviewBuild,
+  (isPreview) => {
+    if (isPreview) applyShotFixture();
+  },
+);
 
 function dismiss(): void {
   dismissed.value = true;
   open.value = false;
+  if (release.value?.latestVersion) writeDismissedVersion(release.value.latestVersion);
 }
 
 function showDetails(): void {
   open.value = true;
 }
+
+async function copyCommand(): Promise<void> {
+  // An empty command has nothing to copy, so it counts as a failed copy.
+  const ok = upgradeCommand.value !== "" && (await copyToClipboard(upgradeCommand.value));
+  if (copiedTimer) clearTimeout(copiedTimer);
+  // A failed copy must say so — silently doing nothing looks like a dead button
+  // (#1073 review).
+  copied.value = ok;
+  copyFailed.value = !ok;
+  copiedTimer = setTimeout(() => {
+    copied.value = false;
+    copyFailed.value = false;
+  }, 2000);
+}
+
+onUnmounted(() => {
+  if (copiedTimer) clearTimeout(copiedTimer);
+});
 </script>
 
 <template>
@@ -85,7 +187,7 @@ function showDetails(): void {
         <p class="release-update-eyebrow">A fresh build has landed</p>
         <DialogTitle>Upgrade to RepoOS {{ release.latestVersion }}</DialogTitle>
         <DialogDescription class="release-update-description">
-          Review the changes, then open the release instructions when you’re ready.
+          Copy the command to upgrade, or read what changed in the release notes.
         </DialogDescription>
         <div class="release-update-versions">
           <div>
@@ -95,6 +197,36 @@ function showDetails(): void {
           <div>
             <span>Available</span><strong>{{ release.latestVersion }}</strong>
           </div>
+        </div>
+        <div class="release-update-upgrade" data-test-id="release-upgrade-command">
+          <span class="release-update-upgrade-label">How to upgrade</span>
+          <p class="release-update-upgrade-hint">{{ upgradePrefix }}</p>
+          <div class="release-update-code-row">
+            <code class="release-update-code">{{ upgradeCommand }}</code>
+            <Button
+              variant="ghost"
+              size="sm"
+              :aria-label="
+                copied
+                  ? 'Copied upgrade command'
+                  : copyFailed
+                    ? 'Copy failed — select the command and copy it manually'
+                    : 'Copy upgrade command'
+              "
+              @click="void copyCommand()"
+            >
+              <Check v-if="copied" class="size-[14px]" />
+              <Copy v-else class="size-[14px]" />
+              {{ copied ? "Copied" : copyFailed ? "Copy failed" : "Copy" }}
+            </Button>
+          </div>
+          <p v-if="copyFailed" class="release-update-muted" role="status">
+            Couldn’t copy automatically — select the command above and copy it.
+          </p>
+          <p class="release-update-muted">
+            Runs in your terminal. A server already running keeps the old version until you restart
+            it.
+          </p>
         </div>
         <div v-if="notesHtml" class="release-update-notes">
           <span class="release-update-notes-label">Release notes</span>
@@ -113,7 +245,7 @@ function showDetails(): void {
             variant="accent"
             size="sm"
           >
-            Upgrade <ArrowUpRight class="size-[14px]" />
+            Release notes <ArrowUpRight class="size-[14px]" />
           </Button>
         </div>
       </DialogContent>
@@ -237,6 +369,41 @@ function showDetails(): void {
 .release-update-versions strong {
   color: var(--txt);
   font-size: 15px;
+}
+.release-update-upgrade {
+  margin-bottom: 22px;
+}
+.release-update-upgrade-label {
+  color: var(--txt-faint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.release-update-upgrade-hint {
+  margin: 6px 0 8px;
+  color: var(--txt-dim);
+  font-size: 12px;
+}
+.release-update-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.release-update-code {
+  flex: 1 1 auto;
+  display: block;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-2);
+  color: var(--txt);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.release-update-upgrade .release-update-muted {
+  margin: 8px 0 0;
 }
 .release-update-notes {
   border-top: 1px solid var(--border);

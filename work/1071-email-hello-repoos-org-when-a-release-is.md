@@ -2,14 +2,25 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: ready
+status: active
+hold: true
+hold_reason: "load: pausing extra engineers until #1080/#1070 land"
+hold_at: "2026-11-10T06:26:35.269Z"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/release-emails-any-project-with-email-co
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-09T20:00:26Z"
+updated_at: "2026-11-10T17:26:31Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
+review_rounds: 2
+review_passes: 2
+handoff_signal_retry_count: 2
+dev_error_count: 1
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -43,9 +54,100 @@ Common patterns: a final CI step after the publish job (Slack/Discord/email webh
 ## Notes for AI
 Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/core/config.ts` (the `auth.emailProvider` handling and `getConfigSchema()`), `ReleasesView.vue`, `release-history.json`, docs/releases.md, docs/native-auth.md and docs/api-keys.md. Do not send any real email while developing or testing. Do not add credentials anywhere. Do not edit repoos.toml. For RepoOS itself the human enables it afterwards by setting `[release.email]` with to = hello@repoos.org.
 
+## Shots
+```json
+[
+{
+"label": "Release email status card with Preview and Resend",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-email\"]"
+},
+{
+"label": "Settings → General → Release emails controls",
+"target": "default",
+"route": "/settings?tab=general&section=release-emails"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-09T04:42:41Z · created · njachowski@gmail.com
 - 2026-11-09T04:52:36Z · title, body: Problem (added 1, removed 1); How other projects do this (added); Desired UX (added 4, removed 1); Design (added); Acceptance criteria (added 8, removed 7); Notes for AI (added 1, removed 1); Design note (why not a git hook) (removed)
 - 2026-11-09T04:52:39Z · area
 - 2026-11-09T20:00:26Z · status inbox→ready
+- 2026-11-09T23:27:41Z · cli_override, model_override
+- 2026-11-09T23:27:46Z · status ready→active, branch
+- 2026-11-09T23:33:02Z · message_queued at 2026-11-09T23:33:02.755Z
+- 2026-11-09T23:35:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T23:40:50Z · message_queued at 2026-11-09T23:40:50.363Z
+- 2026-11-09T23:46:03Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T00:39:49Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T00:40:57Z · message_delivered: 2 message(s)
+- 2026-11-10T00:50:06Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
+- 2026-11-10T01:12:17Z · status ready→active, needs_input
+- 2026-11-10T01:36:21Z · message_queued at 2026-11-10T01:36:21.479Z
+- 2026-11-10T01:36:21Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T01:41:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T01:57:11Z · body
+- 2026-11-10T02:01:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Release emails are implemented, and the scoped `repoos check` passed (exit 0, 7,446 test results, none failing, all steps green). The engineering report draft is at `.repoos/engineering-report-drafts/1071.md` (about 1,050 words). Three acc… · stderr: (empty)
+- 2026-11-10T02:06:28Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T02:06:28Z · note: handoff requested (cli)
+- 2026-11-10T02:11:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T02:13:14Z · status active→review
+- 2026-11-10T02:13:15Z · message_queued at 2026-11-10T02:13:15.092Z
+- 2026-11-10T02:15:42Z · note: review pass 1: needs some work
+- 2026-11-10T02:15:42Z · message_queued at 2026-11-10T02:15:42.694Z
+- 2026-11-10T02:15:43Z · status review→active
+- 2026-11-10T02:15:45Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T02:21:02Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T02:21:03Z · note: handoff requested (cli)
+- 2026-11-10T02:21:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T02:36:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T02:42:27Z · message_queued at 2026-11-10T02:42:27.328Z
+- 2026-11-10T02:42:27Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-10T02:42:41Z · message_delivered: 1 message(s)
+- 2026-11-10T02:46:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T02:50:28Z · body
+- 2026-11-10T03:16:24Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T03:25:29Z · handoff_deferred: 3 queued message(s) must be read before review
+- 2026-11-10T03:25:30Z · message_queued at 2026-11-10T03:25:30.337Z
+- 2026-11-10T03:25:31Z · ↻ resuming engineer to read queued message
+- 2026-11-10T03:25:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check exited 0. I'll confirm no step failed and look at the working tree before handing off. · stderr: (empty)
+- 2026-11-10T03:25:32Z · note: handoff requested (cli)
+- 2026-11-10T03:26:23Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T03:31:35Z · message_delivered: 4 message(s)
+- 2026-11-10T03:33:09Z · status active→review
+- 2026-11-10T03:33:10Z · message_queued at 2026-11-10T03:33:10.600Z
+- 2026-11-10T03:36:18Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (6109a7e21) during finalization (#0734)
+- 2026-11-10T03:36:40Z · note: review pass 2: needs some work
+- 2026-11-10T03:36:42Z · status review→active
+- 2026-11-10T03:36:46Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T03:41:57Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ◆ Check plan · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T03:41:58Z · note: handoff requested (cli)
+- 2026-11-10T03:46:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T04:04:34Z · message_queued at 2026-11-10T04:04:34.241Z
+- 2026-11-10T04:04:34Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-10T04:06:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T04:29:33Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T04:39:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T04:39:35Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-10T05:00:01Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T05:01:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T05:11:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-10T05:46:15Z · message_delivered: 2 message(s)
+- 2026-11-10T06:16:15Z · message_queued at 2026-11-10T06:16:15.371Z
+- 2026-11-10T06:16:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T06:21:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T06:26:14Z · engineer stopped by request
+- 2026-11-10T06:26:19Z · note: handoff requested (cli)
+- 2026-11-10T06:26:35Z · held, held-reason, held-at
+- 2026-11-10T06:49:00Z · message_queued at 2026-11-10T06:49:00.201Z
+- 2026-11-10T06:49:00Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-10T06:49:01Z · message_undelivered: 2 message(s) still queued — waiting for the next run
+- 2026-11-10T07:16:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T08:24:41Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T11:04:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T13:31:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T17:26:31Z · message_overdue: still queued after 60m without being delivered

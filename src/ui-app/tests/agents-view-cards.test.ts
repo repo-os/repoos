@@ -31,6 +31,7 @@ describe("AgentsView agent cards", () => {
         stubs: { teleport: true, Transition: true, VoiceDictate: true },
       },
     });
+    await flush();
 
     expect(wrapper.find(".agents-page-title").text()).toBe("Agents");
     expect(wrapper.find(".agent-tabs").exists()).toBe(true);

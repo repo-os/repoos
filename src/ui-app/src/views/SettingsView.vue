@@ -1227,9 +1227,9 @@ onUnmounted(() => {
 
     <!-- The tab strip above is real chrome and renders immediately; only the
          panel body waits for the config, and it waits as a skeleton (#0950). -->
-    <PageSkeleton v-if="!config.loaded" kind="rows" />
+    <PageSkeleton :loading="!config.loaded" kind="rows" :count="GENERAL_FIELD_SECTIONS.length" />
 
-    <div v-else class="page-scroll-body">
+    <div v-if="config.loaded" class="page-scroll-body">
       <div class="settings-panels">
         <!-- ─── General tab ─────────────────────────────────── -->
         <div

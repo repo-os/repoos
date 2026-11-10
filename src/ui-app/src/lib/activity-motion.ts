@@ -1,4 +1,5 @@
 import { computed, onMounted, onUnmounted, ref, watch, type Ref } from "vue";
+import { OVERLAY_LAYER_ATTR } from "../components/ui/dialog/layer.js";
 
 type Entry = {
   el: Element;
@@ -12,10 +13,13 @@ const entries = new Set<Entry>();
 const pageVisible = ref(typeof document === "undefined" || document.visibilityState !== "hidden");
 const reduced = ref(false);
 let observer: IntersectionObserver | null = null;
+let observerConstructor: typeof IntersectionObserver | null = null;
 let media: MediaQueryList | null = null;
 let visibilityListenerCount = 0;
 let motionListenerCount = 0;
 let occlusionListenerCount = 0;
+let overlayDomListenerCount = 0;
+let overlayDomObserver: MutationObserver | null = null;
 let occlusionRaf = 0;
 
 /** True when the element's center is not covered by another hit-tested layer (drawer, dialog). */
@@ -48,6 +52,56 @@ function scheduleOcclusionRefresh(): void {
 
 function onOcclusionEvent(): void {
   scheduleOcclusionRefresh();
+}
+
+function nodeTouchesOverlayLayer(node: Node): boolean {
+  if (!(node instanceof Element)) return false;
+  if (node.hasAttribute(OVERLAY_LAYER_ATTR)) return true;
+  return node.querySelector(`[${OVERLAY_LAYER_ATTR}]`) !== null;
+}
+
+function attachOverlayDomObserver(): void {
+  if (overlayDomListenerCount++ > 0) return;
+  if (typeof MutationObserver === "undefined" || typeof document === "undefined") return;
+  overlayDomObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (
+        mutation.type === "attributes" &&
+        (mutation.attributeName === OVERLAY_LAYER_ATTR || mutation.attributeName === "data-state")
+      ) {
+        scheduleOcclusionRefresh();
+        return;
+      }
+      if (mutation.type === "childList") {
+        for (const node of mutation.addedNodes) {
+          if (nodeTouchesOverlayLayer(node)) {
+            scheduleOcclusionRefresh();
+            return;
+          }
+        }
+        for (const node of mutation.removedNodes) {
+          if (nodeTouchesOverlayLayer(node)) {
+            scheduleOcclusionRefresh();
+            return;
+          }
+        }
+      }
+    }
+  });
+  overlayDomObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: [OVERLAY_LAYER_ATTR, "data-state"],
+    childList: true,
+    subtree: true,
+  });
+}
+
+function detachOverlayDomObserver(): void {
+  if (--overlayDomListenerCount <= 0) {
+    overlayDomListenerCount = 0;
+    overlayDomObserver?.disconnect();
+    overlayDomObserver = null;
+  }
 }
 
 function attachOcclusionListeners(): void {
@@ -90,14 +144,32 @@ function detachMotionListener(): void {
   }
 }
 
+function ensureObserver(): void {
+  if (typeof IntersectionObserver === "undefined") return;
+  if (observerConstructor === IntersectionObserver && observer) return;
+  observer?.disconnect();
+  observerConstructor = IntersectionObserver;
+  observer = new IntersectionObserver((records) => {
+    for (const record of records) {
+      const found = [...entries].find((candidate) => candidate.el === record.target);
+      if (!found) continue;
+      found.intersecting = record.isIntersecting;
+      syncEntryVisibility(found);
+    }
+    refresh();
+  });
+}
+
 /** Vitest-only: drop the singleton observer and listener refcount between cases. */
 export function resetActivityMotionCoordinatorForTests(): void {
   entries.clear();
   if (observer && typeof observer.disconnect === "function") observer.disconnect();
   observer = null;
+  observerConstructor = null;
   while (visibilityListenerCount > 0) detachVisibilityListener();
   while (motionListenerCount > 0) detachMotionListener();
   while (occlusionListenerCount > 0) detachOcclusionListeners();
+  while (overlayDomListenerCount > 0) detachOverlayDomObserver();
   if (occlusionRaf) cancelAnimationFrame(occlusionRaf);
   occlusionRaf = 0;
   pageVisible.value = typeof document === "undefined" || document.visibilityState !== "hidden";
@@ -130,62 +202,67 @@ export function useActivityMotion(
 ) {
   const active = ref(false);
   let entry: Entry | null = null;
+  let mounted = false;
   const enabled = computed(() => eligible.value && active.value);
+  const bindElement = (el: HTMLElement | null): void => {
+    if (entry?.el === el) return;
+    if (entry) {
+      observer?.unobserve(entry.el);
+      entries.delete(entry);
+      entry = null;
+    }
+    if (!mounted || !el) {
+      active.value = false;
+      refresh();
+      return;
+    }
+    const useIo = typeof IntersectionObserver !== "undefined";
+    entry = {
+      el,
+      intersecting: !useIo,
+      visible: useIo ? false : unobstructed(el),
+      active,
+      limit: max,
+      eligible,
+    };
+    entries.add(entry);
+    if (useIo) {
+      ensureObserver();
+      observer?.observe(el);
+      syncEntryVisibility(entry);
+    }
+    refresh();
+  };
   onMounted(() => {
+    mounted = true;
     pageVisible.value = document.visibilityState !== "hidden";
     attachMotionListener();
     reduced.value = media?.matches ?? false;
     attachVisibilityListener();
-    if (typeof IntersectionObserver !== "undefined") {
-      observer ??= new IntersectionObserver((records) => {
-        for (const record of records) {
-          const found = [...entries].find((candidate) => candidate.el === record.target);
-          if (!found) continue;
-          found.intersecting = record.isIntersecting;
-          syncEntryVisibility(found);
-        }
-        refresh();
-      });
-      attachOcclusionListeners();
-      if (element.value) {
-        entry = {
-          el: element.value,
-          intersecting: false,
-          visible: false,
-          active,
-          limit: max,
-          eligible,
-        };
-        entries.add(entry);
-        observer.observe(element.value);
-      }
-    } else if (element.value) {
-      entry = {
-        el: element.value,
-        intersecting: true,
-        visible: unobstructed(element.value),
-        active,
-        limit: max,
-        eligible,
-      };
-      entries.add(entry);
-    }
-    refresh();
+    ensureObserver();
+    attachOcclusionListeners();
+    attachOverlayDomObserver();
+    bindElement(element.value);
   });
+  watch(element, bindElement);
   watch(max, refresh);
   watch(eligible, refresh);
   onUnmounted(() => {
+    mounted = false;
     detachVisibilityListener();
     detachMotionListener();
     detachOcclusionListeners();
+    detachOverlayDomObserver();
     if (entry) {
       observer?.unobserve(entry.el);
       entries.delete(entry);
+      entry = null;
     }
     refresh();
     if (entries.size === 0) {
       if (observer && typeof observer.disconnect === "function") observer.disconnect();
       observer = null;
+      observerConstructor = null;
     }
   });
   return enabled;

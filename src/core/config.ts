@@ -156,7 +156,8 @@ export const DEFAULT_AGENTS: Agent[] = [
       "`highlight` selector that exists on the page; then open the captured PNG and confirm it shows the change. " +
       "Before handoff, re-read the newest review report and any message sent to you; fix EVERY item, and when a " +
       "finding names a bug, find its whole class (grep sibling paths, callers, config/schema/docs/test " +
-      "registrations) and fix all instances with a table-driven test instead of patching one. A new config key " +
+      "registrations) and fix all instances with a table-driven test instead of patching one. " +
+      "A new config key " +
       "needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs. Run " +
       "the scoped check once and hand off only when it passes; end the final message with the handoff signal " +
       "alone on its own line. After a merge conflict with the base branch, merge it and take the base branch's " +
@@ -370,6 +371,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // is flagged for a human.
   review: {
     humanFlagAfterPasses: 5,
+    freezeAfterPasses: 4,
     timeoutMinutes: 15,
   },
   // Check-gate defaults (#0655): how many times a failing test file is
@@ -2527,11 +2529,16 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
           ? Number(raw.trim())
           : undefined;
     const reviewHumanFlag = reviewNumber(parsed["review.humanFlagAfterPasses"]);
+    const reviewFreeze = reviewNumber(parsed["review.freezeAfterPasses"]);
     const reviewTimeout = reviewNumber(parsed["review.timeoutMinutes"]);
     const review: ReviewConfig = { ...DEFAULT_CONFIG.review, ...cfg.review };
     let reviewConfigured = false;
     if (reviewHumanFlag !== undefined && Number.isFinite(reviewHumanFlag) && reviewHumanFlag >= 1) {
       review.humanFlagAfterPasses = Math.min(50, Math.floor(reviewHumanFlag));
+      reviewConfigured = true;
+    }
+    if (reviewFreeze !== undefined && Number.isFinite(reviewFreeze) && reviewFreeze >= 1) {
+      review.freezeAfterPasses = Math.min(50, Math.floor(reviewFreeze));
       reviewConfigured = true;
     }
     if (reviewTimeout !== undefined && Number.isFinite(reviewTimeout) && reviewTimeout >= 1) {
@@ -3378,6 +3385,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Completed review passes on one task before the next report opens with a summary of the repeated " +
         "bug classes earlier passes kept finding and the task is flagged for a human. Default 5. The flag is " +
         "separate from the auto-bounce review-rounds-exhausted backstop.",
+    },
+    {
+      key: "review.freezeAfterPasses",
+      label: "Freeze the blocking bar after",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.review!.freezeAfterPasses!,
+      description:
+        "Completed review passes on one task before the blocking bar freezes. From the next pass on, only real " +
+        "defects, regressions and landing blockers can block; further edge cases and hardening ideas become " +
+        "non-blocking suggestions. Default 4. P3 tasks and Easter eggs bundles use the lighter bar from pass 1.",
     },
     {
       key: "review.timeoutMinutes",
@@ -4601,6 +4620,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "reviewVerification.guardTestCheck",
   "reviewVerification.testGlobs",
   "review.humanFlagAfterPasses",
+  "review.freezeAfterPasses",
   "review.timeoutMinutes",
   // Remote validation
   "remoteValidation.enabled",
