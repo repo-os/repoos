@@ -14,7 +14,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T08:44:08Z"
+updated_at: "2026-11-10T08:44:09Z"
 review_passes: 19
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -529,3 +529,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T08:39:50Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-10T08:39:52Z · message_queued at 2026-11-10T08:39:52.371Z
 - 2026-11-10T08:39:52Z · handoff failed · task-file handoff failed at review · Engineering report is missing required sections: ## TL;DR, ## Work and rationale.
+- 2026-11-10T08:44:09Z · note: handoff requested (cli)
