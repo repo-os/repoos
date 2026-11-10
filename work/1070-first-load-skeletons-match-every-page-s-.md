@@ -3,6 +3,9 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 16 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p3
 area: web
 assigned_to: ai
@@ -501,3 +504,4 @@ Pass 15: a brief layout shift while the old shell fades out and the new page ent
 - 2026-11-10T07:44:47Z · status active→review
 - 2026-11-10T07:44:48Z · message_queued at 2026-11-10T07:44:48.185Z
 - 2026-11-10T07:45:51Z · note: review pass 16: needs some work
+- 2026-11-10T07:45:51Z · needs_input
