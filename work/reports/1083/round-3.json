@@ -1,0 +1,12 @@
+{
+  "taskId": "1083",
+  "round": 3,
+  "at": "2026-11-10T21:56:57.398Z",
+  "agent": "claude code",
+  "model": "haiku",
+  "branch": "feat/review-runner-a-stale-review-already-run",
+  "baseSha": "9e26222fffbb37b1b692999d6188e9e4ec4e3965",
+  "sourceSha": "922a09f085677115697714b559842a73fd781fd3",
+  "wordCount": 243,
+  "markdown": "## TL;DR\nA review registration can no longer leak and make `repoos review again` refuse with \"a review is already running\" when no reviewer exists. Every release path (reviewer throws, cancel after the child is gone, prepare rejects, registration older than the review timeout) now clears the registration, and a stale one is reaped.\n\n## Work and rationale\nThe registration state in `ReviewManager` could outlive its reviewer through three leaks: a runner entry left after a dead finalize, a cancel that dropped a fence while a finalize was pending, and unguarded `runs.delete` sites. Registrations now go through `dropRun` or an identity-guarded `release`, a dead finalizing entry no longer counts as live, and a registration with no live process is reaped after the review timeout. In review 3 the liveness probe ran on every read path; `registration()` now returns early when nothing holds the task, so board reads do no registry or pid work for idle tasks. Tests cover each release path, including a rejecting prepare callback and the no-probe case.\n\n## Approaches tried\nClearing only on cancel, then making every release path idempotent and identity-guarded, then reaping by age as the backstop.\n\n## Challenges and blockers\nSeveral review rounds raised narrow edge cases of the same class (races between cancel, finalize and the reaper). Remaining ones are recorded as non-blocking follow-ups.\n\n## Key learnings\nPredicates that are called on every read must not have side effects or do I/O when there is nothing to check.\n\n## Generated change summary\n\nBase tree: `9e26222fffbb37b1b692999d6188e9e4ec4e3965`\nSource tree: `a46ceb620645ecdd559748b9372b6d1a248fd8b9`\n\n- M src/server/review.ts: +4 / −2\n- M src/ui-app/tests/review-stale-registration.test.ts: +18 / −0"
+}
