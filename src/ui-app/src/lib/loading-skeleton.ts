@@ -9,6 +9,25 @@ export type LoadingSkeletonKind =
   | "targets"
   | "deployments";
 
+/** Timing is shared by the route shell and every view-level placeholder. */
+export const SKELETON_SHOW_DELAY_MS = 180;
+export const SKELETON_MIN_VISIBLE_MS = 350;
+
+/** Default placeholder counts mirror each route's real content shape. */
+export const LOADING_SKELETON_ITEM_COUNTS = {
+  dashboard: 1, // Mission Control uses one full-width representative content block.
+  cards: 1, // Agents and Releases use one representative card before data loads.
+  table: 5, // Checks and Secrets show compact table-like rows.
+  rows: 1, // Stories uses one representative story row before its list loads.
+  targets: 2, // Dev targets use a two-column card layout at desktop widths.
+  deployments: 3, // Deployments use service rows beside their branch matrix.
+} as const satisfies Partial<Record<LoadingSkeletonKind, number>>;
+
+/** One representative branch column for the deployment matrix. */
+export const DEPLOYMENT_BRANCH_PLACEHOLDER_COUNT = 1;
+/** Must stay aligned with `.board` in style.css. */
+export const BOARD_MEDIUM_BREAKPOINT_PX = 1250;
+
 /** Every routed path the app shell can open while the repo index loads. */
 export const LOADING_SKELETON_ROUTES = [
   "/",
@@ -44,18 +63,13 @@ export function loadingSkeletonKind(path: string): LoadingSkeletonKind {
   return "rows";
 }
 
-/** The heading a page shows above its content, drawn while the page itself is still loading. */
+/** The heading a page shows above its content, drawn while data loads. */
 export interface LoadingPageHeader {
   title: string;
   desc: string;
 }
 
-/**
- * Pages keep their title at the top while data loads, with the skeleton below
- * it. The app-level loader replaces the whole route, so it draws this header
- * itself. Routes without a standard page header (diffs, unknown paths) return
- * null and show the skeleton alone.
- */
+/** Static page chrome rendered by the app-level loading shell. */
 export function loadingPageHeader(path: string): LoadingPageHeader | null {
   const route = path.split("?")[0] ?? "/";
   if (route === "/") return { title: "Mission Control", desc: "Live from your repo" };

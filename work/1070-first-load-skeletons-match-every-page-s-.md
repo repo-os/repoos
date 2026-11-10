@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 687685
-last_close_out_gate_at: "2026-11-10T09:23:45.726Z"
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 71a2f1688b304be9c5a370c41f1f423f43a9f82e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
@@ -14,6 +13,8 @@ review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
 updated_at: "2026-11-10T09:23:45Z"
+last_close_out_gate_ms: 687685
+last_close_out_gate_at: "2026-11-10T09:23:45.726Z"
 review_passes: 21
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
