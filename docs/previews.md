@@ -505,7 +505,8 @@ fixture the preview applies before capture (preview builds only, via
 - `drawer:statusReviewFailed`, `drawer:statusChecksRunning`,
   `drawer:statusHandoffFailed`, `drawer:statusConfirmingHandoff`, and
   `drawer:statusChecksFailed` — focused task drawer states for the compact
-  status summary and priority order.
+  status summary and priority order. `drawer:handoffWaiting` is a handoff
+  waiting on a running self-check, showing the plain-English wait in the drawer.
 - `board:cardChips` — multi-area human-assigned card with seeded diff stats,
   so the area, human and file chips all render (#0776, #0795)
 - `card:noChanges` — ready human-assigned card with a branch and zero diff

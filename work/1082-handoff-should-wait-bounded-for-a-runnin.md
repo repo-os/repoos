@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 787058
-last_close_out_gate_at: "2026-11-10T10:34:30.831Z"
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: 823e3b6024d6693d7f58ce35f92ab12b3a47df78
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-should-wait-bounded-for-a-runnin
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
 updated_at: "2026-11-10T10:34:30Z"
+last_close_out_gate_ms: 787058
+last_close_out_gate_at: "2026-11-10T10:34:30.831Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2

@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import type { RepoOSConfig } from "../core/types.js";
 import { runGit } from "../core/git.js";
 import { reviewReportRelPath } from "../core/report-paths.js";
+import { checkGateBusyRun, waitForCheckGateRelease } from "./check-gate-lock.js";
 import {
   readWorktreeReviewLock,
   refreshHandoffSnapshotFromWorktree,
@@ -55,11 +56,19 @@ export async function persistTrackedReviewReport(args: {
     return { tracked: true, committed: false, error: add.stderr.trim() || "git add failed" };
   }
   // `--only` keeps unrelated staged/uncommitted work out of the report commit.
-  const commit = await runGit(
-    worktree,
-    ["commit", "--only", "-m", `docs(${taskId}): record review pass ${pass}`, "--", rel],
-    30_000,
-  );
+  // A running self-check refuses commits in its worktree; wait it out (#1082).
+  const commit = (
+    await waitForCheckGateRelease(
+      () =>
+        runGit(
+          worktree,
+          ["commit", "--only", "-m", `docs(${taskId}): record review pass ${pass}`, "--", rel],
+          30_000,
+        ),
+      checkGateBusyRun,
+      { boardRoot: config.root, cacheDir: config.cacheDir ?? ".repoos" },
+    )
+  ).result;
   if (commit.status !== 0) {
     return {
       tracked: true,
