@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web, core]
 assigned_to: ai
