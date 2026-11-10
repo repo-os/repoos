@@ -63,6 +63,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:statusChecksRunning",
   "drawer:statusChecksRunningNarrow",
   "drawer:statusConfirmingHandoff",
+  "drawer:handoffWaiting",
   "drawer:statusConfirmingHandoffNarrow",
   "drawer:statusChecksFailed",
   "drawer:statusChecksFailedNarrow",

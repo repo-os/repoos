@@ -1115,12 +1115,25 @@ export async function recoverStaleCheckGateLocks(
 }
 
 /**
- * How long a server git step waits for a running self-check to release the
- * gate before it gives up (#1082). Matches the local check queue timeout, so a
- * check that is allowed to run that long is never cut short by its own waiter.
+ * Upper bound on one wait for a running self-check to release the gate
+ * (#1082). A handoff never waits past its own deadline: see
+ * `checkGateWaitBudgetMs`, which caps this value by the time left.
  */
 export const CHECK_GATE_WAIT_MS = 45 * 60_000;
 const CHECK_GATE_POLL_MS = 1_000;
+/** Time kept back from a handoff deadline so a timed-out wait fails before the deadline. */
+const CHECK_GATE_DEADLINE_MARGIN_MS = 60_000;
+
+/**
+ * Wait budget for a step that must finish before `deadlineAt` (epoch ms): the
+ * time left minus a safety margin, capped at `CHECK_GATE_WAIT_MS`. Waiting
+ * past the deadline would orphan a waiter that keeps polling after the handoff
+ * has already failed (#1082).
+ */
+export function checkGateWaitBudgetMs(deadlineAt: number, now = Date.now()): number {
+  const left = deadlineAt - now - CHECK_GATE_DEADLINE_MARGIN_MS;
+  return Math.max(0, Math.min(CHECK_GATE_WAIT_MS, left));
+}
 
 export interface CheckGateWaitOptions {
   boardRoot: string;
@@ -1147,10 +1160,8 @@ export interface CheckGateWaitResult<T> {
  * failing. Any other failure is not busy.
  */
 export function checkGateBusyRun(run: { status: number | null; stderr: string }): boolean {
-  return run.status !== 0 && CHECK_GATE_BUSY_TEXT.test(run.stderr);
+  return run.status !== 0 && run.stderr.includes(CHECK_GATE_WRITE_REFUSAL);
 }
-
-const CHECK_GATE_BUSY_TEXT = /A check is running/;
 
 /**
  * Run `attempt` and, while `held` says the result was refused only because a

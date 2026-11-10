@@ -1,22 +1,4 @@
 /**
- * A `git add`/`git commit` the check-gate lock refused because a self-check
- * holds the worktree (#1061). Transient: the guard waits it out (#1082).
- */
-const CHECK_GATE_BUSY_DETAIL = /A check is running/;
-
-export interface ReviewGuardOptions {
-  /** Fired once when the commit step is waiting for a running self-check. */
-  onCheckGateWait?: () => void;
-  /** Wait bounds; default to the check-gate wait defaults (#1082). */
-  checkGateWait?: { timeoutMs?: number; pollMs?: number };
-  /**
-   * Wait for a running self-check (default). `false` keeps the fail-fast
-   * refusal for callers that cannot block, such as the PATCH close-out route.
-   */
-  waitForCheckGate?: boolean;
-}
-
-/**
  * The commit+validate gate that every transition into `review` must pass.
  *
  * Originally handoff-finalization carried this logic privately; #0170 added
@@ -45,12 +27,24 @@ import { runGit, agentTouchedFiles } from "../core/git.js";
 import { REPOOS_TOML_REL, taskDeclaresRepoosTomlWork } from "../core/repoos-toml-branch-guard.js";
 import { isOwnReportPath } from "../core/report-paths.js";
 import { getGitWorker } from "./git-worker.js";
-import { waitForCheckGateRelease } from "./check-gate-lock.js";
+import { CHECK_GATE_WRITE_REFUSAL, waitForCheckGateRelease } from "./check-gate-lock.js";
 
 export interface ReviewGuardResult {
   ok: boolean;
   /** Human-readable failure reason when not ok. */
   detail?: string;
+}
+
+export interface ReviewGuardOptions {
+  /** Fired once when the commit step is waiting for a running self-check. */
+  onCheckGateWait?: () => void;
+  /** Wait bounds; default to the check-gate wait defaults (#1082). */
+  checkGateWait?: { timeoutMs?: number; pollMs?: number };
+  /**
+   * Wait for a running self-check (default). `false` keeps the fail-fast
+   * refusal for callers that cannot block, such as the PATCH close-out route.
+   */
+  waitForCheckGate?: boolean;
 }
 
 function samePath(a: string, b: string): boolean {
@@ -84,7 +78,7 @@ export async function guardReviewTransition(
   // dead holder happens inside the wait, so a crashed check never blocks here.
   const waited = await waitForCheckGateRelease(
     () => guardReviewTransitionOnce(config, task),
-    (result) => !result.ok && CHECK_GATE_BUSY_DETAIL.test(result.detail ?? ""),
+    (result) => !result.ok && (result.detail ?? "").includes(CHECK_GATE_WRITE_REFUSAL),
     {
       boardRoot: config.root,
       cacheDir: config.cacheDir ?? ".repoos",

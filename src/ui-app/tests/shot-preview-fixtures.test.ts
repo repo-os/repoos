@@ -666,6 +666,7 @@ describe("shot preview board fixtures (#0743)", () => {
     ["drawer:statusHandoffFailed", "active"],
     ["drawer:statusChecksRunning", "active"],
     ["drawer:statusConfirmingHandoff", "active"],
+    ["drawer:handoffWaiting", "active"],
     ["drawer:statusChecksFailed", "active"],
     ["drawer:statusDetails", "review"],
   ] as const)("seeds the %s status drawer capture", (fixture, status) => {
@@ -692,6 +693,10 @@ describe("shot preview board fixtures (#0743)", () => {
       expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]?.running).toBe(true);
     } else if (fixture === "drawer:statusConfirmingHandoff") {
       expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBe("check");
+    } else if (fixture === "drawer:handoffWaiting") {
+      expect(repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID]?.progress?.reason).toBe(
+        "Waiting for the running check to finish",
+      );
     } else if (fixture === "drawer:engineeringReports") {
       expect(task?.status).toBe("active");
     } else {

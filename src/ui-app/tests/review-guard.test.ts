@@ -1,3 +1,13 @@
+/**
+ * #0210 regression tests: the commit/vacuity gate itself.
+ *
+ * #0507 builds on this: the gate is no longer what a route into `review` runs —
+ * it is the middle step of one shared finalization (`handoffTask` /
+ * `finalizeReviewHandoff`), which every route now goes through. So the gate's
+ * own guarantees (commit the work, reject a vacuous transition, never fold a
+ * sibling task file in) are still asserted here directly, and the routing
+ * tests below assert that no route reaches `review` without it.
+ */
 import { seedEngineeringReport } from "./engineering-report-fixture";
 import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
@@ -13,6 +23,7 @@ import {
   acquireCheckGateLock,
   aliveCheckGateLockForWorktree,
   checkGateBusyRun,
+  checkGateWaitBudgetMs,
   installCheckGateCommitHook,
   readCheckGateLock,
   releaseCheckGateLock,
@@ -793,12 +804,25 @@ describe("check-gate wait scope (1082)", () => {
     try {
       const cfg = config(root);
       beginHandoffStatus(cfg, "1082", { attemptKey: "a1", origin: "agent", step: "commit" });
-      setHandoffWaitingReason(cfg, "1082", "Waiting for the running check to finish");
+      setHandoffWaitingReason(cfg, "1082", "Waiting for the running check to finish", "a1");
       expect(readHandoffStatus(cfg, "1082").progress?.reason).toBe(
         "Waiting for the running check to finish",
       );
-      setHandoffWaitingReason(cfg, "1082", null);
+      setHandoffWaitingReason(cfg, "1082", null, "a1");
       expect(readHandoffStatus(cfg, "1082").progress).toBeNull();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("does not label a newer attempt from a late waiter", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-1082-status-"));
+    try {
+      const cfg = config(root);
+      beginHandoffStatus(cfg, "1082", { attemptKey: "old", origin: "agent", step: "commit" });
+      beginHandoffStatus(cfg, "1082", { attemptKey: "new", origin: "agent", step: "commit" });
+      setHandoffWaitingReason(cfg, "1082", "Waiting for the running check to finish", "old");
+      expect(readHandoffStatus(cfg, "1082").progress?.reason).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -810,10 +834,20 @@ describe("check-gate wait scope (1082)", () => {
       const cfg = config(root);
       beginHandoffStatus(cfg, "1082", { attemptKey: "a1", origin: "agent", step: "commit" });
       finishHandoffStatus(cfg, "1082", "a1", { ok: true, step: "done" });
-      setHandoffWaitingReason(cfg, "1082", "Waiting for the running check to finish");
+      setHandoffWaitingReason(cfg, "1082", "Waiting for the running check to finish", "a1");
       expect(readHandoffStatus(cfg, "1082").progress?.reason).toBeUndefined();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  it.each([
+    ["the deadline is far away", 60 * 60_000, 45 * 60_000],
+    ["the deadline is 10 minutes away", 10 * 60_000, 9 * 60_000],
+    ["the deadline is inside the margin", 30_000, 0],
+    ["the deadline has passed", -5_000, 0],
+  ])("caps the wait budget when %s", (_label, msUntilDeadline, budget) => {
+    const now = 1_000_000;
+    expect(checkGateWaitBudgetMs(now + msUntilDeadline, now)).toBe(budget);
   });
 });
