@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T03:28:48Z"
+updated_at: "2026-11-10T03:28:51Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -69,3 +69,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T02:58:01Z · message_delivered: 1 message(s)
 - 2026-11-10T03:28:47Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T03:28:48Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-10T03:28:51Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The round-2 scoped check is running. It has committed a WIP checkpoint and is now in remote validation. I'll report when it finishes, then either hand off or fix whatever fails. · stderr: Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
