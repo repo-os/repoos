@@ -3,13 +3,16 @@ id: "1084"
 title: "Easter eggs bundle: task drawer status cards (one at a time, spacing, stray info icon)"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Desired UX, Acceptance criteria"
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-10T04:51:25Z"
+updated_at: "2026-11-10T04:51:27Z"
 ---
 ## Problem
 The task drawer (screenshot, #1070 after a failed Move to done) stacks a red close-out failure card on top of a yellow "Waiting for you" review card. Several things are wrong:
@@ -36,3 +39,4 @@ Find the drawer cards in src/ui-app (task drawer status/close-out failure and re
 
 - 2026-11-10T04:51:24Z · created · njachowski@gmail.com
 - 2026-11-10T04:51:25Z · screenshots
+- 2026-11-10T04:51:27Z · needs_input
