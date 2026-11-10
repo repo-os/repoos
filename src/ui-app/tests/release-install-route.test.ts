@@ -39,7 +39,7 @@ async function offlineRelease(): Promise<{
       body = chunk;
     }),
   } as unknown as ServerResponse;
-  await getAvailableRelease({} as never, {} as never, res);
+  await getAvailableRelease({} as never, {} as never, res, {});
   return JSON.parse(body);
 }
 
