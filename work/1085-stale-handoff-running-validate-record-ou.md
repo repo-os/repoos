@@ -2,7 +2,7 @@
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -106,4 +106,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T20:03:28Z · note: handoff requested (cli)
 - 2026-11-10T20:06:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T20:09:36Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
-- 2026-11-10T20:09:38Z · engineer stopped by request
+- 2026-11-10T20:09:38Z · status active→review
