@@ -251,6 +251,55 @@ cannot tell from the code alone:
 - **A task's reports are its own bookkeeping.** Engineering rounds and review passes live together under `work/reports/<id>/` (`round-<n>.json`, `review-<n>.md`; see `user-docs/engineering-reports.md`). They are committed with the task, and handoff/landable/close-out treat this task's report files as bookkeeping rather than implementation drift — another task's reports still fail the task-scope check. Never hand-edit or delete a stored round or pass.
 - **Check gate bookkeeping (#1061).** While a handoff or in-flight check runs, `work/**` and `.repoos/**` commits on the task branch are deferred (not invalidating), RepoOS refuses new engineer turns and source commits, and source changes that bypass those controls are detected by post-check drift inspection. Already-running engineers can still write files directly; this cannot be reliably prevented. See `user-docs/check.md` § "Bookkeeping during a running gate".
 
+- **A task branch's diff contains ONLY that task's own files (#1076).** Another
+  task's `work/<other-id>-*.md` file and `work/reports/<other-id>/**` must never
+  appear in a task branch's commits — the landing preflight rejects the branch
+  ("the diff changes another task's bookkeeping"), and an engineer then has to
+  restore them by hand, round after round. The rule and the code paths:
+  - **Where siblings leak in.** The server does NOT deliberately write a
+    sibling's file into a worktree. An audit of the write sites that can target a
+    worktree — `patchTaskFile` callers (`routes/tasks.ts` `:1194`,
+    `server.ts` `:3432` in `syncTaskBranch`) each write only THIS task's own file
+    (`task.path`) into its worktree, never a sibling's; activity, CTO notes and
+    watchdog writes go to `config.root`/main. Siblings arrive indirectly: the
+    engineer's self-check WIP checkpoint
+    (`commitWipCheckpointForRemoteGate`, `src/server/engineer-remote-self-check.ts`)
+    used to run a bare `git commit`, which folds WHATEVER is staged — including a
+    sibling file a board write left dirty-and-staged — into the branch; a
+    `git add -A` sweep in the worktree (`review-guard.ts`) can do the same; and a
+    merge of main into the branch can carry a sibling's newer copy. It then
+    compounds: the WIP loop re-commits it every check.
+  - **The guardrails.** The WIP checkpoint commits only the paths it intended
+    (`git commit -- <paths>`) and resets any foreign bookkeeping first.
+    `guardReviewTransition` unstages foreign `work/` files and then commits with
+    a pathspec of exactly what the index holds (`commitStagedOnly`) for both the
+    implement and the hotfix commit; it fails closed rather than falling back to a
+    bare commit. The close-out "keep main's copy" commit (`resetForeignWorkFiles`)
+    is pathspec-scoped to the foreign paths it restored. Every task-branch
+    anchor (`merge-base`, the restore, the stray-`repoos.toml` guard, the check
+    scope) uses the configured default branch, not the main checkout's current
+    branch (`handoffBaseBranch`). Handoff, after that commit gate and before the review lock, runs
+    `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): it makes the
+    branch point's copy authoritative for every foreign file the branch touched
+    (modified or deleted files get that copy back, branch-added siblings are
+    removed; the branch point and not main's tip, because the branch's own diff is
+    graded `merge-base..HEAD`) and lands the restore as one plain bookkeeping
+    commit the review tolerates.
+    It reports what it restored in the task log; it never fails a handoff.
+    A commit made WHILE a merge is in progress (`lockfile-conflict.ts`,
+    `integration-orchestrator.ts`'s narrow resolution) cannot use a pathspec —
+    git refuses (`cannot do a partial commit during a merge`) — so those keep a
+    bare `git commit` and instead scope the preceding `git add` to their own
+    paths AND unstage any foreign bookkeeping the index holds first (`done.ts`'s
+    drop-`dist` uses the same unstage-then-bare-commit shape); do not "fix" them
+    into a partial commit.
+  - **What an engineer sees.** `repoos landable` and the handoff report name the
+    offending files and the cause in plain English ("the diff changes another
+    task's bookkeeping: work/<id>-*.md"). When the drift is present, handoff
+    restores the branch point's copy automatically and reports it — an engineer
+    never needs to run `git checkout main -- <file>` by hand; re-requesting review
+    is enough.
+
 - **`repoos mv <id> done` never merges code — it only flips the status
   frontmatter.** Confirmed live twice in one session (2026-09-17): #0389 and
   #0185 were both marked `done` this way while their actual branches sat
