@@ -3,6 +3,9 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — merge with main conflicts in `engineer-remote-self-check.ts` and `handoff.ts`; the code is otherwise sound.
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T19:12:07Z"
+updated_at: "2026-11-10T19:12:08Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -290,3 +293,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T19:10:53Z · note: shots: skipped — the diff (28 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T19:11:27Z · message_queued at 2026-11-10T19:11:27.412Z
 - 2026-11-10T19:12:07Z · note: review pass 5: needs some work
+- 2026-11-10T19:12:08Z · needs_input
