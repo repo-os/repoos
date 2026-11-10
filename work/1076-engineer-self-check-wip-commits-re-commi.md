@@ -17,6 +17,7 @@ review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 13
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T19:51:44.422Z\",\"reason\":\"clean-exit-without-handoff\"}]"
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 Several tasks (seen on #1058, also #1061 and #1060 earlier) repeatedly fail landing with "the diff changes another task's bookkeeping" and "work/<other id>-*.md conflicts with main". Cause found on #1058: the engineer's self-check creates "WIP: engineer self-check checkpoint" commits that stage everything dirty in the worktree, and the server keeps writing OTHER tasks' `work/<id>-*.md` files (activity, CTO nudge notes, task updates) into that worktree. Every checkpoint commit then re-adds those files to the branch, review after review says "restore unrelated bookkeeping", the engineer restores them, the next check re-commits them. The same loop also invalidates running checks (#1061's problem) and burns many review rounds.
