@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T07:22:33Z"
+updated_at: "2026-11-10T07:36:16Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -171,3 +171,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T07:22:32Z · note: review pass 1: needs some work
 - 2026-11-10T07:22:33Z · message_delivered: 1 message(s)
 - 2026-11-10T07:22:33Z · status review→active
+- 2026-11-10T07:36:16Z · message_queued at 2026-11-10T07:36:16.734Z
