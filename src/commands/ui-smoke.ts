@@ -91,9 +91,22 @@ export function makeSmokeFixture(): string {
  */
 /** Work view is lazy-loaded; under a loaded gate the board can appear after 500ms. */
 async function waitForWorkBoard(page: SmokePage): Promise<void> {
-  await page.waitForFunction(() => document.querySelector(".board") !== null, {
+  await page.waitForFunction(() => document.querySelector(".work-page") !== null, {
     timeout: 10_000,
   });
+  // Board and Pipeline both stay mounted (#1062 scroll preservation); ensure the
+  // board is the active pane before smoke clicks task cards on it.
+  await page.evaluate(() => {
+    for (const btn of Array.from(document.querySelectorAll(".view-toggle-btn"))) {
+      if (btn.textContent?.includes("Board") && !btn.classList.contains("active")) {
+        (btn as HTMLElement).click();
+      }
+    }
+  });
+  await page.waitForFunction(() => {
+    const board = document.querySelector(".board");
+    return board instanceof HTMLElement && board.offsetParent !== null;
+  }, { timeout: 10_000 });
 }
 
 async function runUISmokeTest(): Promise<void> {
