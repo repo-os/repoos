@@ -251,3 +251,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T02:56:23Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T03:21:25Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T03:25:29Z · message_delivered: 1 message(s)
+- 2026-11-10T03:25:29Z · message_overdue: still queued after 60m without being delivered
