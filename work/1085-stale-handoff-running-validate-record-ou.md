@@ -11,7 +11,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T19:10:55Z"
+updated_at: "2026-11-10T19:11:45Z"
 review_rounds: 1
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
@@ -35,20 +35,16 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 ```json
 [
 {
-"label": "Review card with landable Move to done enabled after superseded handoff",
-"target": "default",
-"route": "/work",
-"selector": "[data-task-id=\"9999\"]",
-"highlight": "[data-task-id=\"9999\"] .tc-agent-btn",
-"state": "card:reviewLandableReady"
+  "label": "Active card marks stale handoff on checks line",
+  "target": "default",
+  "route": "/work?shotState=card:checksProgress",
+  "highlight": "[data-task-id=\"9999\"] [data-test-id=\"task-card-check-progress\"]"
 },
 {
-"label": "Active handoff stale flag on checks line (long-running validate)",
-"target": "default",
-"route": "/work",
-"selector": "[data-task-id=\"9999\"]",
-"highlight": "[data-task-id=\"9999\"] .tc-status-line",
-"state": "card:reviewChecksRunning"
+  "label": "Review card ready after superseded handoff",
+  "target": "default",
+  "route": "/work?shotState=card:reviewLandableReady",
+  "highlight": "[data-task-id=\"9999\"] .tc-hint"
 }
 ]
 ```
@@ -98,3 +94,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T19:09:46Z · message_queued at 2026-11-10T19:09:46.811Z
 - 2026-11-10T19:09:47Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Active handoff stale flag on checks line (long-running validate) (target "default"): highlight [data-task-id="9999"] .tc-status-line matched nothing on /work (http://127.0.0.1:46227/work?shotState=card%3AreviewChecksRunning)
 - 2026-11-10T19:10:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T19:11:45Z · body
