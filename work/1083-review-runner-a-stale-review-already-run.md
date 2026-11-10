@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-10T21:58:16Z"
-review_passes: 4
 id: "1083"
 title: "Review runner: a stale 'review already running' registration survives review cancel and blocks reviews until the server restarts (seen on #1080)"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — `registration()` still runs the reconciling liveness probe on every board read, so the pass-3 fix did not land."
@@ -16,6 +14,8 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
+updated_at: "2026-11-10T22:04:11Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 ---
@@ -99,4 +99,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T21:58:15Z · note: review pass 4: needs some work
 - 2026-11-10T21:58:15Z · needs_input
 - 2026-11-10T21:58:15Z · needs_input
-
+- 2026-11-10T22:04:11Z · status review→active
