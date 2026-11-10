@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T05:46:15Z"
+updated_at: "2026-11-10T06:16:15Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 7cc9ab95453d79085f1e1c4e3bd4d1303d42d9cf
 review_rounds: 2
@@ -134,3 +134,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T05:01:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T05:11:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-10T05:46:15Z · message_delivered: 2 message(s)
+- 2026-11-10T06:16:15Z · message_queued at 2026-11-10T06:16:15.371Z
