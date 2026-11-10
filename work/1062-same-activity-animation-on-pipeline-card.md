@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T13:49:27Z"
+updated_at: "2026-11-10T14:01:52Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: c03fefe9eddc852051a4889c4721fbb92f433259
 review_rounds: 1
@@ -252,3 +252,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T13:41:54Z · note: handoff requested (cli)
 - 2026-11-10T13:44:26Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T13:49:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T14:01:52Z · message_delivered: 1 message(s)
