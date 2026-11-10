@@ -45,3 +45,4 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 - 2026-11-10T13:33:43Z · cli_override, model_override
 - 2026-11-10T23:04:09Z · status ready→active, needs_input, branch
 - 2026-11-10T23:14:55Z · message_queued at 2026-11-10T23:14:55.217Z
+- 2026-11-10T23:14:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
