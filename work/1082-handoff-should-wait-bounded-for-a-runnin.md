@@ -2,7 +2,7 @@
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -12,10 +12,10 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
 updated_at: "2026-11-10T08:24:41Z"
+review_rounds: 2
 review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'."
 last_handoff_failure_sha: b1fb1141a2bbafe4f1c334c9b42e8862e5efd991
-review_rounds: 1
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -105,3 +105,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T08:22:38Z · status active→review
 - 2026-11-10T08:24:40Z · note: review pass 2: needs some work
 - 2026-11-10T08:24:41Z · message_queued at 2026-11-10T08:24:41.323Z
+- 2026-11-10T08:24:41Z · status review→active
