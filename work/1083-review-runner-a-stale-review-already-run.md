@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 647687
-last_close_out_gate_at: "2026-11-10T22:35:01.018Z"
 id: "1083"
 title: "Review runner: a stale 'review already running' registration survives review cancel and blocks reviews until the server restarts (seen on #1080)"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: b6eba5edac2ce6fb7236b9fbbd3f74cf898127ba
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-runner-a-stale-review-already-run
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
 updated_at: "2026-11-10T22:35:01Z"
+last_close_out_gate_ms: 647687
+last_close_out_gate_at: "2026-11-10T22:35:01.018Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2

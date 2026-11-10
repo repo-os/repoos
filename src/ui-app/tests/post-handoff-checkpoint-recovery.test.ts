@@ -34,6 +34,8 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
     } as Task;
     const reviews = {
       isRunning: () => false,
+      reviewProcessLive: () => false,
+      abandonFinalizing: () => false,
       runCheckpointDelta: vi.fn(async () => ({ ok: true })),
     };
     const started = await startPostHandoffCheckpointRecovery(
@@ -230,6 +232,8 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
       const fakeRunner = {
         clearSession: () => {},
         isRunning: () => false,
+        reviewProcessLive: () => false,
+        abandonFinalizing: () => false,
         output: (key: string) =>
           key.startsWith("review:") ? { lines: [{ type: "text", text: report }] } : null,
         startReview: () => ({ ok: true }),
