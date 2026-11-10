@@ -3212,7 +3212,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       // would have committed (no `dist/`, no the task's own file, no other
       // task's `work/*.md` drift) — and the merge gate then validates the
       // commit, not the raw working tree.
-      const gate = await guardReviewTransition(config, taskStillExists);
+      // Fail fast on a running self-check: this HTTP request must not block for
+      // up to 45 minutes behind a check (#1082). The engineer can retry instead.
+      const gate = await guardReviewTransition(config, taskStillExists, {
+        waitForCheckGate: false,
+      });
       if (!gate.ok) {
         return json(res, 500, {
           error: `could not commit the worktree's uncommitted changes (${gate.detail ?? "the review guard rejected it"}); close-out aborted and nothing was merged.`,
