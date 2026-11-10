@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T02:13:14Z"
+updated_at: "2026-11-10T02:13:15Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -72,3 +72,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T02:06:28Z · note: handoff requested (cli)
 - 2026-11-10T02:11:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T02:13:14Z · status active→review
+- 2026-11-10T02:13:15Z · message_queued at 2026-11-10T02:13:15.092Z
