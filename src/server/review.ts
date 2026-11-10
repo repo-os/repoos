@@ -1299,10 +1299,13 @@ export class ReviewManager {
     const live = this.runner?.isRunning(key) ?? false;
     if (!run && !fenced && !live) return null;
     const proc = live ? this.runner?.running().find((r) => r.id === key) : undefined;
+    // A live process reports its own start time; otherwise the registration's.
+    // Only a live registration reads this, so the reaper's age check is unaffected.
     const since =
-      run?.startedAt ??
-      this.completionSince.get(taskId) ??
-      (proc ? Date.parse(proc.startedAt) : Date.now());
+      (proc ? Date.parse(proc.startedAt) : NaN) ||
+      run?.startedAt ||
+      this.completionSince.get(taskId) ||
+      Date.now();
     return { since, pid: proc && proc.pid > 0 ? proc.pid : null, live };
   }
 
@@ -1323,17 +1326,25 @@ export class ReviewManager {
         since: new Date(reg.since).toISOString(),
       },
     );
-    this.releaseRegistration(taskId);
+    // A run still preparing has no process yet. Mark it cancelled before it is
+    // dropped, so when its preparation resumes it stops rather than spawning.
+    const run = this.runs.get(taskId);
+    if (run) run.cancelled = true;
+    this.dropRun(taskId, run);
+    this.completions.delete(taskId);
+    this.completionSince.delete(taskId);
     return true;
   }
 
-  /** Drop every in-memory trace of a task's review registration (#1083). */
-  private releaseRegistration(taskId: string): void {
-    const run = this.runs.get(taskId);
-    if (run?.timer) clearTimeout(run.timer);
-    this.runs.delete(taskId);
-    this.completions.delete(taskId);
-    this.completionSince.delete(taskId);
+  /**
+   * Remove a run record and its timer, but only if it is still the registered
+   * one. A resumed preparation that was cancelled must not delete a newer run
+   * admitted after it (#1083).
+   */
+  private dropRun(taskId: string, run: Run | undefined): void {
+    if (!run) return;
+    if (run.timer) clearTimeout(run.timer);
+    if (this.runs.get(taskId) === run) this.runs.delete(taskId);
   }
 
   /**
@@ -1550,7 +1561,7 @@ export class ReviewManager {
         : missionBase;
       // A cancel that landed before the spawn must not still start a run.
       if (run.cancelled) {
-        this.runs.delete(task.id);
+        this.dropRun(task.id, run);
         this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
         return { ok: false, skipped: true, reason: "review cancelled" };
       }
@@ -1634,7 +1645,7 @@ export class ReviewManager {
         ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
         : missionBase;
       if (run.cancelled) {
-        this.runs.delete(task.id);
+        this.dropRun(task.id, run);
         this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
         return { ok: false, skipped: true, reason: "review cancelled" };
       }
@@ -2400,7 +2411,7 @@ export class ReviewManager {
         this.config,
       );
       if (run.cancelled) {
-        this.runs.delete(task.id);
+        this.dropRun(task.id, run);
         this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
         return { ok: false, skipped: true, reason: "review cancelled" };
       }
@@ -2537,10 +2548,11 @@ export class ReviewManager {
     } catch {
       /* already gone */
     }
-    // Drop the registration now, even when the child is already gone and will
-    // never report its exit (#1083). A live child still finalizes as cancelled
-    // through the marker above, so nothing is lost by releasing early.
-    this.releaseRegistration(taskId);
+    // Drop the run now, even when the child is already gone and will never
+    // report its exit (#1083). A live child still finalizes as cancelled through
+    // the marker above. A completion fence is left alone: its own finalize
+    // releases it, and the reaper clears it if that finalize never settles.
+    this.dropRun(taskId, run);
   }
 
   /** Cancel every in-flight review (server shutdown). */

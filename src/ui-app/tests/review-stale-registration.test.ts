@@ -105,16 +105,41 @@ describe("review registration release (#1083)", () => {
     expect(runner.stop).toHaveBeenCalledWith(KEY);
   });
 
-  it("clears a cancelled completion fence whose finalize never settles", () => {
+  it("keeps a completion fence through cancel until its own finalize releases it", async () => {
     const { reviews, internal } = setup();
-    const hung = new Promise<void>(() => {});
-    (internal as unknown as { completions: Map<string, Promise<void>> }).completions.set(
-      TASK_ID,
-      hung,
-    );
-    expect(reviews.isRunning(TASK_ID)).toBe(true);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    vi.spyOn(
+      internal as unknown as { finalizeRun: () => Promise<void> },
+      "finalizeRun",
+    ).mockImplementation(async () => {
+      await gate;
+    });
+    const completion = reviews.handleReviewDone(KEY, true, "run");
     reviews.cancel(TASK_ID);
+    // Cancel does not drop a fence whose finalize is still writing the report:
+    // a second review must not be admitted while that finalize runs (#1083).
+    expect(reviews.isRunning(TASK_ID)).toBe(true);
+    release();
+    await completion;
     expect(reviews.isRunning(TASK_ID)).toBe(false);
+  });
+
+  it("does not let a cancelled preparation delete a newer run admitted after it", () => {
+    const { reviews, internal } = setup();
+    const runs = internal.runs;
+    const cancelled = { startedAt: Date.now(), cancelled: false, mode: "run" as const };
+    runs.set(TASK_ID, cancelled);
+    reviews.cancel(TASK_ID);
+    const admitted = { startedAt: Date.now(), cancelled: false, mode: "run" as const };
+    runs.set(TASK_ID, admitted);
+    (reviews as unknown as { dropRun: (id: string, run: unknown) => void }).dropRun(
+      TASK_ID,
+      cancelled,
+    );
+    expect(runs.get(TASK_ID)).toBe(admitted);
   });
 });
 
@@ -125,6 +150,15 @@ describe("stale registration reaper (#1083)", () => {
     internal.runs.set(TASK_ID, { startedAt: stale, cancelled: false, mode: "run" });
     expect(reviews.isRunning(TASK_ID)).toBe(false);
     expect(internal.runs.has(TASK_ID)).toBe(false);
+  });
+
+  it("marks a reaped preparing run cancelled so it cannot spawn after being cleared", () => {
+    const { reviews, internal } = setup();
+    const stale = Date.now() - reviewTimeoutMs({} as RepoOSConfig) - 60_000;
+    const preparing = { startedAt: stale, cancelled: false, mode: "run" as const };
+    internal.runs.set(TASK_ID, preparing);
+    expect(reviews.isRunning(TASK_ID)).toBe(false);
+    expect(preparing.cancelled).toBe(true);
   });
 
   it("keeps a fresh registration with no process yet (still preparing)", () => {
