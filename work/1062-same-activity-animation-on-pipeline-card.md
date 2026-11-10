@@ -2,7 +2,7 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -190,3 +190,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T09:27:14Z · body
 - 2026-11-10T09:34:59Z · body
 - 2026-11-10T09:50:34Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-10T09:50:34Z · status active→review
