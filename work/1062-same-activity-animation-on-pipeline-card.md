@@ -195,3 +195,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T09:50:35Z · note: handoff requested (cli)
 - 2026-11-10T09:54:23Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T10:01:34Z · message_queued at 2026-11-10T10:01:34.779Z
+- 2026-11-10T10:01:34Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
