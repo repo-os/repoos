@@ -595,9 +595,7 @@ const activityAnimationEnabledField = computed(() =>
 const activityAnimationField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationStyle"),
 );
-const activityAnimationOn = computed(
-  () => form.activityAnimationEnabled !== false,
-);
+const activityAnimationOn = computed(() => form.activityAnimationEnabled !== false);
 
 const activityAnimationSizeField = computed(() =>
   config.schema.find((f) => f.key === "activityAnimationSize"),
@@ -1362,7 +1360,11 @@ onUnmounted(() => {
                   </div>
                 </div>
                 <template v-if="activityAnimationOn">
-                  <div class="activity-animation-controls" role="group" aria-label="Animation style">
+                  <div
+                    class="activity-animation-controls"
+                    role="group"
+                    aria-label="Animation style"
+                  >
                     <div id="setting-activityAnimationStyle" class="activity-animation-control">
                       <label class="activity-animation-control-label" for="activity-style-select"
                         >Style</label
@@ -1400,7 +1402,9 @@ onUnmounted(() => {
                       id="setting-activityAnimationSize"
                       class="activity-animation-control"
                     >
-                      <label class="activity-animation-control-label" for="setting-activityAnimationSize-range"
+                      <label
+                        class="activity-animation-control-label"
+                        for="setting-activityAnimationSize-range"
                         >Size</label
                       >
                       <div class="activity-size-control">
@@ -1473,7 +1477,10 @@ onUnmounted(() => {
                       }}</span>
                     </div>
                   </div>
-                  <div class="activity-animation-preview activity-animation-preview--inline" aria-hidden="true">
+                  <div
+                    class="activity-animation-preview activity-animation-preview--inline"
+                    aria-hidden="true"
+                  >
                     <div class="activity-animation-preview-line">
                       <ActivityIndicator
                         :animation-style="activityAnimationPreviewStyle"
