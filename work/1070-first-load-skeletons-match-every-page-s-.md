@@ -462,3 +462,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T05:28:37Z · message_delivered: 1 message(s)
 - 2026-11-10T05:31:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T06:04:39Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-10T06:04:39Z · message_queued at 2026-11-10T06:04:39.347Z
