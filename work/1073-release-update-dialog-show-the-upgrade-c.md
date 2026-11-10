@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-10T12:41:49Z"
-review_passes: 7
+last_close_out_gate_ms: 821135
+last_close_out_gate_at: "2026-11-10T12:57:41.892Z"
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
+updated_at: "2026-11-10T12:57:41Z"
+review_passes: 7
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -330,4 +332,5 @@ FORMAT NOTE for the reviewer: pass 5 found no bugs ('None found.'). Under '## Bu
 - 2026-11-10T12:40:57Z · status active→review
 - 2026-11-10T12:40:58Z · message_queued at 2026-11-10T12:40:58.251Z
 - 2026-11-10T12:41:49Z · note: review pass 7: good to go
+- 2026-11-10T12:57:41Z · close-out gate completed in 821s
 
