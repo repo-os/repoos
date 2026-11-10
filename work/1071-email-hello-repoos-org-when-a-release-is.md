@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 4edbf76a3cad42f35816f23ef678414f1aef8410
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -85,3 +87,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T02:36:27Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T02:42:27Z · message_queued at 2026-11-10T02:42:27.328Z
 - 2026-11-10T02:42:27Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+
