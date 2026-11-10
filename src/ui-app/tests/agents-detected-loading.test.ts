@@ -108,12 +108,14 @@ class QuietEventSource {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
   invalidatePageData("agents:detect");
   invalidatePageDataPrefix("reminders");
 });
 
 describe("AgentsView detected-tab loading (#0950)", () => {
   it("shows the shared skeleton instead of a Probing PATH line", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal("EventSource", QuietEventSource);
     const wrapper = await mountAgents();
 
@@ -218,6 +220,7 @@ describe("AgentsView detected-tab loading (#0950)", () => {
 
 describe("Agents page panels share the skeleton (#0950)", () => {
   it("RemindersPanel shows the skeleton, not a loading line", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),
@@ -234,6 +237,7 @@ describe("Agents page panels share the skeleton (#0950)", () => {
   });
 
   it("ScheduledTasksPanel shows the skeleton, not a loading line", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),
@@ -255,6 +259,7 @@ describe("Agents page panels share the skeleton (#0950)", () => {
   });
 
   it("ModelProvidersPanel shows the skeleton, not a loading line", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),

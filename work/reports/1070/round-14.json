@@ -1,0 +1,12 @@
+{
+  "taskId": "1070",
+  "round": 14,
+  "at": "2026-11-10T08:58:52.306Z",
+  "agent": "codex",
+  "model": "gpt-6-luna",
+  "branch": "feat/first-load-skeletons-match-every-page-s-",
+  "baseSha": "f46ee1c96371448a3d9a5ea5b48f4b171e80576e",
+  "sourceSha": "da632d84739b475a94c8e45797ed31295a650ca1",
+  "wordCount": 263,
+  "markdown": "## TL;DR\nFirst-load skeletons now mirror each page's real layout. The shell-level loader appears after a short delay and stays a minimum time, and it swaps to the page instantly: no fade, no layout shift. A smooth fade is deferred to #1078.\n\n## Work and rationale\nPer-page skeleton components match the real layout constants (header, grid, row heights, columns at the same breakpoints), with component tests asserting structure and counts. The shell transition went through an absolute cross-fade and an out-in fade; both drew contradictory review findings, so the final version removes the transition (App.vue and style.css) and updates the three tests that asserted it.\n\n## Approaches tried\nPer-page skeletons that mirror each page's real layout, with a shell-level loader that shows after a short delay and stays a minimum time. For the shell-to-page transition we tried an absolute-positioned cross-fade, then an out-in opacity fade. Both produced reviewer findings that contradicted each other (layout shift versus missing cross-fade). The final version swaps the shell for the page instantly, with no leave transition.\n\n## Challenges and blockers\nReview loops over 19 passes: the reviewer alternated between demanding a cross-fade and rejecting its layout shift. The handoff capture tool treats loading states as failed shots, so loading-state screenshots were waived. A page-height layout test also failed at close-out when the transition wrapper changed the markup it asserts.\n\n## Key learnings\nPrefer the simplest transition that cannot shift layout. Fix the scope decision in one place early. The smooth shell fade is deferred to follow-up #1078. Tests now assert the instant swap and that no page-fade CSS remains.\n\n## Generated change summary\n\nBase tree: `f46ee1c96371448a3d9a5ea5b48f4b171e80576e`\nSource tree: `d60fe13f30fa19e9cac564d865b9c7ff73a5aa33`\n\n- M src/ui-app/src/App.vue: +15 / −17\n- M src/ui-app/src/style.css: +0 / −14\n- M src/ui-app/tests/app-loading-skeleton.test.ts: +2 / −4\n- D src/ui-app/tests/page-fade-browser.test.ts: +0 / −44\n- M src/ui-app/tests/page-height-layout.test.ts: +1 / −1"
+}

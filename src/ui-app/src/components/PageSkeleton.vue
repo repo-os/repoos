@@ -1,9 +1,108 @@
 <script setup lang="ts">
-import type { LoadingSkeletonKind } from "../lib/loading-skeleton";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { getActivePinia } from "pinia";
+import { useActivityMotion } from "../lib/activity-motion";
+import { useConfigStore } from "../stores/config";
+import {
+  DEPLOYMENT_BRANCH_PLACEHOLDER_COUNT,
+  LOADING_SKELETON_ITEM_COUNTS,
+  SKELETON_MIN_VISIBLE_MS,
+  SKELETON_SHOW_DELAY_MS,
+  type LoadingSkeletonKind,
+} from "../lib/loading-skeleton";
 import { INPUT_BOARD_COLUMN_COUNT, WORK_BOARD_COLUMN_COUNT } from "../lib/work-board-columns";
 
-const props = withDefaults(defineProps<{ kind?: LoadingSkeletonKind }>(), {
-  kind: "rows",
+const props = withDefaults(
+  defineProps<{
+    kind?: LoadingSkeletonKind;
+    loading?: boolean;
+    defer?: boolean;
+    count?: number;
+    matrixCount?: number;
+  }>(),
+  { kind: "rows", loading: true, defer: false },
+);
+const emit = defineEmits<{ "visibility-change": [visible: boolean] }>();
+
+const visible = ref(false);
+const root = ref<HTMLElement | null>(null);
+const pinia = getActivePinia();
+const config = pinia ? useConfigStore(pinia) : null;
+const animationLimit = computed(() => {
+  const limit = config?.form.activityAnimationConcurrency;
+  return typeof limit === "number" ? limit : 6;
+});
+const animate = useActivityMotion(root, animationLimit);
+const prefersReducedMotion = ref(false);
+let showTimer: ReturnType<typeof setTimeout> | null = null;
+let hideTimer: ReturnType<typeof setTimeout> | null = null;
+let shownAt = 0;
+let motionQuery: MediaQueryList | null = null;
+
+function updateMotionPreference(): void {
+  prefersReducedMotion.value = motionQuery?.matches ?? false;
+}
+
+function clearTimers(): void {
+  if (showTimer) clearTimeout(showTimer);
+  if (hideTimer) clearTimeout(hideTimer);
+  showTimer = null;
+  hideTimer = null;
+}
+
+function setVisible(next: boolean): void {
+  if (visible.value === next) return;
+  visible.value = next;
+  emit("visibility-change", next);
+  if (next) shownAt = Date.now();
+}
+
+function updateLoading(loading: boolean): void {
+  if (showTimer) clearTimeout(showTimer);
+  showTimer = null;
+
+  if (!props.defer) {
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = null;
+    setVisible(loading);
+    return;
+  }
+
+  if (loading) {
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = null;
+    if (!visible.value) {
+      showTimer = setTimeout(() => {
+        showTimer = null;
+        setVisible(true);
+      }, SKELETON_SHOW_DELAY_MS);
+    }
+    return;
+  }
+
+  if (!visible.value) return;
+  const remaining = Math.max(0, SKELETON_MIN_VISIBLE_MS - (Date.now() - shownAt));
+  hideTimer = setTimeout(() => {
+    hideTimer = null;
+    setVisible(false);
+  }, remaining);
+}
+
+watch(
+  () => [props.loading, props.defer] as const,
+  ([loading]) => updateLoading(loading),
+);
+onMounted(() => {
+  updateLoading(props.loading);
+  if (typeof window.matchMedia === "function") {
+    motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    updateMotionPreference();
+    motionQuery.addEventListener?.("change", updateMotionPreference);
+  }
+});
+onUnmounted(() => {
+  clearTimers();
+  motionQuery?.removeEventListener?.("change", updateMotionPreference);
 });
 
 const columnCount = (): number => {
@@ -14,27 +113,42 @@ const columnCount = (): number => {
 
 const itemCount = (): number => {
   if (props.kind === "board" || props.kind === "inputBoard") return columnCount();
-  if (props.kind === "dashboard") return 6;
-  if (props.kind === "cards" || props.kind === "deployments") return 3;
-  if (props.kind === "targets") return 2;
-  return 5;
+  const layoutCount = LOADING_SKELETON_ITEM_COUNTS[props.kind] ?? 1;
+  return props.count ?? layoutCount;
 };
+
+const matrixCount = (): number => props.matrixCount ?? DEPLOYMENT_BRANCH_PLACEHOLDER_COUNT;
 </script>
 
 <template>
-  <div
-    class="page-skeleton"
-    :class="`page-skeleton--${kind}`"
-    :style="columnCount() ? { '--skeleton-cols': String(columnCount()) } : undefined"
-    aria-label="Loading page content"
-  >
-    <span v-for="i in itemCount()" :key="i" class="page-skeleton__item">
-      <i></i><i></i><i></i>
-    </span>
-    <div v-if="kind === 'deployments'" class="page-skeleton__matrix">
-      <span v-for="i in 4" :key="i" class="page-skeleton__item"><i></i><i></i><i></i></span>
+  <Transition name="page-skeleton">
+    <div
+      v-if="visible"
+      ref="root"
+      class="page-skeleton"
+      :class="[
+        `page-skeleton--${kind}`,
+        {
+          'page-skeleton--reduced-motion': prefersReducedMotion,
+          'page-skeleton--motion-active': animate,
+        },
+      ]"
+      :style="columnCount() ? { '--skeleton-cols': String(columnCount()) } : undefined"
+      aria-label="Loading page content"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <span v-for="i in itemCount()" :key="i" class="page-skeleton__item">
+        <i></i><i></i><i></i>
+      </span>
+      <div v-if="kind === 'deployments'" class="page-skeleton__matrix">
+        <span v-for="i in matrixCount()" :key="i" class="page-skeleton__item">
+          <i></i><i></i><i></i>
+        </span>
+      </div>
     </div>
-  </div>
+  </Transition>
 </template>
 
 <style scoped>
@@ -43,16 +157,35 @@ const itemCount = (): number => {
   gap: 12px;
   width: 100%;
 }
+.page-skeleton-enter-active {
+  transition: opacity 140ms ease;
+}
+.page-skeleton-enter-from {
+  opacity: 0;
+}
+.page-skeleton--reduced-motion,
+.page-skeleton--reduced-motion .page-skeleton__item i {
+  animation: none;
+  transition: none;
+}
 .page-skeleton--cards,
-.page-skeleton--deployments,
-.page-skeleton--dashboard {
+.page-skeleton--deployments {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.page-skeleton--dashboard,
+.page-skeleton--rows {
+  grid-template-columns: minmax(0, 1fr);
 }
 .page-skeleton--board,
 .page-skeleton--inputBoard {
   grid-template-columns: repeat(var(--skeleton-cols, 6), minmax(0, 1fr));
   align-content: start;
   height: 100%;
+}
+@media (max-width: 1250px) {
+  .page-skeleton--board {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 .page-skeleton--board .page-skeleton__item,
 .page-skeleton--inputBoard .page-skeleton__item {
@@ -82,7 +215,12 @@ const itemCount = (): number => {
   padding: 20px;
 }
 .page-skeleton--dashboard .page-skeleton__item {
-  min-height: 72px;
+  min-height: 220px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+}
+.page-skeleton--rows .page-skeleton__item {
+  min-height: 74px;
 }
 .page-skeleton__matrix {
   grid-column: 1 / -1;
@@ -106,7 +244,10 @@ const itemCount = (): number => {
   width: 72%;
   border-radius: 4px;
   background: var(--bg-2);
-  animation: page-skeleton-pulse 1.3s ease-in-out infinite alternate;
+  animation: none;
+}
+.page-skeleton--motion-active .page-skeleton__item i {
+  animation: page-skeleton-pulse 2.4s ease-in-out infinite alternate;
 }
 .page-skeleton__item i:first-child {
   width: 42%;
@@ -131,6 +272,9 @@ const itemCount = (): number => {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .page-skeleton-enter-active {
+    transition: none;
+  }
   .page-skeleton__item i {
     animation: none;
   }
