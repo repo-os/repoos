@@ -2,7 +2,7 @@
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -91,3 +91,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T18:58:12Z · body
 - 2026-11-10T18:59:51Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T18:59:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
+- 2026-11-10T18:59:52Z · status active→review
