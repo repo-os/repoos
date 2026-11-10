@@ -12,7 +12,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T12:57:41Z"
+updated_at: "2026-11-10T13:03:15Z"
 last_close_out_gate_ms: 821135
 last_close_out_gate_at: "2026-11-10T12:57:41.892Z"
 review_passes: 7
@@ -334,4 +334,4 @@ FORMAT NOTE for the reviewer: pass 5 found no bugs ('None found.'). Under '## Bu
 - 2026-11-10T12:40:58Z · message_queued at 2026-11-10T12:40:58.251Z
 - 2026-11-10T12:41:49Z · note: review pass 7: good to go
 - 2026-11-10T12:57:41Z · close-out gate completed in 821s
-
+- 2026-11-10T13:03:15Z · status done→done, release:success
