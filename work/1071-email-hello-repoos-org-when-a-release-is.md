@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T03:36:42Z"
+updated_at: "2026-11-10T03:36:46Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -118,3 +118,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T03:36:18Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (6109a7e21) during finalization (#0734)
 - 2026-11-10T03:36:40Z · note: review pass 2: needs some work
 - 2026-11-10T03:36:42Z · status review→active
+- 2026-11-10T03:36:46Z · CTO nudge: held — an undelivered message is already queued
