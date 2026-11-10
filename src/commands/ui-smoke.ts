@@ -103,10 +103,13 @@ async function waitForWorkBoard(page: SmokePage): Promise<void> {
       }
     }
   });
-  await page.waitForFunction(() => {
-    const board = document.querySelector(".board");
-    return board instanceof HTMLElement && board.offsetParent !== null;
-  }, { timeout: 10_000 });
+  await page.waitForFunction(
+    () => {
+      const board = document.querySelector(".board");
+      return board instanceof HTMLElement && board.offsetParent !== null;
+    },
+    { timeout: 10_000 },
+  );
 }
 
 async function runUISmokeTest(): Promise<void> {
