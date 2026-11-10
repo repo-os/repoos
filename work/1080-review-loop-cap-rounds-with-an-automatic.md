@@ -3,6 +3,9 @@ id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the codex agent exited without output: error: Reconnecting... 4/5 (workspace routing discovery timed out) error: Reconnecting... 5/5 (workspace routing discovery timed out) error: workspace routing discovery timed out"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -172,3 +175,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-10T00:39:48Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T00:44:57Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-11-10T00:48:58Z · note: review pass 5: failed — no usable report
+- 2026-11-10T00:48:58Z · needs_input
