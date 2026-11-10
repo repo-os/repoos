@@ -3,6 +3,9 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
+hold: true
+hold_reason: "load: pausing extra engineers until #1080/#1070 land"
+hold_at: "2026-11-10T06:26:35.269Z"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T06:26:19Z"
+updated_at: "2026-11-10T06:26:35Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 7cc9ab95453d79085f1e1c4e3bd4d1303d42d9cf
 review_rounds: 2
@@ -139,3 +142,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T06:21:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T06:26:14Z · engineer stopped by request
 - 2026-11-10T06:26:19Z · note: handoff requested (cli)
+- 2026-11-10T06:26:35Z · held, held-reason, held-at
