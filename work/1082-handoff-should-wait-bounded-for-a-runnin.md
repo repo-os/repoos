@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T02:58:01Z"
+updated_at: "2026-11-10T03:28:47Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -67,3 +67,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T02:28:40Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1082.md
 - 2026-11-10T02:31:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T02:58:01Z · message_delivered: 1 message(s)
+- 2026-11-10T03:28:47Z · message_overdue: still queued after 60m without being delivered
