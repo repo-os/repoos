@@ -16,6 +16,7 @@ import {
   shotFixturePinnedTaskRemoteActivity,
   shotFixturePinnedWorkingDiff,
   shotFixtureSchedules,
+  isShotPreviewSeededTaskId,
   shotPreviewSkipsEngineeringReportsFetch,
   shotPreviewSkipsIntegrationJobFetch,
   shotPreviewSkipsTaskSummaryFetch,
@@ -946,6 +947,13 @@ describe("shot preview board fixtures (#0743)", () => {
       "installing dependencies",
     );
     vi.unstubAllGlobals();
+  });
+
+  it("recognizes client-seeded pipeline fixture task ids", () => {
+    expect(isShotPreviewSeededTaskId("9999")).toBe(true);
+    expect(isShotPreviewSeededTaskId("pipe-review")).toBe(true);
+    expect(isShotPreviewSeededTaskId("0980-3")).toBe(true);
+    expect(isShotPreviewSeededTaskId("1062")).toBe(false);
   });
 
   it("skips server-backed report fetches for the fixture task during capture (#1011)", () => {
