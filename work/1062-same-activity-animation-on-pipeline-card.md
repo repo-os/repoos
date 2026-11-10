@@ -118,3 +118,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T02:05:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T02:22:32Z · body
 - 2026-11-10T02:39:46Z · handoff_deferred: 3 queued message(s) must be read before review
+- 2026-11-10T02:39:46Z · message_overdue: still queued after 60m without being delivered
