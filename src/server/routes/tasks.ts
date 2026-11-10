@@ -107,7 +107,12 @@ import {
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
-import { reconcileHandoffStatus } from "../handoff-status.js";
+import {
+  emitHandoffSupersededIfNeeded,
+  readHandoffStatus,
+  reconcileHandoffStatus,
+} from "../handoff-status.js";
+import { handoffProcessLive } from "../handoff-live.js";
 import { HANDOFF_DEADLINE_MS } from "../handoff.js";
 import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
 import { checkGenericStatusPatch, checkHumanTaskStatusPatch } from "../task-transitions.js";
@@ -3288,6 +3293,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
                   taskChecks: ctx.taskChecks,
                   remoteValidator: ctx.remoteValidator,
                   previews: ctx.previews,
+                  runner: ctx.runner,
                 },
                 taskStillExists,
                 integrity.checkpointOnlyDrift.approvedSha,
@@ -5121,12 +5127,14 @@ export const getTaskHandoffStatus: RouteHandler = async (ctx, _req, res, params)
   const id = params.param1;
   const task = index.getTask(id);
   if (!task) return json(res, 404, { error: `Task #${id} not found` });
+  const before = readHandoffStatus(config, id);
   const status = reconcileHandoffStatus(config, id, {
     taskStatus: task.status,
-    handoffLive: runner.isHandoffInFlight(id) || runner.hasPendingHandoff(id),
+    handoffLive: handoffProcessLive(config, id, runner),
     latestReviewAt: reviews.read(id)?.at ?? null,
     staleAfterMs: HANDOFF_DEADLINE_MS,
   });
+  emitHandoffSupersededIfNeeded(before, status, id, ctx.emitEvent);
   return json(res, 200, { ok: true, ...status });
 };
 

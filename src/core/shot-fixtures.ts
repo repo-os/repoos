@@ -42,6 +42,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "card:doneError",
   "board:withReviewTask",
   "card:reviewChecksRunning",
+  "card:reviewLandableReady",
   // #1035 — several tasks spread across every pipeline stage (plus stuck,
   // held, sent-back and recently-merged lanes) for the Pipeline view capture.
   "board:pipeline",

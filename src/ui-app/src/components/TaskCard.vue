@@ -139,11 +139,12 @@ const held = computed(() =>
 
 /** Keep the board on the same server landability result as the task drawer. */
 const landable = computed(() => repo.landableFor(props.task.id));
-const reviewChecksRunning = computed(
-  () =>
-    (repo.taskChecks[props.task.id] ?? []).some((run) => run.running) ||
-    repo.handoffStatuses[props.task.id]?.state === "running",
-);
+const reviewChecksRunning = computed(() => {
+  const handoff = repo.handoffStatuses[props.task.id];
+  const handoffBlocksReview =
+    handoff?.state === "running" && handoff.stale !== true;
+  return (repo.taskChecks[props.task.id] ?? []).some((run) => run.running) || handoffBlocksReview;
+});
 const landableBlocker = computed(() =>
   landable.value?.checks.find((check) => check.status === "fail"),
 );
@@ -501,8 +502,10 @@ onMounted(() => {
   // Hydrate check runs so a reload mid-handoff still reads "running checks"
   // instead of "paused" (SSE only delivers events from now on).
   const id = props.task.id;
-  if (props.task.status === "active") {
+  if (props.task.status === "active" || props.task.status === "review") {
     void repo.refreshHandoffStatus(id);
+  }
+  if (props.task.status === "active") {
     void repo.refreshLocalCheckSlots();
   }
   if (props.task.status === "active" && repo.taskChecks[id] === undefined) {
@@ -517,7 +520,7 @@ watch(
   ([id, status, handoffState]) => {
     if (handoffStatusPoll) window.clearInterval(handoffStatusPoll);
     handoffStatusPoll = undefined;
-    if (status !== "active" || handoffState !== "running") return;
+    if ((status !== "active" && status !== "review") || handoffState !== "running") return;
     handoffStatusPoll = window.setInterval(() => void repo.refreshHandoffStatus(id), 3_000);
   },
   { immediate: true },

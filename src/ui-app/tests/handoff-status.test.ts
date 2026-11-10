@@ -3,11 +3,12 @@
  * one queued message for the engineer's next turn.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { missionFor } from "../../server/agents";
+import { handoffProcessLive } from "../../server/handoff-live";
 import {
   beginHandoffStatus,
   deferHandoffStatus,
@@ -18,6 +19,7 @@ import {
   truncateHandoffReason,
   updateHandoffStatusStep,
   updateHandoffStatusProgress,
+  emitHandoffSupersededIfNeeded,
   reconcileHandoffStatus,
   HANDOFF_STATUS_REASON_LIMIT,
 } from "../../server/handoff-status";
@@ -322,6 +324,42 @@ describe("stale running handoff reconciliation (#1085)", () => {
     expect(stale.state).toBe("running");
     expect(stale.stale).toBe(true);
     expect(readHandoffStatus(config, "1070").state).toBe("running");
+  });
+
+  it("treats post-handoff checkpoint recovery as a live handoff (#1085)", () => {
+    const config = makeConfig();
+    mkdirSync(join(config.root, ".repoos/post-handoff-checkpoint"), { recursive: true });
+    writeFileSync(
+      join(config.root, ".repoos/post-handoff-checkpoint/1085.json"),
+      JSON.stringify({
+        taskId: "1085",
+        approvedSha: "a".repeat(40),
+        headSha: "b".repeat(40),
+        phase: "gate",
+        startedAt: new Date().toISOString(),
+      }),
+      "utf8",
+    );
+    const runner = {
+      isHandoffInFlight: () => false,
+      hasPendingHandoff: () => false,
+    };
+    expect(handoffProcessLive(config, "1085", runner)).toBe(true);
+  });
+
+  it("emits handoff:superseded when reconciliation clears a running record", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1085", { attemptKey: "run-stale", step: "validate" });
+    const before = readHandoffStatus(config, "1085");
+    const events: Array<{ step?: string }> = [];
+    const after = reconcileHandoffStatus(config, "1085", {
+      taskStatus: "review",
+      handoffLive: false,
+    });
+    emitHandoffSupersededIfNeeded(before, after, "1085", (e) => events.push(e));
+    expect(events).toEqual([
+      expect.objectContaining({ step: "handoff:superseded" }),
+    ]);
   });
 });
 

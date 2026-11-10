@@ -1506,7 +1506,7 @@ export const useRepoStore = defineStore("repo", () => {
    */
   function handoffInFlight(id: string): boolean {
     const handoff = handoffStatuses.value[id];
-    if (handoff?.state === "running") return true;
+    if (handoff?.state === "running") return handoff.stale !== true;
     if (handoff && ["passed", "failed", "deferred", "superseded"].includes(handoff.state))
       return false;
     const step = handoffSteps.value[id];
@@ -2000,6 +2000,8 @@ export const useRepoStore = defineStore("repo", () => {
           pushToast(`#${e.id} stayed active — ${detail}`, "error");
         } else if (stage === "done") {
           setHandoffError(e.id, null);
+        } else if (stage === "superseded") {
+          void refreshHandoffStatus(e.id);
         }
       } else if (e.step.startsWith("checkpoint-recovery")) {
         // #0834: keep the post-handoff checkpoint recovery vocabulary out of
