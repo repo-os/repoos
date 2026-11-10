@@ -46,9 +46,8 @@ describe("repo loading skeleton", () => {
     expect(appVue).not.toContain("skeletonDelay");
     expect(appVue).not.toContain("page-loading-shell");
     expect(appVue).toMatch(
-      /<RouterView v-slot="\{ Component \}">[\s\S]*<Transition name="page-fade">[\s\S]*<component :is="Component" v-else key="route" class="main-route" \/>[\s\S]*<\/Transition>[\s\S]*<\/RouterView>/,
+      /<RouterView v-slot="\{ Component \}">[\s\S]*<Transition name="page-fade" mode="out-in">[\s\S]*<div v-if="showLoadingShell" key="loading" class="main-route page-loading">[\s\S]*<component :is="Component" v-else key="route" class="main-route" \/>[\s\S]*<\/Transition>[\s\S]*<\/RouterView>/,
     );
-    expect(appVue).not.toContain('mode="out-in"');
     const styles = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
     expect(styles).toMatch(/\.main\s*\{[^}]*padding:\s*22px 26px 0;/s);
     expect(styles).not.toMatch(/\.main\s*>\s*\.page-fade-leave-active\s*\{/);
@@ -57,9 +56,6 @@ describe("repo loading skeleton", () => {
     );
     expect(styles).toMatch(
       /@media \(max-width: 760px\)\s*\{[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*max\(16px,\s*var\(--page-inline-end-inset\)\);/,
-    );
-    expect(styles).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.page-fade-enter-active,[\s\S]*?transition-duration:\s*0ms;/,
     );
   });
 

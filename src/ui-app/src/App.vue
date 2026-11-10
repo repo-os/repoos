@@ -164,7 +164,7 @@ onUnmounted(() => {
 
         <div class="main">
           <RouterView v-slot="{ Component }">
-            <Transition name="page-fade">
+            <Transition name="page-fade" mode="out-in">
               <div v-if="showLoadingShell" key="loading" class="main-route page-loading">
                 <header v-if="loadingHeader" class="page-header">
                   <div>

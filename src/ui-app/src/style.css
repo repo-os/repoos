@@ -1450,7 +1450,7 @@
 @media (prefers-reduced-motion: reduce) {
   .page-fade-enter-active,
   .page-fade-leave-active {
-    transition-duration: 0ms;
+    transition: none;
   }
 }
 .page-header-actions {
