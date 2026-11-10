@@ -1,11 +1,19 @@
 ---
+id: review-1
+title: review-1
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/handoff-should-wait-bounded-for-a-runnin
 task: "1082"
 pass: 1
 at: "2026-11-10T02:05:12.534Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/handoff-should-wait-bounded-for-a-runnin
 state: ok
 tree_identity: "e1ee9d46f:c4a8ee3fc"
 ---
@@ -21,10 +29,10 @@ None. The one capture is the Mission Control home page (`default-1.png`, auto-ma
 ## Bugs
 - **Waiting label is masked (AC1 visible state unmet).** `src/ui-app/src/components/TaskDrawer.vue:414-424`: `statusProgress` prefers `activeCheckRun` (the task's check run with `running`) over `handoffStatuses[id].progress`. While the self-check holds the lock its run is still `running`, so the drawer shows the check's step name and never reaches the `reason` branch. The reason only shows when no check run is live, which is when nothing is waiting.
 - **Other refused server git writes still fail fast (AC1 says "any other server git operation").** `checkGateGitCommandRefusal` (`check-gate-lock.ts:1249`) refuses every `commit` in a locked worktree, bookkeeping paths included. Unwrapped instances:
-  - `src/server/handoff.ts:1091-1103`: the engineering-report `add` and `commit` run inside the handoff itself, so a live check turns them into `could not commit finalized engineering report: A check is running`.
-  - `src/server/review-report-store.ts:53-60`: `commit --only` on the worktree.
-  - `src/server/engineer-remote-self-check.ts:102-108`: `add` and `commit` in the engineer worktree.
-  - Not verified: the `integration-orchestrator.ts` writes (2121–2198, 3585–3598). Check whether they run in a locked worktree.
+- `src/server/handoff.ts:1091-1103`: the engineering-report `add` and `commit` run inside the handoff itself, so a live check turns them into `could not commit finalized engineering report: A check is running`.
+- `src/server/review-report-store.ts:53-60`: `commit --only` on the worktree.
+- `src/server/engineer-remote-self-check.ts:102-108`: `add` and `commit` in the engineer worktree.
+- Not verified: the `integration-orchestrator.ts` writes (2121–2198, 3585–3598). Check whether they run in a locked worktree.
 - **PATCH close-out route now hangs (`src/server/routes/tasks.ts:3215`).** The "commit & continue" path calls `guardReviewTransition` with no options, so the HTTP request blocks up to 45 minutes with no waiting state. This is an undocumented contract change. Either wait explicitly and say so, or keep fail-fast there.
 - **Reason can stick (`src/server/handoff.ts:788-798`).** `setHandoffWaitingReason(..., null)` only runs on the non-throw path. If the guard throws, the wait reason stays in the record. Wrap it in `try/finally`.
 - **Dead-holder test does not exercise recovery (`src/ui-app/tests/review-guard.test.ts`, "recovers a dead holder's lock").** The first attempt already ignores the dead holder, so `waits` is 0 and the loop's `recoverStaleCheckGateLocks` call never runs. AC3 "stale lock is recovered" is only nominally covered. No test covers handoff-level waiting or the `setHandoffWaitingReason` path.
