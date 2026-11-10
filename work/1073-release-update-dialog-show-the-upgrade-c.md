@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T06:29:52Z"
-review_passes: 4
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
@@ -13,6 +11,8 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
+updated_at: "2026-11-10T06:49:06Z"
+review_passes: 4
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -281,4 +281,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T06:26:21Z · engineer stopped by request
 - 2026-11-10T06:26:26Z · status active→review
 - 2026-11-10T06:29:52Z · note: review pass 4: good to go
-
+- 2026-11-10T06:49:06Z · handoff failed · check failed after 2 automatic retries · repoos check failed: vite v8.2.0 building client environment for production...
