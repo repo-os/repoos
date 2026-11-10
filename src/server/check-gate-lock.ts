@@ -22,6 +22,7 @@ import {
   closeSync,
   fsyncSync,
   openSync,
+  realpathSync,
 } from "node:fs";
 import * as nodeFs from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -567,11 +568,20 @@ export async function releaseCheckGateLock(
   }
 }
 
+/**
+ * Same worktree? Compares real paths: on macOS `/tmp` and `/var` are symlinks,
+ * so the path a lock was written with and the path git reports for the same
+ * worktree (#1082) differ textually. Without this the refusal never matched.
+ */
 function samePath(a: string, b: string): boolean {
+  return realOrResolved(a) === realOrResolved(b);
+}
+
+function realOrResolved(path: string): string {
   try {
-    return resolve(a) === resolve(b);
+    return realpathSync(path);
   } catch {
-    return a === b;
+    return resolve(path);
   }
 }
 
@@ -1101,6 +1111,82 @@ export async function recoverStaleCheckGateLocks(
     }
   } catch {
     /* no deferred dir */
+  }
+}
+
+/**
+ * Upper bound on one wait for a running self-check to release the gate
+ * (#1082). A handoff never waits past its own deadline: see
+ * `checkGateWaitBudgetMs`, which caps this value by the time left.
+ */
+export const CHECK_GATE_WAIT_MS = 45 * 60_000;
+const CHECK_GATE_POLL_MS = 1_000;
+/** Time kept back from a handoff deadline so a timed-out wait fails before the deadline. */
+const CHECK_GATE_DEADLINE_MARGIN_MS = 60_000;
+
+/**
+ * Wait budget for a step that must finish before `deadlineAt` (epoch ms): the
+ * time left minus a safety margin, capped at `CHECK_GATE_WAIT_MS`. Waiting
+ * past the deadline would orphan a waiter that keeps polling after the handoff
+ * has already failed (#1082).
+ */
+export function checkGateWaitBudgetMs(deadlineAt: number, now = Date.now()): number {
+  const left = deadlineAt - now - CHECK_GATE_DEADLINE_MARGIN_MS;
+  return Math.max(0, Math.min(CHECK_GATE_WAIT_MS, left));
+}
+
+export interface CheckGateWaitOptions {
+  boardRoot: string;
+  cacheDir: string;
+  /** Upper bound on total waiting. Defaults to `CHECK_GATE_WAIT_MS`. */
+  timeoutMs?: number;
+  /** Delay between re-checks. Defaults to one second. */
+  pollMs?: number;
+  /** Called once, the first time an attempt is refused by a live gate. */
+  onWait?: () => void;
+}
+
+export interface CheckGateWaitResult<T> {
+  result: T;
+  /** True when at least one attempt was refused by a live gate. */
+  waited: boolean;
+  /** True when the gate was still held at the deadline; `result` is the last refusal. */
+  timedOut: boolean;
+}
+
+/**
+ * Did git refuse this command only because a self-check holds the gate
+ * (#1082)? That refusal is transient, so callers wait it out instead of
+ * failing. Any other failure is not busy.
+ */
+export function checkGateBusyRun(run: { status: number | null; stderr: string }): boolean {
+  return run.status !== 0 && run.stderr.includes(CHECK_GATE_WRITE_REFUSAL);
+}
+
+/**
+ * Run `attempt` and, while `held` says the result was refused only because a
+ * self-check holds the gate, poll again until it clears or the bound runs out
+ * (#1082). Stale or dead-holder locks are reconciled before each re-check, so
+ * a crashed check never keeps a handoff waiting. Only the refusal is retried:
+ * any other result is returned as-is on the first attempt.
+ */
+export async function waitForCheckGateRelease<T>(
+  attempt: () => Promise<T>,
+  held: (result: T) => boolean,
+  opts: CheckGateWaitOptions,
+): Promise<CheckGateWaitResult<T>> {
+  const deadline = Date.now() + (opts.timeoutMs ?? CHECK_GATE_WAIT_MS);
+  const pollMs = opts.pollMs ?? CHECK_GATE_POLL_MS;
+  let result = await attempt();
+  if (!held(result)) return { result, waited: false, timedOut: false };
+  opts.onWait?.();
+  for (;;) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return { result, waited: true, timedOut: true };
+    await new Promise((resolve) => setTimeout(resolve, Math.min(pollMs, remaining)));
+    await recoverStaleCheckGateLocks(opts.boardRoot, opts.cacheDir);
+    result = await attempt();
+    if (!held(result)) return { result, waited: true, timedOut: false };
   }
 }
 

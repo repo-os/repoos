@@ -922,7 +922,8 @@ export const useRepoStore = defineStore("repo", () => {
         updatedAt: string | null;
         startedAt?: string | null;
         attempt: number;
-        progress: TaskCheckRun | null;
+        /** `reason` is the plain-English wait while a running check holds the worktree (#1082). */
+        progress: (TaskCheckRun & { reason?: string | null }) | null;
         machine: string | null;
       }
     >
