@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T05:46:24Z"
+updated_at: "2026-11-10T06:26:15Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
 dev_error_count: 7
@@ -144,3 +144,5 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T05:46:05Z · queued message undelivered for 62m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T05:46:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Re-running the scoped check after a flaky unrelated test failure. · stderr: RetriableError: Connection failed repeatedly Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-10T05:46:24Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T06:16:18Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-10T06:26:15Z · needs_input
