@@ -2,7 +2,7 @@
 id: "1083"
 title: "Review runner: a stale 'review already running' registration survives review cancel and blocks reviews until the server restarts (seen on #1080)"
 type: bug
-status: active
+status: review
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T18:41:18Z"
+updated_at: "2026-11-10T18:44:48Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -54,3 +54,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T18:41:10Z · message_queued at 2026-11-10T18:41:10.004Z
 - 2026-11-10T18:41:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-10T18:41:18Z · body
+- 2026-11-10T18:44:48Z · status active→review
