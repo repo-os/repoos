@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T02:01:19Z"
+updated_at: "2026-11-10T02:03:24Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
 dev_error_count: 5
@@ -48,32 +48,22 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 ```json
 [
 {
-"label": "Pipeline coding lane with activity animation",
-"target": "default",
-"route": "/work?tab=pipeline&shotState=board:pipeline",
-"highlight": "[data-task-id=\"pipe-coding\"] .pl-activity",
-"state": "board:pipeline"
+  "label": "Pipeline card activity animation",
+  "target": "default",
+  "route": "/work?tab=pipeline&shotState=board:activeCoding",
+  "highlight": ".pipeline-card .pl-activity"
 },
 {
-"label": "Compact activity animation settings (motion on)",
-"target": "default",
-"route": "/settings?tab=general&section=activity-animation&shotState=settings:rgbKeystorm",
-"highlight": "#settings-section-activity-animation",
-"state": "settings:rgbKeystorm"
+  "label": "Compact activity animation settings (On)",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": ".activity-animation-controls"
 },
 {
-"label": "Activity animation motion off",
-"target": "default",
-"route": "/settings?tab=general&section=activity-animation",
-"highlight": "#setting-activityAnimationEnabled",
-"steps": [
-{
-"click": "#setting-activityAnimationEnabled [role=\"switch\"]"
-},
-{
-"waitMs": 200
-}
-]
+  "label": "Activity animation Motion Off",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation&shotState=settings:motionOff",
+  "highlight": "#setting-activityAnimationEnabled"
 }
 ]
 ```
@@ -120,3 +110,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T01:47:07Z · note: handoff requested (cli)
 - 2026-11-10T01:51:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T02:01:19Z · message_delivered: 1 message(s)
+- 2026-11-10T02:03:24Z · body
