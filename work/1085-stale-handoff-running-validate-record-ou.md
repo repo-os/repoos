@@ -132,3 +132,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T21:56:17Z · message_delivered: 1 message(s)
 - 2026-11-10T21:56:21Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
 - 2026-11-10T22:12:21Z · body
+- 2026-11-10T22:24:23Z · note: handoff requested (cli)
