@@ -14,7 +14,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T20:24:15Z"
+updated_at: "2026-11-10T20:25:01Z"
 review_passes: 6
 close_out_repair_count: 1
 review_rounds: 2
@@ -41,6 +41,9 @@ Look at the WIP checkpoint commit code in `src/commands/check.ts` and `src/core/
 
 ## Accepted scope (criterion 1)
 Owner/accepted interpretation: the server already writes only the LIVE task's own file into a task worktree — an audit of the write sites (activity, CTO/watchdog notes, `routes/tasks.ts` sync, `server.ts` `syncTaskBranch`) shows each targets `config.root`/main or this task's own `task.path`. No write site is changed. Enforcement lands at the commit boundary instead: every commit made in a task worktree is scoped (pathspec, or an explicit foreign-unstage before a bare commit) so a sibling's `work/<other-id>-*.md` / `work/reports/<other-id>/**` can never ride the branch, and handoff restores any that already did.
+
+## Accepted scope and known limitations
+Non-blocking: isTaskMarkdownBookkeepingPath matching non-task markdown under work/ (pre-existing shape; follow-up). Report as a suggestion, not a bug.
 
 ## Activity
 
@@ -313,3 +316,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T20:15:50Z · needs_input
 - 2026-11-10T20:24:13Z · status review→active
 - 2026-11-10T20:24:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T20:25:01Z · body: Accepted scope and known limitations (added)
