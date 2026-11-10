@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T19:27:43Z"
+updated_at: "2026-11-10T19:45:09Z"
 close_out_repair_count: 1
 review_passes: 5
 review_rounds: 2
@@ -298,3 +298,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T19:24:36Z · note: handoff requested (cli)
 - 2026-11-10T19:26:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T19:27:43Z · body
+- 2026-11-10T19:45:09Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1076.md
