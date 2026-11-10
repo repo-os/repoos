@@ -126,11 +126,16 @@ describe("foreign bookkeeping after main lands another task (#1086)", () => {
         "main",
         raw,
         (p) =>
-          isForbiddenTaskScopePath(p, OWN_FILE, {
-            workDir: "work",
-            inputsDir: "inputs",
-            storiesDir: "stories",
-          }, TASK_B),
+          isForbiddenTaskScopePath(
+            p,
+            OWN_FILE,
+            {
+              workDir: "work",
+              inputsDir: "inputs",
+              storiesDir: "stories",
+            },
+            TASK_B,
+          ),
       );
       expect(filtered).not.toContain(`work/reports/${TASK_A}/summary.md`);
       expect(
@@ -199,7 +204,7 @@ describe("foreign bookkeeping after main lands another task (#1086)", () => {
     expect(created.ok).toBe(true);
     const wtB = created.path;
     const clean = () => rmFixture(root);
-  try {
+    try {
       writeFileSync(join(wtB, "src.ts"), "export const v = 4;\n");
       writeFileSync(join(wtB, "work", "2000-other.md"), '---\nid: "2000"\n---\nDRIFT\n');
       git(wtB, ["add", "-A"]);
