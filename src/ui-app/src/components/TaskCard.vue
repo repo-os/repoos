@@ -145,7 +145,7 @@ const held = computed(() =>
 const landable = computed(() => repo.landableFor(props.task.id));
 const reviewChecksRunning = computed(() => {
   const handoff = repo.handoffStatuses[props.task.id];
-  const handoffBlocksReview = handoff?.state === "running";
+  const handoffBlocksReview = handoff?.state === "running" && handoff.stale !== true;
   return (repo.taskChecks[props.task.id] ?? []).some((run) => run.running) || handoffBlocksReview;
 });
 const landableBlocker = computed(() =>

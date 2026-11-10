@@ -313,6 +313,19 @@ describe("stale running handoff reconciliation (#1085)", () => {
     });
   });
 
+  it("does not supersede a live active handoff when a review finished after it started", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1085", { attemptKey: "run-live", step: "check" });
+    const started = readHandoffStatus(config, "1085").startedAt!;
+    const later = new Date(Date.parse(started) + 120_000).toISOString();
+    const status = reconcileHandoffStatus(config, "1085", {
+      taskStatus: "active",
+      handoffLive: true,
+      latestReviewAt: later,
+    });
+    expect(status.state).toBe("running");
+  });
+
   it("flags a live handoff past the deadline as stale without persisting superseded", () => {
     const config = makeConfig();
     beginHandoffStatus(config, "1070", { attemptKey: "run-wait", step: "validate" });

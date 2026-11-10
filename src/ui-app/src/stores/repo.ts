@@ -1507,7 +1507,7 @@ export const useRepoStore = defineStore("repo", () => {
    */
   function handoffInFlight(id: string): boolean {
     const handoff = handoffStatuses.value[id];
-    if (handoff?.state === "running") return true;
+    if (handoff?.state === "running") return handoff.stale !== true;
     if (handoff && ["passed", "failed", "deferred", "superseded"].includes(handoff.state))
       return false;
     const step = handoffSteps.value[id];

@@ -21,7 +21,7 @@ afterEach(() => {
 });
 
 describe("handoffInFlight and superseded records (#1085)", () => {
-  it("still treats a stale-flagged live running record as in flight", () => {
+  it("does not treat a stale-flagged running record as blocking", () => {
     const repo = useRepoStore();
     repo.handoffStatuses = {
       "1085": {
@@ -34,7 +34,7 @@ describe("handoffInFlight and superseded records (#1085)", () => {
         machine: null,
       },
     };
-    expect(repo.handoffInFlight("1085")).toBe(true);
+    expect(repo.handoffInFlight("1085")).toBe(false);
   });
 
   it("ignores a superseded handoff step fallback", () => {
