@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T13:41:37Z"
+updated_at: "2026-11-10T13:41:52Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: c03fefe9eddc852051a4889c4721fbb92f433259
 review_rounds: 1
@@ -248,3 +248,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T13:09:32Z · note: adopted orphaned engineer pid 73915
 - 2026-11-10T13:10:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T13:41:37Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-10T13:41:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Addressed both handoff blockers: ### UI verify (404 on `pipe-*` /landable) Hidden Board task cards were still polling landable for client-only pipeline fixture ids (`pipe-review`, `pipe-closeout`, …) during shot capture. That matched #0768… · stderr: (empty)
