@@ -2,7 +2,7 @@
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T02:05:16Z"
+updated_at: "2026-11-10T02:10:27Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -59,3 +59,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T02:05:12Z · note: review pass 1: needs some work
 - 2026-11-10T02:05:13Z · status review→active
 - 2026-11-10T02:05:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T02:10:27Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
