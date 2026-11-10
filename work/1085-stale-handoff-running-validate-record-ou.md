@@ -11,7 +11,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T22:24:23Z"
+updated_at: "2026-11-10T22:26:12Z"
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 review_passes: 2
@@ -133,3 +133,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T21:56:21Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
 - 2026-11-10T22:12:21Z · body
 - 2026-11-10T22:24:23Z · note: handoff requested (cli)
+- 2026-11-10T22:26:12Z · CTO nudge: held — handoff gate is running
