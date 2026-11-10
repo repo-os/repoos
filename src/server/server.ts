@@ -258,6 +258,7 @@ import { tryAutoApproveAfterCleanReview } from "./approval-policy.js";
 import {
   abandonCheckpointRecoveryAfterFailedDelta,
   resumeCloseOutAfterCheckpointRecovery,
+  sweepOrphanedPostHandoffCheckpointRecoveries,
 } from "./post-handoff-checkpoint-recovery.js";
 import { SkillSuggestionManager, markOriginTask } from "./skill-suggestions.js";
 import { DebugTldrManager } from "./debug-tldr.js";
@@ -2227,7 +2228,12 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // and silently drop valid requests (`if (!task) clearPendingHandoff()`),
   // leaving the task stuck `active` with its work uncommitted.
   const startupRecoveryReady = Promise.allSettled([indexReady, runnerAdoption]);
-  const runHandoffRecovery = (): void => runner.recoverPendingHandoffs();
+  const runHandoffRecovery = (): void => {
+    sweepOrphanedPostHandoffCheckpointRecoveries(config, (taskId) =>
+      runner.isHandoffInFlight(taskId),
+    );
+    runner.recoverPendingHandoffs();
+  };
   if (!isPreviewChild) {
     void startupRecoveryReady.then(runHandoffRecovery).catch(() => {});
   }

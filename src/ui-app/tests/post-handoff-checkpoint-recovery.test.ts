@@ -16,12 +16,74 @@ import {
   readPostHandoffCheckpointRecovery,
   resumeCloseOutAfterCheckpointRecovery,
   startPostHandoffCheckpointRecovery,
+  sweepOrphanedPostHandoffCheckpointRecoveries,
 } from "../../server/post-handoff-checkpoint-recovery.js";
 import { writeHandoffSnapshot } from "../../server/worktree-handoff-guard.js";
 import { reviewMission, ReviewManager } from "../../server/review.js";
 import type { Agent, Task } from "../../core/types.js";
 
 describe("post-handoff checkpoint recovery (#0834)", () => {
+  it("sweeps orphan checkpoint markers when no handoff slot is live (#1085)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-sweep-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos", "post-handoff-checkpoint"), { recursive: true });
+      writeFileSync(
+        join(root, ".repoos", "post-handoff-checkpoint", "1085.json"),
+        JSON.stringify({
+          taskId: "1085",
+          approvedSha: "a".repeat(40),
+          headSha: "b".repeat(40),
+          phase: "review",
+          startedAt: new Date().toISOString(),
+        }),
+        "utf8",
+      );
+      expect(sweepOrphanedPostHandoffCheckpointRecoveries(config, () => false)).toBe(1);
+      expect(readPostHandoffCheckpointRecovery(config, "1085")).toBeNull();
+    } finally {
+      rmFixture(root);
+    }
+  });
+
+  it("clears an orphan marker so recovery can restart after a crash (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-restart-"));
+  try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos", "post-handoff-checkpoint"), { recursive: true });
+      writeFileSync(
+        join(root, ".repoos", "post-handoff-checkpoint", "0834.json"),
+        JSON.stringify({
+          taskId: "0834",
+          approvedSha: "aaa111",
+          headSha: "bbb222",
+          phase: "gate",
+          startedAt: new Date().toISOString(),
+        }),
+        "utf8",
+      );
+      const task = { id: "0834", status: "review", branch: "feat/x", title: "t" } as Task;
+      const started = await startPostHandoffCheckpointRecovery(
+        {
+          config,
+          index: { getTask: () => task } as any,
+          jobCoordinator: createJobCoordinator(root),
+          reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+          reload: null,
+          emitEvent: () => {},
+          triggerJobProcessing: () => {},
+          runner: { isHandoffInFlight: () => false, markHandoffInFlight: () => true, releaseHandoffInFlight: () => {} },
+        },
+        task,
+        "aaa111",
+        "bbb222",
+      );
+      expect(started.ok).toBe(true);
+    } finally {
+      rmFixture(root);
+    }
+  });
+
   it("persists recovery state when Move to done starts recovery", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-phc-"));
     const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;

@@ -1507,11 +1507,11 @@ export const useRepoStore = defineStore("repo", () => {
    */
   function handoffInFlight(id: string): boolean {
     const handoff = handoffStatuses.value[id];
-    if (handoff?.state === "running") return handoff.stale !== true;
+    if (handoff?.state === "running") return true;
     if (handoff && ["passed", "failed", "deferred", "superseded"].includes(handoff.state))
       return false;
     const step = handoffSteps.value[id];
-    if (step) return step !== "done" && step !== "failed";
+    if (step) return step !== "done" && step !== "failed" && step !== "superseded";
     // After a reload SSE has not replayed `handoff:*`, but the hydrated check
     // runs still show a finalization gate in flight.
     return (taskChecks.value[id] ?? []).some((r) => r.running && r.kind === "handoff-finalize");

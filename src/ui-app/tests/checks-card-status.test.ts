@@ -39,6 +39,14 @@ describe("formatChecksCardLine (#1054)", () => {
     expect(line).toBe("Checks · starting… · 5s");
   });
 
+  it("appends stale when a local check slot outlived the stall threshold (#1085)", () => {
+    const line = formatChecksCardLine({
+      nowMs: NOW,
+      slotAgeMs: 31 * 60_000,
+    });
+    expect(line).toBe("Checks · check · 31m 00s · stale");
+  });
+
   it("appends stale when the handoff record outlived its deadline (#1085)", () => {
     const line = formatChecksCardLine({
       nowMs: NOW,

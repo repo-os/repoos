@@ -20,8 +20,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("handoffInFlight ignores stale and superseded records (#1085)", () => {
-  it("returns false for a stale running record", () => {
+describe("handoffInFlight and superseded records (#1085)", () => {
+  it("still treats a stale-flagged live running record as in flight", () => {
     const repo = useRepoStore();
     repo.handoffStatuses = {
       "1085": {
@@ -34,7 +34,13 @@ describe("handoffInFlight ignores stale and superseded records (#1085)", () => {
         machine: null,
       },
     };
-    expect(repo.handoffInFlight("1085")).toBe(false);
+    expect(repo.handoffInFlight("1085")).toBe(true);
+  });
+
+  it("ignores a superseded handoff step fallback", () => {
+    const repo = useRepoStore();
+    repo.handoffSteps = { "1086": "superseded" };
+    expect(repo.handoffInFlight("1086")).toBe(false);
   });
 
   it("returns false for a superseded record", () => {

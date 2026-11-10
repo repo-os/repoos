@@ -633,6 +633,7 @@ export class TaskWatchdog {
   private reconcileOrphanedHandoffStatuses(now: number): void {
     for (const status of ["active", "review"] as const) {
       for (const task of this.index.getTasks(status)) {
+        if (isHoldActive(task)) continue;
         if (readHandoffStatus(this.config, task.id).state !== "running") continue;
         const before = readHandoffStatus(this.config, task.id);
         const after = reconcileHandoffStatus(this.config, task.id, {
