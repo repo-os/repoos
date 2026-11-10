@@ -13,10 +13,11 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T05:46:24Z"
+updated_at: "2026-11-10T07:05:06Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
-dev_error_count: 7
+dev_error_count: 8
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-10T06:33:17.355Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -48,24 +49,25 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 ```json
 [
 {
-"label": "Pipeline lane cards use ActivityIndicator",
-"target": "default",
-"route": "/work",
-"highlight": ".pipeline-card[data-task-id=\"pipe-coding\"] .pl-activity",
-"state": "board:pipeline"
+  "label": "Pipeline cards with activity animation",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".pipeline-card .pl-activity",
+  "state": "board:pipeline"
 },
 {
-"label": "Compact activity animation settings (Motion on)",
-"target": "default",
-"route": "/settings?tab=general&section=activity-animation",
-"highlight": "#settings-section-activity-animation"
+  "label": "Settings activity animation compact (on)",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": "#settings-section-activity-animation",
+  "state": "settings:birdQuickTrail"
 },
 {
-"label": "Activity animation Motion off",
-"target": "default",
-"route": "/settings?tab=general&section=activity-animation",
-"highlight": "#setting-activityAnimationEnabled",
-"state": "settings:motionOff"
+  "label": "Settings activity animation motion off",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": "#setting-activityAnimationEnabled",
+  "state": "settings:motionOff"
 }
 ]
 ```
@@ -144,3 +146,19 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T05:46:05Z · queued message undelivered for 62m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T05:46:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Re-running the scoped check after a flaky unrelated test failure. · stderr: RetriableError: Connection failed repeatedly Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-10T05:46:24Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T06:16:18Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-10T06:26:15Z · needs_input
+- 2026-11-10T06:26:16Z · message_delivered: 1 message(s)
+- 2026-11-10T06:26:19Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 40m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-10T06:27:10Z · message_queued at 2026-11-10T06:27:10.827Z
+- 2026-11-10T06:27:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T06:30:59Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T06:33:17Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-10T06:33:21Z · needs_input
+- 2026-11-10T06:33:21Z · message_delivered: 1 message(s)
+- 2026-11-10T06:33:22Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 47m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-10T06:49:28Z · body
+- 2026-11-10T06:49:40Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-10T07:02:01Z · body
+- 2026-11-10T07:04:52Z · body
+- 2026-11-10T07:05:06Z · body
