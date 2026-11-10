@@ -2,7 +2,7 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
