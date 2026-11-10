@@ -114,3 +114,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T02:03:51Z · body
 - 2026-11-10T02:04:54Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:41675/api/config (http://127.0.0.1:41675/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:41675/api/config)
 - 2026-11-10T02:04:55Z · message_queued at 2026-11-10T02:04:55.465Z
+- 2026-11-10T02:04:55Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:41675/api/config (http://127.0.0.1:41675/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:41675/api/config)
