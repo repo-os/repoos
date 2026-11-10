@@ -214,3 +214,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T10:04:07Z · released
 - 2026-11-10T10:22:57Z · body
 - 2026-11-10T10:34:22Z · message_queued at 2026-11-10T10:34:22.755Z
+- 2026-11-10T10:34:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
