@@ -11,7 +11,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T19:01:15Z"
+updated_at: "2026-11-10T19:04:35Z"
 review_rounds: 1
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
@@ -93,3 +93,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T18:59:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: no assistant message · stderr: (empty)
 - 2026-11-10T18:59:54Z · note: handoff requested (cli)
 - 2026-11-10T19:01:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T19:04:35Z · message_delivered: 1 message(s)
