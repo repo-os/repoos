@@ -33,6 +33,7 @@ export function formatChecksCardLine(opts: {
   handoffStep?: string | null;
   checkOutput?: string | null;
   slow?: boolean;
+  stale?: boolean;
   slotAgeMs?: number | null;
 }): string {
   const parts = ["Checks"];
@@ -65,6 +66,7 @@ export function formatChecksCardLine(opts: {
     elapsed = formatDuration(opts.slotAgeMs);
   }
   if (elapsed) parts.push(elapsed);
-  if (opts.slow) parts.push("slow");
+  if (opts.stale) parts.push("stale");
+  else if (opts.slow) parts.push("slow");
   return parts.join(" · ");
 }

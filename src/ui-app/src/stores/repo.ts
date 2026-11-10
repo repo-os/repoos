@@ -922,6 +922,7 @@ export const useRepoStore = defineStore("repo", () => {
         updatedAt: string | null;
         startedAt?: string | null;
         attempt: number;
+        stale?: boolean;
         /** `reason` is the plain-English wait while a running check holds the worktree (#1082). */
         progress: (TaskCheckRun & { reason?: string | null }) | null;
         machine: string | null;
@@ -939,6 +940,7 @@ export const useRepoStore = defineStore("repo", () => {
         updatedAt: string | null;
         startedAt?: string | null;
         attempt: number;
+        stale?: boolean;
         progress?: TaskCheckRun | null;
         machine?: string | null;
       }>(`/api/tasks/${id}/handoff-status`);
@@ -948,7 +950,7 @@ export const useRepoStore = defineStore("repo", () => {
       };
       if (status.state === "running" && status.step)
         handoffSteps.value = { ...handoffSteps.value, [id]: status.step };
-      else if (["passed", "failed", "deferred"].includes(status.state)) {
+      else if (["passed", "failed", "deferred", "superseded"].includes(status.state)) {
         const steps = { ...handoffSteps.value };
         delete steps[id];
         handoffSteps.value = steps;
@@ -1503,8 +1505,9 @@ export const useRepoStore = defineStore("repo", () => {
    * `status: review`. This is the "running checks…" state the task card shows.
    */
   function handoffInFlight(id: string): boolean {
-    if (handoffStatuses.value[id]?.state === "running") return true;
-    if (["passed", "failed", "deferred"].includes(handoffStatuses.value[id]?.state ?? ""))
+    const handoff = handoffStatuses.value[id];
+    if (handoff?.state === "running") return true;
+    if (handoff && ["passed", "failed", "deferred", "superseded"].includes(handoff.state))
       return false;
     const step = handoffSteps.value[id];
     if (step) return step !== "done" && step !== "failed";

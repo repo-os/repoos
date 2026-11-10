@@ -81,6 +81,7 @@ import {
   playwrightLockRoot,
 } from "../core/cross-process-slots.js";
 import { HANDOFF_DEADLINE_MS, scheduleHandoffSignalRetry } from "./handoff.js";
+import { readHandoffStatus, reconcileHandoffStatus } from "./handoff-status.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import {
   DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
@@ -569,6 +570,7 @@ export class TaskWatchdog {
       // REVIEWER session died silently sits in `review` forever with no report
       // and no one to nudge it — the same failure mode as a dead engineer, just
       // on the review side where the watchdog never looked before.
+      this.reconcileOrphanedHandoffStatuses(stalenessNow);
       for (const status of ["active", "review"] as const) {
         for (const task of this.index.getTasks(status)) {
           // #0960: a held task is inert for all automation, including the
@@ -614,6 +616,23 @@ export class TaskWatchdog {
         console.error(
           `[repoos] watchdog: queued-message recovery failed for #${task.id}: ${(error as Error).message}`,
         );
+      }
+    }
+  }
+
+  /** Clear handoff-status records that outlived their finalization (#1085). */
+  private reconcileOrphanedHandoffStatuses(now: number): void {
+    for (const status of ["active", "review"] as const) {
+      for (const task of this.index.getTasks(status)) {
+        if (readHandoffStatus(this.config, task.id).state !== "running") continue;
+        reconcileHandoffStatus(this.config, task.id, {
+          taskStatus: task.status,
+          handoffLive:
+            this.runner.isHandoffInFlight(task.id) || this.runner.hasPendingHandoff(task.id),
+          latestReviewAt: this.reviews?.read(task.id)?.at ?? null,
+          nowMs: now,
+          staleAfterMs: HANDOFF_DEADLINE_MS,
+        });
       }
     }
   }

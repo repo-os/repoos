@@ -39,6 +39,16 @@ describe("formatChecksCardLine (#1054)", () => {
     expect(line).toBe("Checks · starting… · 5s");
   });
 
+  it("appends stale when the handoff record outlived its deadline (#1085)", () => {
+    const line = formatChecksCardLine({
+      nowMs: NOW,
+      startedAt: new Date(NOW - 45 * 60_000).toISOString(),
+      handoffStep: "validate",
+      stale: true,
+    });
+    expect(line).toBe("Checks · checking validate · 45m 00s · stale");
+  });
+
   it("uses tests-only copy without step —", () => {
     const line = formatChecksCardLine({
       nowMs: NOW,
