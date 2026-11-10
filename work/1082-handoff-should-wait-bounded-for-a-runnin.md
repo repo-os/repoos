@@ -2,7 +2,7 @@
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T08:56:07Z"
+updated_at: "2026-11-10T08:56:10Z"
 last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 review_passes: 2
@@ -126,3 +126,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T08:48:44Z · body
 - 2026-11-10T08:54:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T08:56:07Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-10T08:56:10Z · status active→review
