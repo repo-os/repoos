@@ -14,7 +14,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T23:24:11Z"
+updated_at: "2026-11-10T23:24:14Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -145,3 +145,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T23:04:43Z · note: review pass 3: needs some work
 - 2026-11-10T23:04:44Z · needs_input
 - 2026-11-10T23:24:11Z · status review→active
+- 2026-11-10T23:24:14Z · CTO nudge: held — an undelivered message is already queued
