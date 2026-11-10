@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T08:24:44Z"
+updated_at: "2026-11-10T08:26:43Z"
 review_rounds: 2
 review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'."
@@ -107,3 +107,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T08:24:41Z · message_queued at 2026-11-10T08:24:41.323Z
 - 2026-11-10T08:24:41Z · status review→active
 - 2026-11-10T08:24:44Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T08:26:43Z · message_queued at 2026-11-10T08:26:43.674Z
