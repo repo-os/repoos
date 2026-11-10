@@ -2,13 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: ready
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: the agent process exited with an error — open the task to see the full output
-debug_tldr: ● Auto selected GPT-6 Luna since the task has medium complexity.
-debug_tldr_at: "2026-11-10T00:52:22Z"
-debug_tldr_key: dev-error|the agent process exited with an error — open the task to see the full output
+status: active
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -17,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T01:11:48Z"
+updated_at: "2026-11-10T01:12:17Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -68,3 +62,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T00:39:49Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T00:40:57Z · message_delivered: 2 message(s)
 - 2026-11-10T00:50:06Z · agent exited with an error (claude) · the agent process exited with an error — open the task to see the full output
+- 2026-11-10T01:12:17Z · status ready→active, needs_input
