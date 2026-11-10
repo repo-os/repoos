@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -294,3 +295,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T19:12:22Z · status review→active, needs_input
 - 2026-11-10T19:12:22Z · note: close-out repair: merge-conflict
 - 2026-11-10T19:12:22Z · message_delivered: 1 message(s)
+
