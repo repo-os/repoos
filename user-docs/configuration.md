@@ -1538,6 +1538,42 @@ Deployments nav item and API on. A row missing `name` or `branch` is dropped.
 | `deployments.dashboard_url` | string | unset | yes | Optional provider-dashboard URL. Note the snake_case spelling. |
 | `deployments.subdir` | string | unset | yes | Repo subdirectory this service lives in, scoping the freshness lookup so an unrelated push doesn't read as a deploy. |
 
+### Release emails
+
+```toml
+[release.email]
+enabled = true
+to = ["hello@example.com", "team@example.com"]
+when = "published"
+includePrereleases = false
+```
+
+When a stable release goes out, RepoOS can email your team the version, the
+release notes, the known issues you typed in the release modal, and links. It
+sends through `[auth.emailProvider]`, so the project needs email set up first
+(see [Authentication](#authentication)). Credentials stay in `.env` as
+described there; nothing about the provider goes in this block.
+
+Each recipient gets their own message, with the subject `<project> v<x> is out`
+and a plain-text alternative. Prereleases (`-beta`, `-canary`, `-rc`) are not
+emailed unless `includePrereleases` is on. Nothing is sent when no provider is
+configured: the Releases page says so and links to the email setup.
+
+| Field | Type | Default | Committed | Effect |
+| --- | --- | --- | --- | --- |
+| `release.email.enabled` | boolean | `false` | yes | Turns release emails on. Needs `[release] enabled = true` as well. |
+| `release.email.to` | array of strings | `[]` | yes | Recipient addresses. Invalid addresses are dropped with a warning. |
+| `release.email.when` | select | `published` | yes | `published` waits until GitHub serves the release with its assets, so the email never links to a download that is not there yet. Needs `release.repository` set; without it, the email goes out at the tag. `tagged` sends as soon as the tag is pushed. |
+| `release.email.includePrereleases` | boolean | `false` | yes | Also email beta, canary and rc releases. |
+
+Known issues are typed into the **Known issues** field of the release modal;
+RepoOS never writes them for you. An empty field renders "None recorded". The
+Releases page shows whether the email was sent, is waiting for GitHub, or
+failed, with a **Preview** that renders the message without sending it and a
+**Resend** that only mails recipients who have not received this release yet.
+Sends are recorded per version in the gitignored cache directory, so a restart
+or a retried cut never mails the team twice.
+
 ### Distribution destinations
 
 ```toml

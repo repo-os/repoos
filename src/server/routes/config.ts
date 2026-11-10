@@ -21,6 +21,7 @@ import {
 import { effectiveAreaVocabulary } from "../../core/areas.js";
 import { effectiveAreaNames, unresolvedAreaReport } from "../../core/areas.js";
 import { normalizeStringList } from "../../core/config.js";
+import { isValidEmail } from "../../core/auth.js";
 import {
   DEV_TARGET_PASSTHROUGH_FIELDS,
   devTargetServiceErrors,
@@ -866,6 +867,29 @@ export const patchConfig: RouteHandler = async (ctx, req, res) => {
         const unchanged =
           onDisk.length === normalized.length && onDisk.every((id, i) => id === normalized[i]);
         if (!unchanged) patch[field.key] = normalized;
+        continue;
+      }
+      if (field.key === "release.email.to") {
+        // Recipients may be empty: that is the normal "nobody gets it" state,
+        // and every Settings save carries the list back, so an empty list must
+        // never reject the save (#1071). Each address is checked here, not
+        // silently dropped, so a typo is reported where it was typed.
+        if (!Array.isArray(val)) {
+          return json(res, 400, { error: `${field.label} must be an array of addresses` });
+        }
+        const addresses: string[] = [];
+        for (const item of val) {
+          const address = typeof item === "string" ? item.trim() : "";
+          if (!address) continue;
+          if (!isValidEmail(address)) {
+            return json(res, 400, { error: `${address} is not an email address` });
+          }
+          if (!addresses.includes(address)) addresses.push(address);
+        }
+        const onDisk = loadConfig(config.root).release?.email?.to ?? [];
+        const unchanged =
+          onDisk.length === addresses.length && onDisk.every((a, i) => a === addresses[i]);
+        if (!unchanged) patch[field.key] = addresses;
         continue;
       }
       if (!Array.isArray(val) || !val.length) {

@@ -1046,6 +1046,25 @@ export interface ReleaseConfig {
   repository?: string;
   /** Optional workflow path, shown as release context (not executed by RepoOS). */
   workflow?: string;
+  /** Mail the team when a release goes out (#1071). Off unless enabled. */
+  email?: ReleaseEmailConfig;
+}
+
+/**
+ * `[release.email]` — one email per recipient per stable release, sent through
+ * the project's `[auth.emailProvider]`. Credentials never live here.
+ */
+export interface ReleaseEmailConfig {
+  enabled?: boolean;
+  /** Recipient addresses. Invalid entries are dropped with a warning at load. */
+  to?: string[];
+  /**
+   * `published` (default): send once GitHub serves the release with its assets.
+   * `tagged`: send as soon as the tag is pushed.
+   */
+  when?: "published" | "tagged";
+  /** Also email prerelease tags (beta, canary, rc). Off by default. */
+  includePrereleases?: boolean;
 }
 
 /**

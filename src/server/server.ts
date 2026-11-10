@@ -276,10 +276,13 @@ import {
   getAvailableRelease,
   getRelease,
   getReleaseDistribution,
+  getReleaseEmail,
+  getReleaseEmailPreview,
   getReleaseNotesRun,
   getReleaseRun,
   getUnpushedReleaseNotes,
   runRelease,
+  sendReleaseEmailNow,
 } from "./routes/release.js";
 import { getDeployments, postDeploy } from "./routes/deployments.js";
 import {
@@ -3549,6 +3552,9 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   router.register("POST", "/api/release/notes", generateReleaseNotes);
   router.register("GET", "/api/release/notes/run", getReleaseNotesRun);
   router.register("GET", "/api/release/notes/unpushed", getUnpushedReleaseNotes);
+  router.register("GET", "/api/release/email", getReleaseEmail);
+  router.register("GET", "/api/release/email/preview", getReleaseEmailPreview);
+  router.register("POST", "/api/release/email/send", sendReleaseEmailNow);
   router.register("GET", "/api/deployments", getDeployments);
   router.register("POST", "/api/deployments/deploy", postDeploy);
   // Dev targets (#0747): list/start/stop/restart a user-declared target. The

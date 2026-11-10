@@ -55,6 +55,7 @@ export const GENERAL_SECTIONS: readonly SettingsSection[] = [
   { id: "attachments", label: "Attachments" },
   { id: "service", label: "Background service" },
   { id: "publishing", label: "Publishing" },
+  { id: "release-emails", label: "Release emails" },
   { id: "remote-validation", label: "Remote validation" },
   { id: "board", label: "Board" },
 ];
@@ -71,6 +72,7 @@ export const GENERAL_FIELD_SECTIONS: readonly string[] = [
   "close-out",
   "automation",
   "screenshots",
+  "release-emails",
 ];
 
 const GENERAL_SECTION_BY_ID = new Map(GENERAL_SECTIONS.map((s) => [s.id, s]));
@@ -104,6 +106,7 @@ export function generalSectionForKey(key: string): string {
   }
   if (key === "remoteValidation.healthCheck") return "remote-validation";
   if (key === "storage.provider") return "attachments";
+  if (key.startsWith("release.email.")) return "release-emails";
   if (
     key === "git.tuneForScale" ||
     key === "heavySlots" ||

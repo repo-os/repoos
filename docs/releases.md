@@ -434,13 +434,52 @@ yet.
 | `GET /api/release`       | `ReleaseStatus` — version, tags, blockers, links |
 | `GET /api/release/distribution` | `DistributionSummary` — each configured channel's published version/state for the release being viewed. Separate from `/api/release` so a slow registry can't delay or fail the page. |
 | `GET /api/release/run`   | `ReleaseRun` — `state` / `phase` / `message` / timestamps for the current or most recent run (in-memory, resets on restart) |
-| `POST /api/release`      | `{ version, confirmTag, notes? }` → starts a run; `409` if one is already running |
+| `POST /api/release`      | `{ version, confirmTag, notes?, knownIssues? }` → starts a run; `409` if one is already running. `knownIssues` is stored on the release record for the release email (#1071) |
+| `GET /api/release/email` | `{ enabled, to, when, includePrereleases, providerConfigured, repository, version, record }` — the `[release.email]` options and the email record for `?version=` (default: newest). Local files only, no network |
+| `GET /api/release/email/preview` | `?version=` → `{ subject, html, text, recipients }`, rendered from the release record. Never sends |
+| `POST /api/release/email/send` | `{ version }` → Resend button. Sends only to configured recipients not yet in `sentTo`; `409` when emails are off, no provider is set, or a send is already running |
 | `POST /api/release/notes` | `{ version? }` → starts the AI draft detached (#0605) and returns `202` with `{ run }`; synchronous short-circuits stay instant: `200` + `{ notes, sinceTag, commitCount, truncated, cached, cachedAt }` when there's nothing to summarize or a cached draft hits for this commit context, `400` when no agent is enabled. A second POST while the run is in flight returns the same run with `202` instead of starting a duplicate agent; never cuts a release |
 | `GET /api/release/notes/run` | `ReleaseNotesRun` — the draft run's `state` (`idle`/`running`/`succeeded`/`failed`), `startedAt`, `error`, commit-context `key`, and the `notes` draft when succeeded (in-memory, resets on restart) |
 | `GET /api/release/notes/unpushed` | The newest cached draft whose generation HEAD is not reachable from the latest release tag, or `null`: `{ notes, createdAt, head, headShort, sinceTag, commitsBehind, commits, currentHead, currentHeadShort }` (#0641) |
 
 `confirmTag` must exactly equal `tagPrefix + version` — a guard against a
 malformed request cutting the wrong tag.
+
+## Release emails (#1071)
+
+After a stable cut pushes its tag, `[release.email]` can email the team the
+version, notes, known issues and links. The code is `src/server/release-email.ts`
+(render, publish detection, record) and `src/server/email.ts` (the one sender,
+shared with login codes and invites).
+
+- **Published, not tagged, by default.** With `[release].repository` set, RepoOS
+  polls the public `GET https://api.github.com/repos/<owner>/<repo>/releases/tags/<tag>`
+  (plain `fetch`, no token) until the release is not a draft and has assets. The
+  first probe is immediate; later probes back off to three minutes and stop after
+  an hour, recording a failure to resend. No repository, or GitHub unreachable on
+  the first look, falls back to sending at the tag, and the record says so.
+- **Not a git hook.** A hook would fire before CI has built anything and link to a
+  download that does not exist yet.
+- **Detached.** `cutNewRelease` calls `startCutReleaseEmail` after the tag push and
+  does not await it. The release outcome never depends on the email.
+- **Record.** `.repoos/release-emails.json` (gitignored, under `cacheDir`) keys one
+  record per version: `status` (`pending` / `sent` / `failed` / `skipped`), `sentTo`,
+  `reason`, `when`, `at`. A `sent` record makes the automatic path a no-op. A
+  malformed file throws rather than reading as empty, so a bad read can't cause a
+  second send.
+- **Resend** only targets configured recipients missing from `sentTo`, so a
+  partial failure can be retried without mailing anyone twice.
+- **Known issues** live on the committed release entry (`knownIssues` in
+  `release-history.json`), typed in the release modal. They are never generated.
+  An empty field renders "None recorded".
+- **Prereleases** (`X.Y.Z-suffix`) are skipped unless `includePrereleases`; the
+  explicit Resend button ignores that toggle, since a person asked.
+- **Tests** use a fake `fetch` and injected sleep/clock: `src/ui-app/tests/release-email.test.ts`.
+  Nothing in the suite sends mail or reaches the network.
+
+Known gaps, filed rather than built here: a process restart during the wait
+leaves the record `pending` (resend from the page); there is no bell notice for a
+failed send yet; and the email has no per-recipient unsubscribe.
 
 ## CI: `release.yml`
 

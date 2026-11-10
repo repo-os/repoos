@@ -1,4 +1,5 @@
 import { DEFAULT_ALWAYS_RUN } from "./check-plan.js";
+import { isValidEmail } from "./auth.js";
 /**
  * Config resolution. Zero-config by default; `repoos.toml` at the repo root
  * can override any field. We parse only the flat subset of TOML we need, again
@@ -41,6 +42,7 @@ import type {
   ReviewVerificationConfig,
   ReviewConfig,
   RepoOSConfig,
+  ReleaseEmailConfig,
   Status,
   Assignee,
   StoriesConfig,
@@ -878,6 +880,44 @@ const DISTRIBUTION_KINDS: readonly DistributionKind[] = [
 ];
 
 /**
+ * Parse `[release.email]` (#1071). Parsed on its own so it reads the same
+ * whether or not `[release]` also sets provider keys. Undefined when the block
+ * is absent. Invalid addresses are dropped with a warning, like `[[distribution]]`
+ * rows; an unknown `when` falls back to "published" rather than sending early.
+ */
+export function parseReleaseEmailConfig(
+  parsed: Record<string, unknown>,
+): ReleaseEmailConfig | undefined {
+  const keys = ["enabled", "to", "when", "includePrereleases"] as const;
+  if (keys.every((key) => parsed[`release.email.${key}`] === undefined)) return undefined;
+  const email: ReleaseEmailConfig = {};
+  const enabled = parsed["release.email.enabled"];
+  if (typeof enabled === "boolean") email.enabled = enabled;
+  const rawTo = parsed["release.email.to"];
+  const items = Array.isArray(rawTo) ? rawTo : typeof rawTo === "string" ? rawTo.split(",") : [];
+  const to: string[] = [];
+  for (const item of items) {
+    const address = typeof item === "string" ? item.trim() : "";
+    if (!address) continue;
+    if (!isValidEmail(address)) {
+      console.warn(`[release.email] ignoring "${address}": not an email address`);
+      continue;
+    }
+    if (!to.includes(address)) to.push(address);
+  }
+  email.to = to;
+  const when = parsed["release.email.when"];
+  if (when === "published" || when === "tagged") email.when = when;
+  else if (when !== undefined) {
+    console.warn(`[release.email] when must be "published" or "tagged"; using "published"`);
+    email.when = "published";
+  }
+  const includePrereleases = parsed["release.email.includePrereleases"];
+  if (typeof includePrereleases === "boolean") email.includePrereleases = includePrereleases;
+  return email;
+}
+
+/**
  * Parse the `[[distribution]]` array of tables (#0445) — one row per place
  * users install this project's releases. Invalid rows are dropped with a
  * warning rather than poisoning the section: a missing name, a non-http(s)
@@ -1492,6 +1532,10 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         if (typeof value === "string") cfg.release[key] = value as never;
       }
     }
+    // [release.email] (#1071): the release-email options. Only read when the
+    // Releases surface is enabled, like the rest of [release].
+    const releaseEmail = parseReleaseEmailConfig(parsed);
+    if (releaseEmail && cfg.release) cfg.release = { ...cfg.release, email: releaseEmail };
     // Optional deployments surface (#0340). A [[deployments]] array of tables —
     // one per (service, branch) — is what turns the Deployments nav item and
     // API on; no block at all means the feature is entirely dormant for this
@@ -2643,6 +2687,48 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "The task-area vocabulary the drawer's area picker offers — comma-separated, order " +
         "matters. Empty means free text only; preview-target areas are offered automatically " +
         "without being declared here.",
+    },
+    {
+      key: "release.email.enabled",
+      label: "Release emails",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "Email the team when a release goes out, with the release notes and known issues. Needs [release] enabled and an email provider ([auth.emailProvider]).",
+    },
+    {
+      key: "release.email.to",
+      label: "Release email recipients",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description: "Addresses that receive each release email, one message per address.",
+    },
+    {
+      key: "release.email.when",
+      label: "Send release email",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "published",
+      options: [
+        { value: "published", label: "When the release is published" },
+        { value: "tagged", label: "When the release is tagged" },
+      ],
+      description:
+        "Published waits until GitHub serves the release with its assets, so the email never links to a download that is not there yet. Tagged sends as soon as the tag is pushed.",
+    },
+    {
+      key: "release.email.includePrereleases",
+      label: "Email prereleases",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description: "Also email beta, canary and rc releases. Off by default.",
     },
     {
       key: "stories.enabled",
@@ -4512,6 +4598,10 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "release.remote",
   "release.repository",
   "release.workflow",
+  "release.email.enabled",
+  "release.email.to",
+  "release.email.when",
+  "release.email.includePrereleases",
   // Deployments
   "deployments.name",
   "deployments.service",

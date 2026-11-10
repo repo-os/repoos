@@ -1,15 +1,26 @@
+import type { IncomingMessage } from "node:http";
 import type { RouteContext, RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { notifyAttentionReleaseNotesTerminal } from "../attention-notify.js";
 import {
   collectReleaseCommits,
   cutNewRelease,
+  expectsOwnCliRepo,
   findUnpushedReleaseNotes,
   getReleaseStatus,
   releaseNotesPrompt,
   type ReleasePhase,
   type ReleaseStatus,
 } from "../release.js";
+import { emailProviderConfigured } from "../email.js";
+import {
+  githubRepository,
+  getReleaseEmailRecord,
+  previewReleaseEmail,
+  resendReleaseEmail,
+  type ReleaseEmailContext,
+} from "../release-email.js";
+import { readReleaseHistory } from "../release-history.js";
 import {
   getDistributionStatus,
   stripVersionPrefix,
@@ -376,12 +387,15 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
     version?: unknown;
     confirmTag?: unknown;
     notes?: unknown;
+    knownIssues?: unknown;
   };
   if (typeof body.version !== "string" || typeof body.confirmTag !== "string")
     return json(res, 400, { error: "version and confirmTag are required" });
   if (run.state === "running")
     return json(res, 409, { error: "A release is already running", run });
   const notes = typeof body.notes === "string" && body.notes.trim() ? body.notes : undefined;
+  const knownIssues =
+    typeof body.knownIssues === "string" && body.knownIssues.trim() ? body.knownIssues : undefined;
   run = {
     state: "running",
     phase: "preparing",
@@ -397,6 +411,7 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
     (phase, message) => updateRun(phase, message),
     ctx.remoteValidator,
     notes,
+    knownIssues,
   )
     // Keep the phase that was in flight when it failed, so the UI can say
     // "failed during checking" rather than a bare "failed".
@@ -416,6 +431,81 @@ export const runRelease: RouteHandler = async (ctx, req, res) => {
       ),
     );
   return json(res, 202, { ok: true, run });
+};
+
+// ---------------------------------------------------------------------------
+// Release emails (#1071)
+// ---------------------------------------------------------------------------
+
+function releaseEmailContext(config: RepoOSConfig): ReleaseEmailContext {
+  return { upgradeCommand: expectsOwnCliRepo(config.root) ? "repoos upgrade" : undefined };
+}
+
+/** `?version=`, else the newest recorded release (the one a cut just made). */
+function releaseEmailVersion(config: RepoOSConfig, req: IncomingMessage): string | null {
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const requested = url.searchParams.get("version")?.trim();
+  return requested || readReleaseHistory(config.root).releases[0]?.version || null;
+}
+
+/**
+ * The email state the Releases page shows for one release, plus the options
+ * the Settings page edits. Reads only local files: no network, no send.
+ */
+export const getReleaseEmail: RouteHandler = (ctx, req, res) => {
+  const { config } = ctx;
+  const email = config.release?.email ?? {};
+  try {
+    const version = releaseEmailVersion(config, req);
+    return json(res, 200, {
+      enabled: email.enabled === true,
+      to: email.to ?? [],
+      when: email.when ?? "published",
+      includePrereleases: email.includePrereleases === true,
+      providerConfigured: emailProviderConfigured(config),
+      repository: githubRepository(config),
+      version,
+      record: version ? getReleaseEmailRecord(config, version) : null,
+    });
+  } catch (err) {
+    return json(res, 500, { error: err instanceof Error ? err.message : String(err) });
+  }
+};
+
+/** The rendered subject and bodies for a release, with no send (the Preview button). */
+export const getReleaseEmailPreview: RouteHandler = (ctx, req, res) => {
+  const version = releaseEmailVersion(ctx.config, req);
+  if (!version) return json(res, 404, { error: "There is no release to preview yet." });
+  try {
+    return json(
+      res,
+      200,
+      previewReleaseEmail(ctx.config, version, releaseEmailContext(ctx.config)),
+    );
+  } catch (err) {
+    return json(res, 404, { error: err instanceof Error ? err.message : String(err) });
+  }
+};
+
+/**
+ * The explicit Resend button. Sends only to configured recipients who have not
+ * received this release yet, so a retry never mails someone twice.
+ */
+export const sendReleaseEmailNow: RouteHandler = async (ctx, req, res) => {
+  const body = (await readBody(req)) as { version?: unknown };
+  if (typeof body.version !== "string" || !body.version.trim()) {
+    return json(res, 400, { error: "version is required" });
+  }
+  try {
+    const record = await resendReleaseEmail(
+      ctx.config,
+      body.version.trim(),
+      releaseEmailContext(ctx.config),
+    );
+    return json(res, 200, { ok: record.status === "sent", record });
+  } catch (err) {
+    return json(res, 409, { error: err instanceof Error ? err.message : String(err) });
+  }
 };
 
 /**
