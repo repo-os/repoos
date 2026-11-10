@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/require-a-step-by-step-guide-on-every-hu
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-10T17:26:31Z"
+updated_at: "2026-11-10T23:04:19Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -54,3 +54,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-10T11:04:26Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T13:31:44Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T17:26:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T23:04:19Z · message_overdue: still queued after 60m without being delivered
