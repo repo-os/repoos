@@ -2,7 +2,7 @@
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
-status: active
+status: review
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T05:28:37Z"
+updated_at: "2026-11-10T05:28:38Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -82,3 +82,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T05:28:07Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-10T05:28:21Z · queued message undelivered for 64m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T05:28:37Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: The round-2 check failed to start. It timed out after 45 minutes waiting for the local check slot, which another task's check (`first-load-skeletons`, pid 72341) is holding. The code has not been tested yet. I've queued a fresh run behind … · stderr: Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T05:28:38Z · status active→review
