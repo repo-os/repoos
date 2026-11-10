@@ -359,9 +359,7 @@ describe("stale running handoff reconciliation (#1085)", () => {
     emitHandoffSupersededIfNeeded(before, after, "1085", (e) =>
       events.push({ type: e.type, step: e.type === "task.progress" ? e.step : undefined }),
     );
-    expect(events).toEqual([
-      expect.objectContaining({ step: "handoff:superseded" }),
-    ]);
+    expect(events).toEqual([expect.objectContaining({ step: "handoff:superseded" })]);
   });
 });
 

@@ -10,7 +10,10 @@ import { FakeEventSource, json } from "./component-test-helpers";
 beforeEach(() => {
   setActivePinia(createPinia());
   vi.stubGlobal("EventSource", FakeEventSource);
-  vi.stubGlobal("fetch", vi.fn(async () => json({ ok: true })));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => json({ ok: true })),
+  );
 });
 
 afterEach(() => {
