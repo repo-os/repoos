@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-10T02:16:03Z"
+review_passes: 2
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
@@ -11,11 +13,9 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T02:16:02Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: build — src/commands/upgrade.ts(237,14): error TS2304: Cannot find name 'readVersion'."
 last_handoff_failure_sha: e83b162a0832adf0bf5d8728211f3d1be87d6d50
 review_rounds: 1
-review_passes: 1
 last_check_failure: "repoos check at 2026-11-09T16:54:34.079Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — the page at / did not apply the fixture (is this the app target?) (http://127.0.0.1:53313/?shotState=release%3AupdateAvailable)"
 handoff_signal_retry_count: 2
 dev_error_count: 12
@@ -236,3 +236,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T02:09:09Z · body
 - 2026-11-10T02:12:49Z · status active→review
 - 2026-11-10T02:16:02Z · note: review pass 2: good to go
+
