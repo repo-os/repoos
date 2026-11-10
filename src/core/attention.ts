@@ -40,7 +40,8 @@ export type AttentionKind =
   | "ctoAction"
   | "gitLock"
   | "ctoSilent"
-  | "engineerRecoveryFailed";
+  | "engineerRecoveryFailed"
+  | "releaseEmailFailed";
 
 export interface AttentionItem {
   /** Stable per event — dedupe key for clients and dismiss markers. */
@@ -70,7 +71,8 @@ export interface RecordedAttentionEvent {
     | "remoteFallback"
     | "ctoAction"
     | "gitLock"
-    | "engineerRecoveryFailed";
+    | "engineerRecoveryFailed"
+    | "releaseEmailFailed";
   taskId: string | null;
   message: string;
   detail: string;
@@ -154,6 +156,7 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   gitLock: "warning",
   ctoSilent: "warning",
   engineerRecoveryFailed: "error",
+  releaseEmailFailed: "warning",
 };
 
 /** Attention kinds that imply the CTO (or a driver) should be acting (#0728). */
@@ -388,7 +391,11 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
       taskId: ev.taskId,
       message: ev.message,
       detail: ev.detail,
-      link: ev.taskId ? `/work?task=${ev.taskId}` : null,
+      link: ev.taskId
+        ? `/work?task=${ev.taskId}`
+        : ev.kind === "releaseEmailFailed"
+          ? "/releases"
+          : null,
       at: ev.at,
     });
   }

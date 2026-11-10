@@ -456,8 +456,11 @@ shared with login codes and invites).
   polls the public `GET https://api.github.com/repos/<owner>/<repo>/releases/tags/<tag>`
   (plain `fetch`, no token) until the release is not a draft and has assets. The
   first probe is immediate; later probes back off to three minutes and stop after
-  an hour, recording a failure to resend. No repository, or GitHub unreachable on
-  the first look, falls back to sending at the tag, and the record says so.
+  an hour, recording a failure to resend. No repository, or no answer from GitHub
+  on the first look, falls back to sending at the tag, and the record says so. An
+  HTTP error (a rate limit, say) keeps waiting, so it never triggers the fallback.
+  A private repository returns 404 to the public API, so its email waits the hour
+  and then fails: set `[release.email] when = "tagged"` for those.
 - **Not a git hook.** A hook would fire before CI has built anything and link to a
   download that does not exist yet.
 - **Detached.** `cutNewRelease` calls `startCutReleaseEmail` after the tag push and
@@ -466,7 +469,11 @@ shared with login codes and invites).
   record per version: `status` (`pending` / `sent` / `failed` / `skipped`), `sentTo`,
   `reason`, `when`, `at`. A `sent` record makes the automatic path a no-op. A
   malformed file throws rather than reading as empty, so a bad read can't cause a
-  second send.
+  second send. A `pending` record with no waiter in this process (the server
+  restarted during the wait) reads as `failed` with a restart reason, so Resend is
+  offered; the file itself is not rewritten.
+- **Bell.** A `failed` send, or a `skipped` one with no provider, raises a
+  `releaseEmailFailed` notice linking to the Releases page. A later `sent` clears it.
 - **Resend** only targets configured recipients missing from `sentTo`, so a
   partial failure can be retried without mailing anyone twice.
 - **Known issues** live on the committed release entry (`knownIssues` in
@@ -477,9 +484,11 @@ shared with login codes and invites).
 - **Tests** use a fake `fetch` and injected sleep/clock: `src/ui-app/tests/release-email.test.ts`.
   Nothing in the suite sends mail or reaches the network.
 
-Known gaps, filed rather than built here: a process restart during the wait
-leaves the record `pending` (resend from the page); there is no bell notice for a
-failed send yet; and the email has no per-recipient unsubscribe.
+Known gaps, filed rather than built here: no "send test email" action (Preview
+renders without sending); no `repoos release email` CLI subcommand (the routes are
+HTTP only); the send route accepts a version before GitHub has published it (only
+the UI hides the button); the wait does not resume after a restart (Resend sends
+at once instead); and the email has no per-recipient unsubscribe.
 
 ## CI: `release.yml`
 

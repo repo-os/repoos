@@ -23,6 +23,10 @@ import type { RepoOSConfig, ReleaseEmailConfig } from "../core/types.js";
 import { projectDisplayName } from "../core/config.js";
 import { readReleaseHistory, type ReleaseHistoryEntry } from "./release-history.js";
 import { emailProviderConfigured, sendEmail } from "./email.js";
+import {
+  notifyAttentionReleaseEmail,
+  notifyAttentionReleaseEmailCleared,
+} from "./attention-notify.js";
 
 export const RELEASE_EMAIL_LOG_FILE = "release-emails.json";
 
@@ -259,7 +263,10 @@ export type PublishOutcome =
 type Probe =
   | { state: "published" }
   | { state: "not-yet"; reason: string }
-  | { state: "error"; reason: string };
+  /** GitHub answered with an error status (rate limit, outage): keep waiting. */
+  | { state: "http-error"; reason: string }
+  /** The request never got an answer: no network. */
+  | { state: "unreachable"; reason: string };
 
 /**
  * One public, unauthenticated look at the release. A published release is one
@@ -279,7 +286,7 @@ async function probeRelease(
     });
     if (res.status === 404)
       return { state: "not-yet", reason: `GitHub has no release for ${tag} yet` };
-    if (!res.ok) return { state: "error", reason: `GitHub answered ${res.status}` };
+    if (!res.ok) return { state: "http-error", reason: `GitHub answered ${res.status}` };
     const body = (await res.json()) as { draft?: unknown; assets?: unknown };
     if (body.draft !== true && Array.isArray(body.assets) && body.assets.length > 0) {
       return { state: "published" };
@@ -287,7 +294,7 @@ async function probeRelease(
     return { state: "not-yet", reason: `${tag} is on GitHub but its assets are not uploaded yet` };
   } catch (err) {
     return {
-      state: "error",
+      state: "unreachable",
       reason: `Could not reach GitHub: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
@@ -296,8 +303,9 @@ async function probeRelease(
 /**
  * Wait until GitHub publishes `tag`. The first probe is immediate, so a repo
  * with no network falls back at once. Later probes back off to `maxDelayMs`
- * and stop at the timeout. A transient error after the first look is not a
- * reason to stop, since the release may still be building.
+ * and stop at the timeout. An HTTP error (a rate limit, say) is not "no
+ * network", so it never triggers the tag fallback, and no error after the first
+ * look stops the wait, since the release may still be building.
  */
 export async function waitForPublishedRelease(
   repository: string,
@@ -316,7 +324,9 @@ export async function waitForPublishedRelease(
   for (;;) {
     const probe = await probeRelease(repository, tag, fetchImpl);
     if (probe.state === "published") return { state: "published" };
-    if (first && probe.state === "error") return { state: "unavailable", reason: probe.reason };
+    if (first && probe.state === "unreachable") {
+      return { state: "unavailable", reason: probe.reason };
+    }
     first = false;
     lastReason = probe.reason;
     const remaining = deadline - now();
@@ -356,11 +366,24 @@ export function readReleaseEmailLog(config: RepoOSConfig): Record<string, Releas
   return parsed as Record<string, ReleaseEmailRecord>;
 }
 
+/**
+ * The record for `version`. A `pending` record with no waiter in this process
+ * was left behind by a restart during the publish wait. It can never finish, so
+ * it reads as failed and offers Resend. The file is not rewritten here.
+ */
 export function getReleaseEmailRecord(
   config: RepoOSConfig,
   version: string,
 ): ReleaseEmailRecord | null {
-  return readReleaseEmailLog(config)[version] ?? null;
+  const record = readReleaseEmailLog(config)[version] ?? null;
+  if (record?.status === "pending" && !inFlight.has(version)) {
+    return {
+      ...record,
+      status: "failed",
+      reason: `The server restarted before GitHub published ${record.tag}. Resend once it is on GitHub.`,
+    };
+  }
+  return record;
 }
 
 function writeRecord(config: RepoOSConfig, record: ReleaseEmailRecord): ReleaseEmailRecord {
@@ -379,13 +402,30 @@ function recordFor(
   patch: Pick<ReleaseEmailRecord, "status" | "sentTo" | "reason">,
 ): ReleaseEmailRecord {
   const when = config.release?.email?.when ?? "published";
-  return writeRecord(config, {
+  const record = writeRecord(config, {
     version: entry.version,
     tag: entry.tag,
     when,
     at: new Date().toISOString(),
     ...patch,
   });
+  surfaceRecord(config, record);
+  return record;
+}
+
+/**
+ * Put a record on the bell: a failed send, or a skipped one caused by a missing
+ * provider, needs a human. A sent record clears any earlier notice for it.
+ */
+function surfaceRecord(config: RepoOSConfig, record: ReleaseEmailRecord): void {
+  if (record.status === "sent") {
+    notifyAttentionReleaseEmailCleared(record.version);
+  } else if (
+    record.status === "failed" ||
+    (record.status === "skipped" && !emailProviderConfigured(config))
+  ) {
+    notifyAttentionReleaseEmail(record);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -455,10 +495,11 @@ export async function deliverCutReleaseEmail(
   const email = config.release?.email;
   if (!email?.enabled) return null;
   if (inFlight.has(entry.version)) return null;
-  const existing = getReleaseEmailRecord(config, entry.version);
-  if (existing?.status === "sent") return existing;
   inFlight.add(entry.version);
+  let existing: ReleaseEmailRecord | null = null;
   try {
+    existing = getReleaseEmailRecord(config, entry.version);
+    if (existing?.status === "sent") return existing;
     const recipients = email.to ?? [];
     if (recipients.length === 0) {
       return recordFor(config, entry, {
@@ -532,7 +573,13 @@ export function startCutReleaseEmail(
   context: ReleaseEmailContext = {},
   deps: ReleaseEmailDeps = {},
 ): void {
-  void deliverCutReleaseEmail(config, entry, context, deps).catch(() => undefined);
+  void deliverCutReleaseEmail(config, entry, context, deps).catch((err) => {
+    // Only reached when the record itself cannot be read or written (a corrupt
+    // release-emails.json). The release is already out, so log it and raise the bell.
+    const reason = err instanceof Error ? err.message : String(err);
+    console.error(`Release email for ${entry.tag} could not be recorded: ${reason}`);
+    notifyAttentionReleaseEmail({ version: entry.version, tag: entry.tag, reason });
+  });
 }
 
 /**

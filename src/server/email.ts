@@ -21,6 +21,9 @@ export interface EmailMessage {
 
 export type EmailSendResult = { ok: true } | { ok: false; reason: string };
 
+/** Longest wait for one Resend call, body included. */
+const EMAIL_SEND_TIMEOUT_MS = 15_000;
+
 /**
  * The standardized default sender name: "RepoOS at <repo>", where <repo> is
  * the checkout's directory name (same convention as the ntfy test
@@ -63,6 +66,8 @@ export async function sendEmail(
   try {
     const res = await fetchImpl("https://api.resend.com/emails", {
       method: "POST",
+      // A hung provider must not hold a release email, or a login, open forever.
+      signal: AbortSignal.timeout(EMAIL_SEND_TIMEOUT_MS),
       headers: {
         Authorization: `Bearer ${provider.apiKey}`,
         "Content-Type": "application/json",

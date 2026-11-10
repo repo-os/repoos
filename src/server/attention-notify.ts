@@ -43,6 +43,37 @@ export function notifyAttentionEngineerRecoveryFailed(
   bumpAttention?.();
 }
 
+/**
+ * A release email that was not sent (#1071). One item per version: a retry
+ * that succeeds clears it through `notifyAttentionReleaseEmailCleared`.
+ */
+export function notifyAttentionReleaseEmail(record: {
+  version: string;
+  tag: string;
+  reason?: string;
+}): void {
+  if (!attentionEvents) return;
+  attentionEvents.record({
+    id: releaseEmailAttentionId(record.version),
+    kind: "releaseEmailFailed",
+    taskId: null,
+    message: `${record.tag} email not sent`,
+    detail: (record.reason ?? "").slice(0, 240) || "The release email was not sent.",
+    at: new Date().toISOString(),
+  });
+  bumpAttention?.();
+}
+
+export function notifyAttentionReleaseEmailCleared(version: string): void {
+  if (!attentionEvents) return;
+  attentionEvents.remove(releaseEmailAttentionId(version));
+  bumpAttention?.();
+}
+
+function releaseEmailAttentionId(version: string): string {
+  return `releaseEmailFailed:${version}`;
+}
+
 /** One durable bell item per exhausted model pair, even when many tasks fail. */
 export function notifyAttentionProviderUsageLimit(
   cli: string,

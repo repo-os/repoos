@@ -517,8 +517,11 @@ async function loadReleaseEmail(): Promise<void> {
   releaseEmailTimer = null;
   try {
     releaseEmail.value = await api<ReleaseEmailState>("/api/release/email");
-  } catch {
+    releaseEmailError.value = "";
+  } catch (err) {
     // Keep the last state on screen; the card is advisory, not the release.
+    releaseEmailError.value =
+      err instanceof Error ? err.message : "Could not load the release email state.";
   }
   if (releaseEmail.value?.record?.status === "pending") {
     releaseEmailTimer = setTimeout(() => void loadReleaseEmail(), 30_000);

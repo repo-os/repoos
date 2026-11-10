@@ -2,21 +2,34 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { Readable } from "node:stream";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import type { RouteContext } from "../../server/routes/types.js";
+import {
+  getReleaseEmail,
+  getReleaseEmailPreview,
+  sendReleaseEmailNow,
+} from "../../server/routes/release.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { parseReleaseEmailConfig } from "../../core/config.js";
 import {
   deliverCutReleaseEmail,
   escapeHtml,
+  getReleaseEmailRecord,
   isPrereleaseVersion,
   markdownToHtml,
   previewReleaseEmail,
   readReleaseEmailLog,
   renderReleaseEmail,
   resendReleaseEmail,
+  startCutReleaseEmail,
   waitForPublishedRelease,
   type ReleaseEmailDeps,
 } from "../../server/release-email.js";
 import { readReleaseHistory, type ReleaseHistoryEntry } from "../../server/release-history.js";
+import { wireAttentionNotifications } from "../../server/attention-notify.js";
+import type { AttentionEventStore } from "../../server/attention-events.js";
+import type { RecordedAttentionEvent } from "../../core/attention.js";
 
 // Fake values only: no real key, no real address, and no network. Every test
 // passes its own fetch so nothing reaches Resend or GitHub.
@@ -495,6 +508,137 @@ describe("resendReleaseEmail", () => {
   });
 });
 
+describe("restart and failure recovery", () => {
+  it("reads a pending record left by a restart as failed, and Resend recovers it", async () => {
+    writeHistory([entry()]);
+    writeFileSync(
+      join(root, ".repoos", "release-emails.json"),
+      JSON.stringify({
+        "0.6.0": {
+          version: "0.6.0",
+          tag: "v0.6.0",
+          status: "pending",
+          when: "published",
+          sentTo: [],
+          reason: "Waiting for GitHub to publish v0.6.0",
+          at: "2026-11-10T00:00:00.000Z",
+        },
+      }),
+      "utf8",
+    );
+    const config = makeConfig({ when: "published" }, { repository: "repo-os/repoos" });
+    const record = getReleaseEmailRecord(config, "0.6.0");
+    expect(record?.status).toBe("failed");
+    expect(record?.reason).toMatch(/restarted/);
+
+    const fake = fakeFetch({ github: () => publishedResponse() });
+    const resent = await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl });
+    expect(resent.status).toBe("sent");
+    expect(fake.resendTo).toEqual(RECIPIENTS);
+  });
+
+  it("keeps waiting through an HTTP error on the first look instead of sending early", async () => {
+    const fake = fakeFetch({
+      github: (call) =>
+        call === 1 ? new Response("rate limited", { status: 403 }) : publishedResponse(),
+    });
+    const outcome = await waitForPublishedRelease("repo-os/repoos", "v0.6.0", {
+      fetchImpl: fake.fetchImpl,
+      sleep: instantSleep().sleep,
+    });
+    expect(outcome.state).toBe("published");
+    expect(fake.githubCalls()).toBe(2);
+  });
+
+  it("bounds each Resend call with an abort signal so a hung provider cannot stall the send", async () => {
+    writeHistory([entry()]);
+    const signals: Array<AbortSignal | undefined> = [];
+    const fetchImpl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      signals.push(init?.signal ?? undefined);
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    await deliverCutReleaseEmail(makeConfig({ when: "tagged" }), entry(), {}, { fetchImpl });
+    expect(signals.length).toBe(RECIPIENTS.length);
+    for (const signal of signals) expect(signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("puts a failed send on the bell and clears it when Resend succeeds", async () => {
+    writeHistory([entry()]);
+    const store = memoryAttentionStore();
+    wireAttentionNotifications(store, () => undefined);
+    const config = makeConfig({ when: "tagged" });
+    await deliverCutReleaseEmail(
+      config,
+      entry(),
+      {},
+      { fetchImpl: fakeFetch({ resendFailFor: RECIPIENTS[1] }).fetchImpl },
+    );
+    const raised = store.list();
+    expect(raised.map((e) => e.kind)).toEqual(["releaseEmailFailed"]);
+    expect(raised[0]?.message).toBe("v0.6.0 email not sent");
+    expect(raised[0]?.detail).toMatch(/team-b/);
+
+    await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fakeFetch().fetchImpl });
+    expect(store.list()).toEqual([]);
+  });
+
+  it("puts a missing provider on the bell rather than failing silently", async () => {
+    writeHistory([entry()]);
+    const store = memoryAttentionStore();
+    wireAttentionNotifications(store, () => undefined);
+    await deliverCutReleaseEmail(makeConfig({ when: "tagged" }, { provider: false }), entry());
+    expect(store.list().map((e) => e.kind)).toEqual(["releaseEmailFailed"]);
+  });
+
+  it("surfaces a record that cannot be read when the detached start runs", async () => {
+    writeHistory([entry()]);
+    const store = memoryAttentionStore();
+    wireAttentionNotifications(store, () => undefined);
+    writeFileSync(join(root, ".repoos", "release-emails.json"), "{not json", "utf8");
+    const errors = console.error;
+    console.error = () => undefined;
+    try {
+      startCutReleaseEmail(
+        makeConfig({ when: "tagged" }),
+        entry(),
+        {},
+        {
+          fetchImpl: fakeFetch().fetchImpl,
+        },
+      );
+      for (let i = 0; i < 50 && store.list().length === 0; i++) {
+        await new Promise((done) => setTimeout(done, 0));
+      }
+    } finally {
+      console.error = errors;
+    }
+    const raised = store.list();
+    expect(raised.map((e) => e.kind)).toEqual(["releaseEmailFailed"]);
+    expect(raised[0]?.detail).toMatch(/Could not parse/);
+  });
+});
+
+/** An in-memory attention store, so the bell lifecycle can be asserted without disk. */
+function memoryAttentionStore(): AttentionEventStore & { list(): RecordedAttentionEvent[] } {
+  const events = new Map<string, RecordedAttentionEvent>();
+  return {
+    record(event) {
+      const full = {
+        ...event,
+        id: event.id ?? `${event.kind}:${event.at}`,
+      } as RecordedAttentionEvent;
+      events.set(full.id, full);
+      return full;
+    },
+    remove(id) {
+      events.delete(id);
+    },
+    list() {
+      return [...events.values()];
+    },
+  };
+}
+
 describe("release history round trip", () => {
   it("keeps knownIssues through readReleaseHistory and drops empty ones", () => {
     writeHistory([
@@ -521,5 +665,150 @@ describe("Settings placement", () => {
     }
     expect(GENERAL_SECTIONS.map((s: { id: string }) => s.id)).toContain("release-emails");
     expect(GENERAL_FIELD_SECTIONS).toContain("release-emails");
+  });
+});
+
+describe("release email routes", () => {
+  // The handlers take a plain request and response. Every send path stays off
+  // the network: the tests only reach refusals, previews and recorded state.
+  function fakeReq(url: string, body?: unknown): IncomingMessage {
+    const req = Readable.from(body === undefined ? [] : [Buffer.from(JSON.stringify(body))]);
+    return Object.assign(req, { url }) as unknown as IncomingMessage;
+  }
+  function fakeRes() {
+    const out = { status: 0, body: undefined as unknown };
+    const res = {
+      writeHead(status: number) {
+        out.status = status;
+        return res;
+      },
+      end(payload: string) {
+        out.body = JSON.parse(payload);
+      },
+    };
+    return { res: res as unknown as ServerResponse, out };
+  }
+  function ctxFor(config: RepoOSConfig): RouteContext {
+    return { config } as unknown as RouteContext;
+  }
+
+  it("reports the recorded email state for a version", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "tagged" });
+    await deliverCutReleaseEmail(config, entry(), {}, { fetchImpl: fakeFetch().fetchImpl });
+    const { res, out } = fakeRes();
+    await getReleaseEmail(ctxFor(config), fakeReq("/api/release/email?version=0.6.0"), res, {});
+    expect(out.status).toBe(200);
+    const body = out.body as {
+      enabled: boolean;
+      providerConfigured: boolean;
+      record: { status: string };
+    };
+    expect(body.enabled).toBe(true);
+    expect(body.providerConfigured).toBe(true);
+    expect(body.record?.status).toBe("sent");
+  });
+
+  it("renders the preview for a recorded version without sending", async () => {
+    writeHistory([entry()]);
+    const { res, out } = fakeRes();
+    await getReleaseEmailPreview(
+      ctxFor(makeConfig()),
+      fakeReq("/api/release/email/preview?version=0.6.0"),
+      res,
+      {},
+    );
+    expect(out.status).toBe(200);
+    expect((out.body as { subject: string }).subject).toMatch(/v0\.6\.0 is out/);
+  });
+
+  it("answers 404 to a preview for a version with no release notes", async () => {
+    writeHistory([entry()]);
+    const { res, out } = fakeRes();
+    await getReleaseEmailPreview(
+      ctxFor(makeConfig()),
+      fakeReq("/api/release/email/preview?version=9.9.9"),
+      res,
+      {},
+    );
+    expect(out.status).toBe(404);
+  });
+
+  it("requires a version on the Resend route", async () => {
+    const { res, out } = fakeRes();
+    await sendReleaseEmailNow(
+      ctxFor(makeConfig()),
+      fakeReq("/api/release/email/send", {}),
+      res,
+      {},
+    );
+    expect(out.status).toBe(400);
+  });
+
+  it("refuses a Resend while the feature is off, before anything is sent", async () => {
+    writeHistory([entry()]);
+    const { res, out } = fakeRes();
+    await sendReleaseEmailNow(
+      ctxFor(makeConfig({ enabled: false })),
+      fakeReq("/api/release/email/send", { version: "0.6.0" }),
+      res,
+      {},
+    );
+    expect(out.status).toBe(409);
+    expect((out.body as { error: string }).error).toMatch(/turn them on/i);
+  });
+});
+
+describe("Settings recipient list", () => {
+  it("rejects a malformed address in release.email.to and names it", async () => {
+    const { patchConfig } = await import("../../server/routes/config.js");
+    const out = { status: 0, body: undefined as unknown };
+    const res = {
+      writeHead(status: number) {
+        out.status = status;
+        return res;
+      },
+      end(payload: string) {
+        out.body = JSON.parse(payload);
+      },
+    } as unknown as ServerResponse;
+    const req = Readable.from([
+      Buffer.from(JSON.stringify({ "release.email.to": ["team at example"] })),
+    ]);
+    await patchConfig(
+      { config: makeConfig(), repoos: {}, index: {} } as unknown as RouteContext,
+      Object.assign(req, { url: "/api/config" }) as unknown as IncomingMessage,
+      res,
+      {},
+    );
+    expect(out.status).toBe(400);
+    expect((out.body as { error: string }).error).toMatch(
+      /team at example is not an email address/,
+    );
+  });
+
+  it("rejects a recipient list that is not an array", async () => {
+    const { patchConfig } = await import("../../server/routes/config.js");
+    const out = { status: 0, body: undefined as unknown };
+    const res = {
+      writeHead(status: number) {
+        out.status = status;
+        return res;
+      },
+      end(payload: string) {
+        out.body = JSON.parse(payload);
+      },
+    } as unknown as ServerResponse;
+    const req = Readable.from([
+      Buffer.from(JSON.stringify({ "release.email.to": "team@example.test" })),
+    ]);
+    await patchConfig(
+      { config: makeConfig(), repoos: {}, index: {} } as unknown as RouteContext,
+      Object.assign(req, { url: "/api/config" }) as unknown as IncomingMessage,
+      res,
+      {},
+    );
+    expect(out.status).toBe(400);
+    expect((out.body as { error: string }).error).toMatch(/must be an array of addresses/);
   });
 });
