@@ -196,3 +196,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T02:36:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T03:31:33Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T03:31:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped `repoos check --changed main` for #1076 finished with `EXIT=1`, so it failed. I haven't written the report draft or handed off. - **Failing test:** `src/ui-app/tests/git-ref-watcher.test.ts > observes shared nested refs from a l… · stderr: (empty)
+- 2026-11-10T03:31:38Z · note: handoff requested (cli)
