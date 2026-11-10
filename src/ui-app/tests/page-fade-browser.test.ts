@@ -23,9 +23,7 @@ describe.skipIf(!existsSync(webkit.executablePath()))("page fade reduced motion 
   it("uses the short opacity fade normally and disables it for reduced motion", async () => {
     const page = await browser!.newPage();
     try {
-      await page.setContent(
-        `<style>${css}</style><div class="page-fade-enter-active">Page</div>`,
-      );
+      await page.setContent(`<style>${css}</style><div class="page-fade-enter-active">Page</div>`);
       const transition = async () =>
         page.locator(".page-fade-enter-active").evaluate((element) => {
           const style = getComputedStyle(element);
