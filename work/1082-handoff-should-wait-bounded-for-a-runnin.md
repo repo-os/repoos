@@ -14,7 +14,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T05:01:15Z"
+updated_at: "2026-11-10T05:26:15Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
@@ -81,3 +81,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T04:56:17Z · note: adopted orphaned engineer pid 58420
 - 2026-11-10T04:57:46Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-10T05:01:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T05:26:15Z · message_overdue: still queued after 60m without being delivered
