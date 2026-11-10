@@ -48,7 +48,7 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
 
   it("clears an orphan marker so recovery can restart after a crash (#1085)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-phc-restart-"));
-  try {
+    try {
       const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
       mkdirSync(join(root, ".repoos", "post-handoff-checkpoint"), { recursive: true });
       writeFileSync(
@@ -72,7 +72,11 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
           reload: null,
           emitEvent: () => {},
           triggerJobProcessing: () => {},
-          runner: { isHandoffInFlight: () => false, markHandoffInFlight: () => true, releaseHandoffInFlight: () => {} },
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => true,
+            releaseHandoffInFlight: () => {},
+          },
         },
         task,
         "aaa111",

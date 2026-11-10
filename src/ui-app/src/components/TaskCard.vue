@@ -104,8 +104,7 @@ const cardChecksDisplay = computed(() => {
   else if (slot?.ageMs != null) elapsed = formatDuration(slot.ageMs);
   const progress = cardCheckProgressFields(run);
   const stale =
-    status?.stale === true ||
-    (slot?.ageMs != null && slot.ageMs >= CHECK_WAIT_STALLED_MS);
+    status?.stale === true || (slot?.ageMs != null && slot.ageMs >= CHECK_WAIT_STALLED_MS);
   return {
     progress,
     elapsed,
