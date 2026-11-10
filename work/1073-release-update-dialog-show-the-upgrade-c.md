@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T04:29:34Z"
+updated_at: "2026-11-10T04:34:39Z"
 check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -270,3 +270,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T04:24:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T04:29:20Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-10T04:29:34Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T04:34:39Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at verify · ui verification failed (4 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (light) (target "default"): highlight [data-test-id="release-upgrade-command"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target "default"): state "release:updateAvailable" did not render on target "default" — / has no open drawer/dialog (declare the route that opens it, e.g. /work?task=9999&tab=changes) (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable); [missing-target] Update dialog: upgrade command block (dark) (target "default"): highlight [data-test-id="release-upgrade-command"] matched nothing on / (http://127.0.0.1:44467/?shotState=release%3AupdateAvailable) · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
