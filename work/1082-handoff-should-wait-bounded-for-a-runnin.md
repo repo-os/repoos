@@ -96,3 +96,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T06:26:49Z · held, held-reason, held-at
 - 2026-11-10T07:24:02Z · released
 - 2026-11-10T07:44:50Z · message_queued at 2026-11-10T07:44:50.250Z
+- 2026-11-10T07:44:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
