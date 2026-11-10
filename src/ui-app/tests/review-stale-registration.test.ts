@@ -78,6 +78,24 @@ describe("review registration release (#1083)", () => {
     expect(reviews.runningCount()).toBe(0);
   });
 
+  it("releases the registration when the prepare callback rejects", async () => {
+    const { reviews, internal } = setup();
+    await expect(
+      internal.prepareReview(TASK_ID, "run", async () => {
+        throw new Error("could not build the review mission");
+      }),
+    ).rejects.toThrow("could not build the review mission");
+    expect(reviews.isRunning(TASK_ID)).toBe(false);
+    expect(reviews.runningCount()).toBe(0);
+  });
+
+  it("answers isRunning without the liveness probe when nothing holds the task", () => {
+    const reviewProcessLive = vi.fn(() => false);
+    const { reviews } = setup({ reviewProcessLive });
+    expect(reviews.isRunning(TASK_ID)).toBe(false);
+    expect(reviewProcessLive).not.toHaveBeenCalled();
+  });
+
   it("does not throw out of a spawn that fails, so no unhandled rejection escapes", () => {
     const { internal } = setup({
       startReview: vi.fn(() => {
