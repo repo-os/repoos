@@ -53,3 +53,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T01:56:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T02:03:15Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-10T02:03:17Z · status active→review
+- 2026-11-10T02:03:17Z · message_queued at 2026-11-10T02:03:17.904Z
