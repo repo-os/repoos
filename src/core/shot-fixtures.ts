@@ -43,6 +43,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "board:withReviewTask",
   "card:reviewChecksRunning",
   "card:reviewLandableReady",
+  // #1085 — active task with a stale but live handoff record on the checks line.
+  "card:handoffStaleActive",
   // #1035 — several tasks spread across every pipeline stage (plus stuck,
   // held, sent-back and recently-merged lanes) for the Pipeline view capture.
   "board:pipeline",
