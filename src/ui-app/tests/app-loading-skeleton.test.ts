@@ -47,9 +47,8 @@ describe("repo loading skeleton", () => {
       /<Transition name="page-fade" mode="out-in">[\s\S]*<RouterView v-else class="main-route"\s*\/>[\s\S]*<\/Transition>/,
     );
     const styles = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
-    expect(styles).toMatch(
-      /\.main\s*\{[^}]*--main-top-inset:\s*22px;[^}]*--main-inline-inset:\s*26px;[^}]*position:\s*relative/s,
-    );
+    expect(styles).toMatch(/\.main\s*\{[^}]*padding:\s*22px 26px 0;/s);
+    expect(styles).not.toMatch(/\.main\s*>\s*\.page-fade-leave-active\s*\{/);
     expect(styles).toMatch(
       /\.page-fade-enter-active,[\s\S]*?transition:\s*opacity 120ms ease-out;/,
     );
