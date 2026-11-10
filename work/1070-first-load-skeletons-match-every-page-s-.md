@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -466,3 +466,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T06:04:39Z · message_queued at 2026-11-10T06:04:39.347Z
 - 2026-11-10T06:04:39Z · ↻ resuming engineer to read queued message
 - 2026-11-10T06:04:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped gate passed: all 369 selected test files passed (5,112 tests, one skipped), the UI smoke test passed, and the other applicable check steps were green. I’m checking whether the existing task report already contains the full skele… · stderr: Reading additional input from stdin... 2026-11-10T06:03:55.197032Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to read file to update /Users/nick/code/nick/repoos-worktrees/feat/first-load-skeletons-match-every-page-s-/ .repoos/engineering-report-drafts/1070.md: No such file or direc…
+- 2026-11-10T06:04:40Z · status active→review
