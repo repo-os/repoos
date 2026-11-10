@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T06:26:35Z"
+updated_at: "2026-11-10T06:49:00Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 7cc9ab95453d79085f1e1c4e3bd4d1303d42d9cf
 review_rounds: 2
@@ -143,3 +143,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T06:26:14Z · engineer stopped by request
 - 2026-11-10T06:26:19Z · note: handoff requested (cli)
 - 2026-11-10T06:26:35Z · held, held-reason, held-at
+- 2026-11-10T06:49:00Z · message_queued at 2026-11-10T06:49:00.201Z
