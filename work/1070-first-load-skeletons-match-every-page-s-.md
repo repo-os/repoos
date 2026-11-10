@@ -458,3 +458,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T05:06:24Z · note: handoff requested (cli)
 - 2026-11-10T05:11:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T05:28:00Z · message_queued at 2026-11-10T05:28:00.348Z
+- 2026-11-10T05:28:00Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — defaultValue: '',
