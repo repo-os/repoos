@@ -963,8 +963,6 @@ export interface TaskCheckRun {
   stepName?: string | null;
   attempt?: number | null;
   attemptReason?: string | null;
-  /** Plain-English wait marker while a handoff waits on a running check (#1082). */
-  reason?: string | null;
   lastProgressAt?: string | null;
 }
 
