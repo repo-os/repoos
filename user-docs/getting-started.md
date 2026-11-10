@@ -118,7 +118,8 @@ it shows the installed and available versions, a **How to upgrade** block with
 the exact command for *your* install (the same detection `repoos upgrade` uses,
 so a package-manager or source checkout sees its own command, and a channel
 install sees `repoos upgrade --channel <name>`), a Copy button, and a link to
-the release notes. The command runs in a terminal; a server already running
+the release notes. A channel install is compared against the newest build on
+that channel, so the banner offers exactly what the command installs. The command runs in a terminal; a server already running
 keeps the old version until you restart it.
 
 RepoOS runs on **Bun** when it's available and falls back to **Node.js 20.6.0 or newer**

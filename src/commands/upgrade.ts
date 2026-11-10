@@ -179,10 +179,11 @@ interface ReleaseAsset {
   name: string;
   browser_download_url: string;
 }
-interface Release {
+export interface Release {
   tag_name: string;
   assets: ReleaseAsset[];
   prerelease?: boolean;
+  html_url?: string;
   /** GitHub release body — the notes authored in the "Cut a release" modal (#0361), when set. */
   body?: string | null;
 }
@@ -211,15 +212,21 @@ function parseChannel(args: string[]): string | null {
  * -canary.N, -rc.N) as a prerelease, exactly so stable users never get handed
  * one from this endpoint. A channel opt-in has to use the list endpoint
  * instead and find its own match.
+ *
+ * Exported so the update dialog's banner (#1073) compares against exactly the
+ * release `repoos upgrade --channel <name>` would install.
  */
-async function fetchLatestRelease(channel: string | null): Promise<Release> {
+export async function fetchLatestRelease(
+  channel: string | null,
+  signal?: AbortSignal,
+): Promise<Release> {
   if (!channel) {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { signal });
     if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
     return (await res.json()) as Release;
   }
   // Newest first by default; the first tag matching "-<channel>." wins.
-  const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`);
+  const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { signal });
   if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
   const releases = (await res.json()) as Release[];
   const match = releases.find((r) => r.tag_name.includes(`-${channel}.`));
