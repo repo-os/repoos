@@ -129,7 +129,8 @@ function showDetails(): void {
 }
 
 async function copyCommand(): Promise<void> {
-  const ok = await copyToClipboard(upgradeCommand.value);
+  // An empty command has nothing to copy, so it counts as a failed copy.
+  const ok = upgradeCommand.value !== "" && (await copyToClipboard(upgradeCommand.value));
   if (copiedTimer) clearTimeout(copiedTimer);
   // A failed copy must say so — silently doing nothing looks like a dead button
   // (#1073 review).
