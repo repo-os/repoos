@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T18:31:16Z"
+updated_at: "2026-11-10T18:31:22Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -266,3 +266,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T18:24:12Z · message_queued at 2026-11-10T18:24:12.412Z
 - 2026-11-10T18:26:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T18:31:16Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-10T18:31:22Z · message_delivered: 1 message(s)
