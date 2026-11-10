@@ -3,6 +3,9 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
+hold: true
+hold_reason: "load: pausing extra engineers until #1080/#1070 land"
+hold_at: "2026-11-10T06:26:35.269Z"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T05:46:15Z"
+updated_at: "2026-11-10T17:26:31Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: 7cc9ab95453d79085f1e1c4e3bd4d1303d42d9cf
+last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -134,3 +137,17 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T05:01:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T05:11:21Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-10T05:46:15Z · message_delivered: 2 message(s)
+- 2026-11-10T06:16:15Z · message_queued at 2026-11-10T06:16:15.371Z
+- 2026-11-10T06:16:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T06:21:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T06:26:14Z · engineer stopped by request
+- 2026-11-10T06:26:19Z · note: handoff requested (cli)
+- 2026-11-10T06:26:35Z · held, held-reason, held-at
+- 2026-11-10T06:49:00Z · message_queued at 2026-11-10T06:49:00.201Z
+- 2026-11-10T06:49:00Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-10T06:49:01Z · message_undelivered: 2 message(s) still queued — waiting for the next run
+- 2026-11-10T07:16:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T08:24:41Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T11:04:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T13:31:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T17:26:31Z · message_overdue: still queued after 60m without being delivered

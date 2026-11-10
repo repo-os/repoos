@@ -382,7 +382,7 @@ watch(
     </header>
 
     <div class="page-scroll-body">
-      <PageSkeleton v-if="loading && !hasTargets" kind="targets" />
+      <PageSkeleton :loading="loading && !hasTargets" kind="targets" />
       <p
         v-if="loadError"
         class="dev-state dev-state--error"

@@ -1,8 +1,9 @@
 ---
+close_out_repair_count: 1
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,10 +12,8 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T19:10:51Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 5676e8dde658b91c55ef42ee04a17cf8b0c40faf
-review_passes: 4
+updated_at: "2026-11-10T19:12:22Z"
+review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 13
@@ -209,8 +208,91 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T05:01:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T05:11:27Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at commit · git add failed: A check is running; wait for it to finish.
 - 2026-11-10T06:04:38Z · message_delivered: 2 message(s)
+- 2026-11-10T06:26:13Z · engineer stopped by request
+- 2026-11-10T06:26:27Z · held, held-reason, held-at
+- 2026-11-10T10:04:07Z · released
+- 2026-11-10T10:22:57Z · body
+- 2026-11-10T10:34:22Z · message_queued at 2026-11-10T10:34:22.755Z
+- 2026-11-10T10:34:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T10:34:35Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T10:41:27Z · body
+- 2026-11-10T10:49:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T10:59:34Z · status active→review
+- 2026-11-10T10:59:35Z · message_queued at 2026-11-10T10:59:35.089Z
+- 2026-11-10T10:59:35Z · note: shots: skipped — the diff (26 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T11:44:01Z · status review→active
+- 2026-11-10T11:44:03Z · CTO nudge: held — review is running
+- 2026-11-10T11:44:06Z · note: handoff requested (cli)
+- 2026-11-10T11:46:08Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T11:55:33Z · message_queued at 2026-11-10T11:55:33.600Z
+- 2026-11-10T11:55:33Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1076.md
+- 2026-11-10T11:55:34Z · message_delivered: 2 message(s)
+- 2026-11-10T11:56:08Z · CTO nudge: held — review is running
+- 2026-11-10T12:15:25Z · body
+- 2026-11-10T12:21:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T12:24:46Z · status active→review
-- 2026-11-10T13:10:07Z · status review→active
+- 2026-11-10T12:24:47Z · message_queued at 2026-11-10T12:24:47.150Z
+- 2026-11-10T12:24:47Z · note: shots: skipped — the diff (27 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-10T13:09:41Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-11-10T13:10:06Z · status review→active
+- 2026-11-10T13:10:11Z · note: handoff requested (cli)
+- 2026-11-10T13:14:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T13:31:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T13:34:17Z · message_queued at 2026-11-10T13:34:17.579Z
+- 2026-11-10T13:34:18Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-10T13:34:29Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T13:39:36Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-11-10T13:39:37Z · message_queued at 2026-11-10T13:39:37.071Z
+- 2026-11-10T13:41:52Z · message_delivered: 2 message(s)
+- 2026-11-10T14:29:52Z · body
+- 2026-11-10T17:26:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T17:31:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T17:31:15Z · message_delivered: 1 message(s)
+- 2026-11-10T17:31:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I haven't triggered a new handoff check. The branch tip hasn't changed since the server recorded its failure, and I don't want to force a re-run with an empty commit. **Current state** - **Server:** reachable again. It records #1076's hand… · stderr: (empty)
+- 2026-11-10T17:34:53Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T17:35:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: No long step is running. The check I started earlier has finished, and there's no `repoos check` or vitest process for this worktree. I'm reporting a blocker rather than re-requesting handoff. The branch tip is still `e4806bbb8`, unchanged… · stderr: (empty)
+- 2026-11-10T17:36:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T17:36:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Blocker for #1076, unchanged since my last check-in. I haven't re-requested handoff, because it would only record the same request again. - **Tip:** `e4806bbb8`, clean worktree. No check or test process is running. - **Server record:** han… · stderr: (empty)
+- 2026-11-10T17:41:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T17:41:19Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Still blocked on #1076, with no change since my last check-in. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Server:** handoff failed at the check step (13:34 UTC) and won't re-validate until the branch changes. - **Local:*… · stderr: (empty)
+- 2026-11-10T17:42:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T17:42:44Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is still blocked, and I haven't re-requested handoff, because it would only record the same request again. - **Tip:** `e4806bbb8`, unchanged, with a clean worktree and no check running. - **Server:** handoff failed at the check step … · stderr: (empty)
+- 2026-11-10T17:46:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T17:46:20Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is still blocked. Nothing has changed since my last check-in, so I haven't re-requested handoff. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Server:** handoff failed at the check step (13:34 UTC). It won't re-valida… · stderr: (empty)
+- 2026-11-10T17:51:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T17:59:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is still blocked, and nothing has changed since my last check-in, so I haven't re-requested handoff. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Server:** handoff failed at the check step (13:34 UTC). It won't re-va… · stderr: (empty)
+- 2026-11-10T18:01:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T18:02:10Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is still blocked on your decision, so I'm not re-requesting handoff. Re-requesting would only record the same request again while the branch tip stays the same. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Server:** … · stderr: (empty)
+- 2026-11-10T18:06:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T18:09:33Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is blocked, and nothing has changed since my last check-in. I'm not re-requesting handoff, because it would record the same request against the same tip. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Server:** handoff… · stderr: (empty)
+- 2026-11-10T18:11:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T18:11:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is still blocked on your decision. Nothing has changed since the last check-in, so I'm not re-requesting handoff. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Server:** handoff failed at the check step (13:34 UTC) an… · stderr: (empty)
+- 2026-11-10T18:16:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T18:16:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is blocked, and nothing has changed since the last check-in, so I'm not re-requesting handoff. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Server:** handoff failed at the check step (13:34 UTC) and won't re-validate… · stderr: (empty)
+- 2026-11-10T18:21:09Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T18:21:14Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is still blocked on a decision from you. I'm not re-requesting handoff, because the branch hasn't changed and the server won't re-run the check against the same tip. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Serve… · stderr: (empty)
+- 2026-11-10T18:26:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T18:26:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: #1076 is still blocked on your decision. The branch hasn't changed, so re-requesting handoff would record the same request against the same tip and wouldn't move it. - **Tip:** `e4806bbb8`, clean worktree, no check running. - **Server:** h… · stderr: (empty)
+- 2026-11-10T18:28:51Z · note: handoff requested (cli)
+- 2026-11-10T18:31:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T18:40:55Z · message_queued at 2026-11-10T18:40:55.035Z
+- 2026-11-10T18:40:55Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1076.md
+- 2026-11-10T18:41:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T18:44:48Z · message_delivered: 1 message(s)
+- 2026-11-10T18:47:51Z · note: handoff requested (cli)
+- 2026-11-10T18:49:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T19:03:01Z · body
 - 2026-11-10T19:10:51Z · status active→review
+- 2026-11-10T19:10:52Z · message_queued at 2026-11-10T19:10:52.216Z
+- 2026-11-10T19:10:52Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-10T19:10:52Z · message_queued at 2026-11-10T19:10:52.723Z
+- 2026-11-10T19:10:53Z · ↻ resuming engineer to read queued message
+- 2026-11-10T19:10:53Z · message_delivered: 2 message(s)
+- 2026-11-10T19:10:53Z · note: shots: skipped — the diff (28 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-10T19:11:27Z · message_queued at 2026-11-10T19:11:27.412Z
+- 2026-11-10T19:12:07Z · note: review pass 5: needs some work
+- 2026-11-10T19:12:08Z · needs_input
+- 2026-11-10T19:12:22Z · status review→active, needs_input
+- 2026-11-10T19:12:22Z · note: close-out repair: merge-conflict
+- 2026-11-10T19:12:22Z · message_delivered: 1 message(s)
+

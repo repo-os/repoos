@@ -74,13 +74,20 @@ import {
   finishHandoffStatus,
   updateHandoffStatusStep,
   updateHandoffStatusProgress,
+  readHandoffStatus,
+  setHandoffWaitingReason,
 } from "./handoff-status.js";
 import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { guardStrayRepoosTomlOnTaskBranch } from "../core/repoos-toml-branch-guard.js";
 import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
-import { acquireCheckGateLock } from "./check-gate-lock.js";
+import {
+  acquireCheckGateLock,
+  checkGateBusyRun,
+  checkGateWaitBudgetMs,
+  waitForCheckGateRelease,
+} from "./check-gate-lock.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
@@ -113,6 +120,41 @@ import {
   resolveEngineeringReportBase,
 } from "./engineering-reports.js";
 import { engineeringReportRelPath, legacyEngineeringReportRelPath } from "../core/report-paths.js";
+
+/** Plain-English handoff state while a running self-check holds the worktree (#1082). */
+const CHECK_GATE_WAIT_LABEL = "Waiting for the running check to finish";
+
+/**
+ * Run one handoff git step that a running self-check may refuse. While it
+ * waits, the handoff shows `CHECK_GATE_WAIT_LABEL`; the label is cleared in a
+ * `finally`, so an error or timeout never leaves it stuck (#1082).
+ */
+async function runWhileCheckGateWait<T>(
+  config: RepoOSConfig,
+  taskId: string,
+  deadlineAt: number,
+  attempt: () => Promise<T>,
+  busy: (result: T) => boolean,
+): Promise<T> {
+  // The label is keyed to the attempt that started the wait, so a late waiter
+  // cannot mark a newer handoff as waiting (#1082).
+  const attemptKey = readHandoffStatus(config, taskId).attemptKey;
+  let waiting = false;
+  try {
+    const waited = await waitForCheckGateRelease(attempt, busy, {
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      timeoutMs: checkGateWaitBudgetMs(deadlineAt),
+      onWait: () => {
+        waiting = true;
+        setHandoffWaitingReason(config, taskId, CHECK_GATE_WAIT_LABEL, attemptKey);
+      },
+    });
+    return waited.result;
+  } finally {
+    if (waiting) setHandoffWaitingReason(config, taskId, null, attemptKey);
+  }
+}
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
@@ -807,7 +849,28 @@ async function runHandoffFinalization(
   // `resolveWorktree` (an empty worktree branch is a lag, not a mismatch),
   // but fatal here, and the mismatch was invisible until #0507 started routing
   // file edits through this path.
-  const gate = await guardReviewTransition(config, { ...worktreeTask, branch: task.branch });
+  // A self-check that still holds the worktree makes this step wait, not fail
+  // (#1082); the handoff row says so in plain words while it waits.
+  // The wait stops before the handoff deadline, so it never outlives the
+  // handoff it belongs to (#1082).
+  const guardAttemptKey = readHandoffStatus(config, task.id).attemptKey;
+  let waitingForCheck = false;
+  let gate: Awaited<ReturnType<typeof guardReviewTransition>>;
+  try {
+    gate = await guardReviewTransition(
+      config,
+      { ...worktreeTask, branch: task.branch },
+      {
+        checkGateWait: { timeoutMs: checkGateWaitBudgetMs(handoffDeadlineAt) },
+        onCheckGateWait: () => {
+          waitingForCheck = true;
+          setHandoffWaitingReason(config, task.id, CHECK_GATE_WAIT_LABEL, guardAttemptKey);
+        },
+      },
+    );
+  } finally {
+    if (waitingForCheck) setHandoffWaitingReason(config, task.id, null, guardAttemptKey);
+  }
   if (!gate.ok) {
     return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
   }
@@ -1134,7 +1197,8 @@ async function runHandoffFinalization(
     if (!finalized.report)
       return fail("review", finalized.error ?? "engineering report could not be finalized");
     finalizedReport = finalized.report;
-    const reportPath = engineeringReportRelPath(config, task.id, finalized.report.round);
+    const reportRound = finalized.report.round;
+    const reportPath = engineeringReportRelPath(config, task.id, reportRound);
     const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
     if (staged.status !== 0)
       return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
@@ -1144,20 +1208,26 @@ async function runHandoffFinalization(
       10_000,
     );
     if (stagedDiff.status === 1) {
-      const reportCommit = await runGit(
-        workdir,
-        [
-          "commit",
-          "-m",
-          `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
-          // Pathspec, not a bare commit: this runs after the check gate (minutes
-          // long), well past the one-shot foreign-bookkeeping restore, and a
-          // sibling staged in that window (a concurrent board write / stray
-          // `git add -A`) must not ride this commit onto the branch (#1076).
-          "--",
-          reportPath,
-        ],
-        20_000,
+      const reportCommit = await runWhileCheckGateWait(
+        config,
+        task.id,
+        handoffDeadlineAt,
+        () =>
+          runGit(
+            workdir,
+            [
+              "commit",
+              "-m",
+              `docs: record engineering report for #${task.id} round ${reportRound}`,
+              // Pathspec, not a bare commit: this runs after the check gate (minutes
+              // long), well past the one-shot foreign-bookkeeping restore, and a
+              // sibling staged in that window must not ride this commit (#1076).
+              "--",
+              reportPath,
+            ],
+            20_000,
+          ),
+        checkGateBusyRun,
       );
       if (reportCommit.status !== 0)
         return fail(

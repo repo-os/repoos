@@ -200,6 +200,24 @@ export function updateHandoffStatusProgress(
   writeHandoffStatus(config, { ...current, progress, updatedAt: new Date().toISOString() });
 }
 
+/**
+ * Show (or clear, with `null`) a plain-English reason the running handoff is
+ * waiting on something other than its own work (#1082). Only the attempt that
+ * started the wait is touched: a finished attempt, or a newer running one, is
+ * left alone, so a late waiter can never label someone else's handoff.
+ */
+export function setHandoffWaitingReason(
+  config: RepoOSConfig,
+  taskId: string,
+  reason: string | null,
+  attemptKey: string | null,
+): void {
+  const current = readHandoffStatus(config, taskId);
+  if (current.state !== "running" || current.attemptKey !== attemptKey) return;
+  const progress = reason ? { reason } : null;
+  writeHandoffStatus(config, { ...current, progress, updatedAt: new Date().toISOString() });
+}
+
 /** Record the terminal pass/fail result of an attempt. */
 export function finishHandoffStatus(
   config: RepoOSConfig,

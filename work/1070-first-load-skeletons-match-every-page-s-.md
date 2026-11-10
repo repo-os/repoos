@@ -2,19 +2,20 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: done
 priority: p3
 area: web
+merged_commit: 71a2f1688b304be9c5a370c41f1f423f43a9f82e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T06:04:41Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — defaultValue: '',"
-last_handoff_failure_sha: 9408c126f3a36bdb0bb608eedc8294267e47d6ff
-review_passes: 14
+updated_at: "2026-11-10T09:30:04Z"
+last_close_out_gate_ms: 687685
+last_close_out_gate_at: "2026-11-10T09:23:45.726Z"
+review_passes: 21
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -22,7 +23,6 @@ routing_escalations: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-09T15:02:18.464Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-10T04:59:46.962Z\",\"reason\":\"handoff-deferred\"}]"
 dev_error_count: 2
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 First-load skeletons are jarring and in places wrong. On Mission Control (`/`) the `dashboard` skeleton draws six tall cards in an `auto-fit` grid (`PageSkeleton.vue`), so on a wide window they wrap into one row of four plus a stray card on a second row, and none of it resembles the real page (which is not a board of cards like Work and Inputs). Stories shows the same kind of mismatch. Other pages use `board`, `inputBoard`, `cards`, `table`, `rows`, `targets` and `deployments` shapes picked by route in `src/ui-app/src/lib/loading-skeleton.ts`, and nobody has checked each one against its real content.
@@ -53,7 +53,7 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 ```
 
 ## Accepted scope: no loading-state screenshots
-Owner-side decision (2026-11-09): the handoff capture tool deliberately treats any page showing aria-busy / a loading indicator as a FAILED shot ('loading state detected', src/core/shot-page.ts), so declared shots of the skeleton itself cannot pass. Acceptance criterion 6 (shots of the loading state) is therefore replaced by: precise component tests that assert the skeleton structure and item counts against the real layout constants, plus optional shots of the SETTLED Mission Control and Stories pages to show the real layout the skeleton must match. A reviewer must not require loading-state screenshots.
+ALL ACCEPTED SCOPE (authoritative, supersedes the 'content cross-fades in' line in Desired UX): (1) No loading-state screenshots; settled pages only. (2) The loading shell is swapped for the page INSTANTLY: no fade, no cross-fade, no leave transition. A smooth fade and per-view exit timing are follow-up #1078. Do NOT report a missing cross-fade as a bug in any form. (3) Layout shift while the shell leaves is out of scope (#1078). Only a broken settled page, a failing test or a regression of existing behaviour blocks; everything else goes under Suggestions.
 
 ## Accepted scope and known limitations
 Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and minimum-visible-time (about 350 ms) are applied at the SHELL level in App.vue only. Applying the same gate inside every individual view that renders its own PageSkeleton (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) is out of scope here and is tracked in a follow-up task; a reviewer must report it as a suggestion, not a blocking bug. Still required: fix the Settings row-count regression, and replace the magic placeholder counts for non-board kinds with named constants documented next to the real layout they mirror.
@@ -68,7 +68,13 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under '## Bugs', and the landing check treats any entry under '## Bugs' as a blocking bug. For the next pass: put every non-blocking observation (shell exit transition, one-row contrast selector, source-text assertions) under '## Suggestions', leave '## Bugs' EMPTY ('None found') when nothing blocks, and give a clear verdict. The code needs no further change.
 
 ## Accepted scope: no shell cross-fade (final)
-Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade of the loading skeleton is NOT required for this task. Replace it with an instant swap (no leave transition, no out-of-flow positioning); a smooth fade-out is part of follow-up #1078. A reviewer must not raise missing cross-fade, transition geometry or exit animation as blocking; report it as a suggestion. Keep: shell show-delay and minimum-visible time, Mission Control single block, Stories, named counts, reduced-motion.
+FINAL: the loading shell is swapped for the page instantly (no fade, no leave transition, no out-of-flow positioning). A smooth fade is follow-up #1078. Do NOT report the missing cross-fade or fade as a bug. Only a broken settled page, failing test or regression of existing behaviour blocks.
+
+## Accepted scope and known limitations (final)
+Pass 15: a brief layout shift while the old shell fades out and the new page enters is a known limitation of this p3 easter egg, follow-up #1078. It is NOT blocking. Only a visible break of the settled page, a failing test, or a regression of existing behaviour blocks. Report anything else under Suggestions.
+
+## Accepted scope and known limitations (decision, pass 16)
+DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a simultaneous cross-fade. Earlier reviews demanded a cross-fade and then flagged the layout shift it causes; out-in is the agreed resolution. A reviewer must not require a cross-fade or flag the out-in behaviour (header fading briefly) as a bug. Per-view exit timing is #1078. Only a broken settled page, failing test or regression blocks.
 
 ## Screenshots
 
@@ -467,3 +473,73 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T06:04:39Z · ↻ resuming engineer to read queued message
 - 2026-11-10T06:04:40Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped gate passed: all 369 selected test files passed (5,112 tests, one skipped), the UI smoke test passed, and the other applicable check steps were green. I’m checking whether the existing task report already contains the full skele… · stderr: Reading additional input from stdin... 2026-11-10T06:03:55.197032Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to read file to update /Users/nick/code/nick/repoos-worktrees/feat/first-load-skeletons-match-every-page-s-/ .repoos/engineering-report-drafts/1070.md: No such file or direc…
 - 2026-11-10T06:04:41Z · note: handoff requested (cli)
+- 2026-11-10T06:06:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T06:12:35Z · status active→review
+- 2026-11-10T06:12:36Z · message_queued at 2026-11-10T06:12:36.143Z
+- 2026-11-10T06:13:41Z · note: review pass 15: needs some work
+- 2026-11-10T06:13:42Z · needs_input
+- 2026-11-10T06:15:14Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (aec924979) during finalization (#0734)
+- 2026-11-10T06:26:17Z · message_delivered: 2 message(s)
+- 2026-11-10T06:30:57Z · status review→active
+- 2026-11-10T06:31:00Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T06:41:12Z · body
+- 2026-11-10T06:44:20Z · body: Accepted scope and known limitations (final) (added)
+- 2026-11-10T06:44:20Z · needs_input
+- 2026-11-10T06:44:21Z · message_queued at 2026-11-10T06:44:21.219Z
+- 2026-11-10T06:44:24Z · message_queued at 2026-11-10T06:44:24.789Z
+- 2026-11-10T07:16:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T07:19:41Z · queued message undelivered for 67m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-10T07:19:42Z · status active→review
+- 2026-11-10T07:19:42Z · message_delivered: 3 message(s)
+- 2026-11-10T07:19:43Z · note: handoff requested (cli)
+- 2026-11-10T07:19:58Z · message_queued at 2026-11-10T07:19:58.639Z
+- 2026-11-10T07:19:58Z · handoff failed · task-file handoff failed at commit · git add failed: A check is running; wait for it to finish.
+- 2026-11-10T07:24:15Z · message_queued at 2026-11-10T07:24:15.791Z
+- 2026-11-10T07:35:53Z · body
+- 2026-11-10T07:39:47Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-10T07:39:47Z · message_queued at 2026-11-10T07:39:47.435Z
+- 2026-11-10T07:39:48Z · ↻ resuming engineer to read queued message
+- 2026-11-10T07:39:48Z · status active→review
+- 2026-11-10T07:39:48Z · message_delivered: 3 message(s)
+- 2026-11-10T07:39:49Z · note: handoff requested (cli)
+- 2026-11-10T07:41:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T07:44:44Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-10T07:44:47Z · status active→review
+- 2026-11-10T07:44:48Z · message_queued at 2026-11-10T07:44:48.185Z
+- 2026-11-10T07:45:51Z · note: review pass 16: needs some work
+- 2026-11-10T07:45:51Z · needs_input
+- 2026-11-10T07:46:42Z · body: Accepted scope and known limitations (decision, pass 16) (added)
+- 2026-11-10T07:46:43Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-10T07:47:46Z · note: review pass 17: needs some work
+- 2026-11-10T07:47:46Z · needs_input
+- 2026-11-10T08:01:07Z · body: Accepted scope: no shell cross-fade (final) (added 1, removed 1)
+- 2026-11-10T08:01:08Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-10T08:02:16Z · note: review pass 18: needs some work
+- 2026-11-10T08:02:16Z · needs_input
+- 2026-11-10T08:09:40Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-10T08:10:39Z · note: review pass 19: needs some work
+- 2026-11-10T08:10:40Z · needs_input
+- 2026-11-10T08:24:20Z · status review→active
+- 2026-11-10T08:24:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T08:24:45Z · body: Accepted scope: no shell cross-fade (final) (added 1, removed 1)
+- 2026-11-10T08:24:46Z · message_delivered: 1 message(s)
+- 2026-11-10T08:24:53Z · note: handoff requested (cli)
+- 2026-11-10T08:25:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Handoff passed; task #1070 is now in review. I made no further changes. · stderr: 2026-11-10T08:24:51.643279Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
+- 2026-11-10T08:29:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T08:39:50Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-10T08:39:52Z · message_queued at 2026-11-10T08:39:52.371Z
+- 2026-11-10T08:39:52Z · handoff failed · task-file handoff failed at review · Engineering report is missing required sections: ## TL;DR, ## Work and rationale.
+- 2026-11-10T08:44:09Z · note: handoff requested (cli)
+- 2026-11-10T08:49:49Z · message_delivered: 1 message(s)
+- 2026-11-10T08:58:50Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-10T08:58:52Z · status active→review
+- 2026-11-10T08:58:53Z · message_queued at 2026-11-10T08:58:53.301Z
+- 2026-11-10T08:59:52Z · note: review pass 20: needs some work
+- 2026-11-10T08:59:52Z · needs_input
+- 2026-11-10T08:59:52Z · needs_input
+- 2026-11-10T09:04:14Z · body: Accepted scope: no loading-state screenshots (added 1, removed 1)
+- 2026-11-10T09:04:14Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-10T09:04:53Z · note: review pass 21: good to go
+- 2026-11-10T09:23:45Z · close-out gate completed in 688s
+- 2026-11-10T09:24:43Z · status done→done, release:success
+- 2026-11-10T09:30:04Z · message_dropped: 1 queued message(s) discarded — task is done

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { useRepoStore } from "./stores/repo";
 import { useDocsStore } from "./stores/docs";
@@ -44,6 +44,8 @@ const notices = useNoticesStore();
 const isPublicRoute = computed(() => route.meta.public === true || route.meta.fullscreen === true);
 const loadingKind = computed(() => loadingSkeletonKind(route.path));
 const loadingHeader = computed(() => loadingPageHeader(route.path));
+const showRepoSkeleton = ref(false);
+const showLoadingShell = computed(() => repo.loading || showRepoSkeleton.value);
 
 const onApiTimeout = (event: Event): void => {
   const detail = (event as CustomEvent<string>).detail;
@@ -142,6 +144,20 @@ watch(
   },
 );
 
+// #1073: `applyShotFixturesFromLocation` is gated on `/api/health` reporting a
+// preview build, but a capture can navigate and settle before `repo.init()`
+// resolves (its own `/api/health` fetch may be slow, and a failed fetch leaves
+// `health` null). That left the applied-state marker unset, so the capture
+// reported "the page did not apply the fixture" for ANY declared state — a
+// timing flake, not a code bug. Re-apply whenever health arrives so the fixture
+// and its marker land as soon as the server is known to be a preview.
+watch(
+  () => repo.health?.isPreviewBuild,
+  (isPreview) => {
+    if (isPreview) applyShotFixturesFromLocation();
+  },
+);
+
 onUnmounted(() => {
   window.removeEventListener("focus", checkUiBuild);
   window.removeEventListener("repoos:api-timeout", onApiTimeout);
@@ -161,14 +177,19 @@ onUnmounted(() => {
         <Sidebar />
 
         <div class="main">
-          <div v-if="repo.loading" class="main-route page-loading">
+          <div v-if="showLoadingShell" key="loading" class="main-route page-loading">
             <header v-if="loadingHeader" class="page-header">
               <div>
                 <div class="page-title">{{ loadingHeader.title }}</div>
                 <div class="page-desc">{{ loadingHeader.desc }}</div>
               </div>
             </header>
-            <PageSkeleton :kind="loadingKind" />
+            <PageSkeleton
+              :kind="loadingKind"
+              :loading="repo.loading"
+              defer
+              @visibility-change="showRepoSkeleton = $event"
+            />
           </div>
           <RouterView v-else class="main-route" />
         </div>
