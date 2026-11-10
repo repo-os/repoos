@@ -351,12 +351,14 @@ describe("stale running handoff reconciliation (#1085)", () => {
     const config = makeConfig();
     beginHandoffStatus(config, "1085", { attemptKey: "run-stale", step: "validate" });
     const before = readHandoffStatus(config, "1085");
-    const events: Array<{ step?: string }> = [];
+    const events: Array<{ type: string; step?: string }> = [];
     const after = reconcileHandoffStatus(config, "1085", {
       taskStatus: "review",
       handoffLive: false,
     });
-    emitHandoffSupersededIfNeeded(before, after, "1085", (e) => events.push(e));
+    emitHandoffSupersededIfNeeded(before, after, "1085", (e) =>
+      events.push({ type: e.type, step: e.type === "task.progress" ? e.step : undefined }),
+    );
     expect(events).toEqual([
       expect.objectContaining({ step: "handoff:superseded" }),
     ]);
