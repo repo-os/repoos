@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T09:30:04Z"
+updated_at: "2026-11-10T09:30:05Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -310,3 +310,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T09:30:03Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-10T09:30:04Z · message_queued at 2026-11-10T09:30:04.452Z
 - 2026-11-10T09:30:04Z · ↻ resuming engineer to read queued message
+- 2026-11-10T09:30:05Z · status active→review
