@@ -3,9 +3,6 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The task stays active — fix the failure and ask again."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T01:11:46Z"
+updated_at: "2026-11-10T01:12:59Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 7acb7acb0353d1640a3ab26f488ff34f36ec1465
 review_passes: 4
@@ -192,3 +189,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T00:39:48Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T00:41:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T01:11:46Z · cli_override, model_override
+- 2026-11-10T01:12:59Z · needs_input
