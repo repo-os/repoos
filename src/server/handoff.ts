@@ -49,7 +49,6 @@ import {
 import {
   runGit,
   worktreePathForBranch,
-  currentBranch,
   branchChangesSinceBase,
   uncommittedWorkFiles,
   workFileFilter,
@@ -61,6 +60,7 @@ import {
 } from "../core/git.js";
 import { gitDirectorySnapshot } from "../core/git-directory-snapshot.js";
 import { getGitWorker } from "./git-worker.js";
+import { resolveDefaultBranch } from "../core/repo-log.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
 import { taskWithLiveHold } from "./hold-guard.js";
@@ -129,6 +129,21 @@ interface RunResult {
   stdout: string;
   stderr: string;
   error?: NodeJS.ErrnoException;
+}
+
+/**
+ * The branch a task's work diverged from — the anchor for the merge-base used
+ * by the bookkeeping restore, the stray-`repoos.toml` guard, the check scope and
+ * the engineering-report base.
+ *
+ * Resolved from the repo's default branch (`main`), NOT from the main
+ * checkout's `currentBranch()`. If the main checkout happens to sit on a
+ * feature branch, `merge-base(feat/x, HEAD)` can miss a sibling file present in
+ * both trees, so handoff would report a heal while the branch still carried the
+ * file (#1076).
+ */
+async function handoffBaseBranch(config: RepoOSConfig): Promise<string> {
+  return await resolveDefaultBranch(config.root);
 }
 
 export function runHandoffCommand(
@@ -319,7 +334,7 @@ async function runCheck(
       : (
           await getGitWorker(config.root).branchChangesSinceBase(
             worktree,
-            (await getGitWorker(config.root).currentBranch()) ?? "main",
+            await handoffBaseBranch(config),
           )
         ).base;
   // Identify the caller to the check-run history (#0564): the child records
@@ -808,7 +823,7 @@ async function runHandoffFinalization(
     try {
       const restored = await restoreForeignTaskBookkeepingFromMain({
         worktree: workdir,
-        baseBranch: (await getGitWorker(config.root).currentBranch()) ?? "main",
+        baseBranch: await handoffBaseBranch(config),
         taskId: task.id,
         ownTaskFile: task.path,
         workDir: config.workDir,
@@ -834,7 +849,7 @@ async function runHandoffFinalization(
 
   const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(
     workdir,
-    (await getGitWorker(config.root).currentBranch()) ?? "main",
+    await handoffBaseBranch(config),
     task,
   );
   if (!tomlGuard.ok) {
@@ -894,7 +909,7 @@ async function runHandoffFinalization(
       {
         const { base } = await getGitWorker(config.root).branchChangesSinceBase(
           workdir,
-          (await getGitWorker(config.root).currentBranch()) ?? "main",
+          await handoffBaseBranch(config),
         );
         if (base) {
           changedBase = base;
@@ -986,7 +1001,7 @@ async function runHandoffFinalization(
         return fail("check", `repoos check failed: ${buildLastCheckFailureSummary(checkOutput)}`);
       }
       if (checkRunSkipped(checkOutput)) {
-        const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
+        const baseBranch = await handoffBaseBranch(config);
         if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
           return fail("check", BRANCH_ADDS_PROJECT_NO_CHECK_PLAN);
         }
@@ -1081,7 +1096,7 @@ async function runHandoffFinalization(
       );
     }
     const source = await worktreeState(workdir, config);
-    const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
+    const baseBranch = await handoffBaseBranch(config);
     const codingAgent = resolveAgentForTask(config, task);
     if (!codingAgent) {
       return fail("review", "could not resolve the coding agent metadata for the report");

@@ -2811,8 +2811,12 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
 
   // A foreign file that exists at the branch point is restored to that copy; a
   // branch-added one has no main equivalent, so it is removed (a task never
-  // creates another task's bookkeeping). Only the branch's own commits are
-  // graded: a stray dirty copy in the working tree is left for the commit gate.
+  // creates another task's bookkeeping). The grading is over the branch's own
+  // commits (`baseFull..HEAD`), but the restore writes the working-tree copy too:
+  // `checkout <base> -- <path>` overwrites a dirty copy of an `onMain` file with
+  // the branch point's bytes. That is deliberate: a sibling's dirty copy here is
+  // a stale server write, never the engineer's work. Its removal is forced below
+  // for the same reason.
   const onMain: string[] = [];
   const addedByBranch: string[] = [];
   for (const p of foreign) {
@@ -3195,6 +3199,8 @@ export async function mergeBranch(
     const blocking = blockingFiles(run.stderr);
     if (blocking.length > 0) {
       for (const p of blocking) git(root, ["add", "--", p]);
+      // Main checkout, not a task worktree: the human may have other staged
+      // work here, so this bare commit is left as-is by design (#1076 scope).
       if (git(root, ["commit", "-m", "chore: sync working tree before merge"]) !== null) {
         notifyGitMutation(root, "commit");
         ff = false;
@@ -3234,6 +3240,8 @@ export async function mergeBranch(
         if (resolved.status !== 0) break;
       }
       const staged = await runGit(root, ["add", "-A", "--", ...conflicts], 10_000);
+      // Mid-merge on the main checkout, not a task worktree: git refuses a
+      // pathspec commit here, so the bare merge commit stays (#1076 scope).
       const commit =
         staged.status === 0 ? await runGit(root, ["commit", "--no-edit"], 15_000) : null;
       if (commit?.status === 0) {
