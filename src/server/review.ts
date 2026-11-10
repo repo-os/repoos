@@ -1305,12 +1305,17 @@ export class ReviewManager {
     const run = this.runs.get(taskId);
     const fenced = this.completions.has(taskId);
     const key = this.reviewKey(taskId);
-    const entryPresent = this.runner?.isRunning(key) ?? false;
-    // Nothing holds this task: answer without the liveness probe, which reads
-    // the registry and probes pids (board reads call this once per task).
-    if (!run && !fenced && !entryPresent) return null;
+    // Nothing holds this task: answer without reconciling dead agents, which
+    // reads the registry and probes pids (board reads call this once per task).
+    const held = this.runner
+      ? typeof this.runner.hasEntry === "function"
+        ? this.runner.hasEntry(key)
+        : this.runner.isRunning(key)
+      : false;
+    if (!run && !fenced && !held) return null;
     // A finalizing runner entry has already exited: it is not a live reviewer.
     const live = this.runner?.reviewProcessLive(key) ?? false;
+    const entryPresent = this.runner?.isRunning(key) ?? false;
     const proc = live ? this.runner?.running().find((r) => r.id === key) : undefined;
     // A live process reports its own start time; otherwise the registration's.
     // Only a live registration reads this, so the reaper's age check is unaffected.

@@ -6422,6 +6422,16 @@ export class AgentRunner {
   }
 
   /**
+   * Whether an entry is registered for the key, WITHOUT reconciling dead agents.
+   * For read paths (board GET, watchdog ticks) that only need to know whether
+   * anything could hold the key: reconciling reads the registry and probes pids
+   * for every entry, which is wrong to do once per idle task (#1083).
+   */
+  hasEntry(taskId: string): boolean {
+    return this.entries.has(taskId);
+  }
+
+  /**
    * Whether a review's reviewer process is still running (#1083). An entry that
    * is finalizing has already exited, so it does not count, even though its
    * finalize has not settled yet.
