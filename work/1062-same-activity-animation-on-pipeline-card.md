@@ -13,12 +13,13 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T18:26:10Z"
+updated_at: "2026-11-10T18:31:16Z"
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
 dev_error_count: 8
+engineer_stall_resume_log: "[{\"at\":\"2026-11-10T18:31:16.099Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -264,3 +265,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T18:24:12Z · handoff failed · remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > activates the shared pulse when reduced motion is off on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-10T18:24:12Z · message_queued at 2026-11-10T18:24:12.412Z
 - 2026-11-10T18:26:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T18:31:16Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
