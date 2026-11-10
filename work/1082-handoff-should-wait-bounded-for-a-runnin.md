@@ -85,3 +85,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T05:28:39Z · note: handoff requested (cli)
 - 2026-11-10T05:31:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T05:52:06Z · message_queued at 2026-11-10T05:52:06.329Z
+- 2026-11-10T05:52:06Z · handoff failed · task-file handoff failed at check · repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'.
