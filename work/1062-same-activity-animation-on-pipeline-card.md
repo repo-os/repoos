@@ -226,3 +226,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T11:32:46Z · ↻ resuming engineer to read queued message
 - 2026-11-10T11:32:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: no assistant message · stderr: (empty)
 - 2026-11-10T11:32:47Z · status active→review
+- 2026-11-10T11:32:47Z · message_delivered: 3 message(s)
