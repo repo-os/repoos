@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: e4806bbb898423c25374bcf91a1c40158a51aac8
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -239,3 +241,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T13:31:45Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T13:34:17Z · message_queued at 2026-11-10T13:34:17.579Z
 - 2026-11-10T13:34:18Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+
