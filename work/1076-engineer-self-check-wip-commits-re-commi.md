@@ -221,3 +221,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T10:59:35Z · note: shots: skipped — the diff (26 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T11:44:01Z · status review→active
 - 2026-11-10T11:44:03Z · CTO nudge: held — review is running
+- 2026-11-10T11:44:06Z · note: handoff requested (cli)
