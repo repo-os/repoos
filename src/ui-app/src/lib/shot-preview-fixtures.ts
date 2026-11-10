@@ -2270,6 +2270,7 @@ export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boole
     fixture === "pages:scroll" ||
     fixture === "editor:unconfigured" ||
     fixture === "budget:paused" ||
+    fixture === "settings:motionOff" ||
     fixture in SETTINGS_FIXTURE_STYLE
   );
 }
@@ -2289,6 +2290,12 @@ export function applyShotPreviewConfigFixture(
     if (editor) editor.command = "";
     const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
     if (dev?.inspector) dev.inspector.editorCommand = "";
+    return;
+  }
+  if (fixture === "settings:motionOff") {
+    config.form.activityAnimationEnabled = false;
+    if (config.data) config.data.activityAnimationEnabled = false;
+    config.notifyExternalFormUpdate();
     return;
   }
   if (fixture === "budget:paused") {
