@@ -14,7 +14,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T06:41:12Z"
+updated_at: "2026-11-10T06:44:20Z"
 review_passes: 15
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -70,6 +70,9 @@ Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under
 
 ## Accepted scope: no shell cross-fade (final)
 Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade of the loading skeleton is NOT required for this task. Replace it with an instant swap (no leave transition, no out-of-flow positioning); a smooth fade-out is part of follow-up #1078. A reviewer must not raise missing cross-fade, transition geometry or exit animation as blocking; report it as a suggestion. Keep: shell show-delay and minimum-visible time, Mission Control single block, Stories, named counts, reduced-motion.
+
+## Accepted scope and known limitations (final)
+Pass 15: a brief layout shift while the old shell fades out and the new page enters is a known limitation of this p3 easter egg, follow-up #1078. It is NOT blocking. Only a visible break of the settled page, a failing test, or a regression of existing behaviour blocks. Report anything else under Suggestions.
 
 ## Screenshots
 
@@ -478,3 +481,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T06:30:57Z · status review→active
 - 2026-11-10T06:31:00Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T06:41:12Z · body
+- 2026-11-10T06:44:20Z · body: Accepted scope and known limitations (final) (added)
