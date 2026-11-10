@@ -95,3 +95,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T21:46:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T21:56:57Z · status active→review
 - 2026-11-10T21:56:58Z · message_queued at 2026-11-10T21:56:58.293Z
+- 2026-11-10T21:56:58Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
