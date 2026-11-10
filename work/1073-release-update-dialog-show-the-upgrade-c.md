@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T09:23:57Z"
+updated_at: "2026-11-10T09:30:03Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -306,3 +306,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T09:13:07Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: A check is running; wait for it to finish.
 - 2026-11-10T09:14:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T09:23:57Z · body
+- 2026-11-10T09:30:03Z · handoff_deferred: 1 queued message(s) must be read before review
