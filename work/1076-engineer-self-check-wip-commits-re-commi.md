@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T13:14:26Z"
+updated_at: "2026-11-10T13:31:45Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -236,3 +236,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T13:10:06Z · status review→active
 - 2026-11-10T13:10:11Z · note: handoff requested (cli)
 - 2026-11-10T13:14:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T13:31:45Z · message_overdue: still queued after 60m without being delivered
