@@ -12,7 +12,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T09:24:43Z"
+updated_at: "2026-11-10T09:30:04Z"
 last_close_out_gate_ms: 687685
 last_close_out_gate_at: "2026-11-10T09:23:45.726Z"
 review_passes: 21
@@ -542,3 +542,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T09:04:53Z · note: review pass 21: good to go
 - 2026-11-10T09:23:45Z · close-out gate completed in 688s
 - 2026-11-10T09:24:43Z · status done→done, release:success
+- 2026-11-10T09:30:04Z · message_dropped: 1 queued message(s) discarded — task is done
