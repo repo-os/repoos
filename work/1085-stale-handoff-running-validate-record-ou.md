@@ -2,7 +2,7 @@
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: review
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -11,7 +11,10 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T17:31:19Z"
+updated_at: "2026-11-10T18:19:49Z"
+review_rounds: 1
+review_passes: 1
+engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 A task's handoff record can stay at `running` / step `validate` for hours after the work moved on. Seen on #1080 (handoff started 04:55Z, still "running validate" at 06:05Z even though review pass 8 was "good to go" and `repoos landable` was ready) and #1070 (same, ~30+ min). `repoos handoff-status <id>` keeps reporting running, and the board card shows "Checks · checking validate · 1h 11m" with "REVIEW PASSED · CHECKS RUNNING" and a greyed Move to done, which makes people think landing will fail.
@@ -27,6 +30,28 @@ The handoff record is only cleared by the handoff pipeline finishing. When the s
 
 ## Notes for AI
 Look at the handoff state store behind `repoos handoff-status` (src/server/handoff.ts), the watchdog (check-wait escalation) and the card state in the UI. Do not edit repoos.toml.
+
+## Shots
+```json
+[
+{
+"label": "Review card with landable Move to done enabled after superseded handoff",
+"target": "default",
+"route": "/work",
+"selector": "[data-task-id=\"9999\"]",
+"highlight": "[data-task-id=\"9999\"] .tc-agent-btn",
+"state": "card:reviewLandableReady"
+},
+{
+"label": "Active handoff stale flag on checks line (long-running validate)",
+"target": "default",
+"route": "/work",
+"selector": "[data-task-id=\"9999\"]",
+"highlight": "[data-task-id=\"9999\"] .tc-status-line",
+"state": "card:reviewChecksRunning"
+}
+]
+```
 
 ## Screenshots
 
@@ -46,3 +71,19 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T14:04:28Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T17:31:10Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T17:31:19Z · status active→review
+- 2026-11-10T17:42:35Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-10T17:42:36Z · note: review pass 1: needs some work
+- 2026-11-10T17:42:37Z · message_queued at 2026-11-10T17:42:37.075Z
+- 2026-11-10T17:42:37Z · note: Task body is underspecified: missing sections: Desired UX
+- 2026-11-10T17:42:37Z · status review→active
+- 2026-11-10T17:42:38Z · message_queued at 2026-11-10T17:42:38.035Z
+- 2026-11-10T17:42:38Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-10T17:42:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T17:47:42Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-10T17:47:46Z · message_delivered: 2 message(s)
+- 2026-11-10T17:49:56Z · body
+- 2026-11-10T17:59:44Z · message_queued at 2026-11-10T17:59:44.908Z
+- 2026-11-10T17:59:45Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T18:01:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T18:02:10Z · body
+- 2026-11-10T18:19:49Z · body
