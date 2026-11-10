@@ -107,3 +107,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T20:06:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T20:09:36Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-10T20:09:38Z · status active→review
+- 2026-11-10T20:09:38Z · note: Task body is underspecified: missing sections: Desired UX
