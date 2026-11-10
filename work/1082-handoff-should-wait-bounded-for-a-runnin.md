@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T01:11:54Z"
+updated_at: "2026-11-10T01:11:57Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -44,3 +44,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T00:39:49Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T01:11:47Z · cli_override, model_override
 - 2026-11-10T01:11:54Z · status ready→active, needs_input
+- 2026-11-10T01:11:57Z · CTO nudge: held — an undelivered message is already queued
