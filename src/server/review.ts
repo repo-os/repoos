@@ -311,8 +311,27 @@ export function reviewBlockingBar(
   return reviewUsesLightBar(task) ? "light" : "full";
 }
 
-/** Cap on the quoted accepted-scope section (#1080). */
-const ACCEPTED_SCOPE_CHARS = 4000;
+/**
+ * Cap on the quoted accepted-scope section (#1080). The section is
+ * authoritative, so it is cut only well past any realistic length.
+ */
+const ACCEPTED_SCOPE_CHARS = 12_000;
+
+/**
+ * Tracks Markdown fences across lines. A fence opens with three or more
+ * backticks or tildes and closes only with the same character, at least as
+ * long as the opener, so a tilde block can quote a backtick fence and the
+ * other way round (#1080). Returns the open fence, or null when outside one.
+ */
+function nextFenceState(open: string | null, line: string): string | null {
+  const match = /^(`{3,}|~{3,})/.exec(line.trim());
+  if (!match) return open;
+  const marker = match[1]!;
+  if (open === null) return marker;
+  const sameChar = marker[0] === open[0];
+  const closes = sameChar && marker.length >= open.length && line.trim() === marker;
+  return closes ? null : open;
+}
 
 /**
  * The `## Accepted scope and known limitations` section of a task body, from
@@ -322,22 +341,21 @@ const ACCEPTED_SCOPE_CHARS = 4000;
 export function acceptedScopeSection(body: string): string | null {
   const lines = body.split("\n");
   let start = -1;
-  let fenced = false;
+  let fence: string | null = null;
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i]!.trim();
-    if (trimmed.startsWith("```")) fenced = !fenced;
-    else if (!fenced && /^##\s+Accepted scope/i.test(trimmed)) {
+    if (fence === null && /^##\s+Accepted scope/i.test(trimmed)) {
       start = i;
       break;
     }
+    fence = nextFenceState(fence, lines[i]!);
   }
   if (start < 0) return null;
   let end = start + 1;
-  fenced = false;
+  fence = null;
   for (; end < lines.length; end++) {
-    const trimmed = lines[end]!.trim();
-    if (trimmed.startsWith("```")) fenced = !fenced;
-    if (!fenced && /^##\s/.test(trimmed)) break;
+    if (fence === null && /^##\s/.test(lines[end]!.trim())) break;
+    fence = nextFenceState(fence, lines[end]!);
   }
   const text = lines.slice(start, end).join("\n").trim();
   if (!text) return null;

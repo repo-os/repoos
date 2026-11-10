@@ -501,13 +501,63 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
     expect(section).not.toContain("## Notes for AI");
   });
 
+  it("keeps a long accepted-scope section whole up to the 12000-character cap", () => {
+    const items = Array.from({ length: 200 }, (_, i) => `- limitation ${i}: ${"x".repeat(30)}`);
+    const body = ["## Accepted scope and known limitations", "", ...items, "", "## Notes", "x"].join(
+      "\n",
+    );
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).not.toMatch(/\[truncated/);
+    expect(section).toContain("- limitation 199:");
+    expect(section).not.toContain("## Notes");
+  });
+
   it("marks a truncated accepted-scope quote instead of dropping items silently", () => {
-    const body = ["## Accepted scope and known limitations", "", "- item ".repeat(1000)].join("\n");
+    const body = ["## Accepted scope and known limitations", "", "- item ".repeat(3000)].join("\n");
     const section = acceptedScopeSection(body) ?? "";
     expect(section).toMatch(
-      /\[truncated: the accepted-scope section is longer than 4000 characters/,
+      /\[truncated: the accepted-scope section is longer than 12000 characters/,
     );
-    expect(section.length).toBeLessThan(4200);
+    expect(section.length).toBeLessThan(12_200);
+  });
+
+  it("treats a tilde-fenced accepted-scope example as a fence, not the real section", () => {
+    const body = [
+      "~~~md",
+      "## Accepted scope and known limitations",
+      "- example only",
+      "~~~",
+      "",
+      "## Accepted scope and known limitations",
+      "",
+      "- real item",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toContain("- real item");
+    expect(section).not.toContain("- example only");
+  });
+
+  it("does not end the section at a heading inside a tilde fence or close a tilde fence with backticks", () => {
+    const body = [
+      "## Accepted scope and known limitations",
+      "",
+      "~~~md",
+      "## not a heading",
+      "```",
+      "## still inside the tilde fence",
+      "~~~",
+      "",
+      "- The guard is out of scope.",
+      "",
+      "## Notes for AI",
+      "",
+      "x",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toContain("## not a heading");
+    expect(section).toContain("## still inside the tilde fence");
+    expect(section).toContain("- The guard is out of scope.");
+    expect(section).not.toContain("## Notes for AI");
   });
 
   it("keeps the engineer handoff sentence well formed", () => {
