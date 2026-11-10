@@ -436,3 +436,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T03:06:53Z · watchdog: restarting engineer after 11m with no live process
 - 2026-11-10T03:07:09Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 51m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-10T03:28:50Z · needs_input
+- 2026-11-10T03:28:50Z · message_delivered: 2 message(s)
