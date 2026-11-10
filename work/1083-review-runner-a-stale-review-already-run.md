@@ -3,9 +3,6 @@ id: "1083"
 title: "Review runner: a stale 'review already running' registration survives review cancel and blocks reviews until the server restarts (seen on #1080)"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `registration()` still runs the reconciling liveness probe on every board read, so the pass-3 fix did not land."
 priority: p1
 area: server
 assigned_to: ai
@@ -107,3 +104,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T22:21:07Z · message_queued at 2026-11-10T22:21:07.951Z
 - 2026-11-10T22:21:08Z · note: shots: skipped — the diff (16 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T22:23:27Z · note: review pass 5: good to go
+- 2026-11-10T22:23:27Z · needs_input
