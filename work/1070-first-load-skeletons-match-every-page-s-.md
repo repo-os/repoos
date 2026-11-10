@@ -3,9 +3,6 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — The shell no longer cross-fades into content.
 priority: p3
 area: web
 assigned_to: ai
@@ -538,3 +535,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T08:59:52Z · needs_input
 - 2026-11-10T08:59:52Z · needs_input
 - 2026-11-10T09:04:14Z · body: Accepted scope: no loading-state screenshots (added 1, removed 1)
+- 2026-11-10T09:04:14Z · needs_input (review-rounds-exhausted) cleared for review again by human
