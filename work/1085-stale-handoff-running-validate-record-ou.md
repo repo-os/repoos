@@ -161,3 +161,4 @@ FINAL (pass 4): reconciling stale handoff records, the stale flag on every check
 - 2026-11-10T23:55:22Z · note: shots: failed — browser capture cancelled
 - 2026-11-10T23:57:57Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-10T23:57:57Z · message_queued at 2026-11-10T23:57:57.891Z
+- 2026-11-10T23:57:57Z · note: review pass 4: needs some work
