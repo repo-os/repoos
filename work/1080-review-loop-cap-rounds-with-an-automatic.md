@@ -16,7 +16,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-10T04:07:10Z"
+updated_at: "2026-11-10T04:19:30Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
@@ -211,3 +211,4 @@ The declared shot of the new Settings control is an evidence nicety: the capture
 - 2026-11-10T03:28:29Z · message_delivered: 2 message(s)
 - 2026-11-10T03:33:29Z · body
 - 2026-11-10T04:07:10Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-10T04:19:30Z · body
