@@ -180,3 +180,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T08:36:39Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Implementing the three review fixes. · stderr: (empty)
 - 2026-11-10T08:36:39Z · status active→review
 - 2026-11-10T08:36:39Z · message_delivered: 1 message(s)
+- 2026-11-10T08:36:40Z · note: handoff requested (cli)
