@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ActivityIndicator from "../src/components/ActivityIndicator.vue";
+import { OVERLAY_LAYER_ATTR } from "../src/components/ui/dialog/layer.js";
 import { resetActivityMotionCoordinatorForTests } from "../src/lib/activity-motion";
 import { useConfigStore } from "../src/stores/config";
 
@@ -108,6 +109,35 @@ describe("activity animation coordinator", () => {
     await wrapper.vm.$nextTick();
     expect(root.classList.contains("ai-motion-paused")).toBe(false);
     blocker.remove();
+  });
+
+  it("pauses when a teleported overlay opens without scroll or resize", async () => {
+    observers.length = 0;
+    globalThis.IntersectionObserver =
+      FakeIntersectionObserver as unknown as typeof IntersectionObserver;
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    useConfigStore(pinia).form.activityAnimationEnabled = true;
+    const wrapper = mount(ActivityIndicator, { global: { plugins: [pinia] } });
+    mounted.push(wrapper);
+    const observer = observers[0]!;
+    const root = wrapper.element;
+    stubIndicatorLayout(root);
+    document.elementFromPoint = vi.fn(() => root) as typeof document.elementFromPoint;
+    observer.trigger(root, true);
+    await wrapper.vm.$nextTick();
+    expect(root.classList.contains("ai-motion-paused")).toBe(false);
+
+    const overlay = document.createElement("div");
+    overlay.setAttribute(OVERLAY_LAYER_ATTR, "overlay-test");
+    document.body.appendChild(overlay);
+    document.elementFromPoint = vi.fn(() => overlay) as typeof document.elementFromPoint;
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    await wrapper.vm.$nextTick();
+    expect(root.classList.contains("ai-motion-paused")).toBe(true);
+    overlay.remove();
   });
 
   it("pauses offscreen and hidden indicators and enforces the live cap", async () => {

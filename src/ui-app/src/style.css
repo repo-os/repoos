@@ -9727,6 +9727,9 @@
   color: var(--txt-faint);
   margin-top: 2px;
 }
+[id="setting-localChecks.reclaimGraceMs"] .setting-desc {
+  color: var(--muted-foreground);
+}
 .setting-input {
   flex-shrink: 0;
   margin-left: auto;

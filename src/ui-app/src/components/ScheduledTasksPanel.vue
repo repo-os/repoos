@@ -343,12 +343,12 @@ onMounted(() => {
       <code>schedules/</code> and run inside this server.
     </p>
     <p v-if="error" class="ff-error">{{ error }}</p>
-    <PageSkeleton v-if="loading && !schedules.length" kind="rows" />
-    <p v-else-if="!schedules.length" class="agent-desc">
+    <PageSkeleton :loading="loading && !schedules.length" kind="rows" />
+    <p v-if="!loading && !schedules.length" class="agent-desc">
       No schedules yet. Add one to automate documentation audits, health checks, or other
       maintenance work.
     </p>
-    <div v-else class="schedule-list">
+    <div v-if="schedules.length" class="schedule-list">
       <article
         v-for="row in schedules"
         :key="row.id"
