@@ -11,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T08:09:19Z"
+updated_at: "2026-11-10T08:09:23Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'."
 last_handoff_failure_sha: b1fb1141a2bbafe4f1c334c9b42e8862e5efd991
 review_rounds: 1
@@ -99,3 +99,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T07:44:50Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-10T07:46:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T08:09:19Z · note: adopted orphaned engineer pid 76013
+- 2026-11-10T08:09:23Z · note: adopted orphaned engineer pid 76013
