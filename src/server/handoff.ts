@@ -1125,7 +1125,8 @@ async function runHandoffFinalization(
     if (!finalized.report)
       return fail("review", finalized.error ?? "engineering report could not be finalized");
     finalizedReport = finalized.report;
-    const reportPath = engineeringReportRelPath(config, task.id, finalized.report.round);
+    const reportRound = finalized.report.round;
+    const reportPath = engineeringReportRelPath(config, task.id, reportRound);
     const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
     if (staged.status !== 0)
       return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
@@ -1144,7 +1145,7 @@ async function runHandoffFinalization(
             [
               "commit",
               "-m",
-              `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
+              `docs: record engineering report for #${task.id} round ${reportRound}`,
             ],
             20_000,
           ),
