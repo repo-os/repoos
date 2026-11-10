@@ -3,9 +3,6 @@ id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the drawer never renders the waiting label; the capture reads \"starting…\", so AC1's visible waiting state is unmet."
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T09:25:15Z"
+updated_at: "2026-11-10T09:25:16Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -135,3 +132,4 @@ FINAL (pass 3): the core behaviour is in scope: the handoff and server git opera
 - 2026-11-10T08:58:19Z · note: review pass 3: needs some work
 - 2026-11-10T08:58:19Z · needs_input
 - 2026-11-10T09:25:15Z · body: Accepted scope and known limitations (added)
+- 2026-11-10T09:25:16Z · needs_input (review-rounds-exhausted) cleared for review again by human
