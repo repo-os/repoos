@@ -118,3 +118,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T01:36:39Z · message_queued at 2026-11-10T01:36:39.227Z
 - 2026-11-10T01:41:54Z · message_queued at 2026-11-10T01:41:54.313Z
 - 2026-11-10T01:47:07Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T01:47:07Z · note: handoff requested (cli)
