@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
@@ -115,3 +116,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T01:31:20Z · message_queued at 2026-11-10T01:31:20.449Z
 - 2026-11-10T01:31:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T01:36:39Z · message_queued at 2026-11-10T01:36:39.227Z
+
