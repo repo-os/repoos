@@ -136,9 +136,10 @@ describe("stale registration reaper (#1083)", () => {
   it("never clears an old registration whose reviewer process is still alive", () => {
     const { reviews, internal } = setup({
       isRunning: (key: string) => key === KEY,
-      running: () => [
-        { id: KEY, pid: 4242, startedAt: new Date(0).toISOString() },
-      ] as unknown as ReturnType<AgentRunner["running"]>,
+      running: () =>
+        [{ id: KEY, pid: 4242, startedAt: new Date(0).toISOString() }] as unknown as ReturnType<
+          AgentRunner["running"]
+        >,
     });
     const stale = Date.now() - reviewTimeoutMs({} as RepoOSConfig) - 60_000;
     internal.runs.set(TASK_ID, { startedAt: stale, cancelled: false, mode: "run" });
@@ -149,9 +150,8 @@ describe("stale registration reaper (#1083)", () => {
     const { reviews, internal } = setup();
     const completions = (internal as unknown as { completions: Map<string, Promise<void>> })
       .completions;
-    const completionSince = (
-      internal as unknown as { completionSince: Map<string, number> }
-    ).completionSince;
+    const completionSince = (internal as unknown as { completionSince: Map<string, number> })
+      .completionSince;
     completions.set(TASK_ID, new Promise<void>(() => {}));
     completionSince.set(TASK_ID, Date.now() - reviewTimeoutMs({} as RepoOSConfig) - 60_000);
     expect(reviews.runningCount()).toBe(0);
@@ -164,9 +164,10 @@ describe("refusal names what is running (#1083)", () => {
     const started = "2026-11-10T17:27:00.000Z";
     const { reviews, internal } = setup({
       isRunning: (key: string) => key === KEY,
-      running: () => [
-        { id: KEY, pid: 4242, startedAt: started },
-      ] as unknown as ReturnType<AgentRunner["running"]>,
+      running: () =>
+        [{ id: KEY, pid: 4242, startedAt: started }] as unknown as ReturnType<
+          AgentRunner["running"]
+        >,
     });
     internal.runs.set(TASK_ID, {
       startedAt: Date.parse(started),
