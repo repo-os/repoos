@@ -258,3 +258,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T17:34:49Z · message_delivered: 1 message(s)
 - 2026-11-10T17:34:50Z · status review→active
 - 2026-11-10T17:46:10Z · message_queued at 2026-11-10T17:46:10.052Z
+- 2026-11-10T17:46:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
