@@ -139,3 +139,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T22:50:40Z · status active→review
 - 2026-11-10T23:04:42Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-10T23:04:43Z · message_queued at 2026-11-10T23:04:43.463Z
+- 2026-11-10T23:04:43Z · note: review pass 3: needs some work
