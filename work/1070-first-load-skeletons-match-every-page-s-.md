@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T05:31:16Z"
+updated_at: "2026-11-10T06:04:39Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — defaultValue: '',"
 last_handoff_failure_sha: 9408c126f3a36bdb0bb608eedc8294267e47d6ff
 review_passes: 14
@@ -461,3 +461,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T05:28:00Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — defaultValue: '',
 - 2026-11-10T05:28:37Z · message_delivered: 1 message(s)
 - 2026-11-10T05:31:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T06:04:39Z · handoff_deferred: 1 queued message(s) must be read before review
