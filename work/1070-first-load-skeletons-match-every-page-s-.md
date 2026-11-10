@@ -528,3 +528,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T08:29:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T08:39:50Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-10T08:39:52Z · message_queued at 2026-11-10T08:39:52.371Z
+- 2026-11-10T08:39:52Z · handoff failed · task-file handoff failed at review · Engineering report is missing required sections: ## TL;DR, ## Work and rationale.
