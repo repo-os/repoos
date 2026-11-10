@@ -192,3 +192,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T09:50:34Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T09:50:34Z · status active→review
 - 2026-11-10T09:50:35Z · message_delivered: 1 message(s)
+- 2026-11-10T09:50:35Z · note: handoff requested (cli)
