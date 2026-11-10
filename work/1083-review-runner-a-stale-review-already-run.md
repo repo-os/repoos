@@ -104,3 +104,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T22:04:45Z · note: handoff requested (cli)
 - 2026-11-10T22:06:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T22:21:07Z · status active→review
+- 2026-11-10T22:21:07Z · message_queued at 2026-11-10T22:21:07.951Z
