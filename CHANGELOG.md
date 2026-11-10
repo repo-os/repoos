@@ -5,7 +5,7 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
-## [v0.5.80] - 2026-11-09
+## [v0.5.80] - 2026-11-10
 
 ## Highlights
 
