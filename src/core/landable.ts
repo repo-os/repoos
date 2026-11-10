@@ -425,7 +425,7 @@ export function evaluateTaskScopeCheck(facts: {
         : `the diff changes another task's bookkeeping: ${quoteList(forbidden)}`,
       nextStep: config
         ? "Remove repoos.toml from the branch and re-request review"
-        : `Restore ${quoteList(forbidden)} from main on the branch (git checkout main -- <path>) and re-request review`,
+        : `Handoff restores ${quoteList(forbidden)} from main automatically; re-request review and it will be healed`,
     };
   }
   return {
