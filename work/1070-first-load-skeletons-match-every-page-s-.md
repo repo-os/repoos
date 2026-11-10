@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T07:45:52Z"
-review_passes: 16
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
+updated_at: "2026-11-10T07:46:42Z"
+review_passes: 16
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -72,6 +72,9 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 
 ## Accepted scope and known limitations (final)
 Pass 15: a brief layout shift while the old shell fades out and the new page enters is a known limitation of this p3 easter egg, follow-up #1078. It is NOT blocking. Only a visible break of the settled page, a failing test, or a regression of existing behaviour blocks. Report anything else under Suggestions.
+
+## Accepted scope and known limitations (decision, pass 16)
+DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a simultaneous cross-fade. Earlier reviews demanded a cross-fade and then flagged the layout shift it causes; out-in is the agreed resolution. A reviewer must not require a cross-fade or flag the out-in behaviour (header fading briefly) as a bug. Per-view exit timing is #1078. Only a broken settled page, failing test or regression blocks.
 
 ## Screenshots
 
@@ -505,4 +508,4 @@ Pass 15: a brief layout shift while the old shell fades out and the new page ent
 - 2026-11-10T07:44:48Z · message_queued at 2026-11-10T07:44:48.185Z
 - 2026-11-10T07:45:51Z · note: review pass 16: needs some work
 - 2026-11-10T07:45:51Z · needs_input
-
+- 2026-11-10T07:46:42Z · body: Accepted scope and known limitations (decision, pass 16) (added)
