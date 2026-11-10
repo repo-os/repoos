@@ -2,18 +2,21 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: ready
+status: active
 priority: p2
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/same-activity-animation-on-pipeline-card
 cli_override: cursor
 model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-08T09:19:43Z"
+updated_at: "2026-11-10T05:46:24Z"
+handoff_signal_retry_count: 2
+last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
+dev_error_count: 7
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -41,6 +44,32 @@ updated_at: "2026-11-08T09:19:43Z"
 ## Notes for AI
 Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `TaskCard.vue`, `src/ui-app/src/views/WorkView.vue` and `PipelineView.vue` (how the two views are mounted), the Settings keys for activity animation in `src/core/config.ts` and `SettingsView.vue`. Reuse the existing styled components and global classes in `style.css`; no native tooltips.
 
+## Shots
+```json
+[
+{
+"label": "Pipeline lane cards use ActivityIndicator",
+"target": "default",
+"route": "/work",
+"highlight": ".pipeline-card[data-task-id=\"pipe-coding\"] .pl-activity",
+"state": "board:pipeline"
+},
+{
+"label": "Compact activity animation settings (Motion on)",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": "#settings-section-activity-animation"
+},
+{
+"label": "Activity animation Motion off",
+"target": "default",
+"route": "/settings?tab=general&section=activity-animation",
+"highlight": "#setting-activityAnimationEnabled",
+"state": "settings:motionOff"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-08T09:13:53Z · created · njachowski@gmail.com
@@ -50,3 +79,68 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-08T09:14:07Z · body: Desired UX (added); Desired behavior (removed)
 - 2026-11-08T09:14:09Z · status inbox→ready
 - 2026-11-08T09:19:43Z · body: Desired UX (added 4, removed 1); Acceptance criteria (added 3, removed 1)
+- 2026-11-09T22:28:23Z · status ready→active, branch
+- 2026-11-09T22:50:40Z · message_queued at 2026-11-09T22:50:40.314Z
+- 2026-11-09T22:50:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T22:51:41Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T23:07:17Z · body
+- 2026-11-09T23:07:33Z · body
+- 2026-11-09T23:43:50Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-09T23:43:50Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-11-09T23:47:01Z · needs_input
+- 2026-11-09T23:47:01Z · message_delivered: 1 message(s)
+- 2026-11-09T23:47:05Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T00:03:53Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T00:39:44Z · watchdog: restarting engineer after 33m with no live process
+- 2026-11-10T00:39:53Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T00:40:23Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T00:40:27Z · needs_input
+- 2026-11-10T00:42:27Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T00:43:28Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T00:43:31Z · needs_input
+- 2026-11-10T00:46:31Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T00:48:01Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T00:48:06Z · needs_input
+- 2026-11-10T01:04:37Z · body
+- 2026-11-10T01:16:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T01:31:19Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)
+- 2026-11-10T01:31:20Z · message_queued at 2026-11-10T01:31:20.449Z
+- 2026-11-10T01:31:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T01:36:39Z · message_queued at 2026-11-10T01:36:39.227Z
+- 2026-11-10T01:41:54Z · message_queued at 2026-11-10T01:41:54.313Z
+- 2026-11-10T01:47:07Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T01:47:07Z · note: handoff requested (cli)
+- 2026-11-10T01:51:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T02:01:19Z · message_delivered: 1 message(s)
+- 2026-11-10T02:03:24Z · body
+- 2026-11-10T02:03:51Z · body
+- 2026-11-10T02:04:54Z · note: ui verification failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:41675/api/config (http://127.0.0.1:41675/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:41675/api/config)
+- 2026-11-10T02:04:55Z · message_queued at 2026-11-10T02:04:55.465Z
+- 2026-11-10T02:04:55Z · handoff failed · task-file handoff failed at verify · ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:41675/api/config (http://127.0.0.1:41675/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:41675/api/config)
+- 2026-11-10T02:05:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T02:22:32Z · body
+- 2026-11-10T02:39:46Z · handoff_deferred: 3 queued message(s) must be read before review
+- 2026-11-10T02:39:46Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T02:39:47Z · message_queued at 2026-11-10T02:39:47.277Z
+- 2026-11-10T02:39:48Z · ↻ resuming engineer to read queued message
+- 2026-11-10T02:39:48Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-10T02:39:48Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-11-10T02:39:54Z · engineer crash recovery: start failed — task is already running or finalizing
+- 2026-11-10T03:27:47Z · needs_input
+- 2026-11-10T03:27:49Z · message_delivered: 4 message(s)
+- 2026-11-10T03:28:09Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T03:28:39Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T04:18:16Z · needs_input
+- 2026-11-10T04:24:32Z · note: adopted orphaned engineer pid 29278
+- 2026-11-10T04:31:25Z · body
+- 2026-11-10T04:32:02Z · body
+- 2026-11-10T04:44:30Z · message_queued at 2026-11-10T04:44:30.301Z
+- 2026-11-10T04:44:30Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T04:49:31Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T04:54:30Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 60421 is dead for 11m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-10T04:54:40Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-10T04:56:16Z · note: adopted orphaned engineer pid 29278
+- 2026-11-10T05:01:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T05:46:05Z · queued message undelivered for 62m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-10T05:46:15Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Re-running the scoped check after a flaky unrelated test failure. · stderr: RetriableError: Connection failed repeatedly Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-10T05:46:24Z · message_overdue: still queued after 60m without being delivered
