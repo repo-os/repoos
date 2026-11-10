@@ -6432,8 +6432,11 @@ export class AgentRunner {
         pidAlive(rec.pid) || livePidsInRecordedGroup(rec.processGroupLeader ?? rec.pid).length > 0;
       if (cwdGone || !processAlive) stale.add(rec.taskId);
     }
+    // Review turns are reaped too (#1083): an adopted review whose process died
+    // has no `close` event, so without this its entry — and the review
+    // registration that reads it — would outlive the process forever.
     for (const [taskId, entry] of this.entries) {
-      if (entry.review || entry.finalizing) continue;
+      if (entry.finalizing) continue;
       const cwdGone = Boolean(entry.workdir && !existsSync(entry.workdir));
       const pid = entry.proc?.pid ?? entry.adoptedPid;
       const processAlive =

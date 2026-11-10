@@ -68,6 +68,7 @@ import {
   usageCostSource,
   type AgentRunner,
   type PromptResult,
+  type StartResult,
 } from "./agents.js";
 import { resolveRoutedAgent } from "./model-routing-wiring.js";
 import { NEEDS_INPUT_DISMISSED_LINE_RE } from "./needs-input-dismiss.js";
@@ -1021,6 +1022,8 @@ export function reviewFollowupMission(
 /** In-flight bookkeeping for one review run. */
 interface Run {
   cancelled: boolean;
+  /** When this registration was taken (ms epoch). Drives the stale-entry reaper (#1083). */
+  startedAt: number;
   /**
    * Reviewer selected when this turn started. This keeps a task-level
    * override attached to the result even if global settings change mid-run.
@@ -1172,6 +1175,8 @@ function parseReviewReportFile(file: string, taskId: string): ReviewReport | nul
 
 export class ReviewManager {
   private readonly completions = new Map<string, Promise<void>>();
+  /** When each completion fence was taken (ms epoch), for the stale-entry reaper (#1083). */
+  private readonly completionSince = new Map<string, number>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;
   private readonly runs = new Map<string, Run>();
@@ -1254,14 +1259,16 @@ export class ReviewManager {
     return resolveReviewer(this.config) !== null;
   }
 
+  /**
+   * Whether a review registration holds this task. An in-flight review is
+   * tracked in the durable runner session (0288), so a review re-attached after
+   * a reload still reads as running here. A registration with no live process
+   * that has outlived the review timeout is stale: it is cleared first, so no
+   * caller (route gate, watchdog, `review again`) is refused by it (#1083).
+   */
   isRunning(taskId: string): boolean {
-    // An in-flight review is tracked in the durable runner session (0288), so
-    // a review re-attached after a reload still reads as running here.
-    return (
-      this.completions.has(taskId) ||
-      this.runs.has(taskId) ||
-      !!this.runner?.isRunning(this.reviewKey(taskId))
-    );
+    this.reapStaleRegistration(taskId);
+    return this.registration(taskId) !== null;
   }
 
   /**
@@ -1270,9 +1277,70 @@ export class ReviewManager {
    * Count turns and completions once each, including adopted reviews whose
    * process has exited but whose report is still being stored. Counting the
    * runner separately would double-count adopted turns (0288 review round 2).
+   * Stale registrations are reaped first so they cannot hold the idle check open.
    */
   runningCount(): number {
+    const ids = new Set([...this.runs.keys(), ...this.completions.keys()]);
+    for (const id of ids) this.reapStaleRegistration(id);
     return new Set([...this.runs.keys(), ...this.completions.keys()]).size;
+  }
+
+  /**
+   * What holds a task's review registration, or null when nothing does. `live`
+   * is whether a reviewer process (or its durable session, mid-finalize) still
+   * exists — the signal that separates a real registration from a leaked one.
+   */
+  private registration(
+    taskId: string,
+  ): { since: number; pid: number | null; live: boolean } | null {
+    const run = this.runs.get(taskId);
+    const fenced = this.completions.has(taskId);
+    const key = this.reviewKey(taskId);
+    const live = this.runner?.isRunning(key) ?? false;
+    if (!run && !fenced && !live) return null;
+    const proc = live ? this.runner?.running().find((r) => r.id === key) : undefined;
+    const since =
+      run?.startedAt ??
+      this.completionSince.get(taskId) ??
+      (proc ? Date.parse(proc.startedAt) : Date.now());
+    return { since, pid: proc && proc.pid > 0 ? proc.pid : null, live };
+  }
+
+  /**
+   * Clear a registration that has no live process once it is older than the
+   * review timeout (#1083). A fresh one (still preparing, or finalizing a
+   * just-finished turn) is left alone. Returns true when it cleared one.
+   */
+  private reapStaleRegistration(taskId: string): boolean {
+    const reg = this.registration(taskId);
+    if (!reg || reg.live) return false;
+    if (Date.now() - reg.since <= reviewTimeoutMs(this.config)) return false;
+    this.logger.task(taskId, "warn", "stale review registration cleared — no live reviewer process", {
+      since: new Date(reg.since).toISOString(),
+    });
+    this.releaseRegistration(taskId);
+    return true;
+  }
+
+  /** Drop every in-memory trace of a task's review registration (#1083). */
+  private releaseRegistration(taskId: string): void {
+    const run = this.runs.get(taskId);
+    if (run?.timer) clearTimeout(run.timer);
+    this.runs.delete(taskId);
+    this.completions.delete(taskId);
+    this.completionSince.delete(taskId);
+  }
+
+  /**
+   * The refusal for a start request that finds a live registration. It names
+   * what is running (pid, start time) so a human can tell a live reviewer from
+   * a leaked one (#1083).
+   */
+  private refusalWhileRunning(taskId: string): string {
+    const reg = this.registration(taskId);
+    const since = reg ? new Date(reg.since).toISOString() : "unknown";
+    const what = reg?.pid ? `pid ${reg.pid}` : "no reviewer process id yet";
+    return `a review is already running for this task (${what}, since ${since})`;
   }
 
   /**
@@ -1319,7 +1387,7 @@ export class ReviewManager {
       return { ok: false, reason: "evidence refresh is in progress for this task" };
     }
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task" };
+      return { ok: false, reason: this.refusalWhileRunning(task.id) };
     }
     if (task.hotfix) {
       return { ok: false, reason: "hotfix tasks skip diff-based review" };
@@ -1356,7 +1424,7 @@ export class ReviewManager {
     mode: "run" | "chat",
     prepare: (run: Run) => Promise<ReviewRunResult>,
   ): Promise<ReviewRunResult> {
-    const run: Run = { cancelled: false, mode };
+    const run: Run = { cancelled: false, mode, startedAt: Date.now() };
     this.runs.set(taskId, run);
     try {
       return await prepare(run);
@@ -1385,7 +1453,7 @@ export class ReviewManager {
       return { ok: false, reason: "evidence refresh is in progress for this task", trigger };
     }
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task", trigger };
+      return { ok: false, reason: this.refusalWhileRunning(task.id), trigger };
     }
     return this.prepareReview(task.id, "run", async (run) => {
       const stored = this.read(task.id);
@@ -1501,7 +1569,7 @@ export class ReviewManager {
    */
   async runCheckpointDelta(task: Task, approvedSha: string): Promise<ReviewRunResult> {
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task" };
+      return { ok: false, reason: this.refusalWhileRunning(task.id) };
     }
     return this.prepareReview(task.id, "run", async (run) => {
       const baseReviewer = resolveReviewerForTask(this.config, task);
@@ -1607,14 +1675,22 @@ export class ReviewManager {
     humanEntry?: AgentOutputEntry,
     sessionId?: string,
   ): void {
-    const started = this.runner?.startReview(this.reviewKey(taskId), agent, mission, workdir, {
-      reset: mode === "run",
-      reviewKind: mode,
-      humanEntry,
-      ...(sessionId ? { sessionId } : {}),
-    });
+    // A throwing spawn is a failed start like any other: it must release the
+    // registration taken in `prepareReview`, not leave it to block the next
+    // request (#1083).
+    let started: StartResult | undefined;
+    try {
+      started = this.runner?.startReview(this.reviewKey(taskId), agent, mission, workdir, {
+        reset: mode === "run",
+        reviewKind: mode,
+        humanEntry,
+        ...(sessionId ? { sessionId } : {}),
+      });
+    } catch (error) {
+      started = { ok: false, reason: (error as Error).message };
+    }
     if (!started || !started.ok) {
-      this.runs.delete(taskId);
+      if (this.runs.get(taskId) === run) this.runs.delete(taskId);
       this.emit({
         type: "review",
         id: taskId,
@@ -1655,6 +1731,7 @@ export class ReviewManager {
       if (this.runs.has(taskId)) continue;
       const run: Run = {
         cancelled: this.isCancelled(taskId),
+        startedAt: Date.now(),
         mode: this.runner?.reviewKindOf(r.id) ?? "run",
         timeoutMinutes: reviewTimeoutMinutes(this.config),
       };
@@ -1771,9 +1848,14 @@ export class ReviewManager {
       reject = failed;
     });
     this.completions.set(taskId, completion);
+    this.completionSince.set(taskId, Date.now());
+    // Release only the fence this call took: the reaper (#1083) may already
+    // have cleared it, and a newer registration must not be dropped with it.
     const release = () => {
+      if (this.completions.get(taskId) !== completion) return;
       this.runs.delete(taskId);
       this.completions.delete(taskId);
+      this.completionSince.delete(taskId);
     };
     // Start immediately so synchronous cancellation/chat bookkeeping keeps its
     // ordering; the fence stays registered across every awaited worker read.
@@ -2281,7 +2363,7 @@ export class ReviewManager {
    */
   async send(task: Task, text: string): Promise<ReviewRunResult> {
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task" };
+      return { ok: false, reason: this.refusalWhileRunning(task.id) };
     }
     return this.prepareReview(task.id, "chat", async (run) => {
       const agent = resolveReviewerForTask(this.config, task);
@@ -2438,7 +2520,7 @@ export class ReviewManager {
   cancel(taskId: string): void {
     const run = this.runs.get(taskId);
     const key = this.reviewKey(taskId);
-    if (!run && !this.runner?.isRunning(key)) return;
+    if (!run && !this.completions.has(taskId) && !this.runner?.isRunning(key)) return;
     if (run) run.cancelled = true;
     // Persist the cancellation so it survives a reload: an adopted review whose
     // `Run` record died with the previous process must still finalize as
@@ -2450,7 +2532,10 @@ export class ReviewManager {
     } catch {
       /* already gone */
     }
-    if (run?.timer) clearTimeout(run.timer);
+    // Drop the registration now, even when the child is already gone and will
+    // never report its exit (#1083). A live child still finalizes as cancelled
+    // through the marker above, so nothing is lost by releasing early.
+    this.releaseRegistration(taskId);
   }
 
   /** Cancel every in-flight review (server shutdown). */
