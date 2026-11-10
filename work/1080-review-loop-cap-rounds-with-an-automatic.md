@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T05:02:07Z"
-review_passes: 4
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
@@ -18,6 +16,8 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
+updated_at: "2026-11-10T05:45:05Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -61,6 +61,9 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 
 ## Accepted scope: Settings screenshot (final)
 The declared shot of the new Settings control is an evidence nicety: the captured shot may show Mission Control instead. A reviewer must report a missing or off-target screenshot as a suggestion, not blocking.
+
+## Accepted scope and known limitations
+Final (pass 7): accepted-scope extraction handles the first matching section up to 12,000 characters, with backtick and tilde fences. Multiple accepted-scope sections, sections longer than 12,000 characters and the 6,000-character task-spec excerpt are known limitations tracked in #1081; they are NOT blocking. A stale engineering report draft and the off-target Settings screenshot are suggestions, not blocking. Reviewer: report these under Suggestions and give the verdict on correctness and landing blockers only.
 
 ## Activity
 
@@ -218,4 +221,4 @@ The declared shot of the new Settings control is an evidence nicety: the capture
 - 2026-11-10T05:01:02Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-11-10T05:02:06Z · note: review pass 7: needs some work
 - 2026-11-10T05:02:07Z · needs_input
-
+- 2026-11-10T05:45:05Z · body: Accepted scope and known limitations (added)
