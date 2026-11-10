@@ -14,7 +14,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-10T07:16:21Z"
+updated_at: "2026-11-10T07:18:30Z"
 last_close_out_gate_ms: 662615
 last_close_out_gate_at: "2026-11-10T07:16:21.479Z"
 review_passes: 5
@@ -225,4 +225,4 @@ Final (pass 7): accepted-scope extraction handles the first matching section up 
 - 2026-11-10T05:45:05Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-10T05:45:51Z · note: review pass 8: good to go
 - 2026-11-10T07:16:21Z · close-out gate completed in 663s
-
+- 2026-11-10T07:18:30Z · status done→done, release:success
