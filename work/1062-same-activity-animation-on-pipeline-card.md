@@ -223,3 +223,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T11:32:45Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-10T11:32:45Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T11:32:46Z · message_queued at 2026-11-10T11:32:46.103Z
+- 2026-11-10T11:32:46Z · ↻ resuming engineer to read queued message
