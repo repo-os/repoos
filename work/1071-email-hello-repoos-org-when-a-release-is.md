@@ -80,3 +80,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T02:15:43Z · status review→active
 - 2026-11-10T02:15:45Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T02:21:02Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T02:21:03Z · note: handoff requested (cli)
