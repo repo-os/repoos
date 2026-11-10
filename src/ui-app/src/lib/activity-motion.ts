@@ -2,6 +2,7 @@ import { computed, onMounted, onUnmounted, ref, watch, type Ref } from "vue";
 
 type Entry = {
   el: Element;
+  intersecting: boolean;
   visible: boolean;
   active: Ref<boolean>;
   limit: Ref<number>;
@@ -14,6 +15,54 @@ let observer: IntersectionObserver | null = null;
 let media: MediaQueryList | null = null;
 let visibilityListenerCount = 0;
 let motionListenerCount = 0;
+let occlusionListenerCount = 0;
+let occlusionRaf = 0;
+
+/** True when the element's center is not covered by another hit-tested layer (drawer, dialog). */
+function unobstructed(el: Element): boolean {
+  if (typeof document === "undefined") return true;
+  const rect = el.getBoundingClientRect();
+  // Skip hit-testing when not laid out (JSDOM); intersection already gates those nodes.
+  if (rect.width <= 0 || rect.height <= 0) return true;
+  let x = rect.left + rect.width / 2;
+  let y = rect.top + rect.height / 2;
+  if (window.innerWidth > 1) x = Math.min(Math.max(x, 0), window.innerWidth - 1);
+  if (window.innerHeight > 1) y = Math.min(Math.max(y, 0), window.innerHeight - 1);
+  const hit = document.elementFromPoint(x, y);
+  if (!hit) return false;
+  return el === hit || el.contains(hit);
+}
+
+function syncEntryVisibility(entry: Entry): void {
+  entry.visible = entry.intersecting && unobstructed(entry.el);
+}
+
+function scheduleOcclusionRefresh(): void {
+  if (occlusionRaf || typeof requestAnimationFrame === "undefined") return;
+  occlusionRaf = requestAnimationFrame(() => {
+    occlusionRaf = 0;
+    for (const entry of entries) syncEntryVisibility(entry);
+    refresh();
+  });
+}
+
+function onOcclusionEvent(): void {
+  scheduleOcclusionRefresh();
+}
+
+function attachOcclusionListeners(): void {
+  if (occlusionListenerCount++ > 0) return;
+  window.addEventListener("scroll", onOcclusionEvent, true);
+  window.addEventListener("resize", onOcclusionEvent);
+}
+
+function detachOcclusionListeners(): void {
+  if (--occlusionListenerCount <= 0) {
+    occlusionListenerCount = 0;
+    window.removeEventListener("scroll", onOcclusionEvent, true);
+    window.removeEventListener("resize", onOcclusionEvent);
+  }
+}
 
 function attachVisibilityListener(): void {
   if (visibilityListenerCount++ === 0) {
@@ -48,6 +97,9 @@ export function resetActivityMotionCoordinatorForTests(): void {
   observer = null;
   while (visibilityListenerCount > 0) detachVisibilityListener();
   while (motionListenerCount > 0) detachMotionListener();
+  while (occlusionListenerCount > 0) detachOcclusionListeners();
+  if (occlusionRaf) cancelAnimationFrame(occlusionRaf);
+  occlusionRaf = 0;
   pageVisible.value = typeof document === "undefined" || document.visibilityState !== "hidden";
   reduced.value = media?.matches ?? false;
 }
@@ -88,17 +140,34 @@ export function useActivityMotion(
       observer ??= new IntersectionObserver((records) => {
         for (const record of records) {
           const found = [...entries].find((candidate) => candidate.el === record.target);
-          if (found) found.visible = record.isIntersecting;
+          if (!found) continue;
+          found.intersecting = record.isIntersecting;
+          syncEntryVisibility(found);
         }
         refresh();
       });
+      attachOcclusionListeners();
       if (element.value) {
-        entry = { el: element.value, visible: false, active, limit: max, eligible };
+        entry = {
+          el: element.value,
+          intersecting: false,
+          visible: false,
+          active,
+          limit: max,
+          eligible,
+        };
         entries.add(entry);
         observer.observe(element.value);
       }
     } else if (element.value) {
-      entry = { el: element.value, visible: true, active, limit: max, eligible };
+      entry = {
+        el: element.value,
+        intersecting: true,
+        visible: unobstructed(element.value),
+        active,
+        limit: max,
+        eligible,
+      };
       entries.add(entry);
     }
     refresh();
@@ -108,6 +177,7 @@ export function useActivityMotion(
   onUnmounted(() => {
     detachVisibilityListener();
     detachMotionListener();
+    detachOcclusionListeners();
     if (entry) {
       observer?.unobserve(entry.el);
       entries.delete(entry);

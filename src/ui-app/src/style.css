@@ -4832,7 +4832,7 @@
 }
 .activity-animation-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(68px, auto);
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.55fr);
   gap: 12px 14px;
   align-items: start;
   margin: 12px 0 10px;
@@ -4859,6 +4859,9 @@
   font-size: 11px;
   line-height: 1.35;
   color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .activity-animation-control--cap .activity-size-control {
   justify-content: flex-start;

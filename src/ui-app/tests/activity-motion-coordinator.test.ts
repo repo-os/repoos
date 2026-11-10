@@ -8,6 +8,25 @@ import { useConfigStore } from "../src/stores/config";
 type Entry = { target: Element; isIntersecting: boolean };
 type Callback = (entries: Entry[]) => void;
 const observers: FakeIntersectionObserver[] = [];
+let layoutSeq = 0;
+function stubIndicatorLayout(el: Element): void {
+  const i = layoutSeq++;
+  const left = 8 + i * 40;
+  const top = 8;
+  el.getBoundingClientRect = () =>
+    ({
+      width: 16,
+      height: 16,
+      left,
+      top,
+      right: left + 16,
+      bottom: top + 16,
+      x: left,
+      y: top,
+      toJSON: () => ({}),
+    }) as DOMRect;
+}
+
 class FakeIntersectionObserver {
   targets = new Set<Element>();
   constructor(private readonly callback: Callback) {
@@ -33,6 +52,7 @@ describe("activity animation coordinator", () => {
   let oldVisibility: PropertyDescriptor | undefined;
 
   beforeEach(() => {
+    layoutSeq = 0;
     resetActivityMotionCoordinatorForTests();
   });
 
@@ -63,6 +83,31 @@ describe("activity animation coordinator", () => {
     expect(removeSpy.mock.calls.filter((c) => c[0] === "visibilitychange")).toHaveLength(1);
     addSpy.mockRestore();
     removeSpy.mockRestore();
+  });
+
+  it("pauses indicators covered by another layer at the sample point", async () => {
+    observers.length = 0;
+    globalThis.IntersectionObserver =
+      FakeIntersectionObserver as unknown as typeof IntersectionObserver;
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    useConfigStore(pinia).form.activityAnimationEnabled = true;
+    const wrapper = mount(ActivityIndicator, { global: { plugins: [pinia] } });
+    mounted.push(wrapper);
+    const observer = observers[0]!;
+    const root = wrapper.element;
+    stubIndicatorLayout(root);
+    const blocker = document.createElement("div");
+    document.body.appendChild(blocker);
+    document.elementFromPoint = vi.fn(() => blocker) as typeof document.elementFromPoint;
+    observer.trigger(root, true);
+    await wrapper.vm.$nextTick();
+    expect(root.classList.contains("ai-motion-paused")).toBe(true);
+    document.elementFromPoint = vi.fn(() => root) as typeof document.elementFromPoint;
+    observer.trigger(root, true);
+    await wrapper.vm.$nextTick();
+    expect(root.classList.contains("ai-motion-paused")).toBe(false);
+    blocker.remove();
   });
 
   it("pauses offscreen and hidden indicators and enforces the live cap", async () => {
@@ -99,6 +144,14 @@ describe("activity animation coordinator", () => {
     expect(observers).toHaveLength(1);
     const observer = observers[0]!;
     const roots = wrappers.map((wrapper) => wrapper.element);
+    roots.forEach(stubIndicatorLayout);
+    document.elementFromPoint = vi.fn((x: number, y: number) => {
+      for (const el of roots) {
+        const r = el.getBoundingClientRect();
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return el;
+      }
+      return null;
+    }) as typeof document.elementFromPoint;
     expect(roots.every((root) => observer.targets.has(root))).toBe(true);
 
     observer.trigger(roots[0]!, true);

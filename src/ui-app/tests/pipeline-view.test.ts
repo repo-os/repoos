@@ -513,13 +513,13 @@ describe("WorkView toggle", () => {
 
   it("defaults to Board and persists the Pipeline choice", async () => {
     const wrapper = mountWork();
-    expect(wrapper.find(".stub-board").exists()).toBe(true);
-    expect(wrapper.find(".stub-pipeline").exists()).toBe(false);
+    expect(wrapper.find(".stub-board").isVisible()).toBe(true);
+    expect(wrapper.find(".stub-pipeline").isVisible()).toBe(false);
     const buttons = wrapper.findAll(".view-toggle-btn");
     expect(buttons.map((b) => b.text())).toEqual(["Pipeline", "Board"]);
     await buttons[0].trigger("click");
-    expect(wrapper.find(".stub-pipeline").exists()).toBe(true);
-    expect(wrapper.find(".stub-board").exists()).toBe(false);
+    expect(wrapper.find(".stub-pipeline").isVisible()).toBe(true);
+    expect(wrapper.find(".stub-board").isVisible()).toBe(false);
     expect(localStorage.getItem("repoos.work.view-mode")).toBe("pipeline");
   });
 
@@ -527,7 +527,7 @@ describe("WorkView toggle", () => {
     localStorage.setItem("repoos.work.view-mode", "pipeline");
     const wrapper = mountWork();
     await wrapper.vm.$nextTick();
-    expect(wrapper.find(".stub-pipeline").exists()).toBe(true);
+    expect(wrapper.find(".stub-pipeline").isVisible()).toBe(true);
   });
 
   it("forces Pipeline on preview captures with pipeline shot routes", async () => {
@@ -535,8 +535,8 @@ describe("WorkView toggle", () => {
     vi.stubGlobal("location", { search: "?shotState=pipeline%3AchecksProgress&tab=pipeline" });
     const wrapper = mountWork();
     await wrapper.vm.$nextTick();
-    expect(wrapper.find(".stub-pipeline").exists()).toBe(true);
-    expect(wrapper.find(".stub-board").exists()).toBe(false);
+    expect(wrapper.find(".stub-pipeline").isVisible()).toBe(true);
+    expect(wrapper.find(".stub-board").isVisible()).toBe(false);
     vi.unstubAllGlobals();
   });
 });
