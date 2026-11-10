@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
@@ -13,7 +11,9 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T08:26:46Z"
+updated_at: "2026-11-10T08:30:20Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'."
@@ -35,6 +35,18 @@ A handoff that arrives while a self-check is running waits for it (bounded, for 
 
 ## Notes for AI
 Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/server/handoff.ts` (commit step) and `src/core/git.ts` (the guarded git add/commit). Do not edit repoos.toml.
+
+## Shots
+```json
+[
+{
+  "label": "Task drawer while a handoff waits for the running check",
+  "target": "default",
+  "route": "/work?task=9999",
+  "state": "drawer:handoffWaiting"
+}
+]
+```
 
 ## Activity
 
@@ -111,4 +123,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T08:24:44Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T08:26:43Z · message_queued at 2026-11-10T08:26:43.674Z
 - 2026-11-10T08:26:46Z · message_delivered: 2 message(s)
-
+- 2026-11-10T08:30:20Z · body
