@@ -11,7 +11,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T18:49:36Z"
+updated_at: "2026-11-10T18:49:37Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -59,3 +59,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T18:49:34Z · message_queued at 2026-11-10T18:49:34.163Z
 - 2026-11-10T18:49:35Z · note: review pass 2: needs some work
 - 2026-11-10T18:49:36Z · status review→active
+- 2026-11-10T18:49:37Z · message_queued at 2026-11-10T18:49:37.164Z
