@@ -234,3 +234,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T12:33:20Z · body
 - 2026-11-10T12:35:35Z · queued message undelivered for 62m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T12:35:36Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-10T12:35:36Z · message_overdue: still queued after 60m without being delivered
