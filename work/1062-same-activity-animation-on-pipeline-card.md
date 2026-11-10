@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T10:47:04Z"
+updated_at: "2026-11-10T10:47:42Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 0d2391a4d0da21d2b9b519d1e8c4506570c4b594
 review_rounds: 1
@@ -210,3 +210,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T10:32:27Z · handoff failed · task-file handoff failed at verify · ui verification failed (20 issue(s)): [request] HTTP 404 for http://127.0.0.1:46173/api/tasks/pipe-review/landable (http://127.0.0.1:46173/api/tasks/pipe-review/landable); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:46173/api/tasks/pipe-review/landable); [request] HTTP 404 for http://127.0.0.1:46173/api/tasks/pipe-closeout/landable (http://127.0.0.1:46173/api/tasks/pipe-closeout/landable); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:46173/api/tasks/pipe-closeout/landable); [request] HTTP 404 for http://127.0.0.1:46173/api/tasks/pipe-stuck/handoff-status (http://127.0.0.1:46173/api/tasks/pipe-stuck/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:46173/api/tasks/pipe-stuck/handoff-status); [request] HTTP 404 for http://127.0.0.1:46173/api/tasks/pipe-held/handoff-status (http://127.0.0.1:46173/api/tasks/pipe-held/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:46173/api/tasks/pipe-held/handoff-status); [request] HTTP 404 for http://127.0.0.1:46173/api/tasks/pipe-sentback/handoff-status (http://127.0.0.1:46173/api/tasks/pipe-sentback/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:46173/api/tasks/pipe-sentback/handoff-status); [request] HTTP 404 for http://127.0.0.1:46173/api/tasks/pipe-coding/handoff-status (http://127.0.0.1:46173/api/tasks/pipe-coding/handoff-status); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:46173/api/tasks/pipe-coding/handoff-status)
 - 2026-11-10T10:34:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T10:47:04Z · body
+- 2026-11-10T10:47:42Z · body
