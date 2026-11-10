@@ -151,3 +151,4 @@ FINAL (pass 4): reconciling stale handoff records, the stale flag on every check
 - 2026-11-10T23:24:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T23:25:04Z · body: Accepted scope and known limitations (added)
 - 2026-11-10T23:25:05Z · message_delivered: 1 message(s)
+- 2026-11-10T23:25:07Z · note: handoff requested (cli)
