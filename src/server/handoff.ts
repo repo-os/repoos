@@ -72,6 +72,7 @@ import {
   finishHandoffStatus,
   updateHandoffStatusStep,
   updateHandoffStatusProgress,
+  setHandoffWaitingReason,
 } from "./handoff-status.js";
 import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
@@ -781,7 +782,20 @@ async function runHandoffFinalization(
   // `resolveWorktree` (an empty worktree branch is a lag, not a mismatch),
   // but fatal here, and the mismatch was invisible until #0507 started routing
   // file edits through this path.
-  const gate = await guardReviewTransition(config, { ...worktreeTask, branch: task.branch });
+  // A self-check that still holds the worktree makes this step wait, not fail
+  // (#1082); the handoff row says so in plain words while it waits.
+  let waitingForCheck = false;
+  const gate = await guardReviewTransition(
+    config,
+    { ...worktreeTask, branch: task.branch },
+    {
+      onCheckGateWait: () => {
+        waitingForCheck = true;
+        setHandoffWaitingReason(config, task.id, "Waiting for the running check to finish");
+      },
+    },
+  );
+  if (waitingForCheck) setHandoffWaitingReason(config, task.id, null);
   if (!gate.ok) {
     return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
   }

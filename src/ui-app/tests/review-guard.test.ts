@@ -1,13 +1,3 @@
-/**
- * #0210 regression tests: the commit/vacuity gate itself.
- *
- * #0507 builds on this: the gate is no longer what a route into `review` runs —
- * it is the middle step of one shared finalization (`handoffTask` /
- * `finalizeReviewHandoff`), which every route now goes through. So the gate's
- * own guarantees (commit the work, reject a vacuous transition, never fold a
- * sibling task file in) are still asserted here directly, and the routing
- * tests below assert that no route reaches `review` without it.
- */
 import { seedEngineeringReport } from "./engineering-report-fixture";
 import { describe, expect, it } from "vitest";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -17,7 +7,14 @@ import { execFileSync } from "node:child_process";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { RepoOSConfig, Task } from "../../core/types";
 import { parseTask } from "../../core/task";
+import { setCheckGateGitRefusal, setCheckGateCommitHook } from "../../core/git";
 import { guardReviewTransition } from "../../server/review-guard";
+import {
+  acquireCheckGateLock,
+  installCheckGateCommitHook,
+  readCheckGateLock,
+  releaseCheckGateLock,
+} from "../../server/check-gate-lock";
 import { patchTask } from "../../server/routes/tasks";
 import { LiveIndex } from "../../server/live-index";
 import type { RouteContext } from "../../server/routes/types";
@@ -572,6 +569,107 @@ describe("file-watch direct edit into review (0507: routed to the finalization)"
       // The finalization committed the previously-dirty work; worktree clean.
       expect(dirtyPaths(fx)).toEqual([]);
     } finally {
+      fx.clean();
+    }
+  });
+});
+
+describe("guardReviewTransition waits for a running self-check (1082)", () => {
+  /** Hold the gate the way a live `repoos check` does, so git refuses source writes. */
+  async function holdGateForSelfCheck(fx: Fixture): Promise<void> {
+    installCheckGateCommitHook(fx.config);
+    const gate = await acquireCheckGateLock({
+      boardRoot: fx.root,
+      cacheDir: ".repoos",
+      taskId: fx.task.id,
+      branch: "feat/patch-bypass",
+      worktree: fx.worktree,
+      kind: "engineer-self-check",
+    });
+    expect(gate.ok).toBe(true);
+  }
+
+  function unhookGate(): void {
+    setCheckGateCommitHook(null);
+    setCheckGateGitRefusal(null);
+    delete process.env.REPOOS_BOARD_ROOT;
+    delete process.env.REPOOS_CACHE_DIR;
+  }
+
+  it("waits for the running check to finish, then commits and returns ok", async () => {
+    const fx = makeFixture();
+    try {
+      uncommittedChange(fx);
+      const before = git(fx.worktree, ["rev-parse", "HEAD"]);
+      await holdGateForSelfCheck(fx);
+      // Release the gate only once the guard is actually waiting on it, so the
+      // test does not depend on how long the guard takes to reach `git add`.
+      let waits = 0;
+      let released: Promise<void> = Promise.resolve();
+      const res = await guardReviewTransition(fx.config, fx.task, {
+        onCheckGateWait: () => {
+          waits++;
+          released = releaseCheckGateLock(fx.root, ".repoos", fx.task.id);
+        },
+        checkGateWait: { timeoutMs: 10_000, pollMs: 20 },
+      });
+      await released;
+      expect(res.ok).toBe(true);
+      expect(waits).toBe(1);
+      expect(git(fx.worktree, ["rev-parse", "HEAD"])).not.toBe(before);
+      expect(dirtyPaths(fx)).toEqual([]);
+    } finally {
+      unhookGate();
+      fx.clean();
+    }
+  });
+
+  it("times out cleanly and leaves the work uncommitted when the check never finishes", async () => {
+    const fx = makeFixture();
+    try {
+      uncommittedChange(fx);
+      const before = git(fx.worktree, ["rev-parse", "HEAD"]);
+      await holdGateForSelfCheck(fx);
+      const res = await guardReviewTransition(fx.config, fx.task, {
+        checkGateWait: { timeoutMs: 120, pollMs: 20 },
+      });
+      expect(res.ok).toBe(false);
+      expect(res.detail).toMatch(/timed out after waiting for the running check/);
+      expect(git(fx.worktree, ["rev-parse", "HEAD"])).toBe(before);
+      expect(dirtyPaths(fx).length).toBeGreaterThan(0);
+      await releaseCheckGateLock(fx.root, ".repoos", fx.task.id);
+    } finally {
+      unhookGate();
+      fx.clean();
+    }
+  });
+
+  it("recovers a dead holder's lock first and does not wait", async () => {
+    const fx = makeFixture();
+    try {
+      uncommittedChange(fx);
+      await holdGateForSelfCheck(fx);
+      const lock = readCheckGateLock(fx.root, ".repoos", fx.task.id);
+      expect(lock).not.toBeNull();
+      if (!lock) return;
+      const dead = {
+        ...lock,
+        holders: lock.holders.map((holder) => ({ ...holder, pid: 2_147_483_647 })),
+      };
+      writeFileSync(
+        join(fx.root, ".repoos", "check-gate-locks", `${fx.task.id}.json`),
+        `${JSON.stringify(dead, null, 2)}\n`,
+      );
+      let waits = 0;
+      const res = await guardReviewTransition(fx.config, fx.task, {
+        onCheckGateWait: () => waits++,
+        checkGateWait: { timeoutMs: 10_000, pollMs: 20 },
+      });
+      expect(res.ok).toBe(true);
+      expect(waits).toBe(0);
+      expect(dirtyPaths(fx)).toEqual([]);
+    } finally {
+      unhookGate();
       fx.clean();
     }
   });

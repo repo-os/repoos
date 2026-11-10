@@ -200,6 +200,22 @@ export function updateHandoffStatusProgress(
   writeHandoffStatus(config, { ...current, progress, updatedAt: new Date().toISOString() });
 }
 
+/**
+ * Show (or clear, with `null`) a plain-English reason the running handoff is
+ * waiting on something other than its own work (#1082). Only the in-flight
+ * attempt is touched; a finished or deferred record is left alone.
+ */
+export function setHandoffWaitingReason(
+  config: RepoOSConfig,
+  taskId: string,
+  reason: string | null,
+): void {
+  const current = readHandoffStatus(config, taskId);
+  if (current.state !== "running") return;
+  const progress = reason ? { reason } : null;
+  writeHandoffStatus(config, { ...current, progress, updatedAt: new Date().toISOString() });
+}
+
 /** Record the terminal pass/fail result of an attempt. */
 export function finishHandoffStatus(
   config: RepoOSConfig,

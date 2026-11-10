@@ -420,6 +420,8 @@ const statusProgressPercent = computed(() =>
 );
 const statusProgressLabel = computed(() => {
   if (statusProgress.value) {
+    // A handoff waiting on a running self-check says so instead of a step name (#1082).
+    if (statusProgress.value.reason) return statusProgress.value.reason;
     if (
       statusProgress.value.stepsDone == null &&
       statusProgress.value.currentStep == null &&

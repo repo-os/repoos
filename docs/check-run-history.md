@@ -11,6 +11,17 @@ start another managed engineer turn with `A check is running; wait for it to
 finish.` and rejects source commits. Edits that bypass those managed paths are
 detected by the post-check drift comparison.
 
+A handoff whose commit step (the add and commit in `guardReviewTransition`)
+meets that refusal waits for the running check instead of failing (#1082). It
+polls once a second for up to 45 minutes, the local check queue timeout, and
+shows `Waiting for the running check to finish` as its progress line while it
+waits. Each poll first reconciles stale or dead-holder locks, so a crashed
+check never holds a handoff. The guard is idempotent, so the whole add-and-commit
+step is re-run after each poll. If the lock is still held at the deadline the
+handoff fails with `timed out after waiting for the running check to finish`
+and the work stays uncommitted; request handoff again once the check has
+finished. Other server git writes still fail fast on the refusal.
+
 After validation, drift inspection examines the intervening commits as well as
 the net tree difference between the check-start commit and resulting HEAD.
 Changes under those bookkeeping roots are allowed; any other path touched by an

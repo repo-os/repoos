@@ -1104,6 +1104,60 @@ export async function recoverStaleCheckGateLocks(
   }
 }
 
+/**
+ * How long a server git step waits for a running self-check to release the
+ * gate before it gives up (#1082). Matches the local check queue timeout, so a
+ * check that is allowed to run that long is never cut short by its own waiter.
+ */
+export const CHECK_GATE_WAIT_MS = 45 * 60_000;
+const CHECK_GATE_POLL_MS = 1_000;
+
+export interface CheckGateWaitOptions {
+  boardRoot: string;
+  cacheDir: string;
+  /** Upper bound on total waiting. Defaults to `CHECK_GATE_WAIT_MS`. */
+  timeoutMs?: number;
+  /** Delay between re-checks. Defaults to one second. */
+  pollMs?: number;
+  /** Called once, the first time an attempt is refused by a live gate. */
+  onWait?: () => void;
+}
+
+export interface CheckGateWaitResult<T> {
+  result: T;
+  /** True when at least one attempt was refused by a live gate. */
+  waited: boolean;
+  /** True when the gate was still held at the deadline; `result` is the last refusal. */
+  timedOut: boolean;
+}
+
+/**
+ * Run `attempt` and, while `held` says the result was refused only because a
+ * self-check holds the gate, poll again until it clears or the bound runs out
+ * (#1082). Stale or dead-holder locks are reconciled before each re-check, so
+ * a crashed check never keeps a handoff waiting. Only the refusal is retried:
+ * any other result is returned as-is on the first attempt.
+ */
+export async function waitForCheckGateRelease<T>(
+  attempt: () => Promise<T>,
+  held: (result: T) => boolean,
+  opts: CheckGateWaitOptions,
+): Promise<CheckGateWaitResult<T>> {
+  const deadline = Date.now() + (opts.timeoutMs ?? CHECK_GATE_WAIT_MS);
+  const pollMs = opts.pollMs ?? CHECK_GATE_POLL_MS;
+  let result = await attempt();
+  if (!held(result)) return { result, waited: false, timedOut: false };
+  opts.onWait?.();
+  for (;;) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return { result, waited: true, timedOut: true };
+    await new Promise((resolve) => setTimeout(resolve, Math.min(pollMs, remaining)));
+    await recoverStaleCheckGateLocks(opts.boardRoot, opts.cacheDir);
+    result = await attempt();
+    if (!held(result)) return { result, waited: true, timedOut: false };
+  }
+}
+
 /** Engineer tool write guard: block source paths while the gate lock is held. */
 export function checkGateSourceWriteRefusal(
   boardRoot: string,
