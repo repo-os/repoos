@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — defaultValue: '',"
+last_handoff_failure_sha: 9408c126f3a36bdb0bb608eedc8294267e47d6ff
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -13,8 +15,6 @@ review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
 updated_at: "2026-11-10T05:28:00Z"
 review_passes: 14
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/page-height-layout.test.ts > standard page height and floating controls > lets the shared page pane fill and scroll through the full app body, tests/page-height-layout.test.ts > standard page height and floating controls > uses a theme-token fade and shared end inset below fixed controls on bee — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 84dcf909cb1607de352d80d71cb7635ebb4a1430
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -459,3 +459,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T05:11:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T05:28:00Z · message_queued at 2026-11-10T05:28:00.348Z
 - 2026-11-10T05:28:00Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — defaultValue: '',
+
