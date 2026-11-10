@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: check-wait
 needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m"
@@ -14,7 +14,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T02:56:06Z"
+updated_at: "2026-11-10T02:58:02Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/page-height-layout.test.ts > standard page height and floating controls > lets the shared page pane fill and scroll through the full app body, tests/page-height-layout.test.ts > standard page height and floating controls > uses a theme-token fade and shared end inset below fixed controls on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 84dcf909cb1607de352d80d71cb7635ebb4a1430
 review_passes: 13
@@ -24,7 +24,7 @@ routing_switches: 1
 routing_escalations: 1
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-09T15:02:18.464Z\",\"reason\":\"handoff-deferred\"}]"
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 First-load skeletons are jarring and in places wrong. On Mission Control (`/`) the `dashboard` skeleton draws six tall cards in an `auto-fit` grid (`PageSkeleton.vue`), so on a wide window they wrap into one row of four plus a stray card on a second row, and none of it resembles the real page (which is not a board of cards like Work and Inputs). Stories shows the same kind of mismatch. Other pages use `board`, `inputBoard`, `cards`, `table`, `rows`, `targets` and `deployments` shapes picked by route in `src/ui-app/src/lib/loading-skeleton.ts`, and nobody has checked each one against its real content.
@@ -436,3 +436,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T02:12:54Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T02:45:19Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-10T02:56:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T02:58:02Z · status active→review
