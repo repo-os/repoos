@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -138,4 +138,3 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T06:16:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-10T06:21:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T06:26:14Z · engineer stopped by request
-- 2026-11-10T06:26:16Z · status active→review
