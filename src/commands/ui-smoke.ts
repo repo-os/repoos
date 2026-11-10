@@ -370,7 +370,7 @@ async function runUISmokeTest(): Promise<void> {
     // seeds task 9001 (status review) with a stored report so the button is
     // enabled; the flow stops before confirming, so nothing is spawned.
     await goWork();
-    await page.click('[data-task-id="9001"]');
+    await page.click('.task-card[data-task-id="9001"]');
     await page.waitForTimeout(600); // drawer opens on the Review tab
     await page.waitForFunction(
       () => {
