@@ -3,6 +3,9 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 17 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p3
 area: web
 assigned_to: ai
@@ -508,3 +511,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T07:46:42Z · body: Accepted scope and known limitations (decision, pass 16) (added)
 - 2026-11-10T07:46:43Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-10T07:47:46Z · note: review pass 17: needs some work
+- 2026-11-10T07:47:46Z · needs_input
