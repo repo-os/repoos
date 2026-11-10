@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T04:24:32Z"
+updated_at: "2026-11-10T04:31:25Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
 dev_error_count: 7
@@ -49,22 +49,32 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 ```json
 [
 {
-"label": "Pipeline card activity animation",
-"target": "default",
-"route": "/work?tab=pipeline&shotState=board:activeCoding",
-"highlight": ".pipeline-card .pl-activity"
+  "label": "Pipeline cards with ActivityIndicator",
+  "target": "default",
+  "route": "/work",
+  "highlight": ".pipeline-card .pl-activity",
+  "steps": [
+    {
+      "click": "button.work-view-tab-pipeline"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "board:pipeline"
 },
 {
-"label": "Compact activity animation settings (On)",
-"target": "default",
-"route": "/settings?tab=general&section=activity-animation",
-"highlight": ".activity-animation-controls"
+  "label": "Activity animation settings compact layout (Motion on)",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": "#settings-section-activity-animation"
 },
 {
-"label": "Activity animation Motion Off",
-"target": "default",
-"route": "/settings?tab=general&section=activity-animation&shotState=settings:motionOff",
-"highlight": "#setting-activityAnimationEnabled"
+  "label": "Activity animation Motion off",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": "#setting-activityAnimationEnabled",
+  "state": "settings:motionOff"
 }
 ]
 ```
@@ -131,3 +141,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T03:28:39Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-10T04:18:16Z · needs_input
 - 2026-11-10T04:24:32Z · note: adopted orphaned engineer pid 29278
+- 2026-11-10T04:31:25Z · body
