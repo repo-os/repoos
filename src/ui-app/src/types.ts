@@ -3,6 +3,7 @@
 import type { RepoCommit } from "../../core/repo-log.js";
 import type { DeclaredShot } from "../../core/shot-plan.js";
 import type { Input } from "../../core/input.js";
+import type { InstallKind } from "../../commands/upgrade.js";
 
 export type Status = "draft" | "inbox" | "ready" | "active" | "review" | "done";
 
@@ -2132,4 +2133,20 @@ export interface DevTargetsResponse {
   targets: DevTargetView[];
   /** `[[dev.targets]]` validation errors, so a config typo stays visible. */
   errors: string[];
+}
+
+/**
+ * Response of `GET /api/release/available` — the newer-release check behind the
+ * dashboard update banner/dialog (#1073). `installKind` and `upgradeCommand`
+ * come from the same detection `repoos upgrade` uses, so the dialog shows the
+ * command that actually upgrades this install.
+ */
+export interface AvailableRelease {
+  currentVersion: string | null;
+  latestVersion: string | null;
+  available: boolean;
+  releaseNotes: string | null;
+  releaseUrl: string | null;
+  installKind: InstallKind;
+  upgradeCommand: string;
 }
