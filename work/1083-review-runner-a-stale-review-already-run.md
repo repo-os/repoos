@@ -71,3 +71,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T19:21:59Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The round-3 check passed: exit 0, no failed steps, and all 237 test files passed. I'll put that result into the report's summary line. · stderr: (empty)
 - 2026-11-10T19:21:59Z · message_delivered: 2 message(s)
 - 2026-11-10T19:26:11Z · message_queued at 2026-11-10T19:26:11.503Z
+- 2026-11-10T19:26:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
