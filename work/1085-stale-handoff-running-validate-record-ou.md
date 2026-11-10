@@ -2,19 +2,16 @@
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX"
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T13:33:40Z"
+updated_at: "2026-11-10T13:33:45Z"
 ---
 ## Problem
 A task's handoff record can stay at `running` / step `validate` for hours after the work moved on. Seen on #1080 (handoff started 04:55Z, still "running validate" at 06:05Z even though review pass 8 was "good to go" and `repoos landable` was ready) and #1070 (same, ~30+ min). `repoos handoff-status <id>` keeps reporting running, and the board card shows "Checks · checking validate · 1h 11m" with "REVIEW PASSED · CHECKS RUNNING" and a greyed Move to done, which makes people think landing will fail.
@@ -42,3 +39,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T06:12:05Z · needs_input
 - 2026-11-10T13:33:39Z · status inbox→ready
 - 2026-11-10T13:33:40Z · cli_override, model_override
+- 2026-11-10T13:33:45Z · status ready→active, needs_input, branch
