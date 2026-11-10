@@ -244,7 +244,11 @@ async function unstageForeignWorkBookkeeping(
   task: Task,
 ): Promise<string | null> {
   const stagedInWork = (
-    await runGit(registered, ["diff", "--cached", "--name-only", "--", config.workDir], 10_000)
+    await runGit(
+      registered,
+      ["diff", "--no-renames", "--cached", "--name-only", "--", config.workDir],
+      10_000,
+    )
   ).stdout
     .split("\n")
     .map((s) => s.trim())
@@ -273,7 +277,11 @@ async function unstageForeignWorkBookkeeping(
  * that. Returns a failure detail, or null on success.
  */
 async function commitStagedOnly(registered: string, message: string): Promise<string | null> {
-  const names = await runGit(registered, ["diff", "--cached", "--name-only"], 10_000);
+  const names = await runGit(
+    registered,
+    ["diff", "--no-renames", "--cached", "--name-only"],
+    10_000,
+  );
   if (names.status !== 0) return `could not list staged changes: ${concise(names)}`;
   const stagedPaths = names.stdout
     .split("\n")

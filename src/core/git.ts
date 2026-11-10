@@ -1818,12 +1818,12 @@ export function branchChangesSinceBase(
   if (!baseFull) return { base: null, paths: [] };
   const base = git(worktree, ["rev-parse", "--short", baseFull]) ?? baseFull;
   const committed =
-    git(worktree, ["diff", "--name-only", baseFull, "HEAD"])
+    git(worktree, ["diff", "--no-renames", "--name-only", baseFull, "HEAD"])
       ?.split("\n")
       .map((s) => s.trim())
       .filter(Boolean) ?? [];
   const uncommitted =
-    git(worktree, ["diff", "--cached", "--name-only"])
+    git(worktree, ["diff", "--no-renames", "--cached", "--name-only"])
       ?.split("\n")
       .map((s) => s.trim())
       .filter(Boolean) ?? [];
@@ -1856,8 +1856,9 @@ export function changedPathsVsBase(worktree: string, baseBranch: string): string
       .map((s) => s.trim())
       .filter(Boolean);
   const paths = new Set<string>();
-  if (baseFull) for (const p of run(["diff", "--name-only", baseFull, "HEAD"])) paths.add(p);
-  for (const p of run(["diff", "--cached", "--name-only"])) paths.add(p);
+  if (baseFull)
+    for (const p of run(["diff", "--no-renames", "--name-only", baseFull, "HEAD"])) paths.add(p);
+  for (const p of run(["diff", "--no-renames", "--cached", "--name-only"])) paths.add(p);
   for (const p of run(["diff", "--name-only"])) paths.add(p);
   for (const p of run(["ls-files", "--others", "--exclude-standard"])) paths.add(p);
   return [...paths];
@@ -2747,7 +2748,7 @@ export async function stagedForeignBookkeepingPaths(
   worktree: string,
   filter: WorkFileFilter & { taskId: string },
 ): Promise<string[]> {
-  const res = await runGit(worktree, ["diff", "--cached", "--name-only"], 15_000);
+  const res = await runGit(worktree, ["diff", "--no-renames", "--cached", "--name-only"], 15_000);
   if (res.status !== 0) return [];
   const staged = res.stdout
     .split("\n")
