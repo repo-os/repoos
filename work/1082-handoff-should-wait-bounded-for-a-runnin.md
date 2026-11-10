@@ -2,7 +2,7 @@
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
-status: review
+status: active
 priority: p1
 area: [server, core]
 assigned_to: ai
