@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T09:46:16Z"
+updated_at: "2026-11-10T10:59:34Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -315,5 +315,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T09:42:01Z · message_queued at 2026-11-10T09:42:01.392Z
 - 2026-11-10T09:42:26Z · note: shots: failed — browser capture cancelled
 - 2026-11-10T09:46:10Z · note: review pass 5: good to go
-
-
+- 2026-11-10T10:59:34Z · message_overdue: still queued after 60m without being delivered
