@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T20:12:31Z"
-review_passes: 2
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
@@ -13,6 +11,8 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
+updated_at: "2026-11-10T20:12:31Z"
+review_passes: 2
 review_rounds: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
 ---
@@ -110,4 +110,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T20:09:38Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-11-10T20:09:38Z · message_queued at 2026-11-10T20:09:38.944Z
 - 2026-11-10T20:12:31Z · note: review pass 2: needs some work
-
+- 2026-11-10T20:12:31Z · message_delivered: 1 message(s)
