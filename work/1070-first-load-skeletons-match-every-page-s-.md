@@ -4,8 +4,8 @@ title: "First-load skeletons: match every page's real layout (Control and Storie
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 14 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — The shell fades out before the content enters instead of cross-fading.
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +14,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T04:29:57Z"
+updated_at: "2026-11-10T04:29:58Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/page-height-layout.test.ts > standard page height and floating controls > lets the shared page pane fill and scroll through the full app body, tests/page-height-layout.test.ts > standard page height and floating controls > uses a theme-token fade and shared end inset below fixed controls on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 84dcf909cb1607de352d80d71cb7635ebb4a1430
 review_passes: 13
