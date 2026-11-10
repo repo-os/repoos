@@ -503,9 +503,14 @@ describe("review blocking bar, freeze and accepted scope (#1080)", () => {
 
   it("keeps a long accepted-scope section whole up to the 12000-character cap", () => {
     const items = Array.from({ length: 200 }, (_, i) => `- limitation ${i}: ${"x".repeat(30)}`);
-    const body = ["## Accepted scope and known limitations", "", ...items, "", "## Notes", "x"].join(
-      "\n",
-    );
+    const body = [
+      "## Accepted scope and known limitations",
+      "",
+      ...items,
+      "",
+      "## Notes",
+      "x",
+    ].join("\n");
     const section = acceptedScopeSection(body) ?? "";
     expect(section).not.toMatch(/\[truncated/);
     expect(section).toContain("- limitation 199:");
