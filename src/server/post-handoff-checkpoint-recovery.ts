@@ -5,7 +5,7 @@
  * self-check checkpoint commit(s), re-run the handoff gate on the new tree,
  * review the delta since the approved SHA, then resume the authorized close-out.
  */
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { LogLevel } from "../core/logger.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -84,6 +84,31 @@ export function isPostHandoffCheckpointRecoveryActive(
   return rec !== null && rec.phase !== "failed";
 }
 
+/** Drop checkpoint markers left behind when no handoff slot is claimed (#1085). */
+export function sweepOrphanedPostHandoffCheckpointRecoveries(
+  config: RepoOSConfig,
+  isHandoffLive: (taskId: string) => boolean,
+): number {
+  const dir = join(config.root, config.cacheDir ?? ".repoos", "post-handoff-checkpoint");
+  let removed = 0;
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return 0;
+  }
+  for (const name of names) {
+    if (!name.endsWith(".json")) continue;
+    const taskId = name.slice(0, -".json".length);
+    const rec = readPostHandoffCheckpointRecovery(config, taskId);
+    if (!rec || rec.phase === "failed") continue;
+    if (isHandoffLive(taskId)) continue;
+    clearPostHandoffCheckpointRecovery(config, taskId);
+    removed++;
+  }
+  return removed;
+}
+
 export interface CheckpointRecoveryDeps {
   config: RepoOSConfig;
   index: LiveIndex;
@@ -97,7 +122,7 @@ export interface CheckpointRecoveryDeps {
   remoteValidator?: RemoteValidator;
   previews?: PreviewManager;
   onTaskLog?: (taskId: string, level: LogLevel, message: string) => void;
-  runner?: Pick<AgentRunner, "markHandoffInFlight" | "releaseHandoffInFlight">;
+  runner?: Pick<AgentRunner, "markHandoffInFlight" | "releaseHandoffInFlight" | "isHandoffInFlight">;
 }
 
 /**
@@ -111,8 +136,12 @@ export async function startPostHandoffCheckpointRecovery(
   headSha: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const { config } = deps;
-  if (isPostHandoffCheckpointRecoveryActive(config, task.id)) {
-    return { ok: false, reason: "checkpoint recovery is already running for this task" };
+  const existing = readPostHandoffCheckpointRecovery(config, task.id);
+  if (existing && existing.phase !== "failed") {
+    if (deps.runner?.isHandoffInFlight?.(task.id)) {
+      return { ok: false, reason: "checkpoint recovery is already running for this task" };
+    }
+    clearPostHandoffCheckpointRecovery(config, task.id);
   }
   writeRecovery(config, {
     taskId: task.id,

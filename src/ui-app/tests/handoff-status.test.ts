@@ -21,6 +21,7 @@ import {
   updateHandoffStatusProgress,
   emitHandoffSupersededIfNeeded,
   reconcileHandoffStatus,
+  supersedeHandoffStatus,
   HANDOFF_STATUS_REASON_LIMIT,
 } from "../../server/handoff-status";
 
@@ -326,7 +327,7 @@ describe("stale running handoff reconciliation (#1085)", () => {
     expect(readHandoffStatus(config, "1070").state).toBe("running");
   });
 
-  it("treats post-handoff checkpoint recovery as a live handoff (#1085)", () => {
+  it("does not treat an orphan checkpoint marker as a live handoff (#1085)", () => {
     const config = makeConfig();
     mkdirSync(join(config.root, ".repoos/post-handoff-checkpoint"), { recursive: true });
     writeFileSync(
@@ -344,7 +345,18 @@ describe("stale running handoff reconciliation (#1085)", () => {
       isHandoffInFlight: () => false,
       hasPendingHandoff: () => false,
     };
-    expect(handoffProcessLive(config, "1085", runner)).toBe(true);
+    expect(handoffProcessLive(config, "1085", runner)).toBe(false);
+  });
+
+  it("begins a fresh running record after supersede with a new attempt key", () => {
+    const config = makeConfig();
+    supersedeHandoffStatus(config, "1085", "orphan");
+    const next = beginHandoffStatus(config, "1085", {
+      attemptKey: "new-attempt",
+      step: "validate",
+    });
+    expect(next.state).toBe("running");
+    expect(readHandoffStatus(config, "1085").state).toBe("running");
   });
 
   it("emits handoff:superseded when reconciliation clears a running record", () => {

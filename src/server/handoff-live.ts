@@ -4,16 +4,12 @@
  */
 import type { RepoOSConfig } from "../core/types.js";
 import type { AgentRunner } from "./agents.js";
-import { isPostHandoffCheckpointRecoveryActive } from "./post-handoff-checkpoint-recovery.js";
 
+/** Process-owned liveness only — durable checkpoint markers are not live (#1085). */
 export function handoffProcessLive(
-  config: RepoOSConfig,
+  _config: RepoOSConfig,
   taskId: string,
   runner: Pick<AgentRunner, "isHandoffInFlight" | "hasPendingHandoff">,
 ): boolean {
-  return (
-    runner.isHandoffInFlight(taskId) ||
-    runner.hasPendingHandoff(taskId) ||
-    isPostHandoffCheckpointRecoveryActive(config, taskId)
-  );
+  return runner.isHandoffInFlight(taskId) || runner.hasPendingHandoff(taskId);
 }

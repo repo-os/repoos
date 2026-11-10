@@ -172,7 +172,8 @@ export function beginHandoffStatus(
   if (
     opts.attemptKey &&
     existing.attemptKey === opts.attemptKey &&
-    existing.state !== "not_requested"
+    existing.state !== "not_requested" &&
+    existing.state !== "superseded"
   ) {
     return existing;
   }
@@ -289,7 +290,8 @@ export interface HandoffReconcileInput {
   staleAfterMs?: number;
 }
 
-const DEFAULT_HANDOFF_STALE_AFTER_MS = (45 * 60 + 15 * 60) * 1000; // matches handoff.ts default deadline
+/** Keep aligned with `handoffDeadlineMs` default in handoff.ts (30 minutes). */
+const DEFAULT_HANDOFF_STALE_AFTER_MS = 30 * 60_000;
 
 /**
  * Reconcile a durable `running` record with live server state. Persists
