@@ -1,5 +1,4 @@
 ---
-close_out_repair_count: 1
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T19:12:22Z"
+updated_at: "2026-11-10T19:24:13Z"
+close_out_repair_count: 1
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
