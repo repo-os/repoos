@@ -2,7 +2,7 @@
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — The shell transition removes the static header and does not cross-fade.
@@ -532,4 +532,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T08:44:09Z · note: handoff requested (cli)
 - 2026-11-10T08:49:49Z · message_delivered: 1 message(s)
 - 2026-11-10T08:58:50Z · note: ui verification passed: 1 shot captured with clean console
-- 2026-11-10T08:58:52Z · engineer stopped by request
+- 2026-11-10T08:58:52Z · status active→review
