@@ -4,8 +4,8 @@ title: "First-load skeletons: match every page's real layout (Control and Storie
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 16 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — The shell transition removes the header and does not cross-fade into content.
 priority: p3
 area: web
 assigned_to: ai
