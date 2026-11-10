@@ -1315,9 +1315,14 @@ export class ReviewManager {
     const reg = this.registration(taskId);
     if (!reg || reg.live) return false;
     if (Date.now() - reg.since <= reviewTimeoutMs(this.config)) return false;
-    this.logger.task(taskId, "warn", "stale review registration cleared — no live reviewer process", {
-      since: new Date(reg.since).toISOString(),
-    });
+    this.logger.task(
+      taskId,
+      "warn",
+      "stale review registration cleared — no live reviewer process",
+      {
+        since: new Date(reg.since).toISOString(),
+      },
+    );
     this.releaseRegistration(taskId);
     return true;
   }
