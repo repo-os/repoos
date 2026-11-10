@@ -11,7 +11,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T19:09:46Z"
+updated_at: "2026-11-10T19:09:47Z"
 review_rounds: 1
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
@@ -96,3 +96,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T19:04:35Z · message_delivered: 1 message(s)
 - 2026-11-10T19:09:46Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Active handoff stale flag on checks line (long-running validate) (target "default"): highlight [data-task-id="9999"] .tc-status-line matched nothing on /work (http://127.0.0.1:46227/work?shotState=card%3AreviewChecksRunning)
 - 2026-11-10T19:09:46Z · message_queued at 2026-11-10T19:09:46.811Z
+- 2026-11-10T19:09:47Z · handoff failed · task-file handoff failed at verify · ui verification failed (1 issue(s)): [missing-target] Active handoff stale flag on checks line (long-running validate) (target "default"): highlight [data-task-id="9999"] .tc-status-line matched nothing on /work (http://127.0.0.1:46227/work?shotState=card%3AreviewChecksRunning)
