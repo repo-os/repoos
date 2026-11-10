@@ -3,9 +3,6 @@ id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — The shell transition removes the header and does not cross-fade into content.
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T07:46:42Z"
+updated_at: "2026-11-10T07:46:43Z"
 review_passes: 16
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -509,3 +506,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T07:45:51Z · note: review pass 16: needs some work
 - 2026-11-10T07:45:51Z · needs_input
 - 2026-11-10T07:46:42Z · body: Accepted scope and known limitations (decision, pass 16) (added)
+- 2026-11-10T07:46:43Z · needs_input (review-rounds-exhausted) cleared for review again by human
