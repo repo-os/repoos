@@ -104,7 +104,7 @@ describe("review preparation fence", () => {
         expect(reviews.runningCount()).toBe(1);
         expect(await start()).toMatchObject({
           ok: false,
-          reason: "a review is already running for this task",
+          reason: expect.stringMatching(/^a review is already running for this task \(/),
         });
         reviews.cancel(task.id);
         release();
