@@ -11,7 +11,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T04:54:39Z"
+updated_at: "2026-11-10T04:59:46Z"
 review_passes: 14
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/page-height-layout.test.ts > standard page height and floating controls > lets the shared page pane fill and scroll through the full app body, tests/page-height-layout.test.ts > standard page height and floating controls > uses a theme-token fade and shared end inset below fixed controls on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 84dcf909cb1607de352d80d71cb7635ebb4a1430
@@ -20,7 +20,7 @@ review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 handoff_signal_retry_count: 2
-engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-09T15:02:18.464Z\",\"reason\":\"handoff-deferred\"}]"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-09T04:49:00.462Z\",\"reason\":\"clean-exit-without-handoff\"},{\"at\":\"2026-11-09T15:02:18.464Z\",\"reason\":\"handoff-deferred\"},{\"at\":\"2026-11-10T04:59:46.962Z\",\"reason\":\"handoff-deferred\"}]"
 dev_error_count: 2
 ---
 ## Problem
@@ -452,3 +452,4 @@ Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade 
 - 2026-11-10T04:52:02Z · needs_input
 - 2026-11-10T04:52:04Z · message_queued at 2026-11-10T04:52:04.500Z
 - 2026-11-10T04:54:39Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T04:59:46Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
