@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T01:04:37Z"
+updated_at: "2026-11-10T01:16:22Z"
 dev_error_count: 5
 ---
 ## Problem
@@ -65,12 +65,12 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 "route": "/settings?tab=general&section=activity-animation",
 "highlight": "#setting-activityAnimationEnabled",
 "steps": [
-  {
-    "click": "#setting-activityAnimationEnabled [role=\"switch\"]"
-  },
-  {
-    "waitMs": 200
-  }
+{
+  "click": "#setting-activityAnimationEnabled [role=\"switch\"]"
+},
+{
+  "waitMs": 200
+}
 ]
 }
 ]
@@ -108,3 +108,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T00:48:01Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-10T00:48:06Z · needs_input
 - 2026-11-10T01:04:37Z · body
+- 2026-11-10T01:16:22Z · CTO nudge: held — handoff gate is running
