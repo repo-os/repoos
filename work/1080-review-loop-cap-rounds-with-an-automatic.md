@@ -186,3 +186,4 @@ The declared shot of the new Settings control is an evidence nicety: the capture
 - 2026-11-10T01:54:45Z · needs_input
 - 2026-11-10T01:54:45Z · message_queued at 2026-11-10T01:54:45.839Z
 - 2026-11-10T01:59:53Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T01:59:53Z · note: handoff requested (cli)
