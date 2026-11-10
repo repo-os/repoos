@@ -9466,8 +9466,9 @@
     display: none;
   }
   .main {
-    padding: 18px 16px 0;
-    padding-inline-end: max(16px, var(--page-inline-end-inset));
+    --main-top-inset: 18px;
+    --main-inline-inset: max(16px, var(--page-inline-end-inset));
+    padding: var(--main-top-inset) var(--main-inline-inset) 0;
   }
   .tabbar {
     display: flex;

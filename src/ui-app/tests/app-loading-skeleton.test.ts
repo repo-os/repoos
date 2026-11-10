@@ -54,6 +54,9 @@ describe("repo loading skeleton", () => {
       /\.main\s*>\s*\.shell-fade-leave-active\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*var\(--main-top-inset\) var\(--main-inline-inset\) 0;/s,
     );
     expect(styles).toMatch(
+      /@media \(max-width: 760px\)\s*\{[\s\S]*?\.main\s*\{[^}]*--main-top-inset:\s*18px;[^}]*--main-inline-inset:\s*max\(16px,\s*var\(--page-inline-end-inset\)\);[^}]*padding:\s*var\(--main-top-inset\) var\(--main-inline-inset\) 0;/,
+    );
+    expect(styles).toMatch(
       /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.shell-fade-enter-active,[\s\S]*?transition-duration:\s*0ms;/,
     );
   });
