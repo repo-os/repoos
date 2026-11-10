@@ -11,7 +11,9 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T17:31:22Z"
+updated_at: "2026-11-10T18:31:23Z"
+review_rounds: 1
+review_passes: 1
 ---
 ## Problem
 On 2026-11-10 #1080 sat in review with a passed handoff for 45+ minutes: `repoos review again 1080` answered "a review is already running for this task" (ReviewRunner.isRunning, src/server/review.ts ~1173), but no reviewer process or session existed (no `claude -p`, no reviewer row since 17:27Z, the last attempt errored with "Can't reach the API server" while the machine was offline). `repoos review cancel 1080` followed by `repoos mv 1080 review` did not clear it. The in-memory running registration leaked when the original reviewer run failed (API outage), so every later review request was refused.
@@ -37,3 +39,15 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T17:26:24Z · watchdog: restarting engineer after 235m with no live process
 - 2026-11-10T17:31:17Z · note: handoff requested (cli)
 - 2026-11-10T17:31:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T17:59:42Z · status active→review
+- 2026-11-10T17:59:42Z · message_queued at 2026-11-10T17:59:42.454Z
+- 2026-11-10T17:59:42Z · note: shots: skipped — the diff (6 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-10T18:02:07Z · note: review pass 1: needs some work
+- 2026-11-10T18:02:07Z · status review→active
+- 2026-11-10T18:02:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T18:02:10Z · message_delivered: 1 message(s)
+- 2026-11-10T18:16:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T18:23:52Z · message_queued at 2026-11-10T18:23:52.075Z
+- 2026-11-10T18:26:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T18:31:14Z · message_delivered: 1 message(s)
+- 2026-11-10T18:31:23Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
