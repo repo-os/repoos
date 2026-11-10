@@ -35,3 +35,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T13:31:27Z · cli_override, model_override
 - 2026-11-10T13:31:31Z · status ready→active, branch
 - 2026-11-10T17:26:24Z · watchdog: restarting engineer after 235m with no live process
+- 2026-11-10T17:31:17Z · note: handoff requested (cli)
