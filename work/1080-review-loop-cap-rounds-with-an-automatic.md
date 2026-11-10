@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 662615
-last_close_out_gate_at: "2026-11-10T07:16:21.479Z"
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: review
+status: done
 priority: p1
 area: [server, core]
+merged_commit: beddcd681371de7fb778f660284c9a7d61f64ce9
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-loop-cap-rounds-with-an-automatic
@@ -16,6 +15,8 @@ review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
 updated_at: "2026-11-10T07:16:21Z"
+last_close_out_gate_ms: 662615
+last_close_out_gate_at: "2026-11-10T07:16:21.479Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
