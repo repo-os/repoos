@@ -14,7 +14,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T20:46:12Z"
+updated_at: "2026-11-10T20:49:33Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 01972ec95500b32d83a57717df28767909417a5e
 review_passes: 6
