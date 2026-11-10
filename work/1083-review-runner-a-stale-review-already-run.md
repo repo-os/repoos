@@ -52,3 +52,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T18:31:14Z · message_delivered: 1 message(s)
 - 2026-11-10T18:31:23Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
 - 2026-11-10T18:41:10Z · message_queued at 2026-11-10T18:41:10.004Z
+- 2026-11-10T18:41:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
