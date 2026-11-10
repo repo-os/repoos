@@ -4,8 +4,8 @@ title: "First-load skeletons: match every page's real layout (Control and Storie
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 18 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — The shell removes its header and does not cross-fade into content.
 priority: p3
 area: web
 assigned_to: ai
@@ -14,7 +14,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T08:02:16Z"
+updated_at: "2026-11-10T08:02:17Z"
 review_passes: 17
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
