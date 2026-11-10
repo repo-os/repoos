@@ -239,3 +239,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T12:35:36Z · ↻ resuming engineer to read queued message
 - 2026-11-10T12:35:37Z · status active→review
 - 2026-11-10T12:35:37Z · message_delivered: 2 message(s)
+- 2026-11-10T12:35:38Z · note: handoff requested (cli)
