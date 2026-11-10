@@ -297,3 +297,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T09:04:48Z · body
 - 2026-11-10T09:07:55Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-10T09:07:55Z · message_queued at 2026-11-10T09:07:55.355Z
+- 2026-11-10T09:07:55Z · ↻ resuming engineer to read queued message
