@@ -2,7 +2,7 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: review
+status: active
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T08:36:39Z"
+updated_at: "2026-11-10T08:36:40Z"
 review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
