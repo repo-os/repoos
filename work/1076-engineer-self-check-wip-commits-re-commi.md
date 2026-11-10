@@ -335,3 +335,4 @@ Non-blocking: isTaskMarkdownBookkeepingPath matching non-task markdown under wor
 - 2026-11-10T21:02:24Z · note: shots: skipped — the diff (33 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T21:02:24Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-10T21:02:25Z · message_queued at 2026-11-10T21:02:25.108Z
+- 2026-11-10T21:02:25Z · ↻ resuming engineer to read queued message
