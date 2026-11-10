@@ -279,25 +279,33 @@ async function probeRelease(
   fetchImpl: typeof fetch,
 ): Promise<Probe> {
   const url = `https://api.github.com/repos/${repository}/releases/tags/${encodeURIComponent(tag)}`;
+  // Only the request itself decides "no network". Anything GitHub or a proxy
+  // sends back is an answer, and a non-JSON answer must not look unreachable.
+  let res: Response;
   try {
-    const res = await fetchImpl(url, {
+    res = await fetchImpl(url, {
       headers: { Accept: "application/vnd.github+json", "User-Agent": "repoos" },
       signal: AbortSignal.timeout(10_000),
     });
-    if (res.status === 404)
-      return { state: "not-yet", reason: `GitHub has no release for ${tag} yet` };
-    if (!res.ok) return { state: "http-error", reason: `GitHub answered ${res.status}` };
-    const body = (await res.json()) as { draft?: unknown; assets?: unknown };
-    if (body.draft !== true && Array.isArray(body.assets) && body.assets.length > 0) {
-      return { state: "published" };
-    }
-    return { state: "not-yet", reason: `${tag} is on GitHub but its assets are not uploaded yet` };
   } catch (err) {
     return {
       state: "unreachable",
       reason: `Could not reach GitHub: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
+  if (res.status === 404)
+    return { state: "not-yet", reason: `GitHub has no release for ${tag} yet` };
+  if (!res.ok) return { state: "http-error", reason: `GitHub answered ${res.status}` };
+  let body: { draft?: unknown; assets?: unknown };
+  try {
+    body = (await res.json()) as { draft?: unknown; assets?: unknown };
+  } catch {
+    return { state: "http-error", reason: "GitHub answered with a body that is not JSON" };
+  }
+  if (body.draft !== true && Array.isArray(body.assets) && body.assets.length > 0) {
+    return { state: "published" };
+  }
+  return { state: "not-yet", reason: `${tag} is on GitHub but its assets are not uploaded yet` };
 }
 
 /**
@@ -368,7 +376,7 @@ export function readReleaseEmailLog(config: RepoOSConfig): Record<string, Releas
 
 /**
  * The record for `version`. A `pending` record with no waiter in this process
- * was left behind by a restart during the publish wait. It can never finish, so
+ * was left behind by a restart during the publish wait or mid-send. It can never finish, so
  * it reads as failed and offers Resend. The file is not rewritten here.
  */
 export function getReleaseEmailRecord(
@@ -380,7 +388,7 @@ export function getReleaseEmailRecord(
     return {
       ...record,
       status: "failed",
-      reason: `The server restarted before GitHub published ${record.tag}. Resend once it is on GitHub.`,
+      reason: `The server restarted before the email for ${record.tag} finished. Resend to send the rest.`,
     };
   }
   return record;
@@ -468,8 +476,18 @@ async function sendAndRecord(
       { to, subject: message.subject, html: message.html, text: message.text },
       deps.fetchImpl,
     );
-    if (result.ok) sentTo.push(to);
-    else failures.push(`${to}: ${result.reason}`);
+    if (!result.ok) {
+      failures.push(`${to}: ${result.reason}`);
+      continue;
+    }
+    sentTo.push(to);
+    // Persist each accepted address before the next send. A restart after this
+    // point must not mail this recipient again.
+    recordFor(config, entry, {
+      status: "pending",
+      sentTo: [...sentTo],
+      reason: `Sent to ${sentTo.length} of ${email.to?.length ?? targets.length}; sending the rest`,
+    });
   }
   if (failures.length === 0) {
     return recordFor(config, entry, { status: "sent", sentTo, reason: note });

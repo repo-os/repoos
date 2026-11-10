@@ -474,9 +474,9 @@ export const getReleaseEmail: RouteHandler = (ctx, req, res) => {
 
 /** The rendered subject and bodies for a release, with no send (the Preview button). */
 export const getReleaseEmailPreview: RouteHandler = (ctx, req, res) => {
-  const version = releaseEmailVersion(ctx.config, req);
-  if (!version) return json(res, 404, { error: "There is no release to preview yet." });
   try {
+    const version = releaseEmailVersion(ctx.config, req);
+    if (!version) return json(res, 404, { error: "There is no release to preview yet." });
     return json(
       res,
       200,
@@ -492,8 +492,8 @@ export const getReleaseEmailPreview: RouteHandler = (ctx, req, res) => {
  * received this release yet, so a retry never mails someone twice.
  */
 export const sendReleaseEmailNow: RouteHandler = async (ctx, req, res) => {
-  const body = (await readBody(req)) as { version?: unknown };
-  if (typeof body.version !== "string" || !body.version.trim()) {
+  const body = (await readBody(req)) as { version?: unknown } | null;
+  if (typeof body?.version !== "string" || !body.version.trim()) {
     return json(res, 400, { error: "version is required" });
   }
   try {

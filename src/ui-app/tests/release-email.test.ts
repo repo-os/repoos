@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -11,7 +11,7 @@ import {
   sendReleaseEmailNow,
 } from "../../server/routes/release.js";
 import type { RepoOSConfig } from "../../core/types.js";
-import { parseReleaseEmailConfig } from "../../core/config.js";
+import { loadConfig, parseReleaseEmailConfig } from "../../core/config.js";
 import {
   deliverCutReleaseEmail,
   escapeHtml,
@@ -321,6 +321,21 @@ describe("waitForPublishedRelease", () => {
     });
     expect(outcome.state).toBe("unavailable");
   });
+
+  it("keeps waiting when a 200 answer is not JSON, instead of sending at the tag", async () => {
+    const fake = fakeFetch({
+      github: (call) =>
+        call === 1
+          ? new Response("<html>Sign in to the network</html>", { status: 200 })
+          : publishedResponse(),
+    });
+    const outcome = await waitForPublishedRelease("repo-os/repoos", "v0.6.0", {
+      fetchImpl: fake.fetchImpl,
+      sleep: instantSleep().sleep,
+    });
+    expect(outcome.state).toBe("published");
+    expect(fake.githubCalls()).toBe(2);
+  });
 });
 
 describe("deliverCutReleaseEmail", () => {
@@ -550,6 +565,49 @@ describe("restart and failure recovery", () => {
     expect(fake.githubCalls()).toBe(2);
   });
 
+  it("writes each accepted recipient before the next send, so a restart mid-loop cannot re-mail it", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "tagged" });
+    const base = fakeFetch();
+    const onDiskBeforeSecond: string[][] = [];
+    const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const to =
+        String(input) === "https://api.resend.com/emails"
+          ? (JSON.parse(String(init?.body)) as { to: string[] }).to[0]
+          : undefined;
+      // Whatever is on disk here is all a restart would see if the process died now.
+      if (to === RECIPIENTS[1]) {
+        onDiskBeforeSecond.push(readReleaseEmailLog(config)["0.6.0"]?.sentTo ?? []);
+      }
+      return base.fetchImpl(input, init);
+    }) as typeof fetch;
+    await deliverCutReleaseEmail(config, entry(), {}, { fetchImpl });
+    expect(onDiskBeforeSecond).toEqual([[RECIPIENTS[0]]]);
+    expect(base.resendTo).toEqual(RECIPIENTS);
+
+    // The restart case: the record the first recipient left behind is read as
+    // failed, and Resend mails only the recipient who has not got it yet.
+    writeFileSync(
+      join(root, ".repoos", "release-emails.json"),
+      JSON.stringify({
+        "0.6.0": {
+          version: "0.6.0",
+          tag: "v0.6.0",
+          status: "pending",
+          when: "tagged",
+          sentTo: [RECIPIENTS[0]],
+          reason: "Sent to 1 of 2; sending the rest",
+          at: "2026-11-10T00:00:00.000Z",
+        },
+      }),
+      "utf8",
+    );
+    expect(getReleaseEmailRecord(config, "0.6.0")?.status).toBe("failed");
+    const resend = fakeFetch();
+    await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: resend.fetchImpl });
+    expect(resend.resendTo).toEqual([RECIPIENTS[1]]);
+  });
+
   it("bounds each Resend call with an abort signal so a hung provider cannot stall the send", async () => {
     writeHistory([entry()]);
     const signals: Array<AbortSignal | undefined> = [];
@@ -734,6 +792,19 @@ describe("release email routes", () => {
     expect(out.status).toBe(404);
   });
 
+  it("answers a JSON error, not a bare 500, when release-history.json is malformed", async () => {
+    writeFileSync(join(root, "release-history.json"), "{ not json", "utf8");
+    const { res, out } = fakeRes();
+    await getReleaseEmailPreview(
+      ctxFor(makeConfig()),
+      fakeReq("/api/release/email/preview"),
+      res,
+      {},
+    );
+    expect(out.status).toBe(404);
+    expect((out.body as { error: string }).error).toBeTypeOf("string");
+  });
+
   it("requires a version on the Resend route", async () => {
     const { res, out } = fakeRes();
     await sendReleaseEmailNow(
@@ -756,6 +827,41 @@ describe("release email routes", () => {
     );
     expect(out.status).toBe(409);
     expect((out.body as { error: string }).error).toMatch(/turn them on/i);
+  });
+});
+
+describe("[release.email] without a [release] block", () => {
+  it("still reads the email options and warns that no email will be sent", () => {
+    writeFileSync(
+      join(root, "repoos.toml"),
+      '[release.email]\nenabled = true\nto = ["team@example.com"]\n',
+      "utf8",
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const config = loadConfig(root);
+      expect(config.release?.enabled).not.toBe(true);
+      expect(config.release?.email?.enabled).toBe(true);
+      expect(config.release?.email?.to).toEqual(["team@example.com"]);
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/\[release\] enabled is not true/));
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("does not warn when [release] is enabled alongside the email block", () => {
+    writeFileSync(
+      join(root, "repoos.toml"),
+      '[release]\nenabled = true\n\n[release.email]\nenabled = true\nto = ["team@example.com"]\n',
+      "utf8",
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(loadConfig(root).release?.email?.enabled).toBe(true);
+      expect(warn).not.toHaveBeenCalledWith(expect.stringMatching(/\[release\] enabled/));
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 

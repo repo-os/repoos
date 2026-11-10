@@ -1532,10 +1532,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         if (typeof value === "string") cfg.release[key] = value as never;
       }
     }
-    // [release.email] (#1071): the release-email options. Only read when the
-    // Releases surface is enabled, like the rest of [release].
+    // [release.email] (#1071): read on its own, so the Settings toggle shows what
+    // the file says. Emails only go out from a cut, and a cut needs [release]
+    // enabled, so say so at load rather than leave the email silently unsent.
     const releaseEmail = parseReleaseEmailConfig(parsed);
-    if (releaseEmail && cfg.release) cfg.release = { ...cfg.release, email: releaseEmail };
+    if (releaseEmail) {
+      cfg.release = { ...cfg.release, email: releaseEmail };
+      if (releaseEmail.enabled === true && cfg.release.enabled !== true) {
+        console.warn(
+          "[release.email] is enabled but [release] enabled is not true; no release email will be sent",
+        );
+      }
+    }
     // Optional deployments surface (#0340). A [[deployments]] array of tables —
     // one per (service, branch) — is what turns the Deployments nav item and
     // API on; no block at all means the feature is entirely dormant for this
@@ -2715,8 +2723,8 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: false,
       default: "published",
       options: [
-        { value: "published", label: "When the release is published" },
-        { value: "tagged", label: "When the release is tagged" },
+        { value: "published", label: "When published" },
+        { value: "tagged", label: "When tagged" },
       ],
       description:
         "Published waits until GitHub serves the release with its assets, so the email never links to a download that is not there yet. Tagged sends as soon as the tag is pushed.",

@@ -1004,6 +1004,7 @@ const ARRAY_PLACEHOLDERS: Record<string, string> = {
   "approval.autoApprove.machineryPaths": "src/server/, src/core/ (comma-separated path prefixes)",
   "check.fullSuitePaths": "src/server/close-out/, repoos.toml (comma-separated path prefixes)",
   "check.alwaysRun": "**/close-out-gate-mode.test.ts (glob patterns)",
+  "release.email.to": "team@example.com, ops@example.com (comma-separated)",
 };
 
 function arrayPlaceholder(key: string): string {
