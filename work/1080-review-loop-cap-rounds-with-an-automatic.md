@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md. The task stays active — fix the failure and ask again."
@@ -198,4 +198,3 @@ The declared shot of the new Settings control is an evidence nicety: the capture
 - 2026-11-10T02:16:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T02:39:45Z · message_delivered: 1 message(s)
 - 2026-11-10T02:42:41Z · agent exited with an error (claude) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md. The task stays active — fix the failure and ask again.
-- 2026-11-10T02:42:42Z · status active→review
