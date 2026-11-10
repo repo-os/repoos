@@ -849,12 +849,14 @@ A **command capture target** (`[[shot.targets]]`, below) has no browser page or 
 
 ```toml
 review.humanFlagAfterPasses = 5
+review.freezeAfterPasses = 4
 review.timeoutMinutes = 15
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `review.humanFlagAfterPasses` | number | `5` | yes | Completed review passes on one task before the next report opens with a summary of the bug classes earlier passes kept finding, and the task gets a human-attention flag (`review-human-attention`). Default 5. The flag is separate from the auto-bounce `review-rounds-exhausted` backstop: it counts every completed pass, including manual **Review again**, and clears when a clean review or a new engineer run confirms progress. |
+| `review.freezeAfterPasses` | number | `4` | yes | Completed review passes on one task before the blocking bar freezes. From the next pass the reviewer blocks only on a defect that breaks the task's own acceptance criteria, a regression, or a landing blocker; everything else goes under `Suggestions (non-blocking)`. P3 tasks and `Easter eggs bundle` tasks use the lighter bar from pass 1 regardless of this value. See [Review and close-out](/review-and-close-out). |
 | `review.timeoutMinutes` | number | `15` | yes | Minutes one review pass may run before it is stopped. A large diff on a slow cheap model can legitimately take longer than the default; raise this when reviews of big branches keep getting cut off. Values are clamped to 1–240. A pass that hits the limit is recorded as **timed out after N minutes** (not "no usable report"), retried once automatically on the same reviewer, and only flagged for a human if that retry also times out. |
 
 Edit both keys in **Settings → General** (Automation & approval). A task can bounce between `active` and `review` many times when each pass finds one more instance of the same class; this is the signal to stop and look at the pattern rather than pay for another round. See [Review and close-out → Repeated review classes](/review-and-close-out#repeated-review-classes-and-the-human-attention-flag).
