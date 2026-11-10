@@ -18,6 +18,7 @@ import {
   truncateHandoffReason,
   updateHandoffStatusStep,
   updateHandoffStatusProgress,
+  reconcileHandoffStatus,
   HANDOFF_STATUS_REASON_LIMIT,
 } from "../../server/handoff-status";
 
@@ -271,6 +272,56 @@ describe("handoff outcome message (#1028)", () => {
     });
     expect(deliverHandoffOutcome(config, "1", failed, runner, null)).toBe(false);
     expect(runner.queueTaskMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe("stale running handoff reconciliation (#1085)", () => {
+  it("supersedes a running record with no live process", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1085", { attemptKey: "run-stale", step: "validate" });
+    const superseded = reconcileHandoffStatus(config, "1085", {
+      taskStatus: "review",
+      handoffLive: false,
+    });
+    expect(superseded).toMatchObject({
+      state: "superseded",
+      reason: "task is already in review",
+    });
+    expect(readHandoffStatus(config, "1085").state).toBe("superseded");
+  });
+
+  it("supersedes when a newer review pass finished after the handoff started", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1080", {
+      attemptKey: "run-old",
+      step: "validate",
+    });
+    const started = readHandoffStatus(config, "1080").startedAt;
+    expect(started).toBeTruthy();
+    const later = new Date(Date.parse(started!) + 60_000).toISOString();
+    const superseded = reconcileHandoffStatus(config, "1080", {
+      taskStatus: "review",
+      handoffLive: false,
+      latestReviewAt: later,
+    });
+    expect(superseded).toMatchObject({
+      state: "superseded",
+      reason: "a newer review pass completed",
+    });
+  });
+
+  it("flags a live handoff past the deadline as stale without persisting superseded", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1070", { attemptKey: "run-wait", step: "validate" });
+    const stale = reconcileHandoffStatus(config, "1070", {
+      taskStatus: "active",
+      handoffLive: true,
+      staleAfterMs: 60_000,
+      nowMs: Date.now() + 120_000,
+    });
+    expect(stale.state).toBe("running");
+    expect(stale.stale).toBe(true);
+    expect(readHandoffStatus(config, "1070").state).toBe("running");
   });
 });
 

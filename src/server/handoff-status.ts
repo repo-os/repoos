@@ -18,7 +18,13 @@ import { dirname, join } from "node:path";
 import type { Agent, RepoOSConfig } from "../core/types.js";
 import type { AgentRunner } from "./agents.js";
 
-export type HandoffStatusState = "not_requested" | "running" | "passed" | "failed" | "deferred";
+export type HandoffStatusState =
+  | "not_requested"
+  | "running"
+  | "passed"
+  | "failed"
+  | "deferred"
+  | "superseded";
 
 export interface HandoffStatus {
   taskId: string;
@@ -51,6 +57,12 @@ export interface HandoffStatus {
   } | null;
   machine?: string | null;
   startedAt?: string | null;
+  /**
+   * True when a `running` record has outlived the handoff deadline while a live
+   * finalization is still marked in flight (#1085). The UI surfaces this on the
+   * checks line; reconciliation may later supersede the record.
+   */
+  stale?: boolean;
 }
 
 /** Maximum characters of a failure reason surfaced in a status read or message. */
@@ -72,6 +84,7 @@ export function emptyHandoffStatus(taskId: string): HandoffStatus {
     progress: null,
     machine: null,
     startedAt: null,
+    stale: false,
   };
 }
 
@@ -106,7 +119,8 @@ export function readHandoffStatus(config: RepoOSConfig, taskId: string): Handoff
       parsed.state === "running" ||
       parsed.state === "passed" ||
       parsed.state === "failed" ||
-      parsed.state === "deferred"
+      parsed.state === "deferred" ||
+      parsed.state === "superseded"
         ? parsed.state
         : "not_requested";
     return {
@@ -122,6 +136,7 @@ export function readHandoffStatus(config: RepoOSConfig, taskId: string): Handoff
       progress: parsed.progress && typeof parsed.progress === "object" ? parsed.progress : null,
       machine: typeof parsed.machine === "string" ? parsed.machine : null,
       startedAt: typeof parsed.startedAt === "string" ? parsed.startedAt : null,
+      stale: parsed.stale === true,
     };
   } catch {
     // A corrupt status file must never break the handoff path.
@@ -240,6 +255,86 @@ export function finishHandoffStatus(
   };
   writeHandoffStatus(config, next);
   return next;
+}
+
+/** Clear a stale `running` record so status reads match reality (#1085). */
+export function supersedeHandoffStatus(
+  config: RepoOSConfig,
+  taskId: string,
+  reason: string,
+): HandoffStatus {
+  const current = readHandoffStatus(config, taskId);
+  if (current.state !== "running") return current;
+  const next: HandoffStatus = {
+    ...current,
+    state: "superseded",
+    reason: truncateHandoffReason(reason),
+    progress: null,
+    stale: false,
+    updatedAt: new Date().toISOString(),
+  };
+  writeHandoffStatus(config, next);
+  return next;
+}
+
+export interface HandoffReconcileInput {
+  taskStatus?: string | null;
+  /** True while the server has claimed this task's handoff slot. */
+  handoffLive: boolean;
+  /** ISO timestamp of the newest stored review report, when known. */
+  latestReviewAt?: string | null;
+  nowMs?: number;
+  /** Elapsed beyond this marks a live handoff as stale (default 30 minutes). */
+  staleAfterMs?: number;
+}
+
+const DEFAULT_HANDOFF_STALE_AFTER_MS = (45 * 60 + 15 * 60) * 1000; // matches handoff.ts default deadline
+
+/**
+ * Reconcile a durable `running` record with live server state. Persists
+ * `superseded` when the record is orphaned; returns `stale: true` while a live
+ * handoff has exceeded the deadline without clearing the slot yet.
+ */
+export function reconcileHandoffStatus(
+  config: RepoOSConfig,
+  taskId: string,
+  input: HandoffReconcileInput,
+): HandoffStatus {
+  const status = readHandoffStatus(config, taskId);
+  if (status.state !== "running") return { ...status, stale: false };
+
+  const now = input.nowMs ?? Date.now();
+  const startedMs = status.startedAt ? Date.parse(status.startedAt) : null;
+  const elapsed =
+    startedMs != null && Number.isFinite(startedMs) ? Math.max(0, now - startedMs) : null;
+  const staleAfterMs = input.staleAfterMs ?? DEFAULT_HANDOFF_STALE_AFTER_MS;
+
+  const reviewAfterHandoff =
+    input.latestReviewAt &&
+    status.startedAt &&
+    Number.isFinite(Date.parse(input.latestReviewAt)) &&
+    Number.isFinite(Date.parse(status.startedAt)) &&
+    Date.parse(input.latestReviewAt) > Date.parse(status.startedAt);
+
+  if (!input.handoffLive) {
+    if (reviewAfterHandoff) {
+      return supersedeHandoffStatus(config, taskId, "a newer review pass completed");
+    }
+    if (input.taskStatus === "review") {
+      return supersedeHandoffStatus(config, taskId, "task is already in review");
+    }
+    return supersedeHandoffStatus(config, taskId, "no live handoff process");
+  }
+
+  if (reviewAfterHandoff && input.taskStatus === "review") {
+    return supersedeHandoffStatus(config, taskId, "a newer review pass completed");
+  }
+
+  if (elapsed != null && elapsed > staleAfterMs) {
+    return { ...status, stale: true };
+  }
+
+  return { ...status, stale: false };
 }
 
 /** Record that a requested handoff was deferred (queued messages must be read first). */

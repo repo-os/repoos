@@ -107,7 +107,8 @@ import {
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
-import { readHandoffStatus } from "../handoff-status.js";
+import { reconcileHandoffStatus } from "../handoff-status.js";
+import { HANDOFF_DEADLINE_MS } from "../handoff.js";
 import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
 import { checkGenericStatusPatch, checkHumanTaskStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
@@ -5116,10 +5117,17 @@ export const getTaskLandable: RouteHandler = async (ctx, _req, res, params) => {
  * touches a handoff. A task with no attempt is `not_requested`, not an error.
  */
 export const getTaskHandoffStatus: RouteHandler = async (ctx, _req, res, params) => {
-  const { index, config } = ctx;
+  const { index, config, runner, reviews } = ctx;
   const id = params.param1;
-  if (!index.getTask(id)) return json(res, 404, { error: `Task #${id} not found` });
-  return json(res, 200, { ok: true, ...readHandoffStatus(config, id) });
+  const task = index.getTask(id);
+  if (!task) return json(res, 404, { error: `Task #${id} not found` });
+  const status = reconcileHandoffStatus(config, id, {
+    taskStatus: task.status,
+    handoffLive: runner.isHandoffInFlight(id) || runner.hasPendingHandoff(id),
+    latestReviewAt: reviews.read(id)?.at ?? null,
+    staleAfterMs: HANDOFF_DEADLINE_MS,
+  });
+  return json(res, 200, { ok: true, ...status });
 };
 
 /** Return one file's committed contents from the task's before/after revisions. */

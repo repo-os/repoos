@@ -846,6 +846,7 @@ const sharedActiveStatus = computed(() => {
   return resolveSharedTaskCardStatus({
     handoffInFlight: repo.handoffInFlight(taskId),
     handoffState: status?.state,
+    handoffStale: status?.stale,
     handoffStep: status?.step ?? repo.handoffSteps[taskId],
     handoffRequested: props.task.pendingHandoff === true,
     checkInFlight: !!checkRun || !!checkSlot,
