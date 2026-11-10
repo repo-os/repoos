@@ -3,9 +3,6 @@ id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the codex agent exited without output: error: Reconnecting... 4/5 (workspace routing discovery timed out) error: Reconnecting... 5/5 (workspace routing discovery timed out) error: workspace routing discovery timed out"
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-10T00:48:58Z"
+updated_at: "2026-11-10T01:09:06Z"
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 review_passes: 2
@@ -176,3 +173,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-10T00:44:57Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-11-10T00:48:58Z · note: review pass 5: failed — no usable report
 - 2026-11-10T00:48:58Z · needs_input
+- 2026-11-10T01:09:06Z · needs_input (review-failed) cleared for review again by human
