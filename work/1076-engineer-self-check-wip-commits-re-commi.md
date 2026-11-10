@@ -3,9 +3,6 @@ id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
 status: active
-hold: true
-hold_reason: "load: pausing extra engineers until #1080/#1070 land"
-hold_at: "2026-11-10T06:26:24.999Z"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T06:26:27Z"
+updated_at: "2026-11-10T10:04:09Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 5676e8dde658b91c55ef42ee04a17cf8b0c40faf
 review_passes: 4
@@ -214,3 +211,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T06:04:38Z · message_delivered: 2 message(s)
 - 2026-11-10T06:26:13Z · engineer stopped by request
 - 2026-11-10T06:26:27Z · held, held-reason, held-at
+- 2026-11-10T10:04:07Z · released
