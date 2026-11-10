@@ -3,6 +3,9 @@ id: "1083"
 title: "Review runner: a stale 'review already running' registration survives review cancel and blocks reviews until the server restarts (seen on #1080)"
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `isRunning` now runs a registry read and pid probes for every task on each board GET, and the AC1 rejection path has no…"
 priority: p1
 area: server
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T19:45:05Z"
+updated_at: "2026-11-10T19:45:06Z"
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 review_passes: 2
@@ -78,3 +81,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T19:41:58Z · message_queued at 2026-11-10T19:41:58.550Z
 - 2026-11-10T19:41:58Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T19:45:05Z · note: review pass 3: needs some work
+- 2026-11-10T19:45:06Z · needs_input
