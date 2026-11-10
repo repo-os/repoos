@@ -11,7 +11,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T18:35:27Z"
+updated_at: "2026-11-10T18:58:12Z"
 review_rounds: 1
 review_passes: 1
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
@@ -88,3 +88,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T18:02:10Z · body
 - 2026-11-10T18:19:49Z · body
 - 2026-11-10T18:35:27Z · body
+- 2026-11-10T18:58:12Z · body
