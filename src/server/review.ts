@@ -1019,6 +1019,13 @@ export function reviewFollowupMission(
   return parts.join("\n");
 }
 
+/**
+ * What holds a review registration (#1083): a reviewer process still running,
+ * a finished reviewer whose report is still being stored, or a run that has not
+ * spawned its reviewer yet.
+ */
+type RegistrationPhase = "running" | "finalizing" | "preparing";
+
 /** In-flight bookkeeping for one review run. */
 interface Run {
   cancelled: boolean;
@@ -1290,14 +1297,18 @@ export class ReviewManager {
    * is whether a reviewer process (or its durable session, mid-finalize) still
    * exists — the signal that separates a real registration from a leaked one.
    */
-  private registration(
-    taskId: string,
-  ): { since: number; pid: number | null; live: boolean } | null {
+  private registration(taskId: string): {
+    since: number;
+    pid: number | null;
+    phase: RegistrationPhase;
+  } | null {
     const run = this.runs.get(taskId);
     const fenced = this.completions.has(taskId);
     const key = this.reviewKey(taskId);
-    const live = this.runner?.isRunning(key) ?? false;
-    if (!run && !fenced && !live) return null;
+    // A finalizing runner entry has already exited: it is not a live reviewer.
+    const live = this.runner?.reviewProcessLive(key) ?? false;
+    const entryPresent = this.runner?.isRunning(key) ?? false;
+    if (!run && !fenced && !entryPresent) return null;
     const proc = live ? this.runner?.running().find((r) => r.id === key) : undefined;
     // A live process reports its own start time; otherwise the registration's.
     // Only a live registration reads this, so the reaper's age check is unaffected.
@@ -1306,7 +1317,12 @@ export class ReviewManager {
       run?.startedAt ||
       this.completionSince.get(taskId) ||
       Date.now();
-    return { since, pid: proc && proc.pid > 0 ? proc.pid : null, live };
+    const phase: RegistrationPhase = live
+      ? "running"
+      : fenced || entryPresent
+        ? "finalizing"
+        : "preparing";
+    return { since, pid: proc && proc.pid > 0 ? proc.pid : null, phase };
   }
 
   /**
@@ -1316,7 +1332,7 @@ export class ReviewManager {
    */
   private reapStaleRegistration(taskId: string): boolean {
     const reg = this.registration(taskId);
-    if (!reg || reg.live) return false;
+    if (!reg || reg.phase === "running") return false;
     if (Date.now() - reg.since <= reviewTimeoutMs(this.config)) return false;
     this.logger.task(
       taskId,
@@ -1324,6 +1340,7 @@ export class ReviewManager {
       "stale review registration cleared — no live reviewer process",
       {
         since: new Date(reg.since).toISOString(),
+        phase: reg.phase,
       },
     );
     // A run still preparing has no process yet. Mark it cancelled before it is
@@ -1333,6 +1350,9 @@ export class ReviewManager {
     this.dropRun(taskId, run);
     this.completions.delete(taskId);
     this.completionSince.delete(taskId);
+    // A finalize that never settled leaves its runner entry behind. Drop it too,
+    // or the runner would still refuse the next review for this task (#1083).
+    this.runner?.abandonFinalizing(this.reviewKey(taskId));
     return true;
   }
 
@@ -1355,7 +1375,12 @@ export class ReviewManager {
   private refusalWhileRunning(taskId: string): string {
     const reg = this.registration(taskId);
     const since = reg ? new Date(reg.since).toISOString() : "unknown";
-    const what = reg?.pid ? `pid ${reg.pid}` : "no reviewer process id yet";
+    const what =
+      reg?.phase === "running"
+        ? `pid ${reg.pid ?? "unknown"}`
+        : reg?.phase === "finalizing"
+          ? "reviewer exited, finalizing its report"
+          : "preparing, no reviewer process yet";
     return `a review is already running for this task (${what}, since ${since})`;
   }
 
@@ -2548,6 +2573,8 @@ export class ReviewManager {
     } catch {
       /* already gone */
     }
+    // Drop the runner entry of a finalize whose child already exited (#1083).
+    this.runner?.abandonFinalizing(key);
     // Drop the run now, even when the child is already gone and will never
     // report its exit (#1083). A live child still finalizes as cancelled through
     // the marker above. A completion fence is left alone: its own finalize
