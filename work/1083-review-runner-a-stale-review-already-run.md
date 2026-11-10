@@ -14,7 +14,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T21:44:15Z"
+updated_at: "2026-11-10T21:44:37Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -33,6 +33,9 @@ A failed, killed or cancelled review always releases its running registration; `
 
 ## Notes for AI
 Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and the handoff step that starts the review. Do not edit repoos.toml.
+
+## Accepted scope and known limitations
+FINAL (pass 4): the liveness probe on read paths is fixed (early return before the probe) and the prepare-rejects case is tested. NOT blocking, follow-up only: (1) a finalizeRun rejection test; (2) a stamped 'since' for a finalizing entry falling back to the entry startedAt; (3) the late proc close handler needing an entry-identity guard; (4) documenting the reaper fence trade-off; (5) a cancelled preparation emitting 'cancelled' after drop. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -85,3 +88,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T20:46:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T21:44:13Z · status review→active
 - 2026-11-10T21:44:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T21:44:37Z · body: Accepted scope and known limitations (added)
