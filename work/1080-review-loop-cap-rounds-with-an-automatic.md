@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-10T05:45:51Z"
+review_passes: 5
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
@@ -13,8 +15,6 @@ model_override: haiku
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-10T05:45:51Z"
-review_passes: 4
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -221,3 +221,4 @@ Final (pass 7): accepted-scope extraction handles the first matching section up 
 - 2026-11-10T05:45:05Z · body: Accepted scope and known limitations (added)
 - 2026-11-10T05:45:05Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-10T05:45:51Z · note: review pass 8: good to go
+
