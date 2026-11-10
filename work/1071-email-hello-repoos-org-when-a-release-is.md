@@ -112,3 +112,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T03:25:29Z · handoff_deferred: 3 queued message(s) must be read before review
 - 2026-11-10T03:25:30Z · message_queued at 2026-11-10T03:25:30.337Z
 - 2026-11-10T03:25:31Z · ↻ resuming engineer to read queued message
+- 2026-11-10T03:25:31Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The scoped check exited 0. I'll confirm no step failed and look at the working tree before handing off. · stderr: (empty)
