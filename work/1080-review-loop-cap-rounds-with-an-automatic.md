@@ -2,7 +2,7 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — accepted-scope extraction can omit or misidentify authoritative text; Settings UI is unverified.
@@ -183,3 +183,5 @@ The declared shot of the new Settings control is an evidence nicety: the capture
 - 2026-11-10T01:10:51Z · note: review pass 6: needs some work
 - 2026-11-10T01:10:51Z · needs_input
 - 2026-11-10T01:54:36Z · body: Accepted scope: Settings screenshot (final) (added)
+- 2026-11-10T01:54:36Z · status review→active
+- 2026-11-10T01:54:36Z · note: send-back — returned to active for engineer follow-up
