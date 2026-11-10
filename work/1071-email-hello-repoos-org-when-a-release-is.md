@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-09T23:46:03Z"
+updated_at: "2026-11-10T00:39:49Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -58,3 +58,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-09T23:35:40Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-09T23:40:50Z · message_queued at 2026-11-09T23:40:50.363Z
 - 2026-11-09T23:46:03Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T00:39:49Z · message_overdue: still queued after 60m without being delivered
