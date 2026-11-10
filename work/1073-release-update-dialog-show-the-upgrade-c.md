@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: 5940508779628f831738901e07a5b681a2aa02d5
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
@@ -15,8 +17,6 @@ updated_at: "2026-11-10T02:56:07Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-10T02:19:01.304Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_passes: 2
-last_handoff_failure_fingerprint: "check|repoos check failed: build — src/commands/upgrade.ts(237,14): error TS2304: Cannot find name 'readVersion'."
-last_handoff_failure_sha: e83b162a0832adf0bf5d8728211f3d1be87d6d50
 review_rounds: 1
 handoff_signal_retry_count: 2
 dev_error_count: 12
@@ -248,3 +248,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T02:31:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T02:56:07Z · message_queued at 2026-11-10T02:56:07.222Z
 - 2026-11-10T02:56:07Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+
