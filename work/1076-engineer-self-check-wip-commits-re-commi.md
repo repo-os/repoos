@@ -280,3 +280,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T18:40:55Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1076.md
 - 2026-11-10T18:41:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T18:44:48Z · message_delivered: 1 message(s)
+- 2026-11-10T18:47:51Z · note: handoff requested (cli)
