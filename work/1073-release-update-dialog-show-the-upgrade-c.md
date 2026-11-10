@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T12:24:49Z"
+updated_at: "2026-11-10T12:40:55Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -326,3 +326,4 @@ FORMAT NOTE for the reviewer: pass 5 found no bugs ('None found.'). Under '## Bu
 - 2026-11-10T12:21:29Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T12:21:42Z · note: handoff requested (cli)
 - 2026-11-10T12:24:49Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T12:40:55Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
