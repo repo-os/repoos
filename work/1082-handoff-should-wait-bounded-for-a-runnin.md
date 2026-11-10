@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
@@ -109,3 +111,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T08:24:44Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T08:26:43Z · message_queued at 2026-11-10T08:26:43.674Z
 - 2026-11-10T08:26:46Z · message_delivered: 2 message(s)
+
