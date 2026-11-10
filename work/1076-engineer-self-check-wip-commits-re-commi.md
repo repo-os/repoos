@@ -234,4 +234,3 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T12:24:47Z · note: shots: skipped — the diff (27 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-10T13:09:41Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
 - 2026-11-10T13:10:06Z · status review→active
-- 2026-11-10T13:10:10Z · CTO nudge: held — review is running
