@@ -47,6 +47,7 @@ import {
   dirtyFiles,
   uncommittedWorkFiles,
   workFileFilter,
+  stagedForeignBookkeepingPaths,
   getDiff,
   getDiffStats,
   getChangedFilePaths,
@@ -653,15 +654,23 @@ export async function resetForeignWorkFiles(opts: {
     }
   }
 
-  const staged = await runGit(candidateWtPath, ["diff", "--cached", "--quiet"], 10_000);
+  // Pathspec-scoped to exactly the foreign paths restored or removed above: a
+  // bare commit would fold in anything else the candidate's index holds (a
+  // concurrent board write, `bun install` output) and publish it (#1076).
+  const staged = await runGit(
+    candidateWtPath,
+    ["diff", "--cached", "--quiet", "--", ...foreign],
+    10_000,
+  );
   if (staged.status !== 1) return []; // nothing actually differed after all
   await runGit(
     candidateWtPath,
     [
       "commit",
-      "--no-edit",
       "-m",
       `chore: keep main's copy of ${foreign.length} unrelated bookkeeping file(s) during close-out`,
+      "--",
+      ...foreign,
     ],
     10_000,
   );
@@ -2193,6 +2202,28 @@ export class CloseOutOrchestrator {
         return { ok: false };
       }
     }
+    // A bare `--no-edit` is required here: this runs while the merge is in
+    // progress, and git refuses a pathspec commit then ("cannot do a partial
+    // commit during a merge"). The scoped `add -A -- ...remaining` above keeps a
+    // sibling out of the *conflicted* paths, but a sibling staged after the
+    // merge started (a concurrent board write, `bun install`) still sits in the
+    // index and a bare merge commit would publish it (#1076). Unstage foreign
+    // bookkeeping first, as the lockfile-conflict path does.
+    const foreignStaged = await stagedForeignBookkeepingPaths(wtPath, {
+      ...workFileFilter(this.config),
+      taskId,
+    });
+    if (foreignStaged.length > 0) {
+      const unstage = await runGit(
+        wtPath,
+        ["reset", "--quiet", "HEAD", "--", ...foreignStaged],
+        10_000,
+      );
+      if (unstage.status !== 0) {
+        await runGit(wtPath, ["merge", "--abort"], 10_000);
+        return { ok: false };
+      }
+    }
     const commit = await runGit(
       wtPath,
       ["commit", "--no-edit", "-m", "chore: resolve integration conflict by union (#0692)"],
@@ -2741,6 +2772,8 @@ export class CloseOutOrchestrator {
       autoResolve,
       autoResolveOurs,
       regenerateLockfileConflicts: true,
+      taskId: job.taskId,
+      workFileFilter: { workDir: this.config.workDir, cacheDir: this.config.cacheDir },
     });
     if (!merge.merged) {
       // A conflict is a property of the two trees, not of the machine. Retrying
@@ -3593,6 +3626,9 @@ export class CloseOutOrchestrator {
       // slow post-merge work.
       const headNow = (await runGit(root, ["rev-parse", "HEAD"], 4_000)).stdout.trim();
       const amend = !ff && headNow === headBefore;
+      // Main checkout, not a task worktree (#1076 scope). Left bare: a human's
+      // own staged work on main would ride this commit, which is main's
+      // existing behaviour, not a task branch's bookkeeping leak.
       const commit = amend
         ? await runGit(root, ["commit", "--amend", "--no-edit"], 30_000)
         : await runGit(root, ["commit", "-m", `docs(${job.taskId}): set status done`], 30_000);

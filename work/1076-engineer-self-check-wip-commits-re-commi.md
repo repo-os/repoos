@@ -1,15 +1,11 @@
 ---
-last_close_out_gate_ms: 686400
-last_close_out_gate_at: "2026-11-10T21:13:57.027Z"
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — pathspec commits split staged renames (checkpoint and review-guard), a regression from the bare commit they replaced."
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 32a2de3d7ed03e455d75e2ffcda16bbe90d233f4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineer-self-check-wip-commits-re-commi
@@ -17,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
 updated_at: "2026-11-10T21:13:57Z"
+last_close_out_gate_ms: 686400
+last_close_out_gate_at: "2026-11-10T21:13:57.027Z"
 review_passes: 6
 close_out_repair_count: 1
 review_rounds: 2

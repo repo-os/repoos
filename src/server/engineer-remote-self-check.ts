@@ -13,7 +13,13 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { resolveCheckStoreRoot } from "../core/check-store.js";
 import { loadConfig } from "../core/config.js";
-import { runGit, uncommittedWorkFiles, workFileFilter } from "../core/git.js";
+import {
+  foreignTaskBookkeepingPaths,
+  runGit,
+  stagedForeignBookkeepingPaths,
+  uncommittedWorkFiles,
+  workFileFilter,
+} from "../core/git.js";
 import { REPOOS_TOML_REL } from "../core/repoos-toml-branch-guard.js";
 import { patchTaskFile } from "./write.js";
 import type { RepoOSConfig } from "../core/types.js";
@@ -100,8 +106,36 @@ export async function commitWipCheckpointForRemoteGate(
   } catch {
     return "could not read git status before remote self-check";
   }
-  if (dirty.length === 0) return null;
-  const toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL);
+  // #1076: a sibling task's `work/<other-id>-*.md` / `work/reports/<other-id>/**`
+  // can be dirty (or already staged) in this worktree because the server writes
+  // board bookkeeping here. A bare `git commit` would fold whatever is staged
+  // into this branch and the landing preflight then rejects it. Drop those paths
+  // from the index and never name them in the commit.
+  //
+  // The staged set must be read from the INDEX, not the dirty list:
+  // `uncommittedWorkFiles` filters every `work/` path out as generated/runtime,
+  // so `dirty` never contains one and a foreign path left staged by an earlier
+  // `git add -A` would stay in the index for the next bare commit to sweep in.
+  const foreignFromDirty = foreignTaskBookkeepingPaths(dirty, {
+    ...workFileFilter(config),
+    taskId,
+  });
+  const foreignStaged = await stagedForeignBookkeepingPaths(worktreePath, {
+    ...workFileFilter(config),
+    taskId,
+  });
+  const foreign = [...new Set([...foreignFromDirty, ...foreignStaged])];
+  const toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL && !foreign.includes(p));
+  if (foreign.length > 0) {
+    const unstage = await runGit(
+      worktreePath,
+      ["reset", "--quiet", "HEAD", "--", ...foreign],
+      30_000,
+    );
+    if (unstage.status !== 0) {
+      return `could not unstage another task's bookkeeping (${foreign.slice(0, 5).join(", ")}) before the remote self-check`;
+    }
+  }
   if (toCommit.length === 0) return null;
   for (const path of toCommit) {
     const add = await runGit(worktreePath, ["add", "--", path], 60_000);
@@ -110,11 +144,14 @@ export async function commitWipCheckpointForRemoteGate(
     }
   }
   const msg = engineerSelfCheckCheckpointMessage(taskId);
+  // Commit ONLY the paths this checkpoint intended, via pathspec form: even if
+  // something slipped into the index between the staging loop and here, a
+  // sibling task's bookkeeping can no longer be swept into the branch (#1076).
   // A checkpoint can land while an earlier self-check still holds the gate;
   // wait it out instead of failing the remote gate (#1082).
   const commit = (
     await waitForCheckGateRelease(
-      () => runGit(worktreePath, ["commit", "-m", msg], 120_000),
+      () => runGit(worktreePath, ["commit", "-m", msg, "--", ...toCommit], 120_000),
       checkGateBusyRun,
       { boardRoot: config.root, cacheDir: config.cacheDir ?? ".repoos" },
     )
