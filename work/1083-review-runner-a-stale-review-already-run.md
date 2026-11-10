@@ -89,3 +89,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T21:44:13Z · status review→active
 - 2026-11-10T21:44:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T21:44:37Z · body: Accepted scope and known limitations (added)
+- 2026-11-10T21:44:37Z · message_delivered: 1 message(s)
