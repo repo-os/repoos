@@ -146,7 +146,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0775 — a failed dev target on the Dev page, so a capture can show the
   // plain-language failure summary, its port holder and the Stop action.
   "dev:failed",
-  // #0950 — pin the shared loading skeleton for first-load captures.
+  // #0950 — hold the Dev targets request pending so the first-load skeleton
+  // stays visible while the real target cards are unavailable.
   "dev:loading",
   // #0801 — a started dev target beside a stopped one, so a capture can show
   // the running highlight (the same cyan glow an active remote runner uses).

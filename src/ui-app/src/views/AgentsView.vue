@@ -734,9 +734,9 @@ onUnmounted(() => {
       </button>
     </div>
 
-    <PageSkeleton v-if="!config.loaded" kind="cards" />
+    <PageSkeleton :loading="!config.loaded" kind="cards" />
 
-    <template v-else>
+    <template v-if="config.loaded">
       <div
         class="agents-tab-content"
         :class="{ 'agents-tab-content--playground': activeTab === 'playground' }"
@@ -952,10 +952,10 @@ onUnmounted(() => {
           </div>
 
           <PageSkeleton
-            v-if="detectLoading && !detected.length && !detectHasSnapshot"
+            :loading="detectLoading && !detected.length && !detectHasSnapshot"
             kind="rows"
           />
-          <div v-else-if="!detected.length" class="agent-empty">
+          <div v-if="!detected.length && (!detectLoading || detectHasSnapshot)" class="agent-empty">
             No known coding agents detected on PATH.
           </div>
 
