@@ -173,7 +173,8 @@ export function resetActivityMotionCoordinatorForTests(): void {
   if (occlusionRaf) cancelAnimationFrame(occlusionRaf);
   occlusionRaf = 0;
   pageVisible.value = typeof document === "undefined" || document.visibilityState !== "hidden";
-  reduced.value = media?.matches ?? false;
+  media = null;
+  reduced.value = false;
 }
 
 function refresh(): void {
