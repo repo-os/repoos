@@ -94,15 +94,17 @@ export async function guardReviewTransition(
       const add = await runGit(registered, ["add", "--", ...sourceFiles], 30_000);
       if (add.status !== 0) return { ok: false, detail: `git add failed: ${concise(add)}` };
     }
+    // A hotfix commit runs in the same task worktree as any other, so a sibling
+    // task's bookkeeping staged in the index (a concurrent board write or a
+    // stray `git add -A`) must not ride it. Drop foreign paths, then pathspec
+    // the commit to exactly what the index holds — the same guard the
+    // non-hotfix branch below applies (#1076).
+    const unstagedForeign = await unstageForeignWorkBookkeeping(registered, config, task);
+    if (unstagedForeign) return { ok: false, detail: unstagedForeign };
     const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
     if (staged.status === 1) {
-      const commit = await runGit(
-        registered,
-        ["commit", "-m", `hotfix(${task.id}): ${task.title}`],
-        30_000,
-      );
-      if (commit.status !== 0)
-        return { ok: false, detail: `git commit failed: ${concise(commit)}` };
+      const committed = await commitStagedOnly(registered, `hotfix(${task.id}): ${task.title}`);
+      if (committed) return { ok: false, detail: committed };
     } else if (staged.status !== 0) {
       return { ok: false, detail: `could not inspect staged changes: ${concise(staged)}` };
     }
@@ -145,64 +147,17 @@ export async function guardReviewTransition(
       };
     }
   }
-  // Drop any OTHER task's bookkeeping from this commit. A concurrent board
-  // write, a `repoos` CLI call, or a stale merge can leave a sibling task file
-  // (or report — `.json` as well as `.md`) dirty in the worktree, and the
-  // `git add -A` above folds it into this task's "implement" commit — which
-  // then publishes to main on close-out (observed: #0319 landed #0202/#0275
-  // frontmatter drift). Only this task's own file (already unstaged above) and
-  // its own report files (#1013) are the handoff's to carry. Use the shared
-  // `foreignTaskBookkeepingPaths` rule so `.json` reports and legacy report dirs
-  // are covered, not just `work/*.md` (#1076).
-  const stagedInWork = (
-    await runGit(registered, ["diff", "--cached", "--name-only", "--", config.workDir], 10_000)
-  ).stdout
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .filter((p) => p !== task.path && !isOwnReportPath(p, config, task.id));
-  const stagedWorkFiles = foreignTaskBookkeepingPaths(stagedInWork, {
-    workDir: config.workDir,
-    cacheDir: config.cacheDir,
-    taskId: task.id,
-  });
-  if (stagedWorkFiles.length > 0) {
-    const unstageForeign = await runGit(
-      registered,
-      ["reset", "--quiet", "HEAD", "--", ...stagedWorkFiles],
-      10_000,
-    );
-    if (unstageForeign.status !== 0) {
-      return {
-        ok: false,
-        detail: `could not unstage unrelated task files: ${concise(unstageForeign)}`,
-      };
-    }
-  }
+  // Drop any OTHER task's bookkeeping from this commit. See
+  // `unstageForeignWorkBookkeeping` — the same guard the hotfix path uses.
+  const unstagedForeign = await unstageForeignWorkBookkeeping(registered, config, task);
+  if (unstagedForeign) return { ok: false, detail: unstagedForeign };
   const staged = await runGit(registered, ["diff", "--cached", "--quiet"], 10_000);
   if (staged.status === 1) {
-    // Pathspec-scoped: commit only the tracked implementation paths the index
-    // holds, so a foreign bookkeeping path that slipped in between the reset
-    // and here can still never ride this commit (#1076). `dist` and the task's
-    // own file were already unstaged above.
-    const stagedPaths = (
-      await runGit(registered, ["diff", "--cached", "--name-only"], 10_000)
-    ).stdout
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const commit = stagedPaths.length
-      ? await runGit(
-          registered,
-          ["commit", "-m", `feat(${task.id}): implement ${task.title}`, "--", ...stagedPaths],
-          30_000,
-        )
-      : await runGit(
-          registered,
-          ["commit", "-m", `feat(${task.id}): implement ${task.title}`],
-          30_000,
-        );
-    if (commit.status !== 0) return { ok: false, detail: `git commit failed: ${concise(commit)}` };
+    const committed = await commitStagedOnly(
+      registered,
+      `feat(${task.id}): implement ${task.title}`,
+    );
+    if (committed) return { ok: false, detail: committed };
   } else if (staged.status !== 0) {
     return { ok: false, detail: `could not inspect staged changes: ${concise(staged)}` };
   }
@@ -223,6 +178,68 @@ export async function guardReviewTransition(
     };
   }
   return { ok: true };
+}
+
+/**
+ * Drop any OTHER task's bookkeeping from the index so a commit in this task's
+ * worktree can never carry a sibling's files (#1076).
+ *
+ * A concurrent board write, a `repoos` CLI call, or a stale merge can leave a
+ * sibling task file (or report — `.json` as well as `.md`) dirty, and a broad
+ * `git add -A` folds it into this task's commit — which then publishes to main
+ * on close-out (observed: #0319 landed #0202/#0275 frontmatter drift). Only
+ * this task's own file and its own report files (#1013) are the handoff's to
+ * carry. Uses the shared `foreignTaskBookkeepingPaths` rule so `.json` reports
+ * and legacy report dirs are covered, not just `work/*.md`.
+ *
+ * Working-tree edits are untouched: `git reset HEAD -- <paths>` only rewrites
+ * the index. Returns a failure detail, or null when the index is clean of
+ * foreign files.
+ */
+async function unstageForeignWorkBookkeeping(
+  registered: string,
+  config: RepoOSConfig,
+  task: Task,
+): Promise<string | null> {
+  const stagedInWork = (
+    await runGit(registered, ["diff", "--cached", "--name-only", "--", config.workDir], 10_000)
+  ).stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((p) => p !== task.path && !isOwnReportPath(p, config, task.id));
+  const stagedWorkFiles = foreignTaskBookkeepingPaths(stagedInWork, {
+    workDir: config.workDir,
+    cacheDir: config.cacheDir,
+    taskId: task.id,
+  });
+  if (stagedWorkFiles.length === 0) return null;
+  const unstage = await runGit(
+    registered,
+    ["reset", "--quiet", "HEAD", "--", ...stagedWorkFiles],
+    10_000,
+  );
+  return unstage.status === 0
+    ? null
+    : `could not unstage unrelated task files: ${concise(unstage)}`;
+}
+
+/**
+ * Commit exactly the paths the index holds, pathspec-scoped, so nothing else
+ * staged in the worktree can ride the commit (#1076). A bare `git commit`
+ * folds the whole index in; this one fails closed instead of falling back to
+ * that. Returns a failure detail, or null on success.
+ */
+async function commitStagedOnly(registered: string, message: string): Promise<string | null> {
+  const names = await runGit(registered, ["diff", "--cached", "--name-only"], 10_000);
+  if (names.status !== 0) return `could not list staged changes: ${concise(names)}`;
+  const stagedPaths = names.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (stagedPaths.length === 0) return "nothing staged to commit";
+  const commit = await runGit(registered, ["commit", "-m", message, "--", ...stagedPaths], 30_000);
+  return commit.status === 0 ? null : `git commit failed: ${concise(commit)}`;
 }
 
 interface RunResult {

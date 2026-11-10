@@ -247,8 +247,14 @@ cannot tell from the code alone:
     compounds: the WIP loop re-commits it every check.
   - **The guardrails.** The WIP checkpoint commits only the paths it intended
     (`git commit -- <paths>`) and resets any foreign bookkeeping first.
-    `guardReviewTransition` unstages foreign `work/` files before its implement
-    commit. Handoff, after that commit gate and before the review lock, runs
+    `guardReviewTransition` unstages foreign `work/` files and then commits with
+    a pathspec of exactly what the index holds (`commitStagedOnly`) for both the
+    implement and the hotfix commit; it fails closed rather than falling back to a
+    bare commit. The close-out "keep main's copy" commit (`resetForeignWorkFiles`)
+    is pathspec-scoped to the foreign paths it restored. Every task-branch
+    anchor (`merge-base`, the restore, the stray-`repoos.toml` guard, the check
+    scope) uses the configured default branch, not the main checkout's current
+    branch (`handoffBaseBranch`). Handoff, after that commit gate and before the review lock, runs
     `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): it makes the
     branch point's copy authoritative for every foreign file the branch touched
     (modified or deleted files get that copy back, branch-added siblings are
