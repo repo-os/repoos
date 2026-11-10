@@ -327,3 +327,4 @@ Non-blocking: isTaskMarkdownBookkeepingPath matching non-task markdown under wor
 - 2026-11-10T20:40:11Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-10T20:40:11Z · message_delivered: 1 message(s)
 - 2026-11-10T20:46:12Z · message_queued at 2026-11-10T20:46:12.120Z
+- 2026-11-10T20:46:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
