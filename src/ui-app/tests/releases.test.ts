@@ -208,6 +208,109 @@ describe("feature releases", () => {
     }
   });
 
+  it.each([
+    {
+      installKind: "package-manager",
+      upgradeCommand: "npm update -g @repo-os/repoos",
+      hint: "Update it with the same tool you installed it with:",
+    },
+    {
+      installKind: "source",
+      upgradeCommand: "git pull && bun install && bun run build",
+      hint: "Update this checkout from source:",
+    },
+  ])(
+    "shows the $installKind install's own command, not `repoos upgrade` (#1073)",
+    async ({ installKind, upgradeCommand, hint }) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              currentVersion: "0.5.79",
+              latestVersion: "0.6.0",
+              available: true,
+              releaseNotes: null,
+              releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+              installKind,
+              upgradeCommand,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+        ),
+      );
+
+      const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+      try {
+        await flushPromises();
+        await document.body
+          .querySelector(".release-update-banner")!
+          .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        await flushPromises();
+
+        const block = document.body.querySelector('[data-test-id="release-upgrade-command"]');
+        expect(block?.querySelector(".release-update-code")?.textContent?.trim()).toBe(
+          upgradeCommand,
+        );
+        expect(block?.querySelector(".release-update-upgrade-hint")?.textContent).toBe(hint);
+        expect(block?.textContent ?? "").not.toContain("repoos upgrade");
+      } finally {
+        wrapper.unmount();
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+
+  it("says so when the copy fails instead of doing nothing (#1073)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            currentVersion: "0.5.46",
+            latestVersion: "0.6.0",
+            available: true,
+            releaseNotes: null,
+            releaseUrl: null,
+            installKind: "standalone",
+            upgradeCommand: "repoos upgrade",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+    // Both copy paths refuse: the async clipboard rejects and the legacy
+    // `execCommand` fallback reports failure.
+    vi.stubGlobal("navigator", {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    const execCommand = vi.fn().mockReturnValue(false);
+    Object.defineProperty(document, "execCommand", { value: execCommand, configurable: true });
+
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      await document.body
+        .querySelector(".release-update-banner")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      const copyButton = document.body.querySelector<HTMLButtonElement>(
+        '[data-test-id="release-upgrade-command"] button',
+      )!;
+      await copyButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      expect(copyButton.textContent ?? "").toContain("Copy failed");
+      expect(document.body.textContent).toContain("select the command above and copy it");
+      expect(copyButton.textContent ?? "").not.toContain("Copied");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+      Reflect.deleteProperty(document, "execCommand");
+    }
+  });
+
   it("opens the update dialog when the App applies the release:updateAvailable fixture (#1073)", async () => {
     // Regression: the component mounts before App's fixture pass runs, and the
     // live `/api/release/available` reports no update on the preview build, so
