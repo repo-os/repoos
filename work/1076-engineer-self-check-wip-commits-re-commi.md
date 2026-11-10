@@ -2,22 +2,22 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/engineer-self-check-wip-commits-re-commi
-cli_override: opencode
-model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-09T22:48:21Z"
+updated_at: "2026-11-10T06:04:38Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 9fae0c3d8660c3abcb0b50c4b7f68c1f626eaaaa
-review_passes: 3
+last_handoff_failure_sha: 5676e8dde658b91c55ef42ee04a17cf8b0c40faf
+review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 12
+dev_error_count: 13
 engineer_stall_resume_log: "[{\"at\":\"2026-11-09T19:51:44.422Z\",\"reason\":\"clean-exit-without-handoff\"}]"
 ---
 ## Problem
@@ -163,4 +163,49 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-09T22:09:08Z · ↻ resuming engineer to read queued message
 - 2026-11-09T22:09:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Only task #1076's own files. The branch is clean. Let me do a final review of the three fixes to confirm correctness, then write a concise summary. Let me re-read the final state of the three edited source regions. · stderr: (empty)
 - 2026-11-09T22:11:10Z · message_delivered: 3 message(s)
-- 2026-11-09T22:48:21Z · status active→review
+- 2026-11-09T22:15:40Z · message_queued at 2026-11-09T22:15:40.043Z
+- 2026-11-09T22:15:40Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-09T22:20:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T22:45:14Z · body
+- 2026-11-09T22:48:22Z · status active→review
+- 2026-11-09T22:48:22Z · message_queued at 2026-11-09T22:48:22.690Z
+- 2026-11-09T22:48:22Z · note: shots: skipped — the diff (23 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-09T22:50:13Z · note: review pass 4: needs some work
+- 2026-11-09T22:50:14Z · needs_input
+- 2026-11-09T22:51:50Z · status review→active
+- 2026-11-09T22:51:50Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-09T22:51:52Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T22:51:58Z · needs_input
+- 2026-11-09T22:51:59Z · message_queued at 2026-11-09T22:51:59.378Z
+- 2026-11-09T22:57:05Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at commit · git add failed: A check is running; wait for it to finish. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T22:57:06Z · note: handoff requested (cli)
+- 2026-11-09T23:00:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T23:19:58Z · message_queued at 2026-11-09T23:19:58.825Z
+- 2026-11-09T23:19:59Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-09T23:20:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T23:38:54Z · message_delivered: 1 message(s)
+- 2026-11-09T23:46:37Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The task stays active — fix the failure and ask again.
+- 2026-11-10T00:20:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T00:39:48Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T00:41:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T01:11:46Z · cli_override, model_override
+- 2026-11-10T01:12:59Z · needs_input
+- 2026-11-10T01:56:08Z · message_delivered: 2 message(s)
+- 2026-11-10T02:31:21Z · message_queued at 2026-11-10T02:31:21.977Z
+- 2026-11-10T02:31:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T02:36:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T03:31:33Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-10T03:31:36Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: The scoped `repoos check --changed main` for #1076 finished with `EXIT=1`, so it failed. I haven't written the report draft or handed off. - **Failing test:** `src/ui-app/tests/git-ref-watcher.test.ts > observes shared nested refs from a l… · stderr: (empty)
+- 2026-11-10T03:31:38Z · note: handoff requested (cli)
+- 2026-11-10T03:33:10Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T03:33:12Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T04:01:39Z · message_queued at 2026-11-10T04:01:39.184Z
+- 2026-11-10T04:01:39Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-10T04:06:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T04:29:28Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T04:29:33Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T04:39:39Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at commit · git add failed: A check is running; wait for it to finish.
+- 2026-11-10T05:00:01Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T05:01:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T05:11:27Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at commit · git add failed: A check is running; wait for it to finish.
+- 2026-11-10T06:04:38Z · message_delivered: 2 message(s)
