@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T08:58:19Z"
-review_passes: 3
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
@@ -16,6 +14,8 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
+updated_at: "2026-11-10T09:25:15Z"
+review_passes: 3
 last_check_failure: "repoos check at 2026-11-10T08:26:47.039Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -47,6 +47,9 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 }
 ]
 ```
+
+## Accepted scope and known limitations
+FINAL (pass 3): the core behaviour is in scope: the handoff and server git operations in the handoff path wait (bounded) for a running check instead of failing. NOT blocking, to be done as follow-up: (1) rendering the 'waiting for a check' label in the task drawer progress line (the status text may read 'starting' meanwhile); (2) the routes/tasks.ts waitForCheckGate:false path and lockfile-conflict.ts git calls staying fail-fast; (3) extra label-path tests. Report these under Suggestions, not Bugs. Only a failing test, a regression, or the handoff still failing on a running check blocks.
 
 ## Activity
 
@@ -131,4 +134,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T08:56:10Z · message_queued at 2026-11-10T08:56:10.576Z
 - 2026-11-10T08:58:19Z · note: review pass 3: needs some work
 - 2026-11-10T08:58:19Z · needs_input
-
+- 2026-11-10T09:25:15Z · body: Accepted scope and known limitations (added)
