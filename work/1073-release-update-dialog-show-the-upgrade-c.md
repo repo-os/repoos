@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-10T02:19:01.304Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
@@ -16,7 +18,6 @@ review_passes: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: build — src/commands/upgrade.ts(237,14): error TS2304: Cannot find name 'readVersion'."
 last_handoff_failure_sha: e83b162a0832adf0bf5d8728211f3d1be87d6d50
 review_rounds: 1
-last_check_failure: "repoos check at 2026-11-09T16:54:34.079Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Update dialog: upgrade command block (light) (target \"default\"): state \"release:updateAvailable\" did not render on target \"default\" — the page at / did not apply the fixture (is this the app target?) (http://127.0.0.1:53313/?shotState=release%3AupdateAvailable)"
 handoff_signal_retry_count: 2
 dev_error_count: 12
 ---
@@ -238,3 +239,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T02:16:02Z · note: review pass 2: good to go
 - 2026-11-10T02:18:56Z · note: shots: failed — browser capture cancelled
 - 2026-11-10T02:18:58Z · message_queued at 2026-11-10T02:18:58.122Z
+
