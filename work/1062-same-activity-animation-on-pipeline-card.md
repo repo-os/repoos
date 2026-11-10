@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T00:48:06Z"
+updated_at: "2026-11-10T01:04:37Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-10T00:39:53.164Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-10T00:42:28.009Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-10T00:46:31.959Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -47,30 +47,32 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 ```json
 [
 {
-"label": "Pipeline card activity animation",
-"target": "default",
-"route": "/work?tab=pipeline&shotState=board:activeCoding",
-"highlight": ".pipeline-card .pl-activity"
+  "label": "Pipeline coding lane with activity animation",
+  "target": "default",
+  "route": "/work?tab=pipeline&shotState=board:pipeline",
+  "highlight": "[data-task-id=\"pipe-coding\"] .pl-activity",
+  "state": "board:pipeline"
 },
 {
-"label": "Compact activity animation settings (On)",
-"target": "default",
-"route": "/settings?tab=general&section=activity-animation",
-"highlight": ".activity-animation-controls"
+  "label": "Compact activity animation settings (motion on)",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation&shotState=settings:rgbKeystorm",
+  "highlight": "#settings-section-activity-animation",
+  "state": "settings:rgbKeystorm"
 },
 {
-"label": "Activity animation Motion Off",
-"target": "default",
-"route": "/settings?tab=general&section=activity-animation",
-"highlight": "#setting-activityAnimationEnabled",
-"steps": [
-{
-"click": "#setting-activityAnimationEnabled [role=switch]"
-},
-{
-"waitMs": 300
-}
-]
+  "label": "Activity animation motion off",
+  "target": "default",
+  "route": "/settings?tab=general&section=activity-animation",
+  "highlight": "#setting-activityAnimationEnabled",
+  "steps": [
+    {
+      "click": "#setting-activityAnimationEnabled [role=\"switch\"]"
+    },
+    {
+      "waitMs": 200
+    }
+  ]
 }
 ]
 ```
@@ -106,3 +108,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T00:46:31Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-10T00:48:01Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-10T00:48:06Z · needs_input
+- 2026-11-10T01:04:37Z · body
