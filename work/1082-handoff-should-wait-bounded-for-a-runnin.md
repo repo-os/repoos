@@ -11,10 +11,10 @@ area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-should-wait-bounded-for-a-runnin
-cli_override: cursor
-model_override: composer-2.5
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T00:39:49Z"
+updated_at: "2026-11-10T01:11:47Z"
 handoff_signal_retry_count: 2
 dev_error_count: 1
 ---
@@ -45,3 +45,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-09T23:46:02Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-09T23:46:41Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-10T00:39:49Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T01:11:47Z · cli_override, model_override
