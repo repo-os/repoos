@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T07:47:47Z"
-review_passes: 17
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
+updated_at: "2026-11-10T08:01:07Z"
+review_passes: 17
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -68,7 +68,7 @@ Owner decision (2026-11-09, release night): review 5 items 3 (board responsive b
 Review 7 judged this task 'good to go' but listed three NON-BLOCKING items under '## Bugs', and the landing check treats any entry under '## Bugs' as a blocking bug. For the next pass: put every non-blocking observation (shell exit transition, one-row contrast selector, source-text assertions) under '## Suggestions', leave '## Bugs' EMPTY ('None found') when nothing blocks, and give a clear verdict. The code needs no further change.
 
 ## Accepted scope: no shell cross-fade (final)
-Owner decision (2026-11-10, after 11 review rounds): the shell-level cross-fade of the loading skeleton is NOT required for this task. Replace it with an instant swap (no leave transition, no out-of-flow positioning); a smooth fade-out is part of follow-up #1078. A reviewer must not raise missing cross-fade, transition geometry or exit animation as blocking; report it as a suggestion. Keep: shell show-delay and minimum-visible time, Mission Control single block, Stories, named counts, reduced-motion.
+FINAL owner decision (supersedes everything below and the 'content cross-fades in' criterion): the shell uses ONE out-in opacity fade (120ms): the loading shell fades out, then the page fades in. No simultaneous cross-fade, no out-of-flow positioning. The header/title fading briefly on the way out is expected and NOT a bug. Do NOT report the out-in transition, the missing cross-fade, or the brief header fade as a bug in any form; list them at most under Suggestions. Per-view exit timing and polish are #1078. Only a broken settled page, a failing test or a regression of existing behaviour blocks.
 
 ## Accepted scope and known limitations (final)
 Pass 15: a brief layout shift while the old shell fades out and the new page enters is a known limitation of this p3 easter egg, follow-up #1078. It is NOT blocking. Only a visible break of the settled page, a failing test, or a regression of existing behaviour blocks. Report anything else under Suggestions.
@@ -512,4 +512,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T07:46:43Z · needs_input (review-rounds-exhausted) cleared for review again by human
 - 2026-11-10T07:47:46Z · note: review pass 17: needs some work
 - 2026-11-10T07:47:46Z · needs_input
-
+- 2026-11-10T08:01:07Z · body: Accepted scope: no shell cross-fade (final) (added 1, removed 1)
