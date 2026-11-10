@@ -2858,7 +2858,11 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
     else dropFromBranch.push(p);
   }
   if (restoreFromMain.length > 0) {
-    const restore = await runGit(opts.worktree, ["checkout", mainSha, "--", ...restoreFromMain], 15_000);
+    const restore = await runGit(
+      opts.worktree,
+      ["checkout", mainSha, "--", ...restoreFromMain],
+      15_000,
+    );
     if (restore.status !== 0) {
       throw new Error(
         `could not restore main's copy of another task's bookkeeping: ${restore.stderr.trim()}`,
