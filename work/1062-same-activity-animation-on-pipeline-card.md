@@ -215,3 +215,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T11:01:09Z · note: adopted orphaned engineer pid 39097
 - 2026-11-10T11:04:26Z · handoff failed · remote validation failed: test failure: gate exit 2 on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-10T11:04:27Z · message_queued at 2026-11-10T11:04:27.572Z
+- 2026-11-10T11:04:27Z · handoff failed · handoff recovery attempted · finalization failed
