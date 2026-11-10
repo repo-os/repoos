@@ -27,6 +27,7 @@ import {
   shotFixtureSchedules,
   shotPreviewSkipsRemoteEventsFetch,
   shotFixtureSeedsLiveTaskChecks,
+  shotPreviewSkipsServerBackedTaskRecord,
   shotPreviewSkipsTaskLogsFetch,
 } from "../lib/shot-preview-fixtures";
 import { SHOT_PREVIEW_FIXTURE_TASK_ID } from "../../../core/shot-fixtures.js";
@@ -703,9 +704,8 @@ function readNewVersion(): { hash: string; buildAt: string | null } | null {
  */
 function isSeededShotFixtureTask(id: string): boolean {
   return (
-    id === SHOT_PREVIEW_FIXTURE_TASK_ID &&
     typeof window !== "undefined" &&
-    isShotPreviewCaptureActive(window.location)
+    shotPreviewSkipsServerBackedTaskRecord(window.location, id)
   );
 }
 

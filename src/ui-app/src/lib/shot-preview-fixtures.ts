@@ -40,6 +40,26 @@ const DEBUG_LOGS_FIXTURE_MESSAGE =
  * history is a real API read and 404s for that id, which fails the handoff
  * console check (#1011).
  */
+/** Client-only task ids seeded by preview board/pipeline fixtures (never on the API). */
+export function isShotPreviewSeededTaskId(taskId: string): boolean {
+  if (taskId === SHOT_PREVIEW_FIXTURE_TASK_ID) return true;
+  if (taskId.startsWith("pipe-")) return true;
+  if (/^0980-\d+$/.test(taskId)) return true;
+  return false;
+}
+
+/**
+ * True while capture is rendering a client-seeded task. The store must not
+ * poll server-backed task endpoints for these ids or handoff UI verification
+ * records 404s (#0768, #1011).
+ */
+export function shotPreviewSkipsServerBackedTaskRecord(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  return isShotPreviewCaptureActive(location) && isShotPreviewSeededTaskId(taskId);
+}
+
 export function shotPreviewSkipsEngineeringReportsFetch(
   location: Pick<Location, "search">,
   taskId: string,
