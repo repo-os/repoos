@@ -1439,20 +1439,6 @@
   min-height: 0;
   height: auto;
 }
-.page-fade-enter-active,
-.page-fade-leave-active {
-  transition: opacity 120ms ease-out;
-}
-.page-fade-enter-from,
-.page-fade-leave-to {
-  opacity: 0;
-}
-@media (prefers-reduced-motion: reduce) {
-  .page-fade-enter-active,
-  .page-fade-leave-active {
-    transition: none;
-  }
-}
 .page-header-actions {
   display: flex;
   align-items: center;
