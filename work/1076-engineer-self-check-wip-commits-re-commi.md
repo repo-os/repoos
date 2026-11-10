@@ -224,3 +224,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T11:44:06Z · note: handoff requested (cli)
 - 2026-11-10T11:46:08Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T11:55:33Z · message_queued at 2026-11-10T11:55:33.600Z
+- 2026-11-10T11:55:33Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1076.md
