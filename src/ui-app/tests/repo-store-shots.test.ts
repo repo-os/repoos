@@ -66,11 +66,7 @@ describe("shot-preview fixture task avoids server fetches (#0819)", () => {
   });
 
   it("skips landable polling for pipeline fixture ids during capture (#1062)", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/work?tab=pipeline&shotState=board%3Apipeline",
-    );
+    window.history.replaceState({}, "", "/work?tab=pipeline&shotState=board%3Apipeline");
     const landableJson = { checks: [], summary: { pass: 0, warn: 0, fail: 0 }, landable: false };
     const fetchMock = vi.fn(async (url: string) => json(landableJson));
     vi.stubGlobal("fetch", fetchMock);
