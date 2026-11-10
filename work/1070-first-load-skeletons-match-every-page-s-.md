@@ -487,3 +487,4 @@ Pass 15: a brief layout shift while the old shell fades out and the new page ent
 - 2026-11-10T07:19:42Z · message_delivered: 3 message(s)
 - 2026-11-10T07:19:43Z · note: handoff requested (cli)
 - 2026-11-10T07:19:58Z · message_queued at 2026-11-10T07:19:58.639Z
+- 2026-11-10T07:19:58Z · handoff failed · task-file handoff failed at commit · git add failed: A check is running; wait for it to finish.
