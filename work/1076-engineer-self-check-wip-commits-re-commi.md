@@ -318,3 +318,4 @@ Non-blocking: isTaskMarkdownBookkeepingPath matching non-task markdown under wor
 - 2026-11-10T20:24:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T20:25:01Z · body: Accepted scope and known limitations (added)
 - 2026-11-10T20:25:02Z · message_delivered: 2 message(s)
+- 2026-11-10T20:25:04Z · note: handoff requested (cli)
