@@ -11,7 +11,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T18:53:43Z"
+updated_at: "2026-11-10T19:09:02Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
