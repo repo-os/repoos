@@ -704,8 +704,7 @@ function readNewVersion(): { hash: string; buildAt: string | null } | null {
  */
 function isSeededShotFixtureTask(id: string): boolean {
   return (
-    typeof window !== "undefined" &&
-    shotPreviewSkipsServerBackedTaskRecord(window.location, id)
+    typeof window !== "undefined" && shotPreviewSkipsServerBackedTaskRecord(window.location, id)
   );
 }
 
