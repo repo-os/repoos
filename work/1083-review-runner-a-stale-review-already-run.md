@@ -11,7 +11,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T18:44:48Z"
+updated_at: "2026-11-10T18:44:50Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -55,3 +55,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T18:41:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-10T18:41:18Z · body
 - 2026-11-10T18:44:48Z · status active→review
+- 2026-11-10T18:44:50Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
