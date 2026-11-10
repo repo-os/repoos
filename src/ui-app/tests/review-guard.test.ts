@@ -1,6 +1,6 @@
 import { seedEngineeringReport } from "./engineering-report-fixture";
 import { describe, expect, it } from "vitest";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
@@ -11,6 +11,7 @@ import { runGit, setCheckGateGitRefusal, setCheckGateCommitHook } from "../../co
 import { guardReviewTransition } from "../../server/review-guard";
 import {
   acquireCheckGateLock,
+  aliveCheckGateLockForWorktree,
   checkGateBusyRun,
   installCheckGateCommitHook,
   readCheckGateLock,
@@ -756,6 +757,30 @@ describe("check-gate wait scope (1082)", () => {
       expect(res.ok).toBe(false);
       expect(res.detail).toMatch(/A check is running/);
       expect(waits).toBe(0);
+      await releaseCheckGateLock(fx.root, ".repoos", fx.task.id);
+    } finally {
+      unhookGate();
+      fx.clean();
+    }
+  });
+
+  it("matches a held lock through any path spelling of its worktree (macOS /tmp symlink)", async () => {
+    const fx = makeFixture();
+    try {
+      const gate = await acquireCheckGateLock({
+        boardRoot: fx.root,
+        cacheDir: ".repoos",
+        taskId: fx.task.id,
+        branch: "feat/patch-bypass",
+        worktree: fx.worktree,
+        kind: "engineer-self-check",
+      });
+      expect(gate.ok).toBe(true);
+      // git reports a worktree by its real path; the lock may hold the symlinked
+      // spelling (`/tmp` vs `/private/tmp`). Both must find the same live lock.
+      const real = realpathSync(fx.worktree);
+      expect(aliveCheckGateLockForWorktree(fx.root, ".repoos", real)).not.toBeNull();
+      expect(aliveCheckGateLockForWorktree(fx.root, ".repoos", fx.worktree)).not.toBeNull();
       await releaseCheckGateLock(fx.root, ".repoos", fx.task.id);
     } finally {
       unhookGate();

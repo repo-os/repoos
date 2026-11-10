@@ -22,6 +22,7 @@ import {
   closeSync,
   fsyncSync,
   openSync,
+  realpathSync,
 } from "node:fs";
 import * as nodeFs from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -567,11 +568,20 @@ export async function releaseCheckGateLock(
   }
 }
 
+/**
+ * Same worktree? Compares real paths: on macOS `/tmp` and `/var` are symlinks,
+ * so the path a lock was written with and the path git reports for the same
+ * worktree (#1082) differ textually. Without this the refusal never matched.
+ */
 function samePath(a: string, b: string): boolean {
+  return realOrResolved(a) === realOrResolved(b);
+}
+
+function realOrResolved(path: string): string {
   try {
-    return resolve(a) === resolve(b);
+    return realpathSync(path);
   } catch {
-    return a === b;
+    return resolve(path);
   }
 }
 

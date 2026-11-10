@@ -74,36 +74,6 @@ import {
   updateHandoffStatusProgress,
   setHandoffWaitingReason,
 } from "./handoff-status.js";
-
-/** Plain-English handoff state while a running self-check holds the worktree (#1082). */
-const CHECK_GATE_WAIT_LABEL = "Waiting for the running check to finish";
-
-/**
- * Run one handoff git step that a running self-check may refuse. While it
- * waits, the handoff shows `CHECK_GATE_WAIT_LABEL`; the label is cleared in a
- * `finally`, so an error or timeout never leaves it stuck (#1082).
- */
-async function runWhileCheckGateWait<T>(
-  config: RepoOSConfig,
-  taskId: string,
-  attempt: () => Promise<T>,
-  busy: (result: T) => boolean,
-): Promise<T> {
-  let waiting = false;
-  try {
-    const waited = await waitForCheckGateRelease(attempt, busy, {
-      boardRoot: config.root,
-      cacheDir: config.cacheDir ?? ".repoos",
-      onWait: () => {
-        waiting = true;
-        setHandoffWaitingReason(config, taskId, CHECK_GATE_WAIT_LABEL);
-      },
-    });
-    return waited.result;
-  } finally {
-    if (waiting) setHandoffWaitingReason(config, taskId, null);
-  }
-}
 import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { guardReviewTransition } from "./review-guard.js";
@@ -146,6 +116,36 @@ import {
   resolveEngineeringReportBase,
 } from "./engineering-reports.js";
 import { engineeringReportRelPath, legacyEngineeringReportRelPath } from "../core/report-paths.js";
+
+/** Plain-English handoff state while a running self-check holds the worktree (#1082). */
+const CHECK_GATE_WAIT_LABEL = "Waiting for the running check to finish";
+
+/**
+ * Run one handoff git step that a running self-check may refuse. While it
+ * waits, the handoff shows `CHECK_GATE_WAIT_LABEL`; the label is cleared in a
+ * `finally`, so an error or timeout never leaves it stuck (#1082).
+ */
+async function runWhileCheckGateWait<T>(
+  config: RepoOSConfig,
+  taskId: string,
+  attempt: () => Promise<T>,
+  busy: (result: T) => boolean,
+): Promise<T> {
+  let waiting = false;
+  try {
+    const waited = await waitForCheckGateRelease(attempt, busy, {
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      onWait: () => {
+        waiting = true;
+        setHandoffWaitingReason(config, taskId, CHECK_GATE_WAIT_LABEL);
+      },
+    });
+    return waited.result;
+  } finally {
+    if (waiting) setHandoffWaitingReason(config, taskId, null);
+  }
+}
 
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
