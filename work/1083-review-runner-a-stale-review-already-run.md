@@ -12,7 +12,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T22:35:01Z"
+updated_at: "2026-11-10T22:40:33Z"
 last_close_out_gate_ms: 647687
 last_close_out_gate_at: "2026-11-10T22:35:01.018Z"
 review_passes: 5
@@ -109,4 +109,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T22:23:27Z · note: review pass 5: good to go
 - 2026-11-10T22:23:27Z · needs_input
 - 2026-11-10T22:35:01Z · close-out gate completed in 648s
-
+- 2026-11-10T22:40:33Z · status done→done, release:success
