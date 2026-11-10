@@ -21,6 +21,7 @@ last_handoff_failure_sha: 5940508779628f831738901e07a5b681a2aa02d5
 handoff_signal_retry_count: 2
 dev_error_count: 12
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T04:29:20.952Z\",\"reason\":\"handoff-deferred\"}]"
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 The dashboard already tells users when a newer RepoOS is available (`ReleaseUpdateNotification.vue`, data from `GET /api/release/available`): a banner, then a dialog with installed vs available version and the release notes. But the dialog's only action is an "Upgrade" button that just opens the GitHub release page. It never says how to actually upgrade, even though the answer is a single command.
