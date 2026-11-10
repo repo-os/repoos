@@ -46,14 +46,12 @@ describe("repo loading skeleton", () => {
     expect(appVue).not.toContain("skeletonDelay");
     expect(appVue).not.toContain("page-loading-shell");
     expect(appVue).toMatch(
-      /<Transition name="page-fade" mode="out-in">\s*<div v-if="showLoadingShell" key="loading" class="main-route page-loading">[\s\S]*<RouterView v-else class="main-route" \/>\s*<\/Transition>/,
+      /<div v-if="showLoadingShell" key="loading" class="main-route page-loading">[\s\S]*<RouterView v-else class="main-route" \/>/,
     );
     const styles = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
     expect(styles).toMatch(/\.main\s*\{[^}]*padding:\s*22px 26px 0;/s);
     expect(styles).not.toMatch(/\.main\s*>\s*\.page-fade-leave-active\s*\{/);
-    expect(styles).toMatch(
-      /\.page-fade-enter-active,[\s\S]*?transition:\s*opacity 120ms ease-out;/,
-    );
+    expect(styles).not.toContain("page-fade");
     expect(styles).toMatch(
       /@media \(max-width: 760px\)\s*\{[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*max\(16px,\s*var\(--page-inline-end-inset\)\);/,
     );

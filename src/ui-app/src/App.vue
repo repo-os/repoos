@@ -163,23 +163,21 @@ onUnmounted(() => {
         <Sidebar />
 
         <div class="main">
-          <Transition name="page-fade" mode="out-in">
-            <div v-if="showLoadingShell" key="loading" class="main-route page-loading">
-              <header v-if="loadingHeader" class="page-header">
-                <div>
-                  <div class="page-title">{{ loadingHeader.title }}</div>
-                  <div class="page-desc">{{ loadingHeader.desc }}</div>
-                </div>
-              </header>
-              <PageSkeleton
-                :kind="loadingKind"
-                :loading="repo.loading"
-                defer
-                @visibility-change="showRepoSkeleton = $event"
-              />
-            </div>
-            <RouterView v-else class="main-route" />
-          </Transition>
+          <div v-if="showLoadingShell" key="loading" class="main-route page-loading">
+            <header v-if="loadingHeader" class="page-header">
+              <div>
+                <div class="page-title">{{ loadingHeader.title }}</div>
+                <div class="page-desc">{{ loadingHeader.desc }}</div>
+              </div>
+            </header>
+            <PageSkeleton
+              :kind="loadingKind"
+              :loading="repo.loading"
+              defer
+              @visibility-change="showRepoSkeleton = $event"
+            />
+          </div>
+          <RouterView v-else class="main-route" />
         </div>
       </div>
 
