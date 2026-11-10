@@ -4917,6 +4917,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
             reviews,
             onDiagnosableFailure: (taskId, reason) => debugTldr?.onFailureEscalated(taskId, reason),
             logger,
+            emitEvent,
           },
         );
       if (watchdog && watchdogConfig.enabled !== false) watchdog.start();

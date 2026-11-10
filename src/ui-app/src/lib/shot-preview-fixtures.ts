@@ -1363,6 +1363,55 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         ],
         summary: { pass: 5, warn: 0, fail: 1 },
       });
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "validate",
+        attempt: 1,
+        progress: null,
+        updatedAt: new Date().toISOString(),
+        startedAt: new Date(Date.now() - 75 * 60_000).toISOString(),
+        machine: null,
+        stale: false,
+      };
+      break;
+    case "card:reviewLandableReady":
+      ensureFixtureTask(repo, "review", { title: "Review passed · ready to land" });
+      repo.reviews = {
+        ...repo.reviews,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            at: new Date().toISOString(),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "feat/shot-fixture",
+            state: "ok",
+            markdown: "## Verdict\ngood to go — nothing blocks sign-off.",
+          },
+        },
+      };
+      repo.seedLandable(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+        branch: "feat/shot-fixture",
+        headSha: "a".repeat(40),
+        lockSha: "a".repeat(40),
+        landable: true,
+        checks: [],
+        summary: { pass: 6, warn: 0, fail: 0 },
+      });
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "superseded",
+        step: "validate",
+        attempt: 1,
+        progress: null,
+        updatedAt: new Date().toISOString(),
+        machine: null,
+        reason: "task is already in review",
+      };
       break;
     case "board:pipeline": {
       // #1035 — one lane per stage plus the special states, so the Pipeline

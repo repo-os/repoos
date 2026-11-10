@@ -17,6 +17,7 @@ import type { PreviewManager } from "./preview.js";
 import type { ReviewManager } from "./review.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
+import type { AgentRunner } from "./agents.js";
 import { finalizeReviewHandoff } from "./handoff.js";
 import { readHandoffSnapshot, writeWorktreeReviewLock } from "./worktree-handoff-guard.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
@@ -96,6 +97,7 @@ export interface CheckpointRecoveryDeps {
   remoteValidator?: RemoteValidator;
   previews?: PreviewManager;
   onTaskLog?: (taskId: string, level: LogLevel, message: string) => void;
+  runner?: Pick<AgentRunner, "markHandoffInFlight" | "releaseHandoffInFlight">;
 }
 
 /**
@@ -170,19 +172,24 @@ async function runRecoveryPipeline(
     );
   }
 
-  const handoff = await finalizeReviewHandoff(config, task, {
-    checkpointRecovery: { approvedSha },
-    taskChecks: deps.taskChecks,
-    onTaskCheckEvent: deps.onTaskCheckEvent,
-    remoteValidator: deps.remoteValidator,
-    previews: deps.previews,
-    onTaskLog: deps.onTaskLog,
-    onProgress: () => {
-      /* progress surfaced via task.progress above */
-    },
-  });
-  if (!handoff.ok) {
-    throw new Error(handoff.detail ?? `handoff gate failed at ${handoff.step}`);
+  const claimed = deps.runner?.markHandoffInFlight?.(task.id) ?? false;
+  try {
+    const handoff = await finalizeReviewHandoff(config, task, {
+      checkpointRecovery: { approvedSha },
+      taskChecks: deps.taskChecks,
+      onTaskCheckEvent: deps.onTaskCheckEvent,
+      remoteValidator: deps.remoteValidator,
+      previews: deps.previews,
+      onTaskLog: deps.onTaskLog,
+      onProgress: () => {
+        /* progress surfaced via task.progress above */
+      },
+    });
+    if (!handoff.ok) {
+      throw new Error(handoff.detail ?? `handoff gate failed at ${handoff.step}`);
+    }
+  } finally {
+    if (claimed) deps.runner?.releaseHandoffInFlight?.(task.id);
   }
 
   writeRecovery(config, {

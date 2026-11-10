@@ -17,6 +17,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { Agent, RepoOSConfig } from "../core/types.js";
 import type { AgentRunner } from "./agents.js";
+import type { RepoEvent } from "./live-index.js";
 
 export type HandoffStatusState =
   | "not_requested"
@@ -335,6 +336,23 @@ export function reconcileHandoffStatus(
   }
 
   return { ...status, stale: false };
+}
+
+/** Notify clients when reconciliation persists `superseded` (#1085). */
+export function emitHandoffSupersededIfNeeded(
+  before: HandoffStatus,
+  after: HandoffStatus,
+  taskId: string,
+  emit?: (e: RepoEvent) => void,
+): void {
+  if (!emit || before.state !== "running" || after.state !== "superseded") return;
+  emit({
+    type: "task.progress",
+    id: taskId,
+    step: "handoff:superseded",
+    ...(after.reason ? { detail: after.reason } : {}),
+    at: new Date().toISOString(),
+  });
 }
 
 /** Record that a requested handoff was deferred (queued messages must be read first). */
