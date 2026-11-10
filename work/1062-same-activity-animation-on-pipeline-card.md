@@ -16,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T06:27:11Z"
+updated_at: "2026-11-10T06:30:59Z"
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
 dev_error_count: 7
@@ -153,3 +153,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T06:26:19Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 40m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-10T06:27:10Z · message_queued at 2026-11-10T06:27:10.827Z
 - 2026-11-10T06:27:11Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T06:30:59Z · CTO nudge: held — an undelivered message is already queued
