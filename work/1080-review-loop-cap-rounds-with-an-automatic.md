@@ -190,3 +190,4 @@ The declared shot of the new Settings control is an evidence nicety: the capture
 - 2026-11-10T02:01:21Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T02:16:04Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-10T02:16:05Z · message_queued at 2026-11-10T02:16:05.055Z
+- 2026-11-10T02:16:05Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
