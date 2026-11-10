@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -299,3 +299,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T09:07:55Z · message_queued at 2026-11-10T09:07:55.355Z
 - 2026-11-10T09:07:55Z · ↻ resuming engineer to read queued message
 - 2026-11-10T09:07:56Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: The clean run exited 0 with "All checks passed". I'll confirm the failed-steps section is empty, check the worktree is clean apart from the expected files, and confirm the report draft is untracked. · stderr: (empty)
+- 2026-11-10T09:07:56Z · status active→review
