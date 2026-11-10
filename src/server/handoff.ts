@@ -74,12 +74,46 @@ import {
   updateHandoffStatusProgress,
   setHandoffWaitingReason,
 } from "./handoff-status.js";
+
+/** Plain-English handoff state while a running self-check holds the worktree (#1082). */
+const CHECK_GATE_WAIT_LABEL = "Waiting for the running check to finish";
+
+/**
+ * Run one handoff git step that a running self-check may refuse. While it
+ * waits, the handoff shows `CHECK_GATE_WAIT_LABEL`; the label is cleared in a
+ * `finally`, so an error or timeout never leaves it stuck (#1082).
+ */
+async function runWhileCheckGateWait<T>(
+  config: RepoOSConfig,
+  taskId: string,
+  attempt: () => Promise<T>,
+  busy: (result: T) => boolean,
+): Promise<T> {
+  let waiting = false;
+  try {
+    const waited = await waitForCheckGateRelease(attempt, busy, {
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      onWait: () => {
+        waiting = true;
+        setHandoffWaitingReason(config, taskId, CHECK_GATE_WAIT_LABEL);
+      },
+    });
+    return waited.result;
+  } finally {
+    if (waiting) setHandoffWaitingReason(config, taskId, null);
+  }
+}
 import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { guardStrayRepoosTomlOnTaskBranch } from "../core/repoos-toml-branch-guard.js";
 import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
-import { acquireCheckGateLock } from "./check-gate-lock.js";
+import {
+  acquireCheckGateLock,
+  checkGateBusyRun,
+  waitForCheckGateRelease,
+} from "./check-gate-lock.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
@@ -785,17 +819,21 @@ async function runHandoffFinalization(
   // A self-check that still holds the worktree makes this step wait, not fail
   // (#1082); the handoff row says so in plain words while it waits.
   let waitingForCheck = false;
-  const gate = await guardReviewTransition(
-    config,
-    { ...worktreeTask, branch: task.branch },
-    {
-      onCheckGateWait: () => {
-        waitingForCheck = true;
-        setHandoffWaitingReason(config, task.id, "Waiting for the running check to finish");
+  let gate: Awaited<ReturnType<typeof guardReviewTransition>>;
+  try {
+    gate = await guardReviewTransition(
+      config,
+      { ...worktreeTask, branch: task.branch },
+      {
+        onCheckGateWait: () => {
+          waitingForCheck = true;
+          setHandoffWaitingReason(config, task.id, CHECK_GATE_WAIT_LABEL);
+        },
       },
-    },
-  );
-  if (waitingForCheck) setHandoffWaitingReason(config, task.id, null);
+    );
+  } finally {
+    if (waitingForCheck) setHandoffWaitingReason(config, task.id, null);
+  }
   if (!gate.ok) {
     return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
   }
@@ -1097,14 +1135,20 @@ async function runHandoffFinalization(
       10_000,
     );
     if (stagedDiff.status === 1) {
-      const reportCommit = await runGit(
-        workdir,
-        [
-          "commit",
-          "-m",
-          `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
-        ],
-        20_000,
+      const reportCommit = await runWhileCheckGateWait(
+        config,
+        task.id,
+        () =>
+          runGit(
+            workdir,
+            [
+              "commit",
+              "-m",
+              `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
+            ],
+            20_000,
+          ),
+        checkGateBusyRun,
       );
       if (reportCommit.status !== 0)
         return fail(

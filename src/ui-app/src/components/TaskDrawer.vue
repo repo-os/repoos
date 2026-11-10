@@ -411,6 +411,12 @@ const activeCheckRun = computed(() => {
   if (!id) return null;
   return (repo.taskChecks[id] ?? []).find((r) => r.running) ?? null;
 });
+// A handoff waiting on a running self-check says so (#1082). It is read ahead of
+// the live check run, which is still `running` while it holds the worktree.
+const handoffWaitingReason = computed(() => {
+  const id = ui.active?.id;
+  return id ? (repo.handoffStatuses[id]?.progress?.reason ?? null) : null;
+});
 const statusProgress = computed(() => {
   const id = ui.active?.id;
   return id ? (activeCheckRun.value ?? repo.handoffStatuses[id]?.progress ?? null) : null;
@@ -419,9 +425,8 @@ const statusProgressPercent = computed(() =>
   statusProgress.value ? checkProgressPercent(statusProgress.value) : null,
 );
 const statusProgressLabel = computed(() => {
+  if (handoffWaitingReason.value) return handoffWaitingReason.value;
   if (statusProgress.value) {
-    // A handoff waiting on a running self-check says so instead of a step name (#1082).
-    if (statusProgress.value.reason) return statusProgress.value.reason;
     if (
       statusProgress.value.stepsDone == null &&
       statusProgress.value.currentStep == null &&
@@ -440,7 +445,9 @@ const statusProgressLabel = computed(() => {
   return "Checks are running";
 });
 const showStatusProgress = computed(() =>
-  Boolean(statusProgress.value || handoffBusy.value || localCheckSlot.value),
+  Boolean(
+    statusProgress.value || handoffWaitingReason.value || handoffBusy.value || localCheckSlot.value,
+  ),
 );
 const activeChecksBusy = computed(() =>
   ui.active ? activeTaskChecksBusy(repo, ui.active.id, checkNow.value) : false,

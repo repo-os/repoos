@@ -20,7 +20,10 @@ check never holds a handoff. The guard is idempotent, so the whole add-and-commi
 step is re-run after each poll. If the lock is still held at the deadline the
 handoff fails with `timed out after waiting for the running check to finish`
 and the work stays uncommitted; request handoff again once the check has
-finished. Other server git writes still fail fast on the refusal.
+finished. The same bounded wait covers the handoff's engineering-report commit,
+the review-report commit and the remote self-check checkpoint commit. The PATCH
+close-out route ("commit & continue") is the exception: it fails fast so an
+HTTP request never blocks behind a check, and the engineer retries instead.
 
 After validation, drift inspection examines the intervening commits as well as
 the net tree difference between the check-start commit and resulting HEAD.

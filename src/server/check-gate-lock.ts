@@ -1132,6 +1132,17 @@ export interface CheckGateWaitResult<T> {
 }
 
 /**
+ * Did git refuse this command only because a self-check holds the gate
+ * (#1082)? That refusal is transient, so callers wait it out instead of
+ * failing. Any other failure is not busy.
+ */
+export function checkGateBusyRun(run: { status: number | null; stderr: string }): boolean {
+  return run.status !== 0 && CHECK_GATE_BUSY_TEXT.test(run.stderr);
+}
+
+const CHECK_GATE_BUSY_TEXT = /A check is running/;
+
+/**
  * Run `attempt` and, while `held` says the result was refused only because a
  * self-check holds the gate, poll again until it clears or the bound runs out
  * (#1082). Stale or dead-holder locks are reconciled before each re-check, so
