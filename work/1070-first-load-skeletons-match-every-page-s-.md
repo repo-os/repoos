@@ -523,3 +523,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T08:24:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T08:24:45Z · body: Accepted scope: no shell cross-fade (final) (added 1, removed 1)
 - 2026-11-10T08:24:46Z · message_delivered: 1 message(s)
+- 2026-11-10T08:24:53Z · note: handoff requested (cli)
