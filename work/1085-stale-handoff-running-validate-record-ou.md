@@ -98,3 +98,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T19:41:01Z · body
 - 2026-11-10T19:55:50Z · body
 - 2026-11-10T20:03:26Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-10T20:03:26Z · message_queued at 2026-11-10T20:03:26.826Z
