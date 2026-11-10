@@ -11,9 +11,10 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T17:42:40Z"
+updated_at: "2026-11-10T17:47:42Z"
 review_rounds: 1
 review_passes: 1
+engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 A task's handoff record can stay at `running` / step `validate` for hours after the work moved on. Seen on #1080 (handoff started 04:55Z, still "running validate" at 06:05Z even though review pass 8 was "good to go" and `repoos landable` was ready) and #1070 (same, ~30+ min). `repoos handoff-status <id>` keeps reporting running, and the board card shows "Checks · checking validate · 1h 11m" with "REVIEW PASSED · CHECKS RUNNING" and a greyed Move to done, which makes people think landing will fail.
@@ -56,3 +57,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T17:42:38Z · message_queued at 2026-11-10T17:42:38.035Z
 - 2026-11-10T17:42:38Z · handoff failed · handoff recovery attempted · finalization failed
 - 2026-11-10T17:42:40Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T17:47:42Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
