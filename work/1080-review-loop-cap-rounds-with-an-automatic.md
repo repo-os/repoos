@@ -3,9 +3,6 @@ id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — accepted-scope extraction can omit authoritative limitations.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -222,3 +219,4 @@ Final (pass 7): accepted-scope extraction handles the first matching section up 
 - 2026-11-10T05:02:06Z · note: review pass 7: needs some work
 - 2026-11-10T05:02:07Z · needs_input
 - 2026-11-10T05:45:05Z · body: Accepted scope and known limitations (added)
+- 2026-11-10T05:45:05Z · needs_input (review-rounds-exhausted) cleared for review again by human
