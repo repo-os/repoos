@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T02:46:21Z"
+updated_at: "2026-11-10T02:50:28Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 4edbf76a3cad42f35816f23ef678414f1aef8410
 review_rounds: 1
@@ -51,6 +51,23 @@ Common patterns: a final CI step after the publish job (Slack/Discord/email webh
 ## Notes for AI
 Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/core/config.ts` (the `auth.emailProvider` handling and `getConfigSchema()`), `ReleasesView.vue`, `release-history.json`, docs/releases.md, docs/native-auth.md and docs/api-keys.md. Do not send any real email while developing or testing. Do not add credentials anywhere. Do not edit repoos.toml. For RepoOS itself the human enables it afterwards by setting `[release.email]` with to = hello@repoos.org.
 
+## Shots
+```json
+[
+{
+  "label": "Release email status card with Preview and Resend",
+  "target": "default",
+  "route": "/releases",
+  "highlight": "[data-test-id=\"release-email\"]"
+},
+{
+  "label": "Settings → General → Release emails controls",
+  "target": "default",
+  "route": "/settings?tab=general&section=release-emails"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-09T04:42:41Z · created · njachowski@gmail.com
@@ -89,3 +106,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T02:42:27Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-10T02:42:41Z · message_delivered: 1 message(s)
 - 2026-11-10T02:46:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T02:50:28Z · body
