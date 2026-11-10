@@ -495,3 +495,4 @@ Pass 15: a brief layout shift while the old shell fades out and the new page ent
 - 2026-11-10T07:39:48Z · ↻ resuming engineer to read queued message
 - 2026-11-10T07:39:48Z · status active→review
 - 2026-11-10T07:39:48Z · message_delivered: 3 message(s)
+- 2026-11-10T07:39:49Z · note: handoff requested (cli)
