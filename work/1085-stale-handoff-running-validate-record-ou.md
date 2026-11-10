@@ -50,3 +50,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T17:42:35Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-10T17:42:36Z · note: review pass 1: needs some work
 - 2026-11-10T17:42:37Z · message_queued at 2026-11-10T17:42:37.075Z
+- 2026-11-10T17:42:37Z · note: Task body is underspecified: missing sections: Desired UX
