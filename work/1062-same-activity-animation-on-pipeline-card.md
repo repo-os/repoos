@@ -249,3 +249,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T13:10:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T13:41:37Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-10T13:41:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Addressed both handoff blockers: ### UI verify (404 on `pipe-*` /landable) Hidden Board task cards were still polling landable for client-only pipeline fixture ids (`pipe-review`, `pipe-closeout`, …) during shot capture. That matched #0768… · stderr: (empty)
+- 2026-11-10T13:41:54Z · note: handoff requested (cli)
