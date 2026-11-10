@@ -44,20 +44,20 @@ describe("repo loading skeleton", () => {
     expect(appVue).not.toContain("skeletonDelay");
     expect(appVue).not.toContain("page-loading-shell");
     expect(appVue).toMatch(
-      /<Transition name="shell-fade">[\s\S]*<RouterView v-else class="main-route"\s*\/>[\s\S]*<\/Transition>/,
+      /<Transition name="page-fade" mode="out-in">[\s\S]*<RouterView v-else class="main-route"\s*\/>[\s\S]*<\/Transition>/,
     );
     const styles = readFileSync(resolve(__dirname, "../src/style.css"), "utf8");
     expect(styles).toMatch(
       /\.main\s*\{[^}]*--main-top-inset:\s*22px;[^}]*--main-inline-inset:\s*26px;[^}]*position:\s*relative/s,
     );
     expect(styles).toMatch(
-      /\.main\s*>\s*\.shell-fade-leave-active\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*var\(--main-top-inset\) var\(--main-inline-inset\) 0;/s,
+      /\.page-fade-enter-active,[\s\S]*?transition:\s*opacity 120ms ease-out;/,
     );
     expect(styles).toMatch(
-      /@media \(max-width: 760px\)\s*\{[\s\S]*?\.main\s*\{[^}]*--main-top-inset:\s*18px;[^}]*--main-inline-inset:\s*max\(16px,\s*var\(--page-inline-end-inset\)\);[^}]*padding:\s*var\(--main-top-inset\) var\(--main-inline-inset\) 0;/,
+      /@media \(max-width: 760px\)\s*\{[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*max\(16px,\s*var\(--page-inline-end-inset\)\);/,
     );
     expect(styles).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.shell-fade-enter-active,[\s\S]*?transition-duration:\s*0ms;/,
+      /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.page-fade-enter-active,[\s\S]*?transition-duration:\s*0ms;/,
     );
   });
 

@@ -163,7 +163,7 @@ onUnmounted(() => {
         <Sidebar />
 
         <div class="main">
-          <Transition name="shell-fade">
+          <Transition name="page-fade" mode="out-in">
             <div v-if="showLoadingShell" class="main-route page-loading">
               <header v-if="loadingHeader" class="page-header">
                 <div>

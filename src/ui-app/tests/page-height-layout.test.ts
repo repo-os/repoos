@@ -49,7 +49,9 @@ describe("standard page height and floating controls", () => {
     // Every page lets the agent heads float over content (as /work did): the
     // desktop .main keeps no blank right lane for them (2026-10-28).
     const desktopMain = css.match(/\n\.main\s*\{[^}]*\}/)?.[0] ?? "";
-    expect(desktopMain).toContain("padding: 22px 26px 0;");
+    expect(desktopMain).toContain(
+      "padding: 22px 26px 0;",
+    );
     expect(desktopMain).not.toMatch(/padding-inline-end/);
     expect(css).toMatch(/--floating-head-size:\s*46px/);
     expect(css).toMatch(
@@ -59,7 +61,7 @@ describe("standard page height and floating controls", () => {
       /@media \(max-width: 760px\)[\s\S]*?:root\s*\{[^}]*--floating-head-size:\s*46px/s,
     );
     expect(css).toMatch(
-      /@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0/s,
+      /@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*max\(16px,\s*var\(--page-inline-end-inset\)\)/s,
     );
     expect(floatingHeads).toMatch(/\.stack\s*\{[^}]*gap:\s*var\(--floating-head-gap\)/s);
     expect(floatingHeads).toMatch(
