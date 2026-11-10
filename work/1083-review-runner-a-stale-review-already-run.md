@@ -68,3 +68,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T19:17:14Z · body
 - 2026-11-10T19:21:58Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-10T19:21:58Z · message_queued at 2026-11-10T19:21:58.597Z
+- 2026-11-10T19:21:58Z · ↻ resuming engineer to read queued message
