@@ -18,7 +18,6 @@ review_rounds: 1
 review_passes: 1
 handoff_signal_retry_count: 2
 dev_error_count: 1
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
