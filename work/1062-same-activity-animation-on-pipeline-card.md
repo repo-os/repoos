@@ -2,7 +2,7 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T12:35:36Z"
+updated_at: "2026-11-10T12:35:37Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: c03fefe9eddc852051a4889c4721fbb92f433259
 review_rounds: 1
@@ -238,3 +238,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T12:35:36Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T12:35:36Z · message_queued at 2026-11-10T12:35:36.561Z
 - 2026-11-10T12:35:36Z · ↻ resuming engineer to read queued message
+- 2026-11-10T12:35:37Z · status active→review
