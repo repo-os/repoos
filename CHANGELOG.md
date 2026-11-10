@@ -5,6 +5,25 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.81] - 2026-11-10
+
+## Highlights
+
+- **Reviews converge in fewer rounds.** After a set number of passes the reviewer now treats leftover edge cases as suggestions instead of blockers, task types like Easter-egg bundles and p3 tasks get a lighter bar from pass 1, and an "Accepted scope" section in a task is honoured by the reviewer (#1080).
+- **Handoffs wait for a running check instead of failing.** A handoff that arrives while the engineer's own check is still running now waits (bounded) instead of failing with "A check is running" (#1082).
+- **Task branches no longer pick up other tasks' bookkeeping.** The engineer self-check commit only stages the task's own files, and handoff restores any other task's work files from main, so tasks stop failing landing with "the diff changes another task's bookkeeping" (#1076).
+- **The release update dialog now shows how to upgrade.** It shows the right command for how RepoOS was installed (standalone, package manager, source checkout or a beta channel) with a Copy button, and remembers a dismissed version (#1073).
+- **First-load skeletons match each page's real layout** on Mission Control and Stories, with no stray second row (#1070).
+
+## Known issues
+
+- A stale "a review is already running" marker can still block a review until the server restarts; fix in progress (#1083).
+- A handoff record can stay at "running" after the work has moved on, and the card shows "checks running" (#1085).
+- A task branch can still fail the scope check on bookkeeping that main legitimately has when another task landed while it was open (#1086).
+- The shell now swaps the loading skeleton for the page instantly; a smooth fade is planned (#1078).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.81)
+
 ## [v0.5.80] - 2026-11-10
 
 ## Highlights
