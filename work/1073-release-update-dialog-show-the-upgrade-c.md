@@ -13,7 +13,6 @@ model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
 updated_at: "2026-11-10T09:09:22Z"
 review_passes: 4
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T04:23:02.755Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
@@ -302,3 +301,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T09:07:56Z · message_delivered: 2 message(s)
 - 2026-11-10T09:07:57Z · note: handoff requested (cli)
 - 2026-11-10T09:09:22Z · CTO nudge: held — handoff gate is running
+
