@@ -75,3 +75,4 @@ Look at `ReviewRunner.isRunning`/`canRun`/`cancel` in `src/server/review.ts` and
 - 2026-11-10T19:35:41Z · body
 - 2026-11-10T19:41:11Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T19:41:58Z · status active→review
+- 2026-11-10T19:41:58Z · message_queued at 2026-11-10T19:41:58.550Z
