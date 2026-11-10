@@ -1,11 +1,19 @@
 ---
+id: review-4
+title: review-4
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/engineer-self-check-wip-commits-re-commi
 task: "1076"
 pass: 4
 at: "2026-11-09T22:50:13.551Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/engineer-self-check-wip-commits-re-commi
 state: ok
 tree_identity: "9e65b6734:"
 ---
@@ -20,9 +28,9 @@ None
 
 ## Bugs
 1. **Unscoped commit in a task worktree (class: bare `git commit` after a staging step).**
-   - `src/server/review-guard.ts:101`: the hotfix implement commit is bare after `add -- sourceFiles`. A sibling already staged in the index rides the commit. Hotfixes also skip the restore (`handoff.ts`, `if (!isHotfix)`), so nothing heals it. Fix: pathspec the commit to the staged paths, as the non-hotfix branch at `:197` does.
-   - `src/server/integration-orchestrator.ts:2202`: the union-merge commit is bare with no foreign unstage, unlike `lockfile-conflict.ts`. The comment at `:2196` says the scoped `add` keeps siblings out, but that only covers the conflicted paths. A sibling staged after the merge started stays in the index. Fix: unstage foreign paths before the commit, as the lockfile path does.
-   - Checked and sound: the handoff report commit (now pathspec), `lockfile-conflict.ts` (unstage before a bare merge commit), `dropDistBeforeMerge`, the remote checkpoint, and the restore commit.
+- `src/server/review-guard.ts:101`: the hotfix implement commit is bare after `add -- sourceFiles`. A sibling already staged in the index rides the commit. Hotfixes also skip the restore (`handoff.ts`, `if (!isHotfix)`), so nothing heals it. Fix: pathspec the commit to the staged paths, as the non-hotfix branch at `:197` does.
+- `src/server/integration-orchestrator.ts:2202`: the union-merge commit is bare with no foreign unstage, unlike `lockfile-conflict.ts`. The comment at `:2196` says the scoped `add` keeps siblings out, but that only covers the conflicted paths. A sibling staged after the merge started stays in the index. Fix: unstage foreign paths before the commit, as the lockfile path does.
+- Checked and sound: the handoff report commit (now pathspec), `lockfile-conflict.ts` (unstage before a bare merge commit), `dropDistBeforeMerge`, the remote checkpoint, and the restore commit.
 
 2. **Comment contradicts its one caller (class: base-branch anchor fallback).** `restoreForeignTaskBookkeepingFromMain` says the main checkout's `currentBranch()` is "deliberately not used", but `handoff.ts:811` passes exactly that as `baseBranch`. The same convention appears at `handoff.ts:989`, `:1084` and `:1101`. Failure: if the main checkout sits on `feat/x`, `merge-base(feat/x, HEAD)` can miss a sibling file present in both trees, so handoff reports a heal and the branch still carries the file. Fix: use the configured base at all four sites, or correct the comment.
 
