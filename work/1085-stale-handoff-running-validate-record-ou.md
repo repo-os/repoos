@@ -11,7 +11,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T21:26:33Z"
+updated_at: "2026-11-10T21:31:11Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -126,3 +126,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T21:26:11Z · message_queued at 2026-11-10T21:26:11.994Z
 - 2026-11-10T21:26:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-10T21:26:33Z · body
+- 2026-11-10T21:31:11Z · CTO nudge: held — handoff gate is running
