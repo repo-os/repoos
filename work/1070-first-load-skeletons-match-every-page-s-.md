@@ -14,7 +14,7 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
-updated_at: "2026-11-10T08:39:50Z"
+updated_at: "2026-11-10T08:39:52Z"
 review_passes: 19
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
@@ -527,3 +527,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T08:25:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Handoff passed; task #1070 is now in review. I made no further changes. · stderr: 2026-11-10T08:24:51.643279Z ERROR codex_models_manager::manager: failed to refresh available models: request timed out
 - 2026-11-10T08:29:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T08:39:50Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-10T08:39:52Z · message_queued at 2026-11-10T08:39:52.371Z
