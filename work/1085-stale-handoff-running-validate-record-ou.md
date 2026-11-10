@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
@@ -121,3 +123,4 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T21:14:00Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T21:15:08Z · message_queued at 2026-11-10T21:15:08.695Z
 - 2026-11-10T21:15:11Z · message_delivered: 1 message(s)
+
