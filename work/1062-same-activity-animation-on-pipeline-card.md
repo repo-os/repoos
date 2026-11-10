@@ -206,3 +206,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T10:26:09Z · note: handoff requested (cli)
 - 2026-11-10T10:29:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T10:32:26Z · note: ui verification failed: ui verification failed (20 issue(s)): [request] HTTP 404 for http://127.0.0.1:46173/api/tasks/pipe-review/landable (http://127.0.0.1:46173/api/tasks/pipe-review/landable); [request] Failed to load resource: the server responded with a status of 404 (Not Found) (http://127.0.0.1:46173/api/tasks/pipe-review/landable); [request] HTTP 404 for http://127.0.0.1:46173/api/tasks/pipe-closeout/landable (http://127.0.0.1:46173/api/tasks/pipe-closeout/landable); [request] Failed to
+- 2026-11-10T10:32:26Z · message_queued at 2026-11-10T10:32:26.945Z
