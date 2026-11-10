@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T01:16:19Z"
+updated_at: "2026-11-10T01:46:21Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: build — src/commands/upgrade.ts(237,14): error TS2304: Cannot find name 'readVersion'."
 last_handoff_failure_sha: e83b162a0832adf0bf5d8728211f3d1be87d6d50
 review_rounds: 1
@@ -230,3 +230,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T01:11:45Z · cli_override, model_override
 - 2026-11-10T01:12:41Z · needs_input
 - 2026-11-10T01:16:19Z · message_delivered: 1 message(s)
+- 2026-11-10T01:46:21Z · message_queued at 2026-11-10T01:46:21.940Z
