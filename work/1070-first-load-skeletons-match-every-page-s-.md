@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-10T08:59:53Z"
-review_passes: 20
 id: "1070"
 title: "First-load skeletons: match every page's real layout (Control and Stories are off), audit all pages"
 type: bug
@@ -16,6 +14,8 @@ branch: feat/first-load-skeletons-match-every-page-s-
 review_cli_override: codex
 review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T03:37:29Z"
+updated_at: "2026-11-10T09:04:14Z"
+review_passes: 20
 last_check_failure: "repoos check at 2026-11-09T14:40:17.794Z: repoos check failed: the worktree changed while the gate was running (HEAD moved from b73038a1 to eecd9431) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 review_rounds: 2
 routing_switches: 1
@@ -53,7 +53,7 @@ Files: `src/ui-app/src/components/PageSkeleton.vue`, `src/ui-app/src/lib/loading
 ```
 
 ## Accepted scope: no loading-state screenshots
-Owner-side decision (2026-11-09): the handoff capture tool deliberately treats any page showing aria-busy / a loading indicator as a FAILED shot ('loading state detected', src/core/shot-page.ts), so declared shots of the skeleton itself cannot pass. Acceptance criterion 6 (shots of the loading state) is therefore replaced by: precise component tests that assert the skeleton structure and item counts against the real layout constants, plus optional shots of the SETTLED Mission Control and Stories pages to show the real layout the skeleton must match. A reviewer must not require loading-state screenshots.
+ALL ACCEPTED SCOPE (authoritative, supersedes the 'content cross-fades in' line in Desired UX): (1) No loading-state screenshots; settled pages only. (2) The loading shell is swapped for the page INSTANTLY: no fade, no cross-fade, no leave transition. A smooth fade and per-view exit timing are follow-up #1078. Do NOT report a missing cross-fade as a bug in any form. (3) Layout shift while the shell leaves is out of scope (#1078). Only a broken settled page, a failing test or a regression of existing behaviour blocks; everything else goes under Suggestions.
 
 ## Accepted scope and known limitations
 Owner decision (2026-11-09, release deadline): the show-delay (about 180 ms) and minimum-visible-time (about 350 ms) are applied at the SHELL level in App.vue only. Applying the same gate inside every individual view that renders its own PageSkeleton (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) is out of scope here and is tracked in a follow-up task; a reviewer must report it as a suggestion, not a blocking bug. Still required: fix the Settings row-count regression, and replace the magic placeholder counts for non-board kinds with named constants documented next to the real layout they mirror.
@@ -537,4 +537,4 @@ DECIDED by the owner: the shell uses a single out-in opacity fade (120ms), NOT a
 - 2026-11-10T08:59:52Z · note: review pass 20: needs some work
 - 2026-11-10T08:59:52Z · needs_input
 - 2026-11-10T08:59:52Z · needs_input
-
+- 2026-11-10T09:04:14Z · body: Accepted scope: no loading-state screenshots (added 1, removed 1)
