@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T09:50:35Z"
+updated_at: "2026-11-10T09:54:23Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on bee — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: b643cd28d1f06094f5d40607fb8bf59fbe97e8f3
 review_rounds: 1
@@ -193,3 +193,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T09:50:34Z · status active→review
 - 2026-11-10T09:50:35Z · message_delivered: 1 message(s)
 - 2026-11-10T09:50:35Z · note: handoff requested (cli)
+- 2026-11-10T09:54:23Z · CTO nudge: held — handoff gate is running
