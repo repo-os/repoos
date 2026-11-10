@@ -2,7 +2,7 @@
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — startup sweep and restart path drop checkpoint markers still owned by a pending delta review (two defects)
@@ -14,7 +14,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T23:49:32Z"
+updated_at: "2026-11-10T23:53:03Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -156,3 +156,4 @@ FINAL (pass 4): reconciling stale handoff records, the stale flag on every check
 - 2026-11-10T23:45:13Z · note: handoff requested (cli)
 - 2026-11-10T23:49:25Z · body
 - 2026-11-10T23:49:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T23:53:03Z · status active→review
