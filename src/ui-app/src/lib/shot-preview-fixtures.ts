@@ -2251,7 +2251,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       const startedAt = new Date(Date.now() - 45 * 60_000).toISOString();
       repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
         state: "running",
-        step: "validate",
+        step: "verify",
         startedAt,
         updatedAt: new Date().toISOString(),
         attempt: 1,
