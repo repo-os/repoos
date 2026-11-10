@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T03:16:24Z"
+updated_at: "2026-11-10T03:25:29Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 4edbf76a3cad42f35816f23ef678414f1aef8410
 review_rounds: 1
@@ -108,3 +108,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T02:46:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T02:50:28Z · body
 - 2026-11-10T03:16:24Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T03:25:29Z · handoff_deferred: 3 queued message(s) must be read before review
