@@ -165,6 +165,7 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(isShotPreviewConfigFixture("settings:pumpkinSpell")).toBe(true);
     expect(isShotPreviewConfigFixture("editor:unconfigured")).toBe(true);
     expect(isShotPreviewConfigFixture("budget:paused")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:motionOff")).toBe(true);
     expect(isShotPreviewConfigFixture("board:startWorkPending")).toBe(false);
   });
 
@@ -184,6 +185,15 @@ describe("shot preview board fixtures (#0743)", () => {
     });
     expect(String(rows[0]?.pausedUntil)).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(rows[1]?.pausedModels).toMatchObject([{ model: "big pickle" }]);
+  });
+
+  it("seeds motion off on the settings form (#1062)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.form.activityAnimationEnabled = true;
+    applyShotPreviewConfigFixture(config, "settings:motionOff");
+    expect(config.form.activityAnimationEnabled).toBe(false);
   });
 
   it("seeds bird quick trail on the settings form (#0822)", () => {
