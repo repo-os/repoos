@@ -14,7 +14,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T21:56:58Z"
+updated_at: "2026-11-10T21:58:15Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -96,3 +96,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T21:56:57Z · status active→review
 - 2026-11-10T21:56:58Z · message_queued at 2026-11-10T21:56:58.293Z
 - 2026-11-10T21:56:58Z · note: shots: skipped — the diff (14 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-10T21:58:15Z · note: review pass 4: needs some work
