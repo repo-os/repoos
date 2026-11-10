@@ -14,7 +14,7 @@ branch: feat/review-runner-a-stale-review-already-run
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T22:52:19Z"
-updated_at: "2026-11-10T22:04:45Z"
+updated_at: "2026-11-10T22:06:12Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-10T18:49:37.527Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -102,3 +102,4 @@ FINAL (pass 4): the liveness probe on read paths is fixed (early return before t
 - 2026-11-10T22:04:11Z · status review→active
 - 2026-11-10T22:04:13Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T22:04:45Z · note: handoff requested (cli)
+- 2026-11-10T22:06:12Z · CTO nudge: held — handoff gate is running
