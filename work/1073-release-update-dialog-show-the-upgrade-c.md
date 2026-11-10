@@ -247,3 +247,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T02:28:21Z · note: handoff requested (cli)
 - 2026-11-10T02:31:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T02:56:07Z · message_queued at 2026-11-10T02:56:07.222Z
+- 2026-11-10T02:56:07Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
