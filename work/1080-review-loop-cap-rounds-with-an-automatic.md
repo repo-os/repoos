@@ -3,6 +3,9 @@ id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — accepted-scope extraction can omit or misidentify authoritative text; Settings UI is unverified.
 priority: p1
 area: [server, core]
 assigned_to: ai
@@ -175,3 +178,4 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-10T00:48:58Z · needs_input
 - 2026-11-10T01:09:06Z · needs_input (review-failed) cleared for review again by human
 - 2026-11-10T01:10:51Z · note: review pass 6: needs some work
+- 2026-11-10T01:10:51Z · needs_input
