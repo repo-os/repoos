@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'."
+last_handoff_failure_sha: b1fb1141a2bbafe4f1c334c9b42e8862e5efd991
 id: "1082"
 title: Handoff should wait (bounded) for a running self-check instead of failing 'A check is running; wait for it to finish'
 type: bug
@@ -86,3 +88,4 @@ Look at `src/server/check-gate-lock.ts` (`CHECK_GATE_WRITE_REFUSAL`), `src/serve
 - 2026-11-10T05:31:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-10T05:52:06Z · message_queued at 2026-11-10T05:52:06.329Z
 - 2026-11-10T05:52:06Z · handoff failed · task-file handoff failed at check · repoos check failed: build — src/server/handoff.ts(1147,72): error TS18047: 'finalized.report' is possibly 'null'.
+
