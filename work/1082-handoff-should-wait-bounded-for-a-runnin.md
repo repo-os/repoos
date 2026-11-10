@@ -12,7 +12,7 @@ branch: feat/handoff-should-wait-bounded-for-a-runnin
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T20:11:19Z"
-updated_at: "2026-11-10T10:36:08Z"
+updated_at: "2026-11-10T10:59:34Z"
 last_close_out_gate_ms: 787058
 last_close_out_gate_at: "2026-11-10T10:34:30.831Z"
 review_passes: 4
@@ -140,3 +140,4 @@ FINAL (pass 3): the core behaviour is in scope: the handoff and server git opera
 - 2026-11-10T10:01:34Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T10:34:30Z · close-out gate completed in 787s
 - 2026-11-10T10:36:08Z · status done→done, release:success
+- 2026-11-10T10:59:34Z · message_dropped: 1 queued message(s) discarded — task is done
