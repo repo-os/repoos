@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shotCapturePageUrl } from "../../core/shot-fixtures.js";
+import { shotCapturePageUrl, shotFixtureContainer } from "../../core/shot-fixtures.js";
 import { parseShotPlan } from "../../core/shot-plan.js";
 
 describe("shot preview fixtures (#0743)", () => {
@@ -91,5 +91,17 @@ describe("shot preview fixtures (#0743)", () => {
     expect(url).toBe("http://127.0.0.1:8000/?shotState=closeOut%3Astalled");
     const body = `## Shots\n\`\`\`json\n[{"route":"/","state":"closeOut:stalled"}]\n\`\`\``;
     expect(parseShotPlan(body).errors).toEqual([]);
+  });
+
+  it("accepts the release:updateAvailable fixture for the update dialog (#1073)", () => {
+    const url = shotCapturePageUrl("http://127.0.0.1:8000", {
+      route: "/",
+      state: "release:updateAvailable",
+    });
+    expect(url).toBe("http://127.0.0.1:8000/?shotState=release%3AupdateAvailable");
+    const body = `## Shots\n\`\`\`json\n[{"route":"/","state":"release:updateAvailable"}]\n\`\`\``;
+    expect(parseShotPlan(body).errors).toEqual([]);
+    // The fixture pins a modal open, so the capture container must be a dialog.
+    expect(shotFixtureContainer("release:updateAvailable")).toBe("dialog");
   });
 });

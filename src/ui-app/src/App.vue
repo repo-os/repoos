@@ -144,6 +144,20 @@ watch(
   },
 );
 
+// #1073: `applyShotFixturesFromLocation` is gated on `/api/health` reporting a
+// preview build, but a capture can navigate and settle before `repo.init()`
+// resolves (its own `/api/health` fetch may be slow, and a failed fetch leaves
+// `health` null). That left the applied-state marker unset, so the capture
+// reported "the page did not apply the fixture" for ANY declared state — a
+// timing flake, not a code bug. Re-apply whenever health arrives so the fixture
+// and its marker land as soon as the server is known to be a preview.
+watch(
+  () => repo.health?.isPreviewBuild,
+  (isPreview) => {
+    if (isPreview) applyShotFixturesFromLocation();
+  },
+);
+
 onUnmounted(() => {
   window.removeEventListener("focus", checkUiBuild);
   window.removeEventListener("repoos:api-timeout", onApiTimeout);
