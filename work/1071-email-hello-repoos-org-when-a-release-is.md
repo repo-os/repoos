@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-10T07:16:20Z"
+updated_at: "2026-11-10T08:24:41Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
@@ -147,3 +147,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T06:49:00Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-10T06:49:01Z · message_undelivered: 2 message(s) still queued — waiting for the next run
 - 2026-11-10T07:16:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T08:24:41Z · message_overdue: still queued after 60m without being delivered
