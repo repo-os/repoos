@@ -2,7 +2,7 @@
 id: "1076"
 title: "Engineer self-check WIP commits re-commit other tasks' work files, blocking landing (stray bookkeeping in task branches)"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/engineer-self-check-wip-commits-re-commi
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T08:36:18Z"
-updated_at: "2026-11-10T20:06:11Z"
+updated_at: "2026-11-10T20:13:49Z"
 close_out_repair_count: 1
 review_passes: 5
 review_rounds: 2
@@ -303,3 +303,4 @@ Owner/accepted interpretation: the server already writes only the LIVE task's ow
 - 2026-11-10T20:01:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T20:04:15Z · note: handoff requested (cli)
 - 2026-11-10T20:06:11Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T20:13:49Z · status active→review
