@@ -2,7 +2,7 @@
 id: "1073"
 title: "Release update dialog: show the upgrade command (copyable) next to the release link"
 type: feature
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-update-dialog-show-the-upgrade-c
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:50:38Z"
-updated_at: "2026-11-10T04:13:02Z"
+updated_at: "2026-11-10T04:18:16Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: 5940508779628f831738901e07a5b681a2aa02d5
 check_retry_count: 1
@@ -259,3 +259,4 @@ This task owns the install-kind detection and the upgrade command text (server: 
 - 2026-11-10T03:33:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-10T03:36:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T04:13:02Z · body
+- 2026-11-10T04:18:16Z · status active→review
