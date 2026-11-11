@@ -3,6 +3,9 @@ id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `restart` silently cancels in-flight reviews and previews, and the managed-service path can restart the wrong server."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -177,4 +180,5 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T19:00:35Z · message_queued at 2026-11-11T19:00:35.721Z
 - 2026-11-11T19:00:36Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T19:03:26Z · note: review pass 4: needs some work
+- 2026-11-11T19:03:27Z · needs_input
 - 2026-11-11T19:03:27Z · needs_input
