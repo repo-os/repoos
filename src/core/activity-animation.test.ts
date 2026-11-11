@@ -51,10 +51,14 @@ describe("activity animation config (#0787)", () => {
   });
 
   it("exposes the setting in schema and supported keys", () => {
+    const enabled = getConfigSchema().find((f) => f.key === "activityAnimationEnabled");
+    expect(enabled?.type).toBe("boolean");
+    expect(enabled?.default).toBe(true);
     const field = getConfigSchema().find((f) => f.key === "activityAnimationStyle");
     expect(field?.type).toBe("select");
     expect(field?.default).toBe("orbital-pixel");
     expect(field?.options?.map((o) => o.value)).toEqual([...ACTIVITY_ANIMATION_STYLES]);
+    expect(SUPPORTED_TOML_KEYS).toContain("activityAnimationEnabled");
     expect(SUPPORTED_TOML_KEYS).toContain("activityAnimationStyle");
   });
 

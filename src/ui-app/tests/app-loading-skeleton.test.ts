@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetActivityMotionCoordinatorForTests } from "../src/lib/activity-motion";
 import { mount } from "@vue/test-utils";
 import { defineComponent, ref } from "vue";
 import { createPinia, setActivePinia } from "pinia";
@@ -32,6 +33,16 @@ const ImmediateSkeletonHarness = defineComponent({
   template: '<PageSkeleton kind="rows" :loading="loading" />',
 });
 describe("repo loading skeleton", () => {
+  beforeEach(() => {
+    resetActivityMotionCoordinatorForTests();
+  });
+
+  afterEach(() => {
+    resetActivityMotionCoordinatorForTests();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
   it("renders a route skeleton instead of the centered spinner", () => {
     expect(appVue).not.toMatch(/v-if="repo\.loading"[^>]*class="spin"/);
     expect(appVue).toMatch(
