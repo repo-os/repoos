@@ -58,7 +58,9 @@ export async function cmdRestart(argv: string[]): Promise<void> {
         );
       }
       if (killed.length === 0 && resumed.length === 0) {
-        console.log(c.dim("  ⚠ Restarting with no in-flight reviews, previews, agents or dev targets."));
+        console.log(
+          c.dim("  ⚠ Restarting with no in-flight reviews, previews, agents or dev targets."),
+        );
       }
     },
   });

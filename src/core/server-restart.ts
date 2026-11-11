@@ -57,35 +57,31 @@ export async function fetchCancelledWork(host: string, port: number): Promise<Ca
   };
   const probeHost = host === "0.0.0.0" ? "127.0.0.1" : host;
   return new Promise((resolve) => {
-    const req = http.get(
-      `http://${probeHost}:${port}/api/health`,
-      { timeout: 1500 },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (c) => chunks.push(c as Buffer));
-        res.on("end", () => {
-          try {
-            const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
-              activeEngineers?: unknown;
-              activeReviews?: unknown;
-              activeFreeformRuns?: unknown;
-              activeDevTargets?: unknown;
-              activePreviews?: unknown;
-            };
-            const n = (v: unknown): number => (typeof v === "number" && v > 0 ? v : 0);
-            resolve({
-              engineers: n(body.activeEngineers),
-              reviews: n(body.activeReviews),
-              freeformRuns: n(body.activeFreeformRuns),
-              devTargets: n(body.activeDevTargets),
-              previews: n(body.activePreviews),
-            });
-          } catch {
-            resolve(zero);
-          }
-        });
-      },
-    );
+    const req = http.get(`http://${probeHost}:${port}/api/health`, { timeout: 1500 }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (c) => chunks.push(c as Buffer));
+      res.on("end", () => {
+        try {
+          const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
+            activeEngineers?: unknown;
+            activeReviews?: unknown;
+            activeFreeformRuns?: unknown;
+            activeDevTargets?: unknown;
+            activePreviews?: unknown;
+          };
+          const n = (v: unknown): number => (typeof v === "number" && v > 0 ? v : 0);
+          resolve({
+            engineers: n(body.activeEngineers),
+            reviews: n(body.activeReviews),
+            freeformRuns: n(body.activeFreeformRuns),
+            devTargets: n(body.activeDevTargets),
+            previews: n(body.activePreviews),
+          });
+        } catch {
+          resolve(zero);
+        }
+      });
+    });
     req.on("timeout", () => {
       req.destroy();
       resolve(zero);
@@ -445,8 +441,7 @@ export async function restartRepoServer(
   const path = await (opts.classify ?? classifyRestartPath)(root, server);
   if (path === "refuse-supervised-unknown") {
     const detected = detectSupervisor(server.pid);
-    const quotedRoot =
-      /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
+    const quotedRoot = /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
     const startCommand = `cd ${quotedRoot} && repoos serve --port ${server.port}`;
     return {
       ok: false,
@@ -528,8 +523,7 @@ export async function restartRepoServer(
       fetch: opts.health,
     });
     if (!waited.ok) {
-      const quotedRoot =
-        /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
+      const quotedRoot = /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
       return {
         ok: false,
         path,
@@ -541,8 +535,7 @@ export async function restartRepoServer(
         // Prefer the supervisor's own restart; fall back to a start command so
         // the human is never left with only "it may be down" (#1091 review pass 4).
         manualCommand:
-          supervisor?.manualCommand ??
-          `cd ${quotedRoot} && repoos serve --port ${server.port}`,
+          supervisor?.manualCommand ?? `cd ${quotedRoot} && repoos serve --port ${server.port}`,
       };
     }
     return {
