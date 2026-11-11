@@ -14,7 +14,7 @@ created_at: "2026-11-11T04:12:08Z"
 updated_at: "2026-11-11T06:34:58Z"
 review_passes: 3
 review_rounds: 2
-deferred_handoff_resume_count: 1
+deferred_handoff_resume_count: 2
 ---
 ## Problem
 After cutting v0.5.82 the Releases page said "The release workflow failed at 'Run oven-sh/setup-bun@v2', so some channels below may not update on their own", linking https://github.com/repo-os/repoos/actions/runs/42566925266. That run is NOT the release workflow. It is the separate "Adoption matrix" workflow (job "adoption matrix (macos-latest)", failed at setup-bun) that also runs on pushes. The real "Release v0.5.82" run (id 42956267884) succeeded, and the Homebrew tap's own "Update RepoOS formula" run was still in progress when the warning showed, so Homebrew was only lagging, not failed.
