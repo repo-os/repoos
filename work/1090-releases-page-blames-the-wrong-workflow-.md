@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T05:53:47Z"
+updated_at: "2026-11-11T06:08:23Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -32,7 +32,7 @@ After cutting v0.5.82 the Releases page said "The release workflow failed at 'Ru
 Separately (not part of this task): the Adoption matrix macOS job failed at `oven-sh/setup-bun@v2`, most likely a transient download failure; re-run it, and file a task only if it repeats.
 
 ## Accepted scope and known limitations
-FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress must query the tap's formula-update workflow (actions/workflows/<file>/runs) and match the viewed tag or version, not repo-wide runs; update the callers (~lines 409, 464) accordingly and add a test where an unrelated tap workflow is in progress and the row stays out-of-sync. NOT blocking, follow-up only: documenting that an unset release.workflow disables the banner and grace window in docs/releases.md; the grace window applying to a formula ahead of the tag; unauthenticated API quota per out-of-sync row; a view test for the updating label and violet CSS. Report those under Suggestions, not Bugs.
+FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap's formula-update workflow (actions/workflows/repoos-release.yml/runs, repository_dispatch) and matches by the time window of the viewed release run (created between the release run start and its updated_at plus 5 minutes). The tap's run list carries no version, so matching a tag or version is NOT required; the time-window scope is accepted and documented in docs/releases.md. NOT blocking, follow-up only: another release dispatched inside the window reading Updating; a tap API error or rate limit reading Out of sync without a hint; a still-running release run missing a late dispatch; run-name versioning in the tap repo; documenting that an unset release.workflow disables the banner; the grace window for a formula ahead of the tag; unauthenticated quota per row; a view test for the updating label. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -74,3 +74,4 @@ FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress mus
 - 2026-11-11T05:53:46Z · note: review pass 2: needs some work
 - 2026-11-11T05:53:47Z · message_delivered: 1 message(s)
 - 2026-11-11T05:53:47Z · status review→active
+- 2026-11-11T06:08:23Z · body: Accepted scope and known limitations (added 1, removed 1)
