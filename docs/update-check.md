@@ -27,8 +27,13 @@ Path: `~/.repoos/release-update-cache.json` (machine state dir via
 
 Fields:
 
-- `lastCheckedAt` — unix ms; network refresh at most once per **24 hours**
-- `latestVersion`, `url` — last successful lookup
+- `lastCheckedAt` — unix ms; network refresh at most once per **24 hours** on
+  success, or **60 seconds** after a failed GET (mirrors the server’s in-memory
+  failure cache)
+- `latestVersion`, `url` — last successful lookup (preserved across failures)
+- `channel` — install channel the row was fetched for (`""` = stable `latest`)
+- `fetchSucceeded` — `false` after offline/timeout/403/429 so refetch backoff
+  stays short
 - `dismissedVersion` — reserved for cross-surface dismissal (dashboard uses
   `localStorage` today; #1073 owns dismissal UX)
 - `lastNoticeAt` — when the CLI last printed its stderr line
@@ -47,7 +52,7 @@ notice throttle.
 - `REPOOS_NO_UPDATE_CHECK=1` or `REPOOS_DISABLE_UPDATE_CHECK=1`
 - CI (`CI=true`, `GITHUB_ACTIONS`, …)
 - Non-TTY stdout/stderr or `--json` (script-friendly commands)
-- `repoos upgrade`, `serve`, `version`, `help`
+- `repoos upgrade`, `serve`, `version`, `help`, `api`
 - Source checkout (`isSourceCheckout`) — avoids misleading “update available”
   when the tree is ahead of the latest tag
 
@@ -57,7 +62,8 @@ Channel installs compare against their channel; stable installs use
 ## Implementation
 
 - Core: `src/core/update-check.ts`, semver helpers in `src/core/release-version.ts`
-- CLI hook: `registerCliUpdateNoticeHook` in `src/cli/index.ts` (prefetch +
-  synchronous `exit` handler)
+- CLI hook: `registerCliUpdateNoticeHook` in `src/cli/index.ts` — background
+  prefetch while the command runs, cache-only stderr notice on `exit` (in-flight
+  GET is aborted so exit never waits on GitHub)
 - Server: `fetchAvailableRelease` in `src/server/routes/release.ts` respects
   `updates.check`

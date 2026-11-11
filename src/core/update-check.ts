@@ -22,6 +22,8 @@ import { readVersion } from "./version.js";
 
 export const UPDATE_CHECK_CACHE_FILE = "release-update-cache.json";
 export const UPDATE_CHECK_TTL_MS = 24 * 60 * 60 * 1000;
+/** Mirror `RELEASE_FAILURE_CACHE_MS` in `src/server/routes/release.ts`. */
+export const UPDATE_CHECK_FAILURE_CACHE_MS = 60 * 1000;
 export const UPDATE_CHECK_TIMEOUT_MS = 1500;
 const DEFAULT_RELEASE_URL = "https://github.com/repo-os/repoos/releases";
 
@@ -30,6 +32,10 @@ export interface UpdateCheckCache {
   latestVersion: string | null;
   url: string | null;
   dismissedVersion: string | null;
+  /** Install channel this row was fetched for (`""` = stable latest). */
+  channel?: string;
+  /** False when the last refresh failed (shorter refetch TTL). */
+  fetchSucceeded?: boolean;
   /** When the CLI last printed its stderr notice (throttle within TTL). */
   lastNoticeAt?: number;
 }
@@ -51,10 +57,12 @@ export interface UpdateCheckDeps {
   readInstallVersion?: (root: string) => string | null;
   readVersion?: () => string;
   env?: NodeJS.ProcessEnv;
+  /** When set, combined with the usual timeout for in-flight CLI refresh. */
+  abortSignal?: AbortSignal;
 }
 
-function sleepSync(ms: number): void {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+export function updateCheckChannelKey(channel: string | null): string {
+  return channel ?? "";
 }
 
 export function updateCheckCachePath(home = homedir()): string {
@@ -74,6 +82,8 @@ export function readUpdateCheckCache(
       latestVersion: typeof raw.latestVersion === "string" ? raw.latestVersion : null,
       url: typeof raw.url === "string" ? raw.url : null,
       dismissedVersion: typeof raw.dismissedVersion === "string" ? raw.dismissedVersion : null,
+      channel: typeof raw.channel === "string" ? raw.channel : undefined,
+      fetchSucceeded: raw.fetchSucceeded === false ? false : true,
       lastNoticeAt: typeof raw.lastNoticeAt === "number" ? raw.lastNoticeAt : undefined,
     };
   } catch {
@@ -90,6 +100,21 @@ export function writeUpdateCheckCache(path: string, cache: UpdateCheckCache): vo
   }
 }
 
+export function cacheMatchesInstallChannel(cache: UpdateCheckCache, channel: string | null): boolean {
+  if (cache.channel === undefined) return false;
+  return cache.channel === updateCheckChannelKey(channel);
+}
+
+export function shouldRefreshUpdateCheckCache(
+  cache: UpdateCheckCache | null,
+  channel: string | null,
+  now: number,
+): boolean {
+  if (!cache || !cacheMatchesInstallChannel(cache, channel)) return true;
+  const ttl = cache.fetchSucceeded === false ? UPDATE_CHECK_FAILURE_CACHE_MS : UPDATE_CHECK_TTL_MS;
+  return now - cache.lastCheckedAt >= ttl;
+}
+
 export function isUpdateCheckEnvDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.REPOOS_NO_UPDATE_CHECK === "1" || env.REPOOS_DISABLE_UPDATE_CHECK === "1";
 }
@@ -102,7 +127,7 @@ export function isCiEnvironment(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.CI === "true" || env.CI === "1" || !!env.GITHUB_ACTIONS || !!env.GITLAB_CI;
 }
 
-/** Commands that never get the passive CLI notice. */
+/** Commands whose output must stay script-clean or that manage upgrades themselves. */
 const CLI_UPDATE_SKIP_COMMANDS = new Set([
   "help",
   "--help",
@@ -113,6 +138,7 @@ const CLI_UPDATE_SKIP_COMMANDS = new Set([
   "upgrade",
   "serve",
   "server",
+  "api",
 ]);
 
 /**
@@ -124,6 +150,8 @@ export function shouldRunCliUpdateCheck(input: {
   argv: string[];
   env?: NodeJS.ProcessEnv;
   config?: Pick<RepoOSConfig, "updates">;
+  stderrIsTTY?: boolean;
+  stdoutIsTTY?: boolean;
 }): boolean {
   const env = input.env ?? process.env;
   if (isUpdateCheckEnvDisabled(env)) return false;
@@ -131,7 +159,9 @@ export function shouldRunCliUpdateCheck(input: {
   if (isCiEnvironment(env)) return false;
   if (!input.cmd || CLI_UPDATE_SKIP_COMMANDS.has(input.cmd)) return false;
   if (input.argv.includes("--json") || process.argv.includes("--json")) return false;
-  if (!process.stderr.isTTY || !process.stdout.isTTY) return false;
+  const stderrTTY = input.stderrIsTTY ?? process.stderr.isTTY;
+  const stdoutTTY = input.stdoutIsTTY ?? process.stdout.isTTY;
+  if (!stderrTTY || !stdoutTTY) return false;
   return true;
 }
 
@@ -173,7 +203,8 @@ export function availableReleaseFromGithub(
   };
 }
 
-async function refreshUpdateCheckCache(
+/** Exported for tests — refresh cache when stale. Never throws. */
+export async function refreshUpdateCheckCache(
   path: string,
   deps: UpdateCheckDeps = {},
 ): Promise<UpdateCheckCache | null> {
@@ -183,48 +214,78 @@ async function refreshUpdateCheckCache(
   const install = releaseFromInstall(root, installVersion);
   if (install.installKind === "source") return null;
 
+  const channelKey = updateCheckChannelKey(install.channel);
   const currentVersion = (deps.readVersion ?? readVersion)();
   const fetchRelease = deps.fetchRelease ?? fetchLatestRelease;
+  const prev = readUpdateCheckCache(path);
+  const signal =
+    deps.abortSignal ??
+    AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS);
   try {
-    const candidate = await fetchRelease(
-      install.channel,
-      AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS),
-    );
+    const candidate = await fetchRelease(install.channel, signal);
     const result = availableReleaseFromGithub(install, candidate, currentVersion);
     const cache: UpdateCheckCache = {
       lastCheckedAt: now(),
       latestVersion: result.latestVersion,
       url: result.releaseUrl,
-      dismissedVersion: readUpdateCheckCache(path)?.dismissedVersion ?? null,
-      lastNoticeAt: readUpdateCheckCache(path)?.lastNoticeAt,
+      channel: channelKey,
+      fetchSucceeded: true,
+      dismissedVersion: prev?.dismissedVersion ?? null,
+      lastNoticeAt: prev?.lastNoticeAt,
     };
     writeUpdateCheckCache(path, cache);
     return cache;
   } catch {
-    return null;
+    const keepPrior =
+      prev && cacheMatchesInstallChannel(prev, install.channel) ? prev : null;
+    const cache: UpdateCheckCache = {
+      lastCheckedAt: now(),
+      latestVersion: keepPrior?.latestVersion ?? null,
+      url: keepPrior?.url ?? null,
+      channel: channelKey,
+      fetchSucceeded: false,
+      dismissedVersion: keepPrior?.dismissedVersion ?? null,
+      lastNoticeAt: keepPrior?.lastNoticeAt,
+    };
+    writeUpdateCheckCache(path, cache);
+    return cache;
   }
 }
 
-let prefetchPromise: Promise<UpdateCheckCache | null> | null = null;
-let prefetchPath: string | null = null;
+let activePrefetchAbort: AbortController | null = null;
 
-/** Fire-and-forget refresh so a short command can finish the GET before exit. */
+/**
+ * Start a background refresh when the on-disk cache is stale. Does not block the
+ * command; an in-flight request is aborted on process exit so stderr never waits
+ * on GitHub.
+ */
 export function prefetchCliUpdateCheck(deps: UpdateCheckDeps = {}): void {
   const home = deps.home ?? homedir;
   const path = updateCheckCachePath(home());
-  prefetchPath = path;
-  prefetchPromise ??= refreshUpdateCheckCache(path, deps).finally(() => {
-    prefetchPromise = null;
-  });
-}
+  const now = (deps.now ?? Date.now)();
+  const root = (deps.installRoot ?? installRoot)();
+  const installVersion = (deps.readInstallVersion ?? readInstallVersion)(root);
+  const install = releaseFromInstall(root, installVersion);
+  if (install.installKind === "source") return;
 
-function waitForPrefetch(ms: number): void {
-  if (!prefetchPromise) return;
-  const deadline = Date.now() + ms;
-  while (Date.now() < deadline) {
-    if (!prefetchPromise) return;
-    sleepSync(25);
+  const cached = readUpdateCheckCache(path);
+  if (!shouldRefreshUpdateCheckCache(cached, install.channel, now)) return;
+
+  activePrefetchAbort?.abort();
+  const abort = new AbortController();
+  activePrefetchAbort = abort;
+  let signal: AbortSignal;
+  try {
+    signal = AbortSignal.any([
+      abort.signal,
+      AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS),
+    ]);
+  } catch {
+    signal = abort.signal;
   }
+  void refreshUpdateCheckCache(path, { ...deps, abortSignal: signal }).finally(() => {
+    if (activePrefetchAbort === abort) activePrefetchAbort = null;
+  });
 }
 
 export function formatCliUpdateNotice(result: UpdateCheckResult): string {
@@ -235,23 +296,23 @@ export function formatCliUpdateNotice(result: UpdateCheckResult): string {
   );
 }
 
-function noticeAllowed(cache: UpdateCheckCache | null, available: boolean, now: number): boolean {
+function noticeAllowed(cache: UpdateCheckCache, available: boolean, now: number): boolean {
   if (!available) return false;
-  if (!cache) return true;
   if (!cache.lastNoticeAt) return true;
   return now - cache.lastNoticeAt >= UPDATE_CHECK_TTL_MS;
 }
 
 /**
- * Synchronous exit hook: may block up to ~1.5s waiting for an in-flight prefetch.
- * Never throws.
+ * Synchronous exit hook: reads only the on-disk cache (no network). Never throws.
  */
 export function emitCliUpdateNoticeOnExit(deps: UpdateCheckDeps = {}): void {
   try {
+    activePrefetchAbort?.abort();
+    activePrefetchAbort = null;
+
     const now = deps.now ?? Date.now;
     const home = deps.home ?? homedir;
-    const path = prefetchPath ?? updateCheckCachePath(home());
-    waitForPrefetch(UPDATE_CHECK_TIMEOUT_MS);
+    const path = updateCheckCachePath(home());
 
     const cache = readUpdateCheckCache(path);
     if (!cache) return;
@@ -260,13 +321,14 @@ export function emitCliUpdateNoticeOnExit(deps: UpdateCheckDeps = {}): void {
     const installVersion = (deps.readInstallVersion ?? readInstallVersion)(root);
     const install = releaseFromInstall(root, installVersion);
     if (install.installKind === "source") return;
+    if (!cacheMatchesInstallChannel(cache, install.channel)) return;
 
     const currentVersion = (deps.readVersion ?? readVersion)();
-    const latestVersion = cache?.latestVersion;
+    const latestVersion = cache.latestVersion;
     const available = isNewerVersion(latestVersion ?? "", currentVersion);
     if (!noticeAllowed(cache, available, now())) return;
 
-    const releaseUrl = cache?.url ?? DEFAULT_RELEASE_URL;
+    const releaseUrl = cache.url ?? DEFAULT_RELEASE_URL;
     const line = formatCliUpdateNotice({
       currentVersion,
       latestVersion,
@@ -277,10 +339,7 @@ export function emitCliUpdateNoticeOnExit(deps: UpdateCheckDeps = {}): void {
     });
     process.stderr.write(line + "\n");
     writeUpdateCheckCache(path, {
-      lastCheckedAt: cache?.lastCheckedAt ?? now(),
-      latestVersion: latestVersion ?? null,
-      url: releaseUrl,
-      dismissedVersion: cache?.dismissedVersion ?? null,
+      ...cache,
       lastNoticeAt: now(),
     });
   } catch {
@@ -297,40 +356,4 @@ export function registerCliUpdateNoticeHook(input: {
   if (!shouldRunCliUpdateCheck(input)) return;
   prefetchCliUpdateCheck(input.deps);
   process.once("exit", () => emitCliUpdateNoticeOnExit(input.deps));
-}
-
-/** Exported for tests — refresh cache when stale and return the parsed result. */
-export async function checkForRepoosUpdate(
-  deps: UpdateCheckDeps = {},
-): Promise<UpdateCheckResult | null> {
-  const home = deps.home ?? homedir;
-  const path = updateCheckCachePath(home());
-  const now = deps.now ?? Date.now;
-  const root = (deps.installRoot ?? installRoot)();
-  const installVersion = (deps.readInstallVersion ?? readInstallVersion)(root);
-  const install = releaseFromInstall(root, installVersion);
-  if (install.installKind === "source") return null;
-
-  const currentVersion = (deps.readVersion ?? readVersion)();
-  const cached = readUpdateCheckCache(path);
-  if (cached && now() - cached.lastCheckedAt < UPDATE_CHECK_TTL_MS) {
-    return {
-      currentVersion,
-      latestVersion: cached.latestVersion,
-      available: isNewerVersion(cached.latestVersion ?? "", currentVersion),
-      releaseUrl: cached.url ?? DEFAULT_RELEASE_URL,
-      upgradeCommand: install.upgradeCommand,
-      installKind: install.installKind,
-    };
-  }
-  const fresh = await refreshUpdateCheckCache(path, deps);
-  if (!fresh) return null;
-  return {
-    currentVersion,
-    latestVersion: fresh.latestVersion,
-    available: isNewerVersion(fresh.latestVersion ?? "", currentVersion),
-    releaseUrl: fresh.url ?? DEFAULT_RELEASE_URL,
-    upgradeCommand: install.upgradeCommand,
-    installKind: install.installKind,
-  };
 }
