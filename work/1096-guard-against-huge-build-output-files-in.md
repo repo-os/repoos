@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T22:38:11Z"
+updated_at: "2026-11-11T22:38:12Z"
 review_passes: 4
 review_rounds: 2
 routing_switches: 1
@@ -126,3 +126,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T22:28:51Z · note: handoff requested (cli)
 - 2026-11-11T22:33:17Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T22:38:11Z · message_queued at 2026-11-11T22:38:11.814Z
+- 2026-11-11T22:38:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
