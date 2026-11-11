@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T11:06:35Z"
+updated_at: "2026-11-11T11:06:40Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_passes: 5
@@ -71,7 +71,7 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```
 
 ## Accepted scope and known limitations
-FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every path, including a corrupt log read (the read is inside the try; tested by corrupting the log, failing a Resend, repairing it and resending). All earlier fixes stand: card refresh after a cut, caller-owned accepted list with awaited sends on both paths, claim before the first await, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Report these under Suggestions, not Bugs.
+FINAL (pass 7): the Resend in-flight claim releases on every path, including a corrupt-log read (the read is inside the try; tested by corrupting the log, failing a Resend, repairing it and resending). A GitHub error answer (rate limit, outage) no longer reads as a claim about the release: the automatic wait and the Resend gate say "could not be checked" and reserve "not on GitHub" for a real 404 (tested). The changelog link assumes CHANGELOG.md exists at the tag, which the RepoOS release pipeline always writes. All earlier fixes stand: card refresh after a cut, caller-owned accepted list with awaited sends on both paths, claim before the first await, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Also this round: an unrelated test edit carried on the branch (agent-process-group.test.ts) hung the check with a machine-wide pgrep on a fixed sleep duration; the helper/decoy sleeps are now unique per run.
 
 ## Activity
 
@@ -244,3 +244,4 @@ FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every 
 - 2026-11-11T10:40:19Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-11T10:40:21Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1071 (pid 68015)
 - 2026-11-11T11:06:35Z · needs_input
+- 2026-11-11T11:06:40Z · body: Accepted scope and known limitations (added 1, removed 1)
