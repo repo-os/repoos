@@ -72,3 +72,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T12:30:29Z · status active→review
 - 2026-11-11T12:30:32Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T12:32:51Z · message_queued at 2026-11-11T12:32:51.185Z
+- 2026-11-11T12:32:51Z · note: review pass 2: needs some work
