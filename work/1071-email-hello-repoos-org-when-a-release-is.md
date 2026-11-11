@@ -3,6 +3,9 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — two Resend paths can send the same release email twice. Both are small and local to `resendReleaseEmail`, with a test g…"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -11,10 +14,8 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T08:21:34Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 8d251b33d5234a6344ed39242c2deb727cccf707
-review_passes: 3
+updated_at: "2026-11-11T08:49:21Z"
+review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 3
@@ -70,7 +71,7 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```
 
 ## Accepted scope and known limitations
-FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut; accepted recipients are kept in a caller-owned list so a failed local write cannot make Resend mail them twice (and the send is now awaited so its errors are caught); an interrupted send reaches the bell; the docs state per-recipient at-most-once with the provider-accept-to-write window. NOT blocking, follow-up only: Resend after a restart skipping the publish gate (reuse probeRelease for when=published); the Set up email link target and a Settings email-setup surface; [release.email] enabled saving without [release] enabled; anything under Edge cases of earlier reviews. Report these under Suggestions, not Bugs.
+FINAL (pass 5, hand-finished): Resend now claims the version before its first await (two concurrent Resends cannot both send) and persists accepted recipients as failed when a local write throws, with tests for both. Earlier fixes stand: card refresh after a cut, caller-owned accepted list on the automatic path with an awaited send, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -199,3 +200,15 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T08:13:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T08:18:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T08:21:34Z · body
+- 2026-11-11T08:28:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T08:29:03Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-11T08:29:03Z · status active→review
+- 2026-11-11T08:29:03Z · message_queued at 2026-11-11T08:29:03.905Z
+- 2026-11-11T08:30:34Z · note: review pass 4: needs some work
+- 2026-11-11T08:30:34Z · needs_input
+- 2026-11-11T08:48:15Z · status review→active
+- 2026-11-11T08:48:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T08:49:04Z · body: Accepted scope and known limitations (added 1, removed 1)
+- 2026-11-11T08:49:04Z · message_delivered: 1 message(s)
+- 2026-11-11T08:49:09Z · note: handoff requested (cli)
+- 2026-11-11T08:49:21Z · CTO nudge: held — handoff gate is running

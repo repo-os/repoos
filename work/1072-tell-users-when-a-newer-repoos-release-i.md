@@ -3,6 +3,9 @@ id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
 status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The four frozen fixes are in, but a documented Retry-After path is dead code and the cache write can still lose the not…"
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
@@ -12,9 +15,9 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T08:17:49Z"
+updated_at: "2026-11-11T08:50:07Z"
+review_passes: 3
 review_rounds: 2
-review_passes: 2
 dev_error_count: 5
 ---
 ## Problem
@@ -45,7 +48,7 @@ Look at `src/commands/upgrade.ts` (`fetchLatestRelease`, channel handling), `src
 The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/components/ReleaseUpdateNotification.vue, data from GET /api/release/available). Do NOT build a second dashboard banner or a second update-status route. Scope of this task is the part that is missing: a passive, throttled update notice in the CLI (acceptance criteria 1, 2, 4, 5, 6), reusing the same data source/logic as /api/release/available and fetchLatestRelease in src/commands/upgrade.ts. The dashboard part here is only: honour the new Settings toggle (hide the banner when updates.check is off). Overlap with #1073, which owns the dialog: #1073 owns (a) the upgrade command text and install-kind detection (installKind / upgradeCommand from the server) and (b) remembering the dismissed version. The CLI notice must reuse #1073's install-kind and command helper instead of re-deriving it, so this task depends on #1073 landing first. Criteria 3 and 7 above are superseded by this section.
 
 ## Accepted scope and known limitations
-FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the shared cache file: re-read right before writing and merge only the fields the child owns (lastNoticeAt, dismissedVersion); (2) handle spawn errors: child.on('error') and try/catch around spawn; (3) wrap the passive CLI hooks (beginCliUpdateBackgroundRefresh, registerCliUpdateNoticeExitHook, prefetchCliUpdateCheck) in try/catch so they can never fail a command; (4) back off much longer after 403/429 (honour Retry-After or use hours) and update docs/update-check.md. NOT blocking, follow-up only: one child spawn per eligible command and no lock; loadConfig memoization and double warnings; dashboard dismissal not read by the CLI (#1073's area); documenting REPOOS_DISABLE_UPDATE_CHECK in user-docs/environment-and-secrets.md; isNewerVersion across prerelease labels. Report those under Suggestions, not Bugs.
+FINAL (round 4, hand-finished): Retry-After is now wired (fetchLatestRelease throws a typed UpdateCheckFetchError carrying status and retry-after ms, tested) and the cache write is atomic (temp file then rename). Earlier fixes stand: failure caching, spawn error handling, hook containment, channel-keyed cache, longer 403/429 backoff. NOT blocking, follow-up only: one child spawn per eligible command and no lock; loadConfig memoization and double warnings; dashboard dismissal not read by the CLI (#1073's area); REPOOS_DISABLE_UPDATE_CHECK in user-docs/environment-and-secrets.md; isNewerVersion across prerelease labels; read-then-write windows in markRefreshSpawned and emitCliUpdateNoticeOnExit now that writes are atomic. Report these under Suggestions, not Bugs.
 
 ## Shots
 ```json
@@ -150,3 +153,15 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T08:16:43Z · watchdog: restarting engineer after 28m with no live process
 - 2026-11-11T08:16:45Z · message_delivered: 1 message(s)
 - 2026-11-11T08:17:49Z · body
+- 2026-11-11T08:28:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T08:30:35Z · body
+- 2026-11-11T08:36:07Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T08:36:08Z · status active→review
+- 2026-11-11T08:36:08Z · message_queued at 2026-11-11T08:36:08.587Z
+- 2026-11-11T08:37:49Z · note: review pass 3: needs some work
+- 2026-11-11T08:37:49Z · needs_input
+- 2026-11-11T08:49:19Z · status review→active
+- 2026-11-11T08:49:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T08:50:05Z · body: Accepted scope and known limitations (added 1, removed 1)
+- 2026-11-11T08:50:06Z · message_delivered: 1 message(s)
+- 2026-11-11T08:50:07Z · note: handoff requested (cli)
