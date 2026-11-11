@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-11T13:07:37Z"
-review_passes: 6
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — code is sound, but acceptance 7's status-row capture is missing and the captures are stale for HEAD d498bd668."
@@ -16,6 +14,8 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
+updated_at: "2026-11-11T18:43:55Z"
+review_passes: 6
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_rounds: 2
@@ -272,4 +272,5 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T12:59:43Z · body
 - 2026-11-11T13:07:35Z · note: review pass 6: needs some work
 - 2026-11-11T13:07:36Z · needs_input
-
+- 2026-11-11T18:42:11Z · status review→active
+- 2026-11-11T18:43:55Z · note: handoff requested (cli)
