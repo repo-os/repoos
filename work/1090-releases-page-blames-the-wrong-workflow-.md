@@ -78,3 +78,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:08:23Z · message_queued at 2026-11-11T06:08:23.183Z
 - 2026-11-11T06:08:34Z · note: handoff requested (cli)
 - 2026-11-11T06:11:08Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T06:11:08Z · message_queued at 2026-11-11T06:11:08.979Z
