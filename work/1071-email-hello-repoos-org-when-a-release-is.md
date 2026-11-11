@@ -14,13 +14,13 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T10:13:58Z"
+updated_at: "2026-11-11T10:15:48Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 3
+dev_error_count: 4
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -237,3 +237,4 @@ FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every 
 - 2026-11-11T10:12:13Z · message_queued at 2026-11-11T10:12:13.262Z
 - 2026-11-11T10:12:13Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
 - 2026-11-11T10:13:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T10:15:48Z · note: stopped orphaned engineer pid 58090
