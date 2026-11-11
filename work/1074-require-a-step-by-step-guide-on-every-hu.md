@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T16:33:14Z"
+updated_at: "2026-11-11T16:41:21Z"
 last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 24cd8ae0c44f83a19a649951f763a90c6dac957b
@@ -204,4 +204,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T16:18:31Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-11T16:25:10Z · body
 - 2026-11-11T16:33:14Z · CTO nudge: held — handoff gate is running
-
+- 2026-11-11T16:41:21Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
