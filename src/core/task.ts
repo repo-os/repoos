@@ -4,7 +4,7 @@
  * fields get sensible derived defaults so even a bare markdown file becomes a
  * usable task.
  */
-import { isMarkdownFenceClose, markdownFenceMask, markdownFenceOpen } from "./markdown-fence.js";
+import { markdownFenceMask } from "./markdown-fence.js";
 import { basename, relative, resolve } from "node:path";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
 import { STATUSES, type Task, type Status, type Assignee, type TaskGitInfo } from "./types.js";
@@ -176,19 +176,16 @@ function stripCommonLeadingIndent(body: string): string {
 /** Collect ordered `- …` activity lines from every `## Activity` block in `body`. */
 function collectActivityEntries(body: string): string[] {
   const lines = body.split("\n");
+  const inFence = markdownFenceMask(lines);
   const entries: string[] = [];
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim() !== ACTIVITY_HEADING) continue;
-    let fence = "";
+    if (inFence[i] || lines[i].trim() !== ACTIVITY_HEADING) continue;
     for (let j = i + 1; j < lines.length; j++) {
       const trimmed = lines[j].trim();
-      if (fence) {
-        if (isMarkdownFenceClose(trimmed, fence)) fence = "";
-      } else {
-        fence = markdownFenceOpen(trimmed) ?? "";
+      if (!inFence[j]) {
+        if (trimmed === ACTIVITY_HEADING) break;
+        if (/^##\s/.test(trimmed)) break;
       }
-      if (trimmed === ACTIVITY_HEADING) break;
-      if (!fence && /^##\s/.test(trimmed)) break;
       if (trimmed.startsWith("- ")) entries.push(trimmed);
       else if (entries.length && lines[j].startsWith("> ")) {
         entries[entries.length - 1] += `\n${lines[j].slice(2)}`;
@@ -240,19 +237,9 @@ function sectionStart(lines: string[], heading: string): number {
 
 /** The line index of the next top-level `## ` heading after `from`, or `lines.length`. */
 function nextSection(lines: string[], from: number): number {
-  let fence = "";
+  const inFence = markdownFenceMask(lines);
   for (let i = from; i < lines.length; i++) {
-    const t = lines[i].trim();
-    if (fence) {
-      if (isMarkdownFenceClose(t, fence)) fence = "";
-      continue;
-    }
-    const open = markdownFenceOpen(t);
-    if (open) {
-      fence = open;
-      continue;
-    }
-    if (/^##\s/.test(t)) return i;
+    if (!inFence[i] && /^##\s/.test(lines[i].trim())) return i;
   }
   return lines.length;
 }

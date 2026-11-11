@@ -84,4 +84,17 @@ describe("section scanning ignores ## lines inside fenced code (#1074)", () => {
     expect(extractSection(body, "## A")).not.toContain("## B");
     expect(extractSection(body, "## B")).toContain("b");
   });
+
+  it("an unclosed fence is plain text and hides nothing after it", () => {
+    const body = ["## Problem", "", FENCE, "", "## Acceptance criteria", "", "- [ ] a"].join("\n");
+    expect(extractSection(body, "## Acceptance criteria")).toContain("- [ ] a");
+    expect(extractSection(body, "## Problem")).not.toContain("## Acceptance criteria");
+    const replaced = replaceSection(
+      body,
+      "## Acceptance criteria",
+      "## Acceptance criteria\n\n- [ ] b",
+    );
+    expect(replaced.match(/## Acceptance criteria/g)).toHaveLength(1);
+    expect(removeSection(body, "## Acceptance criteria")).not.toContain("Acceptance");
+  });
 });

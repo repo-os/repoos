@@ -5,7 +5,7 @@ import {
   humanTaggedCriteria,
   taggedCriteria,
 } from "./human-step-tags.js";
-import { isMarkdownFenceClose, markdownFenceMask, markdownFenceOpen } from "./markdown-fence.js";
+import { markdownFenceMask } from "./markdown-fence.js";
 import {
   ACTIVITY_HEADING,
   ORIGINAL_PROMPT_HEADING,
@@ -69,31 +69,16 @@ export const HUMAN_TASK_GUIDE_HEADING = "## Step-by-step guide";
 /** Extract the guide section while ignoring headings that appear only inside fenced code. */
 function extractHumanTaskGuideSection(body: string): string | null {
   const lines = body.split("\n");
-  let fence: string | null = null;
-  let start = -1;
+  const inFence = markdownFenceMask(lines);
+  const start = lines.findIndex((l, i) => !inFence[i] && l.trim() === HUMAN_TASK_GUIDE_HEADING);
+  if (start === -1) return null;
   let end = lines.length;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
-    const trimmedStart = line.trimStart();
-    if (fence) {
-      if (isMarkdownFenceClose(trimmedStart, fence)) fence = null;
-      continue;
-    }
-    const fenceMatch = markdownFenceOpen(trimmedStart);
-    if (fenceMatch) {
-      fence = fenceMatch;
-      continue;
-    }
-    if (start === -1) {
-      if (line.trim() === HUMAN_TASK_GUIDE_HEADING) start = i;
-      continue;
-    }
-    if (/^##\s/.test(line.trim())) {
+  for (let i = start + 1; i < lines.length; i++) {
+    if (!inFence[i] && /^##\s/.test(lines[i]!.trim())) {
       end = i;
       break;
     }
   }
-  if (start === -1) return null;
   return lines.slice(start, end).join("\n").trim();
 }
 

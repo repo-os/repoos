@@ -11,7 +11,7 @@
  * landable/close-out scope checks ignore it with no extra allowlisting.
  */
 
-import { isMarkdownFenceClose, markdownFenceOpen } from "./markdown-fence.js";
+import { markdownFenceMask } from "./markdown-fence.js";
 import { reportsTaskDirRelPath } from "./report-paths.js";
 
 /** Hard cap on narrative words, excluding the trailing file-changes listing. */
@@ -134,21 +134,8 @@ export function countSummaryNarrativeWords(markdown: string): number {
  */
 function visibleSummaryLines(markdown: string): string[] {
   const lines = stripHtmlBlockComments(markdown).split("\n");
-  const out: string[] = [];
-  let fence: string | null = null;
-  for (const line of lines) {
-    const trimmed = line.trimStart();
-    if (fence) {
-      if (isMarkdownFenceClose(trimmed, fence)) fence = null;
-      continue;
-    }
-    const fenceMatch = markdownFenceOpen(trimmed);
-    if (fenceMatch) {
-      fence = fenceMatch;
-      continue;
-    }
-    out.push(line);
-  }
+  const inFence = markdownFenceMask(lines);
+  const out = lines.filter((_, i) => !inFence[i]);
   return out;
 }
 

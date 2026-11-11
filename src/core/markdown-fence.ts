@@ -22,24 +22,34 @@ export function markdownFenceOpen(trimmedStart: string): string | null {
   return m[1]!;
 }
 
-/** For each line: true when it is a fence delimiter or sits inside a fenced block. */
+/**
+ * For each line: true when it is a fence delimiter or sits inside a closed
+ * fenced block. An opener with no matching close before EOF is plain text
+ * (one stray fence must not hide every later heading), so all scanners that
+ * need fence awareness share this one mask.
+ */
 export function markdownFenceMask(lines: string[]): boolean[] {
-  const mask: boolean[] = [];
-  let fence = "";
-  for (const line of lines) {
-    const t = line.trim();
-    if (fence) {
-      mask.push(true);
-      if (isMarkdownFenceClose(t, fence)) fence = "";
+  const mask: boolean[] = new Array(lines.length).fill(false);
+  let i = 0;
+  while (i < lines.length) {
+    const open = markdownFenceOpen(lines[i]!.trim());
+    if (!open) {
+      i++;
       continue;
     }
-    const open = markdownFenceOpen(t);
-    if (open) {
-      fence = open;
-      mask.push(true);
+    let close = -1;
+    for (let j = i + 1; j < lines.length; j++) {
+      if (isMarkdownFenceClose(lines[j]!.trim(), open)) {
+        close = j;
+        break;
+      }
+    }
+    if (close === -1) {
+      i++; // unclosed opener: plain text
       continue;
     }
-    mask.push(false);
+    for (let k = i; k <= close; k++) mask[k] = true;
+    i = close + 1;
   }
   return mask;
 }
