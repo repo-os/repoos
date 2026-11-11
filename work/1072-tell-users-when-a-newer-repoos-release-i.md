@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T07:29:43Z"
+updated_at: "2026-11-11T07:36:58Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 4
@@ -52,11 +52,11 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 ```json
 [
 {
-  "label": "Dashboard release-update banner, gated by updates.check",
-  "target": "default",
-  "route": "/",
-  "highlight": ".release-update-banner",
-  "state": "release:updateAvailable"
+"label": "Dashboard release-update banner, gated by updates.check",
+"target": "default",
+"route": "/",
+"highlight": ".release-update-banner",
+"state": "release:updateAvailable"
 }
 ]
 ```
@@ -141,3 +141,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T07:11:31Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
 - 2026-11-11T07:11:32Z · needs_input
 - 2026-11-11T07:29:43Z · body
+- 2026-11-11T07:36:58Z · message_queued at 2026-11-11T07:36:58.010Z
