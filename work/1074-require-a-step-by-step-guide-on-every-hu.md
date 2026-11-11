@@ -3,9 +3,6 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T03:31:08Z"
+updated_at: "2026-11-11T03:31:09Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
 handoff_signal_retry_count: 2
@@ -52,7 +49,7 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 "highlight": "[data-test-id=\"human-guide-warning\"]",
 "steps": [
 {
-  "waitFor": "[data-test-id=\"human-guide-warning\"]"
+"waitFor": "[data-test-id=\"human-guide-warning\"]"
 }
 ],
 "state": "card:humanStep"
@@ -104,3 +101,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T03:18:52Z · body
 - 2026-11-11T03:31:08Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T03:31:08Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T03:31:09Z · needs_input
