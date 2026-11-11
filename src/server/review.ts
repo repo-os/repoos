@@ -30,6 +30,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { enrichAgentFailureDetail } from "../core/copilot-auto-tier.js";
 import type { Agent, AgentOutputEntry, RepoOSConfig, Task } from "../core/types.js";
 import { parseDocument, serializeDocument } from "../core/frontmatter.js";
 import { commitTaskFile, runGit } from "../core/git.js";
@@ -1124,14 +1125,14 @@ function sessionHasUsableOutput(cli: string, lines: AgentOutputEntry[]): boolean
  * Best-effort failure text for a run that produced no report, mirroring
  * `runPrompt`'s old behaviour of surfacing the child's last stderr lines.
  */
-function sessionErrorText(lines: AgentOutputEntry[]): string {
+function sessionErrorText(lines: AgentOutputEntry[], cli?: string): string {
   const errs: string[] = [];
   for (const line of lines) {
     if ("s" in line && line.s === "err" && line.d.trim()) errs.push(line.d.trim());
     else if ("type" in line && line.type === "sys" && line.d?.trim()) errs.push(line.d.trim());
   }
   if (errs.length === 0) return "no output produced";
-  return errs.slice(-3).join(" ").trim();
+  return enrichAgentFailureDetail(errs.slice(-3).join(" ").trim(), cli);
 }
 
 /**
@@ -2015,7 +2016,7 @@ export class ReviewManager {
       failure === "timeout"
         ? `the ${agent.cli} agent timed out after ${timeoutText}`
         : failure === "no-output"
-          ? `the ${agent.cli} agent exited without output: ${sessionErrorText(lines)}`
+          ? `the ${agent.cli} agent exited without output: ${sessionErrorText(lines, agent.cli)}`
           : undefined;
     const result: PromptResult = {
       ok,
@@ -2475,7 +2476,7 @@ export class ReviewManager {
       failure === "timeout"
         ? `the ${agent.cli} agent timed out after ${formatReviewTimeout(timeoutMinutes)}`
         : failure === "no-output"
-          ? `the ${agent.cli} agent exited without output: ${sessionErrorText(lines)}`
+          ? `the ${agent.cli} agent exited without output: ${sessionErrorText(lines, agent.cli)}`
           : undefined;
     const result: PromptResult = {
       ok,
