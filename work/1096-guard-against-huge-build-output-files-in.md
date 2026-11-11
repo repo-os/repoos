@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 179cccdfa9bb7c87ac9c55f5284cc8b1d1598252
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
@@ -10,8 +12,6 @@ created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
 updated_at: "2026-11-11T21:21:13Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
-last_handoff_failure_sha: 6e68569cdbc78040106828753090228e88172c2f
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -95,3 +95,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:17:52Z · status active→review
 - 2026-11-11T21:17:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T21:21:13Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
