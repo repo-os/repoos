@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T06:34:58Z"
+updated_at: "2026-11-11T06:46:29Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -99,3 +99,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:34:58Z · message_queued at 2026-11-11T06:34:58.137Z
 - 2026-11-11T06:34:58Z · ↻ resuming engineer to read queued message
 - 2026-11-11T06:34:58Z · message_delivered: 3 message(s)
+- 2026-11-11T06:46:29Z · message_queued at 2026-11-11T06:46:29.327Z
