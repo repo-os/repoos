@@ -201,9 +201,7 @@ describe("canned PM messages above the compose box", () => {
     ui.activeTab = "details";
     await flush();
 
-    const answerBtn = wrapper
-      .findAll("button")
-      .find((b) => b.text().includes("Answer in PM"));
+    const answerBtn = wrapper.findAll("button").find((b) => b.text().includes("Answer in PM"));
     expect(answerBtn).toBeDefined();
     await answerBtn!.trigger("click");
     for (let attempt = 0; attempt < 30 && !wrapper.find(".pm-open-questions").exists(); attempt++) {
