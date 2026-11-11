@@ -2,14 +2,14 @@
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, agent]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/require-a-step-by-step-guide-on-every-hu
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-09T19:57:02Z"
+updated_at: "2026-11-11T05:13:33Z"
 ---
 ## Problem
 Tasks assigned to a human (`--assigned-to human`, usually held, e.g. an account sign-up, a signing key, a real-device check) are often filed as a few lines of acceptance criteria. The human then has to decode what to do. Concrete case: in the Tiao project, tasks #0032 (create and back up a release keystore) and #0033 (sign up for a flight-status provider, set the key, verify a real lookup) were filed with two-line outcomes, and the human (Nick) asked for exact steps. The step-by-step guides had to be written afterwards by hand. Human tasks are the one place where the reader is the least able to infer missing detail, and nothing in RepoOS asks for it.
@@ -30,8 +30,22 @@ Every human-assigned task body contains a `## Step-by-step guide` section that a
 ## Notes for AI
 Look at how `needs-human-step` is detected and how held human tasks are created (`repoos new --human --hold`, `repoos update --assigned-to human`, the split guidance in AGENTS.md "Never close out human-gated work as if the human part were done"). The default PM prompt text lives in the built-in agent defaults; the Tiao project also carries a copy in its `repoos.toml` agent instructions, so a project's own prompt will not pick this up automatically: make the warning (code) the enforcement and the prompt the guidance. Example of the target quality: Tiao tasks #0032 and #0033 (ssh to bee repo `~/code/nick/tiao`, see `repoos/work/0032-*.md`, `0033-*.md`) after their guides were added.
 
+## Shots
+```json
+[
+{
+"label": "Human task missing step-by-step guide warning",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": "[data-test-id=\"human-guide-warning\"]",
+"state": "card:humanStep"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-09T07:52:08Z · created · njachowski@gmail.com
 - 2026-11-09T07:58:10Z · status inbox→ready
 - 2026-11-09T19:57:02Z · status ready→active, branch
+- 2026-11-11T05:13:33Z · status active→review
