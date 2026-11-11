@@ -209,3 +209,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T20:49:38Z · needs_input
 - 2026-11-11T20:50:17Z · status review→active
 - 2026-11-11T20:50:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T20:50:55Z · note: handoff requested (cli)
