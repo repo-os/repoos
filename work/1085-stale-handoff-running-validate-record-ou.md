@@ -3,9 +3,6 @@ id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `handoff.ts` conflicts with main, and checkpoint recovery can leak its slot or drop a pending delta marker"
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -198,3 +195,4 @@ FINAL (pass 6): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:39:44Z · note: Task body is underspecified: missing sections: Desired UX
 - 2026-11-11T01:39:44Z · message_queued at 2026-11-11T01:39:44.801Z
 - 2026-11-11T01:43:42Z · note: review pass 6: good to go
+- 2026-11-11T01:43:42Z · needs_input
