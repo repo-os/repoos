@@ -177,12 +177,10 @@ describe("emitCliUpdateNoticeOnExit", () => {
       lastNoticeAt: now - 1_000,
     });
     const chunks: string[] = [];
-    const stderrWrite = vi
-      .spyOn(process.stderr, "write")
-      .mockImplementation((chunk) => {
-        chunks.push(String(chunk));
-        return true;
-      });
+    const stderrWrite = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      chunks.push(String(chunk));
+      return true;
+    });
     emitCliUpdateNoticeOnExit({
       home: () => home,
       now: () => now,

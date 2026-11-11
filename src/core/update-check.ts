@@ -73,8 +73,7 @@ export function readUpdateCheckCache(
       lastCheckedAt: raw.lastCheckedAt,
       latestVersion: typeof raw.latestVersion === "string" ? raw.latestVersion : null,
       url: typeof raw.url === "string" ? raw.url : null,
-      dismissedVersion:
-        typeof raw.dismissedVersion === "string" ? raw.dismissedVersion : null,
+      dismissedVersion: typeof raw.dismissedVersion === "string" ? raw.dismissedVersion : null,
       lastNoticeAt: typeof raw.lastNoticeAt === "number" ? raw.lastNoticeAt : undefined,
     };
   } catch {
@@ -92,10 +91,7 @@ export function writeUpdateCheckCache(path: string, cache: UpdateCheckCache): vo
 }
 
 export function isUpdateCheckEnvDisabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return (
-    env.REPOOS_NO_UPDATE_CHECK === "1" ||
-    env.REPOOS_DISABLE_UPDATE_CHECK === "1"
-  );
+  return env.REPOOS_NO_UPDATE_CHECK === "1" || env.REPOOS_DISABLE_UPDATE_CHECK === "1";
 }
 
 export function isUpdateCheckConfigEnabled(config?: Pick<RepoOSConfig, "updates">): boolean {
@@ -239,11 +235,7 @@ export function formatCliUpdateNotice(result: UpdateCheckResult): string {
   );
 }
 
-function noticeAllowed(
-  cache: UpdateCheckCache | null,
-  available: boolean,
-  now: number,
-): boolean {
+function noticeAllowed(cache: UpdateCheckCache | null, available: boolean, now: number): boolean {
   if (!available) return false;
   if (!cache) return true;
   if (!cache.lastNoticeAt) return true;

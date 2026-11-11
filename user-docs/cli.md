@@ -87,7 +87,7 @@ fails silently when offline.
 Turn it off with `updates.check = false` in Settings or `repoos.toml`, or with
 `REPOOS_NO_UPDATE_CHECK=1`. Source checkouts are not nagged. The dashboard
 banner uses the same check and the same toggle. Design details:
-[`docs/update-check.md`](/docs/update-check.md).
+[`docs/update-check.md`](../docs/update-check.md).
 
 ## The board
 
