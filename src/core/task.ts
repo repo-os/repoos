@@ -4,6 +4,7 @@
  * fields get sensible derived defaults so even a bare markdown file becomes a
  * usable task.
  */
+import { markdownFenceMask } from "./markdown-fence.js";
 import { basename, relative, resolve } from "node:path";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
 import { STATUSES, type Task, type Status, type Assignee, type TaskGitInfo } from "./types.js";
@@ -175,13 +176,16 @@ function stripCommonLeadingIndent(body: string): string {
 /** Collect ordered `- …` activity lines from every `## Activity` block in `body`. */
 function collectActivityEntries(body: string): string[] {
   const lines = body.split("\n");
+  const inFence = markdownFenceMask(lines);
   const entries: string[] = [];
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim() !== ACTIVITY_HEADING) continue;
+    if (inFence[i] || lines[i].trim() !== ACTIVITY_HEADING) continue;
     for (let j = i + 1; j < lines.length; j++) {
       const trimmed = lines[j].trim();
-      if (trimmed === ACTIVITY_HEADING) break;
-      if (/^##\s/.test(trimmed)) break;
+      if (!inFence[j]) {
+        if (trimmed === ACTIVITY_HEADING) break;
+        if (/^##\s/.test(trimmed)) break;
+      }
       if (trimmed.startsWith("- ")) entries.push(trimmed);
       else if (entries.length && lines[j].startsWith("> ")) {
         entries[entries.length - 1] += `\n${lines[j].slice(2)}`;
@@ -226,13 +230,16 @@ export function taskBodyNeedsNormalize(body: string): boolean {
 
 /** The line index where a top-level `## Heading` section starts, or -1. */
 function sectionStart(lines: string[], heading: string): number {
-  return lines.findIndex((l) => l.trim() === heading);
+  // A heading shown inside a fenced sample is not the section.
+  const inFence = markdownFenceMask(lines);
+  return lines.findIndex((l, i) => !inFence[i] && l.trim() === heading);
 }
 
 /** The line index of the next top-level `## ` heading after `from`, or `lines.length`. */
 function nextSection(lines: string[], from: number): number {
+  const inFence = markdownFenceMask(lines);
   for (let i = from; i < lines.length; i++) {
-    if (/^##\s/.test(lines[i].trim())) return i;
+    if (!inFence[i] && /^##\s/.test(lines[i].trim())) return i;
   }
   return lines.length;
 }

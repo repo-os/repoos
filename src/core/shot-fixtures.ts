@@ -97,6 +97,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "card:humanStep",
   "card:held",
   "drawer:held",
+  // #1074 — human task drawer with missing/unfilled step-by-step guide warning.
+  "drawer:humanGuideWarning",
   // #0832 — review task with review-rounds-exhausted and a long verdict summary.
   "card:reviewRoundsExhausted",
   // #1034 — check-wait escalation with a long queue diagnostic on card and drawer.
