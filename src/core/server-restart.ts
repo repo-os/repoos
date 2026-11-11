@@ -10,8 +10,18 @@ import { getServiceStatus, restartService, repoosBinary } from "./service-manage
 import { canonicalRegistryRoot, readServerRegistryEntry } from "./server-registry.js";
 import { readServeLocks } from "../commands/status.js";
 import { locateRepoServer, type LocatedServer } from "./server-locate.js";
-import { buildHandRunServeArgv, compiledCliEntry } from "./serve-lock-flags.js";
-import { verifyPidServesRepo } from "./serve-pid-verify.js";
+import {
+  buildHandRunServeArgv,
+  compiledCliEntry,
+  extractServeFlagsFromCommand,
+} from "./serve-lock-flags.js";
+import { readProcessCommand, verifyPidServesRepo } from "./serve-pid-verify.js";
+import {
+  detectSupervisor,
+  type SupervisorDetectResult,
+  type SupervisorInfo,
+} from "./supervisor-detect.js";
+import { existsSync } from "node:fs";
 
 export type RestartPath = "managed-service" | "external-supervisor" | "hand-run";
 
@@ -22,13 +32,14 @@ export interface HealthSnapshot {
   activeEngineers: number;
 }
 
-export interface SupervisorInfo {
-  platform: "launchd" | "systemd";
-  /** OS job label / unit name (without .service suffix on systemd). */
-  job: string;
-  /** Full manual restart command when automated restart times out. */
-  manualCommand: string;
-}
+export type { SupervisorInfo, SupervisorDetectResult };
+export {
+  detectSupervisor,
+  parseLaunchctlListForPid,
+  parseLaunchctlPrintCreator,
+  parseSystemdPidStatus,
+  launchctlKickstartCommand,
+} from "./supervisor-detect.js";
 
 export interface PidOwnership {
   /** Unix uid owning the process, when known. */
@@ -40,11 +51,6 @@ export interface PidOwnership {
 }
 
 export const DEFAULT_RESTART_WAIT_MS = 45_000;
-
-export type SupervisorDetectResult =
-  | { kind: "external"; info: SupervisorInfo }
-  | { kind: "none" }
-  | { kind: "uncertain"; reason: string };
 
 /** `kill -0` / `kill` semantics without delivering a signal. */
 export function pidOwnership(pid: number): PidOwnership {
@@ -78,117 +84,10 @@ export function pidOwnership(pid: number): PidOwnership {
   return { uid, canSignal, otherUser: uid !== null && uid !== me };
 }
 
-/**
- * Parse `launchctl print pid/<pid>` for an owning LaunchAgent/Daemon label.
- * Exported for tests with raw output.
- */
-export function parseLaunchctlPidPrint(output: string): SupervisorInfo | null {
-  const labelMatch = output.match(/\blabel\s*=\s*"([^"]+)"/);
-  if (!labelMatch) return null;
-  const label = labelMatch[1]!;
-  const domainMatch = output.match(/\bdomain\s*=\s*(\S+)/);
-  const domain = domainMatch?.[1] ?? "gui";
-  const manualCommand = `launchctl kickstart -k ${domain}/${label}`;
-  return { platform: "launchd", job: label, manualCommand };
-}
-
-/**
- * Parse `systemctl status <pid>` for a specific service unit (not user@.service).
- */
-export function parseSystemdPidStatus(output: string): SupervisorInfo | null {
-  const unit = output.match(/●\s+(\S+\.service)/);
-  if (!unit) return null;
-  const full = unit[1]!;
-  const name = full.replace(/\.service$/, "");
-  if (name.startsWith("user@") || name.endsWith(".slice") || name.endsWith(".scope")) {
-    return null;
-  }
-  if (!/^[\w@.-]+$/.test(name)) return null;
-  const userScope =
-    /\/run\/user\//.test(output) || /\bsystemd --user\b/.test(output) || /--user\b/.test(output);
-  const ctl = userScope ? "systemctl --user" : "systemctl";
-  return {
-    platform: "systemd",
-    job: name,
-    manualCommand: `${ctl} restart ${name}.service`,
-  };
-}
-
-export function detectSupervisor(
-  pid: number,
-  execFile: typeof execFileSync = execFileSync,
-): SupervisorDetectResult {
-  if (process.platform === "darwin") {
-    try {
-      const out = execFile("launchctl", ["print", `pid/${pid}`], {
-        encoding: "utf8",
-        timeout: 3000,
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      const info = parseLaunchctlPidPrint(out);
-      if (info?.job.startsWith("com.repoos.serve.")) return { kind: "none" };
-      if (info) return { kind: "external", info };
-      return { kind: "none" };
-    } catch (err) {
-      const ppid = readPpid(pid, execFile);
-      if (ppid === 1 || ppid === null) {
-        return {
-          kind: "uncertain",
-          reason:
-            `launchctl could not describe pid ${pid}` +
-            (err instanceof Error && err.message ? ` (${err.message})` : "") +
-            " — refusing to guess hand-run vs supervised",
-        };
-      }
-      return { kind: "none" };
-    }
-  }
-  if (process.platform === "linux") {
-    try {
-      const out = execFile("systemctl", ["status", String(pid)], {
-        encoding: "utf8",
-        timeout: 3000,
-        stdio: ["ignore", "pipe", "pipe"],
-      });
-      const info = parseSystemdPidStatus(out);
-      if (info?.job.startsWith("com.repoos.serve.")) return { kind: "none" };
-      if (info) return { kind: "external", info };
-      return { kind: "none" };
-    } catch (err) {
-      return {
-        kind: "uncertain",
-        reason:
-          `systemctl could not describe pid ${pid}` +
-          (err instanceof Error && err.message ? ` (${err.message})` : "") +
-          " — refusing to guess hand-run vs supervised",
-      };
-    }
-  }
-  return { kind: "none" };
-}
-
 /** @deprecated use detectSupervisor */
-export function detectExternalSupervisor(
-  pid: number,
-  execFile: typeof execFileSync = execFileSync,
-): SupervisorInfo | null {
-  const r = detectSupervisor(pid, execFile);
+export function detectExternalSupervisor(pid: number): SupervisorInfo | null {
+  const r = detectSupervisor(pid);
   return r.kind === "external" ? r.info : null;
-}
-
-function readPpid(pid: number, execFile: typeof execFileSync = execFileSync): number | null {
-  if (process.platform === "win32") return null;
-  try {
-    const out = execFile("ps", ["-o", "ppid=", "-p", String(pid)], {
-      encoding: "utf8",
-      timeout: 2000,
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    const n = Number(out);
-    return Number.isFinite(n) ? n : null;
-  } catch {
-    return null;
-  }
 }
 
 export async function classifyRestartPath(
@@ -353,17 +252,29 @@ export function spawnHandRunServe(
   port: number,
   host: string,
   serveFlags: readonly string[] = [],
-): void {
-  const { bin, needsCliEntry } = repoosBinary();
-  const serveArgs = buildHandRunServeArgv(port, host, serveFlags);
-  const args = needsCliEntry ? [compiledCliEntry(), ...serveArgs] : serveArgs;
-  const child = spawn(bin, args, {
-    cwd: root,
-    detached: true,
-    stdio: "ignore",
-    env: process.env,
-  });
-  child.unref();
+): { ok: true } | { ok: false; error: string } {
+  try {
+    const { bin, needsCliEntry } = repoosBinary();
+    const entry = compiledCliEntry();
+    if (needsCliEntry && !existsSync(entry)) {
+      return { ok: false, error: `Cannot find CLI entry at ${entry}` };
+    }
+    const serveArgs = buildHandRunServeArgv(port, host, serveFlags);
+    const args = needsCliEntry ? [entry, ...serveArgs] : serveArgs;
+    const child = spawn(bin, args, {
+      cwd: root,
+      detached: true,
+      stdio: "ignore",
+      env: process.env,
+    });
+    child.on("error", () => {
+      /* surfaced via spawnHandRunServe return when synchronous throw doesn't happen */
+    });
+    child.unref();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export interface RestartRepoServerOptions {
@@ -381,6 +292,7 @@ export interface RestartRepoServerOptions {
   supervisor?: typeof detectExternalSupervisor;
   stop?: typeof stopPidExact;
   spawn?: typeof spawnHandRunServe;
+  resolveServeFlags?: (server: LocatedServer) => string[];
   wait?: typeof waitForServerRestart;
   health?: typeof fetchHealth;
   onBeforeStop?: (ctx: { activeEngineers: number; path: RestartPath }) => void;
@@ -561,12 +473,29 @@ export async function restartRepoServer(
     };
   }
 
-  (opts.spawn ?? spawnHandRunServe)(
+  const resolveFlags =
+    opts.resolveServeFlags ??
+    ((s: LocatedServer) => {
+      if (s.serveFlags.length > 0) return [...s.serveFlags];
+      const cmd = readProcessCommand(s.pid);
+      return cmd ? extractServeFlagsFromCommand(cmd) : [];
+    });
+  const spawnResult = (opts.spawn ?? spawnHandRunServe)(
     root,
     server.port,
     server.host || "127.0.0.1",
-    server.serveFlags,
+    resolveFlags(server),
   );
+  if (!spawnResult.ok) {
+    return {
+      ok: false,
+      path,
+      oldPid,
+      oldVersion,
+      message: `Failed to start hand-run server: ${spawnResult.error}`,
+      manualCommand: `cd ${root} && repoos serve --port ${server.port}`,
+    };
+  }
 
   const waitRestart = opts.wait ?? waitForServerRestart;
 

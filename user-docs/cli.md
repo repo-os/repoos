@@ -581,8 +581,7 @@ Restarts this repo's control-plane server the way it was started:
   `KeepAlive`) — signals the recorded pid and waits for the supervisor to
   respawn it; no sudo when the process runs as you.
 
-The command prints which path it took, warns when engineer agents were running
-(they are adopted after restart when possible), and reports success only after
+The command prints which path it took, warns when engineer agents were running before it stops the server, and reports success only after
 `/api/health` answers and the pid has changed. It never touches another repo's
 server and refuses when the pid belongs to another user.
 

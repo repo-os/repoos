@@ -4,6 +4,7 @@ import {
   buildHandRunServeArgv,
   captureServeLockFlags,
   compiledCliEntry,
+  extractServeFlagsFromCommand,
 } from "./serve-lock-flags.js";
 
 describe("captureServeLockFlags", () => {
@@ -20,6 +21,16 @@ describe("captureServeLockFlags", () => {
         "--preview-overrides",
       ]),
     ).toEqual(["--quiet", "--no-tailscale-https", "--preview-overrides"]);
+  });
+});
+
+describe("extractServeFlagsFromCommand", () => {
+  it("reads flags from a ps command line", () => {
+    expect(
+      extractServeFlagsFromCommand(
+        "/usr/bin/bun dist/cli/index.js serve --port 7200 --host 127.0.0.1 --preview-overrides --quiet",
+      ),
+    ).toEqual(["--preview-overrides", "--quiet"]);
   });
 });
 

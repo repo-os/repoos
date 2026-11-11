@@ -45,3 +45,8 @@ export function buildHandRunServeArgv(
 ): string[] {
   return ["serve", "--port", String(port), "--host", host, ...serveFlags];
 }
+
+/** Reconstruct lock flags from a live `ps` command line when the lock predates serveFlags. */
+export function extractServeFlagsFromCommand(command: string): string[] {
+  return captureServeLockFlags(command.split(/\s+/));
+}

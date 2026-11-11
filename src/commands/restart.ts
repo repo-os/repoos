@@ -35,7 +35,7 @@ export async function cmdRestart(argv: string[]): Promise<void> {
       if (activeEngineers > 0) {
         console.log(
           c.yellow(
-            `  ⚠ ${activeEngineers} engineer agent(s) are running — restarting will interrupt them briefly; in-flight work may be adopted after the new server starts (#0214).`,
+            `  ⚠ ${activeEngineers} engineer agent(s) are running — restarting will interrupt them briefly until the new server is up.`,
           ),
         );
       }
