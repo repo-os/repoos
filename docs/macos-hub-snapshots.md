@@ -102,11 +102,11 @@ stored image, and macOS version/font/DPI differences change the pixels.
 ## `.xcresult` diagnostics (#0892)
 
 Xcode's `xcodebuild test` always writes an `.xcresult` bundle when
-`-resultBundlePath` is set. That archive includes **machine-wide diagnostics**
+`-resultBundlePath` is set. That archive can include **machine-wide diagnostics**
 (process samples, attachment logs, and other host context) in Zstandard-
 compressed `Data` files — not just test stdout. This is default XCTest /
-Xcode behaviour; there is no supported `xcodebuild` flag that turns off that
-collection while still using a result bundle on macOS.
+Xcode behaviour; RepoOS has not verified an `xcodebuild` flag that disables
+that collection while still writing a result bundle on macOS.
 
 RepoOS does **not** try to sanitise those blobs. Mitigation is procedural and
 layered:

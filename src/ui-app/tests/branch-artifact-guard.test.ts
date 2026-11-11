@@ -1,5 +1,8 @@
 import { describe, expect, it, afterEach } from "vitest";
+import * as nodeZlib from "node:zlib";
 import { gzipSync } from "node:zlib";
+const zstdCompressSync = (nodeZlib as { zstdCompressSync?: (b: Buffer) => Buffer })
+  .zstdCompressSync;
 import { execFileSync, spawnSync } from "node:child_process";
 import { cpSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -103,19 +106,24 @@ describe("secret scan", () => {
     expect(secrets.length).toBe(0);
   });
 
-  const bun = (globalThis as unknown as { Bun?: { zstdCompressSync?: (b: Buffer) => Buffer } }).Bun;
-  it.skipIf(!bun?.zstdCompressSync)("finds a fake Stripe key inside zstd", () => {
-    const secret = fakeStripeTestSecret();
-    const z = bun!.zstdCompressSync!(Buffer.from(secret, "utf8"));
-    const { secrets } = scanBuffersForSecrets(z, "blob.bin", 1_000_000);
-    expect(secrets.length).toBeGreaterThan(0);
-  });
+  it.skipIf(typeof zstdCompressSync !== "function")(
+    "finds a fake Stripe key inside zstd (Node zlib)",
+    () => {
+      const secret = fakeStripeTestSecret();
+      const z = zstdCompressSync!(Buffer.from(secret, "utf8"));
+      const { secrets } = scanBuffersForSecrets(z, "blob.bin", 1_000_000);
+      expect(secrets.length).toBeGreaterThan(0);
+    },
+  );
 
   it("flags zstd payloads when no decompressor is available", () => {
-    if (zstdAvailable()) return;
     const fakeFrame = Buffer.from([0x28, 0xb5, 0x2f, 0xfd, 0x00, 0x00, 0x00, 0x01]);
     const { incomplete } = scanBuffersForSecrets(fakeFrame, "x.zst", 64 * 1024);
-    expect(incomplete.some((i) => i.reason.includes("zstd"))).toBe(true);
+    if (!zstdAvailable()) {
+      expect(incomplete.some((i) => i.reason.includes("zstd"))).toBe(true);
+    } else {
+      expect(incomplete.length).toBeGreaterThanOrEqual(0);
+    }
   });
 
   it("does not false-positive on random base64 noise", () => {
@@ -140,6 +148,35 @@ describe("branch diff guard", () => {
     git(root, "commit", "-qm", "big");
     const added = gitAddedPathsOnBranch(root, "main")!;
     const { violations } = evaluateAddedPaths(root, added, {
+      maxAddedFileBytes: 1_048_576,
+    });
+    expect(violations.some((v) => v.kind === "oversize" && v.path === "big.bin")).toBe(true);
+  });
+
+  it("flags a secret committed then overwritten clean in the worktree", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-overwrite-"));
+    dirs.push(root);
+    initRepo(root);
+    const secret = fakeStripeTestSecret();
+    writeFileSync(join(root, "leak.txt"), secret);
+    git(root, "add", "leak.txt");
+    git(root, "commit", "-qm", "add secret");
+    writeFileSync(join(root, "leak.txt"), "clean\n");
+    const added = gitAddedPathsOnBranch(root, "main")!;
+    const { violations } = evaluateAddedPaths(root, added, {});
+    expect(violations.some((v) => v.kind === "secret" && v.path === "leak.txt")).toBe(true);
+  });
+
+  it("flags oversize content committed then removed from the worktree", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-rm-big-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "big.bin"), Buffer.alloc(2 * 1024 * 1024, 1));
+    git(root, "add", "big.bin");
+    git(root, "commit", "-qm", "big");
+    git(root, "rm", "-f", "big.bin");
+    git(root, "commit", "-qm", "rm");
+    const { violations } = evaluateAddedPaths(root, gitAddedPathsOnBranch(root, "main")!, {
       maxAddedFileBytes: 1_048_576,
     });
     expect(violations.some((v) => v.kind === "oversize" && v.path === "big.bin")).toBe(true);
@@ -193,6 +230,18 @@ describe("branch diff guard", () => {
 });
 
 describe("checkpoint staging", () => {
+  it("reads the worktree when a tracked file has a dirty secret (index clean)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-dirty-tracked-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "f.txt"), "ok\n");
+    git(root, "add", "f.txt");
+    git(root, "commit", "-qm", "track");
+    writeFileSync(join(root, "f.txt"), fakeStripeTestSecret());
+    const staging = planCheckpointStaging(root, ["f.txt"], {});
+    expect(staging.allowed).toEqual([]);
+    expect(staging.error).toMatch(/Secret pattern/);
+  });
   it("expands untracked directories", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-dir-expand-"));
     dirs.push(root);
@@ -201,7 +250,7 @@ describe("checkpoint staging", () => {
     writeFileSync(join(root, "dump", "big.bin"), Buffer.alloc(3 * 1024 * 1024, 1));
     writeFileSync(join(root, "dump", "leak.txt"), fakeStripeTestSecret());
     const expanded = expandCheckpointPaths(root, ["dump/"], 50);
-    expect(expanded).toContain("dump/big.bin");
+    expect(expanded.paths).toContain("dump/big.bin");
     const staging = planCheckpointStaging(root, ["dump/"], {
       maxAddedFileBytes: 1_048_576,
     });

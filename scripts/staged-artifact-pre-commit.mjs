@@ -16,6 +16,9 @@ async function loadGuard() {
   try {
     accessSync(distGuard);
     const mod = await import(pathToFileURL(distGuard).href);
+    if (typeof mod.evaluateStagedForPreCommit !== "function") {
+      throw new Error("dist/core/branch-artifact-guard.js is missing evaluateStagedForPreCommit");
+    }
     let check;
     try {
       accessSync(distConfig);
@@ -29,6 +32,9 @@ async function loadGuard() {
     const srcGuard = join(repoRoot, "src/core/branch-artifact-guard.ts");
     accessSync(srcGuard);
     const mod = await import(pathToFileURL(srcGuard).href);
+    if (typeof mod.evaluateStagedForPreCommit !== "function") {
+      throw new Error("src/core/branch-artifact-guard.ts is missing evaluateStagedForPreCommit");
+    }
     return { evaluateStagedForPreCommit: mod.evaluateStagedForPreCommit, check: undefined };
   }
 }
@@ -39,10 +45,17 @@ if (process.env.REPOOS_SKIP_STAGED_ARTIFACT_GUARD === "1") {
 
 const top = process.cwd();
 
-let evaluateStagedForPreCommit;
-let check;
 try {
-  ({ evaluateStagedForPreCommit, check } = await loadGuard());
+  const { evaluateStagedForPreCommit, check } = await loadGuard();
+  const { ok, message } = evaluateStagedForPreCommit(top, check);
+  if (!ok) {
+    console.error("pre-commit: staged artifact guard:\n" + message);
+    console.error(
+      "Unstage or gitignore build output. Override only when you mean it: REPOOS_SKIP_STAGED_ARTIFACT_GUARD=1",
+    );
+    process.exit(1);
+  }
+  process.exit(0);
 } catch (err) {
   console.error(
     "pre-commit: staged artifact guard unavailable — rebuild dist/ or run from a RepoOS checkout.",
@@ -50,13 +63,3 @@ try {
   console.error(String(err));
   process.exit(1);
 }
-
-const { ok, message } = evaluateStagedForPreCommit(top, check);
-if (!ok) {
-  console.error("pre-commit: staged artifact guard:\n" + message);
-  console.error(
-    "Unstage or gitignore build output. Override only when you mean it: REPOOS_SKIP_STAGED_ARTIFACT_GUARD=1",
-  );
-  process.exit(1);
-}
-process.exit(0);

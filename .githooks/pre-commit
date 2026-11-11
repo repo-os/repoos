@@ -3,8 +3,7 @@
 # - On main: format/lint for staged source (#0423).
 # - On every branch: block build output, oversized staged files, and secret
 #   patterns (#1096). Bypass: REPOOS_SKIP_STAGED_ARTIFACT_GUARD=1
-# - RepoOS bookkeeping-only stages (work/** reports, *.md only) skip the
-#   artifact guard so server commits are not blocked.
+# - RepoOS task markdown bookkeeping only (no `inputs/` trees, no binaries).
 #
 # Merge commits are never blocked. Format/lint still applies only on main.
 
@@ -17,8 +16,19 @@ top=$(git rev-parse --show-toplevel)
 staged_all=$(git diff --cached --name-only)
 staged_artifact=$(echo "$staged_all" | grep -v '^$' || true)
 if [ -n "$staged_artifact" ]; then
-  if ! echo "$staged_artifact" | grep -qvE '^(work/reports/|work/[^/]+\.md$|inputs/)'; then
-    : # RepoOS task bookkeeping only — skip artifact guard
+  exempt=1
+  for f in $staged_artifact; do
+    case "$f" in
+      work/reports/*.md|work/reports/*.json) ;;
+      work/[0-9]*-*.md) ;;
+      *)
+        exempt=0
+        break
+        ;;
+    esac
+  done
+  if [ "$exempt" = 1 ]; then
+    : # bookkeeping-only — skip artifact guard
   elif [ "${REPOOS_SKIP_STAGED_ARTIFACT_GUARD:-}" != "1" ]; then
     if command -v bun >/dev/null 2>&1; then
       if ! bun "$top/scripts/staged-artifact-pre-commit.mjs" 2>&1; then
