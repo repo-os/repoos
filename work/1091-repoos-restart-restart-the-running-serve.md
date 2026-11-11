@@ -215,3 +215,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T21:16:44Z · body
 - 2026-11-11T21:19:56Z · message_queued at 2026-11-11T21:19:56.344Z
 - 2026-11-11T21:19:56Z · handoff failed · task-file handoff failed at commit · timed out after waiting for the running check to finish; the check still holds the task worktree. Request handoff again once it has finished
+- 2026-11-11T21:19:56Z · message_delivered: 3 message(s)
