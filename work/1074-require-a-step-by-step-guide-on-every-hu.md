@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T19:01:00Z"
+updated_at: "2026-11-11T19:03:01Z"
 last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 review_rounds: 2
 review_passes: 2
@@ -246,3 +246,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T19:00:58Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-11T19:01:00Z · status active→review
 - 2026-11-11T19:01:00Z · message_queued at 2026-11-11T19:01:00.535Z
+- 2026-11-11T19:03:01Z · note: review pass 5: needs some work
