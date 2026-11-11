@@ -24,6 +24,7 @@ import { REPOOS_TOML_REL } from "../core/repoos-toml-branch-guard.js";
 import { patchTaskFile } from "./write.js";
 import type { RepoOSConfig } from "../core/types.js";
 import { engineerSelfCheckCheckpointMessage } from "../core/engineer-checkpoint-commit.js";
+import { gitStagedPaths, planCheckpointStaging } from "../core/branch-artifact-guard.js";
 import { parseTask, recordChange } from "../core/task.js";
 import type { RemotePreReviewOutcome } from "./pre-review-remote-gate.js";
 import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
@@ -125,7 +126,30 @@ export async function commitWipCheckpointForRemoteGate(
     taskId,
   });
   const foreign = [...new Set([...foreignFromDirty, ...foreignStaged])];
-  const toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL && !foreign.includes(p));
+  let toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL && !foreign.includes(p));
+  const stagedForGuard = gitStagedPaths(worktreePath).filter(
+    (p) => p !== REPOOS_TOML_REL && !foreign.includes(p),
+  );
+  const staging = planCheckpointStaging(
+    worktreePath,
+    [...new Set([...toCommit, ...stagedForGuard])],
+    config.check ?? {},
+  );
+  if (staging.error) {
+    return staging.error;
+  }
+  const blocked = [...staging.unstagedBuildOutput, ...staging.unstagedOversize];
+  if (blocked.length > 0) {
+    const unstageBlocked = await runGit(
+      worktreePath,
+      ["reset", "--quiet", "HEAD", "--", ...blocked],
+      30_000,
+    );
+    if (unstageBlocked.status !== 0) {
+      return `could not unstage build output or oversized files (${blocked.slice(0, 5).join(", ")}) before the remote self-check`;
+    }
+  }
+  toCommit = staging.allowed;
   if (foreign.length > 0) {
     const unstage = await runGit(
       worktreePath,

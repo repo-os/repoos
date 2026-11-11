@@ -49,7 +49,8 @@ Under the hood the script runs:
 xcodebuild -project macos/RepoOSHub.xcodeproj \
   -scheme RepoOSHub \
   -destination 'platform=macOS' \
-  -derivedDataPath macos/.derived-data \
+  -derivedDataPath "${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}" \
+  -resultBundlePath "${REPOOS_MACOS_XCRESULT_DIR:-$HOME/Library/Caches/RepoOS/xcresults}/hub-snapshots.xcresult" \
   -only-testing:RepoOSHubTests/HubSnapshotTests \
   CODE_SIGNING_ALLOWED=NO test
 ```

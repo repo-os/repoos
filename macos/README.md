@@ -57,13 +57,14 @@ xcodebuild -project macos/RepoOSHub.xcodeproj \
   -scheme RepoOSHub \
   -configuration Debug \
   -sdk macosx \
-  -derivedDataPath macos/.derived-data \
+  -derivedDataPath "${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}" \
   CODE_SIGNING_ALLOWED=NO build
 
 xcodebuild -project macos/RepoOSHub.xcodeproj \
   -scheme RepoOSHub \
   -destination 'platform=macOS' \
-  -derivedDataPath macos/.derived-data \
+  -derivedDataPath "${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}" \
+  -resultBundlePath "${REPOOS_MACOS_XCRESULT_DIR:-$HOME/Library/Caches/RepoOS/xcresults}/local.xcresult" \
   CODE_SIGNING_ALLOWED=NO test
 ```
 
@@ -78,7 +79,14 @@ choose a Team under the target's **Signing & Capabilities** tab. Distribution
 signing, hardened runtime, notarization, and secrets belong in a future
 release workflow; no signing identity or credential is committed here.
 
-The `macos/.derived-data/` directory is ignored and may be removed at any time.
+Xcode build output and `.xcresult` bundles must live **outside** the repository
+(default: `~/Library/Caches/RepoOS/macos-derived-data` and
+`~/Library/Caches/RepoOS/xcresults`, overridable with `REPOOS_MACOS_DERIVED_DATA`
+and `REPOOS_MACOS_XCRESULT_DIR`). RepoOS's branch guard refuses to commit them.
+`.xcresult` archives can embed compressed machine-wide diagnostics that GitHub
+secret scanning does not decode — never copy DerivedData or result bundles into
+the tree for verification. `just macos-build`, `just macos-test`, and
+`macos/scripts/hub-snapshots.sh` already point outside the repo.
 
 ### Layout snapshots
 

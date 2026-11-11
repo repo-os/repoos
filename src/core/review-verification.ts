@@ -101,6 +101,7 @@ export const GUARD_REVIEW_MARKERS: Record<string, string[]> = {
   "bare-require": ["bareRequireOffenders", "bare-require", "bareRequire"],
   "hardcoded-colors": ["hardcodedColorOffenders", "hardcoded-colors", "hardcodedColor"],
   "task-assets": ["taskAssetOffenders", "task-assets", "taskAsset"],
+  "branch-artifacts": ["branch-artifact-guard", "branch-artifacts", "branchArtifact"],
   "theme-contrast": ["themeContrastOffenders", "theme-contrast", "themeContrast"],
   "css-layers": ["cssLayeringOffenders", "css-layers", "cssLayering"],
   "ui-smoke": ["runUISmokeTest", "cmdUISmoke", "ui-smoke"],

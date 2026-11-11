@@ -503,17 +503,27 @@ user-docs-build:
 # build the native macOS Hub without opening Xcode `just macos-build`
 [group('build')]
 macos-build:
-    xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -configuration Debug -sdk macosx -derivedDataPath macos/.derived-data CODE_SIGNING_ALLOWED=NO build
+    # DerivedData lives outside the repo (#1096) — override with REPOOS_MACOS_DERIVED_DATA.
+    set -euo pipefail
+    derived="${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}"
+    mkdir -p "$derived"
+    xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -configuration Debug -sdk macosx -derivedDataPath "$derived" CODE_SIGNING_ALLOWED=NO build
 
 # run the native macOS Hub from the command line `just macos-run`
 [group('dev')]
 macos-run: macos-build
-    open "macos/.derived-data/Build/Products/Debug/RepoOS Hub.app"
+    derived="${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}"
+    open "$derived/Build/Products/Debug/RepoOS Hub.app"
 
 # run native macOS Hub unit tests without opening Xcode `just macos-test`
 [group('quality')]
 macos-test:
-    xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -destination 'platform=macOS' -derivedDataPath macos/.derived-data CODE_SIGNING_ALLOWED=NO test
+    set -euo pipefail
+    derived="${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}"
+    result_root="${REPOOS_MACOS_XCRESULT_DIR:-$HOME/Library/Caches/RepoOS/xcresults}"
+    mkdir -p "$derived" "$result_root"
+    xcresult="$result_root/repoos-hub-$(date +%Y%m%d-%H%M%S).xcresult"
+    xcodebuild -project macos/RepoOSHub.xcodeproj -scheme RepoOSHub -destination 'platform=macOS' -derivedDataPath "$derived" -resultBundlePath "$xcresult" CODE_SIGNING_ALLOWED=NO test
 
 # ── quality ──────────────────────────────────────────────────────────────
 

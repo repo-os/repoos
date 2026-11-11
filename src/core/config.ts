@@ -1828,6 +1828,35 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
         .map((v) => v.trim());
       if (dirs.length) cfg.check = { ...cfg.check, hardcodedColorDirs: dirs };
     }
+    const parseCheckInt = (key: string): number | undefined => {
+      const v = parsed[key];
+      return typeof v === "number" && Number.isFinite(v) && v > 0 ? v : undefined;
+    };
+    const branchMax = parseCheckInt("check.branchArtifactsMaxFileBytes");
+    if (branchMax) cfg.check = { ...cfg.check, branchArtifactsMaxFileBytes: branchMax };
+    const cpFiles = parseCheckInt("check.checkpointMaxStagedFiles");
+    if (cpFiles) cfg.check = { ...cfg.check, checkpointMaxStagedFiles: cpFiles };
+    const cpBytes = parseCheckInt("check.checkpointMaxStagedBytes");
+    if (cpBytes) cfg.check = { ...cfg.check, checkpointMaxStagedBytes: cpBytes };
+    const decompressMax = parseCheckInt("check.branchArtifactsMaxDecompressBytes");
+    if (decompressMax)
+      cfg.check = { ...cfg.check, branchArtifactsMaxDecompressBytes: decompressMax };
+    const scanMax = parseCheckInt("check.branchArtifactsMaxScanFiles");
+    if (scanMax) cfg.check = { ...cfg.check, branchArtifactsMaxScanFiles: scanMax };
+    const buildPatterns = parsed["check.buildOutputPatterns"];
+    if (Array.isArray(buildPatterns)) {
+      const patterns = buildPatterns
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim());
+      if (patterns.length) cfg.check = { ...cfg.check, buildOutputPatterns: patterns };
+    }
+    const branchAllow = parsed["check.branchArtifactsAllowlist"];
+    if (Array.isArray(branchAllow)) {
+      const paths = branchAllow
+        .filter((v): v is string => typeof v === "string" && v.trim() !== "")
+        .map((v) => v.trim());
+      if (paths.length) cfg.check = { ...cfg.check, branchArtifactsAllowlist: paths };
+    }
     // [check] fullSuitePaths (#0724): path prefixes that force the full
     // close-out suite even when the cheaper scoped/reuse modes would apply —
     // machinery the changed-path machinery cannot reason about. Empty rows are
@@ -4081,6 +4110,77 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Comma-separated; empty means none.",
     },
     {
+      key: "check.branchArtifactsMaxFileBytes",
+      label: "Branch guard: max added file size",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 1_048_576,
+      description:
+        "Fails the branch-artifacts check when the diff vs main adds a file larger than this many bytes " +
+        "(unless the path is on branchArtifactsAllowlist).",
+    },
+    {
+      key: "check.checkpointMaxStagedFiles",
+      label: "WIP checkpoint: max staged files",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 200,
+      description:
+        "Engineer self-check WIP checkpoints skip staging beyond this many files at once.",
+    },
+    {
+      key: "check.checkpointMaxStagedBytes",
+      label: "WIP checkpoint: max staged bytes",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 5_242_880,
+      description: "Engineer self-check WIP checkpoints skip staging beyond this total byte count.",
+    },
+    {
+      key: "check.buildOutputPatterns",
+      label: "Build-output path patterns",
+      type: "array",
+      tier: "guarded",
+      restartRequired: false,
+      default: [],
+      description:
+        "Extra repo-relative globs (in addition to built-in DerivedData/.build/.xcresult rules) " +
+        "that must not be committed. Comma-separated.",
+    },
+    {
+      key: "check.branchArtifactsAllowlist",
+      label: "Branch guard: large-file allowlist",
+      type: "array",
+      tier: "guarded",
+      restartRequired: false,
+      default: [],
+      description:
+        "Repo-relative paths or prefixes deliberately allowed to exceed branchArtifactsMaxFileBytes.",
+    },
+    {
+      key: "check.branchArtifactsMaxDecompressBytes",
+      label: "Secret scan: max decompressed bytes",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 4_194_304,
+      description:
+        "When scanning added file contents for secret patterns, refuse to decompress a blob larger than this.",
+    },
+    {
+      key: "check.branchArtifactsMaxScanFiles",
+      label: "Secret scan: max files per run",
+      type: "number",
+      tier: "guarded",
+      restartRequired: false,
+      default: 500,
+      description:
+        "Caps how many added files get a content secret scan in one branch-artifacts step.",
+    },
+    {
       key: "editor.command",
       label: "Editor command",
       type: "string",
@@ -4539,6 +4639,13 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "check.contrastExempts",
   "check.alwaysRun",
   "check.fullSuitePaths",
+  "check.branchArtifactsMaxFileBytes",
+  "check.checkpointMaxStagedFiles",
+  "check.checkpointMaxStagedBytes",
+  "check.buildOutputPatterns",
+  "check.branchArtifactsAllowlist",
+  "check.branchArtifactsMaxDecompressBytes",
+  "check.branchArtifactsMaxScanFiles",
   "check.themeScopes.selector",
   "check.themeScopes.name",
   "check.themeScopes.inherits",

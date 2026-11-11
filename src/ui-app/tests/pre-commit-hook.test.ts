@@ -32,6 +32,16 @@ function repo(): string {
   dirs.push(dir);
   git(dir, "init", "-q", "-b", "main");
   cpSync(join(repoRoot, ".githooks"), join(dir, ".githooks"), { recursive: true });
+  mkdirSync(join(dir, "scripts"), { recursive: true });
+  cpSync(
+    join(repoRoot, "scripts", "staged-artifact-pre-commit.mjs"),
+    join(dir, "scripts/staged-artifact-pre-commit.mjs"),
+  );
+  mkdirSync(join(dir, "dist", "core"), { recursive: true });
+  cpSync(
+    join(repoRoot, "dist", "core", "branch-artifact-guard.js"),
+    join(dir, "dist", "core", "branch-artifact-guard.js"),
+  );
   git(dir, "config", "core.hooksPath", ".githooks");
   writeFileSync(join(dir, "README.md"), "seed\n");
   git(dir, "add", "-A");

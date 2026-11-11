@@ -95,6 +95,7 @@ export const BUILTIN_CHECK_KINDS = [
   "hardcoded-colors",
   "bare-require",
   "task-assets",
+  "branch-artifacts",
 ] as const;
 
 export type BuiltinCheckKind = (typeof BUILTIN_CHECK_KINDS)[number];
@@ -379,6 +380,7 @@ export function legacyPlan(bunRunner: boolean): CheckStep[] {
     step("css-layers", "css-layers"),
     step("theme-contrast", "theme-contrast"),
     step("bare-require", "bare-require"),
+    step("branch-artifacts", "branch-artifacts"),
     step("task-assets", "task-assets"),
     step("tests", "tests", { requires: [runner], dependsOn: gate }),
     step("ui-smoke", "ui-smoke", { dependsOn: gate }),
@@ -610,6 +612,17 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
       dependsOn: [],
     });
   }
+  steps.push({
+    name: "branch-artifacts",
+    kind: "branch-artifacts",
+    timeoutMs: DEFAULT_STEP_TIMEOUT_MS,
+    required: true,
+    profiles: [],
+    whenChanged: [],
+    requires: [],
+    runsOn: [],
+    dependsOn: [],
+  });
   steps.push({
     name: "task-assets",
     kind: "task-assets",

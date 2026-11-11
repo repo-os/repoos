@@ -26,6 +26,9 @@ jobs:
   build-and-test:
     name: Build and test native Hub
     runs-on: macos-latest
+    env:
+      REPOOS_MACOS_DERIVED_DATA: ${{ runner.temp }}/repoos-macos-derived-data
+      REPOOS_MACOS_XCRESULT_DIR: ${{ runner.temp }}/repoos-xcresults
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +38,7 @@ jobs:
           -scheme RepoOSHub
           -configuration Debug
           -sdk macosx
-          -derivedDataPath macos/.derived-data
+          -derivedDataPath "$REPOOS_MACOS_DERIVED_DATA"
           CODE_SIGNING_ALLOWED=NO build
 
       - name: Run unit tests without signing
@@ -43,7 +46,8 @@ jobs:
           xcodebuild -project macos/RepoOSHub.xcodeproj
           -scheme RepoOSHub
           -destination 'platform=macOS'
-          -derivedDataPath macos/.derived-data
+          -derivedDataPath "$REPOOS_MACOS_DERIVED_DATA"
+          -resultBundlePath "$REPOOS_MACOS_XCRESULT_DIR/ci.xcresult"
           CODE_SIGNING_ALLOWED=NO test
 
   release:
@@ -52,6 +56,8 @@ jobs:
       startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
     runs-on: macos-latest
+    env:
+      REPOOS_MACOS_DERIVED_DATA: ${{ runner.temp }}/repoos-macos-derived-data
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,7 +71,7 @@ jobs:
           -scheme RepoOSHub \
           -configuration Release \
           -sdk macosx \
-          -derivedDataPath macos/.derived-data \
+          -derivedDataPath "$REPOOS_MACOS_DERIVED_DATA" \
           MARKETING_VERSION="$VERSION" \
           CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}" \
           CODE_SIGN_IDENTITY="-" \
@@ -74,11 +80,11 @@ jobs:
       - name: Verify release app bundle
         run: |
           RELEASE_TAG="${{ inputs.release_tag || github.ref_name }}"
-          APP="macos/.derived-data/Build/Products/Release/RepoOS Hub.app"
+          APP="$REPOOS_MACOS_DERIVED_DATA/Build/Products/Release/RepoOS Hub.app"
           if [[ ! -d "$APP" ]]; then
             echo "error: expected release bundle not found at $APP (PRODUCT_NAME=RepoOS Hub)"
             echo "Contents of Release products directory:"
-            ls -la macos/.derived-data/Build/Products/Release/ 2>/dev/null || echo "(directory missing)"
+            ls -la "$REPOOS_MACOS_DERIVED_DATA/Build/Products/Release/" 2>/dev/null || echo "(directory missing)"
             exit 1
           fi
           ICON="$APP/Contents/Resources/AppIcon.icns"
