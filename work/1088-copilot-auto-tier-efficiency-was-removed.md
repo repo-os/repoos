@@ -75,3 +75,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T17:51:34Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
 - 2026-11-11T17:51:34Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
 - 2026-11-11T17:51:41Z · needs_input
+- 2026-11-11T17:51:41Z · message_delivered: 1 message(s)
