@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T05:01:23Z"
+updated_at: "2026-11-11T05:02:27Z"
 ---
 ## Problem
 After cutting v0.5.82 the Releases page said "The release workflow failed at 'Run oven-sh/setup-bun@v2', so some channels below may not update on their own", linking https://github.com/repo-os/repoos/actions/runs/42566925266. That run is NOT the release workflow. It is the separate "Adoption matrix" workflow (job "adoption matrix (macos-latest)", failed at setup-bun) that also runs on pushes. The real "Release v0.5.82" run (id 42956267884) succeeded, and the Homebrew tap's own "Update RepoOS formula" run was still in progress when the warning showed, so Homebrew was only lagging, not failed.
@@ -47,3 +47,4 @@ Separately (not part of this task): the Adoption matrix macOS job failed at `ove
 - 2026-11-11T05:01:22Z · status active→review
 - 2026-11-11T05:01:23Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
 - 2026-11-11T05:01:23Z · message_queued at 2026-11-11T05:01:23.091Z
+- 2026-11-11T05:02:27Z · note: review pass 1: needs some work
