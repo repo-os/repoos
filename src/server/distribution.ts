@@ -276,6 +276,14 @@ type GithubTapRun = { status?: string; event?: string; created_at?: string };
 /** The Homebrew tap's formula update, dispatched by the release workflow (#1090). */
 const TAP_DISPATCH_EVENT = "repository_dispatch";
 
+/**
+ * The formula-update workflow in the Homebrew tap ("Update RepoOS formula"),
+ * which the release workflow's tap-dispatch step triggers. Its runs carry no
+ * version in the list payload, so the check is scoped to this file and to the
+ * viewed release's time window rather than to any tap run (#1090).
+ */
+const TAP_UPDATE_WORKFLOW_FILE = "repoos-release.yml";
+
 /** When the viewed release's workflow run started and was last updated (epoch ms). */
 interface ReleaseRunWindow {
   startedAt: number;
@@ -410,7 +418,7 @@ async function homebrewTapUpdateInProgress(
 ): Promise<boolean> {
   try {
     const res = await fetchImpl(
-      `https://api.github.com/repos/${tapRepository}/actions/runs?event=${TAP_DISPATCH_EVENT}&per_page=10`,
+      `https://api.github.com/repos/${tapRepository}/actions/workflows/${TAP_UPDATE_WORKFLOW_FILE}/runs?event=${TAP_DISPATCH_EVENT}&per_page=10`,
       { headers: GITHUB_JSON_HEADERS, signal: AbortSignal.timeout(timeoutMs) },
     );
     if (!res.ok) return false;

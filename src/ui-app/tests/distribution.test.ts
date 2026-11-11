@@ -541,7 +541,7 @@ describe("release workflow CI attribution (#1090)", () => {
    */
   async function statusWithTap(
     tapRuns: unknown[],
-    options: { releaseRuns?: unknown[]; nowMs?: number } = {},
+    options: { releaseRuns?: unknown[]; nowMs?: number; repoWideTapRuns?: unknown[] } = {},
   ) {
     const urls: string[] = [];
     const releaseRuns = options.releaseRuns ?? [
@@ -565,8 +565,15 @@ describe("release workflow CI attribution (#1090)", () => {
         if (url.includes("/actions/workflows/release.yml/runs")) {
           return new Response(JSON.stringify({ workflow_runs: releaseRuns }), { status: 200 });
         }
-        if (url.includes("homebrew-tap/actions/runs")) {
+        // The tap's formula-update workflow, the only tap endpoint the check may read.
+        if (url.includes("homebrew-tap/actions/workflows/repoos-release.yml/runs")) {
           return new Response(JSON.stringify({ workflow_runs: tapRuns }), { status: 200 });
+        }
+        // Repo-wide tap runs: unrelated CI that a correct check must never act on.
+        if (url.includes("homebrew-tap/actions/runs")) {
+          return new Response(JSON.stringify({ workflow_runs: options.repoWideTapRuns ?? [] }), {
+            status: 200,
+          });
         }
         return new Response("", { status: 404 });
       }),
@@ -590,11 +597,29 @@ describe("release workflow CI attribution (#1090)", () => {
     expect(summary.channels[0]).toMatchObject({ state: "updating" });
   });
 
-  it("keeps out-of-sync when only unrelated tap workflows are in progress", async () => {
-    const { summary } = await statusWithTap([
-      { event: "push", status: "in_progress", created_at: "2026-11-11T12:05:00.000Z" },
-      { event: "workflow_dispatch", status: "queued", created_at: "2026-11-11T12:06:00.000Z" },
-    ]);
+  it("keeps out-of-sync when an unrelated tap workflow is in progress", async () => {
+    // The tap's CI (tests.yml, a push) is running inside this release's window,
+    // and the formula-update workflow has nothing active. Only the scoped
+    // endpoint may decide, so the row stays out of sync.
+    const { summary, urls } = await statusWithTap([], {
+      repoWideTapRuns: [
+        {
+          event: "push",
+          status: "in_progress",
+          created_at: "2026-11-11T12:05:00.000Z",
+          path: ".github/workflows/tests.yml",
+        },
+        {
+          event: "repository_dispatch",
+          status: "in_progress",
+          created_at: "2026-11-11T12:06:00.000Z",
+          path: ".github/workflows/unrelated.yml",
+        },
+      ],
+    });
+    expect(
+      urls.some((u) => u.includes("homebrew-tap/actions/workflows/repoos-release.yml/runs")),
+    ).toBe(true);
     expect(summary.channels[0]?.state).toBe("out-of-sync");
   });
 
@@ -620,7 +645,7 @@ describe("release workflow CI attribution (#1090)", () => {
       ],
       { releaseRuns: [] },
     );
-    expect(urls.some((u) => u.includes("homebrew-tap/actions/runs"))).toBe(false);
+    expect(urls.some((u) => u.includes("homebrew-tap/actions/"))).toBe(false);
     expect(summary.channels[0]?.state).toBe("out-of-sync");
   });
 });
