@@ -51,3 +51,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T02:04:14Z · cli_override, model_override
 - 2026-11-11T02:04:15Z · status ready→active, branch
 - 2026-11-11T02:14:44Z · message_queued at 2026-11-11T02:14:44.057Z
+- 2026-11-11T02:14:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
