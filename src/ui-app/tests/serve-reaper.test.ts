@@ -444,15 +444,21 @@ describe("orphaned-root sweep classification (#0216)", () => {
     if (process.platform === "win32") return; // sweep is Unix/Mac only
     const root = join(tmpdir(), `repoos-sweep-live-${Date.now()}`);
     mkdirSync(join(root, "cli"), { recursive: true });
-    writeFileSync(join(root, "cli", "index.js"), "setInterval(() => {}, 1000);\n");
+    writeFileSync(
+      join(root, "cli", "index.js"),
+      'process.stdout.write("ready\\n");\nsetInterval(() => {}, 1000);\n',
+    );
     const sweep = new ServeReaper(join(tmpdir(), `repoos-sweep-unused-${Date.now()}`), ".repoos");
     const child = spawn(process.execPath, [join(root, "cli", "index.js"), "serve"], { cwd: root });
     try {
       const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>(
         (resolve) => child.once("exit", (code, signal) => resolve({ code, signal })),
       );
-      // Give the child time to bind its cwd before the root disappears.
-      await new Promise((r) => setTimeout(r, 200));
+      // Wait for the child to say it is running, not for a fixed delay: under load
+      // a 200ms sleep can end before the child has started, and the sweep finds nothing.
+      await new Promise<void>((resolve) => {
+        child.stdout?.once("data", () => resolve());
+      });
       rmSync(root, { recursive: true, force: true });
 
       const reaped = await sweep.cleanupOrphanedRoots();
