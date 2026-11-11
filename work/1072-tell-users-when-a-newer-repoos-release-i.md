@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T05:00:52Z"
+updated_at: "2026-11-11T05:08:23Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -44,6 +44,9 @@ Look at `src/commands/upgrade.ts` (`fetchLatestRelease`, channel handling), `src
 
 ## Correction: what already exists
 The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/components/ReleaseUpdateNotification.vue, data from GET /api/release/available). Do NOT build a second dashboard banner or a second update-status route. Scope of this task is the part that is missing: a passive, throttled update notice in the CLI (acceptance criteria 1, 2, 4, 5, 6), reusing the same data source/logic as /api/release/available and fetchLatestRelease in src/commands/upgrade.ts. The dashboard part here is only: honour the new Settings toggle (hide the banner when updates.check is off). Overlap with #1073, which owns the dialog: #1073 owns (a) the upgrade command text and install-kind detection (installKind / upgradeCommand from the server) and (b) remembering the dismissed version. The CLI notice must reuse #1073's install-kind and command helper instead of re-deriving it, so this task depends on #1073 landing first. Criteria 3 and 7 above are superseded by this section.
+
+## Accepted scope and known limitations
+FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the shared cache file: re-read right before writing and merge only the fields the child owns (lastNoticeAt, dismissedVersion); (2) handle spawn errors: child.on('error') and try/catch around spawn; (3) wrap the passive CLI hooks (beginCliUpdateBackgroundRefresh, registerCliUpdateNoticeExitHook, prefetchCliUpdateCheck) in try/catch so they can never fail a command; (4) back off much longer after 403/429 (honour Retry-After or use hours) and update docs/update-check.md. NOT blocking, follow-up only: one child spawn per eligible command and no lock; loadConfig memoization and double warnings; dashboard dismissal not read by the CLI (#1073's area); documenting REPOOS_DISABLE_UPDATE_CHECK in user-docs/environment-and-secrets.md; isNewerVersion across prerelease labels. Report those under Suggestions, not Bugs.
 
 ## Activity
 
@@ -107,3 +110,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T05:00:49Z · message_delivered: 2 message(s)
 - 2026-11-11T05:00:50Z · status review→active
 - 2026-11-11T05:00:52Z · CTO nudge: held — remote validation is running
+- 2026-11-11T05:08:23Z · body: Accepted scope and known limitations (added)
