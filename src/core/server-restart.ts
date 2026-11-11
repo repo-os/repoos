@@ -5,13 +5,13 @@
  */
 import { execFileSync, spawn } from "node:child_process";
 import http from "node:http";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { loadConfig, resolveServePort } from "./config.js";
-import { isManagedService, restartService, repoosBinary } from "./service-manager.js";
+import { getServiceStatus, restartService, repoosBinary } from "./service-manager.js";
 import { canonicalRegistryRoot, readServerRegistryEntry } from "./server-registry.js";
 import { readServeLocks } from "../commands/status.js";
 import { locateRepoServer, type LocatedServer } from "./server-locate.js";
+import { buildHandRunServeArgv, compiledCliEntry } from "./serve-lock-flags.js";
+import { verifyPidServesRepo } from "./serve-pid-verify.js";
 
 export type RestartPath = "managed-service" | "external-supervisor" | "hand-run";
 
@@ -41,11 +41,10 @@ export interface PidOwnership {
 
 export const DEFAULT_RESTART_WAIT_MS = 45_000;
 
-const CORE_DIR = dirname(fileURLToPath(import.meta.url));
-
-function cliEntryPath(): string {
-  return join(CORE_DIR, "..", "dist", "cli", "index.js");
-}
+export type SupervisorDetectResult =
+  | { kind: "external"; info: SupervisorInfo }
+  | { kind: "none" }
+  | { kind: "uncertain"; reason: string };
 
 /** `kill -0` / `kill` semantics without delivering a signal. */
 export function pidOwnership(pid: number): PidOwnership {
@@ -79,22 +78,6 @@ export function pidOwnership(pid: number): PidOwnership {
   return { uid, canSignal, otherUser: uid !== null && uid !== me };
 }
 
-/** Parent pid of `pid`, when `ps` is available. */
-export function readPpid(pid: number): number | null {
-  if (process.platform === "win32") return null;
-  try {
-    const out = execFileSync("ps", ["-o", "ppid=", "-p", String(pid)], {
-      encoding: "utf8",
-      timeout: 2000,
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    const n = Number(out);
-    return Number.isFinite(n) ? n : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Parse `launchctl print pid/<pid>` for an owning LaunchAgent/Daemon label.
  * Exported for tests with raw output.
@@ -110,34 +93,31 @@ export function parseLaunchctlPidPrint(output: string): SupervisorInfo | null {
 }
 
 /**
- * Parse `systemctl status` output for a cgroup unit name like repoos-serve.service.
+ * Parse `systemctl status <pid>` for a specific service unit (not user@.service).
  */
 export function parseSystemdPidStatus(output: string): SupervisorInfo | null {
-  const m = output.match(/\.service\s+\(/);
-  if (!m) {
-    const unit = output.match(/●\s+(\S+\.service)/);
-    if (!unit) return null;
-    const name = unit[1]!.replace(/\.service$/, "");
-    return {
-      platform: "systemd",
-      job: name,
-      manualCommand: `systemctl --user restart ${name}.service`,
-    };
+  const unit = output.match(/●\s+(\S+\.service)/);
+  if (!unit) return null;
+  const full = unit[1]!;
+  const name = full.replace(/\.service$/, "");
+  if (name.startsWith("user@") || name.endsWith(".slice") || name.endsWith(".scope")) {
+    return null;
   }
-  const unitLine = output.match(/(\S+)\.service/);
-  if (!unitLine) return null;
-  const name = unitLine[1]!;
+  if (!/^[\w@.-]+$/.test(name)) return null;
+  const userScope =
+    /\/run\/user\//.test(output) || /\bsystemd --user\b/.test(output) || /--user\b/.test(output);
+  const ctl = userScope ? "systemctl --user" : "systemctl";
   return {
     platform: "systemd",
     job: name,
-    manualCommand: `systemctl --user restart ${name}.service`,
+    manualCommand: `${ctl} restart ${name}.service`,
   };
 }
 
-export function detectExternalSupervisor(
+export function detectSupervisor(
   pid: number,
   execFile: typeof execFileSync = execFileSync,
-): SupervisorInfo | null {
+): SupervisorDetectResult {
   if (process.platform === "darwin") {
     try {
       const out = execFile("launchctl", ["print", `pid/${pid}`], {
@@ -146,12 +126,22 @@ export function detectExternalSupervisor(
         stdio: ["ignore", "pipe", "pipe"],
       });
       const info = parseLaunchctlPidPrint(out);
-      if (info && !info.job.startsWith("com.repoos.serve.")) return info;
-      if (info?.job.startsWith("com.repoos.serve.")) return null; // RepoOS-managed — not "external"
-    } catch {
-      /* no launchd job for this pid */
+      if (info?.job.startsWith("com.repoos.serve.")) return { kind: "none" };
+      if (info) return { kind: "external", info };
+      return { kind: "none" };
+    } catch (err) {
+      const ppid = readPpid(pid, execFile);
+      if (ppid === 1 || ppid === null) {
+        return {
+          kind: "uncertain",
+          reason:
+            `launchctl could not describe pid ${pid}` +
+            (err instanceof Error && err.message ? ` (${err.message})` : "") +
+            " — refusing to guess hand-run vs supervised",
+        };
+      }
+      return { kind: "none" };
     }
-    return null;
   }
   if (process.platform === "linux") {
     try {
@@ -161,18 +151,55 @@ export function detectExternalSupervisor(
         stdio: ["ignore", "pipe", "pipe"],
       });
       const info = parseSystemdPidStatus(out);
-      if (info && !info.job.startsWith("com.repoos.serve.")) return info;
-    } catch {
-      /* not a systemd unit pid */
+      if (info?.job.startsWith("com.repoos.serve.")) return { kind: "none" };
+      if (info) return { kind: "external", info };
+      return { kind: "none" };
+    } catch (err) {
+      return {
+        kind: "uncertain",
+        reason:
+          `systemctl could not describe pid ${pid}` +
+          (err instanceof Error && err.message ? ` (${err.message})` : "") +
+          " — refusing to guess hand-run vs supervised",
+      };
     }
   }
-  return null;
+  return { kind: "none" };
 }
 
-export function classifyRestartPath(root: string, server: LocatedServer): RestartPath {
-  if (isManagedService(root)) return "managed-service";
-  const external = detectExternalSupervisor(server.pid);
-  if (external) return "external-supervisor";
+/** @deprecated use detectSupervisor */
+export function detectExternalSupervisor(
+  pid: number,
+  execFile: typeof execFileSync = execFileSync,
+): SupervisorInfo | null {
+  const r = detectSupervisor(pid, execFile);
+  return r.kind === "external" ? r.info : null;
+}
+
+function readPpid(pid: number, execFile: typeof execFileSync = execFileSync): number | null {
+  if (process.platform === "win32") return null;
+  try {
+    const out = execFile("ps", ["-o", "ppid=", "-p", String(pid)], {
+      encoding: "utf8",
+      timeout: 2000,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    const n = Number(out);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function classifyRestartPath(
+  root: string,
+  server: LocatedServer,
+): Promise<RestartPath | "refuse-supervised-unknown"> {
+  const managed = await getServiceStatus(root);
+  if (managed?.status === "running") return "managed-service";
+  const detected = detectSupervisor(server.pid);
+  if (detected.kind === "external") return "external-supervisor";
+  if (detected.kind === "uncertain") return "refuse-supervised-unknown";
   return "hand-run";
 }
 
@@ -321,12 +348,15 @@ export function stopPidExact(pid: number): void {
   }
 }
 
-export function spawnHandRunServe(root: string, port: number, host: string): void {
+export function spawnHandRunServe(
+  root: string,
+  port: number,
+  host: string,
+  serveFlags: readonly string[] = [],
+): void {
   const { bin, needsCliEntry } = repoosBinary();
-  const entry = cliEntryPath();
-  const args = needsCliEntry
-    ? [entry, "serve", "--port", String(port), "--host", host, "--quiet"]
-    : ["serve", "--port", String(port), "--host", host, "--quiet"];
+  const serveArgs = buildHandRunServeArgv(port, host, serveFlags);
+  const args = needsCliEntry ? [compiledCliEntry(), ...serveArgs] : serveArgs;
   const child = spawn(bin, args, {
     cwd: root,
     detached: true,
@@ -343,13 +373,19 @@ export interface RestartRepoServerOptions {
   /** Inject for tests */
   locate?: typeof locateRepoServer;
   restartManaged?: typeof restartService;
-  classify?: typeof classifyRestartPath;
+  classify?: (
+    root: string,
+    server: LocatedServer,
+  ) => Promise<RestartPath | "refuse-supervised-unknown">;
   ownership?: typeof pidOwnership;
   supervisor?: typeof detectExternalSupervisor;
   stop?: typeof stopPidExact;
   spawn?: typeof spawnHandRunServe;
   wait?: typeof waitForServerRestart;
   health?: typeof fetchHealth;
+  onBeforeStop?: (ctx: { activeEngineers: number; path: RestartPath }) => void;
+  verifyPid?: typeof verifyPidServesRepo;
+  waitPidGone?: typeof waitForPidGone;
 }
 
 export interface RestartRepoServerResult {
@@ -394,6 +430,16 @@ export async function restartRepoServer(
   }
 
   const health = await (opts.health ?? fetchHealth)(server.host, server.port);
+  const verifyPid = opts.verifyPid ?? verifyPidServesRepo;
+  const healthForRoot =
+    health.ok && health.root && canonicalRegistryRoot(health.root) === canonicalRegistryRoot(root);
+  if (!healthForRoot && !verifyPid(server.pid, root)) {
+    return {
+      ok: false,
+      oldPid: server.pid,
+      message: `Refusing to signal pid ${server.pid}: it is not a verified repoos serve for this repo (stale lock or recycled pid).`,
+    };
+  }
   if (
     health.ok &&
     health.root &&
@@ -405,9 +451,24 @@ export async function restartRepoServer(
     };
   }
 
-  const path = (opts.classify ?? classifyRestartPath)(root, server);
+  const path = await (opts.classify ?? classifyRestartPath)(root, server);
+  if (path === "refuse-supervised-unknown") {
+    const detected = detectSupervisor(server.pid);
+    return {
+      ok: false,
+      oldPid: server.pid,
+      message:
+        detected.kind === "uncertain"
+          ? detected.reason
+          : "Could not determine how this server is supervised — refusing to restart automatically.",
+      manualCommand: `kill ${server.pid}`,
+    };
+  }
+
   const oldPid = server.pid;
   const oldVersion = health.serverVersion ?? server.version;
+
+  opts.onBeforeStop?.({ activeEngineers: health.activeEngineers, path });
 
   if (path === "managed-service") {
     const result = await (opts.restartManaged ?? restartService)(root);
@@ -489,9 +550,23 @@ export async function restartRepoServer(
       message: e instanceof Error ? e.message : String(e),
     };
   }
-  await waitForPidGone(oldPid, { timeoutMs: 8000 });
+  const gone = await (opts.waitPidGone ?? waitForPidGone)(oldPid, { timeoutMs: 8000 });
+  if (!gone) {
+    return {
+      ok: false,
+      path,
+      oldPid,
+      oldVersion,
+      message: `Server pid ${oldPid} did not exit within 8s — refusing to start a second serve on port ${server.port}.`,
+    };
+  }
 
-  (opts.spawn ?? spawnHandRunServe)(root, server.port, server.host || "127.0.0.1");
+  (opts.spawn ?? spawnHandRunServe)(
+    root,
+    server.port,
+    server.host || "127.0.0.1",
+    server.serveFlags,
+  );
 
   const waitRestart = opts.wait ?? waitForServerRestart;
 
@@ -510,7 +585,7 @@ export async function restartRepoServer(
       oldPid,
       oldVersion,
       message: waited.reason ?? "Server did not come back healthy",
-      manualCommand: `cd ${quoted} && repoos serve --port ${port} --host ${server.host || "127.0.0.1"}`,
+      manualCommand: `cd ${quoted} && repoos serve --port ${port} --host ${server.host || "127.0.0.1"}${server.serveFlags.length ? ` ${server.serveFlags.join(" ")}` : ""}`,
     };
   }
   return {

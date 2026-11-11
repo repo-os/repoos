@@ -12,12 +12,15 @@ import {
   type ServerRegistryEntry,
 } from "./server-registry.js";
 import { readServeLocks } from "../commands/status.js";
+import { verifyPidServesRepo } from "./serve-pid-verify.js";
+import { fetchHealthRoot } from "./server-registry.js";
 
 export interface LocatedServer {
   port: number;
   host: string;
   pid: number;
   version: string | null;
+  serveFlags: string[];
   /** Where the PID was resolved — lockfile is authoritative when live. */
   source: "lockfile" | "registry";
 }
@@ -60,12 +63,17 @@ export async function locateRepoServer(
 
   for (const lock of locks) {
     if (!lock.alive || lock.port === null) continue;
+    const host = lock.host ?? "127.0.0.1";
+    const healthRoot = await fetchHealthRoot(host, lock.port);
+    const healthOk = healthRoot !== null && canonicalRegistryRoot(healthRoot) === canonical;
+    if (!healthOk && !verifyPidServesRepo(lock.pid, root)) continue;
     const reg = await registryPidForPort(root, lock.port, opts.registryDir);
     return {
       port: lock.port,
-      host: lock.host ?? "127.0.0.1",
+      host,
       pid: lock.pid,
       version: reg?.version ?? null,
+      serveFlags: lock.serveFlags,
       source: "lockfile",
     };
   }
@@ -79,11 +87,13 @@ export async function locateRepoServer(
   for (const entry of entries) {
     const validated = await validateServerRegistryEntry(entry);
     if (!validated.valid) continue;
+    if (!verifyPidServesRepo(entry.pid, root)) continue;
     return {
       port: entry.port,
       host: entry.host,
       pid: entry.pid,
       version: entry.version,
+      serveFlags: [],
       source: "registry",
     };
   }

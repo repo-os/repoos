@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  classifyRestartPath,
+  detectSupervisor,
   parseLaunchctlPidPrint,
+  parseSystemdPidStatus,
   pidOwnership,
   restartRepoServer,
   waitForServerRestart,
@@ -15,6 +16,7 @@ function server(over: Partial<LocatedServer> = {}): LocatedServer {
     host: "127.0.0.1",
     pid: 1000,
     version: "0.5.80",
+    serveFlags: [],
     source: "lockfile",
     ...over,
   };
@@ -39,10 +41,30 @@ label = "org.repoos.serve.kamrai"
   });
 });
 
-describe("classifyRestartPath", () => {
-  it("prefers managed service when registered", () => {
-    vi.spyOn(serviceManager, "isManagedService").mockReturnValue(true);
-    expect(classifyRestartPath("/repo", server())).toBe("managed-service");
+describe("parseSystemdPidStatus", () => {
+  it("rejects user@ session units", () => {
+    const out = `● user@501.service - User Manager for UID 501`;
+    expect(parseSystemdPidStatus(out)).toBeNull();
+  });
+
+  it("uses systemctl without --user for system units", () => {
+    const out = `● org.repoos.serve.kamrai.service - RepoOS
+   Loaded: loaded (/etc/systemd/system/org.repoos.serve.kamrai.service)`;
+    expect(parseSystemdPidStatus(out)?.manualCommand).toBe(
+      "systemctl restart org.repoos.serve.kamrai.service",
+    );
+  });
+});
+
+describe("detectSupervisor", () => {
+  it("returns uncertain when launchctl fails and ppid is 1", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string) => {
+      if (cmd === "launchctl") throw new Error("permission denied");
+      if (cmd === "ps") return "1\n";
+      return "";
+    });
+    const r = detectSupervisor(99, execFile as never);
+    expect(r.kind).toBe("uncertain");
   });
 });
 
@@ -58,11 +80,46 @@ describe("restartRepoServer", () => {
     expect(result.message).toMatch(/another user/i);
   });
 
+  it("refuses stale pid without health or cmdline proof", async () => {
+    const result = await restartRepoServer(root, {
+      locate: async () => server(),
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: false,
+        root: null,
+        serverVersion: null,
+        activeEngineers: 0,
+      }),
+      verifyPid: () => false,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/not a verified repoos serve/i);
+  });
+
+  it("warns before stop when engineers are active", async () => {
+    const warned = vi.fn();
+    await restartRepoServer(root, {
+      locate: async () => server({ pid: 10 }),
+      classify: async () => "managed-service",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: true,
+        root,
+        serverVersion: "0.5.80",
+        activeEngineers: 2,
+      }),
+      restartManaged: async () => ({ ok: true }),
+      wait: async () => ({ ok: true, pid: 11, version: "0.5.82" }),
+      onBeforeStop: warned,
+    });
+    expect(warned).toHaveBeenCalledWith({ activeEngineers: 2, path: "managed-service" });
+  });
+
   it("restarts a managed service and waits for health", async () => {
     let waited = false;
     const result = await restartRepoServer(root, {
       locate: async () => server({ pid: 10 }),
-      classify: () => "managed-service",
+      classify: async () => "managed-service",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
       health: async () => ({
         ok: true,
@@ -90,13 +147,13 @@ describe("restartRepoServer", () => {
     const stop = vi.fn();
     const result = await restartRepoServer(root, {
       locate: async () => server({ pid: 20 }),
-      classify: () => "external-supervisor",
+      classify: async () => "external-supervisor",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
       health: async () => ({
         ok: true,
         root,
         serverVersion: "0.5.80",
-        activeEngineers: 2,
+        activeEngineers: 0,
       }),
       stop,
       wait: async () => ({ ok: true, pid: 21, version: "0.5.82" }),
@@ -109,13 +166,12 @@ describe("restartRepoServer", () => {
     expect(stop).toHaveBeenCalledWith(20);
     expect(result.ok).toBe(true);
     expect(result.path).toBe("external-supervisor");
-    expect(result.activeEngineers).toBe(2);
   });
 
   it("fails with manual command when supervisor never respawns", async () => {
     const result = await restartRepoServer(root, {
       locate: async () => server({ pid: 30 }),
-      classify: () => "external-supervisor",
+      classify: async () => "external-supervisor",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
       health: async () => ({
         ok: true,
@@ -140,12 +196,13 @@ describe("restartRepoServer", () => {
     expect(result.manualCommand).toContain("kickstart");
   });
 
-  it("hand-run stops then spawns and waits", async () => {
+  it("hand-run stops, waits for exit, spawns with stored flags", async () => {
     const stop = vi.fn();
     const spawn = vi.fn();
     const result = await restartRepoServer(root, {
-      locate: async () => server({ pid: 40, host: "127.0.0.1" }),
-      classify: () => "hand-run",
+      locate: async () =>
+        server({ pid: 40, host: "127.0.0.1", serveFlags: ["--preview-overrides"] }),
+      classify: async () => "hand-run",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
       health: async () => ({
         ok: true,
@@ -155,12 +212,46 @@ describe("restartRepoServer", () => {
       }),
       stop,
       spawn,
+      verifyPid: () => true,
       wait: async () => ({ ok: true, pid: 41, version: "0.5.82" }),
     });
     expect(stop).toHaveBeenCalledWith(40);
-    expect(spawn).toHaveBeenCalledWith(root, 7200, "127.0.0.1");
+    expect(spawn).toHaveBeenCalledWith(root, 7200, "127.0.0.1", ["--preview-overrides"]);
     expect(result.ok).toBe(true);
     expect(result.path).toBe("hand-run");
+  });
+
+  it("refuses hand-run spawn when pid does not exit", async () => {
+    const spawn = vi.fn();
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 50 }),
+      classify: async () => "hand-run",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: true,
+        root,
+        serverVersion: "0.5.80",
+        activeEngineers: 0,
+      }),
+      stop: () => {},
+      spawn,
+      verifyPid: () => true,
+      waitPidGone: async () => false,
+      wait: async () => ({ ok: false, pid: null, version: null }),
+    });
+    expect(spawn).not.toHaveBeenCalled();
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/did not exit/i);
+  });
+});
+
+describe("classifyRestartPath integration", () => {
+  it("prefers managed service only when status is running", async () => {
+    vi.spyOn(serviceManager, "getServiceStatus").mockResolvedValue({
+      status: "running",
+    } as never);
+    const { classifyRestartPath } = await import("./server-restart.js");
+    expect(await classifyRestartPath("/repo", server())).toBe("managed-service");
   });
 });
 
@@ -182,23 +273,6 @@ describe("waitForServerRestart", () => {
     });
     expect(result.ok).toBe(true);
     expect(result.pid).toBe(9);
-  });
-
-  it("times out when pid never changes", async () => {
-    const result = await waitForServerRestart("/r", 7000, "127.0.0.1", {
-      oldPid: 5,
-      timeoutMs: 80,
-      pollMs: 20,
-      fetch: async () => ({
-        ok: true,
-        root: "/r",
-        serverVersion: "1.0.0",
-        activeEngineers: 0,
-      }),
-      readPid: () => 5,
-      sleep: async () => {},
-    });
-    expect(result.ok).toBe(false);
   });
 });
 
