@@ -16,10 +16,7 @@ import {
   sweepStaleAgentRunTmpdirs,
 } from "../core/agent-run-tmpdir.js";
 import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
-import {
-  copilotAutoTierModelArgs,
-  enrichAgentFailureDetail,
-} from "../core/copilot-auto-tier.js";
+import { copilotAutoTierModelArgs, enrichAgentFailureDetail } from "../core/copilot-auto-tier.js";
 import {
   patternKillWarning,
   processGroupKillSupported,

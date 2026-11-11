@@ -24,8 +24,6 @@ describe("copilot Auto tier helpers", () => {
   });
 
   it("does not treat unknown-option errors as tier-unavailable", () => {
-    expect(
-      formatCopilotAutoTierFailure("copilot: unknown option '--auto-tier'"),
-    ).toBeNull();
+    expect(formatCopilotAutoTierFailure("copilot: unknown option '--auto-tier'")).toBeNull();
   });
 });
