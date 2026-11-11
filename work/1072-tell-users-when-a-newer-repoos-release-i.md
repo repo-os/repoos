@@ -3,6 +3,9 @@ id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — The four frozen fixes are in, but a documented Retry-After path is dead code and the cache write can still lose the not…"
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
@@ -156,3 +159,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T08:36:08Z · status active→review
 - 2026-11-11T08:36:08Z · message_queued at 2026-11-11T08:36:08.587Z
 - 2026-11-11T08:37:49Z · note: review pass 3: needs some work
+- 2026-11-11T08:37:49Z · needs_input
