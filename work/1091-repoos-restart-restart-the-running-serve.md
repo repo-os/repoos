@@ -174,3 +174,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T18:38:24Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T18:44:06Z · status review→active
 - 2026-11-11T18:44:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T18:46:03Z · note: handoff requested (cli)
