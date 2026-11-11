@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T07:27:26Z"
+updated_at: "2026-11-11T07:37:37Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: c4a4aac81eb4365f88bf5ecb91decb216d4f4aa1
 review_rounds: 1
