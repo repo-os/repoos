@@ -2,7 +2,7 @@
 id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T18:44:00Z"
+updated_at: "2026-11-11T18:44:09Z"
 handoff_signal_retry_count: 1
 dev_error_count: 6
 ---
@@ -96,3 +96,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T18:35:02Z · body
 - 2026-11-11T18:42:13Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T18:44:00Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T18:44:09Z · status active→review
