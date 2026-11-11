@@ -12,7 +12,7 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T22:07:12Z"
+updated_at: "2026-11-11T22:14:41Z"
 last_close_out_gate_ms: 225461
 last_close_out_gate_at: "2026-11-11T22:05:50.406Z"
 review_passes: 6
@@ -172,3 +172,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T21:53:49Z · needs_input
 - 2026-11-11T22:05:50Z · close-out gate completed in 225s
 - 2026-11-11T22:07:12Z · status done→done, release:success
+- 2026-11-11T22:14:41Z · message_dropped: 4 queued message(s) discarded — task is done
