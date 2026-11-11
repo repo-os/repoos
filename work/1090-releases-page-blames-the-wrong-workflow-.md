@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T05:02:30Z"
+updated_at: "2026-11-11T05:08:24Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -30,6 +30,9 @@ After cutting v0.5.82 the Releases page said "The release workflow failed at 'Ru
 
 ## Notes
 Separately (not part of this task): the Adoption matrix macOS job failed at `oven-sh/setup-bun@v2`, most likely a transient download failure; re-run it, and file a task only if it repeats.
+
+## Accepted scope and known limitations
+FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress must query the tap's formula-update workflow (actions/workflows/<file>/runs) and match the viewed tag or version, not repo-wide runs; update the callers (~lines 409, 464) accordingly and add a test where an unrelated tap workflow is in progress and the row stays out-of-sync. NOT blocking, follow-up only: documenting that an unset release.workflow disables the banner and grace window in docs/releases.md; the grace window applying to a formula ahead of the tag; unauthenticated API quota per out-of-sync row; a view test for the updating label and violet CSS. Report those under Suggestions, not Bugs.
 
 ## Activity
 
@@ -53,3 +56,4 @@ Separately (not part of this task): the Adoption matrix macOS job failed at `ove
 - 2026-11-11T05:02:27Z · message_delivered: 1 message(s)
 - 2026-11-11T05:02:27Z · status review→active
 - 2026-11-11T05:02:30Z · CTO nudge: held — remote validation is running
+- 2026-11-11T05:08:24Z · body: Accepted scope and known limitations (added)
