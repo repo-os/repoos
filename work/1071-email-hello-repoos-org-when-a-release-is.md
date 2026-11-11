@@ -3,9 +3,6 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `needs some work`: one Resend lifecycle bug. A corrupt `release-emails.json` leaves the version stuck \"in progress\" unt…"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T10:20:02Z"
+updated_at: "2026-11-11T10:30:04Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_passes: 5
@@ -242,3 +239,4 @@ FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every 
 - 2026-11-11T10:15:48Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The task stays active — fix the failure and ask again.
 - 2026-11-11T10:15:49Z · message_delivered: 1 message(s)
 - 2026-11-11T10:20:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T10:30:04Z · watchdog: restarting engineer after 10m with no live process
