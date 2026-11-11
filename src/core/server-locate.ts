@@ -21,6 +21,8 @@ export interface LocatedServer {
   pid: number;
   version: string | null;
   serveFlags: string[];
+  /** Lockfile `startedAt`, when resolved from a lockfile (pid-reuse guard). */
+  startedAt?: string | null;
   /** Where the PID was resolved — lockfile is authoritative when live. */
   source: "lockfile" | "registry";
 }
@@ -66,7 +68,7 @@ export async function locateRepoServer(
     const host = lock.host ?? "127.0.0.1";
     // /api/health has no pid, so it cannot vouch for lock.pid (recycled pid):
     // always verify the pid itself serves this repo.
-    if (!verifyPidServesRepo(lock.pid, root)) continue;
+    if (!verifyPidServesRepo(lock.pid, root, undefined, lock.startedAt)) continue;
     const reg = await registryPidForPort(root, lock.port, opts.registryDir);
     return {
       port: lock.port,
@@ -74,6 +76,7 @@ export async function locateRepoServer(
       pid: lock.pid,
       version: reg?.version ?? null,
       serveFlags: lock.serveFlags,
+      startedAt: lock.startedAt,
       source: "lockfile",
     };
   }

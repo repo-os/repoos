@@ -420,7 +420,7 @@ export async function restartRepoServer(
   const verifyPid = opts.verifyPid ?? verifyPidServesRepo;
   // /api/health carries no pid, so it cannot vouch for `server.pid`: a recycled
   // pid plus another server answering on the port would pass. Always verify.
-  if (!verifyPid(server.pid, root)) {
+  if (!verifyPid(server.pid, root, undefined, server.startedAt)) {
     return {
       ok: false,
       oldPid: server.pid,

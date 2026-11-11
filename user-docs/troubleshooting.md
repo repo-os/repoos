@@ -208,8 +208,8 @@ in flight it says so and goes straight on.
 
 If RepoOS cannot read the supervisor's label it refuses and prints the manual
 command rather than risk a half-restart; copy that command and run it yourself.
-The manual command stops the pid and then starts `repoos serve` again, because a
-plain `kill <pid>` on its own only stops the server: it stays down unless its
-supervisor respawns it.
+The manual command is a single `kill <pid>`, which only stops the server: if a
+supervisor owns it, the supervisor respawns it; if nothing answers after about
+30 seconds, start it yourself with `repoos serve`.
 If the pid belongs to another user (root, or a different account) it refuses for
 the same reason — restart under that account or ask an administrator.
