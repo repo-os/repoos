@@ -16,6 +16,7 @@ import {
   shotFixturePinnedRemoteStatus,
   shotFixturePinnedTaskRemoteActivity,
   shotFixturePinnedWorkingDiff,
+  shotFixtureReleaseEmail,
   shotFixtureSchedules,
   isShotPreviewSeededTaskId,
   shotPreviewSkipsEngineeringReportsFetch,
@@ -57,6 +58,15 @@ describe("shot preview board fixtures (#0743)", () => {
       "done",
     );
     expect(ui.active).toBeNull();
+  });
+
+  it("seeds a human task missing a guide for drawer:humanGuideWarning (#1074)", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:humanGuideWarning");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)!;
+    expect(task.assignee).toBe("human");
+    expect(task.body).not.toMatch(/## Step-by-step guide/);
   });
 
   it.each(["card:held", "drawer:held"] as const)("seeds an intentional hold for %s", (fixture) => {
@@ -158,6 +168,28 @@ describe("shot preview board fixtures (#0743)", () => {
       "editor:unconfigured",
     );
     expect(readShotPreviewFixtureFromLocation({ search: "" })).toBeNull();
+  });
+
+  it("seeds a sent or failed release-email card for the release:email* fixtures (#1071)", () => {
+    // The preview board serves Release emails "off", so acceptance 7's status
+    // row needs a fixture; any other fixture must return null so the page keeps
+    // its real per-release state.
+    expect(shotFixtureReleaseEmail(null)).toBeNull();
+    expect(shotFixtureReleaseEmail("reminders:due")).toBeNull();
+    expect(shotFixtureContainer("release:emailSent")).toBeNull();
+
+    const sent = shotFixtureReleaseEmail("release:emailSent");
+    expect(sent?.record?.status).toBe("sent");
+    expect(sent?.record?.sentTo).toEqual(sent?.to);
+    expect(sent?.enabled).toBe(true);
+    expect(sent?.providerConfigured).toBe(true);
+
+    const failed = shotFixtureReleaseEmail("release:emailFailed");
+    expect(failed?.record?.status).toBe("failed");
+    expect(failed?.record?.reason).toMatch(/answered 422/);
+    // One recipient accepted, one still owed — exactly the Resend case.
+    expect(failed?.record?.sentTo).toHaveLength(1);
+    expect(failed?.to).toHaveLength(2);
   });
 
   it("clears the configured editor so the Set-editor hint renders (#0805)", () => {

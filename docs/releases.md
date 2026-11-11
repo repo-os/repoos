@@ -466,13 +466,71 @@ failures never produce that banner.
 | `GET /api/release`       | `ReleaseStatus` — version, tags, blockers, links |
 | `GET /api/release/distribution` | `DistributionSummary` — each configured channel's published version/state for the release being viewed. Separate from `/api/release` so a slow registry can't delay or fail the page. |
 | `GET /api/release/run`   | `ReleaseRun` — `state` / `phase` / `message` / timestamps for the current or most recent run (in-memory, resets on restart) |
-| `POST /api/release`      | `{ version, confirmTag, notes? }` → starts a run; `409` if one is already running |
+| `POST /api/release`      | `{ version, confirmTag, notes?, knownIssues? }` → starts a run; `409` if one is already running. `knownIssues` is stored on the release record for the release email (#1071) |
+| `GET /api/release/email` | `{ enabled, to, when, includePrereleases, providerConfigured, repository, version, record }` — the `[release.email]` options and the email record for `?version=` (default: newest). Local files only, no network |
+| `GET /api/release/email/preview` | `?version=` → `{ subject, html, text, recipients }`, rendered from the release record. Never sends |
+| `POST /api/release/email/send` | `{ version }` → Resend button. Sends only to configured recipients not yet in `sentTo`; `409` when emails are off, no provider is set, or a send is already running |
 | `POST /api/release/notes` | `{ version? }` → starts the AI draft detached (#0605) and returns `202` with `{ run }`; synchronous short-circuits stay instant: `200` + `{ notes, sinceTag, commitCount, truncated, cached, cachedAt }` when there's nothing to summarize or a cached draft hits for this commit context, `400` when no agent is enabled. A second POST while the run is in flight returns the same run with `202` instead of starting a duplicate agent; never cuts a release |
 | `GET /api/release/notes/run` | `ReleaseNotesRun` — the draft run's `state` (`idle`/`running`/`succeeded`/`failed`), `startedAt`, `error`, commit-context `key`, and the `notes` draft when succeeded (in-memory, resets on restart) |
 | `GET /api/release/notes/unpushed` | The newest cached draft whose generation HEAD is not reachable from the latest release tag, or `null`: `{ notes, createdAt, head, headShort, sinceTag, commitsBehind, commits, currentHead, currentHeadShort }` (#0641) |
 
 `confirmTag` must exactly equal `tagPrefix + version` — a guard against a
 malformed request cutting the wrong tag.
+
+## Release emails (#1071)
+
+After a stable cut pushes its tag, `[release.email]` can email the team the
+version, notes, known issues and links. The code is `src/server/release-email.ts`
+(render, publish detection, record) and `src/server/email.ts` (the one sender,
+shared with login codes and invites).
+
+- **Published, not tagged, by default.** With `[release].repository` set, RepoOS
+  polls the public `GET https://api.github.com/repos/<owner>/<repo>/releases/tags/<tag>`
+  (plain `fetch`, no token) until the release is not a draft and has assets. The
+  first probe is immediate; later probes back off to three minutes and stop after
+  an hour, recording a failure to resend. No repository, or no answer from GitHub
+  on the first look, falls back to sending at the tag, and the record says so. An
+  HTTP error (a rate limit, say) keeps waiting, so it never triggers the fallback;
+  if the hour expires while GitHub is still answering with an error, the record
+  says GitHub could not be checked rather than claiming the tag is not published.
+  A private repository returns 404 to the public API, so its email waits the hour
+  and then fails: set `[release.email] when = "tagged"` for those.
+- **Links.** The email links the GitHub release and `CHANGELOG.md` at the tag.
+  Any project releasing through RepoOS has a `CHANGELOG.md` (the release pipeline
+  writes it), so the changelog link resolves; the link assumes that file exists at
+  the tag.
+- **Not a git hook.** A hook would fire before CI has built anything and link to a
+  download that does not exist yet.
+- **Detached.** `cutNewRelease` calls `startCutReleaseEmail` after the tag push and
+  does not await it. The release outcome never depends on the email.
+- **Record.** `.repoos/release-emails.json` (gitignored, under `cacheDir`) keys one
+  record per version: `status` (`pending` / `sent` / `failed` / `skipped`), `sentTo`,
+  `reason`, `when`, `at`. A `sent` record makes the automatic path a no-op. A
+  malformed file throws rather than reading as empty, so a bad read can't cause a
+  second send. A `pending` record with no waiter in this process (the server
+  restarted during the wait) reads as `failed` with a restart reason, so Resend is
+  offered; the file itself is not rewritten.
+- **Bell.** A `failed` send, or a `skipped` one with no provider, raises a
+  `releaseEmailFailed` notice linking to the Releases page. A later `sent` clears it.
+- **Resend** only targets configured recipients missing from `sentTo`, so a
+  partial failure can be retried without mailing a recorded recipient again (at most once per recipient, except for the short window between the provider accepting a message and the local write). With `when = "published"` it also
+  probes GitHub once first, so a resend after a restart cannot announce a version
+  GitHub has not published yet — an unreachable GitHub still falls through to the
+  tag, like the automatic path.
+- **Known issues** live on the committed release entry (`knownIssues` in
+  `release-history.json`), typed in the release modal. They are never generated.
+  An empty field renders "None recorded".
+- **Prereleases** (`X.Y.Z-suffix`) are skipped unless `includePrereleases`; the
+  explicit Resend button ignores that toggle, since a person asked.
+- **Tests** use a fake `fetch` and injected sleep/clock: `src/ui-app/tests/release-email.test.ts`.
+  Nothing in the suite sends mail or reaches the network.
+
+Known gaps, filed rather than built here: no "send test email" action (Preview
+renders without sending); no `repoos release email` CLI subcommand (the routes are
+HTTP only); the send route accepts a version before GitHub has published it (only
+the UI hides the button); the publish wait itself does not resume after a restart
+(Resend re-probes, then sends, rather than waiting out the original hour); and the
+email has no per-recipient unsubscribe.
 
 ## CI: `release.yml`
 

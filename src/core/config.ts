@@ -1,4 +1,5 @@
 import { DEFAULT_ALWAYS_RUN } from "./check-plan.js";
+import { isValidEmail } from "./auth.js";
 /**
  * Config resolution. Zero-config by default; `repoos.toml` at the repo root
  * can override any field. We parse only the flat subset of TOML we need, again
@@ -41,6 +42,7 @@ import type {
   ReviewVerificationConfig,
   ReviewConfig,
   RepoOSConfig,
+  ReleaseEmailConfig,
   Status,
   Assignee,
   StoriesConfig,
@@ -162,7 +164,7 @@ export const DEFAULT_AGENTS: Agent[] = [
       "the scoped check once and hand off only when it passes; end the final message with the handoff signal " +
       "alone on its own line. After a merge conflict with the base branch, merge it and take the base branch's " +
       "copy of the task file, rebuild, then hand off. Never move your own task out of `active`. If an acceptance " +
-      "criterion needs a human (a real device, account or runner), ask for it to be split into a held human task " +
+      "criterion needs a human (a real device, account or runner), ask for it to be split into a held human task with a complete `## Step-by-step guide`: numbered instructions, exact commands or click paths, safe secret storage, likely failures, success checks, and what to report back " +
       "instead of claiming it works. " +
       "Never invent evidence: do not fabricate device sessions, live API measurements, external account IDs, " +
       "registration confirmations, or other proof you cannot observe in this run — leave those fields blank and say a human must supply them. " +
@@ -201,6 +203,7 @@ export const DEFAULT_AGENTS: Agent[] = [
       "Set real dependencies with `--depends-on <ids>` whenever a task cannot start, be verified or land before another; check the other direction too and add `--depends-on` to existing tasks that this one now blocks. Do not add a dependency just because two tasks touch the same area, and never create a cycle. " +
       "Small, independent, low-risk fixes go into the ONE open easter-eggs bundle with `repoos bundle add` (never a new task each, never a second open bundle). " +
       "If an acceptance criterion needs a human (real account, device, runner or mailbox), file that part separately with `--depends-on`, `--assigned-to human` and `--hold true`, and keep the code task to what an agent can do. " +
+      "Every human-assigned task, including one created by splitting out human work, must include `## Step-by-step guide`: numbered steps, exact commands or click paths, where information goes, secrets stored only in the project's secret store (never chat, tasks or git), likely failures and recovery, a clear how-you-will-know-it-worked line, and what to report back. Do not require this section for AI tasks. " +
       "Attach every screenshot a request came with (`--screenshot path`, optional `--caption`). " +
       "When a bug class shows up in review again and again, file the class as one task rather than letting each instance be a review round.",
   },
@@ -884,6 +887,44 @@ const DISTRIBUTION_KINDS: readonly DistributionKind[] = [
 ];
 
 /**
+ * Parse `[release.email]` (#1071). Parsed on its own so it reads the same
+ * whether or not `[release]` also sets provider keys. Undefined when the block
+ * is absent. Invalid addresses are dropped with a warning, like `[[distribution]]`
+ * rows; an unknown `when` falls back to "published" rather than sending early.
+ */
+export function parseReleaseEmailConfig(
+  parsed: Record<string, unknown>,
+): ReleaseEmailConfig | undefined {
+  const keys = ["enabled", "to", "when", "includePrereleases"] as const;
+  if (keys.every((key) => parsed[`release.email.${key}`] === undefined)) return undefined;
+  const email: ReleaseEmailConfig = {};
+  const enabled = parsed["release.email.enabled"];
+  if (typeof enabled === "boolean") email.enabled = enabled;
+  const rawTo = parsed["release.email.to"];
+  const items = Array.isArray(rawTo) ? rawTo : typeof rawTo === "string" ? rawTo.split(",") : [];
+  const to: string[] = [];
+  for (const item of items) {
+    const address = typeof item === "string" ? item.trim() : "";
+    if (!address) continue;
+    if (!isValidEmail(address)) {
+      console.warn(`[release.email] ignoring "${address}": not an email address`);
+      continue;
+    }
+    if (!to.includes(address)) to.push(address);
+  }
+  email.to = to;
+  const when = parsed["release.email.when"];
+  if (when === "published" || when === "tagged") email.when = when;
+  else if (when !== undefined) {
+    console.warn(`[release.email] when must be "published" or "tagged"; using "published"`);
+    email.when = "published";
+  }
+  const includePrereleases = parsed["release.email.includePrereleases"];
+  if (typeof includePrereleases === "boolean") email.includePrereleases = includePrereleases;
+  return email;
+}
+
+/**
  * Parse the `[[distribution]]` array of tables (#0445) — one row per place
  * users install this project's releases. Invalid rows are dropped with a
  * warning rather than poisoning the section: a missing name, a non-http(s)
@@ -1496,6 +1537,18 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
       ] as const) {
         const value = parsed[`release.${key}`];
         if (typeof value === "string") cfg.release[key] = value as never;
+      }
+    }
+    // [release.email] (#1071): read on its own, so the Settings toggle shows what
+    // the file says. Emails only go out from a cut, and a cut needs [release]
+    // enabled, so say so at load rather than leave the email silently unsent.
+    const releaseEmail = parseReleaseEmailConfig(parsed);
+    if (releaseEmail) {
+      cfg.release = { ...cfg.release, email: releaseEmail };
+      if (releaseEmail.enabled === true && cfg.release.enabled !== true) {
+        console.warn(
+          "[release.email] is enabled but [release] enabled is not true; no release email will be sent",
+        );
       }
     }
     // Optional deployments surface (#0340). A [[deployments]] array of tables —
@@ -2691,6 +2744,48 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "The task-area vocabulary the drawer's area picker offers — comma-separated, order " +
         "matters. Empty means free text only; preview-target areas are offered automatically " +
         "without being declared here.",
+    },
+    {
+      key: "release.email.enabled",
+      label: "Release emails",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description:
+        "Email the team when a release goes out, with the release notes and known issues. Needs [release] enabled and an email provider ([auth.emailProvider]).",
+    },
+    {
+      key: "release.email.to",
+      label: "Release email recipients",
+      type: "array",
+      tier: "live",
+      restartRequired: false,
+      default: [],
+      description: "Addresses that receive each release email, one message per address.",
+    },
+    {
+      key: "release.email.when",
+      label: "Send release email",
+      type: "select",
+      tier: "live",
+      restartRequired: false,
+      default: "published",
+      options: [
+        { value: "published", label: "When published" },
+        { value: "tagged", label: "When tagged" },
+      ],
+      description:
+        "Published waits until GitHub serves the release with its assets, so the email never links to a download that is not there yet. Tagged sends as soon as the tag is pushed.",
+    },
+    {
+      key: "release.email.includePrereleases",
+      label: "Email prereleases",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: false,
+      description: "Also email beta, canary and rc releases. Off by default.",
     },
     {
       key: "stories.enabled",
@@ -4671,6 +4766,10 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "release.remote",
   "release.repository",
   "release.workflow",
+  "release.email.enabled",
+  "release.email.to",
+  "release.email.when",
+  "release.email.includePrereleases",
   // Deployments
   "deployments.name",
   "deployments.service",

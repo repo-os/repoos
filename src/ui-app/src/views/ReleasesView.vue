@@ -18,6 +18,11 @@ import FailedTestsList from "../components/FailedTestsList.vue";
 import { nextReleaseVersion } from "../releases";
 import PageSkeleton from "../components/PageSkeleton.vue";
 import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
+import {
+  isShotPreviewCaptureActive,
+  readShotPreviewFixtureFromLocation,
+  shotFixtureReleaseEmail,
+} from "../lib/shot-preview-fixtures";
 
 interface ReleaseStatus {
   enabled: boolean;
@@ -117,6 +122,8 @@ const message = ref("");
 const error = ref("");
 /** Optional release notes; empty means the cut ships with none (the default). */
 const notes = ref("");
+/** Known issues for the release email (#1071). Empty renders "None recorded". */
+const knownIssues = ref("");
 const generatingNotes = ref(false);
 const notesError = ref("");
 /** Short hint that a generate returned saved notes instead of a fresh draft. */
@@ -427,6 +434,147 @@ async function load(): Promise<void> {
     loadError.value = err instanceof Error ? err.message : String(err);
   } finally {
     loading.value = false;
+  }
+}
+
+/** One release's email state, as `GET /api/release/email` reports it (#1071). */
+interface ReleaseEmailRecord {
+  version: string;
+  tag: string;
+  status: "pending" | "sent" | "failed" | "skipped";
+  when: "published" | "tagged";
+  sentTo: string[];
+  reason?: string;
+  at: string;
+}
+interface ReleaseEmailState {
+  enabled: boolean;
+  to: string[];
+  when: "published" | "tagged";
+  includePrereleases: boolean;
+  providerConfigured: boolean;
+  repository: string | null;
+  version: string | null;
+  record: ReleaseEmailRecord | null;
+}
+interface ReleaseEmailPreview {
+  subject: string;
+  text: string;
+  recipients: string[];
+}
+
+const releaseEmail = ref<ReleaseEmailState | null>(null);
+const releaseEmailPreview = ref<ReleaseEmailPreview | null>(null);
+const releaseEmailBusy = ref(false);
+const releaseEmailConfirm = ref(false);
+const releaseEmailError = ref("");
+let releaseEmailTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Recipients who have not received this release's email yet. */
+const releaseEmailPending = computed(() => {
+  const email = releaseEmail.value;
+  if (!email) return [];
+  const sent = email.record?.sentTo ?? [];
+  return email.to.filter((address) => !sent.includes(address));
+});
+
+/** Resend is offered once an email has been attempted and someone is still owed one. */
+const canResendReleaseEmail = computed(() => {
+  const email = releaseEmail.value;
+  if (!email?.enabled || !email.providerConfigured) return false;
+  if (email.record?.status === "pending") return false;
+  return releaseEmailPending.value.length > 0;
+});
+
+/** The one-line status the card shows, in the words the email record uses. */
+const releaseEmailState = computed<{ state: string; label: string }>(() => {
+  const email = releaseEmail.value;
+  if (!email?.version) return { state: "off", label: "" };
+  if (!email.enabled) {
+    return {
+      state: "off",
+      label: "Release emails are off. Nothing is sent when a release goes out.",
+    };
+  }
+  if (!email.providerConfigured) {
+    return {
+      state: "attention",
+      label: "Release emails are on, but no email provider is set up, so nothing is sent.",
+    };
+  }
+  const record = email.record;
+  if (!record) return { state: "idle", label: `No email sent yet for v${email.version}.` };
+  const count = record.sentTo.length;
+  if (record.status === "sent") {
+    return {
+      state: "sent",
+      label: `Email sent to ${count} ${count === 1 ? "recipient" : "recipients"}`,
+    };
+  }
+  if (record.status === "pending") {
+    return {
+      state: "pending",
+      label: record.reason || `Waiting for GitHub to publish ${record.tag}`,
+    };
+  }
+  if (record.status === "failed") {
+    return { state: "failed", label: `Email failed: ${record.reason || "unknown error"}` };
+  }
+  return { state: "skipped", label: `Not emailed: ${record.reason || "skipped"}` };
+});
+
+/** Reads the email state for the viewed release. Polls while a send is waiting on GitHub. */
+async function loadReleaseEmail(): Promise<void> {
+  if (releaseEmailTimer) clearTimeout(releaseEmailTimer);
+  releaseEmailTimer = null;
+  // A capture fixture (#1071) seeds a sent or failed card the preview board
+  // cannot produce on its own, so acceptance 7 can show the real status row.
+  const fixture = isShotPreviewCaptureActive(window.location)
+    ? shotFixtureReleaseEmail(readShotPreviewFixtureFromLocation(window.location))
+    : null;
+  if (fixture) {
+    releaseEmail.value = fixture;
+    releaseEmailError.value = "";
+    return;
+  }
+  try {
+    releaseEmail.value = await api<ReleaseEmailState>("/api/release/email");
+    releaseEmailError.value = "";
+  } catch (err) {
+    // Keep the last state on screen; the card is advisory, not the release.
+    releaseEmailError.value =
+      err instanceof Error ? err.message : "Could not load the release email state.";
+  }
+  if (releaseEmail.value?.record?.status === "pending") {
+    releaseEmailTimer = setTimeout(() => void loadReleaseEmail(), 30_000);
+  }
+}
+
+async function openReleaseEmailPreview(): Promise<void> {
+  releaseEmailError.value = "";
+  try {
+    releaseEmailPreview.value = await api<ReleaseEmailPreview>("/api/release/email/preview");
+  } catch (err) {
+    releaseEmailError.value = err instanceof Error ? err.message : "Could not render the preview.";
+  }
+}
+
+/** The explicit Resend: the server only sends to recipients who do not have it yet. */
+async function resendReleaseEmailNow(): Promise<void> {
+  if (!releaseEmail.value?.version) return;
+  releaseEmailBusy.value = true;
+  releaseEmailError.value = "";
+  try {
+    const result = await api<{ record: ReleaseEmailRecord }>(
+      "/api/release/email/send",
+      JSON_OPTS("POST", { version: releaseEmail.value.version }),
+    );
+    if (releaseEmail.value) releaseEmail.value = { ...releaseEmail.value, record: result.record };
+    releaseEmailConfirm.value = false;
+  } catch (err) {
+    releaseEmailError.value = err instanceof Error ? err.message : "Could not send the email.";
+  } finally {
+    releaseEmailBusy.value = false;
   }
 }
 
@@ -839,6 +987,7 @@ async function release(): Promise<void> {
         version: newVersion.value,
         confirmTag: newTag.value,
         notes: notes.value.trim() || undefined,
+        knownIssues: knownIssues.value.trim() || undefined,
       }),
     );
     releasePosting = false;
@@ -846,6 +995,8 @@ async function release(): Promise<void> {
     // A cut release invalidates the channel list too: the versions below are
     // about to change, so a revisit must not be served the pre-release set.
     invalidatePageData("release-distribution");
+    // A tagged cut emails at once; a published one records "waiting" first.
+    void loadReleaseEmail();
     run.value = result.run;
     // Re-assert the releasing flag (kept only when the returned run is still
     // in flight) and drop polls issued while the POST was in flight — they
@@ -926,6 +1077,7 @@ async function pollRun(): Promise<void> {
         // mid-run never clears it.
         newVersion.value = "";
         notes.value = "";
+        knownIssues.value = "";
         error.value = "";
         runLog.value = "";
         notesError.value = "";
@@ -935,7 +1087,7 @@ async function pollRun(): Promise<void> {
         debuggerSent.value = false;
         debuggerErr.value = "";
         invalidatePageData("release-distribution");
-        await Promise.all([load(), loadDistribution()]);
+        await Promise.all([load(), loadDistribution(), loadReleaseEmail()]);
       } else if (latest.state === "failed" && latest.message) {
         // A failed phase reports its full command output (repoos check log, build
         // errors). Classify the common causes into the headline, then show the
@@ -1030,12 +1182,14 @@ onMounted(() => {
   if (new URLSearchParams(window.location.search).get("drawer") === "cut") confirmOpen.value = true;
   void load();
   void loadDistribution();
+  void loadReleaseEmail();
   void pollRun();
   void pollNotesRun();
   startPolling();
 });
 onBeforeUnmount(() => {
   stopPolling();
+  if (releaseEmailTimer) clearTimeout(releaseEmailTimer);
   if (copyTimer) clearTimeout(copyTimer);
 });
 </script>
@@ -1219,6 +1373,86 @@ onBeforeUnmount(() => {
               </Button>
               <span v-if="debuggerErr" class="rel-debugger-err">{{ debuggerErr }}</span>
             </div>
+          </section>
+
+          <!-- Release emails (#1071): what happened to this release's email, with the
+               explicit Preview and Resend. Shows nothing until the state loads. -->
+          <section
+            v-if="releaseEmail && releaseEmail.version"
+            class="rel-card rel-email"
+            data-test-id="release-email"
+          >
+            <div class="rel-email-head">
+              <h2 class="rel-dist-title">Release email</h2>
+              <div class="rel-email-actions">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  :disabled="releaseEmailBusy"
+                  @click="openReleaseEmailPreview"
+                >
+                  Preview
+                </Button>
+                <Button
+                  v-if="canResendReleaseEmail"
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  :disabled="releaseEmailBusy"
+                  @click="releaseEmailConfirm = true"
+                >
+                  {{ releaseEmail.record ? "Resend" : "Send now" }}
+                </Button>
+              </div>
+            </div>
+            <p class="rel-email-status" :data-state="releaseEmailState.state" role="status">
+              {{ releaseEmailState.label }}
+            </p>
+            <p v-if="!releaseEmail.enabled" class="rel-email-hint">
+              <a class="rel-link" href="/settings?tab=general&section=release-emails"
+                >Set up release emails</a
+              >
+            </p>
+            <p v-else-if="!releaseEmail.providerConfigured" class="rel-email-hint">
+              No email provider is configured, so nothing will be sent. Set
+              <code>[auth.emailProvider]</code> (Resend, key via <code>REPOOS_RESEND_API_KEY</code>)
+              in repoos.toml — <a class="rel-link" href="/settings?tab=toml">open repoos.toml</a>.
+              Nothing is sent to the team until it is set.
+            </p>
+            <div v-if="releaseEmailConfirm" class="rel-email-confirm">
+              <span>
+                Send the v{{ releaseEmail.version }} email to {{ releaseEmailPending.length }}
+                {{ releaseEmailPending.length === 1 ? "recipient" : "recipients" }} who have not
+                received it?
+              </span>
+              <Button
+                size="sm"
+                type="button"
+                :disabled="releaseEmailBusy"
+                @click="resendReleaseEmailNow"
+              >
+                {{ releaseEmailBusy ? "Sending…" : "Send" }}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                :disabled="releaseEmailBusy"
+                @click="releaseEmailConfirm = false"
+              >
+                Cancel
+              </Button>
+            </div>
+            <p v-if="releaseEmailError" class="rel-error" role="status">{{ releaseEmailError }}</p>
+            <pre
+              v-if="releaseEmailPreview"
+              class="rel-email-preview"
+              aria-label="Release email preview"
+            >
+Subject: {{ releaseEmailPreview.subject }}
+
+{{ releaseEmailPreview.text }}</pre>
           </section>
 
           <!-- Keep lookup failures visible even when the cached channel list is
@@ -1490,6 +1724,20 @@ onBeforeUnmount(() => {
                   </div>
                   <div v-if="notesHint" class="rel-notes-hint">{{ notesHint }}</div>
                   <div v-if="notesError" class="rel-notes-error" role="alert">{{ notesError }}</div>
+                </div>
+
+                <div v-if="!running" class="rel-notes-field">
+                  <label class="rel-field-label" for="rel-known-issues">
+                    Known issues
+                    <span class="rel-optional">optional · goes in the release email</span>
+                  </label>
+                  <textarea
+                    id="rel-known-issues"
+                    v-model="knownIssues"
+                    class="rel-notes-input"
+                    rows="3"
+                    placeholder="Anything users should know about this release. Leave empty and the email says none were recorded."
+                  ></textarea>
                 </div>
 
                 <!-- The newest generated draft that never made it out with a
@@ -2107,5 +2355,51 @@ a.rel-channel-name:hover {
   .rel-next-actions {
     justify-content: flex-start;
   }
+}
+.rel-email {
+  margin-top: 16px;
+}
+.rel-email-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.rel-email-actions {
+  display: flex;
+  gap: 8px;
+}
+.rel-email-status {
+  margin: 8px 0 0;
+  color: var(--txt-dim);
+}
+.rel-email-status[data-state="sent"] {
+  color: var(--txt);
+}
+.rel-email-status[data-state="failed"],
+.rel-email-status[data-state="attention"] {
+  color: var(--red, var(--txt));
+}
+.rel-email-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+.rel-email-confirm {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.rel-email-preview {
+  margin: 12px 0 0;
+  padding: 12px;
+  white-space: pre-wrap;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 320px;
+  overflow: auto;
 }
 </style>

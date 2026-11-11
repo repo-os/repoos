@@ -2,9 +2,10 @@
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
-status: active
+status: done
 priority: p2
 area: [core, agent]
+merged_commit: d1b88ebf653505eb9b01cd41696c49a014efc6f6
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/require-a-step-by-step-guide-on-every-hu
@@ -13,15 +14,14 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T15:38:09Z"
-check_retry_count: 1
+updated_at: "2026-11-11T21:16:18Z"
+last_close_out_gate_ms: 1057695
+last_close_out_gate_at: "2026-11-11T21:07:56.061Z"
+review_passes: 6
 last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 24cd8ae0c44f83a19a649951f763a90c6dac957b
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
-dev_error_count: 4
+dev_error_count: 10
 incomplete_review_retries: 1
 ---
 ## Problem
@@ -197,3 +197,90 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T11:06:35Z · engineer stopped by request
 - 2026-11-11T11:08:04Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 28445 is dead for 29m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-11T15:38:09Z · needs_input
+- 2026-11-11T15:38:23Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 4h 59m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-11T15:48:13Z · message_queued at 2026-11-11T15:48:13.945Z
+- 2026-11-11T15:48:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T15:53:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T16:18:18Z · body
+- 2026-11-11T16:18:31Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-11T16:25:10Z · body
+- 2026-11-11T16:33:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T16:41:21Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T16:41:31Z · message_queued at 2026-11-11T16:41:31.536Z
+- 2026-11-11T16:43:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T16:48:34Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-11T16:48:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-11T16:48:41Z · note: handoff requested (cli)
+- 2026-11-11T16:53:13Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T16:58:20Z · message_queued at 2026-11-11T16:58:20.673Z
+- 2026-11-11T16:58:21Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+- 2026-11-11T17:03:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T17:13:17Z · message_delivered: 1 message(s)
+- 2026-11-11T17:32:25Z · body
+- 2026-11-11T17:51:19Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
+- 2026-11-11T17:51:19Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-11-11T17:51:27Z · needs_input
+- 2026-11-11T17:51:27Z · message_delivered: 1 message(s)
+- 2026-11-11T17:51:32Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T17:52:32Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T17:52:39Z · needs_input
+- 2026-11-11T17:52:43Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T17:54:13Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T17:54:19Z · needs_input
+- 2026-11-11T17:54:21Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T17:56:21Z · engineer crash recovery: resuming cursor + composer-2.5 (4/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T17:56:27Z · needs_input
+- 2026-11-11T17:56:30Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T17:59:00Z · engineer crash recovery: resuming cursor + composer-2.5 (5/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T17:59:07Z · needs_input
+- 2026-11-11T17:59:12Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T18:02:12Z · engineer crash recovery: resuming cursor + composer-2.5 (6/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T18:02:17Z · needs_input
+- 2026-11-11T18:08:14Z · message_queued at 2026-11-11T18:08:14.465Z
+- 2026-11-11T18:08:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T18:13:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T18:22:16Z · body
+- 2026-11-11T18:33:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T18:39:43Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T18:39:45Z · message_queued at 2026-11-11T18:39:45.844Z
+- 2026-11-11T18:42:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T18:46:45Z · note: handoff requested (cli)
+- 2026-11-11T18:48:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:00:58Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T19:01:00Z · status active→review
+- 2026-11-11T19:01:00Z · message_queued at 2026-11-11T19:01:00.535Z
+- 2026-11-11T19:03:01Z · note: review pass 5: needs some work
+- 2026-11-11T19:03:02Z · needs_input
+- 2026-11-11T19:14:18Z · status review→active
+- 2026-11-11T19:14:20Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T19:14:56Z · note: handoff requested (cli)
+- 2026-11-11T19:15:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:31:22Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T19:31:24Z · status active→review
+- 2026-11-11T19:31:24Z · message_queued at 2026-11-11T19:31:24.742Z
+- 2026-11-11T19:33:12Z · note: review pass 6: needs some work
+- 2026-11-11T19:33:12Z · needs_input
+- 2026-11-11T19:33:12Z · needs_input
+- 2026-11-11T19:38:30Z · status review→active
+- 2026-11-11T19:38:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T19:39:08Z · note: handoff requested (cli)
+- 2026-11-11T19:39:30Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:40:19Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T19:59:46Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T19:59:50Z · status active→review
+- 2026-11-11T19:59:50Z · message_queued at 2026-11-11T19:59:50.689Z
+- 2026-11-11T20:02:52Z · note: review pass 7: needs some work
+- 2026-11-11T20:02:53Z · needs_input
+- 2026-11-11T20:02:53Z · needs_input
+- 2026-11-11T20:16:24Z · status review→active
+- 2026-11-11T20:16:26Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T20:17:13Z · note: handoff requested (cli)
+- 2026-11-11T20:18:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T20:40:04Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T20:40:06Z · status active→review
+- 2026-11-11T20:40:06Z · message_queued at 2026-11-11T20:40:06.416Z
+- 2026-11-11T20:42:32Z · note: review pass 8: good to go
+- 2026-11-11T20:42:33Z · needs_input
+- 2026-11-11T21:07:56Z · close-out gate completed in 1058s
+- 2026-11-11T21:09:02Z · status done→done, release:success
+- 2026-11-11T21:16:18Z · message_dropped: 5 queued message(s) discarded — task is done

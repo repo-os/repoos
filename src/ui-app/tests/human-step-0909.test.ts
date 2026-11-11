@@ -359,6 +359,7 @@ describe("split human-step tasks (#0909)", () => {
       expect(result.humanTask.isHeld).toBe(true);
       expect(result.humanTask.assignee).toBe("human");
       expect(result.humanTask.dependsOn).toEqual(["0909e"]);
+      expect(result.humanTask.body).toContain("## Step-by-step guide");
       expect(result.source.body).not.toContain("[human]");
       expect(result.source.needsInput).toBe(false);
     } finally {

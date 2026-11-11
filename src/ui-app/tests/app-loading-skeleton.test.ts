@@ -156,7 +156,7 @@ describe("repo loading skeleton", () => {
       resolve(__dirname, "../src/components/ModelProvidersPanel.vue"),
       "utf8",
     );
-    expect(GENERAL_FIELD_SECTIONS).toHaveLength(6);
+    expect(GENERAL_FIELD_SECTIONS).toHaveLength(7);
     expect(settings).toMatch(/kind="rows" :count="GENERAL_FIELD_SECTIONS\.length"/);
     for (const source of [
       agents,
@@ -236,7 +236,7 @@ describe("repo loading skeleton", () => {
       ).toHaveLength(expected);
       wrapper.unmount();
     }
-    expect(GENERAL_FIELD_SECTIONS.length).toBe(6);
+    expect(GENERAL_FIELD_SECTIONS.length).toBe(7);
     const settings = mount(PageSkeleton, {
       props: {
         kind: "rows",

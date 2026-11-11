@@ -24,6 +24,9 @@ interactive sessions and the CTO/driver path alike. Incident: #0660 was closed
 out while it carried the flag (2026-10-14) and the human-only verification was
 split out afterwards, as #0784 — the wrong order.
 
+Every human-assigned task must include a `## Step-by-step guide`; see
+[`user-docs/cli.md`](../user-docs/cli.md) for the required content and warning behavior.
+
 ## Holds
 
 **A `hold` makes a task inert for ALL automation** — `repoos hold <id> --reason
