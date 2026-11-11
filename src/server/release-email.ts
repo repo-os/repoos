@@ -650,8 +650,11 @@ export async function resendReleaseEmail(
   inFlight.add(version);
   // Caller-owned list of accepted addresses: filled by sendAndRecord, read by
   // the catch below so a failed local write never loses an accepted recipient.
-  const accepted: string[] = [...(getReleaseEmailRecord(config, version)?.sentTo ?? [])];
+  const accepted: string[] = [];
   try {
+    // Read inside the try: this can throw (a malformed log), and the finally
+    // below must still release the claim.
+    accepted.push(...(getReleaseEmailRecord(config, version)?.sentTo ?? []));
     const repository = githubRepository(config);
     if ((email.when ?? "published") === "published" && repository) {
       const probe = await probeRelease(repository, entry.tag, deps.fetchImpl ?? fetch);

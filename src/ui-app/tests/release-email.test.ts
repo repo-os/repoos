@@ -414,6 +414,23 @@ describe("deliverCutReleaseEmail", () => {
     expect(fake.resendTo).toEqual([RECIPIENTS[0], RECIPIENTS[1]]);
   });
 
+  it("a Resend that fails on a corrupt log releases its in-flight claim, so a repaired log can be resent", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "tagged" });
+    const fake = fakeFetch();
+    const logFile = join(root, ".repoos", "release-emails.json");
+    writeFileSync(logFile, "{ not json", "utf8");
+
+    await expect(
+      resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl }),
+    ).rejects.toThrow(/Could not parse/);
+
+    writeFileSync(logFile, "{}\n", "utf8");
+    const resent = await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl });
+    expect(resent.status).toBe("sent");
+    expect(fake.resendTo).toEqual(RECIPIENTS);
+  });
+
   it("two concurrent Resends cannot both send: the second is refused before any await", async () => {
     writeHistory([entry()]);
     const config = makeConfig({ when: "tagged" });
