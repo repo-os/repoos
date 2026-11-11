@@ -2,7 +2,7 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — `restart` silently cancels in-flight reviews and previews, and the managed-service path can restart the wrong server."
@@ -202,4 +202,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T20:28:17Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T20:33:00Z · body
 - 2026-11-11T20:40:05Z · body
-- 2026-11-11T20:40:07Z · engineer stopped by request
+- 2026-11-11T20:40:07Z · status active→review
