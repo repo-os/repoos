@@ -12,8 +12,6 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
 updated_at: "2026-11-11T08:29:03Z"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 8d251b33d5234a6344ed39242c2deb727cccf707
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -202,3 +200,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T08:28:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T08:29:03Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-11T08:29:03Z · status active→review
+
