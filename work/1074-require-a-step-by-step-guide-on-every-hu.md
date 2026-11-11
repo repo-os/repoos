@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch — at tests/ensure-worktree-resilience.test.ts:195:30 — AssertionError: expected false to be true // Object.is equality"
+last_handoff_failure_sha: 1ddd2e06fde3bd1ed07d7a2accab2c7c6170ef6e
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -144,3 +146,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T05:51:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T06:08:40Z · message_queued at 2026-11-11T06:08:40.771Z
 - 2026-11-11T06:08:40Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch — at tests/ensure-worktree-resilience.test.ts:195:30 — AssertionError: expected false to be true // Object.is equality
+
