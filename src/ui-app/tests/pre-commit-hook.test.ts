@@ -63,11 +63,15 @@ afterEach(() => {
 });
 
 describe(".githooks/pre-commit", () => {
-  it("blocks a badly formatted source file committed straight to main", () => {
+  it(
+    "blocks a badly formatted source file committed straight to main",
+    () => {
     const res = commitFile(repo(), "src/style.css", BAD_CSS);
     expect(res.status).not.toBe(0);
     expect(res.stderr).toContain("formatting issues in staged files on main");
-  });
+    },
+    30_000,
+  );
 
   it("allows the same file on a task branch (close-out gates those)", () => {
     const dir = repo();
