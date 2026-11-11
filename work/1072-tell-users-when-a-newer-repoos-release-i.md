@@ -2,7 +2,7 @@
 id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — The four frozen fixes are in, but a documented Retry-After path is dead code and the cache write can still lose the not…"
@@ -166,4 +166,4 @@ FINAL (round 4, hand-finished): Retry-After is now wired (fetchLatestRelease thr
 - 2026-11-11T08:50:06Z · message_delivered: 1 message(s)
 - 2026-11-11T08:50:07Z · note: handoff requested (cli)
 - 2026-11-11T08:53:58Z · CTO nudge: held — handoff gate is running
-- 2026-11-11T09:02:57Z · engineer stopped by request
+- 2026-11-11T09:02:57Z · status active→review
