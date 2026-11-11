@@ -25,6 +25,7 @@ import {
   HANDOFF_READY_SIGNAL,
   PREVIEW_REQUEST_SIGNAL,
   oneShotFailureDetail,
+  oneShotResultFromLog,
   promptCommand,
   runPrompt,
 } from "../../server/agents";
@@ -331,6 +332,21 @@ describe("model-aware driver commands", () => {
     const raw = "model claude-opus is unavailable for your plan";
     expect(oneShotFailureDetail(raw, "", "claude code")).toBe(raw);
     expect(oneShotFailureDetail(raw, "")).toBe(raw);
+  });
+
+  it("keeps agent wording in oneShotResultFromLog while passing cli for enrichment", () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-copilot-log-"));
+    const out = join(dir, "out.log");
+    const err = join(dir, "err.log");
+    writeFileSync(
+      err,
+      "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence.\n",
+    );
+    writeFileSync(out, "");
+    const result = oneShotResultFromLog(out, err, 1, 1, "agent", "github copilot");
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/^agent exited with code 1:/);
+    expect(result.error).toContain("Copilot Auto tier");
   });
 
   it("keeps Copilot one-shot prompts as markdown for freeform task creation", () => {

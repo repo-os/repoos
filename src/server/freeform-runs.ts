@@ -517,7 +517,7 @@ export class FreeformRunManager {
       freeformLogPaths(this.config, record.runId).err,
       elapsedMs,
       record.exitCode,
-      record.agent.cli,
+      "agent",
       record.agent.cli,
     );
     if (timedOut) {

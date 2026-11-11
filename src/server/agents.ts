@@ -18,7 +18,7 @@ import {
 import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
 import {
   copilotAutoTierModelArgs,
-  formatCopilotAutoTierFailure,
+  enrichAgentFailureDetail,
 } from "../core/copilot-auto-tier.js";
 import {
   patternKillWarning,
@@ -5078,10 +5078,7 @@ export function extractOneShotReportText(cli: string, rawOutput: string): string
  * an error-shaped plain line, then the last non-empty line.
  */
 export function oneShotFailureDetail(stderr: string, output: string, cli?: string): string {
-  const maybeCopilot = (text: string): string => {
-    if (cli !== "github copilot") return text;
-    return formatCopilotAutoTierFailure(text) ?? text;
-  };
+  const maybeCopilot = (text: string): string => enrichAgentFailureDetail(text, cli);
   const stderrText = stripAnsi(stderr).trim();
   if (stderrText) {
     const fromStderr = stderrText.split("\n").slice(-3).join(" ").trim();
@@ -10742,13 +10739,14 @@ export class AgentRunner {
    * (see `sysLineDescribesFailure`), then a generic fallback.
    */
   private lastFailureLine(session: Session | undefined): string {
+    const wrap = (text: string) => enrichAgentFailureDetail(text, session?.cli);
     if (session?.permissionDenial) {
       return `permission problem, not a code failure: ${session.permissionDenial}`;
     }
     if (session) {
       for (let i = session.lines.length - 1; i >= 0; i--) {
         const line = session.lines[i];
-        if ("s" in line && line.s === "err" && line.d.trim()) return line.d.trim();
+        if ("s" in line && line.s === "err" && line.d.trim()) return wrap(line.d.trim());
       }
       for (let i = session.lines.length - 1; i >= 0; i--) {
         const line = session.lines[i];
@@ -10758,7 +10756,7 @@ export class AgentRunner {
             : "s" in line && line.s === "sys"
               ? line.d
               : undefined;
-        if (text?.trim() && sysLineDescribesFailure(text)) return text.trim();
+        if (text?.trim() && sysLineDescribesFailure(text)) return wrap(text.trim());
       }
     }
     return "the agent process exited with an error — open the task to see the full output";
@@ -10861,10 +10859,11 @@ export class AgentRunner {
       };
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
       let detail =
-        detailOverride ??
-        (this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
-          ? HANDOFF_FINALIZATION_INTERRUPTED_DETAIL
-          : this.lastFailureLine(session));
+        detailOverride != null
+          ? enrichAgentFailureDetail(detailOverride, session?.cli)
+          : this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
+            ? HANDOFF_FINALIZATION_INTERRUPTED_DETAIL
+            : this.lastFailureLine(session);
       let reason = needsInputReason;
       if (reason === "dev-error" && isProviderFailureReason(detail)) {
         reason = "provider-failure";

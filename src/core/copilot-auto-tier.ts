@@ -33,7 +33,16 @@ export function copilotAutoTierModelArgs(model: string): string[] {
 
 /** Copilot-specific tier/catalog errors — must not match generic "unavailable" alone. */
 const COPILOT_AUTO_TIER_FAILURE =
-  /(?:Auto (?:profile|preference)|--auto-tier\b|auto-tier\s+(?:to|profile|preference))/i;
+  /(?:Auto (?:profile|preference)|Set --auto-tier\b|auto-tier\s+(?:to|profile|preference))/i;
+
+/**
+ * Apply Copilot Auto tier guidance when `cli` is GitHub Copilot; otherwise return
+ * the detail unchanged. Shared by one-shot, engineer, and review failure paths.
+ */
+export function enrichAgentFailureDetail(detail: string, cli?: string): string {
+  if (cli !== "github copilot") return detail;
+  return formatCopilotAutoTierFailure(detail) ?? detail;
+}
 
 /**
  * Plain-English guidance when Copilot rejects an Auto tier. Returns null when the
@@ -42,7 +51,9 @@ const COPILOT_AUTO_TIER_FAILURE =
  */
 export function formatCopilotAutoTierFailure(detail: string): string | null {
   const text = detail.trim();
-  if (!text || !COPILOT_AUTO_TIER_FAILURE.test(text)) return null;
+  if (!text) return null;
+  if (/unknown option.*--auto-tier/i.test(text)) return null;
+  if (!COPILOT_AUTO_TIER_FAILURE.test(text)) return null;
 
   const tier =
     /The [`']?(\w+)[`']? Auto profile is no longer available/i.exec(text)?.[1] ??
