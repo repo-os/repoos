@@ -4,6 +4,7 @@
  * fields get sensible derived defaults so even a bare markdown file becomes a
  * usable task.
  */
+import { isMarkdownFenceClose } from "./markdown-fence.js";
 import { basename, relative, resolve } from "node:path";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
 import { STATUSES, type Task, type Status, type Assignee, type TaskGitInfo } from "./types.js";
@@ -178,10 +179,17 @@ function collectActivityEntries(body: string): string[] {
   const entries: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].trim() !== ACTIVITY_HEADING) continue;
+    let fence = "";
     for (let j = i + 1; j < lines.length; j++) {
       const trimmed = lines[j].trim();
+      if (fence) {
+        if (isMarkdownFenceClose(trimmed, fence)) fence = "";
+      } else {
+        const open = trimmed.match(/^(`{3,}|~{3,})/);
+        if (open) fence = open[1]!;
+      }
       if (trimmed === ACTIVITY_HEADING) break;
-      if (/^##\s/.test(trimmed)) break;
+      if (!fence && /^##\s/.test(trimmed)) break;
       if (trimmed.startsWith("- ")) entries.push(trimmed);
       else if (entries.length && lines[j].startsWith("> ")) {
         entries[entries.length - 1] += `\n${lines[j].slice(2)}`;
@@ -231,8 +239,19 @@ function sectionStart(lines: string[], heading: string): number {
 
 /** The line index of the next top-level `## ` heading after `from`, or `lines.length`. */
 function nextSection(lines: string[], from: number): number {
+  let fence = "";
   for (let i = from; i < lines.length; i++) {
-    if (/^##\s/.test(lines[i].trim())) return i;
+    const t = lines[i].trim();
+    if (fence) {
+      if (isMarkdownFenceClose(t, fence)) fence = "";
+      continue;
+    }
+    const open = t.match(/^(`{3,}|~{3,})/);
+    if (open) {
+      fence = open[1]!;
+      continue;
+    }
+    if (/^##\s/.test(t)) return i;
   }
   return lines.length;
 }
