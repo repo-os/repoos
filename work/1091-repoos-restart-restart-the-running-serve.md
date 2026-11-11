@@ -4,8 +4,8 @@ title: "repoos restart: restart the running server whether hand-run, supervised 
 type: feature
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `repoos restart` cannot find a server whose command line does not embed this repo's root, so a project repo on an insta…"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +14,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T22:21:04Z"
+updated_at: "2026-11-11T22:21:05Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
