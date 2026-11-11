@@ -76,3 +76,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T05:53:47Z · status review→active
 - 2026-11-11T06:08:23Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T06:08:23Z · message_queued at 2026-11-11T06:08:23.183Z
+- 2026-11-11T06:08:34Z · note: handoff requested (cli)
