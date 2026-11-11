@@ -177,3 +177,4 @@ FINAL (pass 5): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T00:19:32Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T00:49:32Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T01:01:40Z · body
+- 2026-11-11T01:04:19Z · note: handoff requested (cli)
