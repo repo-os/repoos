@@ -13,7 +13,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T10:15:36Z"
+updated_at: "2026-11-11T10:15:46Z"
 last_close_out_gate_ms: 375683
 last_close_out_gate_at: "2026-11-11T10:15:33.034Z"
 review_passes: 5
@@ -175,3 +175,4 @@ FINAL (round 4, hand-finished): Retry-After is now wired (fetchLatestRelease thr
 - 2026-11-11T10:12:13Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T10:15:33Z · close-out gate completed in 376s
 - 2026-11-11T10:15:36Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-11T10:15:46Z · status done→done, release:success
