@@ -2,7 +2,7 @@
 id: "1090"
 title: "Releases page blames the wrong workflow: an unrelated failed run shows as 'release workflow failed' while Homebrew is just updating"
 type: bug
-status: review
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
