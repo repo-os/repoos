@@ -140,3 +140,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T05:35:41Z · body
 - 2026-11-11T05:49:04Z · body: Accepted scope and known limitations (added)
 - 2026-11-11T05:49:05Z · message_queued at 2026-11-11T05:49:05.100Z
+- 2026-11-11T05:49:08Z · note: handoff requested (cli)
