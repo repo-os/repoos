@@ -52,4 +52,36 @@ describe("section scanning ignores ## lines inside fenced code (#1074)", () => {
     expect(extractSection(body, "## A")).toContain("## Inside");
     expect(extractSection(body, "## A")).not.toContain("## B");
   });
+
+  it("a heading shown inside a fenced sample ahead of the real section is ignored", () => {
+    const body = [
+      "## Problem",
+      "",
+      `${FENCE}md`,
+      "## Step-by-step guide",
+      "1. sample",
+      FENCE,
+      "",
+      "## Step-by-step guide",
+      "",
+      "1. real",
+      "",
+      "## Acceptance criteria",
+      "",
+      "- ok",
+    ].join("\n");
+    expect(extractSection(body, "## Step-by-step guide")).toContain("1. real");
+    expect(extractSection(body, "## Step-by-step guide")).not.toContain("1. sample");
+    const out = replaceSection(body, "## Step-by-step guide", "## Step-by-step guide\n\n1. New.");
+    expect(out).toContain("## Acceptance criteria");
+    expect(out).toContain("1. sample");
+    expect(out).toContain("1. New.");
+    expect(out).not.toContain("1. real");
+  });
+
+  it("inline code that starts with backticks is not a fence opener", () => {
+    const body = ["## A", "", "```inline``` text", "", "## B", "b"].join("\n");
+    expect(extractSection(body, "## A")).not.toContain("## B");
+    expect(extractSection(body, "## B")).toContain("b");
+  });
 });

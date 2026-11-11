@@ -4,7 +4,7 @@
  * fields get sensible derived defaults so even a bare markdown file becomes a
  * usable task.
  */
-import { isMarkdownFenceClose } from "./markdown-fence.js";
+import { isMarkdownFenceClose, markdownFenceMask, markdownFenceOpen } from "./markdown-fence.js";
 import { basename, relative, resolve } from "node:path";
 import { parseDocument, serializeDocument } from "./frontmatter.js";
 import { STATUSES, type Task, type Status, type Assignee, type TaskGitInfo } from "./types.js";
@@ -185,8 +185,7 @@ function collectActivityEntries(body: string): string[] {
       if (fence) {
         if (isMarkdownFenceClose(trimmed, fence)) fence = "";
       } else {
-        const open = trimmed.match(/^(`{3,}|~{3,})/);
-        if (open) fence = open[1]!;
+        fence = markdownFenceOpen(trimmed) ?? "";
       }
       if (trimmed === ACTIVITY_HEADING) break;
       if (!fence && /^##\s/.test(trimmed)) break;
@@ -234,7 +233,9 @@ export function taskBodyNeedsNormalize(body: string): boolean {
 
 /** The line index where a top-level `## Heading` section starts, or -1. */
 function sectionStart(lines: string[], heading: string): number {
-  return lines.findIndex((l) => l.trim() === heading);
+  // A heading shown inside a fenced sample is not the section.
+  const inFence = markdownFenceMask(lines);
+  return lines.findIndex((l, i) => !inFence[i] && l.trim() === heading);
 }
 
 /** The line index of the next top-level `## ` heading after `from`, or `lines.length`. */
@@ -246,9 +247,9 @@ function nextSection(lines: string[], from: number): number {
       if (isMarkdownFenceClose(t, fence)) fence = "";
       continue;
     }
-    const open = t.match(/^(`{3,}|~{3,})/);
+    const open = markdownFenceOpen(t);
     if (open) {
-      fence = open[1]!;
+      fence = open;
       continue;
     }
     if (/^##\s/.test(t)) return i;

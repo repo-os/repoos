@@ -5,7 +5,7 @@ import {
   humanTaggedCriteria,
   taggedCriteria,
 } from "./human-step-tags.js";
-import { isMarkdownFenceClose } from "./markdown-fence.js";
+import { isMarkdownFenceClose, markdownFenceMask, markdownFenceOpen } from "./markdown-fence.js";
 import {
   ACTIVITY_HEADING,
   ORIGINAL_PROMPT_HEADING,
@@ -79,9 +79,9 @@ function extractHumanTaskGuideSection(body: string): string | null {
       if (isMarkdownFenceClose(trimmedStart, fence)) fence = null;
       continue;
     }
-    const fenceMatch = /^(`{3,}|~{3,})/.exec(trimmedStart);
+    const fenceMatch = markdownFenceOpen(trimmedStart);
     if (fenceMatch) {
-      fence = fenceMatch[1]!;
+      fence = fenceMatch;
       continue;
     }
     if (start === -1) {
@@ -185,11 +185,13 @@ interface BundleSpecSection {
 function bundleSpecSections(body: string): BundleSpecSection[] {
   const lines = body.split("\n");
   const items: BundleSpecSection[] = [];
+  const inFence = markdownFenceMask(lines);
   for (let i = 0; i < lines.length; i++) {
+    if (inFence[i]) continue;
     const match = /^##\s+(E\d+)\s+·\s+.+\s*$/.exec(lines[i]);
     if (!match) continue;
     let end = i + 1;
-    while (end < lines.length && !/^##\s+/.test(lines[end])) end++;
+    while (end < lines.length && (inFence[end] || !/^##\s+/.test(lines[end]))) end++;
     items.push({ id: match[1], body: lines.slice(i + 1, end).join("\n") });
     i = end - 1;
   }

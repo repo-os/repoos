@@ -11,7 +11,7 @@
  * landable/close-out scope checks ignore it with no extra allowlisting.
  */
 
-import { isMarkdownFenceClose } from "./markdown-fence.js";
+import { isMarkdownFenceClose, markdownFenceOpen } from "./markdown-fence.js";
 import { reportsTaskDirRelPath } from "./report-paths.js";
 
 /** Hard cap on narrative words, excluding the trailing file-changes listing. */
@@ -142,9 +142,9 @@ function visibleSummaryLines(markdown: string): string[] {
       if (isMarkdownFenceClose(trimmed, fence)) fence = null;
       continue;
     }
-    const fenceMatch = /^(`{3,}|~{3,})/.exec(trimmed);
+    const fenceMatch = markdownFenceOpen(trimmed);
     if (fenceMatch) {
-      fence = fenceMatch[1]!;
+      fence = fenceMatch;
       continue;
     }
     out.push(line);
