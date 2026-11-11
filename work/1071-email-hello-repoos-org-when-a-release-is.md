@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T08:18:58Z"
+updated_at: "2026-11-11T08:21:34Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 8d251b33d5234a6344ed39242c2deb727cccf707
 review_passes: 3
@@ -198,3 +198,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T08:13:58Z · message_queued at 2026-11-11T08:13:58.122Z
 - 2026-11-11T08:13:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T08:18:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T08:21:34Z · body
