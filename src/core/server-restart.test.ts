@@ -271,6 +271,32 @@ describe("restartRepoServer", () => {
     expect(spawnedFlags).toEqual(["--preview-overrides"]);
   });
 
+  it("reads the old flags from the process BEFORE stopping it when the lock has none", async () => {
+    let alive = true;
+    let spawnedFlags: readonly string[] = [];
+    const result = await restart(root, {
+      // Registry-located: no serveFlags on the located server.
+      locate: async () => server({ pid: 90, serveFlags: [], source: "registry" }),
+      classify: async () => "hand-run",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({ ok: true, root, serverVersion: "0.5.80", activeEngineers: 0 }),
+      // The flags are only readable while the pid is alive (as with `ps`).
+      resolveServeFlags: () => (alive ? ["--preview-overrides", "--quiet"] : []),
+      stop: () => {
+        alive = false;
+      },
+      waitPidGone: async () => true,
+      spawn: (_root, _port, _host, flags = []) => {
+        spawnedFlags = flags;
+        return { ok: true };
+      },
+      verifyPid: () => true,
+      wait: async () => ({ ok: true, pid: 91, version: "0.5.82" }),
+    });
+    expect(result.ok).toBe(true);
+    expect(spawnedFlags).toEqual(["--preview-overrides", "--quiet"]);
+  });
+
   it("refuses to signal a pid that does not verify, even when /api/health answers", async () => {
     const stop = vi.fn();
     const result = await restart(root, {

@@ -472,6 +472,18 @@ export async function restartRepoServer(
   // PM children are durable and re-adopted. Ask the server what is in flight so
   // the warning names everything, not just engineers (#1091 review pass 4).
   const cancelled = await (opts.cancelledWork ?? fetchCancelledWork)(server.host, server.port);
+  // Resolve the serve flags while the old pid is still alive: after SIGTERM `ps`
+  // returns nothing, so reading them later loses the flags of any server whose lock
+  // predates `serveFlags` or that was found through the registry.
+  const resolveFlags =
+    opts.resolveServeFlags ??
+    ((s: LocatedServer) => {
+      if (s.serveFlags.length > 0) return [...s.serveFlags];
+      const cmd = readProcessCommand(s.pid);
+      return cmd ? extractServeFlagsFromCommand(cmd) : [];
+    });
+  const resolvedFlags = resolveFlags(server);
+
   opts.onBeforeStop?.({ cancelled, path });
 
   if (path === "managed-service") {
@@ -574,18 +586,12 @@ export async function restartRepoServer(
     };
   }
 
-  const resolveFlags =
-    opts.resolveServeFlags ??
-    ((s: LocatedServer) => {
-      if (s.serveFlags.length > 0) return [...s.serveFlags];
-      const cmd = readProcessCommand(s.pid);
-      return cmd ? extractServeFlagsFromCommand(cmd) : [];
-    });
+  const flags = resolvedFlags;
   const spawnResult = (opts.spawn ?? spawnHandRunServe)(
     root,
     server.port,
     server.host || "127.0.0.1",
-    resolveFlags(server),
+    flags,
   );
   if (!spawnResult.ok) {
     return {
@@ -594,9 +600,7 @@ export async function restartRepoServer(
       oldPid,
       oldVersion,
       message: `Failed to start hand-run server: ${spawnResult.error}`,
-      manualCommand: `cd ${root} && repoos serve --port ${server.port}${
-        resolveFlags(server).length ? " " + resolveFlags(server).join(" ") : ""
-      }`,
+      manualCommand: `cd ${root} && repoos serve --port ${server.port}${flags.length ? " " + flags.join(" ") : ""}`,
     };
   }
 
@@ -611,7 +615,6 @@ export async function restartRepoServer(
   if (!waited.ok) {
     const port = server.port;
     const quoted = /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
-    const flags = resolveFlags(server);
     return {
       ok: false,
       path,
