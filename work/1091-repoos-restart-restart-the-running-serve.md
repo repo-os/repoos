@@ -18,7 +18,6 @@ routing_switches: 1
 routing_escalations: 1
 review_passes: 2
 dev_error_count: 12
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T14:13:55.426Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T14:17:45.790Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T14:28:32.073Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T14:33:57.075Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-11T14:39:10.758Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-11T14:40:39.695Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-11T14:42:11.929Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
 ---
 ## Problem
