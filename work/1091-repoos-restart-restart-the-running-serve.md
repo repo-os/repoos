@@ -3,18 +3,23 @@ id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Error: [unavailable] read ETIMEDOUT"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T13:58:16Z"
+updated_at: "2026-11-11T14:01:23Z"
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 review_passes: 2
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T14:00:53.076Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
@@ -96,3 +101,5 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T13:53:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T13:58:15Z · message_delivered: 1 message(s)
 - 2026-11-11T13:58:16Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1091.md
+- 2026-11-11T14:00:53Z · agent exited with an error (cursor) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-11T14:01:23Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [unavailable] read ETIMEDOUT
