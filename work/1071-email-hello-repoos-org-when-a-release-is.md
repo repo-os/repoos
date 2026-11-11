@@ -13,7 +13,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T20:00:13Z"
+updated_at: "2026-11-11T20:00:19Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: e738f025d11cdaa88fd5509000a7d7b75dceacd6
 review_passes: 6
@@ -295,3 +295,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T19:46:47Z · message_queued at 2026-11-11T19:46:47.029Z
 - 2026-11-11T19:46:47Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-11T20:00:13Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
+- 2026-11-11T20:00:19Z · note: review pass 7: needs some work
