@@ -165,3 +165,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T04:48:22Z · message_delivered: 1 message(s)
 - 2026-11-11T05:28:14Z · body
 - 2026-11-11T05:29:10Z · status active→review
+- 2026-11-11T05:34:32Z · note: review pass 3: needs some work
