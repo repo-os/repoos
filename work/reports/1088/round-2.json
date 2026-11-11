@@ -1,0 +1,12 @@
+{
+  "taskId": "1088",
+  "round": 2,
+  "at": "2026-11-11T19:40:18.298Z",
+  "agent": "cursor",
+  "model": "composer-2.5",
+  "branch": "feat/copilot-auto-tier-efficiency-was-removed",
+  "baseSha": "addef9addf3ac5803f38bb343f44b51d9e053653",
+  "sourceSha": "43f4b8f1bb12d1445081cd023b82550e4f86c516",
+  "wordCount": 200,
+  "markdown": "## TL;DR\n\nCopilot’s retired `efficiency` Auto tier broke default `github copilot` runs. RepoOS now maps `default` and legacy `copilot-auto-efficiency` to `--auto-tier balance`, centralizes tier argv in `src/core/copilot-auto-tier.ts`, and enriches Copilot-only tier failures with Agents-page guidance. Review round 2 scoped that enrichment to `github copilot` only and tightened matchers so other harnesses’ “unavailable” errors pass through unchanged.\n\n## Work and rationale\n\nShared `resolveCopilotAutoTier` / `copilotAutoTierModelArgs` feed both `modelArgs` in `src/server/agents.ts` and the Copilot contract probes. `oneShotFailureDetail(stderr, output, cli?)` applies `formatCopilotAutoTierFailure` only when `cli === \"github copilot\"`; `runPrompt`, `oneShotResultFromLog`, and `testModelCombination` pass the harness id. Tier failure detection requires Copilot-shaped phrases (Auto profile/preference, `--auto-tier`), not bare “unavailable.” User-facing copy points at Settings → Agents model choices, not CLI flags.\n\n`DEFAULT_PROBE_MODELS` for Copilot is `default` (same balance mapping); `copilot-auto-efficiency` remains a runtime alias. Docs avoid unverified “lowest cost” and fixed retirement dates.\n\n## Approaches tried\n\nDual fix for the review bug: cli gating plus stricter regex, with a negative test using Claude-style unavailable text.\n\n## Challenges and blockers\n\nNo live Copilot tier probe in this session (credits). Human can confirm via Agents test after merge.\n\n## Key learnings\n\nHarness-specific error rewriting must always receive harness context; generic substring rules are unsafe across CLIs.\n\n## Generated change summary\n\nBase tree: `addef9addf3ac5803f38bb343f44b51d9e053653`\nSource tree: `bd4989d91ad3467cf209dd5b2feea7711a4f9d10`\n\n- M docs/architecture.md: +4 / −4\n- M src/core/agent-contract.ts: +2 / −1\n- M src/core/copilot-auto-tier.ts: +17 / −26\n- M src/server/agents.ts: +13 / −11\n- M src/server/freeform-runs.ts: +1 / −0\n- M src/server/model-test.ts: +3 / −2\n- M src/ui-app/tests/agent-drivers.test.ts: +11 / −3\n- M user-docs/agents.md: +2 / −2"
+}

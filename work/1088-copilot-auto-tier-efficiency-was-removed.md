@@ -1,21 +1,21 @@
 ---
-updated_at: "2026-11-11T21:18:02Z"
-review_passes: 5
 id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — freeform run errors lost their CLI name at `freeform-runs.ts:515`; the fix is one line, and the rest of the branch is s…"
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 73cf9cb1908a8ea08bfb35bd1075d4d8e8b827a5
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
+updated_at: "2026-11-11T22:14:41Z"
+last_close_out_gate_ms: 225461
+last_close_out_gate_at: "2026-11-11T22:05:50.406Z"
+review_passes: 6
 review_rounds: 2
 handoff_signal_retry_count: 1
 dev_error_count: 6
@@ -160,4 +160,16 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T21:18:01Z · note: review pass 5: needs some work
 - 2026-11-11T21:18:02Z · needs_input
 - 2026-11-11T21:18:02Z · needs_input
-
+- 2026-11-11T21:26:09Z · status review→active
+- 2026-11-11T21:26:11Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T21:26:44Z · note: handoff requested (cli)
+- 2026-11-11T21:28:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T21:38:20Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T21:52:22Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T21:52:24Z · status active→review
+- 2026-11-11T21:52:25Z · message_queued at 2026-11-11T21:52:25.030Z
+- 2026-11-11T21:53:48Z · note: review pass 6: good to go
+- 2026-11-11T21:53:49Z · needs_input
+- 2026-11-11T22:05:50Z · close-out gate completed in 225s
+- 2026-11-11T22:07:12Z · status done→done, release:success
+- 2026-11-11T22:14:41Z · message_dropped: 4 queued message(s) discarded — task is done

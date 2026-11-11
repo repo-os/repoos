@@ -1,19 +1,22 @@
 ---
+updated_at: "2026-11-11T22:16:45Z"
+review_passes: 4
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the branch gate misses secrets added after a file's first commit, the allowlist can't cover files over 5 MiB, and zlib …"
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T21:21:32Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 2
 last_check_failure: "repoos check at 2026-11-11T18:02:32.813Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-11T19:48:26.351Z\",\"reason\":\"handoff-deferred\"}]"
@@ -96,3 +99,26 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:21:30Z · note: review pass 2: needs some work
 - 2026-11-11T21:21:32Z · message_delivered: 3 message(s)
 - 2026-11-11T21:21:32Z · status review→active
+- 2026-11-11T21:38:21Z · message_queued at 2026-11-11T21:38:21.065Z
+- 2026-11-11T21:40:30Z · body
+- 2026-11-11T21:43:18Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T21:46:06Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T21:46:06Z · message_queued at 2026-11-11T21:46:06.371Z
+- 2026-11-11T21:46:06Z · ↻ resuming engineer to read queued message
+- 2026-11-11T21:46:06Z · message_delivered: 2 message(s)
+- 2026-11-11T21:47:53Z · status active→review
+- 2026-11-11T21:47:56Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T21:59:32Z · note: review pass 3: needs some work
+- 2026-11-11T21:59:33Z · needs_input
+- 2026-11-11T21:59:33Z · message_queued at 2026-11-11T21:59:33.518Z
+- 2026-11-11T22:02:16Z · status review→active
+- 2026-11-11T22:02:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T22:03:21Z · note: handoff requested (cli)
+- 2026-11-11T22:05:54Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T22:14:41Z · status active→review
+- 2026-11-11T22:14:41Z · message_queued at 2026-11-11T22:14:41.981Z
+- 2026-11-11T22:14:42Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T22:16:44Z · note: review pass 4: needs some work
+- 2026-11-11T22:16:44Z · needs_input
+- 2026-11-11T22:16:45Z · needs_input
+

@@ -16,6 +16,7 @@ import {
   sweepStaleAgentRunTmpdirs,
 } from "../core/agent-run-tmpdir.js";
 import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
+import { copilotAutoTierModelArgs, enrichAgentFailureDetail } from "../core/copilot-auto-tier.js";
 import {
   patternKillWarning,
   processGroupKillSupported,
@@ -3434,18 +3435,8 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
  */
 function modelArgs(cli: string, model: string): string[] {
   if (cli === "github copilot") {
-    // Copilot Auto chooses an account-available model. Keep `default` as the
-    // persisted sentinel used across RepoOS, but make its Copilot meaning the
-    // least-expensive Auto tier rather than the CLI's opaque current default.
-    const tier =
-      model === "copilot-auto-balance"
-        ? "balance"
-        : model === "copilot-auto-intelligence"
-          ? "intelligence"
-          : model === "default" || !model
-            ? "efficiency"
-            : null;
-    if (tier) return ["--model", "auto", "--auto-tier", tier];
+    const auto = copilotAutoTierModelArgs(model);
+    if (auto.length) return auto;
   }
   if (!model || model === "default") return [];
   if (cli === "pi") {
@@ -5083,9 +5074,13 @@ export function extractOneShotReportText(cli: string, rawOutput: string): string
  * scraped from stdout: a structured event's `error`/`message` field first, then
  * an error-shaped plain line, then the last non-empty line.
  */
-export function oneShotFailureDetail(stderr: string, output: string): string {
+export function oneShotFailureDetail(stderr: string, output: string, cli?: string): string {
+  const maybeCopilot = (text: string): string => enrichAgentFailureDetail(text, cli);
   const stderrText = stripAnsi(stderr).trim();
-  if (stderrText) return stderrText.split("\n").slice(-3).join(" ").trim();
+  if (stderrText) {
+    const fromStderr = stderrText.split("\n").slice(-3).join(" ").trim();
+    return maybeCopilot(fromStderr);
+  }
   const lines = stripAnsi(output)
     .trim()
     .split("\n")
@@ -5110,7 +5105,7 @@ export function oneShotFailureDetail(stderr: string, output: string): string {
         /error|unavailable|denied|fail|invalid/i.test(obj.message)
           ? obj.message
           : "");
-      if (err) return String(err).slice(0, 500);
+      if (err) return maybeCopilot(String(err).slice(0, 500));
     } catch {
       /* not JSON — keep scanning */
     }
@@ -5121,7 +5116,8 @@ export function oneShotFailureDetail(stderr: string, output: string): string {
     .find((line) =>
       /error|unavailable|denied|unauthori[sz]ed|rate limit|invalid|not found|no such/i.test(line),
     );
-  return (errLine ?? lines[lines.length - 1] ?? "").slice(0, 500);
+  const base = (errLine ?? lines[lines.length - 1] ?? "").slice(0, 500);
+  return maybeCopilot(base);
 }
 
 /**
@@ -5310,7 +5306,7 @@ export function runPrompt(
         turns: usage.turns,
       };
       if (exitCode !== 0 || signal) {
-        const detail = oneShotFailureDetail(stderr, output) || "no stderr output";
+        const detail = oneShotFailureDetail(stderr, output, agent.cli) || "no stderr output";
         const termination = signal ? `signal ${signal}` : `code ${exitCode ?? "unknown"}`;
         const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
         finish({
@@ -5331,7 +5327,7 @@ export function runPrompt(
         finish({ ok: true, output, ...usageFields });
         return;
       }
-      const reason = oneShotFailureDetail(stderr, output) || "no output produced";
+      const reason = oneShotFailureDetail(stderr, output, agent.cli) || "no output produced";
       const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
       finish({
         ok: false,
@@ -5389,6 +5385,7 @@ export function oneShotResultFromLog(
   elapsedMs: number,
   exitCode?: number | null,
   commandName = "agent",
+  cli?: string,
 ): PromptResult {
   const rawOut = existsSync(outLog) ? readFileSync(outLog, "utf8") : "";
   const rawErr = existsSync(errLog) ? readFileSync(errLog, "utf8") : "";
@@ -5410,7 +5407,7 @@ export function oneShotResultFromLog(
     turns: usage.turns,
   };
   if (exitCode !== undefined && exitCode !== 0) {
-    const detail = oneShotFailureDetail(stderr, output) || "no stderr output";
+    const detail = oneShotFailureDetail(stderr, output, cli) || "no stderr output";
     return {
       ok: false,
       error: `${commandName} exited with code ${exitCode ?? "unknown"}: ${detail}`,
@@ -5422,7 +5419,7 @@ export function oneShotResultFromLog(
     if (error) return { ok: false, error, ...usageFields };
   }
   if (output) return { ok: true, output, ...usageFields };
-  const reason = oneShotFailureDetail(stderr, output) || "no output produced";
+  const reason = oneShotFailureDetail(stderr, output, cli) || "no output produced";
   return { ok: false, error: `agent exited without output: ${reason}`, ...usageFields };
 }
 
@@ -10123,11 +10120,19 @@ export class AgentRunner {
         : `exited with code ${exitCode ?? "unknown"}`;
       const assistant = this.lastAssistantText(session);
       const stderr = this.stderrTail(taskId, entry, wasReview, session);
+      // Build the stderr segment on its own: a Copilot Auto-tier rejection arrives
+      // as raw CLI text, so say what it means. Enriching before composing (not
+      // patching the joined string) keeps "last assistant" text that happens to
+      // quote "stderr: " intact.
+      const stderrText = stderr ? oneLineTail(stderr, 320) : "";
+      const stderrSegment = stderrText
+        ? enrichAgentFailureDetail(stderrText, session?.cli)
+        : "(empty)";
       const detail = [
         "engineer turn ended without a handoff: the turn exited cleanly and did not request review",
         `reason: ${reason}`,
         `last assistant: ${oneLineTail(assistant ?? "no assistant message", 240)}`,
-        `stderr: ${stderr ? oneLineTail(stderr, 320) : "(empty)"}`,
+        `stderr: ${stderrSegment}`,
       ].join(" · ");
       this.recordTaskActivity(taskId, detail);
     }
@@ -10739,13 +10744,14 @@ export class AgentRunner {
    * (see `sysLineDescribesFailure`), then a generic fallback.
    */
   private lastFailureLine(session: Session | undefined): string {
+    const wrap = (text: string) => enrichAgentFailureDetail(text, session?.cli);
     if (session?.permissionDenial) {
       return `permission problem, not a code failure: ${session.permissionDenial}`;
     }
     if (session) {
       for (let i = session.lines.length - 1; i >= 0; i--) {
         const line = session.lines[i];
-        if ("s" in line && line.s === "err" && line.d.trim()) return line.d.trim();
+        if ("s" in line && line.s === "err" && line.d.trim()) return wrap(line.d.trim());
       }
       for (let i = session.lines.length - 1; i >= 0; i--) {
         const line = session.lines[i];
@@ -10755,7 +10761,7 @@ export class AgentRunner {
             : "s" in line && line.s === "sys"
               ? line.d
               : undefined;
-        if (text?.trim() && sysLineDescribesFailure(text)) return text.trim();
+        if (text?.trim() && sysLineDescribesFailure(text)) return wrap(text.trim());
       }
     }
     return "the agent process exited with an error — open the task to see the full output";
@@ -10858,10 +10864,11 @@ export class AgentRunner {
       };
       const engine = session?.engine && session.engine !== "plain" ? ` (${session.engine})` : "";
       let detail =
-        detailOverride ??
-        (this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
-          ? HANDOFF_FINALIZATION_INTERRUPTED_DETAIL
-          : this.lastFailureLine(session));
+        detailOverride != null
+          ? enrichAgentFailureDetail(detailOverride, session?.cli)
+          : this.hasPendingHandoff(taskId) || handoffFinalizationWasInterrupted(session)
+            ? HANDOFF_FINALIZATION_INTERRUPTED_DETAIL
+            : this.lastFailureLine(session);
       let reason = needsInputReason;
       if (reason === "dev-error" && isProviderFailureReason(detail)) {
         reason = "provider-failure";

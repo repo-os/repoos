@@ -16,6 +16,7 @@ const CLAUDE_CODE_MODELS = ["default", "opus", "sonnet", "haiku"] as const;
 
 const MODEL_LABELS: Record<string, string> = {
   default: "Default",
+  "copilot-auto-efficiency": "Auto · Balance",
   "copilot-auto-balance": "Auto · Balance",
   "copilot-auto-intelligence": "Auto · Intelligence",
   opus: "Opus",
@@ -27,7 +28,7 @@ const MODEL_LABELS: Record<string, string> = {
 
 /** Display label for a model id; unknown ids render as-is. */
 export function labelForModel(m: string, cli?: string): string {
-  if (m === "default" && cli === "github copilot") return "Auto · Efficiency";
+  if (m === "default" && cli === "github copilot") return "Auto · Balance";
   return MODEL_LABELS[m] ?? m;
 }
 

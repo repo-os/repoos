@@ -2,10 +2,10 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `restartCommand` now tells a down server's user to run `repoos restart`, which refuses when nothing is listening, so th…"
+needs_input_detail: "`needs some work` — `repoos restart` cannot find a server whose command line does not embed this repo's root, so a project repo on an insta…"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,8 +14,8 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T22:19:14Z"
-review_passes: 5
+updated_at: "2026-11-11T22:26:05Z"
+review_passes: 6
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -23,6 +23,7 @@ routing_escalations: 1
 dev_error_count: 13
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-11T16:03:13.143Z\",\"reason\":\"handoff-deferred\"}]"
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
@@ -216,4 +217,22 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T21:19:56Z · message_queued at 2026-11-11T21:19:56.344Z
 - 2026-11-11T21:19:56Z · handoff failed · task-file handoff failed at commit · timed out after waiting for the running check to finish; the check still holds the task worktree. Request handoff again once it has finished
 - 2026-11-11T21:19:56Z · message_delivered: 3 message(s)
+- 2026-11-11T21:26:47Z · note: handoff requested (cli)
+- 2026-11-11T21:28:18Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T21:41:37Z · body
+- 2026-11-11T21:56:46Z · message_queued at 2026-11-11T21:56:46.515Z
+- 2026-11-11T21:56:46Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: A check is running; wait for it to finish.
+- 2026-11-11T21:58:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T22:02:09Z · note: handoff requested (cli)
+- 2026-11-11T22:02:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T22:05:13Z · body
+- 2026-11-11T22:16:15Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T22:16:16Z · message_queued at 2026-11-11T22:16:16.139Z
+- 2026-11-11T22:16:16Z · ↻ resuming engineer to read queued message
+- 2026-11-11T22:16:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The tests are actually running and passing. The scoped check is fully green. Let me do a final verification of the complete picture before handing off: confirm the diff scope, that no bare node/npm/npx was introduced, and that the worktree… · stderr: (empty)
 - 2026-11-11T22:19:14Z · status active→review
+- 2026-11-11T22:19:15Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T22:21:04Z · note: review pass 6: needs some work
+- 2026-11-11T22:21:04Z · needs_input
+- 2026-11-11T22:21:04Z · needs_input
+- 2026-11-11T22:26:05Z · status review→active
