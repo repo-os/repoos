@@ -344,7 +344,7 @@ describe("model-aware driver commands", () => {
     expect(oneShotFailureDetail(raw, "")).toBe(raw);
   });
 
-  it("keeps agent wording in oneShotResultFromLog while passing cli for enrichment", () => {
+  it("keeps the CLI name in freeform error wording while enriching tier failures", () => {
     const dir = mkdtempSync(join(tmpdir(), "repoos-copilot-log-"));
     const out = join(dir, "out.log");
     const err = join(dir, "err.log");
@@ -353,9 +353,9 @@ describe("model-aware driver commands", () => {
       "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence.\n",
     );
     writeFileSync(out, "");
-    const result = oneShotResultFromLog(out, err, 1, 1, "agent", "github copilot");
+    const result = oneShotResultFromLog(out, err, 1, 1, "github copilot", "github copilot");
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/^agent exited with code 1:/);
+    expect(result.error).toMatch(/^github copilot exited with code 1:/);
     expect(result.error).toContain("Copilot Auto tier");
   });
 
