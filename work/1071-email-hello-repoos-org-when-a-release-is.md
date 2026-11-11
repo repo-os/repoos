@@ -3,9 +3,6 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T07:39:12Z"
+updated_at: "2026-11-11T07:39:24Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 8d251b33d5234a6344ed39242c2deb727cccf707
 review_passes: 3
@@ -193,3 +190,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T07:17:31Z · agent exited with an error (claude) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T07:39:10Z · cli_override, model_override
 - 2026-11-11T07:39:12Z · model_override
+- 2026-11-11T07:39:24Z · needs_input
