@@ -14,7 +14,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-11T00:19:32Z"
+updated_at: "2026-11-11T00:49:32Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-WORKTREE guard (#0512) > queues checkpoint recovery instead of 409 when HEAD moved only by WIP checkpoint (#0834) on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: eddc478a44621e88dc16d2dc8d68f6c4dcdb0342
 review_passes: 4
@@ -175,3 +175,4 @@ FINAL (pass 5): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T00:14:55Z · message_queued at 2026-11-11T00:14:55.090Z
 - 2026-11-11T00:14:55Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-WORKTREE guard (#0512) > queues checkpoint recovery instead of 409 when HEAD moved only by WIP checkpoint (#0834) on mini — fix it in the feature branch and re-run the gate
 - 2026-11-11T00:19:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T00:49:32Z · CTO nudge: held — handoff gate is running
