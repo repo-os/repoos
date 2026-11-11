@@ -3,9 +3,6 @@ id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `repoos restart` cannot find a server whose command line does not embed this repo's root, so a project repo on an insta…"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -243,3 +240,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:47:42Z · message_queued at 2026-11-11T22:47:42.112Z
 - 2026-11-11T22:47:42Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T22:49:36Z · note: review pass 7: needs some work
+- 2026-11-11T22:49:36Z · needs_input
