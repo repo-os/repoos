@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T12:43:40Z"
+updated_at: "2026-11-11T12:44:04Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_passes: 5
@@ -55,24 +55,24 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```json
 [
 {
-  "label": "Releases page: Release email card after a successful send (\"Email sent to 2 recipients\")",
-  "target": "default",
-  "route": "/releases",
-  "highlight": "[data-test-id=\"release-email\"]",
-  "state": "release:emailSent"
+"label": "Releases page: Release email card after a successful send (\"Email sent to 2 recipients\")",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-email\"]",
+"state": "release:emailSent"
 },
 {
-  "label": "Releases page: Release email card after a failed send (\"Email failed: …\") with Resend",
-  "target": "default",
-  "route": "/releases",
-  "highlight": "[data-test-id=\"release-email\"]",
-  "state": "release:emailFailed"
+"label": "Releases page: Release email card after a failed send (\"Email failed: …\") with Resend",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-email\"]",
+"state": "release:emailFailed"
 },
 {
-  "label": "Settings: Release emails controls (on/off, recipients, when, prereleases)",
-  "target": "default",
-  "route": "/settings?tab=general&section=release-emails",
-  "highlight": "#settings-section-release-emails"
+"label": "Settings: Release emails controls (on/off, recipients, when, prereleases)",
+"target": "default",
+"route": "/settings?tab=general&section=release-emails",
+"highlight": "#settings-section-release-emails"
 }
 ]
 ```
@@ -265,3 +265,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T12:21:18Z · engineer stopped by request
 - 2026-11-11T12:37:28Z · body
 - 2026-11-11T12:43:40Z · body
+- 2026-11-11T12:44:04Z · body
