@@ -12,7 +12,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T07:43:55Z"
+updated_at: "2026-11-11T07:49:13Z"
 last_close_out_gate_ms: 387537
 last_close_out_gate_at: "2026-11-11T07:43:07.068Z"
 review_passes: 3
@@ -105,3 +105,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:46:29Z · message_queued at 2026-11-11T06:46:29.327Z
 - 2026-11-11T07:43:07Z · close-out gate completed in 388s
 - 2026-11-11T07:43:55Z · status done→done, release:success
+- 2026-11-11T07:49:13Z · message_dropped: 1 queued message(s) discarded — task is done
