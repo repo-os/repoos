@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T02:46:17Z"
+updated_at: "2026-11-11T02:59:07Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T02:28:59.468Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -61,3 +61,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T02:29:00Z · needs_input
 - 2026-11-11T02:29:00Z · message_delivered: 1 message(s)
 - 2026-11-11T02:46:17Z · body
+- 2026-11-11T02:59:07Z · body
