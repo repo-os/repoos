@@ -45,3 +45,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T10:48:13Z · cli_override, model_override
 - 2026-11-11T10:48:13Z · status ready→active, branch
 - 2026-11-11T10:55:28Z · message_queued at 2026-11-11T10:55:28.776Z
+- 2026-11-11T10:55:28Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
