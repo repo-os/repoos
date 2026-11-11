@@ -44,7 +44,6 @@ describe("classifyRestartPath", () => {
     vi.spyOn(serviceManager, "isManagedService").mockReturnValue(true);
     expect(classifyRestartPath("/repo", server())).toBe("managed-service");
   });
-
 });
 
 describe("restartRepoServer", () => {

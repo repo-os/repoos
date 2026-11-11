@@ -488,7 +488,7 @@ describe("renderStatus", () => {
     expect(out).toContain("server is older than the installed CLI");
     expect(out).toContain("v0.5.60 → v0.5.66");
     expect(out).toContain("restart to pick up fixes");
-    expect(out).toContain("repoos serve"); // hand-run default hint
+    expect(out).toContain("repoos restart");
     // the server line names the running build, not just the port/pid (it may
     // wrap across the narrow row, so check the two tokens independently)
     expect(out).toContain("v0.5.60 (build");
@@ -516,7 +516,7 @@ describe("renderStatus", () => {
     renderStatus(live);
     const out = lines.join("\n");
     expect(out).toContain("server is older than the installed CLI");
-    expect(out).toContain("repoos service restart");
+    expect(out).toContain("repoos restart");
     expect(out).toContain("managed service");
   });
 

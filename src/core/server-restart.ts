@@ -176,11 +176,7 @@ export function classifyRestartPath(root: string, server: LocatedServer): Restar
   return "hand-run";
 }
 
-export function fetchHealth(
-  host: string,
-  port: number,
-  timeoutMs = 1500,
-): Promise<HealthSnapshot> {
+export function fetchHealth(host: string, port: number, timeoutMs = 1500): Promise<HealthSnapshot> {
   const probeHost = host === "0.0.0.0" ? "127.0.0.1" : host;
   return new Promise((resolve) => {
     const miss: HealthSnapshot = {
@@ -207,8 +203,7 @@ export function fetchHealth(
               ok: body.ok === true,
               root: typeof body.root === "string" ? body.root : null,
               serverVersion: typeof body.serverVersion === "string" ? body.serverVersion : null,
-              activeEngineers:
-                typeof body.activeEngineers === "number" ? body.activeEngineers : 0,
+              activeEngineers: typeof body.activeEngineers === "number" ? body.activeEngineers : 0,
             });
           } catch {
             resolve(miss);
@@ -274,8 +269,7 @@ export async function waitForServerRestart(
   const fetch = opts.fetch ?? fetchHealth;
   const sleep = opts.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const readPid =
-    opts.readPid ??
-    ((r: string, p: number) => readCurrentServePid(r, p, opts.registryDir).pid);
+    opts.readPid ?? ((r: string, p: number) => readCurrentServePid(r, p, opts.registryDir).pid);
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
@@ -332,7 +326,7 @@ export function spawnHandRunServe(root: string, port: number, host: string): voi
   const entry = cliEntryPath();
   const args = needsCliEntry
     ? [entry, "serve", "--port", String(port), "--host", host, "--quiet"]
-  : ["serve", "--port", String(port), "--host", host, "--quiet"];
+    : ["serve", "--port", String(port), "--host", host, "--quiet"];
   const child = spawn(bin, args, {
     cwd: root,
     detached: true,
@@ -400,7 +394,11 @@ export async function restartRepoServer(
   }
 
   const health = await (opts.health ?? fetchHealth)(server.host, server.port);
-  if (health.ok && health.root && canonicalRegistryRoot(health.root) !== canonicalRegistryRoot(root)) {
+  if (
+    health.ok &&
+    health.root &&
+    canonicalRegistryRoot(health.root) !== canonicalRegistryRoot(root)
+  ) {
     return {
       ok: false,
       message: `Port ${server.port} answers /api/health for a different repo (${health.root}) — refusing to touch it.`,
