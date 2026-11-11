@@ -3,9 +3,6 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the Releases email card goes stale after a cut, and a transient write error mid-send can make Resend mail recipients tw…"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T05:45:09Z"
+updated_at: "2026-11-11T05:45:10Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -171,3 +168,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T05:34:33Z · message_queued at 2026-11-11T05:34:33.277Z
 - 2026-11-11T05:45:07Z · status review→active
 - 2026-11-11T05:45:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T05:45:10Z · needs_input
