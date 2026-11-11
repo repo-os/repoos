@@ -2,7 +2,7 @@
 id: "1090"
 title: "Releases page blames the wrong workflow: an unrelated failed run shows as 'release workflow failed' while Homebrew is just updating"
 type: bug
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -44,3 +44,4 @@ Separately (not part of this task): the Adoption matrix macOS job failed at `ove
 - 2026-11-11T04:55:11Z · body
 - 2026-11-11T04:56:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T05:01:22Z · note: ui verification passed: 1 shot captured with clean console
+- 2026-11-11T05:01:22Z · status active→review
