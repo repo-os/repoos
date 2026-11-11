@@ -91,9 +91,25 @@ export function makeSmokeFixture(): string {
  */
 /** Work view is lazy-loaded; under a loaded gate the board can appear after 500ms. */
 async function waitForWorkBoard(page: SmokePage): Promise<void> {
-  await page.waitForFunction(() => document.querySelector(".board") !== null, {
+  await page.waitForFunction(() => document.querySelector(".work-page") !== null, {
     timeout: 10_000,
   });
+  // Board and Pipeline both stay mounted (#1062 scroll preservation); ensure the
+  // board is the active pane before smoke clicks task cards on it.
+  await page.evaluate(() => {
+    for (const btn of Array.from(document.querySelectorAll(".view-toggle-btn"))) {
+      if (btn.textContent?.includes("Board") && !btn.classList.contains("active")) {
+        (btn as HTMLElement).click();
+      }
+    }
+  });
+  await page.waitForFunction(
+    () => {
+      const board = document.querySelector(".board");
+      return board instanceof HTMLElement && board.offsetParent !== null;
+    },
+    { timeout: 10_000 },
+  );
 }
 
 async function runUISmokeTest(): Promise<void> {
@@ -357,7 +373,7 @@ async function runUISmokeTest(): Promise<void> {
     // seeds task 9001 (status review) with a stored report so the button is
     // enabled; the flow stops before confirming, so nothing is spawned.
     await goWork();
-    await page.click('[data-task-id="9001"]');
+    await page.click('.task-card[data-task-id="9001"]');
     await page.waitForTimeout(600); // drawer opens on the Review tab
     await page.waitForFunction(
       () => {

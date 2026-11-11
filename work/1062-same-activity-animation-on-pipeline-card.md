@@ -13,9 +13,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T23:57:57Z"
-review_passes: 3
+updated_at: "2026-11-10T18:58:59Z"
 review_rounds: 2
+review_passes: 2
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
 dev_error_count: 8
@@ -267,13 +267,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T18:26:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T18:31:16Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-10T18:31:22Z · message_delivered: 1 message(s)
-- 2026-11-10T18:48:22Z · body
-- 2026-11-10T18:56:11Z · CTO nudge: held — handoff gate is running
-- 2026-11-10T18:58:56Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
-- 2026-11-10T18:59:00Z · status active→review
-- 2026-11-10T18:59:00Z · message_queued at 2026-11-10T18:59:00.798Z
-- 2026-11-10T19:04:38Z · note: review pass 3: needs some work
-- 2026-11-10T19:07:44Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
-- 2026-11-10T20:03:26Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-10T23:04:19Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T18:58:59Z · status active→review

@@ -550,6 +550,8 @@ export interface RepoOSConfig {
    * Inline animation beside agent-activity labels. Default `orbital-pixel` when
    * omitted. Use `three-dots` for the legacy pulsing-dot row.
    */
+  /** When false, activity indicators render a still status dot with no motion. Default true. */
+  activityAnimationEnabled?: boolean;
   activityAnimationStyle?: ActivityAnimationStyle;
   /**
    * Fixed pixel width of the inline activity animation, the same on every

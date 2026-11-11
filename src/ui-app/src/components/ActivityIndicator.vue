@@ -46,11 +46,21 @@ const props = withDefaults(
 const pinia = getActivePinia();
 const config = pinia ? useConfigStore(pinia) : null;
 const root = ref<HTMLElement | null>(null);
+const settingsPreview = computed(
+  () => props.animationStyle !== undefined || props.animationSize !== undefined,
+);
+const animationGloballyEnabled = computed(() => {
+  if (settingsPreview.value) return true;
+  const raw = config?.form.activityAnimationEnabled;
+  return raw !== false;
+});
 const animationLimit = computed(() => {
   const value = config?.form.activityAnimationConcurrency;
   return typeof value === "number" ? value : 6;
 });
-const animate = useActivityMotion(root, animationLimit);
+const animate = useActivityMotion(root, animationLimit, animationGloballyEnabled);
+const motionActive = animate;
+const plainDot = computed(() => !animationGloballyEnabled.value);
 
 const style = computed((): ActivityAnimationStyle => {
   if (props.animationStyle) return props.animationStyle;
@@ -120,17 +130,19 @@ const matrixPositions = [
     :class="[
       size === 'md' ? 'ai-md' : 'ai-sm',
       `ai-${variant}`,
-      legacyDots ? 'ai-legacy-dots' : 'ai-compact',
-      !legacyDots && `ai-style-${style}`,
-      !legacyDots && `ai-motion-${motion}`,
-      !animate ? 'ai-motion-paused' : '',
+      legacyDots && !plainDot ? 'ai-legacy-dots' : plainDot ? '' : 'ai-compact',
+      !legacyDots && !plainDot && `ai-style-${style}`,
+      !legacyDots && !plainDot && `ai-motion-${motion}`,
+      plainDot ? 'ai-plain-dot-mode' : '',
+      !motionActive ? 'ai-motion-paused' : '',
       sized ? 'ai-sized' : '',
     ]"
     :style="sizeStyle"
     role="status"
     :aria-label="label"
   >
-    <template v-if="legacyDots">
+    <span v-if="plainDot" class="ai-dot ai-plain-dot" aria-hidden="true"></span>
+    <template v-else-if="legacyDots">
       <span
         v-for="n in dots"
         :key="n"

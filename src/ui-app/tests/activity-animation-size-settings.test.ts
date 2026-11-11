@@ -57,10 +57,12 @@ function settingsConfigResponse(): {
 } {
   return {
     config: {
+      activityAnimationEnabled: true,
       activityAnimationStyle: "orbital-pixel",
       activityAnimationSize: DEFAULT_ACTIVITY_ANIMATION_SIZE,
     },
     schema: [
+      schemaField("activityAnimationEnabled", "boolean", { default: true }),
       schemaField("activityAnimationStyle", "select", {
         default: "orbital-pixel",
         options: ACTIVITY_ANIMATION_STYLES.map((value) => ({
@@ -123,6 +125,16 @@ afterEach(() => {
 });
 
 describe("Settings activity animation size (#0813, pixels #0816)", () => {
+  it("hides style controls when motion is off", async () => {
+    const wrapper = await mountSettings();
+    const motionSwitch = wrapper.get("#setting-activityAnimationEnabled [role='switch']");
+    await motionSwitch.trigger("click");
+    await wrapper.vm.$nextTick();
+    expect(wrapper.find("#setting-activityAnimationStyle").exists()).toBe(false);
+    expect(wrapper.find(".activity-animation-preview").exists()).toBe(false);
+    expect(wrapper.find("#setting-activityAnimationEnabled").exists()).toBe(true);
+  });
+
   it("offers a pixel slider with no Auto toggle and a default tick", async () => {
     const config = useConfigStore();
     const saveSpy = vi.spyOn(config, "save").mockResolvedValue(undefined);
