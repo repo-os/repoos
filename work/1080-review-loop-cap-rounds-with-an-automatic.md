@@ -2,21 +2,27 @@
 id: "1080"
 title: "Review loop: cap rounds with an automatic scope freeze, priority-aware blocking bar, honour accepted-scope sections, auto-file follow-ups"
 type: feature
-status: active
+status: done
 priority: p1
 area: [server, core]
+merged_commit: beddcd681371de7fb778f660284c9a7d61f64ce9
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/review-loop-cap-rounds-with-an-automatic
 cli_override: claude code
 model_override: haiku
+review_cli_override: codex
+review_model_override: gpt-6.1-terra
 created_at: "2026-11-09T12:14:25Z"
-updated_at: "2026-11-09T19:56:19Z"
+updated_at: "2026-11-10T07:18:30Z"
+last_close_out_gate_ms: 662615
+last_close_out_gate_at: "2026-11-10T07:16:21.479Z"
+review_passes: 5
 last_check_failure: "repoos check at 2026-11-09T17:02:18.678Z: repoos check failed: ui verification failed: timed out waiting for the task's browser capture"
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
 incomplete_review_retries: 1
+dev_error_count: 1
 ---
 ## Problem
 Tasks routinely take 10-15 review rounds (#1058, #1060, #1061 each took 15; #1070 is at 4+). Each round is 20-40 minutes. Rounds are dominated by narrow edge cases found one at a time, reviewer bars that drift between rounds, and housekeeping failures, not by real defects in the change. The review prompt (`src/server/review.ts`) already says to report the whole bug class in one pass and never hold an instance back, and `review.humanFlagAfterPasses` (default 5) only flags needs-input; neither stops the loop.
@@ -42,8 +48,22 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 
 ## Shots
 ```json
-[]
+[
+{
+"label": "Settings: Freeze the blocking bar after (new review.freezeAfterPasses control)",
+"target": "default",
+"route": "/settings?tab=automation",
+"selector": "[data-config-key=\"review.freezeAfterPasses\"]",
+"highlight": "[data-config-key=\"review.freezeAfterPasses\"]"
+}
+]
 ```
+
+## Accepted scope: Settings screenshot (final)
+The declared shot of the new Settings control is an evidence nicety: the captured shot may show Mission Control instead. A reviewer must report a missing or off-target screenshot as a suggestion, not blocking.
+
+## Accepted scope and known limitations
+Final (pass 7): accepted-scope extraction handles the first matching section up to 12,000 characters, with backtick and tilde fences. Multiple accepted-scope sections, sections longer than 12,000 characters and the 6,000-character task-spec excerpt are known limitations tracked in #1081; they are NOT blocking. A stale engineering report draft and the off-target Settings screenshot are suggestions, not blocking. Reviewer: report these under Suggestions and give the verdict on correctness and landing blockers only.
 
 ## Activity
 
@@ -137,3 +157,72 @@ The owner wants tasks to converge in a few rounds. Ship in two slices and hand o
 - 2026-11-09T19:56:18Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-09T19:56:19Z · message_queued at 2026-11-09T19:56:19.490Z
 - 2026-11-09T19:56:19Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
+- 2026-11-09T19:57:06Z · CTO nudge: held — review is running
+- 2026-11-09T19:58:03Z · message_delivered: 2 message(s)
+- 2026-11-09T20:11:18Z · message_queued at 2026-11-09T20:11:18.151Z
+- 2026-11-09T20:15:23Z · body
+- 2026-11-09T20:18:05Z · handoff_deferred: 2 queued message(s) must be read before review
+- 2026-11-09T20:18:06Z · message_queued at 2026-11-09T20:18:06.167Z
+- 2026-11-09T20:18:06Z · ↻ resuming engineer to read queued message
+- 2026-11-09T20:18:06Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The earlier handoff failed because the engineering report draft was missing. I've written a fresh draft at `.repoos/engineering-report-drafts/1080.md`, re-run the scoped check (exit 0, no failed steps), and requested handoff again with `re… · stderr: (empty)
+- 2026-11-09T20:46:36Z · message_delivered: 3 message(s)
+- 2026-11-09T20:50:39Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T20:51:40Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T20:51:45Z · status active→review
+- 2026-11-09T20:51:45Z · message_queued at 2026-11-09T20:51:45.580Z
+- 2026-11-09T20:51:58Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (71147bb40) during finalization (#0734)
+- 2026-11-09T21:21:54Z · status review→active
+- 2026-11-09T21:21:56Z · CTO nudge: held — review is running
+- 2026-11-09T21:22:01Z · note: handoff requested (cli)
+- 2026-11-09T21:25:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T21:36:00Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T21:36:00Z · message_queued at 2026-11-09T21:36:00.879Z
+- 2026-11-09T21:36:01Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
+- 2026-11-09T21:40:40Z · CTO nudge: held — review is running
+- 2026-11-09T21:45:44Z · message_delivered: 2 message(s)
+- 2026-11-09T21:59:15Z · body
+- 2026-11-09T22:05:40Z · CTO nudge: held — handoff gate is running
+- 2026-11-09T22:09:48Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-09T22:09:50Z · status active→review
+- 2026-11-09T22:09:50Z · message_queued at 2026-11-09T22:09:50.594Z
+- 2026-11-09T22:22:35Z · review_cli_override, review_model_override
+- 2026-11-09T23:10:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T00:39:48Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T00:44:57Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-11-10T00:48:58Z · note: review pass 5: failed — no usable report
+- 2026-11-10T00:48:58Z · needs_input
+- 2026-11-10T01:09:06Z · needs_input (review-failed) cleared for review again by human
+- 2026-11-10T01:10:51Z · note: review pass 6: needs some work
+- 2026-11-10T01:10:51Z · needs_input
+- 2026-11-10T01:54:36Z · body: Accepted scope: Settings screenshot (final) (added)
+- 2026-11-10T01:54:36Z · status review→active
+- 2026-11-10T01:54:36Z · note: send-back — returned to active for engineer follow-up
+- 2026-11-10T01:54:38Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T01:54:45Z · needs_input
+- 2026-11-10T01:54:45Z · message_queued at 2026-11-10T01:54:45.839Z
+- 2026-11-10T01:59:53Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-10T01:59:53Z · note: handoff requested (cli)
+- 2026-11-10T02:01:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T02:16:04Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-10T02:16:05Z · message_queued at 2026-11-10T02:16:05.055Z
+- 2026-11-10T02:16:05Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md
+- 2026-11-10T02:16:21Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T02:39:45Z · message_delivered: 1 message(s)
+- 2026-11-10T02:42:41Z · agent exited with an error (claude) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1080.md. The task stays active — fix the failure and ask again.
+- 2026-11-10T02:52:46Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-10T02:56:06Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T03:28:29Z · message_delivered: 2 message(s)
+- 2026-11-10T03:33:29Z · body
+- 2026-11-10T04:07:10Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 30m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-10T04:19:30Z · body
+- 2026-11-10T04:19:42Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-10T04:24:31Z · note: adopted orphaned engineer pid 63125
+- 2026-11-10T04:55:56Z · status active→review
+- 2026-11-10T05:01:02Z · watchdog: auto-retried dead reviewer session · the reviewer agent produced no report and its session ended — starting a fresh review
+- 2026-11-10T05:02:06Z · note: review pass 7: needs some work
+- 2026-11-10T05:02:07Z · needs_input
+- 2026-11-10T05:45:05Z · body: Accepted scope and known limitations (added)
+- 2026-11-10T05:45:05Z · needs_input (review-rounds-exhausted) cleared for review again by human
+- 2026-11-10T05:45:51Z · note: review pass 8: good to go
+- 2026-11-10T07:16:21Z · close-out gate completed in 663s
+- 2026-11-10T07:18:30Z · status done→done, release:success
