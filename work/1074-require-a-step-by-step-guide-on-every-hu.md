@@ -44,12 +44,12 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 "route": "/work?task=9999&tab=changes",
 "highlight": "[data-test-id=\"human-guide-warning\"]",
 "steps": [
-  {
-    "click": "[data-task-id=\"9999\"]"
-  },
-  {
-    "waitMs": 400
-  }
+{
+  "click": "[data-task-id=\"9999\"]"
+},
+{
+  "waitMs": 400
+}
 ],
 "state": "card:humanStep"
 }
@@ -95,3 +95,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T03:10:48Z · body
 - 2026-11-11T03:15:19Z · body
 - 2026-11-11T03:18:31Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target "default"): click [data-task-id="9999"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)
+- 2026-11-11T03:18:31Z · message_queued at 2026-11-11T03:18:31.239Z
