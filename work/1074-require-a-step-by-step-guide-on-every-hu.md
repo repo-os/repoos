@@ -2,7 +2,7 @@
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, agent]
 assigned_to: ai
