@@ -24,6 +24,8 @@ import {
   freshSessionId,
   HANDOFF_READY_SIGNAL,
   PREVIEW_REQUEST_SIGNAL,
+  oneShotFailureDetail,
+  oneShotResultFromLog,
   promptCommand,
   runPrompt,
 } from "../../server/agents";
@@ -307,12 +309,54 @@ describe("model-aware driver commands", () => {
   );
 
   it.each([
-    ["default", "efficiency"],
+    ["default", "balance"],
+    ["copilot-auto-efficiency", "balance"],
     ["copilot-auto-balance", "balance"],
     ["copilot-auto-intelligence", "intelligence"],
   ])("uses Copilot Auto %s tier", (model, tier) => {
     const command = promptCommand({ ...agent("github copilot"), model }, "ping");
     expect(command.args).toEqual(expect.arrayContaining(["--model", "auto", "--auto-tier", tier]));
+  });
+
+  it("does not suggest the tier that just failed (balance unavailable)", () => {
+    const raw =
+      "Auto preference `balance` is unavailable for this account. Set --auto-tier to balance or intelligence.";
+    const msg = oneShotFailureDetail(raw, "", "github copilot");
+    expect(msg).toContain("Copilot Auto tier `balance`");
+    expect(msg).toMatch(/try intelligence\)/);
+    expect(msg).not.toMatch(/try [^)]*balance/);
+    expect(msg).not.toContain("Settings →");
+  });
+
+  it("maps a removed Copilot Auto tier failure to plain-English guidance", () => {
+    const raw =
+      "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence.";
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toContain(
+      "Copilot Auto tier `efficiency`",
+    );
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toMatch(/balance.*intelligence/i);
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toContain("copilot-auto-efficiency");
+  });
+
+  it("does not rewrite generic unavailable errors for other CLIs", () => {
+    const raw = "model claude-opus is unavailable for your plan";
+    expect(oneShotFailureDetail(raw, "", "claude code")).toBe(raw);
+    expect(oneShotFailureDetail(raw, "")).toBe(raw);
+  });
+
+  it("keeps the CLI name in freeform error wording while enriching tier failures", () => {
+    const dir = mkdtempSync(join(tmpdir(), "repoos-copilot-log-"));
+    const out = join(dir, "out.log");
+    const err = join(dir, "err.log");
+    writeFileSync(
+      err,
+      "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence.\n",
+    );
+    writeFileSync(out, "");
+    const result = oneShotResultFromLog(out, err, 1, 1, "github copilot", "github copilot");
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/^github copilot exited with code 1:/);
+    expect(result.error).toContain("Copilot Auto tier");
   });
 
   it("keeps Copilot one-shot prompts as markdown for freeform task creation", () => {

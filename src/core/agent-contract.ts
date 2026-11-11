@@ -23,6 +23,7 @@
  */
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { copilotAutoTierModelArgs } from "./copilot-auto-tier.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -689,11 +690,12 @@ const COPILOT_CONTRACT: ContractCommandTemplates = {
   version: () => ["version"],
   help: () => ["--help"],
   models: () => null,
-  // `copilot-auto-efficiency` is RepoOS's name for Copilot Auto's cheapest tier.
-  modelArgs: (model) =>
-    model === "copilot-auto-efficiency"
-      ? ["--model", "auto", "--auto-tier", "efficiency"]
-      : ["--model", model],
+  // `copilot-auto-efficiency` is a persisted alias; GitHub retired the efficiency tier (#1088).
+  modelArgs: (model) => {
+    const auto = copilotAutoTierModelArgs(model);
+    if (auto.length) return auto;
+    return ["--model", model];
+  },
   run: (_dir, prompt) => [
     "-p",
     prompt,
@@ -899,7 +901,8 @@ export const DEFAULT_PROBE_MODELS: Record<string, string> = {
   "claude code": "claude-haiku-4-5-20251001",
   codex: "gpt-5.6-luna",
   antigravity: "gemini-3.8-flash-low",
-  "github copilot": "copilot-auto-efficiency",
+  // `default` maps to Auto · Balance; `copilot-auto-efficiency` remains a persisted alias (#1088).
+  "github copilot": "default",
   pi: "openrouter/z-ai/glm-5.3-flash",
   muse: "muse-spark-1.3",
 };

@@ -2,18 +2,18 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — staged deletions block hook and checkpoints; renames bypass the branch guard; 128 KiB+ binaries fail closed
+needs_input_detail: "`needs some work` — the branch gate misses secrets added after a file's first commit, the allowlist can't cover files over 5 MiB, and zlib …"
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T22:14:41Z"
-review_passes: 3
+updated_at: "2026-11-11T22:27:01Z"
+review_passes: 4
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -112,4 +112,13 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:59:33Z · needs_input
 - 2026-11-11T21:59:33Z · message_queued at 2026-11-11T21:59:33.518Z
 - 2026-11-11T22:02:16Z · status review→active
+- 2026-11-11T22:02:19Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T22:03:21Z · note: handoff requested (cli)
+- 2026-11-11T22:05:54Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T22:14:41Z · status active→review
+- 2026-11-11T22:14:41Z · message_queued at 2026-11-11T22:14:41.981Z
+- 2026-11-11T22:14:42Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T22:16:44Z · note: review pass 4: needs some work
+- 2026-11-11T22:16:44Z · needs_input
+- 2026-11-11T22:16:45Z · needs_input
+- 2026-11-11T22:27:01Z · status review→active

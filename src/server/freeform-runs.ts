@@ -518,6 +518,7 @@ export class FreeformRunManager {
       elapsedMs,
       record.exitCode,
       record.agent.cli,
+      record.agent.cli,
     );
     if (timedOut) {
       const secs = Math.round((this.timeoutMs ?? FREEFORM_TIMEOUT_MS) / 1000);

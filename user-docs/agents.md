@@ -159,8 +159,8 @@ CLI never empties the other dropdowns, a failing one shows its reason (not
 found on PATH, timed out, not signed in…) with a **Retry**, and the last good
 list per CLI is saved in your browser so a reload shows it immediately while it
 revalidates. A model of `default` uses whatever the CLI itself defaults to,
-except for GitHub Copilot: it means **Auto · Efficiency**, the lowest-cost Auto
-tier.
+except for GitHub Copilot: it means **Auto · Balance** (RepoOS's economical Auto
+default). Some accounts no longer accept the CLI `efficiency` tier.
 
 ### Codex engineering permissions
 
@@ -179,12 +179,15 @@ engineering turns and resumed follow-ups after the server loads the new build.
 
 ### GitHub Copilot CLI
 
-RepoOS offers Copilot's three Auto tiers: **Auto · Efficiency** (the default),
-**Auto · Balance**, and **Auto · Intelligence**. They choose from models your
-Copilot account and policy make available; the tier controls the cost, quality,
-and latency trade-off rather than pinning a named model. RepoOS uses Copilot's
-documented `--model auto --auto-tier <tier>` flags, so it does not need to
-scrape the interactive `/model` picker.
+RepoOS offers Copilot's **Auto · Balance** (the default) and **Auto ·
+Intelligence** tiers. They choose from models your Copilot account and policy
+make available; the tier controls the cost, quality, and latency trade-off rather
+than pinning a named model. The legacy model id `copilot-auto-efficiency` still
+works in saved config but maps to Balance — GitHub removed the CLI `efficiency`
+tier. Valid tier ids can differ by account; if a tier fails, the CLI error may
+name alternatives. RepoOS uses Copilot's documented `--model auto --auto-tier`
+flags (for example `balance` or `intelligence`), so it does not need to scrape
+the interactive `/model` picker.
 
 RepoOS passes Copilot's `--yolo` flag (all tools, paths and URLs) for every role:
 engineer, PM, reviewer, Debugger, RepoOS Guide, and one-shot authoring. Copilot
