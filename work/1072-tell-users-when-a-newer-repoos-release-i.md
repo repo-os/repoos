@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T03:52:42Z"
+updated_at: "2026-11-11T03:56:57Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -75,3 +75,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T03:36:36Z · needs_input
 - 2026-11-11T03:41:58Z · note: adopted orphaned engineer pid 33890
 - 2026-11-11T03:52:42Z · body
+- 2026-11-11T03:56:57Z · CTO nudge: held — handoff gate is running
