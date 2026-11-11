@@ -79,3 +79,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T00:59:09Z · message_delivered: 1 message(s)
 - 2026-11-11T00:59:09Z · status review→active
 - 2026-11-11T01:04:35Z · body: Accepted scope and known limitations (added)
+- 2026-11-11T01:04:35Z · message_queued at 2026-11-11T01:04:35.833Z
