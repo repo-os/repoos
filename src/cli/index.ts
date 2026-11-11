@@ -76,6 +76,12 @@ import {
 import { c } from "./colors.js";
 import { commandUsage, printCommandHelp, printHelp, SELF_HELP_COMMANDS } from "./help.js";
 import { readVersion } from "../core/version.js";
+import {
+  beginCliUpdateBackgroundRefresh,
+  CLI_UPDATE_CHECK_REFRESH_CMD,
+  registerCliUpdateNoticeExitHook,
+  runCliUpdateCheckRefreshChild,
+} from "../core/update-check.js";
 
 // node:sqlite (used by db.ts/auth-store.ts) is still marked experimental on
 // supported Node versions and prints a warning the first time it's loaded.
@@ -106,6 +112,13 @@ function main(): void {
   if (reexecAfterStaleBuild()) {
     return;
   }
+  if (cmd === CLI_UPDATE_CHECK_REFRESH_CMD) {
+    void runCliUpdateCheckRefreshChild().then(
+      () => process.exit(0),
+      () => process.exit(0),
+    );
+    return;
+  }
   // Apple-signed git first on macOS: ad-hoc-signed git costs ~2x wall time in
   // syspolicyd re-validation on every launch (see preferAppleGit).
   preferAppleGit();
@@ -131,6 +144,15 @@ function main(): void {
     printCommandHelp(cmd);
     return;
   }
+
+  let configUpdates: { check?: boolean } | undefined;
+  try {
+    configUpdates = loadConfig().updates;
+  } catch {
+    /* outside a repo or unreadable config — default stays enabled */
+  }
+  const cliUpdateHookInput = { cmd, argv: rest, config: { updates: configUpdates } };
+  beginCliUpdateBackgroundRefresh(cliUpdateHookInput);
 
   // Staleness check — skip for version/help since those read no source, and
   // for `status`/`check` which report staleness themselves as first-class
@@ -457,6 +479,8 @@ function main(): void {
       printHelp();
       process.exitCode = 1;
   }
+
+  registerCliUpdateNoticeExitHook(cliUpdateHookInput);
 }
 
 main();
