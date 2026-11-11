@@ -222,3 +222,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T09:28:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T09:38:43Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-11T09:38:43Z · message_queued at 2026-11-11T09:38:43.367Z
+- 2026-11-11T09:38:43Z · ↻ resuming engineer to read queued message
