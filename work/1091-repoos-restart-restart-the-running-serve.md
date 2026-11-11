@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-11T10:55:25Z"
+review_passes: 1
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T10:55:25Z"
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
@@ -54,3 +55,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T10:54:04Z · message_queued at 2026-11-11T10:54:04.241Z
 - 2026-11-11T10:54:04Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T10:55:25Z · note: review pass 1: needs some work
+
