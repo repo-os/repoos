@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T04:06:10Z"
+updated_at: "2026-11-11T04:07:43Z"
 dev_error_count: 2
 ---
 ## Problem
@@ -79,3 +79,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:06:09Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-11T04:06:10Z · status active→review
 - 2026-11-11T04:06:10Z · message_queued at 2026-11-11T04:06:10.392Z
+- 2026-11-11T04:07:43Z · note: review pass 1: needs some work
