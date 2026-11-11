@@ -14,7 +14,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-11T01:08:42Z"
+updated_at: "2026-11-11T01:08:43Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-WORKTREE guard (#0512) > queues checkpoint recovery instead of 409 when HEAD moved only by WIP checkpoint (#0834) on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: eddc478a44621e88dc16d2dc8d68f6c4dcdb0342
 review_passes: 4
@@ -179,3 +179,4 @@ FINAL (pass 5): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:01:40Z · body
 - 2026-11-11T01:04:19Z · note: handoff requested (cli)
 - 2026-11-11T01:08:42Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-11T01:08:43Z · engineer stopped by request
