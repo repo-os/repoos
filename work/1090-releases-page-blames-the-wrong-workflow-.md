@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T05:02:27Z"
+updated_at: "2026-11-11T05:02:30Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -52,3 +52,4 @@ Separately (not part of this task): the Adoption matrix macOS job failed at `ove
 - 2026-11-11T05:02:27Z · note: review pass 1: needs some work
 - 2026-11-11T05:02:27Z · message_delivered: 1 message(s)
 - 2026-11-11T05:02:27Z · status review→active
+- 2026-11-11T05:02:30Z · CTO nudge: held — remote validation is running
