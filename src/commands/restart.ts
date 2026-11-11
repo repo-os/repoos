@@ -46,8 +46,6 @@ export async function cmdRestart(argv: string[]): Promise<void> {
   const toV = result.newVersion ? `v${result.newVersion}` : "unknown version";
   console.log(
     c.green("  ✓ Server restarted.") +
-      c.dim(
-        `  pid ${result.oldPid ?? "?"} → ${result.newPid ?? "?"}  ${fromV} → ${toV}`,
-      ),
+      c.dim(`  pid ${result.oldPid ?? "?"} → ${result.newPid ?? "?"}  ${fromV} → ${toV}`),
   );
 }
