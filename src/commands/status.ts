@@ -215,6 +215,7 @@ interface ServeLockEntry {
   port: number | null;
   host: string | null;
   startedAt: string | null;
+  serveFlags: string[];
   alive: boolean;
 }
 
@@ -272,15 +273,20 @@ export function readServeLocks(root: string, cacheDir: string): ServeLockEntry[]
         port?: unknown;
         host?: unknown;
         startedAt?: unknown;
+        serveFlags?: unknown;
       };
       const pid = typeof raw.pid === "number" && Number.isInteger(raw.pid) ? raw.pid : 0;
       const alive = pid > 0 && pid !== process.pid && pidAlive(pid);
+      const serveFlags = Array.isArray(raw.serveFlags)
+        ? raw.serveFlags.filter((f): f is string => typeof f === "string")
+        : [];
       out.push({
         file,
         pid,
         port: typeof raw.port === "number" ? raw.port : null,
         host: typeof raw.host === "string" ? raw.host : null,
         startedAt: typeof raw.startedAt === "string" ? raw.startedAt : null,
+        serveFlags,
         alive,
       });
     } catch {
@@ -714,8 +720,8 @@ export function serverBuildState(
 }
 
 /** The command that restarts this repo's server — matches how it is running. */
-export function restartHint(server: StatusServer): string {
-  return server.managedService ? "repoos service restart" : "repoos serve";
+export function restartHint(_server: StatusServer): string {
+  return "repoos restart";
 }
 
 /** `v0.5.66 (build abc123)` for the running server, degrading gracefully. */

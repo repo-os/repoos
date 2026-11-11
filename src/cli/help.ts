@@ -399,6 +399,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--port N",
       },
       {
+        name: "restart",
+        usage: "restart [--port N]",
+        desc: "Restart this repo's server (managed service, supervised, or hand-run)",
+        flags: "--port N",
+      },
+      {
         name: "servers",
         usage: "servers [--json] [--prune]",
         desc: "List locally running RepoOS servers from ~/.repoos/servers",

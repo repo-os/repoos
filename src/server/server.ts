@@ -758,6 +758,8 @@ export interface ServeOptions {
    * behaviour is isolated from the runner's swap use inject a 73%-swap sample.
    */
   pressureProbe?: MemoryPressureProbe;
+  /** Persisted in the serve lock for `repoos restart` (#1091). */
+  serveLockFlags?: string[];
 }
 
 /**
@@ -4694,7 +4696,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
       // Register this serve process in the lockfile so port conflicts can be
       // detected on the next startup (0168).
-      reaper.register(actualPort, host);
+      reaper.register(actualPort, host, opts.serveLockFlags);
       const serverStartedAt = new Date().toISOString();
       if (registerInServerRegistry) {
         try {

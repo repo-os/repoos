@@ -1,10 +1,11 @@
 ---
-updated_at: "2026-11-11T23:05:42Z"
-review_passes: 8
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — hand-run restart respawns without its serve flags whenever the lock predates this build or the server is found via the …
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -13,6 +14,8 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
+updated_at: "2026-11-11T23:02:54Z"
+review_passes: 7
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -243,13 +246,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:49:36Z · needs_input
 - 2026-11-11T22:49:36Z · needs_input
 - 2026-11-11T22:50:04Z · status review→active
-- 2026-11-11T22:50:06Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-11T22:51:11Z · note: handoff requested (cli)
-- 2026-11-11T22:53:18Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T23:02:54Z · status active→review
-- 2026-11-11T23:02:55Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-11T23:02:55Z · message_queued at 2026-11-11T23:02:55.212Z
-- 2026-11-11T23:02:55Z · note: shots: skipped — Docs site skipped: no docs shot declared
-- 2026-11-11T23:05:42Z · note: review pass 8: good to go
-- 2026-11-11T23:05:42Z · needs_input
-

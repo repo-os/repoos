@@ -169,10 +169,10 @@ The banner names the project and the address the page talks to, and tells two
 cases apart:
 
 - **Not running.** The connection was refused: nothing is listening on that
-  port. The banner shows a command to copy that restarts this project's server:
-  the `launchctl kickstart` line for a server installed with
-  `repoos service install`, or `repoos serve --port <port>` from the project
-  folder for one you started by hand. The browser cannot start it for you.
+  port. The banner shows a command to copy that starts this project's server
+  (`repoos serve` for a hand-run server, or the service manager's command).
+  `repoos restart` needs a running server to find, so use it once the server is up
+  (or when it is running but stale). The browser cannot start it for you.
 - **Not responding.** The server is running but did not answer within the time
   limit. It may be busy; retry in a moment. Restarting is not the first step.
 
@@ -190,3 +190,26 @@ Give the automatic reaper a moment to clear it; if the server has been down for
 more than a couple of minutes, check the lockfile in your configured cache
 directory (`repoos/.repoos/` on a fresh install) before
 intervening, and never `kill -9` a RepoOS server without checking it first.
+
+## The server runs under a supervisor RepoOS didn't install
+
+A server started by a hand-written launchd plist (`KeepAlive`) or a systemd unit
+you wrote shows in `repoos status` as a server, but `repoos service` does not
+know it, and `launchctl kickstart` wants `sudo` you may not have.
+**`repoos restart`** handles this: it finds the pid from the repo's own
+lockfile, sees the supervisor, and — when the process belongs to you — signals
+exactly that pid so the supervisor respawns it, then waits for `/api/health` to
+answer with a new pid. No sudo, no guessing, and it never `pkill`s by name.
+A stop is a real shutdown, unlike the UI's reload handover: in-flight reviews are
+killed and re-spawned by recovery, previews and dev targets stop, and engineer
+and PM runs are durable and re-adopted by the new server. `repoos restart` reads
+those counts from the running server and warns before it stops; with nothing
+in flight it says so and goes straight on.
+
+If RepoOS cannot read the supervisor's label it refuses and prints the manual
+command rather than risk a half-restart; copy that command and run it yourself.
+The manual command is a single `kill <pid>`, which only stops the server: if a
+supervisor owns it, the supervisor respawns it; if nothing answers after about
+30 seconds, start it yourself with `repoos serve`.
+If the pid belongs to another user (root, or a different account) it refuses for
+the same reason — restart under that account or ask an administrator.

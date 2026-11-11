@@ -488,7 +488,7 @@ describe("renderStatus", () => {
     expect(out).toContain("server is older than the installed CLI");
     expect(out).toContain("v0.5.60 → v0.5.66");
     expect(out).toContain("restart to pick up fixes");
-    expect(out).toContain("repoos serve"); // hand-run default hint
+    expect(out).toContain("repoos restart");
     // the server line names the running build, not just the port/pid (it may
     // wrap across the narrow row, so check the two tokens independently)
     expect(out).toContain("v0.5.60 (build");
@@ -516,7 +516,7 @@ describe("renderStatus", () => {
     renderStatus(live);
     const out = lines.join("\n");
     expect(out).toContain("server is older than the installed CLI");
-    expect(out).toContain("repoos service restart");
+    expect(out).toContain("repoos restart");
     expect(out).toContain("managed service");
   });
 
@@ -632,11 +632,9 @@ describe("stale-server helpers (#0701)", () => {
   });
 
   describe("restartHint", () => {
-    it("uses `repoos service restart` for a managed service", () => {
-      expect(restartHint(srv({ managedService: true }))).toBe("repoos service restart");
-    });
-    it("uses `repoos serve` for a hand-run server", () => {
-      expect(restartHint(srv({ managedService: false }))).toBe("repoos serve");
+    it("names `repoos restart` regardless of how the server runs", () => {
+      expect(restartHint(srv({ managedService: true }))).toBe("repoos restart");
+      expect(restartHint(srv({ managedService: false }))).toBe("repoos restart");
     });
   });
 });
