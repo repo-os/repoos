@@ -185,3 +185,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T06:28:47Z · note: handoff requested (cli)
 - 2026-11-11T06:31:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T06:58:47Z · message_queued at 2026-11-11T06:58:47.736Z
+- 2026-11-11T06:58:47Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
