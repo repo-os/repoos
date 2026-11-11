@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-11T22:49:36Z"
-review_passes: 7
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — hand-run restart respawns without its serve flags whenever the lock predates this build or the server is found via the …
@@ -16,6 +14,8 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
+updated_at: "2026-11-11T22:50:04Z"
+review_passes: 7
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -245,4 +245,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:49:36Z · note: review pass 7: needs some work
 - 2026-11-11T22:49:36Z · needs_input
 - 2026-11-11T22:49:36Z · needs_input
-
+- 2026-11-11T22:50:04Z · status review→active
