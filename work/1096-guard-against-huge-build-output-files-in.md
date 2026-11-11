@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T15:38:32Z"
+updated_at: "2026-11-11T15:43:44Z"
 ---
 ## Problem
 On 2026-10-21 the engineer WIP checkpoint commit 5607e2aaa (#0892) staged 4,763 Xcode build files from macos/.derived-data-verify/ (~271 MB raw, ~160 MB compressed) into public history. The existing .githooks/pre-commit only runs on main and only checks format/lint, and checkpoint commits are made by RepoOS code (src/core/engineer-checkpoint-commit.ts), so nothing noticed.
@@ -39,3 +39,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T10:43:58Z · body: Acceptance criteria (added 4, removed 2)
 - 2026-11-11T15:38:28Z · status inbox→ready
 - 2026-11-11T15:38:32Z · status ready→active, branch
+- 2026-11-11T15:43:44Z · message_queued at 2026-11-11T15:43:44.699Z
