@@ -31,6 +31,8 @@ export interface ServeLockInfo {
   port: number;
   host: string;
   startedAt: string;
+  /** CLI flags for `repoos restart` hand-run respawn (#1091). */
+  serveFlags?: string[];
 }
 
 /** Concurrency cap for the boot-time orphan sweep's per-process cwd lookups. */
@@ -338,7 +340,7 @@ export class ServeReaper {
    * Register the current process as serving on the given port.
    * Call this after successful bind. Idempotent.
    */
-  register(port: number, host: string): void {
+  register(port: number, host: string, serveFlags?: string[]): void {
     // Preview children don't own the control-plane lockfile; writing it would
     // collide with the worktree's other preview cycles (see `previewChild`).
     if (!this.enabled || this.previewChild) return;
@@ -349,6 +351,7 @@ export class ServeReaper {
         port,
         host,
         startedAt: new Date().toISOString(),
+        ...(serveFlags && serveFlags.length > 0 ? { serveFlags } : {}),
       };
       writeFileSync(this.lockPath, JSON.stringify(info, null, 2));
       this.registered = true;

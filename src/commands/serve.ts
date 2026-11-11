@@ -12,6 +12,7 @@ import { kv } from "../cli/layout.js";
 import type { RepoEvent } from "../server/live-index.js";
 import { readVersion } from "../core/version.js";
 import { detectTailscaleIPv4, ensureTailscaleHttps } from "../core/tailscale.js";
+import { captureServeLockFlags } from "../core/serve-lock-flags.js";
 
 /**
  * The OS-visible process title for a `repoos serve` instance:
@@ -257,6 +258,11 @@ export async function cmdServe(
       hostExplicit: explicitHost !== undefined,
       previewOverrides: applyPreviewOverrides,
       reloadReplacement: process.env.REPOOS_RELOAD === "1",
+      serveLockFlags: captureServeLockFlags([
+        ...args,
+        ...(quiet ? ["--quiet"] : []),
+        ...(!tailscaleHttps ? ["--no-tailscale-https"] : []),
+      ]),
     });
   } catch (e) {
     const msg = (e as Error).message;
