@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: e738f025d11cdaa88fd5509000a7d7b75dceacd6
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -15,7 +13,9 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T19:46:47Z"
+updated_at: "2026-11-11T19:50:48Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: e738f025d11cdaa88fd5509000a7d7b75dceacd6
 review_passes: 6
 review_rounds: 2
 handoff_signal_retry_count: 2
