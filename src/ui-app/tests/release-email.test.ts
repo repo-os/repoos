@@ -386,6 +386,47 @@ describe("deliverCutReleaseEmail", () => {
     expect(fake.resendTo).toEqual([RECIPIENTS[0], RECIPIENTS[1]]);
   });
 
+  it("Resend keeps accepted recipients when a local write throws, and a second Resend mails only the rest", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "tagged" });
+    const fake = fakeFetch();
+    const logTmp = join(root, ".repoos", "release-emails.json.tmp");
+    let blockFirst = true;
+    const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const res = await fake.fetchImpl(input, init);
+      if (blockFirst && String(input) === "https://api.resend.com/emails") {
+        blockFirst = false;
+        mkdirSync(logTmp, { recursive: true });
+      }
+      return res;
+    }) as typeof fetch;
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+      rmdirSync(logTmp);
+    });
+
+    const failed = await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl });
+    errorSpy.mockRestore();
+    expect(failed.status).toBe("failed");
+    expect(failed.sentTo).toEqual([RECIPIENTS[0]]);
+
+    const second = await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl });
+    expect(second.status).toBe("sent");
+    expect(fake.resendTo).toEqual([RECIPIENTS[0], RECIPIENTS[1]]);
+  });
+
+  it("two concurrent Resends cannot both send: the second is refused before any await", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "tagged" });
+    const fake = fakeFetch();
+    const results = await Promise.allSettled([
+      resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl }),
+      resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl }),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((r) => r.status === "rejected")).toHaveLength(1);
+    expect(fake.resendTo).toEqual(RECIPIENTS);
+  });
+
   it("sends nothing when the feature is off", async () => {
     const config = makeConfig({ enabled: false });
     const fake = fakeFetch();

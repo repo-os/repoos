@@ -645,25 +645,45 @@ export async function resendReleaseEmail(
   const entry = findHistoryEntry(config, version);
   if (!entry) throw new Error(`No release notes are recorded for version ${version}.`);
   if (inFlight.has(version)) throw new Error(`An email for ${entry.tag} is already in progress.`);
-  const repository = githubRepository(config);
-  if ((email.when ?? "published") === "published" && repository) {
-    const probe = await probeRelease(repository, entry.tag, deps.fetchImpl ?? fetch);
-    if (probe.state === "not-yet" || probe.state === "http-error") {
-      throw new Error(
-        `GitHub does not have ${entry.tag} published yet (${probe.reason}). Send once it is, or set [release.email] when = "tagged".`,
-      );
-    }
-    // `published` and `unreachable` both proceed: unreachable is the same
-    // no-network fallback the automatic path takes.
-  }
+  // Claim the version BEFORE the first await (the GitHub probe), so two
+  // concurrent Resend requests cannot both pass the check and both send.
   inFlight.add(version);
+  // Caller-owned list of accepted addresses: filled by sendAndRecord, read by
+  // the catch below so a failed local write never loses an accepted recipient.
+  const accepted: string[] = [...(getReleaseEmailRecord(config, version)?.sentTo ?? [])];
   try {
-    const sentTo = [...(getReleaseEmailRecord(config, version)?.sentTo ?? [])];
-    return await sendAndRecord(config, entry, context, deps, sentTo);
+    const repository = githubRepository(config);
+    if ((email.when ?? "published") === "published" && repository) {
+      const probe = await probeRelease(repository, entry.tag, deps.fetchImpl ?? fetch);
+      if (probe.state === "not-yet" || probe.state === "http-error") {
+        throw new ResendRefused(
+          `GitHub does not have ${entry.tag} published yet (${probe.reason}). Send once it is, or set [release.email] when = "tagged".`,
+        );
+      }
+      // `published` and `unreachable` both proceed: unreachable is the same
+      // no-network fallback the automatic path takes.
+    }
+    return await sendAndRecord(config, entry, context, deps, accepted);
+  } catch (err) {
+    // A refusal sent nothing, so it is returned as is. Anything else may have
+    // accepted recipients before failing: persist them so the next Resend
+    // does not mail them again.
+    if (err instanceof ResendRefused) throw new Error(err.message);
+    console.error(
+      `Release email resend for ${entry.tag} failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return recordFor(config, entry, {
+      status: "failed",
+      sentTo: [...accepted],
+      reason: err instanceof Error ? err.message : String(err),
+    });
   } finally {
     inFlight.delete(version);
   }
 }
+
+/** Marks a Resend that was refused before anything was sent. */
+class ResendRefused extends Error {}
 
 export function findHistoryEntry(
   config: RepoOSConfig,
