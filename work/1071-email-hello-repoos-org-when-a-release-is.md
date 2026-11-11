@@ -3,6 +3,9 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the Releases email card goes stale after a cut, and a transient write error mid-send can make Resend mail recipients tw…"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -166,3 +169,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T05:28:14Z · body
 - 2026-11-11T05:29:10Z · status active→review
 - 2026-11-11T05:34:32Z · note: review pass 3: needs some work
+- 2026-11-11T05:34:32Z · needs_input
