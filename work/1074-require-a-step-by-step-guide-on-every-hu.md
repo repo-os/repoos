@@ -14,8 +14,6 @@ review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-09T07:52:08Z"
 updated_at: "2026-11-11T05:13:33Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 63cd33b58c7d8f5aa649159626b68a287739f125
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
 handoff_signal_retry_count: 2
 dev_error_count: 2
@@ -108,3 +106,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T04:48:03Z · body
 - 2026-11-11T05:13:33Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-11T05:13:33Z · status active→review
+
