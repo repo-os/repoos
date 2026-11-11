@@ -184,6 +184,12 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // list screen whose steps open and close their own dialog.
   "agents:scheduledSeeded",
   "reminders:due",
+  // #1071 — Releases page with the release-email card in a terminal state, so a
+  // capture proves the sent/failed status row and the Resend button without a
+  // real release or provider. `emailSent` shows "Email sent to N recipients";
+  // `emailFailed` shows "Email failed: …" with Resend.
+  "release:emailSent",
+  "release:emailFailed",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];

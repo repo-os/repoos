@@ -18,6 +18,11 @@ import FailedTestsList from "../components/FailedTestsList.vue";
 import { nextReleaseVersion } from "../releases";
 import PageSkeleton from "../components/PageSkeleton.vue";
 import { invalidatePageData, refreshPageData } from "../composables/page-data-cache";
+import {
+  isShotPreviewCaptureActive,
+  readShotPreviewFixtureFromLocation,
+  shotFixtureReleaseEmail,
+} from "../lib/shot-preview-fixtures";
 
 interface ReleaseStatus {
   enabled: boolean;
@@ -515,6 +520,16 @@ const releaseEmailState = computed<{ state: string; label: string }>(() => {
 async function loadReleaseEmail(): Promise<void> {
   if (releaseEmailTimer) clearTimeout(releaseEmailTimer);
   releaseEmailTimer = null;
+  // A capture fixture (#1071) seeds a sent or failed card the preview board
+  // cannot produce on its own, so acceptance 7 can show the real status row.
+  const fixture = isShotPreviewCaptureActive(window.location)
+    ? shotFixtureReleaseEmail(readShotPreviewFixtureFromLocation(window.location))
+    : null;
+  if (fixture) {
+    releaseEmail.value = fixture;
+    releaseEmailError.value = "";
+    return;
+  }
   try {
     releaseEmail.value = await api<ReleaseEmailState>("/api/release/email");
     releaseEmailError.value = "";
