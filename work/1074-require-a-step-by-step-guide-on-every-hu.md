@@ -3,6 +3,9 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — section lookup ignores code fences, so `repoos update --section \"Step-by-step guide\"` can swallow the sections after th…"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -256,4 +259,5 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T19:31:24Z · status active→review
 - 2026-11-11T19:31:24Z · message_queued at 2026-11-11T19:31:24.742Z
 - 2026-11-11T19:33:12Z · note: review pass 6: needs some work
+- 2026-11-11T19:33:12Z · needs_input
 - 2026-11-11T19:33:12Z · needs_input
