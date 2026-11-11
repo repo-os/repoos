@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-11T21:59:33Z"
+review_passes: 3
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
@@ -12,11 +14,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T21:59:33Z"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 2
 last_check_failure: "repoos check at 2026-11-11T18:02:32.813Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-11T19:48:26.351Z\",\"reason\":\"handoff-deferred\"}]"
@@ -110,3 +110,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:47:56Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T21:59:32Z · note: review pass 3: needs some work
 - 2026-11-11T21:59:33Z · needs_input
+
