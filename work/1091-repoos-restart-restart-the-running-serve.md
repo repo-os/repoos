@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T12:18:09Z"
+updated_at: "2026-11-11T12:28:10Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -66,3 +66,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T12:18:09Z · message_queued at 2026-11-11T12:18:09.412Z
 - 2026-11-11T12:18:09Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1091.md
 - 2026-11-11T12:18:09Z · message_delivered: 1 message(s)
+- 2026-11-11T12:28:10Z · message_queued at 2026-11-11T12:28:10.357Z
