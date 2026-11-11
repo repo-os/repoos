@@ -59,6 +59,15 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(ui.active).toBeNull();
   });
 
+  it("seeds a human task missing a guide for drawer:humanGuideWarning (#1074)", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    applyShotPreviewFixture(repo, "drawer:humanGuideWarning");
+    const task = repo.tasks.find((t) => t.id === SHOT_PREVIEW_FIXTURE_TASK_ID)!;
+    expect(task.assignee).toBe("human");
+    expect(task.body).not.toMatch(/## Step-by-step guide/);
+  });
+
   it.each(["card:held", "drawer:held"] as const)("seeds an intentional hold for %s", (fixture) => {
     setActivePinia(createPinia());
     const repo = useRepoStore();

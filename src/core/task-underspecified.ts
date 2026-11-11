@@ -1,4 +1,5 @@
 import { parseTaskAreas } from "./areas.js";
+import { hasHumanTaggedCriteria, humanTaggedCriteria, taggedCriteria } from "./human-step-tags.js";
 import {
   ACTIVITY_HEADING,
   ORIGINAL_PROMPT_HEADING,
@@ -20,7 +21,6 @@ const HUMAN_TASK_GUIDE_MISSING =
 
 const HUMAN_TASK_GUIDE_UNFILLED =
   "## Step-by-step guide is still empty — replace the placeholder with numbered steps, exact commands or click paths, safe secret handling, success checks, and what to report back.";
-import { hasHumanTaggedCriteria, humanTaggedCriteria, taggedCriteria } from "./human-step-tags.js";
 
 /** Machine-readable `needs_input_reason` when a task body looks like an unfinished stub. */
 export const UNDERSPECIFIED_NEEDS_INPUT_REASON = "underspecified";
@@ -65,6 +65,40 @@ ${HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER}`;
 
 export const HUMAN_TASK_GUIDE_HEADING = "## Step-by-step guide";
 
+/** Extract the guide section while ignoring headings that appear only inside fenced code. */
+function extractHumanTaskGuideSection(body: string): string | null {
+  const lines = body.split("\n");
+  let fence: string | null = null;
+  let start = -1;
+  let end = lines.length;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    const trimmedStart = line.trimStart();
+    if (fence) {
+      if (trimmedStart.startsWith(fence)) fence = null;
+      continue;
+    }
+    const fenceMatch = /^(`{3,}|~{3,})/.exec(trimmedStart);
+    if (fenceMatch) {
+      fence = fenceMatch[1]!;
+      continue;
+    }
+    if (start === -1) {
+      if (line.trim() === HUMAN_TASK_GUIDE_HEADING) start = i;
+      continue;
+    }
+    if (/^##\s/.test(line.trim())) {
+      end = i;
+      break;
+    }
+  }
+  if (start === -1) return null;
+  return lines
+    .slice(start, end)
+    .join("\n")
+    .trim();
+}
+
 function humanTaskGuidePlaceholderLines(): string[] {
   return [HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER, HUMAN_SPLIT_GUIDE_PLACEHOLDER];
 }
@@ -89,7 +123,7 @@ export function humanTaskGuideWarning(
   body: string,
 ): string | null {
   if (!isHumanAssigned(assignee)) return null;
-  const section = extractSection(body, HUMAN_TASK_GUIDE_HEADING);
+  const section = extractHumanTaskGuideSection(body);
   if (section === null) return HUMAN_TASK_GUIDE_MISSING;
   if (!humanTaskGuideSectionFilled(section)) return HUMAN_TASK_GUIDE_UNFILLED;
   return null;
