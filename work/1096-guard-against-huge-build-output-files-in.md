@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
@@ -40,3 +41,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T15:38:28Z · status inbox→ready
 - 2026-11-11T15:38:32Z · status ready→active, branch
 - 2026-11-11T15:43:44Z · message_queued at 2026-11-11T15:43:44.699Z
+
