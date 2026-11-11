@@ -3,6 +3,9 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — two Resend paths can send the same release email twice. Both are small and local to `resendReleaseEmail`, with a test g…"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -202,3 +205,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T08:29:03Z · status active→review
 - 2026-11-11T08:29:03Z · message_queued at 2026-11-11T08:29:03.905Z
 - 2026-11-11T08:30:34Z · note: review pass 4: needs some work
+- 2026-11-11T08:30:34Z · needs_input
