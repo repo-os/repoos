@@ -12,7 +12,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T20:21:22Z"
+updated_at: "2026-11-11T20:36:01Z"
 last_close_out_gate_ms: 245714
 last_close_out_gate_at: "2026-11-11T20:18:23.888Z"
 review_passes: 8
@@ -304,3 +304,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T20:06:14Z · needs_input
 - 2026-11-11T20:18:23Z · close-out gate completed in 246s
 - 2026-11-11T20:21:22Z · status done→done, release:success
+- 2026-11-11T20:36:01Z · message_dropped: 1 queued message(s) discarded — task is done
