@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T06:36:58Z"
+updated_at: "2026-11-11T06:37:38Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -119,3 +119,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T06:26:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T06:31:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T06:36:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T06:37:38Z · message_queued at 2026-11-11T06:37:38.572Z
