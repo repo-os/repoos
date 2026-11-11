@@ -238,8 +238,68 @@ describe("repoos new --assigned-to / --human / --ai (#0815)", () => {
   it("stamps a human task with a note and does not flag it underspecified", async () => {
     const { task, body } = await createAndRead(["A human chore", "--human"]);
     expect(body).toContain("## Human task");
+    expect(body).toContain("## Step-by-step guide");
     expect(task.needsInput).toBe(false);
     expect(task.needsInputReason).toBeUndefined();
+  });
+
+  it("repoos update --section Step-by-step guide edits only that section (#1074)", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    try {
+      await withCwd(root, () => cmdNew(["Held chore", "--human"]));
+      const file = readdirSync(join(root, "work")).find((f) => f !== "0001-test.md");
+      expect(file).toBeTruthy();
+      const before = readFileSync(join(root, "work", file!), "utf8");
+      const logs: string[] = [];
+      const spy = vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => {
+        logs.push(a.map(String).join(" "));
+      });
+      try {
+        await withCwd(root, () =>
+          cmdUpdate([
+            "0002",
+            "--section",
+            "Step-by-step guide",
+            "--section-body",
+            "1. Open the portal.\n2. Paste the API key in Settings → Secrets.",
+          ]),
+        );
+        const after = readFileSync(join(root, "work", file!), "utf8");
+        expect(after).toContain("1. Open the portal.");
+        expect(after).toContain("## Problem");
+        expect(after).toContain("## Acceptance criteria");
+        expect(after).not.toContain("_Write numbered steps");
+        expect(logs.join("\n")).not.toMatch(/warning:.*still empty/);
+      } finally {
+        spy.mockRestore();
+      }
+    } finally {
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
+  it("warns on the CLI when a human task body omits the guide heading (#1074)", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => {
+      logs.push(a.map(String).join(" "));
+    });
+    try {
+      await withCwd(root, () =>
+        cmdNew(["Signup chore", "--human", "--body", "## Problem\n\nRegister for the provider."]),
+      );
+      expect(process.exitCode).toBe(prevExit);
+      expect(logs.join("\n")).toMatch(/warning:.*## Step-by-step guide/);
+    } finally {
+      spy.mockRestore();
+      process.exitCode = prevExit;
+      clean();
+    }
   });
 
   it("still flags an AI-assigned task with an empty body as underspecified", async () => {

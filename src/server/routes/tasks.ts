@@ -71,6 +71,7 @@ import { humanStepOverrideSuppresses } from "../../core/human-step-override.js";
 import { humanStepFlagDetail } from "../../core/human-step-decision.js";
 import { runHumanStepDecisionCheck } from "../human-step-decision.js";
 import { HumanStepSplitError, splitHumanStepTask } from "../human-step-split.js";
+import { humanTaskGuideWarning } from "../../core/task-underspecified.js";
 import { isHoldActive } from "../../core/task-selection.js";
 import { holdBlocksEngineer } from "../hold-guard.js";
 import { relaunchEngineerOnActiveTask } from "../engineer-launch.js";
@@ -436,7 +437,8 @@ export const createTask: RouteHandler = async (ctx, req, res) => {
     created = index.getTask(created.id) ?? created;
   }
   commitTaskFile(config.root, created.absPath, `docs(${created.id}): add task`);
-  return json(res, 201, created);
+  const guideWarning = humanTaskGuideWarning(created.assignee, created.body);
+  return json(res, 201, { ...created, ...(guideWarning ? { warning: guideWarning } : {}) });
 };
 
 export interface FreeformFinalizeDeps {
@@ -1251,8 +1253,10 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     body.body !== undefined || body.section !== undefined
       ? (index.consumeRequirementsNotice?.(updated.id) ?? null)
       : null;
+  const guideWarning = current ? humanTaskGuideWarning(current.assignee, current.body) : null;
   return json(res, 200, {
     ...current,
+    ...(guideWarning ? { warning: guideWarning } : {}),
     ...(requirementsNotice ? { requirementsNotice } : {}),
   });
 };
@@ -3960,10 +3964,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       logger.task(id, "info", "Split human-step acceptance criteria", {
         humanTaskId: result.humanTask.id,
       });
+      const human = index.getTask(result.humanTask.id) ?? result.humanTask;
+      const splitGuideWarning = humanTaskGuideWarning(human.assignee, human.body);
       return json(res, 200, {
         ok: true,
         task: index.getTask(result.source.id) ?? result.source,
-        humanTask: result.humanTask,
+        humanTask: human,
+        ...(splitGuideWarning ? { warning: splitGuideWarning } : {}),
       });
     } catch (err) {
       if (err instanceof HumanStepSplitError) return json(res, 400, { error: err.message });
