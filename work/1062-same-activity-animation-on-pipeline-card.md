@@ -2,7 +2,7 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: active
+status: review
 priority: p2
 area: web
 assigned_to: ai
@@ -13,14 +13,13 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T13:10:09Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
-last_handoff_failure_sha: c03fefe9eddc852051a4889c4721fbb92f433259
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-11-10T23:57:57Z"
+review_passes: 3
+review_rounds: 2
 handoff_signal_retry_count: 2
 last_check_failure: "repoos check at 2026-11-10T01:31:27.569Z: repoos check failed: ui verification failed (2 issue(s)): [request] HTTP 405 for http://127.0.0.1:44143/api/config (http://127.0.0.1:44143/api/config); [request] Failed to load resource: the server responded with a status of 405 (Method Not Allowed) (http://127.0.0.1:44143/api/config)"
 dev_error_count: 8
+engineer_stall_resume_log: "[{\"at\":\"2026-11-10T18:31:16.099Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 1. The card activity animation chosen in Settings (activity animation style and size, via `ActivityIndicator.vue`) shows on Board cards (`TaskCard.vue` uses it 7 times) but NOT on Pipeline cards: `PipelineCard.vue` does not use `ActivityIndicator` at all and shows only a plain status dot. The same running task looks alive on one view and static on the other, and the Settings choice is ignored in Pipeline.
@@ -247,3 +246,34 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T12:46:08Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T13:09:32Z · note: adopted orphaned engineer pid 73915
 - 2026-11-10T13:10:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T13:41:37Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-10T13:41:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Addressed both handoff blockers: ### UI verify (404 on `pipe-*` /landable) Hidden Board task cards were still polling landable for client-only pipeline fixture ids (`pipe-review`, `pipe-closeout`, …) during shot capture. That matched #0768… · stderr: (empty)
+- 2026-11-10T13:41:54Z · note: handoff requested (cli)
+- 2026-11-10T13:44:26Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T13:49:27Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T14:01:52Z · message_delivered: 1 message(s)
+- 2026-11-10T14:07:56Z · status active→review
+- 2026-11-10T14:07:57Z · message_queued at 2026-11-10T14:07:57.780Z
+- 2026-11-10T17:26:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T17:34:49Z · note: review pass 2: needs some work
+- 2026-11-10T17:34:49Z · message_delivered: 1 message(s)
+- 2026-11-10T17:34:50Z · status review→active
+- 2026-11-10T17:46:10Z · message_queued at 2026-11-10T17:46:10.052Z
+- 2026-11-10T17:46:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T17:51:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T18:11:10Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T18:24:12Z · handoff failed · remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > activates the shared pulse when reduced motion is off on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-10T18:24:12Z · message_queued at 2026-11-10T18:24:12.412Z
+- 2026-11-10T18:26:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T18:31:16Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-10T18:31:22Z · message_delivered: 1 message(s)
+- 2026-11-10T18:48:22Z · body
+- 2026-11-10T18:56:11Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T18:58:56Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
+- 2026-11-10T18:59:00Z · status active→review
+- 2026-11-10T18:59:00Z · message_queued at 2026-11-10T18:59:00.798Z
+- 2026-11-10T19:04:38Z · note: review pass 3: needs some work
+- 2026-11-10T19:07:44Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
+- 2026-11-10T20:03:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T23:04:19Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
