@@ -26,4 +26,11 @@ describe("copilot Auto tier helpers", () => {
   it("does not treat unknown-option errors as tier-unavailable", () => {
     expect(formatCopilotAutoTierFailure("copilot: unknown option '--auto-tier'")).toBeNull();
   });
+
+  it("splits a comma-separated CLI suggestion into separate tiers", () => {
+    const msg = formatCopilotAutoTierFailure(
+      "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance, intelligence.",
+    );
+    expect(msg).toContain("balance or intelligence");
+  });
 });

@@ -63,7 +63,7 @@ export function formatCopilotAutoTierFailure(detail: string): string | null {
   const suggestMatch = /Set --auto-tier to (.+?)(?:\.|$)/i.exec(text);
   const fromCli = suggestMatch
     ? suggestMatch[1]
-        .split(/\s+or\s+/i)
+        .split(/\s*,\s*|\s+or\s+/i)
         .map((part) => part.trim().replace(/^[`']|[`']$/g, ""))
         .filter(Boolean)
     : [];

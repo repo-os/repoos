@@ -10120,23 +10120,21 @@ export class AgentRunner {
         : `exited with code ${exitCode ?? "unknown"}`;
       const assistant = this.lastAssistantText(session);
       const stderr = this.stderrTail(taskId, entry, wasReview, session);
+      // Build the stderr segment on its own: a Copilot Auto-tier rejection arrives
+      // as raw CLI text, so say what it means. Enriching before composing (not
+      // patching the joined string) keeps "last assistant" text that happens to
+      // quote "stderr: " intact.
+      const stderrText = stderr ? oneLineTail(stderr, 320) : "";
+      const stderrSegment = stderrText
+        ? enrichAgentFailureDetail(stderrText, session?.cli)
+        : "(empty)";
       const detail = [
         "engineer turn ended without a handoff: the turn exited cleanly and did not request review",
         `reason: ${reason}`,
         `last assistant: ${oneLineTail(assistant ?? "no assistant message", 240)}`,
-        `stderr: ${stderr ? oneLineTail(stderr, 320) : "(empty)"}`,
+        `stderr: ${stderrSegment}`,
       ].join(" · ");
-      // A Copilot Auto-tier rejection arrives as raw CLI text here; say what it
-      // means. Enrich only the stderr (keep "reason" and "last assistant").
-      const enrichedStderr = stderr
-        ? enrichAgentFailureDetail(oneLineTail(stderr, 320), session?.cli)
-        : null;
-      this.recordTaskActivity(
-        taskId,
-        enrichedStderr && enrichedStderr !== oneLineTail(stderr ?? "", 320)
-          ? detail.replace(/stderr: .*$/, `stderr: ${enrichedStderr}`)
-          : detail,
-      );
+      this.recordTaskActivity(taskId, detail);
     }
     // Any non-clean exit that isn't a deliberate stop means the task is about
     // to sit silently in its current status with nothing left running — flag it
