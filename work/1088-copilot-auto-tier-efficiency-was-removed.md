@@ -3,6 +3,9 @@ id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,10 +14,10 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T17:59:24Z"
+updated_at: "2026-11-11T18:02:27Z"
 handoff_signal_retry_count: 1
-dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:51:34.369Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:51:46.164Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:52:57.982Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:54:36.911Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:56:49.176Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 6
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:51:34.369Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:51:46.164Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:52:57.982Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:54:36.911Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:56:49.176Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:59:27.443Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 The `github copilot` agent now fails its connectivity test (and any run) with: "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence." (Copilot CLI 1.0.109.) RepoOS hard-codes the cheapest Auto tier as `efficiency`: `src/server/agents.ts` `modelArgs` maps the model `default` (the only github copilot model on the budget allowlist) to `--model auto --auto-tier efficiency`, and `src/core/agent-contract.ts` maps `copilot-auto-efficiency` the same way (and uses it as the default model for github copilot, ~line 902). The CLI validates the tier up front against the account's catalog ("Auto preference ... is unavailable for this account") and does not list the valid ones; `copilot --help` says `--auto-tier <preference>`: "Set the Auto routing profile by its exact advertised ID (validated against the available catalog)".
@@ -88,3 +91,5 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T17:56:49Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-11T17:59:19Z · engineer crash recovery: resuming cursor + composer-2.5 (5/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-11T17:59:24Z · needs_input
+- 2026-11-11T17:59:27Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-11T18:02:27Z · engineer crash recovery: resuming cursor + composer-2.5 (6/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
