@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T09:49:09Z"
+updated_at: "2026-11-11T09:49:37Z"
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -72,7 +72,7 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```
 
 ## Accepted scope and known limitations
-FINAL (pass 5, hand-finished): Resend now claims the version before its first await (two concurrent Resends cannot both send) and persists accepted recipients as failed when a local write throws, with tests for both. Earlier fixes stand: card refresh after a cut, caller-owned accepted list on the automatic path with an awaited send, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Report these under Suggestions, not Bugs.
+FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every path, including a corrupt log read (the read is inside the try; tested by corrupting the log, failing a Resend, repairing it and resending). All earlier fixes stand: card refresh after a cut, caller-owned accepted list with awaited sends on both paths, claim before the first await, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -229,3 +229,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T09:44:17Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (fc59e3bb4) during finalization (#0734)
 - 2026-11-11T09:49:07Z · status review→active
 - 2026-11-11T09:49:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T09:49:37Z · body: Accepted scope and known limitations (added 1, removed 1)
