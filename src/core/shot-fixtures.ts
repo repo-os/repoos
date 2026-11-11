@@ -229,7 +229,8 @@ export function shotFixtureContainer(fixture: string): ShotFixtureContainer | nu
     fixture.startsWith("panel:") ||
     fixture.startsWith("schedule:") ||
     // #1073 — `release:updateAvailable` pins the release-update modal open.
-    fixture.startsWith("release:")
+    // #1071 — `release:email*` render a card on the Releases page, no dialog.
+    fixture === "release:updateAvailable"
   ) {
     return "dialog";
   }
