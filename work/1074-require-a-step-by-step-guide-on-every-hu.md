@@ -268,3 +268,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T19:40:19Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T19:59:46Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-11T19:59:50Z · status active→review
+- 2026-11-11T19:59:50Z · message_queued at 2026-11-11T19:59:50.689Z
