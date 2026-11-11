@@ -2,14 +2,14 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: inbox
+status: ready
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T10:43:58Z"
+updated_at: "2026-11-11T15:38:28Z"
 ---
 ## Problem
 On 2026-10-21 the engineer WIP checkpoint commit 5607e2aaa (#0892) staged 4,763 Xcode build files from macos/.derived-data-verify/ (~271 MB raw, ~160 MB compressed) into public history. The existing .githooks/pre-commit only runs on main and only checks format/lint, and checkpoint commits are made by RepoOS code (src/core/engineer-checkpoint-commit.ts), so nothing noticed.
@@ -37,3 +37,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T10:29:43Z · created · njachowski@gmail.com
 - 2026-11-11T10:43:57Z · body: Problem (added 2, removed 1)
 - 2026-11-11T10:43:58Z · body: Acceptance criteria (added 4, removed 2)
+- 2026-11-11T15:38:28Z · status inbox→ready
