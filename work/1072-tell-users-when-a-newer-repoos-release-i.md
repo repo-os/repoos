@@ -2,7 +2,7 @@
 id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
-status: review
+status: active
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T04:48:22Z"
+updated_at: "2026-11-11T04:48:23Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 3
@@ -96,4 +96,3 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:48:10Z · cli_override, model_override
 - 2026-11-11T04:48:19Z · message_queued at 2026-11-11T04:48:19.335Z
 - 2026-11-11T04:48:22Z · engineer stopped by request
-- 2026-11-11T04:48:22Z · status active→review
