@@ -54,3 +54,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T18:23:31Z · body
 - 2026-11-11T18:33:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T18:35:50Z · status active→review
+- 2026-11-11T18:35:50Z · message_queued at 2026-11-11T18:35:50.879Z
