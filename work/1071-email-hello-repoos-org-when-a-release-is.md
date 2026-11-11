@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T05:45:10Z"
+updated_at: "2026-11-11T05:46:49Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -66,6 +66,9 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 }
 ]
 ```
+
+## Accepted scope and known limitations
+FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut; accepted recipients are kept in a caller-owned list so a failed local write cannot make Resend mail them twice (and the send is now awaited so its errors are caught); an interrupted send reaches the bell; the docs state per-recipient at-most-once with the provider-accept-to-write window. NOT blocking, follow-up only: Resend after a restart skipping the publish gate (reuse probeRelease for when=published); the Set up email link target and a Settings email-setup surface; [release.email] enabled saving without [release] enabled; anything under Edge cases of earlier reviews. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -169,3 +172,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T05:45:07Z · status review→active
 - 2026-11-11T05:45:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T05:45:10Z · needs_input
+- 2026-11-11T05:46:49Z · body: Accepted scope and known limitations (added)
