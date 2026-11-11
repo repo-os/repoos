@@ -88,3 +88,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:22:01Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report is missing required sections: ## Approaches tried. · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-11T06:22:01Z · note: handoff requested (cli)
 - 2026-11-11T06:25:01Z · message_queued at 2026-11-11T06:25:01.177Z
+- 2026-11-11T06:25:01Z · handoff failed · task-file handoff failed at review · Engineering report is missing required sections: ## Approaches tried.
