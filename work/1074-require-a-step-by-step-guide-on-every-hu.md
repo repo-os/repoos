@@ -3,9 +3,6 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-failed
-needs_input_detail: "the muse agent exited without output: Muse run network connection could not be opened within 15 seconds (after 3 provider attempts). muse: subscription allowance unavailable: refresh failed (transient) run ended with Failed: network connection could not be opened within 15 seconds (after 3 provider attempts)"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T05:28:11Z"
+updated_at: "2026-11-11T05:28:12Z"
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
 handoff_signal_retry_count: 2
 dev_error_count: 2
@@ -116,3 +113,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T05:20:42Z · note: review pass 2: failed — no usable report
 - 2026-11-11T05:20:42Z · needs_input
 - 2026-11-11T05:28:11Z · review_cli_override, review_model_override
+- 2026-11-11T05:28:12Z · needs_input (review-failed) cleared for review again by human
