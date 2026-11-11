@@ -237,3 +237,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T18:02:12Z · engineer crash recovery: resuming cursor + composer-2.5 (6/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-11T18:02:17Z · needs_input
 - 2026-11-11T18:08:14Z · message_queued at 2026-11-11T18:08:14.465Z
+- 2026-11-11T18:08:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
