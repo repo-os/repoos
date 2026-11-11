@@ -2,7 +2,7 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — staged deletions block hook and checkpoints; renames bypass the branch guard; 128 KiB+ binaries fail closed
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T22:02:16Z"
+updated_at: "2026-11-11T22:14:41Z"
 review_passes: 3
 review_rounds: 2
 routing_switches: 1
@@ -112,3 +112,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:59:33Z · needs_input
 - 2026-11-11T21:59:33Z · message_queued at 2026-11-11T21:59:33.518Z
 - 2026-11-11T22:02:16Z · status review→active
+- 2026-11-11T22:14:41Z · status active→review
