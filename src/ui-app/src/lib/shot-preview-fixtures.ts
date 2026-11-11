@@ -1699,6 +1699,14 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
           'Criterion "Rotate the API keys in the dev config" — Decision model (91%): split this into an AI task and a human task — it needs a real account, credential, or API key.',
       });
       break;
+    case "drawer:humanGuideWarning":
+      // #1074 — human assignee with no guide section (drawer warning banner).
+      ensureFixtureTask(repo, "active", {
+        assignee: "human",
+        assignedTo: "Nick",
+        body: "## Problem\n\nRotate production API keys.\n\n## Acceptance criteria\n\n- [ ] Keys rotated and confirmed in staging\n",
+      });
+      break;
     case "card:reviewRoundsExhausted": {
       // #0832 — exhausted review rounds: card shows stripped/clamped summary only.
       const fixtureTaskId = "0832";

@@ -12,6 +12,9 @@ import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { createTask, patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import {
+  HUMAN_TASK_GUIDE_HEADING,
+  HUMAN_TASK_SCAFFOLD,
+  humanTaskGuideWarning,
   PM_SPLIT_HUMAN_STEP_MESSAGE,
   splitHumanStepRequirementsPrompt,
 } from "../../core/task-underspecified.js";
@@ -23,6 +26,91 @@ import {
 } from "../../server/task-underspecified-flag.js";
 import type { Agent } from "../../core/types.js";
 import type { RouteContext } from "../../server/routes/types.js";
+
+describe("human task guide warning", () => {
+  it("warns when a human task lacks the guide heading", () => {
+    expect(humanTaskGuideWarning("human", "## Problem\nDo it")).toContain("Missing");
+    expect(humanTaskGuideWarning("ai", "## Problem\nDo it")).toBeNull();
+    expect(humanTaskGuideWarning("human", "## Step-by-step guide\n1. Do it")).toBeNull();
+  });
+
+  it("warns when the guide section is only the scaffold placeholder (#1074)", () => {
+    expect(humanTaskGuideWarning("human", HUMAN_TASK_SCAFFOLD)).toContain("still empty");
+  });
+
+  it("warns when the guide section has bullets but no numbered steps (#1074)", () => {
+    const body = "## Step-by-step guide\n\n- Do the signup\n- Paste the key in Settings";
+    expect(humanTaskGuideWarning("human", body)).toContain("still empty");
+    expect(humanTaskGuideWarning("human", body)).toContain("numbered steps");
+  });
+
+  it("does not treat a guide heading inside a fenced code sample as present (#1074)", () => {
+    const body = [
+      "## Problem",
+      "",
+      "```md",
+      "## Step-by-step guide",
+      "1. Only in the sample",
+      "```",
+    ].join("\n");
+    expect(humanTaskGuideWarning("human", body)).toContain("Missing");
+  });
+
+  it("does not treat a guide heading inside a fenced block as present (#1074)", () => {
+    const body = [
+      "## Problem",
+      "Document the section.",
+      "",
+      "```md",
+      HUMAN_TASK_GUIDE_HEADING,
+      "1. Example only",
+      "```",
+    ].join("\n");
+    expect(humanTaskGuideWarning("human", body)).toContain("Missing");
+  });
+
+  it("splitHumanStepRequirementsPrompt requires a step-by-step guide (#1074)", () => {
+    const prompt = splitHumanStepRequirementsPrompt();
+    expect(prompt).toContain("## Step-by-step guide");
+    expect(prompt).toContain('--section "Step-by-step guide"');
+  });
+
+  it("returns a warning field from POST /api/tasks for human tasks without the guide (#1074)", async () => {
+    const humanBody = "## Problem\n\nDo the signup.\n";
+    const fx = makeFixture("inbox");
+    try {
+      const ctx = makeCtx(fx);
+      ctx.repoos = {
+        createTask: (input: { title: string; body?: string; assignedTo?: string }) => {
+          const taskPath = join(fx.root, "work", "1074-human.md");
+          writeFileSync(
+            taskPath,
+            taskFileText("1074", "inbox", input.body ?? "", "assigned_to: human\n"),
+          );
+          return parseTask({
+            content: readFileSync(taskPath, "utf8"),
+            absPath: taskPath,
+            root: fx.root,
+            defaultStatus: "inbox",
+            defaultAssignee: "unassigned",
+          });
+        },
+      } as RouteContext["repoos"];
+      const { res, fake } = makeRes();
+      await createTask(
+        ctx,
+        makeReq({ title: "Human signup", body: humanBody, assignedTo: "human" }),
+        res,
+        {},
+      );
+      expect(fake.status).toBe(201);
+      const payload = fake.payload as { warning?: string };
+      expect(payload.warning).toContain("## Step-by-step guide");
+    } finally {
+      fx.clean();
+    }
+  });
+});
 
 vi.mock("../../core/bootstrap.js", () => ({
   bootstrap: vi.fn(async () => ({
