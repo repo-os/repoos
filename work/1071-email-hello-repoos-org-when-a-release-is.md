@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T08:29:03Z"
+updated_at: "2026-11-11T08:30:34Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -201,3 +201,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T08:29:03Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-11T08:29:03Z · status active→review
 - 2026-11-11T08:29:03Z · message_queued at 2026-11-11T08:29:03.905Z
+- 2026-11-11T08:30:34Z · note: review pass 4: needs some work
