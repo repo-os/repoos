@@ -24,6 +24,12 @@ export interface ReleaseHistoryEntry {
   date: string;
   /** Markdown release notes, without a version heading. */
   notes: string;
+  /**
+   * Markdown known issues for the release email (#1071). Typed by the
+   * operator in the release modal, never invented. Absent or empty means
+   * "None recorded" in the email.
+   */
+  knownIssues?: string;
 }
 
 export interface ReleaseHistory {
@@ -85,6 +91,9 @@ export function readReleaseHistory(root: string): ReleaseHistory {
       tag: entry.tag,
       date: entry.date,
       notes: entry.notes,
+      ...(typeof entry.knownIssues === "string" && entry.knownIssues.trim()
+        ? { knownIssues: entry.knownIssues }
+        : {}),
     });
   }
   return { releases };

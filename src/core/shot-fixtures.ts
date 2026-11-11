@@ -191,6 +191,12 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // list screen whose steps open and close their own dialog.
   "agents:scheduledSeeded",
   "reminders:due",
+  // #1071 — Releases page with the release-email card in a terminal state, so a
+  // capture proves the sent/failed status row and the Resend button without a
+  // real release or provider. `emailSent` shows "Email sent to N recipients";
+  // `emailFailed` shows "Email failed: …" with Resend.
+  "release:emailSent",
+  "release:emailFailed",
   // #1073 — the release-update dialog pinned open with a newer version
   // available, so a capture shows the upgrade command block (which only
   // renders when `available` is true on the live board).
@@ -223,7 +229,8 @@ export function shotFixtureContainer(fixture: string): ShotFixtureContainer | nu
     fixture.startsWith("panel:") ||
     fixture.startsWith("schedule:") ||
     // #1073 — `release:updateAvailable` pins the release-update modal open.
-    fixture.startsWith("release:")
+    // #1071 — `release:email*` render a card on the Releases page, no dialog.
+    fixture === "release:updateAvailable"
   ) {
     return "dialog";
   }
