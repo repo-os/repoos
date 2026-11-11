@@ -210,3 +210,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T08:48:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T08:49:04Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T08:49:04Z · message_delivered: 1 message(s)
+- 2026-11-11T08:49:09Z · note: handoff requested (cli)
