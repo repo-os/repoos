@@ -534,28 +534,93 @@ describe("release workflow CI attribution (#1090)", () => {
     expect(summary.channels[0]?.state).toBe("out-of-sync");
   });
 
-  it("labels Homebrew as updating while the tap workflow is still running", async () => {
+  /**
+   * A Homebrew row that is out of sync, with the viewed release's run (created
+   * 12:00, last updated 12:10) and the given tap runs. Records every request so
+   * a test can assert which tap endpoints were queried.
+   */
+  async function statusWithTap(
+    tapRuns: unknown[],
+    options: { releaseRuns?: unknown[]; nowMs?: number } = {},
+  ) {
+    const urls: string[] = [];
+    const releaseRuns = options.releaseRuns ?? [
+      {
+        id: 5,
+        html_url: "https://github.com/repo-os/repoos/actions/runs/5",
+        conclusion: "success",
+        status: "completed",
+        created_at: "2026-11-11T12:00:00.000Z",
+        updated_at: "2026-11-11T12:10:00.000Z",
+      },
+    ];
     const summary = await getDistributionStatus(
       configWithRelease([homebrewChannel]),
       release,
       fakeFetch((url) => {
+        urls.push(url);
         if (url.includes("example.com/formula.rb")) {
           return new Response('version "1.2.2"', { status: 200 });
         }
         if (url.includes("/actions/workflows/release.yml/runs")) {
-          return new Response(JSON.stringify({ workflow_runs: [] }), { status: 200 });
+          return new Response(JSON.stringify({ workflow_runs: releaseRuns }), { status: 200 });
         }
         if (url.includes("homebrew-tap/actions/runs")) {
-          return new Response(
-            JSON.stringify({
-              workflow_runs: [{ status: "in_progress" }],
-            }),
-            { status: 200 },
-          );
+          return new Response(JSON.stringify({ workflow_runs: tapRuns }), { status: 200 });
         }
         return new Response("", { status: 404 });
       }),
+      undefined,
+      // 12:30 is past the five-minute grace after the 12:10 success, so only the
+      // tap signal can make the row Updating.
+      { nowMs: options.nowMs ?? Date.parse("2026-11-11T12:30:00.000Z") },
     );
+    return { summary, urls };
+  }
+
+  it("labels Homebrew as updating while this release's tap dispatch is still running", async () => {
+    const { summary, urls } = await statusWithTap([
+      {
+        event: "repository_dispatch",
+        status: "in_progress",
+        created_at: "2026-11-11T12:05:00.000Z",
+      },
+    ]);
+    expect(urls.some((u) => u.includes("event=repository_dispatch"))).toBe(true);
     expect(summary.channels[0]).toMatchObject({ state: "updating" });
+  });
+
+  it("keeps out-of-sync when only unrelated tap workflows are in progress", async () => {
+    const { summary } = await statusWithTap([
+      { event: "push", status: "in_progress", created_at: "2026-11-11T12:05:00.000Z" },
+      { event: "workflow_dispatch", status: "queued", created_at: "2026-11-11T12:06:00.000Z" },
+    ]);
+    expect(summary.channels[0]?.state).toBe("out-of-sync");
+  });
+
+  it("keeps out-of-sync when the running tap dispatch belongs to an earlier release", async () => {
+    const { summary } = await statusWithTap([
+      {
+        event: "repository_dispatch",
+        status: "in_progress",
+        created_at: "2026-11-01T09:00:00.000Z",
+      },
+    ]);
+    expect(summary.channels[0]?.state).toBe("out-of-sync");
+  });
+
+  it("does not query the tap when no release run anchors the window", async () => {
+    const { summary, urls } = await statusWithTap(
+      [
+        {
+          event: "repository_dispatch",
+          status: "in_progress",
+          created_at: "2026-11-11T12:05:00.000Z",
+        },
+      ],
+      { releaseRuns: [] },
+    );
+    expect(urls.some((u) => u.includes("homebrew-tap/actions/runs"))).toBe(false);
+    expect(summary.channels[0]?.state).toBe("out-of-sync");
   });
 });
