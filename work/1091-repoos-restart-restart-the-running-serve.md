@@ -48,3 +48,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T10:20:39Z · status inbox→ready
 - 2026-11-11T10:20:42Z · status ready→active, branch
 - 2026-11-11T10:30:47Z · message_queued at 2026-11-11T10:30:47.779Z
+- 2026-11-11T10:30:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
