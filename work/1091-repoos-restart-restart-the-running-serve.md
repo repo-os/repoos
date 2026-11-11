@@ -14,7 +14,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T20:40:09Z"
+updated_at: "2026-11-11T20:46:38Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -203,3 +203,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T20:40:07Z · status active→review
 - 2026-11-11T20:40:08Z · message_queued at 2026-11-11T20:40:08.652Z
 - 2026-11-11T20:40:09Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T20:46:38Z · body
