@@ -1,0 +1,12 @@
+{
+  "taskId": "1088",
+  "round": 5,
+  "at": "2026-11-11T21:16:17.390Z",
+  "agent": "cursor",
+  "model": "composer-2.5",
+  "branch": "feat/copilot-auto-tier-efficiency-was-removed",
+  "baseSha": "32b9aa433aa43168a3af8d8e61c487741e89c262",
+  "sourceSha": "4feef727a34a5abb44774ad65e994c548af39c7b",
+  "wordCount": 245,
+  "markdown": "## TL;DR\nThe default `github copilot` model (`default` / `copilot-auto-efficiency`) now maps to the Auto `balance` tier, which exists today, and Copilot tier rejections are turned into plain-English guidance on every failure path. This round fixes review pass 4.\n\n## Work and rationale\n- `src/server/agents.ts`: the \"engineer turn ended without a handoff\" activity line now enriches the stderr value before composing the line, instead of regex-patching the joined string. A `last assistant` text that quotes \"stderr: \" can no longer be truncated or have guidance spliced into it.\n- `src/core/copilot-auto-tier.ts`: the CLI's suggested tiers are split on commas as well as \"or\", so `balance, intelligence` is two tiers; the guidance never suggests the tier that just failed. Test added in `copilot-auto-tier.test.ts`.\n- Earlier rounds on the branch: tier mapping, legacy id alias, enrichment for one-shot, review, engineer banner and agent test, docs.\n- Out of scope, stated explicitly: `probeError` in `src/core/models.ts` (the model-list probe) stays raw; the Settings agent test goes through the enriched `model-test.ts`, so acceptance 2 holds.\n\n## Approaches tried\nEnriching the segment before composition rather than a safer regex, since any post-hoc string surgery on user-influenced text can mis-hit.\n\n## Challenges and blockers\nNot verified live: running with `--auto-tier balance` spends Copilot credits and no probe was run; the CLI's exact multi-tier wording is unverified, which is why both comma and \"or\" separators are handled.\n\n## Key learnings\nCompose failure text from separately enriched parts; never regex-patch the joined string.\n\n## Generated change summary\n\nBase tree: `32b9aa433aa43168a3af8d8e61c487741e89c262`\nSource tree: `f9bfae90c9c1345c4b192b885019d9db6f12f328`\n\n- M src/core/copilot-auto-tier.ts: +1 / −1\n- M src/server/agents.ts: +10 / −12\n- M src/ui-app/tests/copilot-auto-tier.test.ts: +7 / −0\n- M work/1074-require-a-step-by-step-guide-on-every-hu.md: +9 / −6\n- M work/1091-repoos-restart-restart-the-running-serve.md: +15 / −5\n- M work/1096-guard-against-huge-build-output-files-in.md: +8 / −1"
+}
