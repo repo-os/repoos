@@ -196,3 +196,4 @@ FINAL (pass 6): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:39:08Z · body
 - 2026-11-11T01:39:44Z · status active→review
 - 2026-11-11T01:39:44Z · note: Task body is underspecified: missing sections: Desired UX
+- 2026-11-11T01:39:44Z · message_queued at 2026-11-11T01:39:44.801Z
