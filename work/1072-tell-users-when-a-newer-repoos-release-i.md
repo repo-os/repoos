@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T05:08:24Z"
+updated_at: "2026-11-11T05:11:57Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
@@ -113,3 +113,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T05:08:23Z · body: Accepted scope and known limitations (added)
 - 2026-11-11T05:08:23Z · message_queued at 2026-11-11T05:08:23.451Z
 - 2026-11-11T05:08:24Z · message_queued at 2026-11-11T05:08:24.908Z
+- 2026-11-11T05:11:57Z · CTO nudge: held — an undelivered message is already queued
