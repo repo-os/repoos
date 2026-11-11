@@ -149,7 +149,7 @@ export async function startPostHandoffCheckpointRecovery(
   const { config } = deps;
   const existing = readPostHandoffCheckpointRecovery(config, task.id);
   if (existing && existing.phase !== "failed") {
-    if (deps.runner.isHandoffInFlight(task.id)) {
+    if (deps.runner?.isHandoffInFlight?.(task.id)) {
       return { ok: false, reason: "checkpoint recovery is already running for this task" };
     }
     // The `review` phase is not slot-backed, but its delta review may still be
@@ -161,7 +161,7 @@ export async function startPostHandoffCheckpointRecovery(
   }
   // Claim the handoff slot synchronously, before any await, so a second Move to
   // done cannot slip in between the start decision and the pipeline's claim.
-  if (!deps.runner.markHandoffInFlight(task.id)) {
+  if (deps.runner?.markHandoffInFlight && !deps.runner.markHandoffInFlight(task.id)) {
     return { ok: false, reason: "checkpoint recovery is already running for this task" };
   }
   writeRecovery(config, {
@@ -241,7 +241,7 @@ async function runRecoveryPipeline(
       throw new Error(handoff.detail ?? `handoff gate failed at ${handoff.step}`);
     }
   } finally {
-    deps.runner.releaseHandoffInFlight(task.id);
+    deps.runner?.releaseHandoffInFlight?.(task.id);
   }
 
   writeRecovery(config, {
