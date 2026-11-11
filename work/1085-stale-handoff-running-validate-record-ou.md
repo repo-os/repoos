@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-10T23:57:58Z"
-review_passes: 4
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — checkpoint recovery can start a second finalization before its slot is claimed; shots are stale on HEAD
@@ -16,6 +14,8 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
+updated_at: "2026-11-11T00:04:12Z"
+review_passes: 4
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
@@ -164,4 +164,4 @@ FINAL (pass 4): reconciling stale handoff records, the stale flag on every check
 - 2026-11-10T23:57:57Z · note: review pass 4: needs some work
 - 2026-11-10T23:57:58Z · needs_input
 - 2026-11-10T23:57:58Z · needs_input
-
+- 2026-11-11T00:04:12Z · status review→active
