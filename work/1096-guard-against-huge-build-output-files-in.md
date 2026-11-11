@@ -82,3 +82,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T20:49:34Z · body
 - 2026-11-11T20:49:36Z · body
 - 2026-11-11T20:50:32Z · message_queued at 2026-11-11T20:50:32.339Z
+- 2026-11-11T20:50:32Z · handoff failed · task-file handoff failed at check · repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:
