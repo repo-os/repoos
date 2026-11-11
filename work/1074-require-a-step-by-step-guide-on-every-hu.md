@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch — at tests/ensure-worktree-resilience.test.ts:195:30 — AssertionError: expected false to be true // Object.is equality"
-last_handoff_failure_sha: 1ddd2e06fde3bd1ed07d7a2accab2c7c6170ef6e
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -15,7 +13,9 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T06:08:40Z"
+updated_at: "2026-11-11T06:11:57Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch — at tests/ensure-worktree-resilience.test.ts:195:30 — AssertionError: expected false to be true // Object.is equality"
+last_handoff_failure_sha: 1ddd2e06fde3bd1ed07d7a2accab2c7c6170ef6e
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
@@ -146,4 +146,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T05:51:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T06:08:40Z · message_queued at 2026-11-11T06:08:40.771Z
 - 2026-11-11T06:08:40Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch — at tests/ensure-worktree-resilience.test.ts:195:30 — AssertionError: expected false to be true // Object.is equality
-
+- 2026-11-11T06:11:57Z · CTO nudge: held — an undelivered message is already queued
