@@ -100,3 +100,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T02:17:01Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-11T02:19:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T02:26:36Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T02:26:36Z · message_queued at 2026-11-11T02:26:36.795Z
