@@ -12,10 +12,10 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T06:36:58Z"
+updated_at: "2026-11-11T08:17:49Z"
 review_rounds: 2
 review_passes: 2
-dev_error_count: 3
+dev_error_count: 5
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
@@ -46,6 +46,19 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 
 ## Accepted scope and known limitations
 FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the shared cache file: re-read right before writing and merge only the fields the child owns (lastNoticeAt, dismissedVersion); (2) handle spawn errors: child.on('error') and try/catch around spawn; (3) wrap the passive CLI hooks (beginCliUpdateBackgroundRefresh, registerCliUpdateNoticeExitHook, prefetchCliUpdateCheck) in try/catch so they can never fail a command; (4) back off much longer after 403/429 (honour Retry-After or use hours) and update docs/update-check.md. NOT blocking, follow-up only: one child spawn per eligible command and no lock; loadConfig memoization and double warnings; dashboard dismissal not read by the CLI (#1073's area); documenting REPOOS_DISABLE_UPDATE_CHECK in user-docs/environment-and-secrets.md; isNewerVersion across prerelease labels. Report those under Suggestions, not Bugs.
+
+## Shots
+```json
+[
+{
+"label": "Dashboard release-update banner, gated by updates.check",
+"target": "default",
+"route": "/",
+"highlight": ".release-update-banner",
+"state": "release:updateAvailable"
+}
+]
+```
 
 ## Activity
 
@@ -119,3 +132,21 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T06:26:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T06:31:16Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T06:36:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T06:37:38Z · message_queued at 2026-11-11T06:37:38.572Z
+- 2026-11-11T06:41:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T06:46:59Z · message_delivered: 1 message(s)
+- 2026-11-11T06:47:00Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-11T07:11:31Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
+- 2026-11-11T07:11:31Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
+- 2026-11-11T07:11:32Z · needs_input
+- 2026-11-11T07:29:43Z · body
+- 2026-11-11T07:36:58Z · message_queued at 2026-11-11T07:36:58.010Z
+- 2026-11-11T07:36:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T07:41:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T07:44:00Z · note: stopped orphaned engineer pid 50732
+- 2026-11-11T07:44:00Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
+- 2026-11-11T07:44:00Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
+- 2026-11-11T07:48:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T08:16:43Z · watchdog: restarting engineer after 28m with no live process
+- 2026-11-11T08:16:45Z · message_delivered: 1 message(s)
+- 2026-11-11T08:17:49Z · body

@@ -8,16 +8,16 @@ area: [server, web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-emails-any-project-with-email-co
-cli_override: claude code
-model_override: haiku
+cli_override: opencode
+model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T06:31:16Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
-last_handoff_failure_sha: 1541535f99c18250059c0409a7378be9d0444898
+updated_at: "2026-11-11T08:21:34Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 8d251b33d5234a6344ed39242c2deb727cccf707
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 2
+dev_error_count: 3
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -55,16 +55,16 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```json
 [
 {
-"label": "Releases page: release email card with Preview and Resend",
+"label": "Releases page: Release email card with Preview/Resend and the setup hint",
 "target": "default",
 "route": "/releases",
 "highlight": "[data-test-id=\"release-email\"]"
 },
 {
-"label": "Settings: Release emails controls, select label not clipped",
+"label": "Settings: Release emails controls (on/off, recipients, when, prereleases)",
 "target": "default",
 "route": "/settings?tab=general&section=release-emails",
-"highlight": "[data-settings-section=\"release-emails\"]"
+"highlight": "#settings-section-release-emails"
 }
 ]
 ```
@@ -184,3 +184,18 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T06:11:08Z · message_delivered: 1 message(s)
 - 2026-11-11T06:28:47Z · note: handoff requested (cli)
 - 2026-11-11T06:31:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T06:58:47Z · message_queued at 2026-11-11T06:58:47.736Z
+- 2026-11-11T06:58:47Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-11T07:01:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T07:17:31Z · agent exited with an error (claude) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T07:39:10Z · cli_override, model_override
+- 2026-11-11T07:39:12Z · model_override
+- 2026-11-11T07:39:24Z · needs_input
+- 2026-11-11T07:43:40Z · message_delivered: 1 message(s)
+- 2026-11-11T07:44:01Z · note: stopped orphaned engineer pid 28686
+- 2026-11-11T07:49:13Z · watchdog: restarted engineer after identical check failure · branch tip unchanged since the last failing handoff validation
+- 2026-11-11T08:07:35Z · body
+- 2026-11-11T08:13:58Z · message_queued at 2026-11-11T08:13:58.122Z
+- 2026-11-11T08:13:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T08:18:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T08:21:34Z · body
