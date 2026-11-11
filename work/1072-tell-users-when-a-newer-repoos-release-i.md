@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T07:11:32Z"
+updated_at: "2026-11-11T07:29:43Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 4
@@ -47,6 +47,19 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 
 ## Accepted scope and known limitations
 FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the shared cache file: re-read right before writing and merge only the fields the child owns (lastNoticeAt, dismissedVersion); (2) handle spawn errors: child.on('error') and try/catch around spawn; (3) wrap the passive CLI hooks (beginCliUpdateBackgroundRefresh, registerCliUpdateNoticeExitHook, prefetchCliUpdateCheck) in try/catch so they can never fail a command; (4) back off much longer after 403/429 (honour Retry-After or use hours) and update docs/update-check.md. NOT blocking, follow-up only: one child spawn per eligible command and no lock; loadConfig memoization and double warnings; dashboard dismissal not read by the CLI (#1073's area); documenting REPOOS_DISABLE_UPDATE_CHECK in user-docs/environment-and-secrets.md; isNewerVersion across prerelease labels. Report those under Suggestions, not Bugs.
+
+## Shots
+```json
+[
+{
+  "label": "Dashboard release-update banner, gated by updates.check",
+  "target": "default",
+  "route": "/",
+  "highlight": ".release-update-banner",
+  "state": "release:updateAvailable"
+}
+]
+```
 
 ## Activity
 
@@ -127,3 +140,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T07:11:31Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
 - 2026-11-11T07:11:31Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
 - 2026-11-11T07:11:32Z · needs_input
+- 2026-11-11T07:29:43Z · body
