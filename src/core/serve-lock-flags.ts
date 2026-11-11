@@ -6,7 +6,13 @@ import { dirname, join } from "node:path";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const LOCKED_FLAGS = new Set([
+/**
+ * Flags `repoos restart` can safely replay when respawning a hand-run server.
+ * `--port`/`--host` are handled explicitly and must not be duplicated here.
+ * `--preview-overrides` also matters: a server started with it (as an auth-less
+ * preview) must not come back with the base config (#1091 review pass 2).
+ */
+const REPLAYABLE_FLAGS = new Set([
   "--quiet",
   "-q",
   "--no-tailscale-https",
@@ -23,7 +29,7 @@ export function captureServeLockFlags(cliArgs: readonly string[]): string[] {
       i++;
       continue;
     }
-    if (LOCKED_FLAGS.has(arg)) out.push(arg);
+    if (REPLAYABLE_FLAGS.has(arg)) out.push(arg);
   }
   return out;
 }

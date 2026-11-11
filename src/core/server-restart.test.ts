@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  pidOwnership,
-  restartRepoServer,
-  waitForServerRestart,
-} from "./server-restart.js";
+import { pidOwnership, restartRepoServer, waitForServerRestart } from "./server-restart.js";
 import type { LocatedServer } from "./server-locate.js";
 
 function server(over: Partial<LocatedServer> = {}): LocatedServer {
@@ -143,6 +139,72 @@ describe("restartRepoServer", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.message).toMatch(/Failed to start hand-run/i);
+  });
+
+  it("refuses an uncertain supervisor and prints a manual command", async () => {
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 60 }),
+      classify: async () => "refuse-supervised-unknown",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: true,
+        root,
+        serverVersion: "0.5.80",
+        activeEngineers: 0,
+      }),
+      supervisor: () => null,
+      verifyPid: () => true,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.oldPid).toBe(60);
+    expect(result.manualCommand).toBe("kill 60");
+  });
+
+  it("hand-run aborts before spawning when the old pid will not exit", async () => {
+    const spawn = vi.fn(() => ({ ok: true }) as const);
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 70 }),
+      classify: async () => "hand-run",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: true,
+        root,
+        serverVersion: "0.5.80",
+        activeEngineers: 0,
+      }),
+      stop: () => {},
+      waitPidGone: async () => false,
+      spawn,
+      verifyPid: () => true,
+    });
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/did not exit/i);
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it("keeps the old flags when restarting a hand-run server", async () => {
+    let spawnedFlags: readonly string[] = [];
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 80, serveFlags: ["--preview-overrides"] }),
+      classify: async () => "hand-run",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: true,
+        root,
+        serverVersion: "0.5.80",
+        activeEngineers: 0,
+      }),
+      stop: () => {},
+      waitPidGone: async () => true,
+      spawn: (_root, _port, _host, flags = []) => {
+        spawnedFlags = flags;
+        return { ok: true };
+      },
+      verifyPid: () => true,
+      wait: async () => ({ ok: true, pid: 81, version: "0.5.82" }),
+    });
+    expect(result.ok).toBe(true);
+    expect(spawnedFlags).toEqual(["--preview-overrides"]);
   });
 });
 

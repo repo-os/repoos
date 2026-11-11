@@ -576,14 +576,25 @@ Restarts this repo's control-plane server the way it was started:
 - **`repoos service install`** — uses the managed service restart path (`repoos
   service` semantics are unchanged).
 - **Hand-run `repoos serve`** — stops the recorded pid and starts a new
-  `repoos serve` on the same port and host.
+  `repoos serve` on the same port, host and flags (the serve lock records the
+  restart-relevant flags).
 - **Externally supervised** (for example a hand-written launchd plist with
-  `KeepAlive`) — signals the recorded pid and waits for the supervisor to
-  respawn it; no sudo when the process runs as you.
+  `KeepAlive`, or a systemd unit not installed by RepoOS) — signals the recorded
+  pid and waits for the supervisor to respawn it; no sudo when the process runs
+  as you.
 
-The command prints which path it took, warns when engineer agents were running before it stops the server, and reports success only after
-`/api/health` answers and the pid has changed. It never touches another repo's
-server and refuses when the pid belongs to another user.
+RepoOS identifies the supervisor from the live process (`launchctl list` on
+macOS, `systemctl status` on Linux) and only acts when it is sure: a launchd
+process whose label it cannot read is reported as unknown and refused, with the
+manual command to run, rather than guessed at.
+
+The command prints which path it took, warns when engineer agents were running
+before it stops the server, and reports success only after `/api/health` answers
+and the pid has changed — printing the old and new pid and version. If a
+supervisor does not respawn within the timeout it says so and prints the exact
+manual command instead of claiming success. It never touches another repo's
+server and refuses when the pid belongs to another user (it never escalates to
+sudo).
 
 ### `repoos servers [--json] [--prune]`
 

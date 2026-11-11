@@ -190,3 +190,18 @@ Give the automatic reaper a moment to clear it; if the server has been down for
 more than a couple of minutes, check the lockfile in your configured cache
 directory (`repoos/.repoos/` on a fresh install) before
 intervening, and never `kill -9` a RepoOS server without checking it first.
+
+## The server runs under a supervisor RepoOS didn't install
+
+A server started by a hand-written launchd plist (`KeepAlive`) or a systemd unit
+you wrote shows in `repoos status` as a server, but `repoos service` does not
+know it, and `launchctl kickstart` wants `sudo` you may not have.
+**`repoos restart`** handles this: it finds the pid from the repo's own
+lockfile, sees the supervisor, and — when the process belongs to you — signals
+exactly that pid so the supervisor respawns it, then waits for `/api/health` to
+answer with a new pid. No sudo, no guessing, and it never `pkill`s by name.
+
+If RepoOS cannot read the supervisor's label it refuses and prints the manual
+command rather than risk a half-restart; copy that command and run it yourself.
+If the pid belongs to another user (root, or a different account) it refuses for
+the same reason — restart under that account or ask an administrator.

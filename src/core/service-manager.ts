@@ -154,15 +154,17 @@ export function isManagedService(root: string): boolean {
 /**
  * The command a person runs to bring this project's server back (#0959). The
  * UI shows it when the server is down: the browser cannot start a process.
- * A managed service restarts through its OS job; a hand-run server through
- * `repoos serve` from its own root.
+ * `repoos restart` picks the right path whatever started the server (#1091) —
+ * a managed service, a hand-run serve, or an external launchd/systemd
+ * supervisor; the service-manager commands are the fallback when the CLI cannot
+ * see a running server to classify.
  */
 export function restartCommand(root: string, port: number | null): string {
   const entry = findEntry(readRegistry(), root);
   if (entry?.platform === "launchd") return `launchctl kickstart -k gui/$(id -u)/${entry.label}`;
   if (entry?.platform === "systemd") return `systemctl --user restart ${entry.label}`;
   const quoted = /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
-  return `cd ${quoted} && repoos serve${port ? ` --port ${port}` : ""}`;
+  return `cd ${quoted} && repoos restart${port ? ` --port ${port}` : ""}`;
 }
 
 // ── Platform detection ───────────────────────────────────────────────────────

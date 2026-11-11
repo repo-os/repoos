@@ -39,6 +39,8 @@ export {
   parseLaunchctlPrintCreator,
   parseSystemdPidStatus,
   launchctlKickstartCommand,
+  launchctlRestartCommand,
+  launchdDomainForUid,
 } from "./supervisor-detect.js";
 
 export interface PidOwnership {
