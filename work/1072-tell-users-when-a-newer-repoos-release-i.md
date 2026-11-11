@@ -1,13 +1,12 @@
 ---
-last_close_out_gate_ms: 375683
-last_close_out_gate_at: "2026-11-11T10:15:33.034Z"
 id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
-status: review
+status: done
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
+merged_commit: 15c5ef1a80a490f6e4a5f0294c517419d70f8336
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/tell-users-when-a-newer-repoos-release-i
@@ -15,6 +14,8 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
 updated_at: "2026-11-11T10:15:33Z"
+last_close_out_gate_ms: 375683
+last_close_out_gate_at: "2026-11-11T10:15:33.034Z"
 review_passes: 5
 review_rounds: 2
 dev_error_count: 5

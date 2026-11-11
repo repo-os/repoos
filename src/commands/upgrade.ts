@@ -21,6 +21,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { c } from "../cli/colors.js";
 import { launcherScript } from "../core/launcher-runtime.js";
+import { UpdateCheckFetchError } from "../core/update-check.js";
 
 export { launcherScript } from "../core/launcher-runtime.js";
 
@@ -207,6 +208,25 @@ function parseChannel(args: string[]): string | null {
 }
 
 /**
+ * A GitHub API failure carrying the status and any `Retry-After` (seconds or an
+ * HTTP date), so the CLI update check can back off for as long as GitHub asked
+ * instead of retrying (#1072). `repoos upgrade` shows the same message as before.
+ */
+function githubApiError(res: Response): Error {
+  const header = res.headers?.get?.("retry-after") ?? null;
+  let retryAfterMs: number | null = null;
+  if (header) {
+    const seconds = Number(header);
+    if (Number.isFinite(seconds) && seconds >= 0) retryAfterMs = Math.round(seconds * 1000);
+    else {
+      const when = Date.parse(header);
+      if (Number.isFinite(when)) retryAfterMs = Math.max(0, when - Date.now());
+    }
+  }
+  return new UpdateCheckFetchError(res.status, retryAfterMs);
+}
+
+/**
  * `GET /releases/latest` always excludes prereleases (GitHub's own rule, not
  * configurable) — release.yml marks any tag with a "-" (v0.6.0-beta.1,
  * -canary.N, -rc.N) as a prerelease, exactly so stable users never get handed
@@ -222,12 +242,12 @@ export async function fetchLatestRelease(
 ): Promise<Release> {
   if (!channel) {
     const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { signal });
-    if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+    if (!res.ok) throw githubApiError(res);
     return (await res.json()) as Release;
   }
   // Newest first by default; the first tag matching "-<channel>." wins.
   const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { signal });
-  if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
+  if (!res.ok) throw githubApiError(res);
   const releases = (await res.json()) as Release[];
   const match = releases.find((r) => r.tag_name.includes(`-${channel}.`));
   if (!match) throw new Error(`No "${channel}" release found in the last 30 releases.`);
