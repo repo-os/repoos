@@ -102,3 +102,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:43:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T21:46:06Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-11T21:46:06Z · message_queued at 2026-11-11T21:46:06.371Z
+- 2026-11-11T21:46:06Z · ↻ resuming engineer to read queued message
