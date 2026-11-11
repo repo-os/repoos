@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-11T05:53:46Z"
-review_passes: 2
 id: "1090"
 title: "Releases page blames the wrong workflow: an unrelated failed run shows as 'release workflow failed' while Homebrew is just updating"
 type: bug
@@ -13,6 +11,8 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
+updated_at: "2026-11-11T05:53:47Z"
+review_passes: 2
 review_rounds: 1
 ---
 ## Problem
@@ -72,4 +72,4 @@ FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress mus
 - 2026-11-11T05:52:51Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
 - 2026-11-11T05:52:51Z · message_queued at 2026-11-11T05:52:51.574Z
 - 2026-11-11T05:53:46Z · note: review pass 2: needs some work
-
+- 2026-11-11T05:53:47Z · message_delivered: 1 message(s)
