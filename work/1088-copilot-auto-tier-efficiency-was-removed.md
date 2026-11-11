@@ -3,9 +3,6 @@ id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection failed repeatedly"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T17:51:34Z"
+updated_at: "2026-11-11T17:51:41Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T17:51:34.369Z\",\"kind\":\"dev-error\"}]"
@@ -77,3 +74,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T17:40:02Z · body
 - 2026-11-11T17:51:34Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
 - 2026-11-11T17:51:34Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
+- 2026-11-11T17:51:41Z · needs_input
