@@ -5,6 +5,7 @@ import { formatChecksCardLine } from "./checks-card-status.js";
 export interface SharedTaskCardStatusInput {
   handoffInFlight: boolean;
   handoffState?: string | null;
+  handoffStale?: boolean;
   handoffStep?: string | null;
   handoffRequested?: boolean;
   checkInFlight: boolean;
@@ -44,7 +45,9 @@ export interface SharedTaskCardStatus {
 export function resolveSharedTaskCardStatus(
   input: SharedTaskCardStatusInput,
 ): SharedTaskCardStatus {
-  const handoffRunning = input.handoffInFlight || input.handoffState === "running";
+  const handoffRunning =
+    input.handoffState !== "superseded" &&
+    (input.handoffInFlight || input.handoffState === "running");
   if (input.handoffRequested && !handoffRunning) {
     return {
       kind: "checks",
@@ -64,6 +67,7 @@ export function resolveSharedTaskCardStatus(
         handoffStep: input.handoffStep,
         checkOutput: input.checkOutput,
         slow: input.slowCheck,
+        stale: input.handoffStale,
         slotAgeMs: input.checkSlotAgeMs,
       }),
       inFlight: true,
