@@ -159,8 +159,8 @@ CLI never empties the other dropdowns, a failing one shows its reason (not
 found on PATH, timed out, not signed in…) with a **Retry**, and the last good
 list per CLI is saved in your browser so a reload shows it immediately while it
 revalidates. A model of `default` uses whatever the CLI itself defaults to,
-except for GitHub Copilot: it means **Auto · Balance**, the lowest-cost Auto tier
-GitHub still exposes in common catalogs (the old `efficiency` tier was retired).
+except for GitHub Copilot: it means **Auto · Balance** (RepoOS's economical Auto
+default). Some accounts no longer accept the CLI `efficiency` tier.
 
 ### Codex engineering permissions
 

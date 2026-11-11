@@ -320,9 +320,17 @@ describe("model-aware driver commands", () => {
   it("maps a removed Copilot Auto tier failure to plain-English guidance", () => {
     const raw =
       "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence.";
-    expect(oneShotFailureDetail(raw, "")).toContain("Copilot Auto tier `efficiency`");
-    expect(oneShotFailureDetail(raw, "")).toMatch(/balance.*intelligence/i);
-    expect(oneShotFailureDetail(raw, "")).toContain("copilot-auto-efficiency");
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toContain(
+      "Copilot Auto tier `efficiency`",
+    );
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toMatch(/balance.*intelligence/i);
+    expect(oneShotFailureDetail(raw, "", "github copilot")).toContain("copilot-auto-efficiency");
+  });
+
+  it("does not rewrite generic unavailable errors for other CLIs", () => {
+    const raw = "model claude-opus is unavailable for your plan";
+    expect(oneShotFailureDetail(raw, "", "claude code")).toBe(raw);
+    expect(oneShotFailureDetail(raw, "")).toBe(raw);
   });
 
   it("keeps Copilot one-shot prompts as markdown for freeform task creation", () => {

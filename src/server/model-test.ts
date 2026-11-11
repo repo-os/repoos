@@ -151,7 +151,8 @@ export function testModelCombination(
           ),
         );
       } else {
-        const detail = oneShotFailureDetail(stderr, stdout) || `${cmd} produced no final answer`;
+        const detail =
+          oneShotFailureDetail(stderr, stdout, cli) || `${cmd} produced no final answer`;
         done(finish("timed_out", `Timed out after ${Math.round(timeoutMs / 1000)}s: ${detail}`));
       }
     }, timeoutMs);
@@ -170,7 +171,7 @@ export function testModelCombination(
         // the old behaviour dumped a JSON event blob and said nothing useful
         // (#0677). Fall back to a bounded diagnostic only when no line matches.
         const detail =
-          oneShotFailureDetail(stderr, stdout) ||
+          oneShotFailureDetail(stderr, stdout, cli) ||
           `${cmd} exited with code ${code ?? "unknown"} without ${MODEL_TEST_SENTINEL}`;
         done(finish("failed", detail));
       }

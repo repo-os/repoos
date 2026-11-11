@@ -5077,11 +5077,15 @@ export function extractOneShotReportText(cli: string, rawOutput: string): string
  * scraped from stdout: a structured event's `error`/`message` field first, then
  * an error-shaped plain line, then the last non-empty line.
  */
-export function oneShotFailureDetail(stderr: string, output: string): string {
+export function oneShotFailureDetail(stderr: string, output: string, cli?: string): string {
+  const maybeCopilot = (text: string): string => {
+    if (cli !== "github copilot") return text;
+    return formatCopilotAutoTierFailure(text) ?? text;
+  };
   const stderrText = stripAnsi(stderr).trim();
   if (stderrText) {
     const fromStderr = stderrText.split("\n").slice(-3).join(" ").trim();
-    return formatCopilotAutoTierFailure(fromStderr) ?? fromStderr;
+    return maybeCopilot(fromStderr);
   }
   const lines = stripAnsi(output)
     .trim()
@@ -5107,10 +5111,7 @@ export function oneShotFailureDetail(stderr: string, output: string): string {
         /error|unavailable|denied|fail|invalid/i.test(obj.message)
           ? obj.message
           : "");
-      if (err) {
-        const sliced = String(err).slice(0, 500);
-        return formatCopilotAutoTierFailure(sliced) ?? sliced;
-      }
+      if (err) return maybeCopilot(String(err).slice(0, 500));
     } catch {
       /* not JSON — keep scanning */
     }
@@ -5122,7 +5123,7 @@ export function oneShotFailureDetail(stderr: string, output: string): string {
       /error|unavailable|denied|unauthori[sz]ed|rate limit|invalid|not found|no such/i.test(line),
     );
   const base = (errLine ?? lines[lines.length - 1] ?? "").slice(0, 500);
-  return formatCopilotAutoTierFailure(base) ?? base;
+  return maybeCopilot(base);
 }
 
 /**
@@ -5311,7 +5312,7 @@ export function runPrompt(
         turns: usage.turns,
       };
       if (exitCode !== 0 || signal) {
-        const detail = oneShotFailureDetail(stderr, output) || "no stderr output";
+        const detail = oneShotFailureDetail(stderr, output, agent.cli) || "no stderr output";
         const termination = signal ? `signal ${signal}` : `code ${exitCode ?? "unknown"}`;
         const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
         finish({
@@ -5332,7 +5333,7 @@ export function runPrompt(
         finish({ ok: true, output, ...usageFields });
         return;
       }
-      const reason = oneShotFailureDetail(stderr, output) || "no output produced";
+      const reason = oneShotFailureDetail(stderr, output, agent.cli) || "no output produced";
       const hint = agent.cli === "antigravity" ? antigravityErrorHint(stderr) : null;
       finish({
         ok: false,
@@ -5390,6 +5391,7 @@ export function oneShotResultFromLog(
   elapsedMs: number,
   exitCode?: number | null,
   commandName = "agent",
+  cli?: string,
 ): PromptResult {
   const rawOut = existsSync(outLog) ? readFileSync(outLog, "utf8") : "";
   const rawErr = existsSync(errLog) ? readFileSync(errLog, "utf8") : "";
@@ -5411,7 +5413,7 @@ export function oneShotResultFromLog(
     turns: usage.turns,
   };
   if (exitCode !== undefined && exitCode !== 0) {
-    const detail = oneShotFailureDetail(stderr, output) || "no stderr output";
+    const detail = oneShotFailureDetail(stderr, output, cli) || "no stderr output";
     return {
       ok: false,
       error: `${commandName} exited with code ${exitCode ?? "unknown"}: ${detail}`,
@@ -5423,7 +5425,7 @@ export function oneShotResultFromLog(
     if (error) return { ok: false, error, ...usageFields };
   }
   if (output) return { ok: true, output, ...usageFields };
-  const reason = oneShotFailureDetail(stderr, output) || "no output produced";
+  const reason = oneShotFailureDetail(stderr, output, cli) || "no output produced";
   return { ok: false, error: `agent exited without output: ${reason}`, ...usageFields };
 }
 

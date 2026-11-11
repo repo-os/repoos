@@ -3,34 +3,25 @@
  *
  * GitHub retired the `efficiency` tier for many accounts (Copilot CLI 1.0.109+).
  * RepoOS keeps the `copilot-auto-efficiency` model id as a persisted alias but maps
- * it (and `default`) to `balance`, the cheapest tier that remains in common catalogs.
+ * it (and `default`) to `balance` (the economical Auto tier RepoOS targets as default).
  * Valid tier ids are account-specific; the CLI validates against the user's catalog
  * and may suggest alternatives in error text — do not treat tier ids as a closed list.
  */
 
-/** RepoOS model ids that select Copilot Auto with a specific tier. */
-export const COPILOT_AUTO_TIER_MODEL_IDS = [
-  "default",
-  "copilot-auto-efficiency",
-  "copilot-auto-balance",
-  "copilot-auto-intelligence",
-] as const;
+const COPILOT_AUTO_TIER_CLI_ID: Record<string, string> = {
+  default: "balance",
+  "copilot-auto-efficiency": "balance",
+  "copilot-auto-balance": "balance",
+  "copilot-auto-intelligence": "intelligence",
+};
 
 /**
  * Copilot CLI `--auto-tier` value for a RepoOS model id, or null when the id is a
  * named model rather than an Auto tier selection.
  */
 export function resolveCopilotAutoTier(model: string): string | null {
-  if (
-    model === "default" ||
-    !model ||
-    model === "copilot-auto-efficiency" ||
-    model === "copilot-auto-balance"
-  ) {
-    return "balance";
-  }
-  if (model === "copilot-auto-intelligence") return "intelligence";
-  return null;
+  if (!model || model === "default") return "balance";
+  return COPILOT_AUTO_TIER_CLI_ID[model] ?? null;
 }
 
 /** argv fragment for Copilot Auto tier models; empty when `model` is a named model id. */
@@ -40,8 +31,9 @@ export function copilotAutoTierModelArgs(model: string): string[] {
   return ["--model", "auto", "--auto-tier", tier];
 }
 
+/** Copilot-specific tier/catalog errors — must not match generic "unavailable" alone. */
 const COPILOT_AUTO_TIER_FAILURE =
-  /Auto (?:profile|preference)|auto-tier|no longer available|is unavailable/i;
+  /(?:Auto (?:profile|preference)|--auto-tier\b|auto-tier\s+(?:to|profile|preference))/i;
 
 /**
  * Plain-English guidance when Copilot rejects an Auto tier. Returns null when the
@@ -65,18 +57,17 @@ export function formatCopilotAutoTierFailure(detail: string): string | null {
         .filter(Boolean)
     : [];
 
-  const suggestions =
-    fromCli.length > 0
-      ? fromCli.map((id) => `\`${id}\``).join(" or ")
-      : "`balance` or `intelligence` (see `copilot --help` for your account catalog)";
-
   const tierPhrase = tier
     ? `The Copilot Auto tier \`${tier}\` is not available for this account.`
     : "The selected Copilot Auto tier is not available for this account.";
 
+  const tierHint =
+    fromCli.length > 0
+      ? ` Your Copilot CLI suggested: ${fromCli.join(" or ")}.`
+      : " Valid tier ids depend on your Copilot account — try Auto · Balance or Auto · Intelligence in the Agents model dropdown.";
+
   return (
-    `${tierPhrase} In Settings → Agents, pick Auto · Balance or Auto · Intelligence, ` +
-    `or pass --auto-tier with an id your CLI accepts (for example ${suggestions.replace(/`/g, "")}). ` +
+    `${tierPhrase} In Settings → Agents, pick Auto · Balance or Auto · Intelligence for this agent.${tierHint} ` +
     `RepoOS maps default and the legacy copilot-auto-efficiency model id to Balance.`
   );
 }

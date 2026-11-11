@@ -901,7 +901,8 @@ export const DEFAULT_PROBE_MODELS: Record<string, string> = {
   "claude code": "claude-haiku-4-5-20251001",
   codex: "gpt-5.6-luna",
   antigravity: "gemini-3.8-flash-low",
-  "github copilot": "copilot-auto-efficiency",
+  // `default` maps to Auto · Balance; `copilot-auto-efficiency` remains a persisted alias (#1088).
+  "github copilot": "default",
   pi: "openrouter/z-ai/glm-5.3-flash",
   muse: "muse-spark-1.3",
 };
