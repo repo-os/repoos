@@ -11,7 +11,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T14:52:19Z"
+updated_at: "2026-11-11T15:08:12Z"
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -137,3 +137,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T14:42:11Z · agent exited with an error (opencode) · Error: [unavailable]
 - 2026-11-11T14:42:11Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash); it will not chain another automatic switch (3/3 crashes in 30m)
 - 2026-11-11T14:52:19Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-11T15:08:12Z · message_queued at 2026-11-11T15:08:11.997Z
