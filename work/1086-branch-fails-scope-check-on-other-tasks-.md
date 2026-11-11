@@ -11,7 +11,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T02:46:57Z"
+updated_at: "2026-11-11T03:09:44Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 15d8889732f8cd7982d6b10a8793b51f81f70f9b
 review_rounds: 2
@@ -110,3 +110,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T02:39:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T02:44:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T02:46:57Z · body
+- 2026-11-11T03:09:44Z · CTO nudge: held — handoff gate is running
