@@ -11,7 +11,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T15:58:13Z"
+updated_at: "2026-11-11T16:03:13Z"
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -19,6 +19,7 @@ routing_escalations: 1
 review_passes: 2
 dev_error_count: 12
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-11T16:03:13.143Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
@@ -146,3 +147,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T15:38:07Z · message_delivered: 1 message(s)
 - 2026-11-11T15:58:07Z · message_queued at 2026-11-11T15:58:07.720Z
 - 2026-11-11T15:58:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T16:03:13Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
