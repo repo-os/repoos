@@ -2,14 +2,14 @@
 id: "1095"
 title: Purge macos/.derived-data-verify from git history
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: general
 assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-11T10:04:28Z"
-updated_at: "2026-11-11T10:04:28Z"
+updated_at: "2026-11-11T10:20:00Z"
 ---
 Commit 5607e2aaa (WIP checkpoint #0892, 2026-10-21) swept 4,763 Xcode build files from macos/.derived-data-verify/ into public history (~271 MB raw, ~160 MB compressed; also reachable from ~10 task branches). No secrets found (a scanner email claiming a Stripe key was a false positive). .gitignore already covers it going forward (macos/.gitignore: .derived-data-*/).
 
@@ -24,3 +24,4 @@ _Assigned to a human, not an AI agent. No `## Notes for AI` is required here; th
 ## Activity
 
 - 2026-11-11T10:04:28Z · created · njachowski@gmail.com
+- 2026-11-11T10:20:00Z · status inbox→ready
