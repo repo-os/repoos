@@ -16,7 +16,6 @@ last_handoff_failure_fingerprint: "check|remote validation failed: test failure:
 last_handoff_failure_sha: 15d8889732f8cd7982d6b10a8793b51f81f70f9b
 review_rounds: 2
 review_passes: 2
-deferred_handoff_resume_count: 1
 dev_error_count: 1
 ---
 ## Problem
