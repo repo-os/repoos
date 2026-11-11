@@ -11,7 +11,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T01:54:51Z"
+updated_at: "2026-11-11T01:59:44Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -85,3 +85,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T01:28:11Z · body
 - 2026-11-11T01:49:31Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T01:54:51Z · body
+- 2026-11-11T01:59:44Z · note: adopted orphaned engineer pid 27088
