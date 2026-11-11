@@ -52,3 +52,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T10:35:47Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T10:54:04Z · status active→review
 - 2026-11-11T10:54:04Z · message_queued at 2026-11-11T10:54:04.241Z
+- 2026-11-11T10:54:04Z · note: shots: skipped — Docs site skipped: no docs shot declared
