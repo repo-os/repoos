@@ -252,3 +252,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T23:02:54Z · status active→review
 - 2026-11-11T23:02:55Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T23:02:55Z · message_queued at 2026-11-11T23:02:55.212Z
+- 2026-11-11T23:02:55Z · note: shots: skipped — Docs site skipped: no docs shot declared
