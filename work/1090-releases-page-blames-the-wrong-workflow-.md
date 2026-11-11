@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T06:08:34Z"
+updated_at: "2026-11-11T06:11:08Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -77,3 +77,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:08:23Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T06:08:23Z · message_queued at 2026-11-11T06:08:23.183Z
 - 2026-11-11T06:08:34Z · note: handoff requested (cli)
+- 2026-11-11T06:11:08Z · handoff_deferred: 1 queued message(s) must be read before review
