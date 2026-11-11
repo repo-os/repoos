@@ -167,3 +167,4 @@ FINAL (round 4, hand-finished): Retry-After is now wired (fetchLatestRelease thr
 - 2026-11-11T08:50:07Z · note: handoff requested (cli)
 - 2026-11-11T08:53:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T09:02:57Z · status active→review
+- 2026-11-11T09:02:57Z · message_queued at 2026-11-11T09:02:57.384Z
