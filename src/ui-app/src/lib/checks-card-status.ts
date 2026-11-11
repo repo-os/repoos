@@ -1,3 +1,4 @@
+import { CHECK_WAIT_STALLED_MS } from "../../../core/check-wait.js";
 import { checkProgressDetailLabel, type CheckProgress } from "./check-progress.js";
 import { formatDuration } from "./time.js";
 
@@ -33,6 +34,7 @@ export function formatChecksCardLine(opts: {
   handoffStep?: string | null;
   checkOutput?: string | null;
   slow?: boolean;
+  stale?: boolean;
   slotAgeMs?: number | null;
 }): string {
   const parts = ["Checks"];
@@ -65,6 +67,9 @@ export function formatChecksCardLine(opts: {
     elapsed = formatDuration(opts.slotAgeMs);
   }
   if (elapsed) parts.push(elapsed);
-  if (opts.slow) parts.push("slow");
+  const slotStale =
+    opts.slotAgeMs != null && opts.slotAgeMs >= CHECK_WAIT_STALLED_MS && !opts.stale;
+  if (opts.stale || slotStale) parts.push("stale");
+  else if (opts.slow) parts.push("slow");
   return parts.join(" · ");
 }

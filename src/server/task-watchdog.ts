@@ -56,7 +56,7 @@
 import { writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { RepoOSConfig, Task } from "../core/types.js";
-import type { LiveIndex } from "./live-index.js";
+import type { LiveIndex, RepoEvent } from "./live-index.js";
 import type { AgentRunner } from "./agents.js";
 import type { Logger } from "../core/logger.js";
 import type { ReviewReport, ReviewRunResult } from "./review.js";
@@ -81,6 +81,12 @@ import {
   playwrightLockRoot,
 } from "../core/cross-process-slots.js";
 import { HANDOFF_DEADLINE_MS, scheduleHandoffSignalRetry } from "./handoff.js";
+import {
+  emitHandoffSupersededIfNeeded,
+  readHandoffStatus,
+  reconcileHandoffStatus,
+} from "./handoff-status.js";
+import { handoffProcessLive } from "./handoff-live.js";
 import { isTaskClosingOut } from "./close-out-lock.js";
 import {
   DEFAULT_ENGINEER_STALL_RESUME_LIMIT,
@@ -443,6 +449,8 @@ export interface TaskWatchdogOptions {
    * shared engineer relaunch path, exactly like crash recovery.
    */
   launch?: typeof relaunchEngineerOnActiveTask;
+  /** SSE fan-out for durable handoff-status reconciliation (#1085). */
+  emitEvent?: (e: RepoEvent) => void;
 }
 
 /**
@@ -472,6 +480,7 @@ export class TaskWatchdog {
   private readonly logger?: Pick<Logger, "task">;
   /** Test seam for the clean-exit resume launch (#0888). */
   private readonly launch?: typeof relaunchEngineerOnActiveTask;
+  private readonly emitEvent?: (e: RepoEvent) => void;
   private timer: ReturnType<typeof setInterval> | null = null;
   private stalenessThresholdMs: number;
   /** Re-entry guard: a scan already in flight is skipped by the next tick. */
@@ -496,6 +505,7 @@ export class TaskWatchdog {
     this.onDiagnosableFailure = opts.onDiagnosableFailure;
     this.logger = opts.logger;
     this.launch = opts.launch;
+    this.emitEvent = opts.emitEvent;
   }
 
   start(): void {
@@ -569,6 +579,7 @@ export class TaskWatchdog {
       // REVIEWER session died silently sits in `review` forever with no report
       // and no one to nudge it — the same failure mode as a dead engineer, just
       // on the review side where the watchdog never looked before.
+      this.reconcileOrphanedHandoffStatuses(stalenessNow);
       for (const status of ["active", "review"] as const) {
         for (const task of this.index.getTasks(status)) {
           // #0960: a held task is inert for all automation, including the
@@ -614,6 +625,25 @@ export class TaskWatchdog {
         console.error(
           `[repoos] watchdog: queued-message recovery failed for #${task.id}: ${(error as Error).message}`,
         );
+      }
+    }
+  }
+
+  /** Clear handoff-status records that outlived their finalization (#1085). */
+  private reconcileOrphanedHandoffStatuses(now: number): void {
+    for (const status of ["active", "review"] as const) {
+      for (const task of this.index.getTasks(status)) {
+        if (isHoldActive(task)) continue;
+        if (readHandoffStatus(this.config, task.id).state !== "running") continue;
+        const before = readHandoffStatus(this.config, task.id);
+        const after = reconcileHandoffStatus(this.config, task.id, {
+          taskStatus: task.status,
+          handoffLive: handoffProcessLive(this.config, task.id, this.runner),
+          latestReviewAt: this.reviews?.read(task.id)?.at ?? null,
+          nowMs: now,
+          staleAfterMs: HANDOFF_DEADLINE_MS,
+        });
+        emitHandoffSupersededIfNeeded(before, after, task.id, this.emitEvent);
       }
     }
   }

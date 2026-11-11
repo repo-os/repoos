@@ -1,10 +1,11 @@
 ---
-updated_at: "2026-11-11T01:43:42Z"
-review_passes: 6
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `handoff.ts` conflicts with main, and checkpoint recovery can leak its slot or drop a pending delta marker"
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -13,9 +14,12 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
+updated_at: "2026-11-11T01:39:44Z"
+review_passes: 5
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 A task's handoff record can stay at `running` / step `validate` for hours after the work moved on. Seen on #1080 (handoff started 04:55Z, still "running validate" at 06:05Z even though review pass 8 was "good to go" and `repoos landable` was ready) and #1070 (same, ~30+ min). `repoos handoff-status <id>` keeps reporting running, and the board card shows "Checks · checking validate · 1h 11m" with "REVIEW PASSED · CHECKS RUNNING" and a greyed Move to done, which makes people think landing will fail.
@@ -51,7 +55,7 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 ```
 
 ## Accepted scope and known limitations
-FINAL (pass 6): reconciling stale handoff records, stale flag on all checks renderers, watchdog skipping held tasks, pending delta-review markers kept, single-flight checkpoint recovery (claim first, marker only replaced after the claim succeeds, slot released on every throw path) are in scope and done. NOT blocking, follow-up only: HANDOFF_DEADLINE_MS doubling as stale threshold; GET persisting superseded; a live finalization superseded by a newer review staying live; beginHandoffStatus restarting a superseded attemptKey; optional reviews dependency in the watchdog; a review marker with no running review restarting the gate; the unchanged server.ts unified-handoff throw paths; capture of the stale-running state in shots. Report these under Suggestions, not Bugs.
+FINAL (pass 5): reconciling stale handoff records, stale flag on all checks renderers, watchdog skipping held tasks, keeping pending delta-review markers, and single-flight checkpoint recovery (slot claimed synchronously, required runner) are in scope and done. NOT blocking, follow-up only: (1) HANDOFF_DEADLINE_MS being both the stale threshold and the deadline timer; (2) GET persisting superseded and emitting SSE; (3) a live finalization superseded by a newer review pass staying live; (4) beginHandoffStatus restarting a superseded attemptKey with outcomeQueued false; (5) the optional reviews dependency in the watchdog (server always wires it); (6) a review marker with no running review restarting the gate (intended, untested); (7) stale shots: handoff re-captures them. Report these under Suggestions, not Bugs.
 
 ## Screenshots
 
@@ -184,16 +188,4 @@ FINAL (pass 6): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:10:25Z · needs_input
 - 2026-11-11T01:24:13Z · status review→active
 - 2026-11-11T01:24:15Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-11T01:25:29Z · body: Accepted scope and known limitations (added 1, removed 1)
-- 2026-11-11T01:25:29Z · message_overdue: still queued after 60m without being delivered
-- 2026-11-11T01:25:29Z · message_delivered: 2 message(s)
-- 2026-11-11T01:25:38Z · note: handoff requested (cli)
-- 2026-11-11T01:29:32Z · CTO nudge: held — handoff gate is running
-- 2026-11-11T01:37:20Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
-- 2026-11-11T01:39:08Z · body
 - 2026-11-11T01:39:44Z · status active→review
-- 2026-11-11T01:39:44Z · note: Task body is underspecified: missing sections: Desired UX
-- 2026-11-11T01:39:44Z · message_queued at 2026-11-11T01:39:44.801Z
-- 2026-11-11T01:43:42Z · note: review pass 6: good to go
-- 2026-11-11T01:43:42Z · needs_input
-

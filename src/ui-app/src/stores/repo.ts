@@ -921,6 +921,8 @@ export const useRepoStore = defineStore("repo", () => {
         updatedAt: string | null;
         startedAt?: string | null;
         attempt: number;
+        stale?: boolean;
+        reason?: string | null;
         /** `reason` is the plain-English wait while a running check holds the worktree (#1082). */
         progress: (TaskCheckRun & { reason?: string | null }) | null;
         machine: string | null;
@@ -938,6 +940,7 @@ export const useRepoStore = defineStore("repo", () => {
         updatedAt: string | null;
         startedAt?: string | null;
         attempt: number;
+        stale?: boolean;
         progress?: TaskCheckRun | null;
         machine?: string | null;
       }>(`/api/tasks/${id}/handoff-status`);
@@ -947,7 +950,7 @@ export const useRepoStore = defineStore("repo", () => {
       };
       if (status.state === "running" && status.step)
         handoffSteps.value = { ...handoffSteps.value, [id]: status.step };
-      else if (["passed", "failed", "deferred"].includes(status.state)) {
+      else if (["passed", "failed", "deferred", "superseded"].includes(status.state)) {
         const steps = { ...handoffSteps.value };
         delete steps[id];
         handoffSteps.value = steps;
@@ -1502,11 +1505,12 @@ export const useRepoStore = defineStore("repo", () => {
    * `status: review`. This is the "running checks…" state the task card shows.
    */
   function handoffInFlight(id: string): boolean {
-    if (handoffStatuses.value[id]?.state === "running") return true;
-    if (["passed", "failed", "deferred"].includes(handoffStatuses.value[id]?.state ?? ""))
+    const handoff = handoffStatuses.value[id];
+    if (handoff?.state === "running") return handoff.stale !== true;
+    if (handoff && ["passed", "failed", "deferred", "superseded"].includes(handoff.state))
       return false;
     const step = handoffSteps.value[id];
-    if (step) return step !== "done" && step !== "failed";
+    if (step) return step !== "done" && step !== "failed" && step !== "superseded";
     // After a reload SSE has not replayed `handoff:*`, but the hydrated check
     // runs still show a finalization gate in flight.
     return (taskChecks.value[id] ?? []).some((r) => r.running && r.kind === "handoff-finalize");
@@ -1996,6 +2000,8 @@ export const useRepoStore = defineStore("repo", () => {
           pushToast(`#${e.id} stayed active — ${detail}`, "error");
         } else if (stage === "done") {
           setHandoffError(e.id, null);
+        } else if (stage === "superseded") {
+          void refreshHandoffStatus(e.id);
         }
       } else if (e.step.startsWith("checkpoint-recovery")) {
         // #0834: keep the post-handoff checkpoint recovery vocabulary out of
