@@ -7,13 +7,14 @@ import {
   closeSync,
   existsSync,
   fstatSync,
+  lstatSync,
   openSync,
   readdirSync,
   readSync,
   statSync,
 } from "node:fs";
 import { join } from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import type { CheckConfig } from "./types.js";
 
 const { gunzipSync, inflateSync, unzipSync } = nodeZlib;
@@ -293,6 +294,30 @@ export function scanBuffersForSecrets(
       reason: `more than ${maxOffsets} gzip/zstd regions — cannot exhaustively scan`,
     });
   }
+  // zlib has no magic number, only a 2-byte header check: probe every valid
+  // header by trial inflation (random data fails fast), bounded by a candidate cap.
+  const zlibStarts: number[] = [];
+  for (let i = 0; i + 1 < buf.length; i++) {
+    if (buf[i] === 0x78 && (buf[i]! * 256 + buf[i + 1]!) % 31 === 0) zlibStarts.push(i);
+  }
+  const MAX_ZLIB_CANDIDATES = 4096;
+  if (zlibStarts.length > MAX_ZLIB_CANDIDATES) {
+    incomplete.push({
+      path,
+      reason: `more than ${MAX_ZLIB_CANDIDATES} candidate zlib headers — cannot exhaustively scan`,
+    });
+  }
+  for (const start of zlibStarts.slice(0, MAX_ZLIB_CANDIDATES)) {
+    if (secrets.length >= 20) break;
+    if (start === 0) continue; // handled below with the other offset-0 probes
+    const out = tryZlibInflate(buf.subarray(start), maxDecompressBytes);
+    if (out === "too_large") {
+      incomplete.push({
+        path,
+        reason: `zlib payload expands past the ${maxDecompressBytes}-byte scan limit`,
+      });
+    } else if (out) pushHits(out);
+  }
   const prioritized = [...new Set<number>([0, ...gzipHits, ...zstdHits])].sort((a, b) => a - b);
   const sorted = prioritized.slice(0, maxOffsets);
   for (const start of sorted) {
@@ -409,11 +434,16 @@ function readGitBlobBounded(
     );
     if (!Number.isFinite(size) || size < 0) return null;
     const toRead = Math.min(size, maxRead);
-    const out = execFileSync("git", ["show", spec], {
+    // spawnSync keeps the bytes read before an ENOBUFS overflow, so a blob past
+    // the cap is truncated (and reported as such) instead of failing to read.
+    const res = spawnSync("git", ["show", spec], {
       cwd: repoRoot,
       maxBuffer: toRead + 64,
       stdio: ["pipe", "pipe", "pipe"],
-    }) as Buffer;
+    });
+    const out = res.stdout as Buffer | null;
+    if (!out || (res.error && (res.error as NodeJS.ErrnoException).code !== "ENOBUFS")) return null;
+    if (res.status !== 0 && !res.error) return null;
     return {
       buf: out.subarray(0, Math.min(out.length, toRead)),
       size,
@@ -623,39 +653,67 @@ export function evaluateAddedPaths(
       continue;
     }
     scanned++;
-    const scanIncomplete: ScanIncomplete[] = [];
-    if (blob.truncated) {
-      scanIncomplete.push({
+    // The branch gate must judge what the branch ends with as well as what it
+    // introduced: a file that was clean when added can gain a secret or grow
+    // past the size limit in a later commit.
+    const blobs: BoundedBlobRead[] = [blob];
+    if (!opts.preferStaged) {
+      const head = readGitBlobBounded(repoRoot, `HEAD:${normRepoPath(path)}`, maxRead);
+      if (head) {
+        blobs.push(head);
+        if (
+          head.size > resolved.maxAddedFileBytes &&
+          !isAllowlistedLargePath(path, resolved.largeFileAllowlist) &&
+          !(size != null && size > resolved.maxAddedFileBytes)
+        ) {
+          violations.push({
+            kind: "oversize",
+            path,
+            detail: `${head.size} bytes at HEAD (limit ${resolved.maxAddedFileBytes})`,
+          });
+        }
+      }
+    }
+    for (const b of blobs) {
+      const scanIncomplete: ScanIncomplete[] = [];
+      if (b.truncated) {
+        scanIncomplete.push({
+          path,
+          reason: `file is ${b.size} bytes but only the first ${maxRead} bytes were scanned`,
+        });
+      }
+      const { secrets: found, incomplete } = scanBuffersForSecrets(
+        b.buf,
         path,
-        reason: `file is ${blob.size} bytes but only the first ${maxRead} bytes were scanned`,
-      });
-    }
-    const { secrets: found, incomplete } = scanBuffersForSecrets(
-      blob.buf,
-      path,
-      resolved.maxDecompressBytes,
-      resolved.maxCompressedProbeOffsets,
-    );
-    scanIncomplete.push(...incomplete);
-    for (const hit of found) {
-      secrets.push(hit);
-      violations.push({ kind: "secret", path, detail: hit.type });
+        resolved.maxDecompressBytes,
+        resolved.maxCompressedProbeOffsets,
+      );
+      scanIncomplete.push(...incomplete);
+      for (const hit of found) {
+        secrets.push(hit);
+        violations.push({ kind: "secret", path, detail: hit.type });
+        if (secrets.length >= 20) break;
+      }
+      for (const inc of scanIncomplete) {
+        violations.push({
+          kind: "scan-incomplete",
+          path: inc.path,
+          detail: inc.reason,
+        });
+      }
       if (secrets.length >= 20) break;
-    }
-    for (const inc of scanIncomplete) {
-      violations.push({
-        kind: "scan-incomplete",
-        path: inc.path,
-        detail: inc.reason,
-      });
     }
     if (secrets.length >= 20) break;
   }
   return { violations, secrets };
 }
 
-function walkDirFiles(repoRoot: string, dir: string, budget: number, out: string[]): void {
-  if (budget <= 0) return;
+interface WalkState {
+  remaining: number;
+  capped: boolean;
+}
+
+function walkDirFiles(repoRoot: string, dir: string, state: WalkState, out: string[]): void {
   const abs = join(repoRoot, dir);
   let names: string[];
   try {
@@ -664,15 +722,22 @@ function walkDirFiles(repoRoot: string, dir: string, budget: number, out: string
     return;
   }
   for (const name of names) {
-    if (budget <= 0) return;
+    if (state.remaining <= 0) {
+      state.capped = true;
+      return;
+    }
     const rel = normRepoPath(join(dir, name));
     const full = join(repoRoot, rel);
     try {
-      const st = statSync(full);
-      if (st.isDirectory()) walkDirFiles(repoRoot, rel, budget - out.length, out);
+      // lstat: never follow a symlink (a directory cycle would recurse forever).
+      const st = lstatSync(full);
+      if (st.isSymbolicLink()) {
+        out.push(rel);
+        state.remaining--;
+      } else if (st.isDirectory()) walkDirFiles(repoRoot, rel, state, out);
       else {
         out.push(rel);
-        budget--;
+        state.remaining--;
       }
     } catch {
       /* skip */
@@ -708,8 +773,11 @@ export function expandCheckpointPaths(
     try {
       const st = statSync(abs);
       if (st.isFile()) out.push(p);
-      else if (st.isDirectory()) walkDirFiles(repoRoot, p, maxFiles - out.length, out);
-      else out.push(p);
+      else if (st.isDirectory()) {
+        const state: WalkState = { remaining: maxFiles - out.length, capped: false };
+        walkDirFiles(repoRoot, p, state, out);
+        if (state.capped) capped = true;
+      } else out.push(p);
     } catch {
       out.push(p);
     }

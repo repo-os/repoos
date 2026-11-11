@@ -1,10 +1,10 @@
 import { describe, expect, it, afterEach } from "vitest";
 import * as nodeZlib from "node:zlib";
-import { gzipSync } from "node:zlib";
+import { deflateSync, gzipSync } from "node:zlib";
 const zstdCompressSync = (nodeZlib as { zstdCompressSync?: (b: Buffer) => Buffer })
   .zstdCompressSync;
 import { execFileSync, spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -294,6 +294,83 @@ describe("review pass 3 regressions (#1096)", () => {
     expect(added).toContain("b.txt");
     const { violations } = evaluateAddedPaths(root, added, {});
     expect(violations.some((v) => v.kind === "secret")).toBe(true);
+  });
+});
+
+describe("review pass 4 regressions (#1096)", () => {
+  it("flags a secret added to a file after its first (clean) commit", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-later-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "notes.txt"), "hello\n");
+    git(root, "add", "notes.txt");
+    git(root, "commit", "-qm", "clean");
+    writeFileSync(join(root, "notes.txt"), "hello\n" + fakeStripeTestSecret() + "\n");
+    git(root, "commit", "-qam", "later secret");
+    const added = gitAddedPathsOnBranch(root, "main")!;
+    const { violations } = evaluateAddedPaths(root, added, {});
+    expect(violations.some((v) => v.kind === "secret" && v.path === "notes.txt")).toBe(true);
+  });
+
+  it("flags a file that grew past the size limit after it was added", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-grew-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "data.bin"), "small");
+    git(root, "add", "data.bin");
+    git(root, "commit", "-qm", "small");
+    writeFileSync(join(root, "data.bin"), Buffer.alloc(2 * 1024 * 1024, 5));
+    git(root, "commit", "-qam", "grow");
+    const added = gitAddedPathsOnBranch(root, "main")!;
+    const { violations } = evaluateAddedPaths(root, added, { maxAddedFileBytes: 1_048_576 });
+    expect(violations.some((v) => v.kind === "oversize" && v.path === "data.bin")).toBe(true);
+  });
+
+  it("scans an allowlisted file over 5 MiB (truncates, does not fail to read)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-bigallow-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "big.dat"), Buffer.alloc(6 * 1024 * 1024, 9));
+    git(root, "add", "big.dat");
+    git(root, "commit", "-qm", "big");
+    const added = gitAddedPathsOnBranch(root, "main")!;
+    const { violations } = evaluateAddedPaths(root, added, { largeFileAllowlist: ["big.dat"] });
+    expect(violations.some((v) => v.detail?.includes("could not read blob"))).toBe(false);
+    expect(violations.some((v) => v.kind === "oversize")).toBe(false);
+  });
+
+  it("finds a zlib payload at a non-zero offset", () => {
+    const payload = Buffer.concat([
+      Buffer.from("AAAA"),
+      deflateSync(Buffer.from(fakeStripeTestSecret())),
+    ]);
+    const { secrets } = scanBuffersForSecrets(payload, "z.bin", 1_048_576);
+    expect(secrets.length).toBeGreaterThan(0);
+  });
+
+  it("reports capped when directory expansion is cut off, across directories", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-walk-"));
+    dirs.push(root);
+    initRepo(root);
+    for (const d of ["d1", "d2"]) {
+      mkdirSync(join(root, d));
+      for (let i = 0; i < 30; i++) writeFileSync(join(root, d, `f${i}.txt`), "x");
+    }
+    const r = expandCheckpointPaths(root, ["d1", "d2"], 40);
+    expect(r.capped).toBe(true);
+    expect(r.paths.length).toBeLessThanOrEqual(40);
+  });
+
+  it("does not loop on a directory symlink cycle", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cycle-"));
+    dirs.push(root);
+    initRepo(root);
+    mkdirSync(join(root, "d"));
+    writeFileSync(join(root, "d", "a.txt"), "x");
+    symlinkSync("..", join(root, "d", "up"));
+    const r = expandCheckpointPaths(root, ["d"], 100);
+    expect(r.paths).toContain("d/a.txt");
+    expect(r.paths.length).toBeLessThan(10);
   });
 });
 
