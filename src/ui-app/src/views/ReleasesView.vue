@@ -2020,9 +2020,9 @@ a.rel-channel-name:hover {
   border-color: var(--amber-border-tint);
 }
 .rel-channel-state[data-state="updating"] {
-  color: var(--cyan);
-  background: var(--cyan-tint);
-  border-color: var(--cyan-border-tint, var(--border));
+  color: var(--violet);
+  background: var(--violet-tint);
+  border-color: var(--violet-border-tint);
 }
 .rel-channel-state[data-state="failed"] {
   color: var(--red);
