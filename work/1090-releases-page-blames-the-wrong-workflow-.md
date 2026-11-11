@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 387537
+last_close_out_gate_at: "2026-11-11T07:43:07.068Z"
 id: "1090"
 title: "Releases page blames the wrong workflow: an unrelated failed run shows as 'release workflow failed' while Homebrew is just updating"
 type: bug
@@ -11,7 +13,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T06:46:29Z"
+updated_at: "2026-11-11T07:43:07Z"
 review_passes: 3
 review_rounds: 2
 ---
@@ -100,3 +102,5 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:34:58Z · ↻ resuming engineer to read queued message
 - 2026-11-11T06:34:58Z · message_delivered: 3 message(s)
 - 2026-11-11T06:46:29Z · message_queued at 2026-11-11T06:46:29.327Z
+- 2026-11-11T07:43:07Z · close-out gate completed in 388s
+
