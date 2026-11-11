@@ -2,7 +2,7 @@
 id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T08:36:07Z"
+updated_at: "2026-11-11T08:36:08Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 5
@@ -153,3 +153,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T08:28:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T08:30:35Z · body
 - 2026-11-11T08:36:07Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T08:36:08Z · status active→review
