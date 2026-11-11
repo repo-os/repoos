@@ -92,3 +92,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:28:16Z · note: handoff requested (cli)
 - 2026-11-11T06:31:14Z · status active→review
 - 2026-11-11T06:31:14Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
+- 2026-11-11T06:31:14Z · message_queued at 2026-11-11T06:31:14.387Z
