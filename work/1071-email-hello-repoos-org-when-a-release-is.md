@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -201,3 +201,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T08:21:34Z · body
 - 2026-11-11T08:28:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T08:29:03Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-11T08:29:03Z · status active→review
