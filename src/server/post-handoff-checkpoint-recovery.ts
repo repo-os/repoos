@@ -132,10 +132,8 @@ export interface CheckpointRecoveryDeps {
   remoteValidator?: RemoteValidator;
   previews?: PreviewManager;
   onTaskLog?: (taskId: string, level: LogLevel, message: string) => void;
-  runner?: Pick<
-    AgentRunner,
-    "markHandoffInFlight" | "releaseHandoffInFlight" | "isHandoffInFlight"
-  >;
+  /** Required: the handoff slot is what makes recovery single-flight (#1085). */
+  runner: Pick<AgentRunner, "markHandoffInFlight" | "releaseHandoffInFlight" | "isHandoffInFlight">;
 }
 
 /**
@@ -151,7 +149,7 @@ export async function startPostHandoffCheckpointRecovery(
   const { config } = deps;
   const existing = readPostHandoffCheckpointRecovery(config, task.id);
   if (existing && existing.phase !== "failed") {
-    if (deps.runner?.isHandoffInFlight?.(task.id)) {
+    if (deps.runner.isHandoffInFlight(task.id)) {
       return { ok: false, reason: "checkpoint recovery is already running for this task" };
     }
     // The `review` phase is not slot-backed, but its delta review may still be
@@ -160,6 +158,11 @@ export async function startPostHandoffCheckpointRecovery(
       return { ok: false, reason: "the delta review for this task is still running" };
     }
     clearPostHandoffCheckpointRecovery(config, task.id);
+  }
+  // Claim the handoff slot synchronously, before any await, so a second Move to
+  // done cannot slip in between the start decision and the pipeline's claim.
+  if (!deps.runner.markHandoffInFlight(task.id)) {
+    return { ok: false, reason: "checkpoint recovery is already running for this task" };
   }
   writeRecovery(config, {
     taskId: task.id,
@@ -208,19 +211,21 @@ async function runRecoveryPipeline(
   const { config, reviews } = deps;
   const branch = task.branch;
   if (!branch) throw new Error("task has no branch");
-  const workdir = await getGitWorker(config.root).worktreePath(branch);
-  if (!workdir) throw new Error("feature worktree not found");
-
-  const headRes = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);
-  const liveHead = headRes.status === 0 ? headRes.stdout.trim() : headSha;
-  if (liveHead !== headSha) {
-    throw new Error(
-      `worktree HEAD moved during checkpoint recovery (${headSha.slice(0, 8)} → ${liveHead.slice(0, 8)})`,
-    );
-  }
-
-  const claimed = deps.runner?.markHandoffInFlight?.(task.id) ?? false;
+  // The slot was claimed by startPostHandoffCheckpointRecovery; hold it for the
+  // whole gate and release it however the gate ends.
+  let liveHead = headSha;
   try {
+    const workdir = await getGitWorker(config.root).worktreePath(branch);
+    if (!workdir) throw new Error("feature worktree not found");
+
+    const headRes = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);
+    liveHead = headRes.status === 0 ? headRes.stdout.trim() : headSha;
+    if (liveHead !== headSha) {
+      throw new Error(
+        `worktree HEAD moved during checkpoint recovery (${headSha.slice(0, 8)} → ${liveHead.slice(0, 8)})`,
+      );
+    }
+
     const handoff = await finalizeReviewHandoff(config, task, {
       checkpointRecovery: { approvedSha },
       taskChecks: deps.taskChecks,
@@ -236,7 +241,7 @@ async function runRecoveryPipeline(
       throw new Error(handoff.detail ?? `handoff gate failed at ${handoff.step}`);
     }
   } finally {
-    if (claimed) deps.runner?.releaseHandoffInFlight?.(task.id);
+    deps.runner.releaseHandoffInFlight(task.id);
   }
 
   writeRecovery(config, {
