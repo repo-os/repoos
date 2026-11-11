@@ -1,8 +1,13 @@
 ---
+updated_at: "2026-11-11T17:38:24Z"
+review_passes: 3
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the reported Kamrai case (system-domain LaunchDaemon, KeepAlive) is never detected, so `repoos restart` refuses it inst…"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,14 +16,10 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T16:58:14Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
-last_handoff_failure_sha: 60f9445261105da777b42d14a1ee98df2bc3c600
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 2
 dev_error_count: 13
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-11T16:03:13.143Z\",\"reason\":\"handoff-deferred\"}]"
@@ -164,3 +165,10 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T16:53:16Z · message_queued at 2026-11-11T16:53:16.863Z
 - 2026-11-11T16:53:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T16:58:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T17:28:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T17:36:20Z · status active→review
+- 2026-11-11T17:36:21Z · message_queued at 2026-11-11T17:36:21.577Z
+- 2026-11-11T17:36:21Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T17:38:24Z · note: review pass 3: needs some work
+- 2026-11-11T17:38:24Z · needs_input
+
