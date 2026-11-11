@@ -634,6 +634,34 @@ describe("release workflow CI attribution (#1090)", () => {
     expect(summary.channels[0]?.state).toBe("out-of-sync");
   });
 
+  it("keeps the window open while the release run is still in progress", async () => {
+    // The run's last recorded update (12:10) is more than the grace before the
+    // dispatch (12:35). An in-progress run keeps moving, so the window runs to now.
+    const { summary } = await statusWithTap(
+      [
+        {
+          event: "repository_dispatch",
+          status: "in_progress",
+          created_at: "2026-11-11T12:35:00.000Z",
+        },
+      ],
+      {
+        releaseRuns: [
+          {
+            id: 6,
+            html_url: "https://github.com/repo-os/repoos/actions/runs/6",
+            conclusion: null,
+            status: "in_progress",
+            created_at: "2026-11-11T12:00:00.000Z",
+            updated_at: "2026-11-11T12:10:00.000Z",
+          },
+        ],
+        nowMs: Date.parse("2026-11-11T12:40:00.000Z"),
+      },
+    );
+    expect(summary.channels[0]).toMatchObject({ state: "updating" });
+  });
+
   it("does not query the tap when no release run anchors the window", async () => {
     const { summary, urls } = await statusWithTap(
       [

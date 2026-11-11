@@ -436,7 +436,8 @@ instead in one of two cases, both anchored to the configured release workflow
   looks only at the `repoos-release.yml` ("Update RepoOS formula") workflow in
   the Homebrew tap, and only its `repository_dispatch` runs (the event the release
   workflow's "Request Homebrew tap update" step sends) that started between that
-  run's start and five minutes after its last update. The tap's other workflows
+  run's start and five minutes after its last update (or until now, while the
+  release run is still in progress). The tap's other workflows
   (its own CI, manual runs) never count, and neither does an earlier release's update.
   The run list does not carry the version, so the match is by time window, not by tag.
 
