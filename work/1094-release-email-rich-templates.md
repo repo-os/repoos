@@ -5,14 +5,14 @@ type: feature
 status: inbox
 needs_input: true
 needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
+needs_input_detail: "missing sections: Desired UX"
 priority: p3
 area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-11T05:28:26Z"
-updated_at: "2026-11-11T05:28:40Z"
+updated_at: "2026-11-11T07:43:59Z"
 ---
 ## Problem
 The first release-email cut (#1071) renders one plain HTML and text pair. The spec asked for grouped release notes, per-recipient unsubscribe and links that work for non-GitHub hosts. None of these fit the first cut, so they are filed here.
