@@ -46,6 +46,7 @@ import {
   firstValidActivityTimestamp,
   stateElapsedTip,
 } from "../lib/card-activity-recency";
+import { CHECK_WAIT_STALLED_MS } from "../../../core/check-wait.js";
 import { resolveSharedTaskCardStatus } from "../lib/task-card-status.js";
 import {
   AWAITING_FRESH_REVIEW_LABEL,
@@ -102,11 +103,14 @@ const cardChecksDisplay = computed(() => {
   if (startedAt) elapsed = formatDuration(Math.max(0, now.value - Date.parse(startedAt)));
   else if (slot?.ageMs != null) elapsed = formatDuration(slot.ageMs);
   const progress = cardCheckProgressFields(run);
+  const stale =
+    status?.stale === true || (slot?.ageMs != null && slot.ageMs >= CHECK_WAIT_STALLED_MS);
   return {
     progress,
     elapsed,
     reused: isReusedCheckOutput(run?.output),
     slow: !!slowCheck.value,
+    stale,
     handoffStep:
       !progress && !run ? (status?.step ?? repo.handoffSteps[id] ?? (slot ? "check" : null)) : null,
   };
@@ -139,11 +143,11 @@ const held = computed(() =>
 
 /** Keep the board on the same server landability result as the task drawer. */
 const landable = computed(() => repo.landableFor(props.task.id));
-const reviewChecksRunning = computed(
-  () =>
-    (repo.taskChecks[props.task.id] ?? []).some((run) => run.running) ||
-    repo.handoffStatuses[props.task.id]?.state === "running",
-);
+const reviewChecksRunning = computed(() => {
+  const handoff = repo.handoffStatuses[props.task.id];
+  const handoffBlocksReview = handoff?.state === "running" && handoff.stale !== true;
+  return (repo.taskChecks[props.task.id] ?? []).some((run) => run.running) || handoffBlocksReview;
+});
 const landableBlocker = computed(() =>
   landable.value?.checks.find((check) => check.status === "fail"),
 );
@@ -501,8 +505,10 @@ onMounted(() => {
   // Hydrate check runs so a reload mid-handoff still reads "running checks"
   // instead of "paused" (SSE only delivers events from now on).
   const id = props.task.id;
-  if (props.task.status === "active") {
+  if (props.task.status === "active" || props.task.status === "review") {
     void repo.refreshHandoffStatus(id);
+  }
+  if (props.task.status === "active") {
     void repo.refreshLocalCheckSlots();
   }
   if (props.task.status === "active" && repo.taskChecks[id] === undefined) {
@@ -517,7 +523,7 @@ watch(
   ([id, status, handoffState]) => {
     if (handoffStatusPoll) window.clearInterval(handoffStatusPoll);
     handoffStatusPoll = undefined;
-    if (status !== "active" || handoffState !== "running") return;
+    if ((status !== "active" && status !== "review") || handoffState !== "running") return;
     handoffStatusPoll = window.setInterval(() => void repo.refreshHandoffStatus(id), 3_000);
   },
   { immediate: true },
@@ -846,6 +852,7 @@ const sharedActiveStatus = computed(() => {
   return resolveSharedTaskCardStatus({
     handoffInFlight: repo.handoffInFlight(taskId),
     handoffState: status?.state,
+    handoffStale: status?.stale,
     handoffStep: status?.step ?? repo.handoffSteps[taskId],
     handoffRequested: props.task.pendingHandoff === true,
     checkInFlight: !!checkRun || !!checkSlot,
@@ -1881,6 +1888,7 @@ async function openDebuggerFromError(): Promise<void> {
             :elapsed="cardChecksDisplay.elapsed"
             :reused="cardChecksDisplay.reused"
             :slow="cardChecksDisplay.slow"
+            :stale="cardChecksDisplay.stale"
             :handoff-step="cardChecksDisplay.handoffStep"
             :status-line="props.task.status === 'active' ? sharedActiveStatus.label : null"
           />

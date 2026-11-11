@@ -13,6 +13,7 @@ const props = withDefaults(
     titlePrefix?: "card" | "drawer";
     elapsed?: string | null;
     slow?: boolean;
+    stale?: boolean;
     reused?: boolean;
     /** Drawer line 1 when scope is not a full check. */
     scopeLine?: string | null;
@@ -34,6 +35,7 @@ const props = withDefaults(
     titlePrefix: "card",
     elapsed: null,
     slow: false,
+    stale: false,
     reused: false,
     scopeLine: null,
     machineLine: null,
@@ -71,7 +73,8 @@ const cardLine = computed(() => {
     );
   } else parts.push("starting…");
   if (props.elapsed) parts.push(props.elapsed);
-  if (props.slow) parts.push("slow");
+  if (props.stale) parts.push("stale");
+  else if (props.slow) parts.push("slow");
   return parts.join(" · ");
 });
 

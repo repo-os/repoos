@@ -55,6 +55,8 @@ import {
   commitTaskFile,
   pathsChangedBetweenCommits,
   getChangedFilePaths,
+  gitRunLockContention,
+  retryOnGitLock,
   restoreForeignTaskBookkeepingFromMain,
   foreignTaskBookkeepingPaths,
 } from "../core/git.js";
@@ -1190,7 +1192,10 @@ async function runHandoffFinalization(
     finalizedReport = finalized.report;
     const reportRound = finalized.report.round;
     const reportPath = engineeringReportRelPath(config, task.id, reportRound);
-    const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
+    const staged = await retryOnGitLock(
+      () => runGit(workdir, ["add", "--", reportPath], 10_000),
+      gitRunLockContention,
+    );
     if (staged.status !== 0)
       return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
     const stagedDiff = await runGit(
@@ -1204,19 +1209,23 @@ async function runHandoffFinalization(
         task.id,
         handoffDeadlineAt,
         () =>
-          runGit(
-            workdir,
-            [
-              "commit",
-              "-m",
-              `docs: record engineering report for #${task.id} round ${reportRound}`,
-              // Pathspec, not a bare commit: this runs after the check gate (minutes
-              // long), well past the one-shot foreign-bookkeeping restore, and a
-              // sibling staged in that window must not ride this commit (#1076).
-              "--",
-              reportPath,
-            ],
-            20_000,
+          retryOnGitLock(
+            () =>
+              runGit(
+                workdir,
+                [
+                  "commit",
+                  "-m",
+                  `docs: record engineering report for #${task.id} round ${reportRound}`,
+                  // Pathspec, not a bare commit: this runs after the check gate (minutes
+                  // long), well past the one-shot foreign-bookkeeping restore, and a
+                  // sibling staged in that window must not ride this commit (#1076).
+                  "--",
+                  reportPath,
+                ],
+                20_000,
+              ),
+            gitRunLockContention,
           ),
         checkGateBusyRun,
       );
