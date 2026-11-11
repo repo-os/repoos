@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T09:53:58Z"
+updated_at: "2026-11-11T10:12:13Z"
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -232,3 +232,4 @@ FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every 
 - 2026-11-11T09:49:37Z · message_delivered: 2 message(s)
 - 2026-11-11T09:49:40Z · note: handoff requested (cli)
 - 2026-11-11T09:53:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T10:12:13Z · message_queued at 2026-11-11T10:12:13.262Z
