@@ -182,3 +182,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T06:09:20Z · message_queued at 2026-11-11T06:09:20.179Z
 - 2026-11-11T06:09:20Z · handoff failed · task-file handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
 - 2026-11-11T06:11:08Z · message_delivered: 1 message(s)
+- 2026-11-11T06:28:47Z · note: handoff requested (cli)
