@@ -260,7 +260,7 @@ const cases: Case[] = [
     status: "fail",
     detail: "the diff changes another task's bookkeeping: work/0123-other-task.md",
     nextStep:
-      "Handoff restores work/0123-other-task.md from main automatically; or in the worktree run git checkout main -- <paths>, commit on the branch, then re-request review",
+      "Re-request review — handoff (or repoos sync) heals work/0123-other-task.md from main; post-merge siblings are dropped from the branch, not copied in",
   },
   {
     name: "diff changes an input",

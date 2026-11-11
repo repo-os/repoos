@@ -130,6 +130,7 @@ import {
   saveBuiltInAgentsConfig,
   projectDisplayName,
   worktreesDir,
+  bookkeepingDirs,
 } from "../core/config.js";
 import {
   ensureWorktree,
@@ -3432,6 +3433,23 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       autoResolve: [rel],
     });
     const wtPath = await getGitWorker(config.root).worktreePath(task.branch);
+    const healDirs = bookkeepingDirs(config);
+    const healForeignBookkeeping = async (): Promise<void> => {
+      if (!wtPath || !task.branch) return;
+      try {
+        await restoreForeignTaskBookkeepingFromMain({
+          worktree: wtPath,
+          baseBranch: await resolveDefaultBranch(config.root),
+          taskId: task.id,
+          ownTaskFile: task.path,
+          workDir: healDirs.workDir,
+          inputsDir: healDirs.inputsDir,
+          storiesDir: healDirs.storiesDir,
+        });
+      } catch {
+        // Best-effort; handoff runs the same heal before review.
+      }
+    };
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
       const mainUpdated = patchTaskFile(
@@ -3456,6 +3474,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
     if (!result.ok) {
       await setNeedsMerge(true);
+      await healForeignBookkeeping();
       return {
         ok: false,
         conflicts: result.conflicts,
@@ -3464,21 +3483,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
 
     await setNeedsMerge(false);
-    // A sync merge can leave committed sibling bookkeeping the branch should
-    // not carry; heal it the same way handoff does (#1086).
-    if (wtPath && task.branch) {
-      try {
-        await restoreForeignTaskBookkeepingFromMain({
-          worktree: wtPath,
-          baseBranch: await resolveDefaultBranch(config.root),
-          taskId: task.id,
-          ownTaskFile: task.path,
-          workDir: config.workDir,
-        });
-      } catch {
-        // Best-effort: sync already succeeded; handoff will retry the restore.
-      }
-    }
+    await healForeignBookkeeping();
     return { ok: true, conflicts: [] };
   }
 

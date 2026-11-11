@@ -2790,10 +2790,82 @@ export async function stagedForeignBookkeepingPaths(
   return foreignTaskBookkeepingPaths(staged, filter);
 }
 
+const REPOOS_CONFIG_PATH = "repoos.toml";
+
 /**
- * Restore main's copy of another task's `work/` bookkeeping that a task branch
- * has committed or staged (#1076, #1086), so the branch's diff against main is
- * only ever this task's own files.
+ * Paths under managed bookkeeping dirs that a task branch must not carry — the
+ * same set `isForbiddenTaskScopePath` flags for landing, except `repoos.toml`
+ * (handled by `guardStrayRepoosTomlOnTaskBranch`). Covers `work/`, `inputs/`,
+ * and `stories/` (#1086).
+ */
+export function foreignScopeDriftPaths(
+  paths: string[],
+  opts: {
+    taskId: string;
+    ownTaskFile: string | null;
+    workDir?: string;
+    inputsDir?: string;
+    storiesDir?: string;
+  },
+): string[] {
+  const workDir = opts.workDir ?? "work";
+  const inputsDir = opts.inputsDir ?? "inputs";
+  const storiesDir = opts.storiesDir ?? "stories";
+  const inputsPrefix = withTrailingSlash(inputsDir);
+  const storiesPrefix = withTrailingSlash(storiesDir);
+  const workPrefix = withTrailingSlash(workDir);
+  const workForeign = new Set(
+    foreignTaskBookkeepingPaths(
+      paths.filter((p) => p.startsWith(workPrefix)),
+      { workDir, taskId: opts.taskId },
+    ),
+  );
+  return paths.filter((p) => {
+    if (p === REPOOS_CONFIG_PATH || p === opts.ownTaskFile) return false;
+    if (p.startsWith(workPrefix)) return workForeign.has(p);
+    if (p.startsWith(inputsPrefix) || p.startsWith(storiesPrefix)) return true;
+    return false;
+  });
+}
+
+async function foreignBookkeepingHealCandidates(
+  worktree: string,
+  baseFull: string,
+  dirPrefixes: string[],
+): Promise<string[] | null> {
+  const paths = new Set<string>();
+  const addLines = (stdout: string): void => {
+    for (const p of stdout
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean)) {
+      paths.add(p);
+    }
+  };
+  const committed = await runGit(
+    worktree,
+    ["diff", "--name-only", `${baseFull}..HEAD`, "--", ...dirPrefixes],
+    15_000,
+  );
+  if (committed.status !== 0) return null;
+  addLines(committed.stdout);
+  for (const args of [
+    ["diff", "--cached", "--name-only", "--", ...dirPrefixes],
+    ["diff", "--name-only", "--", ...dirPrefixes],
+    ["ls-files", "--others", "--exclude-standard", "--", ...dirPrefixes],
+  ] as const) {
+    const run = await runGit(worktree, [...args], 15_000);
+    if (run.status !== 0) return null;
+    addLines(run.stdout);
+  }
+  return [...paths];
+}
+
+/**
+ * Restore main's copy of foreign bookkeeping under `work/`, `inputs/`, and
+ * `stories/` on a task branch (#1076, #1086). Candidates come from committed
+ * drift, the index, the working tree, and untracked files so handoff does not
+ * leave the reporter's "modified + untracked" siblings behind.
  *
  * Same rule close-out applies (`resetForeignWorkFiles`), with one nuance (#1086):
  * siblings present at the merge-base get main's current tip; post-merge siblings
@@ -2816,8 +2888,13 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
   /** This task's own task file (repo-relative) — never restored or removed. */
   ownTaskFile: string | null;
   workDir?: string;
+  inputsDir?: string;
+  storiesDir?: string;
 }): Promise<string[]> {
   const workDir = opts.workDir ?? "work";
+  const inputsDir = opts.inputsDir ?? "inputs";
+  const storiesDir = opts.storiesDir ?? "stories";
+  const dirPrefixes = [workDir, inputsDir, storiesDir].map(withTrailingSlash);
   const mainSha = (
     await runGit(opts.worktree, ["rev-parse", "--verify", `${opts.baseBranch}^{commit}`], 15_000)
   ).stdout.trim();
@@ -2826,17 +2903,15 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
     await runGit(opts.worktree, ["merge-base", opts.baseBranch, "HEAD"], 15_000)
   ).stdout.trim();
   if (!baseFull) return [];
-  const changed = await runGit(
-    opts.worktree,
-    ["diff", "--name-only", `${baseFull}..HEAD`, "--", withTrailingSlash(workDir)],
-    15_000,
-  );
-  if (changed.status !== 0) return [];
-  const candidates = changed.stdout
-    .split("\n")
-    .map((s) => s.trim())
-    .filter((p) => p && p !== opts.ownTaskFile);
-  const foreign = foreignTaskBookkeepingPaths(candidates, { workDir, taskId: opts.taskId });
+  const candidates = await foreignBookkeepingHealCandidates(opts.worktree, baseFull, dirPrefixes);
+  if (candidates === null) return [];
+  const foreign = foreignScopeDriftPaths(candidates, {
+    taskId: opts.taskId,
+    ownTaskFile: opts.ownTaskFile,
+    workDir,
+    inputsDir,
+    storiesDir,
+  });
   if (foreign.length === 0) return [];
 
   // Foreign bookkeeping the branch touched is healed in two classes (#1076, #1086):
@@ -2871,33 +2946,67 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
     await runGit(opts.worktree, ["add", "--", ...restoreFromMain], 10_000);
   }
   if (dropFromBranch.length > 0) {
+    const trackedDrop: string[] = [];
+    const untrackedDrop: string[] = [];
+    for (const p of dropFromBranch) {
+      const listed = await runGit(opts.worktree, ["ls-files", "--", p], 5_000);
+      if (listed.status === 0 && listed.stdout.trim()) trackedDrop.push(p);
+      else untrackedDrop.push(p);
+    }
     // `-f`: a branch-added sibling can also have a dirty working-tree copy (a
     // board write lands after the branch added it). Plain `git rm` refuses
     // ("has local modifications") and would abort the handoff on the very drift
     // this restores — force it, since a task never keeps another task's
     // bookkeeping anyway.
-    const removed = await runGit(opts.worktree, ["rm", "-qf", "--", ...dropFromBranch], 10_000);
-    if (removed.status !== 0) {
-      throw new Error(`could not drop stray bookkeeping files: ${removed.stderr.trim()}`);
+    if (trackedDrop.length > 0) {
+      const removed = await runGit(opts.worktree, ["rm", "-qf", "--", ...trackedDrop], 10_000);
+      if (removed.status !== 0) {
+        throw new Error(`could not drop stray bookkeeping files: ${removed.stderr.trim()}`);
+      }
+    }
+    if (untrackedDrop.length > 0) {
+      const cleaned = await runGit(opts.worktree, ["clean", "-f", "--", ...untrackedDrop], 10_000);
+      if (cleaned.status !== 0) {
+        throw new Error(`could not remove untracked bookkeeping: ${cleaned.stderr.trim()}`);
+      }
     }
   }
-  const staged = await runGit(
+  const stagedList = await runGit(
     opts.worktree,
-    ["diff", "--cached", "--quiet", "--", ...foreign],
+    ["diff", "--cached", "--name-only", "--", ...foreign],
     10_000,
   );
-  if (staged.status !== 1) return [];
-  // Pathspec-scoped commit: only the foreign paths are committed, so anything
-  // else the index happened to hold (the task's own staged work, a stray
-  // `git add -A`) is left exactly as it was for the commit gate to handle.
+  if (stagedList.status !== 0) {
+    throw new Error(
+      `could not list staged bookkeeping restore: ${stagedList.stderr.trim() || stagedList.stdout.trim()}`,
+    );
+  }
+  const toCommit = stagedList.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (toCommit.length === 0) return foreign;
+  const staged = await runGit(
+    opts.worktree,
+    ["diff", "--cached", "--quiet", "--", ...toCommit],
+    10_000,
+  );
+  if (staged.status === 0) return foreign;
+  if (staged.status !== 1) {
+    throw new Error(
+      `could not verify staged bookkeeping restore: ${staged.stderr.trim() || staged.stdout.trim()}`,
+    );
+  }
+  // Pathspec-scoped commit: only paths that are actually staged are committed,
+  // so an index-only drop (staged sibling removed, never on HEAD) needs no commit.
   const commit = await runGit(
     opts.worktree,
     [
       "commit",
       "-m",
-      `chore(#${opts.taskId}): restore main's copy of ${foreign.length} other task's bookkeeping file(s)`,
+      `chore(#${opts.taskId}): restore main's copy of ${toCommit.length} other task's bookkeeping file(s)`,
       "--",
-      ...foreign,
+      ...toCommit,
     ],
     20_000,
   );

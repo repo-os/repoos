@@ -425,7 +425,7 @@ export function evaluateTaskScopeCheck(facts: {
         : `the diff changes another task's bookkeeping: ${quoteList(forbidden)}`,
       nextStep: config
         ? "Remove repoos.toml from the branch and re-request review"
-        : `Handoff restores ${quoteList(forbidden)} from main automatically; or in the worktree run git checkout main -- <paths>, commit on the branch, then re-request review`,
+        : `Re-request review — handoff (or repoos sync) heals ${quoteList(forbidden)} from main; post-merge siblings are dropped from the branch, not copied in`,
     };
   }
   return {

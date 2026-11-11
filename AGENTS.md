@@ -236,8 +236,9 @@ test suite, a headless WebKit UI smoke test and a rendered contrast audit
   `work/<other-id>-*.md` or `work/reports/<other-id>/**` never belongs on your
   branch; the landing preflight says "the diff changes another task's
   bookkeeping". The WIP checkpoint commits only intended paths, and handoff
-  restores the branch point's copy of any foreign file as one bookkeeping
-  commit — you never fix it by hand. Details: `docs/agent-workflow-rules.md`.
+  restores main's copy of foreign `work/`, `inputs/`, and `stories/` bookkeeping
+  as one commit (including dirty or untracked siblings). Details:
+  `docs/agent-workflow-rules.md`.
 - **`repoos mv <id> done` never merges** (#0389/#0185 were marked done with
   unmerged branches). `cmdMv` refuses when the recorded branch isn't an ancestor
   of `main` unless `--force-not-merged`, but that's a backstop. Use Move to done.
