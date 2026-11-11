@@ -3,9 +3,6 @@ id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "error: Transport"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T16:41:45Z"
+updated_at: "2026-11-11T16:42:18Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
 last_handoff_failure_sha: 60f9445261105da777b42d14a1ee98df2bc3c600
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
@@ -163,3 +160,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T16:29:47Z · message_delivered: 1 message(s)
 - 2026-11-11T16:41:45Z · agent exited with an error (opencode) · error: Transport
 - 2026-11-11T16:41:45Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · error: Transport
+- 2026-11-11T16:42:18Z · needs_input
