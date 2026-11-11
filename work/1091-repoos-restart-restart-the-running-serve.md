@@ -15,8 +15,6 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
 updated_at: "2026-11-11T20:40:07Z"
-last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/commands/restart.ts, src/core/server-restart.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
-last_handoff_failure_sha: bb14f9d305fde0eb478da02eed80e343eb2457c8
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -203,3 +201,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T20:33:00Z · body
 - 2026-11-11T20:40:05Z · body
 - 2026-11-11T20:40:07Z · status active→review
+
