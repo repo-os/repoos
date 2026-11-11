@@ -2,12 +2,12 @@
 id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
-status: ready
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
@@ -43,3 +43,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T02:58:46Z · screenshots
 - 2026-11-11T10:48:12Z · status inbox→ready
 - 2026-11-11T10:48:13Z · cli_override, model_override
+- 2026-11-11T10:48:13Z · status ready→active, branch
