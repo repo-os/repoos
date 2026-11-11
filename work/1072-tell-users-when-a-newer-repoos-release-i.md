@@ -2,7 +2,7 @@
 id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
-status: review
+status: active
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
@@ -12,9 +12,9 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T05:00:49Z"
+updated_at: "2026-11-11T05:00:50Z"
+review_rounds: 2
 review_passes: 2
-review_rounds: 1
 dev_error_count: 3
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T04:21:52.567Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -105,3 +105,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:59:22Z · message_queued at 2026-11-11T04:59:22.076Z
 - 2026-11-11T05:00:49Z · note: review pass 2: needs some work
 - 2026-11-11T05:00:49Z · message_delivered: 2 message(s)
+- 2026-11-11T05:00:50Z · status review→active
