@@ -95,3 +95,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T04:01:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T04:21:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Adding integration tests for CLI/API warnings and the split scaffold, then finishing the engineering report and shots. · stderr: RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T04:22:26Z · message_queued at 2026-11-11T04:22:26.665Z
+- 2026-11-11T04:22:26Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate
