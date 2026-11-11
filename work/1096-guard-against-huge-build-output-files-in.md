@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T19:23:16Z"
+updated_at: "2026-11-11T19:42:25Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -67,3 +67,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T18:58:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T19:14:42Z · body
 - 2026-11-11T19:23:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:42:25Z · handoff failed · remote validation failed: test failure: tests/debugger-integration.test.ts > debugger agent integration > runs a diagnosis when enabled and serves it back, tests/debugger-integration.test.ts > debugger agent integration > does not re-broadcast a turn the panel already drew optimistically (#0443), tests/mtd-docs-fast-path.test.ts > validateCandidate docs-only fast path (#0355) > runs a declared bootstrap check without inventing a build step on thinkpad — fix it in the feature branch and re-run the gate
