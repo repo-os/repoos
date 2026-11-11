@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-11T12:32:51Z"
-review_passes: 2
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
+updated_at: "2026-11-11T12:32:53Z"
+review_passes: 2
 review_rounds: 1
 routing_switches: 1
 ---
@@ -73,4 +73,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T12:30:32Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T12:32:51Z · message_queued at 2026-11-11T12:32:51.185Z
 - 2026-11-11T12:32:51Z · note: review pass 2: needs some work
-
+- 2026-11-11T12:32:53Z · message_delivered: 1 message(s)
