@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 71374
-last_close_out_gate_at: "2026-11-11T03:41:41.443Z"
 id: "1086"
 title: Branch fails scope check on other tasks' bookkeeping that main legitimately has; sync does not bring it in (kamrai report)
 type: bug
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: e24c3dbfd5db301e83c94a5c47f031aba86875a9
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/branch-fails-scope-check-on-other-tasks-
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
 updated_at: "2026-11-11T03:41:41Z"
+last_close_out_gate_ms: 71374
+last_close_out_gate_at: "2026-11-11T03:41:41.443Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 1

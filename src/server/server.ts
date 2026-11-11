@@ -142,6 +142,7 @@ import {
   runGit,
   setGitLockFailureSink,
 } from "../core/git.js";
+import { healForeignBookkeepingAfterSync } from "./sync-bookkeeping-heal.js";
 import { setGitMaintenanceLockSink } from "../core/git-maintenance.js";
 import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import {
@@ -3461,6 +3462,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
     if (!result.ok) {
       await setNeedsMerge(true);
+      await healForeignBookkeepingAfterSync(config, task, wtPath);
       return {
         ok: false,
         conflicts: result.conflicts,
@@ -3469,6 +3471,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
 
     await setNeedsMerge(false);
+    await healForeignBookkeepingAfterSync(config, task, wtPath);
     return { ok: true, conflicts: [] };
   }
 
