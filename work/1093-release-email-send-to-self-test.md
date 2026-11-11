@@ -3,16 +3,13 @@ id: "1093"
 title: "Release email: send-to-self test"
 type: chore
 status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Problem, Acceptance criteria, Notes for AI; body under 400 characters (excluding original prompt)"
 priority: p3
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-11T05:28:23Z"
-updated_at: "2026-11-11T05:28:38Z"
+updated_at: "2026-11-11T07:43:59Z"
 ---
 ## Problem
 The release-email tests (#1071) inject a fake fetch and check the send loop, but nothing drives the real sendEmail wiring from a cut through to the Resend request. A regression in the From header or the request shape would pass the current suite.
@@ -30,3 +27,4 @@ See src/server/email.ts and src/server/release-email.ts. Do not put any real key
 - 2026-11-11T05:28:23Z · created · njachowski@gmail.com
 - 2026-11-11T05:28:24Z · needs_input
 - 2026-11-11T05:28:38Z · body: Problem (added); Acceptance criteria (added); Notes for AI (added)
+- 2026-11-11T07:43:59Z · needs_input
