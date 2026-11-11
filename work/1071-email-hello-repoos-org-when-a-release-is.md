@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 priority: p2
@@ -13,7 +13,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T19:39:23Z"
+updated_at: "2026-11-11T19:39:27Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > uses one representative block while the gated collection is not loaded, tests/app-loading-skeleton.test.ts > repo loading skeleton > renders each skeleton kind from the real column or representative-block layout on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 27026587838fdfde40d67c7e32893fddf8ce0ef0
 review_passes: 6
@@ -291,3 +291,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T19:39:21Z · engineer stopped by request
 - 2026-11-11T19:39:22Z · needs_input
 - 2026-11-11T19:39:23Z · needs_input
+- 2026-11-11T19:39:27Z · status active→review
