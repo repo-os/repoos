@@ -11,7 +11,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T01:04:35Z"
+updated_at: "2026-11-11T01:04:36Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -80,3 +80,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T00:59:09Z · status review→active
 - 2026-11-11T01:04:35Z · body: Accepted scope and known limitations (added)
 - 2026-11-11T01:04:35Z · message_queued at 2026-11-11T01:04:35.833Z
+- 2026-11-11T01:04:36Z · message_queued at 2026-11-11T01:04:36.538Z
