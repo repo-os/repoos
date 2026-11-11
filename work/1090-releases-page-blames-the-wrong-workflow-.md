@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T06:11:58Z"
+updated_at: "2026-11-11T06:14:26Z"
 review_rounds: 2
 review_passes: 2
 deferred_handoff_resume_count: 1
@@ -82,3 +82,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:11:08Z · message_queued at 2026-11-11T06:11:08.979Z
 - 2026-11-11T06:11:09Z · ↻ resuming engineer to read queued message
 - 2026-11-11T06:11:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T06:14:26Z · note: ui verification passed: 1 shot captured with clean console
