@@ -347,6 +347,25 @@ describe("refreshUpdateCheckCache", () => {
     );
   });
 
+  it("fetchLatestRelease turns a 429 with Retry-After into a typed error carrying the delay", async () => {
+    const { fetchLatestRelease } = await import("../commands/upgrade.js");
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response("rate limited", {
+        status: 429,
+        headers: { "Retry-After": "120" },
+      })) as typeof fetch;
+    try {
+      await expect(fetchLatestRelease(null)).rejects.toMatchObject({
+        name: "UpdateCheckFetchError",
+        status: 429,
+        retryAfterMs: 120_000,
+      });
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
   it("honours a Retry-After value on a rate-limit response", async () => {
     const path = updateCheckCachePath(home);
     const base = 1_700_000_000_000;

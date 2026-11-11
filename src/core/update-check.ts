@@ -4,7 +4,7 @@
  * `docs/update-check.md`.
  */
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { RepoOSConfig } from "./types.js";
@@ -132,7 +132,11 @@ export function readUpdateCheckCache(
 export function writeUpdateCheckCache(path: string, cache: UpdateCheckCache): void {
   try {
     mkdirSync(join(path, ".."), { recursive: true });
-    writeFileSync(path, JSON.stringify(cache, null, 2) + "\n", "utf8");
+    // Temp file then rename: a concurrent reader sees the old or the new file,
+    // never a truncated one (which would read as no cache and lose lastNoticeAt).
+    const tmp = `${path}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify(cache, null, 2) + "\n", "utf8");
+    renameSync(tmp, path);
   } catch {
     /* cache is best-effort */
   }
