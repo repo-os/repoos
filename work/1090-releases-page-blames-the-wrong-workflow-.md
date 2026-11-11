@@ -70,3 +70,4 @@ FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress mus
 - 2026-11-11T05:51:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T05:52:51Z · status active→review
 - 2026-11-11T05:52:51Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
+- 2026-11-11T05:52:51Z · message_queued at 2026-11-11T05:52:51.574Z
