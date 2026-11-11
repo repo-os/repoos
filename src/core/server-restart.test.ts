@@ -71,6 +71,38 @@ describe("restartRepoServer", () => {
     expect(result.newPid).toBe(21);
   });
 
+  it("external-supervisor success reports the new pid after the supervisor respawns", async () => {
+    const stop = vi.fn();
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 31 }),
+      classify: async () => "external-supervisor",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({ ok: true, root, serverVersion: "0.5.80", activeEngineers: 0 }),
+      supervisor: () => null,
+      stop,
+      verifyPid: () => true,
+      wait: async () => ({ ok: true, pid: 32, version: "0.5.82" }),
+    });
+    expect(stop).toHaveBeenCalledWith(31);
+    expect(result).toMatchObject({ ok: true, path: "external-supervisor", oldPid: 31, newPid: 32 });
+    expect(result.newVersion).toBe("0.5.82");
+  });
+
+  it("an uncertain supervisor refuses and says kill only stops the server", async () => {
+    const stop = vi.fn();
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 33 }),
+      classify: async () => "refuse-supervised-unknown",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({ ok: true, root, serverVersion: "0.5.80", activeEngineers: 0 }),
+      stop,
+      verifyPid: () => true,
+    });
+    expect(result.ok).toBe(false);
+    expect(stop).not.toHaveBeenCalled();
+    expect(result.manualCommand).toMatch(/stays down|stops it/);
+  });
+
   it("external-supervisor reports manual command when respawn times out", async () => {
     const result = await restartRepoServer(root, {
       locate: async () => server({ pid: 30 }),
@@ -159,7 +191,7 @@ describe("restartRepoServer", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.oldPid).toBe(60);
-    expect(result.manualCommand).toBe("kill 60");
+    expect(result.manualCommand).toMatch(/^kill 60 /);
   });
 
   it("hand-run aborts before spawning when the old pid will not exit", async () => {

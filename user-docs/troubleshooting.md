@@ -200,8 +200,12 @@ know it, and `launchctl kickstart` wants `sudo` you may not have.
 lockfile, sees the supervisor, and — when the process belongs to you — signals
 exactly that pid so the supervisor respawns it, then waits for `/api/health` to
 answer with a new pid. No sudo, no guessing, and it never `pkill`s by name.
+A stop is a real shutdown, so in-flight reviews, PM runs, previews and dev targets
+are cancelled (the UI's reload keeps them); `repoos restart` warns before it stops.
 
 If RepoOS cannot read the supervisor's label it refuses and prints the manual
 command rather than risk a half-restart; copy that command and run it yourself.
+A plain `kill <pid>` there only stops the server: it stays down unless its
+supervisor respawns it.
 If the pid belongs to another user (root, or a different account) it refuses for
 the same reason — restart under that account or ask an administrator.

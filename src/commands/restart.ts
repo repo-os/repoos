@@ -32,6 +32,13 @@ export async function cmdRestart(argv: string[]): Promise<void> {
   const result = await restartRepoServer(root, {
     portFilter,
     onBeforeStop: ({ activeEngineers }) => {
+      // A stop is a real shutdown, not the UI's reload handover: in-flight
+      // reviews, PM/freeform runs, previews and dev targets are cancelled too.
+      console.log(
+        c.yellow(
+          "  ⚠ Restarting cancels any in-flight reviews, PM runs, previews and dev targets (the UI's reload keeps them).",
+        ),
+      );
       if (activeEngineers > 0) {
         console.log(
           c.yellow(

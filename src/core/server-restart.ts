@@ -97,7 +97,9 @@ export async function classifyRestartPath(
   server: LocatedServer,
 ): Promise<RestartPath | "refuse-supervised-unknown"> {
   const managed = await getServiceStatus(root);
-  if (managed?.status === "running") return "managed-service";
+  // Only the managed service when it is the server that was located: a hand-run
+  // server on another port must not be "restarted" by bouncing the service.
+  if (managed?.status === "running" && managed.port === server.port) return "managed-service";
   const detected = detectSupervisor(server.pid);
   if (detected.kind === "external") return "external-supervisor";
   // A RepoOS service unit whose registry entry is missing or not `running`:
@@ -384,7 +386,11 @@ export async function restartRepoServer(
           : detected.kind === "managed"
             ? `pid ${server.pid} is the RepoOS service ${detected.job}, but the service manager does not report it running — use \`repoos service restart\` instead of signalling it.`
             : "Could not determine how this server is supervised — refusing to restart automatically.",
-      manualCommand: detected.kind === "managed" ? "repoos service restart" : `kill ${server.pid}`,
+      // `kill` only stops the server, so say so rather than offering it as a restart.
+      manualCommand:
+        detected.kind === "managed"
+          ? "repoos service restart"
+          : `kill ${server.pid}   # stops it; it stays down unless its supervisor respawns it, then run: repoos serve --port ${server.port}`,
     };
   }
 
@@ -448,7 +454,9 @@ export async function restartRepoServer(
         path,
         oldPid,
         oldVersion,
-        message: waited.reason ?? "Supervisor did not respawn the server in time",
+        message:
+          (waited.reason ?? "Supervisor did not respawn the server in time") +
+          ` The old server (pid ${oldPid}) has been stopped, so the server may be DOWN now.`,
         manualCommand: supervisor?.manualCommand,
       };
     }
@@ -480,7 +488,8 @@ export async function restartRepoServer(
       path,
       oldPid,
       oldVersion,
-      message: `Server pid ${oldPid} did not exit within 8s — refusing to start a second serve on port ${server.port}.`,
+      message: `Server pid ${oldPid} was sent SIGTERM but did not exit within 8s — refusing to start a second serve on port ${server.port}. It may still be shutting down; check \`repoos status\`.`,
+      manualCommand: `kill ${oldPid}   # if it is still alive after a minute, then: cd ${root} && repoos serve --port ${server.port}`,
     };
   }
 
@@ -504,7 +513,9 @@ export async function restartRepoServer(
       oldPid,
       oldVersion,
       message: `Failed to start hand-run server: ${spawnResult.error}`,
-      manualCommand: `cd ${root} && repoos serve --port ${server.port}`,
+      manualCommand: `cd ${root} && repoos serve --port ${server.port}${
+        resolveFlags(server).length ? " " + resolveFlags(server).join(" ") : ""
+      }`,
     };
   }
 
