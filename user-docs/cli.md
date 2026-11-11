@@ -230,7 +230,7 @@ done wait by default in human mode).
 | `repoos done <id> --cancel` (`repoos abort <id>`) | `POST /api/tasks/:id/done/cancel` |
 | `repoos api <METHOD> /api/<path> [--json body] [--port N]` | Any `/api/` route |
 | `repoos landable <id>` | `GET /api/tasks/:id/landable` — read-only merge readiness checks; exits non-zero unless the task is ready to merge (`--json` for a stable checklist shape) |
-| `repoos handoff-status <id>` | `GET /api/tasks/:id/handoff-status` — non-blocking latest handoff state (`not_requested`, `running`, `passed`, `failed`, `deferred`), step and reason; never starts or waits for a handoff |
+| `repoos handoff-status <id>` | `GET /api/tasks/:id/handoff-status` — non-blocking latest handoff state (`not_requested`, `running`, `passed`, `failed`, `deferred`, `superseded`), step and reason; never starts or waits for a handoff |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
 | `repoos dev [list]` · `repoos dev <name> start\|stop\|restart\|status\|logs` | `GET`/`POST /api/dev/targets` |

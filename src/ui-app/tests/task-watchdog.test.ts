@@ -44,6 +44,7 @@ import {
   localFallbackSerializeLockRoot,
 } from "../../core/cross-process-slots";
 import { HANDOFF_DEADLINE_MS } from "../../server/handoff";
+import { beginHandoffStatus, readHandoffStatus } from "../../server/handoff-status";
 import {
   writeQueueMarker,
   readQueueMarkers,
@@ -1731,6 +1732,27 @@ describe("watchdog check-wait escalation (#0974)", () => {
     await watchdog.checkNow();
     const bodyTwice = readFileSync(fx.taskPath, "utf8");
     expect(bodyTwice).toBe(bodyOnce);
+    runner.dispose();
+    fx.clean();
+  });
+
+  it("supersedes an orphan running handoff record on each scan (#1085)", async () => {
+    const fx = makeFx(500);
+    writeFileSync(
+      fx.taskPath,
+      readFileSync(fx.taskPath, "utf8").replace(/^status: active$/m, "status: review"),
+    );
+    const index = new LiveIndex(fx.config);
+    index.refreshAll();
+    const runner = new AgentRunner(fx.config, () => {});
+    vi.spyOn(runner, "isHandoffInFlight").mockReturnValue(false);
+    vi.spyOn(runner, "hasPendingHandoff").mockReturnValue(false);
+    beginHandoffStatus(fx.config, "0001", { attemptKey: "orphan", step: "validate" });
+    const watchdog = new TaskWatchdog(fx.config, index, runner, 1000);
+
+    await watchdog.checkNow();
+
+    expect(readHandoffStatus(fx.config, "0001").state).toBe("superseded");
     runner.dispose();
     fx.clean();
   });

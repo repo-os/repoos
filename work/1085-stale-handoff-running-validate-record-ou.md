@@ -2,19 +2,22 @@
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: review
+status: done
 priority: p2
 area: [server, web]
+merged_commit: 28a0af85bd921cd89f0806a708ac2fba4990b552
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-10T22:50:40Z"
+updated_at: "2026-11-11T02:03:45Z"
+last_close_out_gate_ms: 835515
+last_close_out_gate_at: "2026-11-11T01:59:28.853Z"
+review_passes: 6
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
-review_passes: 2
 engineer_stall_resume_log: "[{\"at\":\"2026-11-10T17:47:42.870Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
@@ -49,6 +52,9 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 }
 ]
 ```
+
+## Accepted scope and known limitations
+FINAL (pass 6): reconciling stale handoff records, stale flag on all checks renderers, watchdog skipping held tasks, pending delta-review markers kept, single-flight checkpoint recovery (claim first, marker only replaced after the claim succeeds, slot released on every throw path) are in scope and done. NOT blocking, follow-up only: HANDOFF_DEADLINE_MS doubling as stale threshold; GET persisting superseded; a live finalization superseded by a newer review staying live; beginHandoffStatus restarting a superseded attemptKey; optional reviews dependency in the watchdog; a review marker with no running review restarting the gate; the unchanged server.ts unified-handoff throw paths; capture of the stale-running state in shots. Report these under Suggestions, not Bugs.
 
 ## Screenshots
 
@@ -137,3 +143,62 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 - 2026-11-10T22:34:44Z · body
 - 2026-11-10T22:44:58Z · note: adopted orphaned engineer pid 53279
 - 2026-11-10T22:50:40Z · status active→review
+- 2026-11-10T23:04:42Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-10T23:04:43Z · message_queued at 2026-11-10T23:04:43.463Z
+- 2026-11-10T23:04:43Z · note: review pass 3: needs some work
+- 2026-11-10T23:04:44Z · needs_input
+- 2026-11-10T23:24:11Z · status review→active
+- 2026-11-10T23:24:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T23:25:04Z · body: Accepted scope and known limitations (added)
+- 2026-11-10T23:25:05Z · message_delivered: 1 message(s)
+- 2026-11-10T23:25:07Z · note: handoff requested (cli)
+- 2026-11-10T23:29:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T23:45:13Z · note: handoff requested (cli)
+- 2026-11-10T23:49:25Z · body
+- 2026-11-10T23:49:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-10T23:53:03Z · status active→review
+- 2026-11-10T23:55:20Z · handoff failed · task-file handoff failed at verify · ui verification failed: timed out waiting for the task's browser capture
+- 2026-11-10T23:55:22Z · note: shots: failed — browser capture cancelled
+- 2026-11-10T23:57:57Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-10T23:57:57Z · message_queued at 2026-11-10T23:57:57.891Z
+- 2026-11-10T23:57:57Z · note: review pass 4: needs some work
+- 2026-11-10T23:57:58Z · needs_input
+- 2026-11-10T23:57:58Z · needs_input
+- 2026-11-11T00:04:12Z · status review→active
+- 2026-11-11T00:04:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T00:06:32Z · body: Accepted scope and known limitations (added 1, removed 1)
+- 2026-11-11T00:06:32Z · message_delivered: 1 message(s)
+- 2026-11-11T00:06:35Z · note: handoff requested (cli)
+- 2026-11-11T00:09:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T00:14:55Z · message_queued at 2026-11-11T00:14:55.090Z
+- 2026-11-11T00:14:55Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/done-guard.test.ts > move-to-done dirty-WORKTREE guard (#0512) > queues checkpoint recovery instead of 409 when HEAD moved only by WIP checkpoint (#0834) on mini — fix it in the feature branch and re-run the gate
+- 2026-11-11T00:19:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T00:49:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T01:01:40Z · body
+- 2026-11-11T01:04:19Z · note: handoff requested (cli)
+- 2026-11-11T01:08:42Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-11T01:08:43Z · status active→review
+- 2026-11-11T01:08:43Z · note: Task body is underspecified: missing sections: Desired UX
+- 2026-11-11T01:08:43Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T01:08:43Z · message_queued at 2026-11-11T01:08:43.636Z
+- 2026-11-11T01:08:43Z · ↻ resuming engineer to read queued message
+- 2026-11-11T01:10:25Z · note: review pass 5: needs some work
+- 2026-11-11T01:10:25Z · needs_input
+- 2026-11-11T01:10:25Z · needs_input
+- 2026-11-11T01:24:13Z · status review→active
+- 2026-11-11T01:24:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T01:25:29Z · body: Accepted scope and known limitations (added 1, removed 1)
+- 2026-11-11T01:25:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T01:25:29Z · message_delivered: 2 message(s)
+- 2026-11-11T01:25:38Z · note: handoff requested (cli)
+- 2026-11-11T01:29:32Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T01:37:20Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
+- 2026-11-11T01:39:08Z · body
+- 2026-11-11T01:39:44Z · status active→review
+- 2026-11-11T01:39:44Z · note: Task body is underspecified: missing sections: Desired UX
+- 2026-11-11T01:39:44Z · message_queued at 2026-11-11T01:39:44.801Z
+- 2026-11-11T01:43:42Z · note: review pass 6: good to go
+- 2026-11-11T01:43:42Z · needs_input
+- 2026-11-11T01:59:28Z · close-out gate completed in 836s
+- 2026-11-11T01:59:42Z · status done→done, release:success
+- 2026-11-11T02:03:45Z · message_dropped: 1 queued message(s) discarded — task is done

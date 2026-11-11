@@ -16,12 +16,274 @@ import {
   readPostHandoffCheckpointRecovery,
   resumeCloseOutAfterCheckpointRecovery,
   startPostHandoffCheckpointRecovery,
+  sweepOrphanedPostHandoffCheckpointRecoveries,
 } from "../../server/post-handoff-checkpoint-recovery.js";
 import { writeHandoffSnapshot } from "../../server/worktree-handoff-guard.js";
 import { reviewMission, ReviewManager } from "../../server/review.js";
 import type { Agent, Task } from "../../core/types.js";
 
 describe("post-handoff checkpoint recovery (#0834)", () => {
+  it("sweeps orphan gate markers but keeps a pending delta-review marker (#1085)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-sweep-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos", "post-handoff-checkpoint"), { recursive: true });
+      for (const [id, phase] of [
+        ["1085", "gate"],
+        ["1086", "review"],
+      ] as const) {
+        writeFileSync(
+          join(root, ".repoos", "post-handoff-checkpoint", `${id}.json`),
+          JSON.stringify({
+            taskId: id,
+            approvedSha: "a".repeat(40),
+            headSha: "b".repeat(40),
+            phase,
+            startedAt: new Date().toISOString(),
+          }),
+          "utf8",
+        );
+      }
+      expect(sweepOrphanedPostHandoffCheckpointRecoveries(config, () => false)).toBe(1);
+      expect(readPostHandoffCheckpointRecovery(config, "1085")).toBeNull();
+      expect(readPostHandoffCheckpointRecovery(config, "1086")?.phase).toBe("review");
+    } finally {
+      rmFixture(root);
+    }
+  });
+
+  it("refuses a second start while the delta review is still running (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-review-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos", "post-handoff-checkpoint"), { recursive: true });
+      writeFileSync(
+        join(root, ".repoos", "post-handoff-checkpoint", "0834.json"),
+        JSON.stringify({
+          taskId: "0834",
+          approvedSha: "aaa111",
+          headSha: "bbb222",
+          phase: "review",
+          startedAt: new Date().toISOString(),
+        }),
+        "utf8",
+      );
+      const task = { id: "0834", status: "review", branch: "feat/x", title: "t" } as Task;
+      const started = await startPostHandoffCheckpointRecovery(
+        {
+          config,
+          index: { getTask: () => task } as any,
+          jobCoordinator: createJobCoordinator(root),
+          reviews: { isRunning: () => true, runCheckpointDelta: vi.fn() } as any,
+          reload: null,
+          emitEvent: () => {},
+          triggerJobProcessing: () => {},
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => true,
+            releaseHandoffInFlight: () => {},
+          },
+        },
+        task,
+        "aaa111",
+        "bbb222",
+      );
+      expect(started.ok).toBe(false);
+      expect(readPostHandoffCheckpointRecovery(config, "0834")?.phase).toBe("review");
+    } finally {
+      rmFixture(root);
+    }
+  });
+
+  it("refuses to start when the handoff slot cannot be claimed (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-claim-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos"), { recursive: true });
+      const task = { id: "0834", status: "review", branch: "feat/x", title: "t" } as Task;
+      const release = vi.fn();
+      const started = await startPostHandoffCheckpointRecovery(
+        {
+          config,
+          index: { getTask: () => task } as any,
+          jobCoordinator: createJobCoordinator(root),
+          reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+          reload: null,
+          emitEvent: () => {},
+          triggerJobProcessing: () => {},
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => false,
+            releaseHandoffInFlight: release,
+          },
+        },
+        task,
+        "aaa111",
+        "bbb222",
+      );
+      expect(started.ok).toBe(false);
+      expect(readPostHandoffCheckpointRecovery(config, "0834")).toBeNull();
+    } finally {
+      rmFixture(root);
+    }
+  });
+
+  it("two starts racing: the second is refused because the slot is claimed first (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-race-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos"), { recursive: true });
+      const task = { id: "0834", status: "review", branch: "feat/x", title: "t" } as Task;
+      let held = false;
+      const runner = {
+        isHandoffInFlight: () => held,
+        markHandoffInFlight: () => {
+          if (held) return false;
+          held = true;
+          return true;
+        },
+        releaseHandoffInFlight: () => {
+          held = false;
+        },
+      };
+      const deps = {
+        config,
+        index: { getTask: () => task } as any,
+        jobCoordinator: createJobCoordinator(root),
+        reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+        reload: null,
+        emitEvent: () => {},
+        triggerJobProcessing: () => {},
+        runner,
+      };
+      const [a, b] = await Promise.all([
+        startPostHandoffCheckpointRecovery(deps, task, "aaa111", "bbb222"),
+        startPostHandoffCheckpointRecovery(deps, task, "aaa111", "bbb222"),
+      ]);
+      expect([a.ok, b.ok].filter(Boolean)).toHaveLength(1);
+    } finally {
+      rmFixture(root);
+    }
+  });
+
+  it("keeps a pending review marker when the slot claim is refused (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-keep-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos", "post-handoff-checkpoint"), { recursive: true });
+      writeFileSync(
+        join(root, ".repoos", "post-handoff-checkpoint", "0834.json"),
+        JSON.stringify({
+          taskId: "0834",
+          approvedSha: "aaa111",
+          headSha: "bbb222",
+          phase: "review",
+          startedAt: new Date().toISOString(),
+        }),
+        "utf8",
+      );
+      const task = { id: "0834", status: "review", branch: "feat/x", title: "t" } as Task;
+      const started = await startPostHandoffCheckpointRecovery(
+        {
+          config,
+          index: { getTask: () => task } as any,
+          jobCoordinator: createJobCoordinator(root),
+          reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+          reload: null,
+          emitEvent: () => {},
+          triggerJobProcessing: () => {},
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => false,
+            releaseHandoffInFlight: () => {},
+          },
+        },
+        task,
+        "aaa111",
+        "bbb222",
+      );
+      expect(started.ok).toBe(false);
+      expect(readPostHandoffCheckpointRecovery(config, "0834")?.phase).toBe("review");
+    } finally {
+      rmFixture(root);
+    }
+  });
+
+  it("releases the slot when the task has no branch (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-nobranch-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos"), { recursive: true });
+      const task = { id: "0834", status: "review", title: "t" } as Task;
+      const release = vi.fn();
+      const started = await startPostHandoffCheckpointRecovery(
+        {
+          config,
+          index: { getTask: () => task } as any,
+          jobCoordinator: createJobCoordinator(root),
+          reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+          reload: null,
+          emitEvent: () => {},
+          triggerJobProcessing: () => {},
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => true,
+            releaseHandoffInFlight: release,
+          },
+        },
+        task,
+        "aaa111",
+        "bbb222",
+      );
+      expect(started.ok).toBe(true);
+      await vi.waitFor(() => expect(release).toHaveBeenCalledWith("0834"));
+    } finally {
+      rmFixture(root);
+    }
+  });
+
+  it("clears an orphan marker so recovery can restart after a crash (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-restart-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos", "post-handoff-checkpoint"), { recursive: true });
+      writeFileSync(
+        join(root, ".repoos", "post-handoff-checkpoint", "0834.json"),
+        JSON.stringify({
+          taskId: "0834",
+          approvedSha: "aaa111",
+          headSha: "bbb222",
+          phase: "gate",
+          startedAt: new Date().toISOString(),
+        }),
+        "utf8",
+      );
+      const task = { id: "0834", status: "review", branch: "feat/x", title: "t" } as Task;
+      const started = await startPostHandoffCheckpointRecovery(
+        {
+          config,
+          index: { getTask: () => task } as any,
+          jobCoordinator: createJobCoordinator(root),
+          reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+          reload: null,
+          emitEvent: () => {},
+          triggerJobProcessing: () => {},
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => true,
+            releaseHandoffInFlight: () => {},
+          },
+        },
+        task,
+        "aaa111",
+        "bbb222",
+      );
+      expect(started.ok).toBe(true);
+    } finally {
+      rmFixture(root);
+    }
+  });
+
   it("persists recovery state when Move to done starts recovery", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-phc-"));
     const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
@@ -45,6 +307,11 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
         jobCoordinator: createJobCoordinator(root),
         reviews: reviews as any,
         reload: null,
+        runner: {
+          isHandoffInFlight: () => false,
+          markHandoffInFlight: () => true,
+          releaseHandoffInFlight: () => {},
+        },
         emitEvent: () => {},
         triggerJobProcessing: () => {},
       },
@@ -79,6 +346,11 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
           jobCoordinator: createJobCoordinator(root),
           reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
           reload: null,
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => true,
+            releaseHandoffInFlight: () => {},
+          },
           emitEvent: (e) => events.push(e as never),
           triggerJobProcessing: () => {},
         },
@@ -144,6 +416,11 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
         jobCoordinator: coordinator,
         reviews: { isRunning: () => false } as any,
         reload: null,
+        runner: {
+          isHandoffInFlight: () => false,
+          markHandoffInFlight: () => true,
+          releaseHandoffInFlight: () => {},
+        },
         emitEvent: (e) => events.push(e as never),
         triggerJobProcessing: vi.fn(),
       },

@@ -282,6 +282,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   theme: "system",
   uiTheme: "classic",
   defaultTaskMode: "freeform",
+  activityAnimationEnabled: true,
   activityAnimationStyle: "orbital-pixel",
   activityAnimationSize: DEFAULT_ACTIVITY_ANIMATION_SIZE,
   activityAnimationConcurrency: 6,
@@ -1599,6 +1600,9 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
     const taskMode = get("defaultTaskMode");
     if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
+    if (typeof get("activityAnimationEnabled") === "boolean") {
+      cfg.activityAnimationEnabled = get("activityAnimationEnabled") as boolean;
+    }
     const activityStyle = get("activityAnimationStyle");
     if (
       typeof activityStyle === "string" &&
@@ -2755,8 +2759,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Which flow the New task drawer opens with",
     },
     {
-      key: "activityAnimationStyle",
+      key: "activityAnimationEnabled",
       label: "Activity animation",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.activityAnimationEnabled,
+      description: "Show motion beside live agent work; off keeps a plain colored status dot.",
+    },
+    {
+      key: "activityAnimationStyle",
+      label: "Animation style",
       type: "select",
       tier: "live",
       restartRequired: false,
@@ -2765,8 +2778,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         value,
         label: ACTIVITY_ANIMATION_STYLE_LABELS[value],
       })),
-      description:
-        "Motion beside coding, reviewing, and other agent-activity labels. Compact styles use a small fixed footprint; Three dots keeps the legacy row.",
+      description: "Compact motion style; Three dots keeps the legacy pulsing row.",
     },
     {
       key: "activityAnimationSize",
@@ -2779,8 +2791,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         value,
         label: ACTIVITY_ANIMATION_SIZE_LABELS[value],
       })),
-      description:
-        "Inline space for the activity animation, in pixels. The same fixed size renders everywhere it appears — task cards, the Dev page and this preview — regardless of the surrounding text size.",
+      description: "Fixed pixel width on task cards, Pipeline, Dev and the preview below.",
     },
     {
       key: "activityAnimationConcurrency",
@@ -2793,7 +2804,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       max: 24,
       step: 1,
       description:
-        "Maximum number of activity indicators animated at once. Others stay on a still frame; set to 0 to pause all animation.",
+        "Cap on simultaneously animated indicators that are on screen; off-screen cards do not count.",
     },
     {
       key: "defaultAssignee",
@@ -4345,6 +4356,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultStatus",
   "defaultAssignee",
   "defaultTaskMode",
+  "activityAnimationEnabled",
   "activityAnimationStyle",
   "activityAnimationSize",
   "activityAnimationConcurrency",

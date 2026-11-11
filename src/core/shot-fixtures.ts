@@ -42,6 +42,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "card:doneError",
   "board:withReviewTask",
   "card:reviewChecksRunning",
+  "card:reviewLandableReady",
+  // #1085 — active task with a stale but live handoff record on the checks line.
+  "card:handoffStaleActive",
   // #1035 — several tasks spread across every pipeline stage (plus stuck,
   // held, sent-back and recently-merged lanes) for the Pipeline view capture.
   "board:pipeline",
@@ -140,6 +143,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "settings:wheelieCourier",
   "settings:booSwoop",
   "settings:pumpkinSpell",
+  // #1062 — Settings activity animation with Motion off (no preview PATCH).
+  "settings:motionOff",
   // #0821 — a task with a running agent and a message queued for when the turn
   // ends, so a capture can show the composer's "Queued — will be read when the
   // current turn ends" notice (and a still-usable send control).

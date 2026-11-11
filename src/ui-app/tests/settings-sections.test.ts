@@ -46,6 +46,7 @@ describe("General settings sections (#0800)", () => {
   });
 
   it("maps hand-rendered General keys to the card they render under", () => {
+    expect(generalSectionForKey("activityAnimationEnabled")).toBe("activity-animation");
     expect(generalSectionForKey("activityAnimationStyle")).toBe("activity-animation");
     expect(generalSectionForKey("storage.provider")).toBe("attachments");
     expect(generalSectionForKey("tunnelEnabled")).toBe("publishing");
