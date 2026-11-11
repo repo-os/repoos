@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: dev-error
 needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
@@ -191,4 +191,3 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T06:58:47Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-11T07:01:57Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T07:17:31Z · agent exited with an error (claude) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
-- 2026-11-11T07:17:31Z · status active→review
