@@ -3,6 +3,9 @@ id: "1089"
 title: "Easter eggs bundle: release in progress shows the activity animation (Releases page and Cut a release panel)"
 type: feature
 status: inbox
+needs_input: true
+needs_input_reason: underspecified
+needs_input_detail: "missing sections: Notes for AI"
 priority: p3
 area: web
 assigned_to: ai
@@ -34,3 +37,4 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 
 - 2026-11-11T03:47:02Z · created · njachowski@gmail.com
 - 2026-11-11T03:47:03Z · screenshots
+- 2026-11-11T03:47:03Z · needs_input
