@@ -76,6 +76,7 @@ import {
 import { c } from "./colors.js";
 import { commandUsage, printCommandHelp, printHelp, SELF_HELP_COMMANDS } from "./help.js";
 import { readVersion } from "../core/version.js";
+import { registerCliUpdateNoticeHook } from "../core/update-check.js";
 
 // node:sqlite (used by db.ts/auth-store.ts) is still marked experimental on
 // supported Node versions and prints a warning the first time it's loaded.
@@ -457,6 +458,14 @@ function main(): void {
       printHelp();
       process.exitCode = 1;
   }
+
+  let configUpdates: { check?: boolean } | undefined;
+  try {
+    configUpdates = loadConfig().updates;
+  } catch {
+    /* outside a repo or unreadable config — default stays enabled */
+  }
+  registerCliUpdateNoticeHook({ cmd, argv: rest, config: { updates: configUpdates } });
 }
 
 main();
