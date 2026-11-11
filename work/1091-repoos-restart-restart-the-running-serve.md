@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-11T17:38:24Z"
+review_passes: 3
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
@@ -14,12 +16,10 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T17:38:24Z"
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
-review_passes: 2
 dev_error_count: 13
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
 engineer_stall_resume_log: "[{\"at\":\"2026-11-11T16:03:13.143Z\",\"reason\":\"handoff-deferred\"}]"
@@ -171,3 +171,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T17:36:21Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T17:38:24Z · note: review pass 3: needs some work
 - 2026-11-11T17:38:24Z · needs_input
+
