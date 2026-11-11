@@ -168,11 +168,16 @@ describe("foreign bookkeeping after main lands another task (#1086)", () => {
         "main",
         ["repoos.toml"],
         (p) =>
-          isForbiddenTaskScopePath(p, OWN_FILE, {
-            workDir: "work",
-            inputsDir: "inputs",
-            storiesDir: "stories",
-          }, TASK_B),
+          isForbiddenTaskScopePath(
+            p,
+            OWN_FILE,
+            {
+              workDir: "work",
+              inputsDir: "inputs",
+              storiesDir: "stories",
+            },
+            TASK_B,
+          ),
       );
       expect(filtered).toEqual(["repoos.toml"]);
     } finally {
