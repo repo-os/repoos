@@ -12,11 +12,10 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T05:11:57Z"
+updated_at: "2026-11-11T06:36:58Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T04:21:52.567Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
@@ -114,3 +113,9 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T05:08:23Z · message_queued at 2026-11-11T05:08:23.451Z
 - 2026-11-11T05:08:24Z · message_queued at 2026-11-11T05:08:24.908Z
 - 2026-11-11T05:11:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T06:08:31Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-11T06:08:31Z · message_delivered: 2 message(s)
+- 2026-11-11T06:26:57Z · message_queued at 2026-11-11T06:26:57.982Z
+- 2026-11-11T06:26:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T06:31:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T06:36:58Z · CTO nudge: held — handoff gate is running
