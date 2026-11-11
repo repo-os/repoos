@@ -2,7 +2,7 @@
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T08:42:15Z"
+updated_at: "2026-11-11T08:42:16Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: c4a4aac81eb4365f88bf5ecb91decb216d4f4aa1
 review_rounds: 1
@@ -170,3 +170,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T08:26:28Z · body
 - 2026-11-11T08:28:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T08:42:15Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T08:42:16Z · status active→review
