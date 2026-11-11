@@ -60,3 +60,4 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 - 2026-11-11T00:30:30Z · body
 - 2026-11-11T00:33:44Z · status active→review
 - 2026-11-11T00:33:45Z · note: Task body is underspecified: missing sections: Acceptance criteria, Notes for AI
+- 2026-11-11T00:33:45Z · message_queued at 2026-11-11T00:33:45.381Z
