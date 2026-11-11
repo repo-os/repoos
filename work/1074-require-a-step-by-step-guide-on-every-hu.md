@@ -147,3 +147,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T06:08:40Z · message_queued at 2026-11-11T06:08:40.771Z
 - 2026-11-11T06:08:40Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch — at tests/ensure-worktree-resilience.test.ts:195:30 — AssertionError: expected false to be true // Object.is equality
 - 2026-11-11T06:11:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T06:28:33Z · note: handoff requested (cli)
