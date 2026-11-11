@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 57c069719a37ee97774430707b73adf1da342342
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
@@ -127,3 +129,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T22:33:17Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T22:38:11Z · message_queued at 2026-11-11T22:38:11.814Z
 - 2026-11-11T22:38:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+
