@@ -241,3 +241,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:27:03Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T22:47:41Z · status active→review
 - 2026-11-11T22:47:42Z · message_queued at 2026-11-11T22:47:42.112Z
+- 2026-11-11T22:47:42Z · note: shots: skipped — Docs site skipped: no docs shot declared
