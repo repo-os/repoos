@@ -254,3 +254,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T12:21:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check is at remote validation, which can take a while. The report draft is complete and accurate. I'll stop here and let the background check notify me when it finishes. · stderr: (empty)
 - 2026-11-11T12:21:17Z · status active→review
 - 2026-11-11T12:21:18Z · message_delivered: 1 message(s)
+- 2026-11-11T12:21:18Z · engineer stopped by request
