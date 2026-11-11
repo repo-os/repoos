@@ -308,7 +308,30 @@ describe("waitForPublishedRelease", () => {
       maxDelayMs: 4_000,
     });
     expect(outcome.state).toBe("timeout");
-    if (outcome.state === "timeout") expect(outcome.reason).toMatch(/no release/);
+    if (outcome.state === "timeout") {
+      expect(outcome.reason).toMatch(/no release/);
+      expect(outcome.probe).toBe("not-yet");
+    }
+  });
+
+  it("records an error answer as a probe error, not as a missing release", async () => {
+    const { fetchImpl } = fakeFetch({ github: () => new Response("", { status: 403 }) });
+    let now = 0;
+    const outcome = await waitForPublishedRelease("repo-os/repoos", "v0.6.0", {
+      fetchImpl,
+      sleep: async (ms) => {
+        now += ms;
+      },
+      now: () => now,
+      publishTimeoutMs: 10_000,
+      initialDelayMs: 4_000,
+      maxDelayMs: 4_000,
+    });
+    expect(outcome.state).toBe("timeout");
+    if (outcome.state === "timeout") {
+      expect(outcome.probe).toBe("http-error");
+      expect(outcome.reason).toMatch(/403/);
+    }
   });
 
   it("is unavailable when the first look cannot reach GitHub", async () => {
@@ -526,6 +549,31 @@ describe("deliverCutReleaseEmail", () => {
     expect(fake.resendTo).toEqual([]);
   });
 
+  it("says GitHub could not be checked when the timeout was a rate limit, not a missing release", async () => {
+    const fake = fakeFetch({ github: () => new Response("rate limited", { status: 429 }) });
+    let now = 0;
+    const record = await deliverCutReleaseEmail(
+      makeConfig({ when: "published" }, { repository: "repo-os/repoos" }),
+      entry(),
+      {},
+      {
+        fetchImpl: fake.fetchImpl,
+        sleep: async (ms) => {
+          now += ms;
+        },
+        now: () => now,
+        publishTimeoutMs: 5_000,
+        initialDelayMs: 2_000,
+        maxDelayMs: 2_000,
+      },
+    );
+    expect(record?.status).toBe("failed");
+    // A rate limit is our blind spot, not a missing release: never claim the tag is absent.
+    expect(record?.reason).toMatch(/could not be checked/);
+    expect(record?.reason).not.toMatch(/not on GitHub/);
+    expect(fake.resendTo).toEqual([]);
+  });
+
   it("falls back to sending at the tag when there is no repository", async () => {
     const fake = fakeFetch();
     const record = await deliverCutReleaseEmail(
@@ -653,7 +701,7 @@ describe("resendReleaseEmail", () => {
     const fake = fakeFetch({ github: () => new Response("rate limited", { status: 403 }) });
     await expect(
       resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl }),
-    ).rejects.toThrow(/not.*published yet/i);
+    ).rejects.toThrow(/could not be checked/i);
     expect(fake.resendTo).toEqual([]);
   });
 });

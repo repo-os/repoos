@@ -458,9 +458,15 @@ shared with login codes and invites).
   first probe is immediate; later probes back off to three minutes and stop after
   an hour, recording a failure to resend. No repository, or no answer from GitHub
   on the first look, falls back to sending at the tag, and the record says so. An
-  HTTP error (a rate limit, say) keeps waiting, so it never triggers the fallback.
+  HTTP error (a rate limit, say) keeps waiting, so it never triggers the fallback;
+  if the hour expires while GitHub is still answering with an error, the record
+  says GitHub could not be checked rather than claiming the tag is not published.
   A private repository returns 404 to the public API, so its email waits the hour
   and then fails: set `[release.email] when = "tagged"` for those.
+- **Links.** The email links the GitHub release and `CHANGELOG.md` at the tag.
+  Any project releasing through RepoOS has a `CHANGELOG.md` (the release pipeline
+  writes it), so the changelog link resolves; the link assumes that file exists at
+  the tag.
 - **Not a git hook.** A hook would fire before CI has built anything and link to a
   download that does not exist yet.
 - **Detached.** `cutNewRelease` calls `startCutReleaseEmail` after the tag push and

@@ -257,8 +257,13 @@ export type PublishOutcome =
   | { state: "published" }
   /** No network on the first look: caller falls back to sending at the tag. */
   | { state: "unavailable"; reason: string }
-  /** Still not on GitHub after the timeout. */
-  | { state: "timeout"; reason: string };
+  /**
+   * Still not on GitHub after the timeout. `probe` records what the last look
+   * actually saw, so the caller can say "not published yet" only when GitHub
+   * really answered; an error answer (a rate limit, an outage) reads as
+   * "could not be checked", never as a claim about the release.
+   */
+  | { state: "timeout"; reason: string; probe: "not-yet" | "http-error" | "unreachable" };
 
 type Probe =
   | { state: "published" }
@@ -329,6 +334,7 @@ export async function waitForPublishedRelease(
   let delay = deps.initialDelayMs ?? DEFAULT_INITIAL_DELAY_MS;
   let first = true;
   let lastReason = "";
+  let lastProbe: "not-yet" | "http-error" | "unreachable" = "not-yet";
   for (;;) {
     const probe = await probeRelease(repository, tag, fetchImpl);
     if (probe.state === "published") return { state: "published" };
@@ -337,8 +343,9 @@ export async function waitForPublishedRelease(
     }
     first = false;
     lastReason = probe.reason;
+    lastProbe = probe.state;
     const remaining = deadline - now();
-    if (remaining <= 0) return { state: "timeout", reason: lastReason };
+    if (remaining <= 0) return { state: "timeout", reason: lastReason, probe: lastProbe };
     await sleep(Math.min(delay, remaining));
     delay = Math.min(delay * 2, maxDelayMs);
   }
@@ -569,11 +576,14 @@ export async function deliverCutReleaseEmail(
       });
       const outcome = await waitForPublishedRelease(repository, entry.tag, deps);
       if (outcome.state === "timeout") {
-        return recordFor(config, entry, {
-          status: "failed",
-          sentTo,
-          reason: `${entry.tag} was not on GitHub after an hour (${outcome.reason}). Resend once it is.`,
-        });
+        // Only claim the release is missing when GitHub actually answered. An
+        // error answer (a rate limit, an outage) means we could not check, and
+        // saying "was not on GitHub" would blame the release for our blind spot.
+        const detail =
+          outcome.probe === "not-yet"
+            ? `${entry.tag} was not on GitHub after an hour (${outcome.reason}). Resend once it is.`
+            : `GitHub could not be checked for an hour (${outcome.reason}). Resend when it can be reached.`;
+        return recordFor(config, entry, { status: "failed", sentTo, reason: detail });
       }
       if (outcome.state === "unavailable") {
         // No network: fall back to the tag, as documented. The record says so.
@@ -658,9 +668,16 @@ export async function resendReleaseEmail(
     const repository = githubRepository(config);
     if ((email.when ?? "published") === "published" && repository) {
       const probe = await probeRelease(repository, entry.tag, deps.fetchImpl ?? fetch);
-      if (probe.state === "not-yet" || probe.state === "http-error") {
+      if (probe.state === "not-yet") {
         throw new ResendRefused(
           `GitHub does not have ${entry.tag} published yet (${probe.reason}). Send once it is, or set [release.email] when = "tagged".`,
+        );
+      }
+      if (probe.state === "http-error") {
+        // GitHub answered with an error, so we cannot tell whether the tag is
+        // out. Say that, rather than claiming it is not published.
+        throw new ResendRefused(
+          `GitHub could not be checked (${probe.reason}). Send again shortly, or set [release.email] when = "tagged".`,
         );
       }
       // `published` and `unreachable` both proceed: unreachable is the same
