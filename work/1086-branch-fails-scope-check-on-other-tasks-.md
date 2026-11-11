@@ -2,19 +2,18 @@
 id: "1086"
 title: Branch fails scope check on other tasks' bookkeeping that main legitimately has; sync does not bring it in (kamrai report)
 type: bug
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Acceptance criteria, Notes for AI"
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-10T13:33:43Z"
+updated_at: "2026-11-11T01:08:45Z"
+review_rounds: 2
+review_passes: 2
 ---
 ## Problem
 Reported from a new RepoOS project (kamrai, on the mini, RepoOS v0.5.80). A task branch fails the scope check ("diff changes another task's bookkeeping") on files that already exist on main, and the engineer cannot fix it: each time they restore the files from main, the files come back as uncommitted changes (one modified, four untracked) and the committed branch still lacks them. `repoos landable` stays red with no code involved.
@@ -40,9 +39,46 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 4. Manual workaround documented in the task report: commit the restore on the branch.
 5. Check git history of sync and the scope check for a recent regression.
 
+## Accepted scope and known limitations
+FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1) docs/agent-workflow-rules.md and docs/close-out-pipeline.md must not say the restore never fails a handoff, state that restore errors fail the handoff at the commit step with the named paths; (2) the same docs and AGENTS.md must say post-merge siblings that exist on main are dropped from the branch (main's copy wins) as well as restored; (3) docs must say sync heals after failed syncs too. NOT blocking, follow-up only: restore running before the report commit instead of last; a test for the server.ts sync wiring; repoos.toml exclusion in dropForeignBookkeepingPathsMatchingMain; request-close-out changedPaths. Report these under Suggestions, not Bugs.
+
 ## Activity
 
 - 2026-11-10T08:56:33Z · created · njachowski@gmail.com
 - 2026-11-10T08:56:34Z · needs_input
 - 2026-11-10T13:33:42Z · status inbox→ready
 - 2026-11-10T13:33:43Z · cli_override, model_override
+- 2026-11-10T23:04:09Z · status ready→active, needs_input, branch
+- 2026-11-10T23:14:55Z · message_queued at 2026-11-10T23:14:55.217Z
+- 2026-11-10T23:14:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-10T23:19:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T23:21:42Z · body
+- 2026-11-10T23:49:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-10T23:56:50Z · body
+- 2026-11-11T00:15:03Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-11T00:15:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code unknown) · last assistant: Fixing restore logic: foreign bookkeeping that exists only on main (not at merge-base) should be removed from the branch, not checked out from main. · stderr: (empty)
+- 2026-11-11T00:15:18Z · message_delivered: 1 message(s)
+- 2026-11-11T00:18:02Z · body
+- 2026-11-11T00:19:32Z · message_queued at 2026-11-11T00:19:32.959Z
+- 2026-11-11T00:19:33Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T00:24:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T00:30:30Z · body
+- 2026-11-11T00:33:44Z · status active→review
+- 2026-11-11T00:33:45Z · note: Task body is underspecified: missing sections: Acceptance criteria, Notes for AI
+- 2026-11-11T00:33:45Z · message_queued at 2026-11-11T00:33:45.381Z
+- 2026-11-11T00:33:45Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-11T00:35:35Z · note: review pass 1: needs some work
+- 2026-11-11T00:35:35Z · message_delivered: 1 message(s)
+- 2026-11-11T00:35:35Z · status review→active
+- 2026-11-11T00:53:15Z · body
+- 2026-11-11T00:57:19Z · status active→review
+- 2026-11-11T00:57:19Z · note: Task body is underspecified: missing sections: Acceptance criteria, Notes for AI
+- 2026-11-11T00:57:19Z · message_queued at 2026-11-11T00:57:19.333Z
+- 2026-11-11T00:57:19Z · note: shots: skipped — the diff (15 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-11T00:59:09Z · note: review pass 2: needs some work
+- 2026-11-11T00:59:09Z · message_delivered: 1 message(s)
+- 2026-11-11T00:59:09Z · status review→active
+- 2026-11-11T01:04:35Z · body: Accepted scope and known limitations (added)
+- 2026-11-11T01:04:35Z · message_queued at 2026-11-11T01:04:35.833Z
+- 2026-11-11T01:04:36Z · message_queued at 2026-11-11T01:04:36.538Z
+- 2026-11-11T01:08:45Z · CTO nudge: held — an undelivered message is already queued
