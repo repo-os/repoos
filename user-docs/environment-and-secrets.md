@@ -315,6 +315,7 @@ Groq, or the reverse.
 | `REPOOS_RUNTIME` | `auto` (default), `bun`, or `node`. |
 | `REPOOS_BUN_PATH` | Explicit path to a Bun binary. Only set it if Bun is installed somewhere not on `PATH` — a set-but-missing path makes RepoOS fall back to Node rather than searching `PATH`. |
 | `REPOOS_STRICT_BUILD` | `1` makes a stale build exit with an error, the same as `strictBuild = true` in `repoos.toml` (or the `--strict-build` flag). |
+| `REPOOS_NO_UPDATE_CHECK` | `1` disables the passive GitHub release check for the CLI notice and dashboard banner (same as `updates.check = false`). |
 
 These are the supported public controls for how RepoOS starts itself and treats
 a stale build. See
@@ -415,6 +416,7 @@ REPOOS_REMOTE_SSH_KEY=/absolute/path/to/private_key
 # REPOOS_RUNTIME=auto           # auto | bun | node
 # REPOOS_BUN_PATH=/path/to/bun  # only if Bun is not on PATH
 # REPOOS_STRICT_BUILD=1         # same as strictBuild = true in repoos.toml
+# REPOOS_NO_UPDATE_CHECK=1      # disable passive CLI/dashboard release check (#1072)
 
 # Internal / process-only variables are not normal configuration and should be
 # left to the runtime. Do not add them here as if they were project settings:
