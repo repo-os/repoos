@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T05:52:51Z"
+updated_at: "2026-11-11T05:53:46Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -71,3 +71,4 @@ FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress mus
 - 2026-11-11T05:52:51Z · status active→review
 - 2026-11-11T05:52:51Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
 - 2026-11-11T05:52:51Z · message_queued at 2026-11-11T05:52:51.574Z
+- 2026-11-11T05:53:46Z · note: review pass 2: needs some work
