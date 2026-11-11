@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T19:15:19Z"
+updated_at: "2026-11-11T19:16:46Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > uses one representative block while the gated collection is not loaded, tests/app-loading-skeleton.test.ts > repo loading skeleton > renders each skeleton kind from the real column or representative-block layout on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 27026587838fdfde40d67c7e32893fddf8ce0ef0
 review_passes: 6
