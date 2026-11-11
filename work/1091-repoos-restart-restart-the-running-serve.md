@@ -2,14 +2,14 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T05:27:34Z"
+updated_at: "2026-11-11T10:20:39Z"
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
@@ -45,3 +45,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 ## Activity
 
 - 2026-11-11T05:27:34Z · created · njachowski@gmail.com
+- 2026-11-11T10:20:39Z · status inbox→ready
