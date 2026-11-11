@@ -369,18 +369,12 @@ landing.
     }
   }, 60_000);
 
-  // The report commit runs AFTER the check gate — which can be minutes long —
-  // and the foreign-bookkeeping restore runs only once, earlier. A bare commit
-  // there would fold a sibling staged in that window onto the branch; the
-  // pathspec scopes it to the report. A merely-staged sibling is the exact shape
-  // a concurrent board write / stray `git add -A` leaves at report time, and the
-  // committed-drift restore (which grades only `merge-base..HEAD`) never sees it.
-  it("keeps a sibling staged at report time out of the report commit", async () => {
+  // #1086: restore grades the index and working tree, so a staged-only sibling
+  // is dropped at handoff before the report commit; the report stays pathspec-scoped.
+  it("drops a staged-only sibling at handoff restore before the report commit", async () => {
     const fx = handoffFixture();
     try {
       const { finalizeReviewHandoff } = await import("../../server/handoff.js");
-      // A sibling file that is staged but never committed: untouched by the
-      // committed-drift restore, so it is live in the index at report time.
       writeFileSync(join(fx.wt, "work", "3000-staged-sibling.md"), '---\nid: "3000"\n---\nX\n');
       git(fx.wt, ["add", "--", "work/3000-staged-sibling.md"]);
       expect(git(fx.wt, ["diff", "--cached", "--name-only"])).toContain(
@@ -392,19 +386,9 @@ landing.
         skipChecks: true,
         actor: "test@repoos.org",
         onTaskLog: () => {},
-        // "check" fires after the commit gate's blanket unstage and before the
-        // report commit — the real window a concurrent board write / `git add -A`
-        // can leave a sibling staged. Stage one there to prove the report commit
-        // is scoped to the report and can never sweep it.
-        onProgress: (step) => {
-          if (step !== "check") return;
-          writeFileSync(join(fx.wt, "work", "3000-staged-sibling.md"), '---\nid: "3000"\n---\nX\n');
-          git(fx.wt, ["add", "--", "work/3000-staged-sibling.md"]);
-        },
       });
       expect(result.ok).toBe(true);
 
-      // The report commit names the report, never the sibling.
       const reportSha = git(fx.wt, [
         "log",
         "--format=%H",

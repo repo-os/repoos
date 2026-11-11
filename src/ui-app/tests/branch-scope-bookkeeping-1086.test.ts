@@ -45,7 +45,7 @@ function initTwoTaskRepo(): { root: string; wtB: string; clean: () => void } {
 }
 
 describe("foreign bookkeeping after main lands another task (#1086)", () => {
-  it("restoreForeignTaskBookkeepingFromMain checks out main's post-merge reports, not merge-base", async () => {
+  it("drops post-merge sibling reports the branch committed (not at merge-base)", async () => {
     const fx = initTwoTaskRepo();
     try {
       // Task B works on its branch while task A's close-out writes to main.
@@ -146,6 +146,63 @@ describe("foreign bookkeeping after main lands another task (#1086)", () => {
           bookkeeping: { workDir: "work", inputsDir: "inputs", storiesDir: "stories" },
         }).status,
       ).toBe("pass");
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("heals dirty untracked and unstaged sibling files without a prior commit", async () => {
+    const fx = initTwoTaskRepo();
+    try {
+      writeFileSync(join(fx.wtB, "src.ts"), "export const v = 8;\n");
+      git(fx.wtB, ["add", "src.ts"]);
+      git(fx.wtB, ["commit", "-q", "-m", "feat(1086): own work"]);
+
+      mkdirSync(join(fx.root, "work", "reports", TASK_A), { recursive: true });
+      writeFileSync(join(fx.root, "work", "reports", TASK_A, "summary.md"), "on main\n");
+      git(fx.root, ["add", "-A"]);
+      git(fx.root, ["commit", "-q", "-m", "main post-merge"]);
+
+      mkdirSync(join(fx.wtB, "work", "reports", TASK_A), { recursive: true });
+      writeFileSync(join(fx.wtB, "work", "reports", TASK_A, "summary.md"), "dirty copy\n");
+      writeFileSync(join(fx.wtB, "work", "reports", TASK_A, "review-1.md"), "untracked\n");
+
+      const restored = await restoreForeignTaskBookkeepingFromMain({
+        worktree: fx.wtB,
+        baseBranch: "main",
+        taskId: TASK_B,
+        ownTaskFile: OWN_FILE,
+        workDir: "work",
+      });
+      expect(restored.length).toBeGreaterThan(0);
+      expect(git(fx.wtB, ["status", "--porcelain"])).toBe("");
+      const changed = await branchChangedPaths(fx.root, BRANCH, "main");
+      expect(changed).not.toContain(`work/reports/${TASK_A}/summary.md`);
+    } finally {
+      fx.clean();
+    }
+  });
+
+  it("heals a stray file under inputs/", async () => {
+    const fx = initTwoTaskRepo();
+    try {
+      mkdirSync(join(fx.root, "inputs"), { recursive: true });
+      writeFileSync(join(fx.root, "inputs/0003-note.md"), "main input\n");
+      git(fx.root, ["add", "inputs/0003-note.md"]);
+      git(fx.root, ["commit", "-q", "-m", "main input"]);
+
+      mkdirSync(join(fx.wtB, "inputs"), { recursive: true });
+      writeFileSync(join(fx.wtB, "inputs/0003-note.md"), "branch dirty\n");
+      await restoreForeignTaskBookkeepingFromMain({
+        worktree: fx.wtB,
+        baseBranch: "main",
+        taskId: TASK_B,
+        ownTaskFile: OWN_FILE,
+        workDir: "work",
+        inputsDir: "inputs",
+        storiesDir: "stories",
+      });
+      expect(git(fx.wtB, ["status", "--porcelain"])).toBe("");
     } finally {
       fx.clean();
     }

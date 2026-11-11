@@ -61,6 +61,7 @@ import {
 import { gitDirectorySnapshot } from "../core/git-directory-snapshot.js";
 import { getGitWorker } from "./git-worker.js";
 import { resolveDefaultBranch } from "../core/repo-log.js";
+import { bookkeepingDirs } from "../core/config.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
 import { taskWithLiveHold } from "./hold-guard.js";
@@ -875,12 +876,15 @@ async function runHandoffFinalization(
   // fail on it.
   if (!isHotfix) {
     try {
+      const bkDirs = bookkeepingDirs(config);
       const restored = await restoreForeignTaskBookkeepingFromMain({
         worktree: workdir,
         baseBranch: await handoffBaseBranch(config),
         taskId: task.id,
         ownTaskFile: task.path,
-        workDir: config.workDir,
+        workDir: bkDirs.workDir,
+        inputsDir: bkDirs.inputsDir,
+        storiesDir: bkDirs.storiesDir,
       });
       if (restored.length > 0) {
         const listed = restored.slice(0, 8).join(", ");
