@@ -1031,3 +1031,60 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     wrapper.unmount();
   });
 });
+
+describe("ReleasesView Homebrew Updating state (#1090)", () => {
+  it("labels a channel that is still updating as Updating, not Out of sync", async () => {
+    mockApi([
+      channel({
+        name: "Homebrew",
+        kind: "homebrew",
+        version: "1.2.2",
+        state: "updating",
+        detail: "The Homebrew tap workflow is still running.",
+      }),
+    ]);
+    const wrapper = await mountView();
+    const badge = wrapper.find('.rel-channel-state[data-state="updating"]');
+    expect(badge.exists()).toBe(true);
+    expect(badge.text()).toBe("Updating");
+    expect(wrapper.text()).toContain("The Homebrew tap workflow is still running.");
+    expect(wrapper.text()).not.toContain("Out of sync");
+    wrapper.unmount();
+  });
+
+  it("summarizes all-updating destinations as updating, not as needing attention", async () => {
+    mockApi([
+      channel(),
+      channel({ name: "Homebrew", kind: "homebrew", version: "1.2.2", state: "updating" }),
+    ]);
+    const wrapper = await mountView();
+    const sync = wrapper.find(".rel-current-sync");
+    expect(sync.text()).toBe("Distribution destinations are updating");
+    expect(sync.attributes("data-state")).toBe("attention");
+    wrapper.unmount();
+  });
+
+  it("keeps the attention summary when an updating row sits beside a real out-of-sync row", async () => {
+    mockApi([
+      channel({ name: "Homebrew", kind: "homebrew", version: "1.2.2", state: "updating" }),
+      channel({ name: "npm", version: "1.2.1", state: "out-of-sync" }),
+    ]);
+    const wrapper = await mountView();
+    expect(wrapper.find(".rel-current-sync").text()).toBe(
+      "Some distribution destinations need attention",
+    );
+    wrapper.unmount();
+  });
+
+  it("styles the updating badge with declared violet tokens", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const view = readFileSync(join(process.cwd(), "src/ui-app/src/views/ReleasesView.vue"), "utf8");
+    const tokens = readFileSync(join(process.cwd(), "src/ui-app/src/style.css"), "utf8");
+    const rule = view.match(/\.rel-channel-state\[data-state="updating"\]\s*\{([^}]*)\}/);
+    expect(rule).not.toBeNull();
+    expect(rule![1]).toContain("var(--violet-tint)");
+    expect(rule![1]).toContain("var(--violet-border-tint)");
+    expect(tokens).toMatch(/--violet-tint:/);
+  });
+});

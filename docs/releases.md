@@ -427,11 +427,20 @@ its install commands, just with an **Unverified** status — RepoOS never claims
 a version it couldn't read. A `404` is **Not published yet**; a fetch/timeout
 failure is **Check failed**. When the release being viewed has a version, a
 channel at the same version reads **Up to date**, and any other version reads
-**Out of sync** with both versions shown. A Homebrew row that is still catching
-up after a successful release — or while the tap's own update workflow is still
-running — reads **Updating** instead, for a few minutes after the configured
-release workflow (the `release.workflow` path, typically
-`.github/workflows/release.yml`) finishes successfully. All of this is computed
+**Out of sync** with both versions shown. A Homebrew row reads **Updating**
+instead in one of two cases, both anchored to the configured release workflow
+(the `release.workflow` path, typically `.github/workflows/release.yml`):
+
+- that workflow's latest run for the tag succeeded within the last five minutes; or
+- the tap is still running the formula update this release dispatched. RepoOS
+  looks only at the tap's `repository_dispatch` runs (the event the release
+  workflow's "Request Homebrew tap update" step sends) that started between that
+  run's start and five minutes after its last update. The tap's other workflows
+  (its own CI, manual runs) never count, and neither does an earlier release's update.
+
+If `release.workflow` is unset, RepoOS has no release run to anchor either case,
+so neither the banner nor the Updating state appears and the tap is not queried.
+All of this is computed
 for the UI only: it is never a prerequisite for viewing releases, and no token,
 registry secret or repository credential is ever sent to the browser. The
 initial check is a snapshot: publishing CI can finish before a registry or CDN

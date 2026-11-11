@@ -266,8 +266,26 @@ type GithubWorkflowRun = {
   html_url: string;
   conclusion: string | null;
   status: string;
+  created_at: string;
   updated_at: string;
 };
+
+/** A tap run as the Actions runs API lists it; only the fields the check reads. */
+type GithubTapRun = { status?: string; event?: string; created_at?: string };
+
+/** The Homebrew tap's formula update, dispatched by the release workflow (#1090). */
+const TAP_DISPATCH_EVENT = "repository_dispatch";
+
+/** When the viewed release's workflow run started and was last updated (epoch ms). */
+interface ReleaseRunWindow {
+  startedAt: number;
+  endedAt: number;
+}
+
+function parseTimestamp(value: string | undefined): number | null {
+  const parsed = value ? Date.parse(value) : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 /** `.github/workflows/release.yml` → `release.yml` for the Actions workflows API. */
 export function releaseWorkflowBasename(workflowPath?: string): string | null {
@@ -343,7 +361,8 @@ async function failedStepForRun(
 
 /**
  * Inspect only the configured release workflow's latest run for `tag` — unrelated
- * workflows that also trigger on the tag never count (#1090).
+ * workflows that also trigger on the tag never count (#1090). Also returns the
+ * run's time window, which scopes the tap check to this release's dispatch.
  */
 async function inspectReleaseWorkflow(
   repository: string,
@@ -351,44 +370,58 @@ async function inspectReleaseWorkflow(
   tag: string,
   fetchImpl: typeof fetch,
   timeoutMs: number,
-): Promise<{ ciFailure: ReleaseCiFailure | null; succeededAt: number | null }> {
+): Promise<{
+  ciFailure: ReleaseCiFailure | null;
+  succeededAt: number | null;
+  window: ReleaseRunWindow | null;
+}> {
   const runs = await listReleaseWorkflowRuns(repository, workflowFile, tag, fetchImpl, timeoutMs);
-  if (!runs.length) return { ciFailure: null, succeededAt: null };
+  if (!runs.length) return { ciFailure: null, succeededAt: null, window: null };
   const latest = runs[0]!;
+  const startedAt = parseTimestamp(latest.created_at);
+  const endedAt = parseTimestamp(latest.updated_at);
+  const window = startedAt !== null && endedAt !== null ? { startedAt, endedAt } : null;
   if (latest.conclusion === "success") {
-    const parsed = Date.parse(latest.updated_at);
-    return {
-      ciFailure: null,
-      succeededAt: Number.isFinite(parsed) ? parsed : null,
-    };
+    return { ciFailure: null, succeededAt: endedAt, window };
   }
   if (latest.conclusion === "failure" || latest.conclusion === "timed_out") {
     return {
       ciFailure: await failedStepForRun(repository, latest, fetchImpl, timeoutMs),
       succeededAt: null,
+      window,
     };
   }
-  return { ciFailure: null, succeededAt: null };
+  return { ciFailure: null, succeededAt: null, window };
 }
 
 const TAP_ACTIVE_STATUSES = new Set(["in_progress", "queued", "waiting", "requested", "pending"]);
 
+/**
+ * Whether the tap is still applying the formula update this release dispatched.
+ * Only `repository_dispatch` runs that started inside the release run's window
+ * count, so unrelated tap CI and an earlier release's update never mark a row
+ * Updating (#1090).
+ */
 async function homebrewTapUpdateInProgress(
   tapRepository: string,
+  window: ReleaseRunWindow,
   fetchImpl: typeof fetch,
   timeoutMs: number,
 ): Promise<boolean> {
   try {
     const res = await fetchImpl(
-      `https://api.github.com/repos/${tapRepository}/actions/runs?per_page=10`,
+      `https://api.github.com/repos/${tapRepository}/actions/runs?event=${TAP_DISPATCH_EVENT}&per_page=10`,
       { headers: GITHUB_JSON_HEADERS, signal: AbortSignal.timeout(timeoutMs) },
     );
     if (!res.ok) return false;
-    const runs =
-      ((await res.json()) as { workflow_runs?: { status?: string }[] }).workflow_runs ?? [];
-    return runs.some(
-      (run) => typeof run.status === "string" && TAP_ACTIVE_STATUSES.has(run.status),
-    );
+    const runs = ((await res.json()) as { workflow_runs?: GithubTapRun[] }).workflow_runs ?? [];
+    const windowEnd = window.endedAt + DISTRIBUTION_HOMEBREW_GRACE_MS;
+    return runs.some((run) => {
+      if (run.event !== TAP_DISPATCH_EVENT) return false;
+      if (typeof run.status !== "string" || !TAP_ACTIVE_STATUSES.has(run.status)) return false;
+      const createdAt = parseTimestamp(run.created_at);
+      return createdAt !== null && createdAt >= window.startedAt && createdAt <= windowEnd;
+    });
   } catch {
     return false;
   }
@@ -445,6 +478,7 @@ export async function getDistributionStatus(
   const needsCiContext =
     repository && tag && workflowFile && summary.channels.some((c) => c.state !== "matching");
   let releaseSucceededAt: number | null = null;
+  let releaseWindow: ReleaseRunWindow | null = null;
   if (needsCiContext) {
     const inspected = await inspectReleaseWorkflow(
       repository,
@@ -455,6 +489,7 @@ export async function getDistributionStatus(
     );
     summary.ciFailure = inspected.ciFailure;
     releaseSucceededAt = inspected.succeededAt;
+    releaseWindow = inspected.window;
   }
   const nowMs = options?.nowMs ?? Date.now();
   const tapRepos = new Set<string>();
@@ -466,12 +501,15 @@ export async function getDistributionStatus(
     if (tapRepo) tapRepos.add(tapRepo);
   }
   const tapInProgressByRepo = new Map<string, boolean>();
-  if (tapRepos.size) {
+  // No release run to anchor the window means no tap signal at all: a repo-wide
+  // "is the tap busy" answer could belong to any release or unrelated CI.
+  if (tapRepos.size && releaseWindow) {
+    const window = releaseWindow;
     await Promise.all(
       [...tapRepos].map(async (repo) => {
         tapInProgressByRepo.set(
           repo,
-          await homebrewTapUpdateInProgress(repo, fetchImpl, timeoutMs),
+          await homebrewTapUpdateInProgress(repo, window, fetchImpl, timeoutMs),
         );
       }),
     );
