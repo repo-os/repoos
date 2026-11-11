@@ -19,8 +19,16 @@ if [ -n "$staged_artifact" ]; then
   exempt=1
   for f in $staged_artifact; do
     case "$f" in
-      work/reports/*.md|work/reports/*.json) ;;
-      work/[0-9]*-*.md) ;;
+      work/reports/*.md|work/reports/*.json|work/[0-9]*-*.md)
+        # Bookkeeping is exempt only while it is small and secret-free: the
+        # exemption must not be broader than the guard it skips.
+        size=$(git cat-file -s ":$f" 2>/dev/null || echo 0)
+        if [ "$size" -gt 262144 ] ||
+          git show ":$f" 2>/dev/null | grep -Eq 'sk_(live|test)_[0-9A-Za-z]{10,}|rk_(live|test)_[0-9A-Za-z]{10,}|whsec_[0-9A-Za-z]{10,}|AIza[0-9A-Za-z_-]{30,}|A[KS]IA[0-9A-Z]{16}|gh[pousr]_[0-9A-Za-z]{30,}|github_pat_[0-9A-Za-z_]{20,}|sk-ant-[0-9A-Za-z_-]{10,}|xox[baprs]-[0-9A-Za-z-]{10,}'; then
+          exempt=0
+          break
+        fi
+        ;;
       *)
         exempt=0
         break

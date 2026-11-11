@@ -322,7 +322,9 @@ export function scanBuffersForSecrets(
     }
   };
 
-  pushHits(buf.slice(0, Math.min(buf.length, maxDecompressBytes)));
+  // Raw-scan the whole (caller-bounded) buffer: the decompression limit caps
+  // inflation output only, never the plaintext scan.
+  pushHits(buf);
   if (secrets.length >= 20) return { secrets, incomplete };
 
   const gzipHits = indexOfAll(buf, GZIP_MAGIC, buf.length);
@@ -643,6 +645,60 @@ const ALLOWLIST_SCAN_HARD_CAP = 64 * 1024 * 1024;
 /** Overlap between scan windows so a secret straddling a boundary is still seen. */
 const WINDOW_OVERLAP = 8 * 1024;
 
+/**
+ * Scan one bounded blob for secrets. A truncated blob of an allowlisted large
+ * path is re-read up to a hard cap and scanned in overlapping windows; any other
+ * truncated blob is reported as incomplete. Shared by the branch gate and the
+ * checkpoint planner so the allowlist means the same thing in both.
+ */
+function scanBlobAllowlistAware(
+  repoRoot: string,
+  spec: string,
+  blob: BoundedBlobRead,
+  path: string,
+  resolved: ReturnType<typeof resolveBranchArtifactGuardOptions>,
+  maxRead: number,
+): BufferSecretScan {
+  const secrets: SecretHit[] = [];
+  const incomplete: ScanIncomplete[] = [];
+  let windows: Buffer[] = [blob.buf];
+  if (blob.truncated) {
+    if (isAllowlistedLargePath(path, resolved.largeFileAllowlist)) {
+      const full = readGitBlobBounded(repoRoot, spec, ALLOWLIST_SCAN_HARD_CAP);
+      if (full) {
+        windows = [];
+        for (let off = 0; off < full.buf.length; off += maxRead - WINDOW_OVERLAP) {
+          windows.push(full.buf.subarray(off, Math.min(full.buf.length, off + maxRead)));
+          if (off + maxRead >= full.buf.length) break;
+        }
+        if (full.truncated) {
+          incomplete.push({
+            path,
+            reason: `allowlisted file is ${full.size} bytes, past the ${ALLOWLIST_SCAN_HARD_CAP}-byte scan hard cap`,
+          });
+        }
+      }
+    } else {
+      incomplete.push({
+        path,
+        reason: `file is ${blob.size} bytes but only the first ${maxRead} bytes were scanned`,
+      });
+    }
+  }
+  for (const w of windows) {
+    const r = scanBuffersForSecrets(
+      w,
+      path,
+      resolved.maxDecompressBytes,
+      resolved.maxCompressedProbeOffsets,
+    );
+    secrets.push(...r.secrets);
+    incomplete.push(...r.incomplete);
+    if (secrets.length >= 20) break;
+  }
+  return { secrets, incomplete };
+}
+
 export function evaluateAddedPaths(
   repoRoot: string,
   paths: string[],
@@ -737,45 +793,9 @@ export function evaluateAddedPaths(
     }
     for (let bi = 0; bi < blobs.length; bi++) {
       const b = blobs[bi]!;
-      const scanIncomplete: ScanIncomplete[] = [];
-      const found: SecretHit[] = [];
-      let windows: Buffer[] = [b.buf];
-      if (b.truncated) {
-        if (isAllowlistedLargePath(path, resolved.largeFileAllowlist)) {
-          // An allowlisted large file is still scanned end to end, in overlapping
-          // windows, up to a hard cap (a secret must not hide past the first window).
-          const full = readGitBlobBounded(repoRoot, blobSpecs[bi]!, ALLOWLIST_SCAN_HARD_CAP);
-          if (full) {
-            windows = [];
-            for (let off = 0; off < full.buf.length; off += maxRead - WINDOW_OVERLAP) {
-              windows.push(full.buf.subarray(off, Math.min(full.buf.length, off + maxRead)));
-              if (off + maxRead >= full.buf.length) break;
-            }
-            if (full.truncated) {
-              scanIncomplete.push({
-                path,
-                reason: `allowlisted file is ${full.size} bytes, past the ${ALLOWLIST_SCAN_HARD_CAP}-byte scan hard cap`,
-              });
-            }
-          }
-        } else {
-          scanIncomplete.push({
-            path,
-            reason: `file is ${b.size} bytes but only the first ${maxRead} bytes were scanned`,
-          });
-        }
-      }
-      for (const w of windows) {
-        const r = scanBuffersForSecrets(
-          w,
-          path,
-          resolved.maxDecompressBytes,
-          resolved.maxCompressedProbeOffsets,
-        );
-        found.push(...r.secrets);
-        scanIncomplete.push(...r.incomplete);
-        if (found.length >= 20) break;
-      }
+      const scanned_ = scanBlobAllowlistAware(repoRoot, blobSpecs[bi]!, b, path, resolved, maxRead);
+      const found = scanned_.secrets;
+      const scanIncomplete: ScanIncomplete[] = [...scanned_.incomplete];
       for (const hit of found) {
         secrets.push(hit);
         violations.push({ kind: "secret", path, detail: hit.type });
@@ -937,17 +957,13 @@ export function planCheckpointStaging(
       refusedPaths.push(path);
       continue;
     }
-    if (blob.truncated) {
-      incomplete.push({
-        path,
-        reason: `file is ${blob.size} bytes but only the first ${maxRead} bytes were scanned`,
-      });
-    }
-    const scan = scanBuffersForSecrets(
-      blob.buf,
+    const scan = scanBlobAllowlistAware(
+      repoRoot,
+      `:${normRepoPath(path)}`,
+      blob,
       path,
-      resolved.maxDecompressBytes,
-      resolved.maxCompressedProbeOffsets,
+      resolved,
+      maxRead,
     );
     secrets.push(...scan.secrets);
     incomplete.push(...scan.incomplete);

@@ -297,6 +297,43 @@ describe("review pass 3 regressions (#1096)", () => {
   });
 });
 
+describe("review pass 6 regressions (#1096)", () => {
+  it("raw-scans the whole bounded buffer: a key at 4.3 MiB and 4.9 MiB is found", () => {
+    for (const at of [4.3, 4.9]) {
+      const buf = Buffer.alloc(5 * 1024 * 1024, 9);
+      Buffer.from(fakeStripeTestSecret()).copy(buf, Math.floor(at * 1024 * 1024));
+      const { secrets } = scanBuffersForSecrets(buf, "p.bin", 4 * 1024 * 1024);
+      expect(secrets.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("an allowlisted large dirty file does not block the checkpoint", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cp-allow-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "big.dat"), Buffer.alloc(6 * 1024 * 1024, 9));
+    writeFileSync(join(root, "src.ts"), "ok\n");
+    git(root, "add", "big.dat", "src.ts");
+    const staging = planCheckpointStaging(root, ["big.dat", "src.ts"], {
+      largeFileAllowlist: ["big.dat"],
+    });
+    expect(staging.error).toBeFalsy();
+    expect(staging.allowed).toContain("src.ts");
+  });
+
+  it("an allowlisted large dirty file with a secret past the first window is refused", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-cp-allow-secret-"));
+    dirs.push(root);
+    initRepo(root);
+    const buf = Buffer.alloc(6 * 1024 * 1024, 9);
+    Buffer.from(fakeStripeTestSecret()).copy(buf, 5 * 1024 * 1024 + 100);
+    writeFileSync(join(root, "big.dat"), buf);
+    git(root, "add", "big.dat");
+    const staging = planCheckpointStaging(root, ["big.dat"], { largeFileAllowlist: ["big.dat"] });
+    expect(staging.error).toMatch(/Secret pattern/);
+  });
+});
+
 describe("review pass 4 regressions (#1096)", () => {
   it("flags a secret added to a file after its first (clean) commit", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-later-"));
@@ -506,6 +543,39 @@ describe("pre-commit hook (#1096)", () => {
     const res = spawnSync("git", ["commit", "-qm", "bad"], { cwd: root, encoding: "utf8" });
     expect(res.status).not.toBe(0);
     expect(res.stderr).toMatch(/artifact guard|build-output/i);
+  });
+
+  it("blocks a secret-bearing task bookkeeping file (exemption is not by filename alone)", () => {
+    const root = seedPreCommitRepo();
+    dirs.push(root);
+    git(root, "checkout", "-q", "-b", "feat/book");
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "work/1-x.md"), `leak ${fakeStripeTestSecret()}\n`);
+    git(root, "add", "work/1-x.md");
+    const res = spawnSync("git", ["commit", "-qm", "bad"], { cwd: root, encoding: "utf8" });
+    expect(res.status).not.toBe(0);
+  });
+
+  it("blocks an oversized task bookkeeping file", () => {
+    const root = seedPreCommitRepo();
+    dirs.push(root);
+    git(root, "checkout", "-q", "-b", "feat/book2");
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "work/2-x.md"), "a".repeat(1536 * 1024));
+    git(root, "add", "work/2-x.md");
+    const res = spawnSync("git", ["commit", "-qm", "bad"], { cwd: root, encoding: "utf8" });
+    expect(res.status).not.toBe(0);
+  });
+
+  it("still allows a small clean task bookkeeping commit", () => {
+    const root = seedPreCommitRepo();
+    dirs.push(root);
+    git(root, "checkout", "-q", "-b", "feat/book3");
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "work/3-x.md"), "# task\n");
+    git(root, "add", "work/3-x.md");
+    const res = spawnSync("git", ["commit", "-qm", "ok"], { cwd: root, encoding: "utf8" });
+    expect(res.status).toBe(0);
   });
 
   it("still runs artifact guard for docs-only stages", () => {
