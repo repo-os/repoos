@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
@@ -67,3 +68,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T17:13:16Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T17:13:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: VitePress runs the LLMS enrich hook too early (`closeBundle` before markdown lands in `dist`). Moving enrichment to `buildEnd` so the user-docs build passes the gate. · stderr: (empty)
 - 2026-11-11T17:18:34Z · message_queued at 2026-11-11T17:18:34.580Z
+
