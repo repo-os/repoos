@@ -9,6 +9,7 @@ import { spawn } from "node:child_process";
 import { join, relative, resolve } from "node:path";
 import type { ReleaseConfig, RepoOSConfig } from "../core/types.js";
 import { captureOutput } from "./done.js";
+import { startCutReleaseEmail } from "./release-email.js";
 import { listCachedReleaseNotes } from "./release-notes-cache.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import {
@@ -648,6 +649,11 @@ export async function cutNewRelease(
    * `Release <tag>` annotation exactly as before.
    */
   notes?: string,
+  /**
+   * Operator-typed known issues for the release email (#1071). Stored on the
+   * release record, never invented; empty means "None recorded" in the email.
+   */
+  knownIssues?: string,
 ): Promise<{ ok: boolean; status: ReleaseStatus; output: string }> {
   onProgress?.("preparing", "Validating the configured branch and release version…");
   let status = await getReleaseStatus(config, exec);
@@ -689,11 +695,13 @@ export async function cutNewRelease(
     const commits = await collectReleaseCommits(config, exec);
     releaseNotes = renderDefaultReleaseNotes(commits.commits);
   }
+  const trimmedKnownIssues = knownIssues?.trim() ?? "";
   const releaseEntry: ReleaseHistoryEntry = {
     version,
     tag,
     date: releaseDate(),
     notes: releaseNotes,
+    ...(trimmedKnownIssues ? { knownIssues: trimmedKnownIssues } : {}),
   };
   // Committed with the version bump so the tag CI releases already carries the
   // new version/date for docs.repoos.org and repoos.org to build from.
@@ -1082,6 +1090,11 @@ export async function cutNewRelease(
     );
   }
   const deployNote = await deployReleaseBranches(config, status.branch, exec);
+  // Release emails (#1071) run detached: they wait for GitHub to publish when
+  // configured, and never change the outcome of this cut.
+  startCutReleaseEmail(config, releaseEntry, {
+    upgradeCommand: expectsOwnCliRepo(config.root) ? "repoos upgrade" : undefined,
+  });
   return {
     ok: true,
     status: await getReleaseStatus(config, exec),

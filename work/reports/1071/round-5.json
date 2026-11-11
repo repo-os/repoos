@@ -1,0 +1,12 @@
+{
+  "taskId": "1071",
+  "round": 5,
+  "at": "2026-11-11T09:41:42.254Z",
+  "agent": "opencode",
+  "model": "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash",
+  "branch": "feat/release-emails-any-project-with-email-co",
+  "baseSha": "54696310b2603957331fcd3239ec7a62cb7ea8fb",
+  "sourceSha": "c963a9a0fb9768bfc07c180fd61481146f7e38f5",
+  "wordCount": 308,
+  "markdown": "## TL;DR\nWhen a release is cut, any project with an email provider configured can email its team the release notes, with a Releases-page card for status, preview, Resend and the bell. The last round fixed two Resend defects: concurrent Resends could both send, and a local write error could lose an accepted recipient so the next Resend mailed them again.\n\n## Work and rationale\n`release-email.ts` renders and sends one message per recipient through the configured provider and records each accepted address before the next send. `resendReleaseEmail` now claims the version in `inFlight` before its first await (the GitHub probe), so a second concurrent Resend is refused, and it keeps a caller-owned accepted list that a catch block persists as a `failed` record, mirroring the automatic path (which already awaited its sends inside the try). A refusal before anything is sent still throws as before. Tests make the second local write throw during a Resend, and race two Resends, and 60 release-email tests pass. Earlier rounds fixed the card refresh after a cut, orphaned pending sends reaching the bell, and the docs wording (per-recipient at-most-once with the provider-accept-to-write window).\n\n## Approaches tried\nFire-and-forget send with one record, then per-recipient persistence, then caller-owned accepted state shared by the automatic and Resend paths, and finally claiming the in-flight slot before any await.\n\n## Challenges and blockers\nFive review rounds on narrow edge cases of one class (state written from a stale snapshot, and guards set after an await). The engineer stalled twice, so the last two rounds were finished by hand. The first handoffs timed out when three full checks ran at once.\n\n## Key learnings\nSet the in-flight guard before the first await, and own the progress state in the caller so a catch block can persist it. Share the pattern across the sibling paths instead of fixing one at a time.\n\n## Generated change summary\n\nBase tree: `54696310b2603957331fcd3239ec7a62cb7ea8fb`\nSource tree: `3e54e1b1e20c4f3780b69d41973ade262ae85c58`\n\n- M src/server/release-email.ts: +33 / −13\n- M src/ui-app/tests/release-email.test.ts: +41 / −0"
+}

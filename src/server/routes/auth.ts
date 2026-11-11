@@ -26,7 +26,8 @@ import { createVerify, createPublicKey } from "node:crypto";
 import type { RouteHandler } from "./types.js";
 import { json, readBody } from "./utils.js";
 import { getAuthStore, type AuthStore } from "../../core/auth-store.js";
-import type { AuthEmailProvider, AuthRole } from "../../core/auth.js";
+import type { AuthRole } from "../../core/auth.js";
+import { sendEmail } from "../email.js";
 import {
   generateOtp,
   hashOtp,
@@ -109,58 +110,16 @@ export function requireAdmin(
 // Email sending via Resend
 // ---------------------------------------------------------------------------
 
-/**
- * The standardized default sender name: "RepoOS at <repo>", where <repo> is
- * the checkout's directory name (same convention as the ntfy test
- * notification in notify.ts). auth.emailProvider.fromName overrides it.
- */
-function defaultFromName(config: RepoOSConfig): string {
-  return `RepoOS at ${projectDisplayName(config.root)}`;
-}
+export { buildFromHeader } from "../email.js";
 
-/**
- * RFC 5322 `From` header: "Display Name <addr>". Without a configured
- * fromName, mail clients fall back to showing the address's local part
- * (e.g. "otp") as the sender name, so this always supplies one.
- */
-export function buildFromHeader(config: RepoOSConfig, provider: AuthEmailProvider): string {
-  const name = provider.fromName || defaultFromName(config);
-  return `${name} <${provider.fromAddress}>`;
-}
-
+/** Login codes and invites go through the shared sender (server/email.ts). */
 async function sendResendEmail(
   config: RepoOSConfig,
   toEmail: string,
   subject: string,
   html: string,
 ): Promise<boolean> {
-  const provider = config.auth?.emailProvider;
-  if (!provider || provider.type !== "resend") return false;
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${provider.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: buildFromHeader(config, provider),
-        to: [toEmail],
-        subject,
-        html,
-      }),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      console.error(`Resend send to ${toEmail} failed (${res.status}): ${detail.slice(0, 500)}`);
-    }
-    return res.ok;
-  } catch (err) {
-    console.error(
-      `Resend send to ${toEmail} threw: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return false;
-  }
+  return (await sendEmail(config, { to: toEmail, subject, html })).ok;
 }
 
 async function sendOtpEmail(config: RepoOSConfig, toEmail: string, code: string): Promise<boolean> {
