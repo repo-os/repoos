@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 63cd33b58c7d8f5aa649159626b68a287739f125
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -96,3 +98,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T04:21:57Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Adding integration tests for CLI/API warnings and the split scaffold, then finishing the engineering report and shots. · stderr: RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T04:22:26Z · message_queued at 2026-11-11T04:22:26.665Z
 - 2026-11-11T04:22:26Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate
+
