@@ -1,12 +1,9 @@
-import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitepress";
 import llmstxt from "vitepress-plugin-llms";
-import { enrichLlmsOutputs } from "./llms-enrich";
 import { themeBootPlugin, themeBootScriptContent } from "./vite-plugin-theme-boot";
+import { llmsEnrichPlugin } from "./llms-enrich";
 import { LLMS_INDEX_EXCLUDED_SOURCES, SITE_ORIGIN, llmsIndexTemplate } from "./llms-index";
-
-const docsRoot = fileURLToPath(new URL("..", import.meta.url));
 
 // The header mark's geometry is shared with the landing page (repo-root
 // `shared/logo.ts`), which sits above this project's root. The dev server —
@@ -66,12 +63,10 @@ export default defineConfig({
         excludeIndexPage: true,
         customLLMsTxtTemplate: llmsIndexTemplate,
       }),
+      // Fills index descriptions the generator left blank, and writes
+      // /llms-essentials.txt from the built raw pages.
+      llmsEnrichPlugin(fileURLToPath(new URL("..", import.meta.url))),
     ],
-  },
-  // Run after vitepress-plugin-llms has written raw `.md` pages into dist — a Vite
-  // `closeBundle` hook fires too early (client bundle) and dist is not ready yet.
-  async buildEnd() {
-    enrichLlmsOutputs(docsRoot, path.join(docsRoot, ".vitepress", "dist"));
   },
   head: [
     ["script", { id: "repoos-theme-boot" }, themeBootInline],

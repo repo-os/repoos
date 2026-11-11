@@ -137,3 +137,15 @@ export function enrichLlmsOutputs(docsRoot: string, distRoot: string): void {
   }
   writeFileSync(path.join(distRoot, ESSENTIALS_FILE), essentials);
 }
+
+/** Runs after vitepress-plugin-llms has emitted the index and raw pages. */
+export function llmsEnrichPlugin(docsRoot: string) {
+  return {
+    name: "repoos:llms-enrich",
+    apply: "build",
+    closeBundle() {
+      const distRoot = path.join(docsRoot, ".vitepress", "dist");
+      enrichLlmsOutputs(docsRoot, distRoot);
+    },
+  };
+}
