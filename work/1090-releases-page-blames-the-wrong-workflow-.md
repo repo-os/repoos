@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T06:31:14Z"
+updated_at: "2026-11-11T06:32:17Z"
 review_rounds: 2
 review_passes: 2
 deferred_handoff_resume_count: 1
@@ -93,3 +93,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:31:14Z · status active→review
 - 2026-11-11T06:31:14Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
 - 2026-11-11T06:31:14Z · message_queued at 2026-11-11T06:31:14.387Z
+- 2026-11-11T06:32:17Z · note: review pass 3: good to go
