@@ -3,6 +3,9 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Error: [aborted] read ECONNRESET"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -13,15 +16,15 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T07:11:58Z"
+updated_at: "2026-11-11T07:27:24Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: c4a4aac81eb4365f88bf5ecb91decb216d4f4aa1
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
 handoff_signal_retry_count: 2
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T04:22:39.239Z\",\"kind\":\"dev-error\"}]"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T07:26:54.870Z\",\"kind\":\"dev-error\"}]"
 incomplete_review_retries: 1
 ---
 ## Problem
@@ -158,3 +161,5 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T07:06:58Z · message_queued at 2026-11-11T07:06:58.037Z
 - 2026-11-11T07:06:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T07:11:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T07:26:54Z · agent exited with an error (cursor) · Error: [aborted] read ECONNRESET
+- 2026-11-11T07:27:24Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [aborted] read ECONNRESET
