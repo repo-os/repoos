@@ -161,3 +161,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T07:26:54Z · agent exited with an error (cursor) · Error: [aborted] read ECONNRESET
 - 2026-11-11T07:27:24Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [aborted] read ECONNRESET
 - 2026-11-11T07:27:26Z · needs_input
+- 2026-11-11T07:27:26Z · message_delivered: 1 message(s)
