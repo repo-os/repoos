@@ -77,3 +77,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T19:58:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T19:59:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T20:17:32Z · body
+- 2026-11-11T20:38:12Z · note: handoff requested (cli)
