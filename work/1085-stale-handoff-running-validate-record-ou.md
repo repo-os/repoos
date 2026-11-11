@@ -12,7 +12,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-11T01:59:42Z"
+updated_at: "2026-11-11T02:03:45Z"
 last_close_out_gate_ms: 835515
 last_close_out_gate_at: "2026-11-11T01:59:28.853Z"
 review_passes: 6
@@ -201,3 +201,4 @@ FINAL (pass 6): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:43:42Z · needs_input
 - 2026-11-11T01:59:28Z · close-out gate completed in 836s
 - 2026-11-11T01:59:42Z · status done→done, release:success
+- 2026-11-11T02:03:45Z · message_dropped: 1 queued message(s) discarded — task is done
