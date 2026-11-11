@@ -2,7 +2,7 @@
 id: "1090"
 title: "Releases page blames the wrong workflow: an unrelated failed run shows as 'release workflow failed' while Homebrew is just updating"
 type: bug
-status: active
+status: review
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T06:28:16Z"
+updated_at: "2026-11-11T06:31:14Z"
 review_rounds: 2
 review_passes: 2
 deferred_handoff_resume_count: 1
@@ -90,3 +90,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:25:01Z · message_queued at 2026-11-11T06:25:01.177Z
 - 2026-11-11T06:25:01Z · handoff failed · task-file handoff failed at review · Engineering report is missing required sections: ## Approaches tried.
 - 2026-11-11T06:28:16Z · note: handoff requested (cli)
+- 2026-11-11T06:31:14Z · status active→review
