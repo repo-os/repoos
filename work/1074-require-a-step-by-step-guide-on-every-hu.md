@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T05:35:41Z"
+updated_at: "2026-11-11T05:48:16Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
@@ -45,16 +45,16 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 ```json
 [
 {
-  "label": "Human task drawer missing step-by-step guide warning",
-  "target": "default",
-  "route": "/work?task=9999&tab=changes",
-  "highlight": "[data-test-id=\"human-guide-warning\"]",
-  "steps": [
-    {
-      "waitFor": "[data-test-id=\"human-guide-warning\"]"
-    }
-  ],
-  "state": "drawer:humanGuideWarning"
+"label": "Human task drawer missing step-by-step guide warning",
+"target": "default",
+"route": "/work?task=9999&tab=changes",
+"highlight": "[data-test-id=\"human-guide-warning\"]",
+"steps": [
+  {
+    "waitFor": "[data-test-id=\"human-guide-warning\"]"
+  }
+],
+"state": "drawer:humanGuideWarning"
 }
 ]
 ```
