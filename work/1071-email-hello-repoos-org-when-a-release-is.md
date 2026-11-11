@@ -230,3 +230,4 @@ FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every 
 - 2026-11-11T09:49:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T09:49:37Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T09:49:37Z · message_delivered: 2 message(s)
+- 2026-11-11T09:49:40Z · note: handoff requested (cli)
