@@ -57,3 +57,4 @@ FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress mus
 - 2026-11-11T05:02:27Z · status review→active
 - 2026-11-11T05:02:30Z · CTO nudge: held — remote validation is running
 - 2026-11-11T05:08:24Z · body: Accepted scope and known limitations (added)
+- 2026-11-11T05:08:24Z · message_queued at 2026-11-11T05:08:24.674Z
