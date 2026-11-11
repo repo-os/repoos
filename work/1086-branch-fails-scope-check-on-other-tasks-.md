@@ -11,7 +11,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T00:35:35Z"
+updated_at: "2026-11-11T00:53:15Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -67,3 +67,4 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 - 2026-11-11T00:35:35Z · note: review pass 1: needs some work
 - 2026-11-11T00:35:35Z · message_delivered: 1 message(s)
 - 2026-11-11T00:35:35Z · status review→active
+- 2026-11-11T00:53:15Z · body
