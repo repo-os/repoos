@@ -222,3 +222,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T21:56:46Z · message_queued at 2026-11-11T21:56:46.515Z
 - 2026-11-11T21:56:46Z · handoff failed · task-file handoff failed at review · could not commit finalized engineering report: A check is running; wait for it to finish.
 - 2026-11-11T21:58:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T22:02:09Z · note: handoff requested (cli)
