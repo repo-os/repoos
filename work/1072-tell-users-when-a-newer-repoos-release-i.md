@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T03:24:45Z"
+updated_at: "2026-11-11T03:35:16Z"
 dev_error_count: 1
 ---
 ## Problem
@@ -69,3 +69,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T03:19:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T03:24:45Z · message_delivered: 1 message(s)
 - 2026-11-11T03:24:45Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-11T03:35:16Z · body
