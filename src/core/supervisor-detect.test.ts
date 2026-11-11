@@ -134,13 +134,28 @@ describe("detectSupervisor", () => {
     }
   });
 
+  it("finds a system-domain LaunchDaemon that non-root `launchctl list` omits (Kamrai)", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "launchctl" && args[0] === "list")
+        return "PID\tStatus\tLabel\n714\t0\tcom.apple.Finder\n";
+      if (cmd === "launchctl" && args[0] === "print" && args[1] === "system") {
+        return "system = {\n\tservices = {\n\t\t48210\t0\torg.repoos.serve.kamrai\n\t\t-\t0\tcom.apple.foo\n\t}\n}\n";
+      }
+      if (cmd === "ps" && args.includes("uid=")) return "0\n";
+      throw new Error("unexpected");
+    });
+    const r = detectSupervisor(48210, execFile as never);
+    expect(r.kind).toBe("external");
+    if (r.kind === "external") expect(r.info.job).toBe("org.repoos.serve.kamrai");
+  });
+
   it("treats a RepoOS-managed label as its own service, not an external supervisor", () => {
     const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "launchctl" && args[0] === "list") return MACOS_LIST_SAMPLE;
       throw new Error("unexpected");
     });
     const r = detectSupervisor(83082, execFile as never);
-    expect(r.kind).toBe("none");
+    expect(r.kind).toBe("managed");
   });
 
   it("is uncertain (not hand-run) when a launchd-parented pid has no list row", () => {

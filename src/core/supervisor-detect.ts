@@ -19,6 +19,8 @@ export interface SupervisorInfo {
 export type SupervisorDetectResult =
   | { kind: "external"; info: SupervisorInfo }
   | { kind: "none" }
+  /** A RepoOS-installed service unit (`com.repoos.serve.*`): restart via the service manager, never by signalling. */
+  | { kind: "managed"; job: string }
   | { kind: "uncertain"; reason: string };
 
 /**
@@ -211,10 +213,30 @@ function detectDarwinSupervisor(
     };
   }
 
-  const listed = parseLaunchctlListForPid(listOut, pid);
+  let listed = parseLaunchctlListForPid(listOut, pid);
+  if (!listed) {
+    // A non-root `launchctl list` only shows the caller's own domain, so a
+    // LaunchDaemon in the `system` domain (the Kamrai case) never appears.
+    // `launchctl print <domain>` lists a domain's services, with pids, and runs
+    // without sudo.
+    const uid = readPidUid(pid, execFile);
+    const domains = ["system", ...(uid !== null && uid !== 0 ? [`gui/${uid}`] : [])];
+    for (const domain of domains) {
+      try {
+        const out = execFile("launchctl", ["print", domain], {
+          encoding: "utf8",
+          timeout: 5000,
+          stdio: ["ignore", "pipe", "ignore"],
+        });
+        listed = parseLaunchctlListForPid(out, pid);
+        if (listed) break;
+      } catch {
+        /* domain not printable by this user — try the next one */
+      }
+    }
+  }
   if (listed && MANAGED_LABEL_RE.test(listed)) {
-    // RepoOS-managed unit — the caller uses the service manager, not this path.
-    return { kind: "none" };
+    return { kind: "managed", job: listed };
   }
   if (listed) {
     const uid = readPidUid(pid, execFile);
@@ -266,7 +288,7 @@ function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): Supe
       stdio: ["ignore", "pipe", "pipe"],
     });
     const info = parseSystemdPidStatus(out);
-    if (info && MANAGED_LABEL_RE.test(info.job)) return { kind: "none" };
+    if (info && MANAGED_LABEL_RE.test(info.job)) return { kind: "managed", job: info.job };
     if (info) return { kind: "external", info };
     if (/\b\.service\b/.test(out) || /Main PID:/.test(out)) {
       return {

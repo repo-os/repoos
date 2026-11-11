@@ -24,6 +24,7 @@ describe("restartRepoServer", () => {
   it("refuses when server belongs to another user", async () => {
     const result = await restartRepoServer(root, {
       locate: async () => server({ pid: 42 }),
+      verifyPid: () => true,
       ownership: () => ({ uid: 999, canSignal: false, otherUser: true }),
     });
     expect(result.ok).toBe(false);
@@ -34,6 +35,7 @@ describe("restartRepoServer", () => {
     const warned = vi.fn();
     await restartRepoServer(root, {
       locate: async () => server({ pid: 10 }),
+      verifyPid: () => true,
       classify: async () => "managed-service",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
       health: async () => ({
@@ -205,6 +207,20 @@ describe("restartRepoServer", () => {
     });
     expect(result.ok).toBe(true);
     expect(spawnedFlags).toEqual(["--preview-overrides"]);
+  });
+
+  it("refuses to signal a pid that does not verify, even when /api/health answers", async () => {
+    const stop = vi.fn();
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 77 }),
+      verifyPid: () => false,
+      classify: async () => "hand-run",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({ ok: true, root, serverVersion: "0.5.80", activeEngineers: 0 }),
+      stop,
+    });
+    expect(result.ok).toBe(false);
+    expect(stop).not.toHaveBeenCalled();
   });
 });
 

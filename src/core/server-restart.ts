@@ -100,7 +100,11 @@ export async function classifyRestartPath(
   if (managed?.status === "running") return "managed-service";
   const detected = detectSupervisor(server.pid);
   if (detected.kind === "external") return "external-supervisor";
-  if (detected.kind === "uncertain") return "refuse-supervised-unknown";
+  // A RepoOS service unit whose registry entry is missing or not `running`:
+  // signalling it would race the service's KeepAlive respawn into a second server.
+  if (detected.kind === "uncertain" || detected.kind === "managed") {
+    return "refuse-supervised-unknown";
+  }
   return "hand-run";
 }
 
@@ -348,9 +352,9 @@ export async function restartRepoServer(
 
   const health = await (opts.health ?? fetchHealth)(server.host, server.port);
   const verifyPid = opts.verifyPid ?? verifyPidServesRepo;
-  const healthForRoot =
-    health.ok && health.root && canonicalRegistryRoot(health.root) === canonicalRegistryRoot(root);
-  if (!healthForRoot && !verifyPid(server.pid, root)) {
+  // /api/health carries no pid, so it cannot vouch for `server.pid`: a recycled
+  // pid plus another server answering on the port would pass. Always verify.
+  if (!verifyPid(server.pid, root)) {
     return {
       ok: false,
       oldPid: server.pid,
@@ -377,8 +381,10 @@ export async function restartRepoServer(
       message:
         detected.kind === "uncertain"
           ? detected.reason
-          : "Could not determine how this server is supervised — refusing to restart automatically.",
-      manualCommand: `kill ${server.pid}`,
+          : detected.kind === "managed"
+            ? `pid ${server.pid} is the RepoOS service ${detected.job}, but the service manager does not report it running — use \`repoos service restart\` instead of signalling it.`
+            : "Could not determine how this server is supervised — refusing to restart automatically.",
+      manualCommand: detected.kind === "managed" ? "repoos service restart" : `kill ${server.pid}`,
     };
   }
 

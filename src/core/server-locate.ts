@@ -64,9 +64,9 @@ export async function locateRepoServer(
   for (const lock of locks) {
     if (!lock.alive || lock.port === null) continue;
     const host = lock.host ?? "127.0.0.1";
-    const healthRoot = await fetchHealthRoot(host, lock.port);
-    const healthOk = healthRoot !== null && canonicalRegistryRoot(healthRoot) === canonical;
-    if (!healthOk && !verifyPidServesRepo(lock.pid, root)) continue;
+    // /api/health has no pid, so it cannot vouch for lock.pid (recycled pid):
+    // always verify the pid itself serves this repo.
+    if (!verifyPidServesRepo(lock.pid, root)) continue;
     const reg = await registryPidForPort(root, lock.port, opts.registryDir);
     return {
       port: lock.port,
