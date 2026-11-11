@@ -71,3 +71,4 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 - 2026-11-11T00:57:19Z · status active→review
 - 2026-11-11T00:57:19Z · note: Task body is underspecified: missing sections: Acceptance criteria, Notes for AI
 - 2026-11-11T00:57:19Z · message_queued at 2026-11-11T00:57:19.333Z
+- 2026-11-11T00:57:19Z · note: shots: skipped — the diff (15 changed paths) touches no capture target's globs — no UI change to capture
