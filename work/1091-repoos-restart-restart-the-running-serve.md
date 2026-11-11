@@ -85,3 +85,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T13:13:10Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T13:22:30Z · body
 - 2026-11-11T13:28:46Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T13:28:46Z · message_queued at 2026-11-11T13:28:46.757Z
