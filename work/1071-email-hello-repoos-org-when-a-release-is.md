@@ -3,9 +3,6 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -301,3 +298,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T20:00:20Z · needs_input
 - 2026-11-11T20:02:28Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
 - 2026-11-11T20:06:14Z · note: review pass 8: good to go
+- 2026-11-11T20:06:14Z · needs_input
