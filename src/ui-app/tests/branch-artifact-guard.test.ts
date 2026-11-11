@@ -230,7 +230,7 @@ describe("branch diff guard", () => {
 });
 
 describe("checkpoint staging", () => {
-  it("reads the worktree when a tracked file has a dirty secret (index clean)", () => {
+  it("scans the index blob after git add, not a clean worktree with dirty disk", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-dirty-tracked-"));
     dirs.push(root);
     initRepo(root);
@@ -238,6 +238,7 @@ describe("checkpoint staging", () => {
     git(root, "add", "f.txt");
     git(root, "commit", "-qm", "track");
     writeFileSync(join(root, "f.txt"), fakeStripeTestSecret());
+    git(root, "add", "f.txt");
     const staging = planCheckpointStaging(root, ["f.txt"], {});
     expect(staging.allowed).toEqual([]);
     expect(staging.error).toMatch(/Secret pattern/);
@@ -251,6 +252,7 @@ describe("checkpoint staging", () => {
     writeFileSync(join(root, "dump", "leak.txt"), fakeStripeTestSecret());
     const expanded = expandCheckpointPaths(root, ["dump/"], 50);
     expect(expanded.paths).toContain("dump/big.bin");
+    git(root, "add", "dump");
     const staging = planCheckpointStaging(root, ["dump/"], {
       maxAddedFileBytes: 1_048_576,
     });

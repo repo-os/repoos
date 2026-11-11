@@ -132,11 +132,14 @@ export async function commitWipCheckpointForRemoteGate(
   const stagedForGuard = gitStagedPaths(worktreePath).filter(
     (p) => p !== REPOOS_TOML_REL && !foreign.includes(p),
   );
-  const staging = planCheckpointStaging(
-    worktreePath,
-    [...new Set([...toCommit, ...stagedForGuard])],
-    config.check,
-  );
+  const pathsToScan = [...new Set([...toCommit, ...stagedForGuard])];
+  for (const path of pathsToScan) {
+    const add = await runGit(worktreePath, ["add", "--", path], 60_000);
+    if (add.status !== 0) {
+      return `could not stage ${path} for artifact scan before remote self-check`;
+    }
+  }
+  const staging = planCheckpointStaging(worktreePath, pathsToScan, config.check);
   const blocked = [...staging.unstagedBuildOutput, ...staging.unstagedOversize];
   if (blocked.length > 0) {
     const unstageBlocked = await runGit(

@@ -26,6 +26,8 @@ export const DEFAULT_CHECKPOINT_MAX_BYTES = 5_242_880;
 export const DEFAULT_MAX_DECOMPRESS_BYTES = 4_194_304;
 export const DEFAULT_MAX_SCAN_FILES = 500;
 export const DEFAULT_MAX_COMPRESSED_PROBE_OFFSETS = 512;
+/** Refuse decompression when compressed size × ratio could exceed the output cap (#1096 r3). */
+export const MAX_COMPRESSION_EXPANSION_RATIO = 32;
 
 /** Built-in path segments / suffixes that must never enter git (#1096). */
 export const DEFAULT_BUILD_OUTPUT_PATTERNS = [
@@ -209,8 +211,13 @@ function zstdAvailable(): boolean {
   return Boolean(bun?.zstdDecompressSync) || typeof zstdDecompressSync === "function";
 }
 
-/** Node's `zstdDecompressSync` caps output; Bun's does not — never use Bun for zstd (#1096 r3). */
+function compressionWouldExceedCap(compressedLen: number, maxOut: number): boolean {
+  return compressedLen > maxOut / MAX_COMPRESSION_EXPANSION_RATIO;
+}
+
+/** Node's `zstdDecompressSync` caps output during inflation; never uncapped Bun (#1096 r3). */
 function decompressZstd(buf: Buffer, maxOut: number): Buffer | "too_large" | "missing" | "error" {
+  if (compressionWouldExceedCap(buf.length, maxOut)) return "too_large";
   if (typeof zstdDecompressSync !== "function") return "missing";
   try {
     return zstdDecompressSync(buf, { maxOutputLength: maxOut });
@@ -223,6 +230,7 @@ function decompressZstd(buf: Buffer, maxOut: number): Buffer | "too_large" | "mi
 }
 
 function tryGunzip(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
+  if (compressionWouldExceedCap(buf.length, maxOut)) return "too_large";
   try {
     return gunzipSync(buf, { maxOutputLength: maxOut });
   } catch (e: unknown) {
@@ -233,6 +241,7 @@ function tryGunzip(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
 }
 
 function tryZlibInflate(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
+  if (compressionWouldExceedCap(buf.length, maxOut)) return "too_large";
   try {
     return inflateSync(buf, { maxOutputLength: maxOut });
   } catch {
@@ -446,24 +455,13 @@ export function readBranchIntroducedBlob(
   return readGitBlobBounded(repoRoot, `${rev}:${normRepoPath(rel)}`, maxRead);
 }
 
-/** What a WIP checkpoint would commit: worktree file when present, else index blob. */
-export function readCheckpointCandidateBlob(
+/** Staged index blob only — never the worktree (#1096 scope freeze). */
+export function readStagedIndexBlob(
   repoRoot: string,
   rel: string,
   maxRead: number,
 ): BoundedBlobRead | null {
-  const work = readBoundedWorktreeFile(join(repoRoot, normRepoPath(rel)), maxRead);
-  if (work) return work;
-  const path = normRepoPath(rel);
-  try {
-    execFileSync("git", ["rev-parse", "--verify", "--quiet", `:${path}`], {
-      cwd: repoRoot,
-      stdio: "pipe",
-    });
-  } catch {
-    return null;
-  }
-  return readGitBlobBounded(repoRoot, `:${path}`, maxRead);
+  return readGitBlobBounded(repoRoot, `:${normRepoPath(rel)}`, maxRead);
 }
 
 function fileSizeAtBranchIntroduced(repoRoot: string, rel: string): number | null {
@@ -483,16 +481,7 @@ function fileSizeAtBranchIntroduced(repoRoot: string, rel: string): number | nul
   }
 }
 
-function fileSizeAtCheckpoint(repoRoot: string, rel: string): number | null {
-  const abs = join(repoRoot, normRepoPath(rel));
-  if (existsSync(abs)) {
-    try {
-      const st = statSync(abs);
-      if (st.isFile()) return st.size;
-    } catch {
-      /* fall back to index */
-    }
-  }
+function fileSizeAtStagedIndex(repoRoot: string, rel: string): number | null {
   try {
     const size = Number(
       execFileSync("git", ["cat-file", "-s", `:${normRepoPath(rel)}`], {
@@ -620,7 +609,16 @@ export function evaluateAddedPaths(
     const blob = opts.preferStaged
       ? readGitBlobBounded(repoRoot, `:${normRepoPath(path)}`, maxRead)
       : readBranchIntroducedBlob(repoRoot, path, maxRead);
-    if (!blob) continue;
+    if (!blob) {
+      violations.push({
+        kind: "scan-incomplete",
+        path,
+        detail: opts.preferStaged
+          ? "no staged index blob to scan"
+          : "could not read blob at adding commit",
+      });
+      continue;
+    }
     scanned++;
     const scanIncomplete: ScanIncomplete[] = [];
     if (blob.truncated) {
@@ -770,26 +768,29 @@ export function planCheckpointStaging(
       continue;
     }
     const maxRead = resolved.maxAddedFileBytes + resolved.maxDecompressBytes;
-    const blob = readCheckpointCandidateBlob(repoRoot, path, maxRead);
-    if (blob) {
-      if (blob.truncated) {
-        incomplete.push({
-          path,
-          reason: `file is ${blob.size} bytes but only the first ${maxRead} bytes were scanned`,
-        });
-      }
-      const scan = scanBuffersForSecrets(
-        blob.buf,
+    const blob = readStagedIndexBlob(repoRoot, path, maxRead);
+    if (!blob) {
+      incomplete.push({ path, reason: "no staged index blob to scan" });
+      refusedPaths.push(path);
+      continue;
+    }
+    if (blob.truncated) {
+      incomplete.push({
         path,
-        resolved.maxDecompressBytes,
-        resolved.maxCompressedProbeOffsets,
-      );
-      secrets.push(...scan.secrets);
-      incomplete.push(...scan.incomplete);
-      if (scan.secrets.length > 0 || scan.incomplete.length > 0) {
-        refusedPaths.push(path);
-        continue;
-      }
+        reason: `file is ${blob.size} bytes but only the first ${maxRead} bytes were scanned`,
+      });
+    }
+    const scan = scanBuffersForSecrets(
+      blob.buf,
+      path,
+      resolved.maxDecompressBytes,
+      resolved.maxCompressedProbeOffsets,
+    );
+    secrets.push(...scan.secrets);
+    incomplete.push(...scan.incomplete);
+    if (scan.secrets.length > 0 || scan.incomplete.length > 0) {
+      refusedPaths.push(path);
+      continue;
     }
     if (secrets.length > 0) continue;
     if (incomplete.length > 0) continue;
@@ -843,7 +844,7 @@ export function planCheckpointStaging(
   let totalBytes = 0;
   const capped: string[] = [];
   for (const path of allowed) {
-    const size = fileSizeAtCheckpoint(repoRoot, path) ?? 0;
+    const size = fileSizeAtStagedIndex(repoRoot, path) ?? 0;
     if (
       capped.length >= resolved.checkpointMaxFiles ||
       totalBytes + size > resolved.checkpointMaxBytes
