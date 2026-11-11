@@ -229,3 +229,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:16:15Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-11T22:16:16Z · message_queued at 2026-11-11T22:16:16.139Z
 - 2026-11-11T22:16:16Z · ↻ resuming engineer to read queued message
+- 2026-11-11T22:16:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The tests are actually running and passing. The scoped check is fully green. Let me do a final verification of the complete picture before handing off: confirm the diff scope, that no bare node/npm/npx was introduced, and that the worktree… · stderr: (empty)
