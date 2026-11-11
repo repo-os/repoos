@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T21:09:02Z"
+updated_at: "2026-11-11T21:16:18Z"
 last_close_out_gate_ms: 1057695
 last_close_out_gate_at: "2026-11-11T21:07:56.061Z"
 review_passes: 6
@@ -283,3 +283,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T20:42:33Z · needs_input
 - 2026-11-11T21:07:56Z · close-out gate completed in 1058s
 - 2026-11-11T21:09:02Z · status done→done, release:success
+- 2026-11-11T21:16:18Z · message_dropped: 5 queued message(s) discarded — task is done
