@@ -78,3 +78,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T03:56:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T04:06:09Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
 - 2026-11-11T04:06:10Z · status active→review
+- 2026-11-11T04:06:10Z · message_queued at 2026-11-11T04:06:10.392Z
