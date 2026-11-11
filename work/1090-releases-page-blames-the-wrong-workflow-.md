@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 387537
-last_close_out_gate_at: "2026-11-11T07:43:07.068Z"
 id: "1090"
 title: "Releases page blames the wrong workflow: an unrelated failed run shows as 'release workflow failed' while Homebrew is just updating"
 type: bug
-status: review
+status: done
 priority: p2
 area: [server, web]
+merged_commit: 3061a9eb456c7901a86858b5d2fa903a0a48f4bb
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/releases-page-blames-the-wrong-workflow-
@@ -14,6 +13,8 @@ cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
 updated_at: "2026-11-11T07:43:07Z"
+last_close_out_gate_ms: 387537
+last_close_out_gate_at: "2026-11-11T07:43:07.068Z"
 review_passes: 3
 review_rounds: 2
 ---
