@@ -180,3 +180,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T08:53:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T08:58:18Z · body
 - 2026-11-11T09:20:58Z · message_queued at 2026-11-11T09:20:58.570Z
+- 2026-11-11T09:20:58Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
