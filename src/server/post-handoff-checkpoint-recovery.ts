@@ -157,27 +157,35 @@ export async function startPostHandoffCheckpointRecovery(
     if (existing.phase === "review" && deps.reviews.isRunning(task.id)) {
       return { ok: false, reason: "the delta review for this task is still running" };
     }
-    clearPostHandoffCheckpointRecovery(config, task.id);
+    // Do NOT clear the marker here: the claim below can still refuse, and a
+    // dropped `review` marker would stop close-out from ever resuming.
+    // `writeRecovery` overwrites it once the claim succeeds.
   }
   // Claim the handoff slot synchronously, before any await, so a second Move to
   // done cannot slip in between the start decision and the pipeline's claim.
   if (deps.runner?.markHandoffInFlight && !deps.runner.markHandoffInFlight(task.id)) {
     return { ok: false, reason: "checkpoint recovery is already running for this task" };
   }
-  writeRecovery(config, {
-    taskId: task.id,
-    approvedSha,
-    headSha,
-    phase: "gate",
-    startedAt: new Date().toISOString(),
-  });
-  deps.emitEvent({
-    type: "task.progress",
-    id: task.id,
-    step: "checkpoint-recovery",
-    detail: "Re-running handoff gate after engineer checkpoint commit(s)",
-    at: new Date().toISOString(),
-  });
+  try {
+    writeRecovery(config, {
+      taskId: task.id,
+      approvedSha,
+      headSha,
+      phase: "gate",
+      startedAt: new Date().toISOString(),
+    });
+    deps.emitEvent({
+      type: "task.progress",
+      id: task.id,
+      step: "checkpoint-recovery",
+      detail: "Re-running handoff gate after engineer checkpoint commit(s)",
+      at: new Date().toISOString(),
+    });
+  } catch (err) {
+    // Anything thrown after the claim must not leak the slot.
+    deps.runner?.releaseHandoffInFlight?.(task.id);
+    throw err;
+  }
   void runRecoveryPipeline(deps, task, approvedSha, headSha).catch((err) => {
     const message = err instanceof Error ? err.message : String(err);
     writeRecovery(config, {
@@ -210,11 +218,11 @@ async function runRecoveryPipeline(
 ): Promise<void> {
   const { config, reviews } = deps;
   const branch = task.branch;
-  if (!branch) throw new Error("task has no branch");
   // The slot was claimed by startPostHandoffCheckpointRecovery; hold it for the
-  // whole gate and release it however the gate ends.
+  // whole gate and release it however the gate ends, including a missing branch.
   let liveHead = headSha;
   try {
+    if (!branch) throw new Error("task has no branch");
     const workdir = await getGitWorker(config.root).worktreePath(branch);
     if (!workdir) throw new Error("feature worktree not found");
 
