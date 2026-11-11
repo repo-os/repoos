@@ -3,6 +3,9 @@ id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — the engineer activity line still shows raw tier errors, and the tier message has a wrong path and a self-contradicting …"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,9 +14,9 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T19:13:09Z"
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-11-11T20:40:10Z"
+review_passes: 3
+review_rounds: 2
 handoff_signal_retry_count: 1
 dev_error_count: 6
 ---
@@ -35,6 +38,18 @@ The `github copilot` agent now fails its connectivity test (and any run) with: "
 
 ## Notes for AI
 Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900), `src/core/agent-compatibility.json`, `src/ui-app/tests/agent-drivers.test.ts`. Do not edit repoos.toml.
+
+## Shots
+```json
+[
+{
+"label": "GitHub Copilot Auto · Balance default on Agents",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-page-title"
+}
+]
+```
 
 ## Screenshots
 
@@ -105,3 +120,27 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T18:45:05Z · status review→active
 - 2026-11-11T18:45:07Z · CTO nudge: held — remote validation is running
 - 2026-11-11T19:13:09Z · body
+- 2026-11-11T19:28:16Z · message_queued at 2026-11-11T19:28:16.159Z
+- 2026-11-11T19:28:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T19:31:26Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T19:38:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:40:16Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T19:40:18Z · status active→review
+- 2026-11-11T19:40:19Z · message_queued at 2026-11-11T19:40:19.278Z
+- 2026-11-11T19:41:28Z · note: review pass 2: needs some work
+- 2026-11-11T19:41:29Z · message_delivered: 1 message(s)
+- 2026-11-11T19:41:29Z · status review→active
+- 2026-11-11T19:41:32Z · CTO nudge: held — remote validation is running
+- 2026-11-11T19:44:32Z · body
+- 2026-11-11T19:59:08Z · body
+- 2026-11-11T20:16:45Z · body
+- 2026-11-11T20:23:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T20:35:58Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T20:36:01Z · status active→review
+- 2026-11-11T20:36:02Z · message_queued at 2026-11-11T20:36:02.160Z
+- 2026-11-11T20:37:38Z · note: review pass 3: needs some work
+- 2026-11-11T20:37:39Z · needs_input
+- 2026-11-11T20:38:19Z · status review→active
+- 2026-11-11T20:38:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T20:39:12Z · note: handoff requested (cli)
+- 2026-11-11T20:40:10Z · CTO nudge: held — handoff gate is running

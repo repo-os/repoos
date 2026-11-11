@@ -12,8 +12,13 @@ import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { processGroupKillSupported } from "../../core/process-group.js";
 import { spawnTestProcess, waitFor } from "./helpers";
 
-const FAKE_CHILD_SLEEP = "600";
-const FAKE_DECOY_SLEEP = "900";
+// Unique per run: `pgrep -f "sleep <secs>"` is machine-wide, so a fixed number
+// collides with any unrelated `sleep 600` left by another suite, watcher or
+// shell (found leaking on a dev box, 2026-11-11). A random 7-digit duration is
+// still a valid sleep argument and cannot match a process this test did not
+// start. Decoy must differ from the helper so `pgrep` can tell them apart.
+const FAKE_CHILD_SLEEP = String(1_000_000 + Math.floor(Math.random() * 8_000_000));
+const FAKE_DECOY_SLEEP = String(Number(FAKE_CHILD_SLEEP) + 1);
 
 const FAKEBIN = `#!/usr/bin/env node
 const { spawn } = require("child_process");
@@ -131,9 +136,12 @@ describe("AgentRunner process group (#0675)", () => {
       expect(start.ok).toBe(true);
 
       await waitFor(() => !runner.isRunning("0675"), "agent turn exit");
+      // The group kill is delivered asynchronously: the turn can report exit
+      // before the helper is gone. Wait for it to be reaped instead of sampling
+      // once and flaking on a slow machine.
+      await waitFor(() => listSleepPids(FAKE_CHILD_SLEEP).length === 0, "helper child reaped");
 
-      const childSleeps = listSleepPids(FAKE_CHILD_SLEEP);
-      expect(childSleeps).toEqual([]);
+      expect(listSleepPids(FAKE_CHILD_SLEEP)).toEqual([]);
       expect(pidAlive(decoyPid)).toBe(true);
       try {
         process.kill(decoyPid, "SIGTERM");
