@@ -86,3 +86,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:07:43Z · status review→active
 - 2026-11-11T04:07:46Z · CTO nudge: held — remote validation is running
 - 2026-11-11T04:16:57Z · message_queued at 2026-11-11T04:16:57.844Z
+- 2026-11-11T04:16:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
