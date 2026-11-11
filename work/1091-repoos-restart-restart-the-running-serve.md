@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 200899
-last_close_out_gate_at: "2026-11-11T23:17:22.829Z"
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: review
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 1a2a1574424db1670deab6c24efca90fd5c05573
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
 updated_at: "2026-11-11T23:17:22Z"
+last_close_out_gate_ms: 200899
+last_close_out_gate_at: "2026-11-11T23:17:22.829Z"
 review_passes: 8
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2

@@ -323,6 +323,11 @@ export class DevTargetManager {
     return this.targets().map((t) => this.view(t));
   }
 
+  /** Number of dev targets currently running — what a real shutdown stops (#1091). */
+  activeCount(): number {
+    return this.running.size;
+  }
+
   /** Config validation errors recorded by `loadConfig` (#0747). */
   configErrors(): string[] {
     return this.config.devTargetErrors ?? [];
