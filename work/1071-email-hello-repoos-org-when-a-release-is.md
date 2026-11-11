@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T06:31:16Z"
+updated_at: "2026-11-11T06:58:47Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_sha: 1541535f99c18250059c0409a7378be9d0444898
 review_passes: 3
@@ -184,3 +184,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T06:11:08Z · message_delivered: 1 message(s)
 - 2026-11-11T06:28:47Z · note: handoff requested (cli)
 - 2026-11-11T06:31:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T06:58:47Z · message_queued at 2026-11-11T06:58:47.736Z
