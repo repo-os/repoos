@@ -458,7 +458,9 @@ export async function restartRepoServer(
       manualCommand:
         detected.kind === "managed"
           ? "repoos service restart"
-          : `stop it, then start it again:  kill ${server.pid} && ${startCommand}   # if a supervisor owns pid ${server.pid}, killing it lets the supervisor respawn it and the second command is unnecessary`,
+          : // One step, never `kill && serve`: if a supervisor owns the pid it respawns the
+            // server itself, and a second serve would race it onto the same port.
+            `kill ${server.pid}   # this only stops it. If a supervisor owns it, it respawns the server; after ~30s, if nothing answers, start it yourself: ${startCommand}`,
     };
   }
 

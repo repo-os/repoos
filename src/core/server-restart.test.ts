@@ -129,7 +129,8 @@ describe("restartRepoServer", () => {
     });
     expect(result.ok).toBe(false);
     expect(stop).not.toHaveBeenCalled();
-    expect(result.manualCommand).toMatch(/stop it, then start it again/);
+    expect(result.manualCommand).toMatch(/^kill \d+ {3}# this only stops it/);
+    expect(result.manualCommand).not.toMatch(/kill \d+ &&/);
   });
 
   it("external-supervisor reports manual command when respawn times out", async () => {

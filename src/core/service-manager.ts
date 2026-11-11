@@ -32,7 +32,6 @@ import { homedir } from "node:os";
 import { basename, join, dirname, resolve } from "node:path";
 import { realpathSync } from "node:fs";
 import { loadConfig } from "./config.js";
-import { compiledCliEntry } from "./serve-lock-flags.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -154,17 +153,15 @@ export function isManagedService(root: string): boolean {
 /**
  * The command a person runs to bring this project's server back (#0959). The
  * UI shows it when the server is down: the browser cannot start a process.
- * `repoos restart` picks the right path whatever started the server (#1091) —
- * a managed service, a hand-run serve, or an external launchd/systemd
- * supervisor; the service-manager commands are the fallback when the CLI cannot
- * see a running server to classify.
+ * A managed service restarts through its OS job; a hand-run server through
+ * `repoos serve` from its own root.
  */
 export function restartCommand(root: string, port: number | null): string {
   const entry = findEntry(readRegistry(), root);
   if (entry?.platform === "launchd") return `launchctl kickstart -k gui/$(id -u)/${entry.label}`;
   if (entry?.platform === "systemd") return `systemctl --user restart ${entry.label}`;
   const quoted = /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
-  return `cd ${quoted} && repoos restart${port ? ` --port ${port}` : ""}`;
+  return `cd ${quoted} && repoos serve${port ? ` --port ${port}` : ""}`;
 }
 
 // ── Platform detection ───────────────────────────────────────────────────────
@@ -217,7 +214,8 @@ export function repoosBinary(): { bin: string; needsCliEntry: boolean } {
   // If running from the source checkout (dist/ exists next to src/), use
   // process.execPath + the CLI entry directly. This covers the common dev
   // case where `repoos` is a bun link pointing at this repo's dist/.
-  const cliEntry = compiledCliEntry();
+  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
+  const cliEntry = join(srcDir, "dist", "cli", "index.js");
   if (existsSync(cliEntry)) {
     return { bin: process.execPath, needsCliEntry: true };
   }
@@ -234,11 +232,12 @@ function generatePlist(entry: ServiceEntry): string {
   // Derive the compiled entry point from this module's location
   // (src/core/service-manager.ts → ../../dist/cli/index.js) rather than
   // guessing from the binary path.
-  const cliEntry = compiledCliEntry();
+  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
+  const cliEntry = join(srcDir, "dist", "cli", "index.js");
   const programArgs = needsCliEntry
     ? [
         `<string>${xmlEscape(bin)}</string>`,
-        `<string>${xmlEscape(cliEntry)}</string>`,
+        `<string>${xmlEscape(existsSync(cliEntry) ? cliEntry : join(srcDir, "cli", "index.js"))}</string>`,
         `<string>serve</string>`,
         `<string>--port</string>`,
         `<string>${String(entry.port)}</string>`,
@@ -329,9 +328,10 @@ function systemdUnitPath(label: string): string {
 
 function generateUnit(entry: ServiceEntry): string {
   const { bin, needsCliEntry } = repoosBinary();
-  const cliEntry = compiledCliEntry();
+  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
+  const cliEntry = join(srcDir, "dist", "cli", "index.js");
   const execStart = needsCliEntry
-    ? `${bin} ${cliEntry} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`
+    ? `${bin} ${existsSync(cliEntry) ? cliEntry : join(srcDir, "cli", "index.js")} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`
     : `${bin} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`;
 
   // Always default.target for user units — multi-user.target is a system

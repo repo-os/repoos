@@ -437,14 +437,14 @@ describe("plist content validation", () => {
   });
 });
 
-describe("restartCommand (#0959, #1091)", () => {
-  it("falls back to repoos restart from the project root for a hand-run server", () => {
+describe("restartCommand (#0959)", () => {
+  it("falls back to repoos serve from the project root for a hand-run server", () => {
     expect(restartCommand("/tmp/repoos-no-service-xyz", 7405)).toBe(
-      "cd /tmp/repoos-no-service-xyz && repoos restart --port 7405",
+      "cd /tmp/repoos-no-service-xyz && repoos serve --port 7405",
     );
   });
 
   it("quotes a root with spaces and omits an unknown port", () => {
-    expect(restartCommand("/tmp/my project", null)).toBe("cd '/tmp/my project' && repoos restart");
+    expect(restartCommand("/tmp/my project", null)).toBe("cd '/tmp/my project' && repoos serve");
   });
 });
