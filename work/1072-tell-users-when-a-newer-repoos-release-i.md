@@ -111,3 +111,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T05:00:50Z · status review→active
 - 2026-11-11T05:00:52Z · CTO nudge: held — remote validation is running
 - 2026-11-11T05:08:23Z · body: Accepted scope and known limitations (added)
+- 2026-11-11T05:08:23Z · message_queued at 2026-11-11T05:08:23.451Z
