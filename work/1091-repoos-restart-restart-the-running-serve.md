@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T12:32:54Z"
+updated_at: "2026-11-11T12:32:56Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -79,4 +79,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T12:32:53Z · message_delivered: 1 message(s)
 - 2026-11-11T12:32:53Z · status review→active
 - 2026-11-11T12:32:54Z · message_queued at 2026-11-11T12:32:54.190Z
-
+- 2026-11-11T12:32:56Z · CTO nudge: held — an undelivered message is already queued
