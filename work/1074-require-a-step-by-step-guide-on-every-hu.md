@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 24cd8ae0c44f83a19a649951f763a90c6dac957b
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -15,7 +13,9 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T09:20:58Z"
+updated_at: "2026-11-11T09:23:58Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 24cd8ae0c44f83a19a649951f763a90c6dac957b
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
@@ -183,4 +183,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T08:58:18Z · body
 - 2026-11-11T09:20:58Z · message_queued at 2026-11-11T09:20:58.570Z
 - 2026-11-11T09:20:58Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-11T09:23:58Z · CTO nudge: held — an undelivered message is already queued
