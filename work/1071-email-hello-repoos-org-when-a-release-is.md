@@ -217,3 +217,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T09:08:36Z · message_queued at 2026-11-11T09:08:36.752Z
 - 2026-11-11T09:08:36Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality
 - 2026-11-11T09:08:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T09:28:36Z · note: handoff requested (cli)
