@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T12:59:43Z"
+updated_at: "2026-11-11T13:07:35Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_passes: 5
@@ -55,24 +55,24 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```json
 [
 {
-  "label": "Releases page: email sent status row with Resend",
-  "target": "default",
-  "route": "/releases",
-  "highlight": "[data-test-id=\"release-email\"] .rel-email-status",
-  "state": "release:emailSent"
+"label": "Releases page: email sent status row with Resend",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-email\"] .rel-email-status",
+"state": "release:emailSent"
 },
 {
-  "label": "Releases page: email failed status with Resend",
-  "target": "default",
-  "route": "/releases",
-  "highlight": "[data-test-id=\"release-email\"]",
-  "state": "release:emailFailed"
+"label": "Releases page: email failed status with Resend",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-email\"]",
+"state": "release:emailFailed"
 },
 {
-  "label": "Release emails settings controls",
-  "target": "default",
-  "route": "/settings?tab=general&section=release-emails",
-  "highlight": "[data-settings-section=\"release-emails\"]"
+"label": "Release emails settings controls",
+"target": "default",
+"route": "/settings?tab=general&section=release-emails",
+"highlight": "[data-settings-section=\"release-emails\"]"
 }
 ]
 ```
@@ -267,3 +267,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T12:43:40Z · body
 - 2026-11-11T12:44:04Z · body
 - 2026-11-11T12:59:43Z · body
+- 2026-11-11T13:07:35Z · note: review pass 6: needs some work
