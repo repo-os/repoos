@@ -11,7 +11,7 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T17:24:07Z"
+updated_at: "2026-11-11T17:40:02Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -69,3 +69,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T17:13:18Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: ended to deliver a queued message (exit code 143) · last assistant: VitePress runs the LLMS enrich hook too early (`closeBundle` before markdown lands in `dist`). Moving enrichment to `buildEnd` so the user-docs build passes the gate. · stderr: (empty)
 - 2026-11-11T17:18:34Z · message_queued at 2026-11-11T17:18:34.580Z
 - 2026-11-11T17:24:07Z · message_delivered: 1 message(s)
+- 2026-11-11T17:40:02Z · body
