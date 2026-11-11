@@ -11,8 +11,10 @@ area: [server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: cursor
+model_override: composer-2.5
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T04:17:23Z"
+updated_at: "2026-11-11T04:17:24Z"
 ---
 ## Problem
 After cutting v0.5.82 the Releases page said "The release workflow failed at 'Run oven-sh/setup-bun@v2', so some channels below may not update on their own", linking https://github.com/repo-os/repoos/actions/runs/42566925266. That run is NOT the release workflow. It is the separate "Adoption matrix" workflow (job "adoption matrix (macos-latest)", failed at setup-bun) that also runs on pushes. The real "Release v0.5.82" run (id 42956267884) succeeded, and the Homebrew tap's own "Update RepoOS formula" run was still in progress when the warning showed, so Homebrew was only lagging, not failed.
@@ -35,3 +37,4 @@ Separately (not part of this task): the Adoption matrix macOS job failed at `ove
 - 2026-11-11T04:12:08Z · created · njachowski@gmail.com
 - 2026-11-11T04:12:08Z · needs_input
 - 2026-11-11T04:17:23Z · status inbox→ready
+- 2026-11-11T04:17:24Z · cli_override, model_override
