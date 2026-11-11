@@ -1,11 +1,10 @@
 ---
+updated_at: "2026-11-11T20:06:15Z"
+review_passes: 8
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — code is sound, but acceptance 7's status-row capture is missing and the captures are stale for HEAD d498bd668."
+status: review
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -14,10 +13,8 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T19:18:16Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > uses one representative block while the gated collection is not loaded, tests/app-loading-skeleton.test.ts > repo loading skeleton > renders each skeleton kind from the real column or representative-block layout on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 27026587838fdfde40d67c7e32893fddf8ce0ef0
-review_passes: 6
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: e738f025d11cdaa88fd5509000a7d7b75dceacd6
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 4
@@ -289,3 +286,17 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T19:15:19Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T19:16:46Z · note: handoff requested (cli)
 - 2026-11-11T19:18:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:39:21Z · engineer stopped by request
+- 2026-11-11T19:39:22Z · needs_input
+- 2026-11-11T19:39:23Z · needs_input
+- 2026-11-11T19:39:27Z · status active→review
+- 2026-11-11T19:46:47Z · message_queued at 2026-11-11T19:46:47.029Z
+- 2026-11-11T19:46:47Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+- 2026-11-11T20:00:13Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
+- 2026-11-11T20:00:19Z · note: review pass 7: needs some work
+- 2026-11-11T20:00:19Z · needs_input
+- 2026-11-11T20:00:20Z · needs_input
+- 2026-11-11T20:02:28Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
+- 2026-11-11T20:06:14Z · note: review pass 8: good to go
+- 2026-11-11T20:06:14Z · needs_input
+

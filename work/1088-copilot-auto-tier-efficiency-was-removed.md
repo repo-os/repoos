@@ -11,9 +11,9 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T19:38:16Z"
-review_rounds: 1
-review_passes: 1
+updated_at: "2026-11-11T19:59:08Z"
+review_rounds: 2
+review_passes: 2
 handoff_signal_retry_count: 1
 dev_error_count: 6
 ---
@@ -35,6 +35,18 @@ The `github copilot` agent now fails its connectivity test (and any run) with: "
 
 ## Notes for AI
 Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900), `src/core/agent-compatibility.json`, `src/ui-app/tests/agent-drivers.test.ts`. Do not edit repoos.toml.
+
+## Shots
+```json
+[
+{
+"label": "GitHub Copilot Auto · Balance default on Agents",
+"target": "default",
+"route": "/agents",
+"highlight": ".agents-page-title"
+}
+]
+```
 
 ## Screenshots
 
@@ -109,3 +121,12 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T19:28:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T19:31:26Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T19:38:16Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:40:16Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T19:40:18Z · status active→review
+- 2026-11-11T19:40:19Z · message_queued at 2026-11-11T19:40:19.278Z
+- 2026-11-11T19:41:28Z · note: review pass 2: needs some work
+- 2026-11-11T19:41:29Z · message_delivered: 1 message(s)
+- 2026-11-11T19:41:29Z · status review→active
+- 2026-11-11T19:41:32Z · CTO nudge: held — remote validation is running
+- 2026-11-11T19:44:32Z · body
+- 2026-11-11T19:59:08Z · body
