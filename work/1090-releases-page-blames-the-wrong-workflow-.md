@@ -2,7 +2,7 @@
 id: "1090"
 title: "Releases page blames the wrong workflow: an unrelated failed run shows as 'release workflow failed' while Homebrew is just updating"
 type: bug
-status: inbox
+status: ready
 needs_input: true
 needs_input_reason: underspecified
 needs_input_detail: "missing sections: Desired UX, Notes for AI"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T04:12:08Z"
+updated_at: "2026-11-11T04:17:23Z"
 ---
 ## Problem
 After cutting v0.5.82 the Releases page said "The release workflow failed at 'Run oven-sh/setup-bun@v2', so some channels below may not update on their own", linking https://github.com/repo-os/repoos/actions/runs/42566925266. That run is NOT the release workflow. It is the separate "Adoption matrix" workflow (job "adoption matrix (macos-latest)", failed at setup-bun) that also runs on pushes. The real "Release v0.5.82" run (id 42956267884) succeeded, and the Homebrew tap's own "Update RepoOS formula" run was still in progress when the warning showed, so Homebrew was only lagging, not failed.
@@ -34,3 +34,4 @@ Separately (not part of this task): the Adoption matrix macOS job failed at `ove
 
 - 2026-11-11T04:12:08Z · created · njachowski@gmail.com
 - 2026-11-11T04:12:08Z · needs_input
+- 2026-11-11T04:17:23Z · status inbox→ready
