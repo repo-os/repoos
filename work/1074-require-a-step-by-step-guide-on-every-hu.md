@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -97,3 +99,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T03:18:31Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target "default"): click [data-task-id="9999"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)
 - 2026-11-11T03:18:31Z · message_queued at 2026-11-11T03:18:31.239Z
 - 2026-11-11T03:18:34Z · message_delivered: 1 message(s)
+
