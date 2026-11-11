@@ -12,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T02:14:44Z"
+updated_at: "2026-11-11T02:19:44Z"
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
@@ -52,3 +52,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T02:04:15Z · status ready→active, branch
 - 2026-11-11T02:14:44Z · message_queued at 2026-11-11T02:14:44.057Z
 - 2026-11-11T02:14:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T02:19:44Z · CTO nudge: held — an undelivered message is already queued
