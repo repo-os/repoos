@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
@@ -77,3 +79,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T12:32:53Z · message_delivered: 1 message(s)
 - 2026-11-11T12:32:53Z · status review→active
 - 2026-11-11T12:32:54Z · message_queued at 2026-11-11T12:32:54.190Z
+
