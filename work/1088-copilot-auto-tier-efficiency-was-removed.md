@@ -57,3 +57,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T15:54:29Z · body
 - 2026-11-11T15:54:42Z · watchdog: check wait ended or recovered — cleared needs_input
 - 2026-11-11T16:13:14Z · message_queued at 2026-11-11T16:13:14.062Z
+- 2026-11-11T16:13:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
