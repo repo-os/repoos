@@ -14,7 +14,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T19:53:19Z"
+updated_at: "2026-11-11T20:08:02Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 9f3a930b77ab9014171d8eb162d527be6892605b
 review_passes: 4
@@ -195,3 +195,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T19:33:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T19:50:56Z · note: handoff requested (cli)
 - 2026-11-11T19:53:19Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T20:08:02Z · message_queued at 2026-11-11T20:08:02.154Z
