@@ -3,9 +3,6 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — two Resend paths can send the same release email twice. Both are small and local to `resendReleaseEmail`, with a test g…"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -224,3 +221,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T09:38:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **All checks passed** on the current tip `c963a9a0f` — including the two tests that flaked earlier (`handoff-unification.test.ts > ignores a marker left behind by an earlier turn` now passes in 8.77s, and `tests` overall is green). Both re… · stderr: (empty)
 - 2026-11-11T09:41:42Z · status active→review
 - 2026-11-11T09:43:22Z · note: review pass 5: needs some work
+- 2026-11-11T09:43:22Z · needs_input
