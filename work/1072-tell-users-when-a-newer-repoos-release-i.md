@@ -2,7 +2,7 @@
 id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
-status: active
+status: review
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
@@ -101,3 +101,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:50:16Z · model_override
 - 2026-11-11T04:55:12Z · body
 - 2026-11-11T04:59:21Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T04:59:21Z · status active→review
