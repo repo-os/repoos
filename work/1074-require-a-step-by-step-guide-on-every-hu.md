@@ -220,3 +220,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T17:51:19Z · agent exited with an error (cursor) · RetriableError: Connection failed repeatedly
 - 2026-11-11T17:51:19Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Connection failed repeatedly
 - 2026-11-11T17:51:27Z · needs_input
+- 2026-11-11T17:51:27Z · message_delivered: 1 message(s)
