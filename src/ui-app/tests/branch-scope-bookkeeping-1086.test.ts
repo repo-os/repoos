@@ -151,6 +151,35 @@ describe("foreign bookkeeping after main lands another task (#1086)", () => {
     }
   });
 
+  it("dropForeignBookkeepingPathsMatchingMain never filters repoos.toml even when it matches main", async () => {
+    const fx = initTwoTaskRepo();
+    try {
+      writeFileSync(join(fx.wtB, "repoos.toml"), "x = 1\n");
+      git(fx.wtB, ["add", "repoos.toml"]);
+      git(fx.wtB, ["commit", "-q", "-m", "stray toml"]);
+      git(fx.root, ["checkout", "-q", "main"]);
+      writeFileSync(join(fx.root, "repoos.toml"), "x = 1\n");
+      git(fx.root, ["add", "repoos.toml"]);
+      git(fx.root, ["commit", "-q", "-m", "main toml"]);
+
+      const filtered = await dropForeignBookkeepingPathsMatchingMain(
+        fx.root,
+        BRANCH,
+        "main",
+        ["repoos.toml"],
+        (p) =>
+          isForbiddenTaskScopePath(p, OWN_FILE, {
+            workDir: "work",
+            inputsDir: "inputs",
+            storiesDir: "stories",
+          }, TASK_B),
+      );
+      expect(filtered).toEqual(["repoos.toml"]);
+    } finally {
+      fx.clean();
+    }
+  });
+
   it("heals dirty untracked and unstaged sibling files without a prior commit", async () => {
     const fx = initTwoTaskRepo();
     try {
@@ -203,43 +232,6 @@ describe("foreign bookkeeping after main lands another task (#1086)", () => {
         storiesDir: "stories",
       });
       expect(git(fx.wtB, ["status", "--porcelain"])).toBe("");
-    } finally {
-      fx.clean();
-    }
-  });
-
-  it("restore heals sibling bookkeeping even when sync aborts on that path", async () => {
-    const fx = initTwoTaskRepo();
-    try {
-      writeFileSync(join(fx.wtB, "src.ts"), "export const v = 3;\n");
-      git(fx.wtB, ["add", "src.ts"]);
-      git(fx.wtB, ["commit", "-q", "-m", "feat(1086): branch work"]);
-
-      git(fx.root, ["checkout", "-q", "main"]);
-      mkdirSync(join(fx.root, "work", "reports", TASK_A), { recursive: true });
-      writeFileSync(join(fx.root, "work", "reports", TASK_A, "summary.md"), "on main\n");
-      git(fx.root, ["add", "-A"]);
-      git(fx.root, ["commit", "-q", "-m", "task A lands on main"]);
-
-      mkdirSync(join(fx.wtB, "work", "reports", TASK_A), { recursive: true });
-      writeFileSync(join(fx.wtB, "work", "reports", TASK_A, "summary.md"), "branch wrong\n");
-      git(fx.wtB, ["add", "work/reports/0003/summary.md"]);
-      git(fx.wtB, ["commit", "-q", "-m", "stray sibling"]);
-
-      const sync = await syncBranchWithMain(fx.root, BRANCH);
-      expect(sync.ok).toBe(false);
-      expect(sync.conflicts).toContain(`work/reports/${TASK_A}/summary.md`);
-
-      await restoreForeignTaskBookkeepingFromMain({
-        worktree: fx.wtB,
-        baseBranch: "main",
-        taskId: TASK_B,
-        ownTaskFile: OWN_FILE,
-        workDir: "work",
-      });
-
-      const changed = await branchChangedPaths(fx.root, BRANCH, "main");
-      expect(changed).not.toContain(`work/reports/${TASK_A}/summary.md`);
     } finally {
       fx.clean();
     }

@@ -2116,6 +2116,10 @@ export async function dropForeignBookkeepingPathsMatchingMain(
   if (!baseSha) return paths;
   const kept: string[] = [];
   for (const p of paths) {
+    if (p === "repoos.toml") {
+      kept.push(p);
+      continue;
+    }
     if (!isForeign(p)) {
       kept.push(p);
       continue;
@@ -2878,8 +2882,10 @@ async function foreignBookkeepingHealCandidates(
  * the caller via `resolveDefaultBranch`, not the main checkout's
  * `currentBranch()` (#1076).
  *
- * Returns the repo-relative foreign paths it restored, empty when there were
+ * Returns the repo-relative foreign paths it touched, empty when there were
  * none. Fails soft (`[]`) when the branch point or base tip cannot be resolved.
+ * Throws on git failures; handoff fails closed on those errors, while sync's
+ * `healForeignBookkeepingAfterSync` swallows them as best-effort.
  */
 export async function restoreForeignTaskBookkeepingFromMain(opts: {
   worktree: string;
@@ -3004,7 +3010,7 @@ export async function restoreForeignTaskBookkeepingFromMain(opts: {
     [
       "commit",
       "-m",
-      `chore(#${opts.taskId}): restore main's copy of ${toCommit.length} other task's bookkeeping file(s)`,
+      `chore(#${opts.taskId}): restore or drop ${toCommit.length} other task's bookkeeping file(s) from main`,
       "--",
       ...toCommit,
     ],
