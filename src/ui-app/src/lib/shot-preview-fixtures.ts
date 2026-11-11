@@ -795,6 +795,61 @@ export function shotFixtureSchedules(fixture: ShotPreviewFixtureId | null): Task
   ];
 }
 
+/** The release-email card state a preview capture needs (#1071). */
+export interface ShotReleaseEmailState {
+  enabled: boolean;
+  to: string[];
+  when: "published" | "tagged";
+  includePrereleases: boolean;
+  providerConfigured: boolean;
+  repository: string | null;
+  version: string | null;
+  record: {
+    version: string;
+    tag: string;
+    status: "pending" | "sent" | "failed" | "skipped";
+    when: "published" | "tagged";
+    sentTo: string[];
+    reason?: string;
+    at: string;
+  } | null;
+}
+
+/**
+ * The `GET /api/release/email` body for the `release:emailSent` / `release:emailFailed`
+ * capture fixtures (#1071). Returns null for any other fixture, so the Releases
+ * page keeps its real per-release state. The preview board serves Release emails
+ * "off", so without this a capture can only show the empty/off card and cannot
+ * prove acceptance 7's sent or failed status row and the Resend button.
+ */
+export function shotFixtureReleaseEmail(
+  fixture: ShotPreviewFixtureId | null,
+): ShotReleaseEmailState | null {
+  if (fixture !== "release:emailSent" && fixture !== "release:emailFailed") return null;
+  const to = ["team-a@example.test", "team-b@example.test"];
+  const sent = fixture === "release:emailSent";
+  return {
+    enabled: true,
+    to,
+    when: "published",
+    includePrereleases: false,
+    providerConfigured: true,
+    repository: "repo-os/repoos",
+    version: "0.6.0",
+    record: {
+      version: "0.6.0",
+      tag: "v0.6.0",
+      status: sent ? "sent" : "failed",
+      when: "published",
+      sentTo: sent ? to : [to[0]!],
+      reason: sent
+        ? undefined
+        : "Resend answered 422 for team-b@example.test: the domain is not verified.",
+      at: "2026-11-11T00:00:00.000Z",
+    },
+  };
+}
+
 /**
  * Fixture body for `drawer:shotEvidence` (#0819): the `## Activity` docs-skip
  * note the Changes tab parses into the "Docs site skipped: no docs shot
@@ -937,6 +992,11 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   // pin freezing the live snapshot (#0782).
   resetShotFixturePins();
   switch (fixture) {
+    case "release:emailSent":
+    case "release:emailFailed":
+      // ReleasesView reads this registered fixture and renders the email card
+      // in a terminal state locally, without a real release or provider (#1071).
+      break;
     case "secrets:populated":
     case "secrets:removeDialog":
       // SecretsView reads this registered fixture and seeds fake metadata

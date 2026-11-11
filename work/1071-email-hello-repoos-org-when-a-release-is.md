@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 245714
-last_close_out_gate_at: "2026-11-11T20:18:23.888Z"
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: review
+status: done
 priority: p2
 area: [server, web, core]
+merged_commit: e52a74cdae5d27438cc44c7d2b5977212c702056
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-emails-any-project-with-email-co
@@ -14,6 +13,8 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
 updated_at: "2026-11-11T20:18:23Z"
+last_close_out_gate_ms: 245714
+last_close_out_gate_at: "2026-11-11T20:18:23.888Z"
 review_passes: 8
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: e738f025d11cdaa88fd5509000a7d7b75dceacd6
