@@ -782,10 +782,14 @@ dirs in #0726 and #0860):
   (#1086) — merge success or aborted conflict. Both run after the commit gate
   and before the review lock (#1076). The heal grades `work/`, `inputs/`, and
   `stories/` in every git tree state (committed, staged, unstaged, untracked).
-  Siblings at the merge-base → main's tip; post-merge-only-on-main → dropped from
-  the branch; no main blob → removed. Handoff fails if git refuses; sync heal is
-  best-effort. This heals drift from WIP checkpoints or concurrent board writes
-  instead of bouncing the engineer.
+  Siblings at the merge-base are **restored** to main's tip (main's copy wins on
+  the branch). Post-merge siblings that **exist on main** but not at the merge-base
+  are **dropped** from the branch (not copied in) so main stays authoritative at
+  landing; stray adds with no main blob are removed. If the heal throws, handoff
+  stops at the **commit** step with a message naming the paths — it does not
+  silently succeed. Sync heal is best-effort after every attempt, including when
+  the merge aborts on conflict (#1086). This heals drift from WIP checkpoints or
+  concurrent board writes instead of bouncing the engineer.
   A handoff is also refused on an unchanged branch tip with a recorded identical
   check failure; a new commit (even a docs touch) is the way to request a fresh
   validation after a failure that is no longer reproducible.

@@ -284,8 +284,11 @@ cannot tell from the code alone:
     `stories/` (#1086). Siblings present at the merge-base get **main's tip**;
     post-merge siblings that only exist on main after the branch point are **dropped**
     from the branch (not copied in); stray adds with no main blob are removed.
-    Lands a pathspec-scoped commit when needed. Handoff **fails closed** if git
-    refuses the heal; sync swallows heal errors as best-effort (`sync-bookkeeping-heal.ts`).
+    Lands a pathspec-scoped commit when needed. If the heal throws, handoff **does
+    not** continue: `finalizeReviewHandoff` fails at the **commit** step with
+    `could not restore main's copy of another task's bookkeeping on this branch: …`
+    naming the offending paths (#1086). Sync uses the same helper as best-effort
+    (`healForeignBookkeepingAfterSync`) and does not block the route on heal errors.
     `repoos sync` runs that heal after every merge attempt — success or aborted conflict.
     Handoff reports what was restored or dropped; it runs after the commit gate and
     before the review lock (the report commit is pathspec-scoped to this task's report).
