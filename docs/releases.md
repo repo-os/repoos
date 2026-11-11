@@ -427,15 +427,37 @@ its install commands, just with an **Unverified** status — RepoOS never claims
 a version it couldn't read. A `404` is **Not published yet**; a fetch/timeout
 failure is **Check failed**. When the release being viewed has a version, a
 channel at the same version reads **Up to date**, and any other version reads
-**Out of sync** with both versions shown. All of this is computed for the UI
-only: it is never a prerequisite for viewing releases, and no token, registry
-secret or repository credential is ever sent to the browser. The initial
-check is a snapshot: publishing CI can finish before a registry or CDN makes
-the package available. RepoOS re-checks destinations when its local tag push
-finishes, and the operator can use **Check again** on the Releases page while
-downstream destinations catch up. Treat a few minutes of propagation as
+**Out of sync** with both versions shown. A Homebrew row reads **Updating**
+instead in one of two cases, both anchored to the configured release workflow
+(the `release.workflow` path, typically `.github/workflows/release.yml`):
+
+- that workflow's latest run for the tag succeeded within the last five minutes; or
+- the tap is still running the formula update this release dispatched. RepoOS
+  looks only at the `repoos-release.yml` ("Update RepoOS formula") workflow in
+  the Homebrew tap, and only its `repository_dispatch` runs (the event the release
+  workflow's "Request Homebrew tap update" step sends) that started between that
+  run's start and five minutes after its last update (or until now, while the
+  release run is still in progress). The tap's other workflows
+  (its own CI, manual runs) never count, and neither does an earlier release's update.
+  The run list does not carry the version, so the match is by time window, not by tag.
+
+If `release.workflow` is unset, RepoOS has no release run to anchor either case,
+so neither the banner nor the Updating state appears and the tap is not queried.
+All of this is computed
+for the UI only: it is never a prerequisite for viewing releases, and no token,
+registry secret or repository credential is ever sent to the browser. The
+initial check is a snapshot: publishing CI can finish before a registry or CDN
+makes the package available. RepoOS re-checks destinations when its local tag
+push finishes, and the operator can use **Check again** on the Releases page
+while downstream destinations catch up. Treat a few minutes of propagation as
 normal; a channel is not a release failure merely because it has not updated
 yet.
+
+When at least one channel is out of sync, RepoOS may show a **release workflow
+failed** banner. It refers **only** to the latest run of the configured
+`release.workflow` file for the tag being viewed — not to other workflows that
+also trigger on tag pushes (adoption matrix, ordinary CI, and so on). Unrelated
+failures never produce that banner.
 
 ## API
 

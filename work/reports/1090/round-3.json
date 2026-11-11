@@ -1,0 +1,12 @@
+{
+  "taskId": "1090",
+  "round": 3,
+  "at": "2026-11-11T06:31:14.045Z",
+  "agent": "claude code",
+  "model": "haiku",
+  "branch": "feat/releases-page-blames-the-wrong-workflow-",
+  "baseSha": "203452f4aff47c12486d5dd172ba82e8c2dc9bbe",
+  "sourceSha": "68ff2b7f219f44151ee241b1eade50974f5b6ca1",
+  "wordCount": 282,
+  "markdown": "## TL;DR\nThe Releases page no longer blames the wrong workflow. A failed run of an unrelated workflow (for example Adoption matrix) no longer shows as \"the release workflow failed\", and an out-of-sync Homebrew row reads \"Updating\" while the tap's own formula-update run is in progress, instead of looking failed.\n\n## Work and rationale\n`fetchCiFailure` in `src/server/distribution.ts` now queries only the configured release workflow's runs (`actions/workflows/<file>/runs`) instead of every run for the tag. A grace window after a successful release run, and the tap's formula-update workflow (`repoos-release.yml`, repository_dispatch), drive the \"Updating\" label; the tap run is matched by the viewed release run's time window because the tap's run list carries no version. `docs/releases.md` says which workflow the banner refers to and how the window works. Tests cover an unrelated failed run beside a successful release run, a failed release run with the right step, an out-of-sync row inside the grace window, and an unrelated tap workflow in progress leaving the row out of sync.\n\n## Approaches tried\nFiltering the repo-wide run list by workflow name, then querying the workflow's own run list; for the tap, first a repo-wide \"any active run\" signal (rejected: it repeats the same misattribution), then the formula-update workflow with a time window.\n\n## Challenges and blockers\nThe tap's run list has no version, so matching the viewed tag is not possible without changing the tap repo; the window match was accepted and documented, with edge cases recorded as follow-ups. The first handoff failed on a missing report section.\n\n## Key learnings\nScope every external signal to the specific workflow it belongs to. When the data lacks a key, say so and document the approximation.\n\n## Generated change summary\n\nBase tree: `203452f4aff47c12486d5dd172ba82e8c2dc9bbe`\nSource tree: `80cf40732d765345bef9b1947a9643f41bcae30f`\n\n- M docs/releases.md: +2 / −1\n- M src/server/distribution.ts: +10 / −2\n- M src/ui-app/tests/distribution.test.ts: +28 / −0"
+}
