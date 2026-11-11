@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 930615
+last_close_out_gate_at: "2026-11-11T01:43:56.162Z"
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
@@ -13,7 +15,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T23:57:57Z"
+updated_at: "2026-11-11T01:43:56Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -277,3 +279,5 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T20:03:26Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T23:04:19Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T01:43:56Z · close-out gate completed in 931s
+
