@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T08:50:14Z"
+updated_at: "2026-11-11T08:50:55Z"
 review_rounds: 2
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
@@ -59,7 +59,7 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 ```
 
 ## Accepted scope and known limitations
-FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated pm-canned-messages test edit is dropped (main's version restored); the PM split prompt and PM_SPLIT_HUMAN_STEP_MESSAGE already require the ## Step-by-step guide; an unfilled guide (heading plus placeholder only) warns as HUMAN_TASK_GUIDE_UNFILLED. NOT blocking, follow-up only: a captured screenshot of the drawer banner (the declared shot was brittle; the warning is covered by unit and route tests); the heading regex matching inside fenced code blocks; the duplicate humanTaskGuideWarning call in patchTask; assignee case normalisation in the scaffold check. Report these under Suggestions, not Bugs.
+FINAL (round 5, hand-finished): other tasks' work files were restored from main (the branch diff contains only this task's files) and main was merged; fence-close matching in task-underspecified.ts and task-summary.ts now uses the shared isMarkdownFenceClose helper, covered by markdown-fence.test.ts (info-string lines do not close a fence). The merge conflict, the PM split prompt guide rule and the unfilled-guide warning are done. NOT blocking, follow-up only: a captured screenshot of the drawer banner (the declared shot was brittle; unit and route tests cover the warning); the duplicate humanTaskGuideWarning call in patchTask; assignee case normalisation in the scaffold check. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -174,3 +174,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T08:43:54Z · message_delivered: 1 message(s)
 - 2026-11-11T08:43:55Z · status review→active
 - 2026-11-11T08:43:57Z · CTO nudge: held — remote validation is running
+- 2026-11-11T08:50:55Z · body: Accepted scope and known limitations (added 1, removed 1)
