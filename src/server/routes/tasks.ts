@@ -108,7 +108,13 @@ import {
 } from "../../core/git.js";
 import { guardReviewTransition } from "../review-guard.js";
 import { gatherLandable } from "../landable.js";
-import { readHandoffStatus } from "../handoff-status.js";
+import {
+  emitHandoffSupersededIfNeeded,
+  readHandoffStatus,
+  reconcileHandoffStatus,
+} from "../handoff-status.js";
+import { handoffProcessLive } from "../handoff-live.js";
+import { HANDOFF_DEADLINE_MS } from "../handoff.js";
 import { REVIEW_RUN_TRIGGERS } from "../review-automation.js";
 import { checkGenericStatusPatch, checkHumanTaskStatusPatch } from "../task-transitions.js";
 import { readFileSync, existsSync, statSync, unlinkSync, mkdirSync, writeFileSync } from "node:fs";
@@ -1247,11 +1253,10 @@ export const patchTask: RouteHandler = async (ctx, req, res, params) => {
     body.body !== undefined || body.section !== undefined
       ? (index.consumeRequirementsNotice?.(updated.id) ?? null)
       : null;
+  const guideWarning = current ? humanTaskGuideWarning(current.assignee, current.body) : null;
   return json(res, 200, {
     ...current,
-    ...(current && humanTaskGuideWarning(current.assignee, current.body)
-      ? { warning: humanTaskGuideWarning(current.assignee, current.body) }
-      : {}),
+    ...(guideWarning ? { warning: guideWarning } : {}),
     ...(requirementsNotice ? { requirementsNotice } : {}),
   });
 };
@@ -3217,7 +3222,11 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       // would have committed (no `dist/`, no the task's own file, no other
       // task's `work/*.md` drift) — and the merge gate then validates the
       // commit, not the raw working tree.
-      const gate = await guardReviewTransition(config, taskStillExists);
+      // Fail fast on a running self-check: this HTTP request must not block for
+      // up to 45 minutes behind a check (#1082). The engineer can retry instead.
+      const gate = await guardReviewTransition(config, taskStillExists, {
+        waitForCheckGate: false,
+      });
       if (!gate.ok) {
         return json(res, 500, {
           error: `could not commit the worktree's uncommitted changes (${gate.detail ?? "the review guard rejected it"}); close-out aborted and nothing was merged.`,
@@ -3288,6 +3297,7 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
                   taskChecks: ctx.taskChecks,
                   remoteValidator: ctx.remoteValidator,
                   previews: ctx.previews,
+                  runner: ctx.runner,
                 },
                 taskStillExists,
                 integrity.checkpointOnlyDrift.approvedSha,
@@ -5117,10 +5127,19 @@ export const getTaskLandable: RouteHandler = async (ctx, _req, res, params) => {
  * touches a handoff. A task with no attempt is `not_requested`, not an error.
  */
 export const getTaskHandoffStatus: RouteHandler = async (ctx, _req, res, params) => {
-  const { index, config } = ctx;
+  const { index, config, runner, reviews } = ctx;
   const id = params.param1;
-  if (!index.getTask(id)) return json(res, 404, { error: `Task #${id} not found` });
-  return json(res, 200, { ok: true, ...readHandoffStatus(config, id) });
+  const task = index.getTask(id);
+  if (!task) return json(res, 404, { error: `Task #${id} not found` });
+  const before = readHandoffStatus(config, id);
+  const status = reconcileHandoffStatus(config, id, {
+    taskStatus: task.status,
+    handoffLive: handoffProcessLive(config, id, runner),
+    latestReviewAt: reviews.read(id)?.at ?? null,
+    staleAfterMs: HANDOFF_DEADLINE_MS,
+  });
+  emitHandoffSupersededIfNeeded(before, status, id, ctx.emitEvent);
+  return json(res, 200, { ok: true, ...status });
 };
 
 /** Return one file's committed contents from the task's before/after revisions. */

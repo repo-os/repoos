@@ -23,7 +23,9 @@ describe("standard page height and floating controls", () => {
     expect(css).toMatch(/\.page-scroll\s*\{[^}]*flex:\s*1 1 auto;/s);
     expect(css).toMatch(/\.agents-page\s*\{[^}]*flex:\s*1 1 auto;/s);
     expect(css).toMatch(/\.ctx-page\s*\{[^}]*flex:\s*1 1 auto;/s);
-    expect(appVue).toMatch(/<RouterView v-else class="main-route"\s*\/>/);
+    expect(appVue).toMatch(
+      /<div v-if="showLoadingShell" key="loading" class="main-route page-loading">[\s\S]*<RouterView v-else class="main-route" \/>/,
+    );
     expect(inputsVue).toMatch(/\.inputs-board-page\s*\{[^}]*flex:\s*1 1 auto;/s);
   });
 
@@ -59,7 +61,7 @@ describe("standard page height and floating controls", () => {
       /@media \(max-width: 760px\)[\s\S]*?:root\s*\{[^}]*--floating-head-size:\s*46px/s,
     );
     expect(css).toMatch(
-      /@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0/s,
+      /@media \(max-width: 760px\)[\s\S]*?\.main\s*\{[^}]*padding:\s*18px 16px 0;[^}]*padding-inline-end:\s*max\(16px,\s*var\(--page-inline-end-inset\)\)/s,
     );
     expect(floatingHeads).toMatch(/\.stack\s*\{[^}]*gap:\s*var\(--floating-head-gap\)/s);
     expect(floatingHeads).toMatch(

@@ -43,6 +43,7 @@ describe("assessTaskUnderspecified", () => {
     expect(prompt).toContain("--human-step-override");
     expect(prompt).toContain("--depends-on <id>");
     expect(prompt).toContain("--assigned-to human --hold true");
+    expect(prompt).toContain("## Step-by-step guide");
     expect(prompt).toContain("Never hand-edit task files");
     expect(prompt).toContain("fakes or fixtures");
   });

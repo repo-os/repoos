@@ -124,6 +124,30 @@ to avoid that race by skipping review or reissuing `mv done` is not the current
 workflow. The lesson is to coordinate through server actions, wait for actual
 completion, and keep merging and status changes in the close-out pipeline.
 
+## Review loop: blocking bar, freeze and accepted scope (#1080)
+
+A review should converge in 2–4 passes. The reviewer prompt (`reviewMission` in
+`src/server/review.ts`, tested in `src/ui-app/tests/default-agent-prompts.test.ts`)
+enforces four rules:
+
+- **Priority-aware bar.** P1/P2 use the full bar: every item under `## Bugs`
+  blocks. P3 tasks and tasks titled `Easter eggs bundle…` use the light bar from
+  pass 1: correctness bugs and landing blockers only.
+- **Automatic freeze.** From pass `review.freezeAfterPasses + 1` (default 4 →
+  pass 5) the bar is frozen: blocking = a defect that breaks the task's own
+  acceptance criteria, a regression of existing behaviour, or a landing blocker.
+  Further edge cases of an already-fixed class and hardening ideas go under
+  `## Suggestions (non-blocking)` and do not change the verdict.
+- **Accepted scope is authoritative.** A `## Accepted scope and known limitations`
+  section (any heading starting `Accepted scope`) is quoted into the prompt; the
+  items it lists, and anything it explicitly supersedes, are not blocking.
+
+Slice 1 covers only the rules above. Enumeration closers, engineer self-review,
+auto-filed follow-ups, the `Land anyway` override and the `round N of ~4`
+convergence display are slice 2, tracked as a follow-up task. Housekeeping
+failures that waste rounds are #1076 (stray other-task bookkeeping in branches)
+and #1061 (bookkeeping commits invalidating checks).
+
 ## Definition of done: the check plan in detail
 
 ## Definition of done
@@ -229,6 +253,60 @@ cannot tell from the code alone:
 - **Merging main into a task branch: take main's copy of work/<id>-*.md.** When manually merging main into an active task branch, git may stop on a conflict in `work/<id>-*.md` (the task file is pure bookkeeping, always superseded by main's version). Take main's copy: `git checkout --theirs work/<id>-*.md`, then stage and commit. Do not pause the merge to report this. RepoOS auto-resolves these inside close-out (#0754); manual merges need the same rule.
 - **A task's reports are its own bookkeeping.** Engineering rounds and review passes live together under `work/reports/<id>/` (`round-<n>.json`, `review-<n>.md`; see `user-docs/engineering-reports.md`). They are committed with the task, and handoff/landable/close-out treat this task's report files as bookkeeping rather than implementation drift — another task's reports still fail the task-scope check. Never hand-edit or delete a stored round or pass.
 - **Check gate bookkeeping (#1061).** While a handoff or in-flight check runs, `work/**` and `.repoos/**` commits on the task branch are deferred (not invalidating), RepoOS refuses new engineer turns and source commits, and source changes that bypass those controls are detected by post-check drift inspection. Already-running engineers can still write files directly; this cannot be reliably prevented. See `user-docs/check.md` § "Bookkeeping during a running gate".
+
+- **A task branch's diff contains ONLY that task's own files (#1076).** Another
+  task's `work/<other-id>-*.md` file and `work/reports/<other-id>/**` must never
+  appear in a task branch's commits — the landing preflight rejects the branch
+  ("the diff changes another task's bookkeeping"), and an engineer then has to
+  restore them by hand, round after round. The rule and the code paths:
+  - **Where siblings leak in.** The server does NOT deliberately write a
+    sibling's file into a worktree. An audit of the write sites that can target a
+    worktree — `patchTaskFile` callers (`routes/tasks.ts` `:1194`,
+    `server.ts` `:3432` in `syncTaskBranch`) each write only THIS task's own file
+    (`task.path`) into its worktree, never a sibling's; activity, CTO notes and
+    watchdog writes go to `config.root`/main. Siblings arrive indirectly: the
+    engineer's self-check WIP checkpoint
+    (`commitWipCheckpointForRemoteGate`, `src/server/engineer-remote-self-check.ts`)
+    used to run a bare `git commit`, which folds WHATEVER is staged — including a
+    sibling file a board write left dirty-and-staged — into the branch; a
+    `git add -A` sweep in the worktree (`review-guard.ts`) can do the same; and a
+    merge of main into the branch can carry a sibling's newer copy. It then
+    compounds: the WIP loop re-commits it every check.
+  - **The guardrails.** The WIP checkpoint commits only the paths it intended
+    (`git commit -- <paths>`) and resets any foreign bookkeeping first.
+    `guardReviewTransition` unstages foreign `work/` files and then commits with
+    a pathspec of exactly what the index holds (`commitStagedOnly`) for both the
+    implement and the hotfix commit; it fails closed rather than falling back to a
+    bare commit. The close-out "keep main's copy" commit (`resetForeignWorkFiles`)
+    is pathspec-scoped to the foreign paths it restored. Every task-branch
+    anchor (`merge-base`, the restore, the stray-`repoos.toml` guard, the check
+    scope) uses the configured default branch, not the main checkout's current
+    branch (`handoffBaseBranch`). Handoff, after that commit gate and before the review lock, runs
+    `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): scans committed,
+    staged, unstaged, and untracked paths under `work/`, `inputs/`, and
+    `stories/` (#1086). Siblings present at the merge-base get **main's tip**;
+    post-merge siblings that only exist on main after the branch point are **dropped**
+    from the branch (not copied in); stray adds with no main blob are removed.
+    Lands a pathspec-scoped commit when needed. If the heal throws, handoff **does
+    not** continue: `finalizeReviewHandoff` fails at the **commit** step with
+    `could not restore main's copy of another task's bookkeeping on this branch: …`
+    naming the offending paths (#1086). Sync uses the same helper as best-effort
+    (`healForeignBookkeepingAfterSync`) and does not block the route on heal errors.
+    `repoos sync` runs that heal after every merge attempt — success or aborted conflict.
+    Handoff reports what was restored or dropped; it runs after the commit gate and
+    before the review lock (the report commit is pathspec-scoped to this task's report).
+    A commit made WHILE a merge is in progress (`lockfile-conflict.ts`,
+    `integration-orchestrator.ts`'s narrow resolution) cannot use a pathspec —
+    git refuses (`cannot do a partial commit during a merge`) — so those keep a
+    bare `git commit` and instead scope the preceding `git add` to their own
+    paths AND unstage any foreign bookkeeping the index holds first (`done.ts`'s
+    drop-`dist` uses the same unstage-then-bare-commit shape); do not "fix" them
+    into a partial commit.
+  - **What an engineer sees.** `repoos landable` and the handoff report name the
+    offending files and the cause in plain English ("the diff changes another
+    task's bookkeeping: work/<id>-*.md"). When the drift is present, handoff
+    restores or drops foreign bookkeeping automatically — re-requesting review is
+    enough. `repoos sync` runs the same heal even when the merge aborts on a conflict.
 
 - **`repoos mv <id> done` never merges code — it only flips the status
   frontmatter.** Confirmed live twice in one session (2026-09-17): #0389 and

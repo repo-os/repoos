@@ -245,9 +245,16 @@ describe("TaskCard activity recency (#1058)", () => {
 });
 
 describe("PipelineCard activity recency (#1058)", () => {
+  const pipelineLane = {
+    pipelineStage: "coding" as const,
+    reviewRunning: false,
+    closeoutActive: false,
+  };
+
   it("hides elapsed inline for ok state and exposes it on the step tooltip", () => {
     const wrapper = mount(PipelineCard, {
       props: {
+        ...pipelineLane,
         taskId: "1058",
         type: "chore",
         priority: "p3",
@@ -277,6 +284,7 @@ describe("PipelineCard activity recency (#1058)", () => {
   it("keeps elapsed visible for stuck state", () => {
     const wrapper = mount(PipelineCard, {
       props: {
+        ...pipelineLane,
         taskId: "1058",
         type: "chore",
         priority: "p3",
@@ -317,6 +325,7 @@ describe("PipelineCard activity recency (#1058)", () => {
     ({ lastActivityAt, checkProgress }) => {
       const wrapper = mount(PipelineCard, {
         props: {
+          ...pipelineLane,
           taskId: "1058",
           type: "chore",
           priority: "p3",
@@ -347,6 +356,7 @@ describe("PipelineCard activity recency (#1058)", () => {
   it("shows stuck and elapsed time for a silent agent that still reports running", () => {
     const wrapper = mount(PipelineCard, {
       props: {
+        ...pipelineLane,
         taskId: "1058",
         type: "chore",
         priority: "p3",
@@ -383,6 +393,8 @@ describe("PipelineCard activity recency (#1058)", () => {
   it.each(["review", "close-out"])("keeps elapsed inline on idle %s rows", (kind) => {
     const wrapper = mount(PipelineCard, {
       props: {
+        ...pipelineLane,
+        pipelineStage: kind === "review" ? "review" : "closeout",
         taskId: "1058",
         type: "chore",
         priority: "p3",
@@ -408,6 +420,7 @@ describe("PipelineCard activity recency (#1058)", () => {
   it("keeps last-activity recency available on check progress", () => {
     const wrapper = mount(PipelineCard, {
       props: {
+        ...pipelineLane,
         taskId: "1058",
         type: "chore",
         priority: "p3",

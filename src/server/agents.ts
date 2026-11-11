@@ -6421,6 +6421,41 @@ export class AgentRunner {
     return this.entries.has(taskId);
   }
 
+  /**
+   * Whether an entry is registered for the key, WITHOUT reconciling dead agents.
+   * For read paths (board GET, watchdog ticks) that only need to know whether
+   * anything could hold the key: reconciling reads the registry and probes pids
+   * for every entry, which is wrong to do once per idle task (#1083).
+   */
+  hasEntry(taskId: string): boolean {
+    return this.entries.has(taskId);
+  }
+
+  /**
+   * Whether a review's reviewer process is still running (#1083). An entry that
+   * is finalizing has already exited, so it does not count, even though its
+   * finalize has not settled yet.
+   */
+  reviewProcessLive(taskId: string): boolean {
+    this.reconcileDeadAgents();
+    const entry = this.entries.get(taskId);
+    return entry !== undefined && !entry.finalizing;
+  }
+
+  /**
+   * Drop a review entry whose process is gone but whose finalize never settled
+   * (#1083). The late finalize then leaves any newer entry for the same key
+   * alone. Returns true when it dropped one.
+   */
+  abandonFinalizing(taskId: string): boolean {
+    const entry = this.entries.get(taskId);
+    if (!entry?.finalizing) return false;
+    this.entries.delete(taskId);
+    this.removeRegistryEntry(taskId);
+    this.drainQueue();
+    return true;
+  }
+
   /** Drop dead or worktree-less engineer turns before they can fence a new run. */
   reconcileDeadAgents(): string[] {
     const registry = readRegistry(this.cacheDir);
@@ -6432,8 +6467,11 @@ export class AgentRunner {
         pidAlive(rec.pid) || livePidsInRecordedGroup(rec.processGroupLeader ?? rec.pid).length > 0;
       if (cwdGone || !processAlive) stale.add(rec.taskId);
     }
+    // Review turns are reaped too (#1083): an adopted review whose process died
+    // has no `close` event, so without this its entry — and the review
+    // registration that reads it — would outlive the process forever.
     for (const [taskId, entry] of this.entries) {
-      if (entry.review || entry.finalizing) continue;
+      if (entry.finalizing) continue;
       const cwdGone = Boolean(entry.workdir && !existsSync(entry.workdir));
       const pid = entry.proc?.pid ?? entry.adoptedPid;
       const processAlive =
@@ -9739,7 +9777,11 @@ export class AgentRunner {
       clearInterval(tailer.timer);
     }
     entry.tailers = undefined;
-    this.removeRegistryEntry(taskId);
+    // An abandoned review (#1083) may have a newer entry under this key by now;
+    // only remove the durable record this turn wrote.
+    if (!this.entries.has(taskId) || this.entries.get(taskId) === entry) {
+      this.removeRegistryEntry(taskId);
+    }
 
     this.logger?.agent(
       taskId,
@@ -9905,7 +9947,7 @@ export class AgentRunner {
         `Failed to capture session usage: ${(error as Error).message}`,
       );
     }
-    this.entries.delete(taskId);
+    if (this.entries.get(taskId) === entry) this.entries.delete(taskId);
     this.drainQueue();
     // Deliver any message queued during this turn now that it has ended (#0821),
     // so the human's follow-up is read without another send or start. A turn

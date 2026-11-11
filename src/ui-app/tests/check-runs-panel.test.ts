@@ -66,6 +66,7 @@ describe("CheckRunsPanel loading (#0950)", () => {
   it("shows a skeleton instead of a bare loading line on first load", async () => {
     api.mockImplementation(() => new Promise(() => {}));
     const wrapper = mount(CheckRunsPanel);
+    await flushPromises();
 
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     expect(wrapper.text()).not.toContain("Loading run history");

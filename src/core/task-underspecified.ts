@@ -6,6 +6,20 @@ import {
   extractSection,
   removeSection,
 } from "./task.js";
+
+/** Scaffold italic line under `## Step-by-step guide` in {@link HUMAN_TASK_SCAFFOLD}. */
+export const HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER =
+  "_Write numbered steps with exact commands or click paths, where to enter information and store secrets, what could go wrong, how to know each step worked, and what to report back._";
+
+/** Placeholder line in the human-step split task template (`human-step-tags.ts`). */
+export const HUMAN_SPLIT_GUIDE_PLACEHOLDER =
+  "_Write numbered steps with exact commands or click paths, where to enter information and store secrets (never in chat, task text or git), what can go wrong, how to tell each step worked, and what to report back._";
+
+const HUMAN_TASK_GUIDE_MISSING =
+  "Missing ## Step-by-step guide — add numbered steps, exact commands or click paths, safe secret handling, success checks, and what to report back.";
+
+const HUMAN_TASK_GUIDE_UNFILLED =
+  "## Step-by-step guide is still empty — replace the placeholder with numbered steps, exact commands or click paths, safe secret handling, success checks, and what to report back.";
 import { hasHumanTaggedCriteria, humanTaggedCriteria, taggedCriteria } from "./human-step-tags.js";
 
 /** Machine-readable `needs_input_reason` when a task body looks like an unfinished stub. */
@@ -47,17 +61,38 @@ _What needs doing, and why does it matter?_
 
 ## Step-by-step guide
 
-_Write numbered steps with exact commands or click paths, where to enter information and store secrets, what could go wrong, how to know each step worked, and what to report back._`;
+${HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER}`;
 
 export const HUMAN_TASK_GUIDE_HEADING = "## Step-by-step guide";
 
-/** Missing-guide warning shared by CLI, HTTP responses and task UI. */
+function humanTaskGuidePlaceholderLines(): string[] {
+  return [HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER, HUMAN_SPLIT_GUIDE_PLACEHOLDER];
+}
+
+/** True when the guide section has no real steps yet (heading only or scaffold italic). */
+export function humanTaskGuideSectionFilled(sectionBody: string): boolean {
+  const lines = sectionBody
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+  const placeholders = new Set(humanTaskGuidePlaceholderLines());
+  const substantive = lines.filter(
+    (line) =>
+      line !== HUMAN_TASK_GUIDE_HEADING && !line.startsWith("## ") && !placeholders.has(line),
+  );
+  return substantive.some((line) => /^\d+\.\s/.test(line));
+}
+
+/** Missing- or unfilled-guide warning shared by CLI, HTTP responses and task UI. */
 export function humanTaskGuideWarning(
   assignee: string | null | undefined,
   body: string,
 ): string | null {
-  if (!isHumanAssigned(assignee) || /^## Step-by-step guide\s*$/im.test(body)) return null;
-  return "Missing ## Step-by-step guide — add numbered steps, exact commands or click paths, safe secret handling, success checks, and what to report back.";
+  if (!isHumanAssigned(assignee)) return null;
+  const section = extractSection(body, HUMAN_TASK_GUIDE_HEADING);
+  if (section === null) return HUMAN_TASK_GUIDE_MISSING;
+  if (!humanTaskGuideSectionFilled(section)) return HUMAN_TASK_GUIDE_UNFILLED;
+  return null;
 }
 
 /** Append the human-task note to a body unless it is already present (idempotent). */
@@ -419,14 +454,15 @@ export function assessTaskUnderspecified(
 
 /** The PM chat's canned "flesh this out" message (mirrors the UI's `PM_FLESH_OUT_CANNED_MESSAGE`). */
 export const PM_FLESH_OUT_MESSAGE = "Can you flesh this out?";
-export const PM_SPLIT_HUMAN_STEP_MESSAGE = "Review and resolve the human-only steps in this task.";
+export const PM_SPLIT_HUMAN_STEP_MESSAGE =
+  "Review and resolve the human-only steps in this task — split work must include a complete ## Step-by-step guide on the human task.";
 
 /** Server-side instructions for deciding whether human-only work needs splitting. */
 export function splitHumanStepRequirementsPrompt(): string {
   return [
     "Review the acceptance criteria and decide which truly require a human: a real device, account or credentials, or a third-party sign-up. Criteria an agent can satisfy with fakes or fixtures do not count.",
     'If none require a human, record the false-positive override with `repoos update <id> --human-step-override "<reason>"` and explain why. Do not split.',
-    'Otherwise create the human part with `repoos new "<title>" --depends-on <id>`, then run `repoos update <new> --assigned-to human --hold true`. Narrow the original task acceptance criteria to agent-doable work and keep the original `needs_input` cleared.',
+    'Otherwise create the human part with `repoos new "<title>" --depends-on <id>`, then run `repoos update <new> --assigned-to human --hold true`. The human task must include `## Step-by-step guide` with numbered steps, exact commands or click paths, safe secret storage (never chat, tasks or git), likely failures, how to know it worked, and what to report back — fill it with `repoos update <new> --section "Step-by-step guide" --section-body "1. ..."` (do not leave the scaffold placeholder). Narrow the original task acceptance criteria to agent-doable work and keep the original `needs_input` cleared.',
     "Use only repoos commands. Never hand-edit task files under work/.",
   ].join("\n\n");
 }

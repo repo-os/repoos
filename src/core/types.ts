@@ -550,6 +550,8 @@ export interface RepoOSConfig {
    * Inline animation beside agent-activity labels. Default `orbital-pixel` when
    * omitted. Use `three-dots` for the legacy pulsing-dot row.
    */
+  /** When false, activity indicators render a still status dot with no motion. Default true. */
+  activityAnimationEnabled?: boolean;
   activityAnimationStyle?: ActivityAnimationStyle;
   /**
    * Fixed pixel width of the inline activity animation, the same on every
@@ -2049,6 +2051,12 @@ export interface ReviewVerificationConfig {
 export interface ReviewConfig {
   /** Completed passes before the repeated-class summary and human flag. Default 5. */
   humanFlagAfterPasses?: number;
+  /**
+   * Completed passes after which the blocking bar freezes to real defects, a
+   * regression or a landing blocker; everything else becomes a non-blocking
+   * suggestion (#1080). Default 4.
+   */
+  freezeAfterPasses?: number;
   /**
    * Wall-clock ceiling on one review pass, in minutes (#1019). Default 15.
    * A large diff on a slow cheap model needs longer; a timed-out pass is

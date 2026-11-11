@@ -156,7 +156,8 @@ export const DEFAULT_AGENTS: Agent[] = [
       "`highlight` selector that exists on the page; then open the captured PNG and confirm it shows the change. " +
       "Before handoff, re-read the newest review report and any message sent to you; fix EVERY item, and when a " +
       "finding names a bug, find its whole class (grep sibling paths, callers, config/schema/docs/test " +
-      "registrations) and fix all instances with a table-driven test instead of patching one. A new config key " +
+      "registrations) and fix all instances with a table-driven test instead of patching one. " +
+      "A new config key " +
       "needs a Settings control, a `getConfigSchema()` entry, an entry in the supported-keys list and docs. Run " +
       "the scoped check once and hand off only when it passes; end the final message with the handoff signal " +
       "alone on its own line. After a merge conflict with the base branch, merge it and take the base branch's " +
@@ -282,6 +283,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   theme: "system",
   uiTheme: "classic",
   defaultTaskMode: "freeform",
+  activityAnimationEnabled: true,
   activityAnimationStyle: "orbital-pixel",
   activityAnimationSize: DEFAULT_ACTIVITY_ANIMATION_SIZE,
   activityAnimationConcurrency: 6,
@@ -370,6 +372,7 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
   // is flagged for a human.
   review: {
     humanFlagAfterPasses: 5,
+    freezeAfterPasses: 4,
     timeoutMinutes: 15,
   },
   // Check-gate defaults (#0655): how many times a failing test file is
@@ -1598,6 +1601,9 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     if (typeof get("ntfyBaseUrl") === "string") cfg.ntfyBaseUrl = get("ntfyBaseUrl") as string;
     const taskMode = get("defaultTaskMode");
     if (taskMode === "freeform" || taskMode === "manual") cfg.defaultTaskMode = taskMode;
+    if (typeof get("activityAnimationEnabled") === "boolean") {
+      cfg.activityAnimationEnabled = get("activityAnimationEnabled") as boolean;
+    }
     const activityStyle = get("activityAnimationStyle");
     if (
       typeof activityStyle === "string" &&
@@ -2524,11 +2530,16 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
           ? Number(raw.trim())
           : undefined;
     const reviewHumanFlag = reviewNumber(parsed["review.humanFlagAfterPasses"]);
+    const reviewFreeze = reviewNumber(parsed["review.freezeAfterPasses"]);
     const reviewTimeout = reviewNumber(parsed["review.timeoutMinutes"]);
     const review: ReviewConfig = { ...DEFAULT_CONFIG.review, ...cfg.review };
     let reviewConfigured = false;
     if (reviewHumanFlag !== undefined && Number.isFinite(reviewHumanFlag) && reviewHumanFlag >= 1) {
       review.humanFlagAfterPasses = Math.min(50, Math.floor(reviewHumanFlag));
+      reviewConfigured = true;
+    }
+    if (reviewFreeze !== undefined && Number.isFinite(reviewFreeze) && reviewFreeze >= 1) {
+      review.freezeAfterPasses = Math.min(50, Math.floor(reviewFreeze));
       reviewConfigured = true;
     }
     if (reviewTimeout !== undefined && Number.isFinite(reviewTimeout) && reviewTimeout >= 1) {
@@ -2749,8 +2760,17 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       description: "Which flow the New task drawer opens with",
     },
     {
-      key: "activityAnimationStyle",
+      key: "activityAnimationEnabled",
       label: "Activity animation",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.activityAnimationEnabled,
+      description: "Show motion beside live agent work; off keeps a plain colored status dot.",
+    },
+    {
+      key: "activityAnimationStyle",
+      label: "Animation style",
       type: "select",
       tier: "live",
       restartRequired: false,
@@ -2759,8 +2779,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         value,
         label: ACTIVITY_ANIMATION_STYLE_LABELS[value],
       })),
-      description:
-        "Motion beside coding, reviewing, and other agent-activity labels. Compact styles use a small fixed footprint; Three dots keeps the legacy row.",
+      description: "Compact motion style; Three dots keeps the legacy pulsing row.",
     },
     {
       key: "activityAnimationSize",
@@ -2773,8 +2792,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         value,
         label: ACTIVITY_ANIMATION_SIZE_LABELS[value],
       })),
-      description:
-        "Inline space for the activity animation, in pixels. The same fixed size renders everywhere it appears — task cards, the Dev page and this preview — regardless of the surrounding text size.",
+      description: "Fixed pixel width on task cards, Pipeline, Dev and the preview below.",
     },
     {
       key: "activityAnimationConcurrency",
@@ -2787,7 +2805,7 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       max: 24,
       step: 1,
       description:
-        "Maximum number of activity indicators animated at once. Others stay on a still frame; set to 0 to pause all animation.",
+        "Cap on simultaneously animated indicators that are on screen; off-screen cards do not count.",
     },
     {
       key: "defaultAssignee",
@@ -3368,6 +3386,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
         "Completed review passes on one task before the next report opens with a summary of the repeated " +
         "bug classes earlier passes kept finding and the task is flagged for a human. Default 5. The flag is " +
         "separate from the auto-bounce review-rounds-exhausted backstop.",
+    },
+    {
+      key: "review.freezeAfterPasses",
+      label: "Freeze the blocking bar after",
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.review!.freezeAfterPasses!,
+      description:
+        "Completed review passes on one task before the blocking bar freezes. From the next pass on, only real " +
+        "defects, regressions and landing blockers can block; further edge cases and hardening ideas become " +
+        "non-blocking suggestions. Default 4. P3 tasks and Easter eggs bundles use the lighter bar from pass 1.",
     },
     {
       key: "review.timeoutMinutes",
@@ -4327,6 +4357,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "defaultStatus",
   "defaultAssignee",
   "defaultTaskMode",
+  "activityAnimationEnabled",
   "activityAnimationStyle",
   "activityAnimationSize",
   "activityAnimationConcurrency",
@@ -4590,6 +4621,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "reviewVerification.guardTestCheck",
   "reviewVerification.testGlobs",
   "review.humanFlagAfterPasses",
+  "review.freezeAfterPasses",
   "review.timeoutMinutes",
   // Remote validation
   "remoteValidation.enabled",

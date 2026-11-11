@@ -1,9 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetShotFixturePins } from "../src/lib/shot-preview-fixtures";
 import { flushPromises, mount } from "@vue/test-utils";
+import { createPinia, setActivePinia } from "pinia";
 import { parseTask, releasedAtFromActivity } from "../../core/task";
 import { markTaskReleased, patchTaskFile } from "../../server/write";
 import { nextReleaseVersion, releaseTimelineTasks } from "../src/releases";
 import { isNewerVersion, isStableRelease } from "../../server/routes/release";
+import {
+  SOURCE_UPGRADE_COMMAND,
+  channelFromVersion,
+  upgradeInstruction,
+} from "../../commands/upgrade";
+import { SHOT_PREVIEW_APPLIED_ATTR } from "../../core/shot-fixtures.js";
 import ReleaseUpdateNotification from "../src/components/ReleaseUpdateNotification.vue";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -38,6 +46,16 @@ function task(root: string, id: string, body = "## Activity\n"): Task {
 }
 
 describe("feature releases", () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+  });
+
+  // The shot-fixture pins are module-level; a fixture set by one test must not
+  // leak its seeded release dialog into the next mount.
+  afterEach(() => {
+    resetShotFixturePins();
+  });
+
   it("accepts only stable semantic-version release tags", () => {
     expect(isStableRelease({ tag_name: "v0.5.48", prerelease: false })).toBe(true);
     expect(isStableRelease({ tag_name: "v0.6.0-rc.1", prerelease: true })).toBe(false);
@@ -51,6 +69,75 @@ describe("feature releases", () => {
     expect(isNewerVersion("0.5.48", null)).toBe(false);
   });
 
+  it.each([
+    ["0.5.81-beta.2", "0.5.81-beta.1", true],
+    ["0.5.81-beta.1", "0.5.81-beta.2", false],
+    ["0.5.81-beta.1", "0.5.80-beta.1", true],
+    ["0.5.81", "0.5.81-beta.2", true],
+    ["0.5.81-beta.2", "0.5.81", false],
+    ["0.5.81-beta.1", "0.5.81-beta.1", false],
+    ["not-a-version", "0.5.81", false],
+  ])(
+    "orders prerelease builds the way repoos upgrade takes them: %s vs %s",
+    (latest, current, expected) => {
+      expect(isNewerVersion(latest, current)).toBe(expected);
+    },
+  );
+
+  it("reads the prerelease channel from an installed version (#1073)", () => {
+    expect(channelFromVersion("0.6.0-beta.1")).toBe("beta");
+    expect(channelFromVersion("0.6.0-canary.12")).toBe("canary");
+    expect(channelFromVersion("0.6.0-rc.1")).toBe("rc");
+    expect(channelFromVersion("0.6.0")).toBeNull();
+    expect(channelFromVersion(null)).toBeNull();
+  });
+
+  it("returns the standalone upgrade command, with the channel when installed from one (#1073)", () => {
+    expect(
+      upgradeInstruction({ installRoot: "/Users/nick/.repoos/dist", version: "0.5.79" }),
+    ).toEqual({ installKind: "standalone", packageManager: null, command: "repoos upgrade" });
+    expect(
+      upgradeInstruction({
+        installRoot: "/Users/nick/.repoos/dist",
+        version: "0.6.0-beta.1",
+        channel: channelFromVersion("0.6.0-beta.1"),
+      }),
+    ).toEqual({
+      installKind: "standalone",
+      packageManager: null,
+      command: "repoos upgrade --channel beta",
+    });
+  });
+
+  it("returns the source-checkout instruction when no build marker is present (#1073)", () => {
+    expect(
+      upgradeInstruction({ installRoot: "/Users/nick/code/repoos/src", version: null }),
+    ).toEqual({ installKind: "source", packageManager: null, command: SOURCE_UPGRADE_COMMAND });
+  });
+
+  it("returns each package manager's own update command (#1073)", () => {
+    expect(
+      upgradeInstruction({
+        installRoot: "/opt/homebrew/Cellar/repoos/0.5.79/libexec/node_modules/@repo-os/repoos/dist",
+        version: "0.5.79",
+      }),
+    ).toEqual({
+      installKind: "package-manager",
+      packageManager: "Homebrew",
+      command: "brew update && brew upgrade repo-os/tap/repoos",
+    });
+    expect(
+      upgradeInstruction({
+        installRoot: "/usr/local/lib/node_modules/@repo-os/repoos/dist",
+        version: "0.5.79",
+      }),
+    ).toEqual({
+      installKind: "package-manager",
+      packageManager: "npm",
+      command: "npm update -g @repo-os/repoos",
+    });
+  });
+
   it("keeps the banner visible while the modal opens for details", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
@@ -60,6 +147,8 @@ describe("feature releases", () => {
           available: true,
           releaseNotes: "## Highlights\n- New release",
           releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+          installKind: "standalone",
+          upgradeCommand: "repoos upgrade",
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -83,6 +172,266 @@ describe("feature releases", () => {
     }
   });
 
+  it("shows the upgrade command in a code block and relabels the release button (#1073)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          currentVersion: "0.5.46",
+          latestVersion: "0.6.0",
+          available: true,
+          releaseNotes: null,
+          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+          installKind: "standalone",
+          upgradeCommand: "repoos upgrade",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      await document.body
+        .querySelector(".release-update-banner")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      const code = document.body.querySelector(".release-update-code");
+      expect(code?.textContent?.trim()).toBe("repoos upgrade");
+
+      // The old "Upgrade" label is gone; the link now reads "Release notes".
+      const releaseLink = document.body.querySelector(".release-update-actions a");
+      expect(releaseLink?.textContent ?? "").toContain("Release notes");
+      expect(releaseLink?.getAttribute("href")).toBe(
+        "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+      );
+
+      // Copy puts the exact command on the clipboard and confirms it.
+      const copyButton = document.body.querySelector<HTMLButtonElement>(
+        '[data-test-id="release-upgrade-command"] button',
+      )!;
+      await copyButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+      expect(writeText).toHaveBeenCalledWith("repoos upgrade");
+      expect(copyButton.textContent ?? "").toContain("Copied");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
+    {
+      installKind: "package-manager",
+      upgradeCommand: "npm update -g @repo-os/repoos",
+      hint: "Update it with the same tool you installed it with:",
+    },
+    {
+      installKind: "source",
+      upgradeCommand: "git pull && bun install && bun run build",
+      hint: "Update this checkout from source:",
+    },
+  ])(
+    "shows the $installKind install's own command, not `repoos upgrade` (#1073)",
+    async ({ installKind, upgradeCommand, hint }) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              currentVersion: "0.5.79",
+              latestVersion: "0.6.0",
+              available: true,
+              releaseNotes: null,
+              releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+              installKind,
+              upgradeCommand,
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
+        ),
+      );
+
+      const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+      try {
+        await flushPromises();
+        await document.body
+          .querySelector(".release-update-banner")!
+          .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        await flushPromises();
+
+        const block = document.body.querySelector('[data-test-id="release-upgrade-command"]');
+        expect(block?.querySelector(".release-update-code")?.textContent?.trim()).toBe(
+          upgradeCommand,
+        );
+        expect(block?.querySelector(".release-update-upgrade-hint")?.textContent).toBe(hint);
+        expect(block?.textContent ?? "").not.toContain("repoos upgrade");
+      } finally {
+        wrapper.unmount();
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+
+  it("says so when the copy fails instead of doing nothing (#1073)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            currentVersion: "0.5.46",
+            latestVersion: "0.6.0",
+            available: true,
+            releaseNotes: null,
+            releaseUrl: null,
+            installKind: "standalone",
+            upgradeCommand: "repoos upgrade",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+    // Both copy paths refuse: the async clipboard rejects and the legacy
+    // `execCommand` fallback reports failure.
+    vi.stubGlobal("navigator", {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    const execCommand = vi.fn().mockReturnValue(false);
+    Object.defineProperty(document, "execCommand", { value: execCommand, configurable: true });
+
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      await document.body
+        .querySelector(".release-update-banner")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      const copyButton = document.body.querySelector<HTMLButtonElement>(
+        '[data-test-id="release-upgrade-command"] button',
+      )!;
+      await copyButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await flushPromises();
+
+      expect(copyButton.textContent ?? "").toContain("Copy failed");
+      expect(document.body.textContent).toContain("select the command above and copy it");
+      expect(copyButton.textContent ?? "").not.toContain("Copied");
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+      Reflect.deleteProperty(document, "execCommand");
+    }
+  });
+
+  it("opens the update dialog when the App applies the release:updateAvailable fixture (#1073)", async () => {
+    // Regression: the component mounts before App's fixture pass runs, and the
+    // live `/api/release/available` reports no update on the preview build, so
+    // the seeded dialog never opened — the capture showed the applied marker
+    // with no dialog and its highlight matched nothing. The App now pins the
+    // payload, which the component opens reactively.
+    const { useRepoStore } = await import("../src/stores/repo");
+    const { applyShotPreviewFixture } = await import("../src/lib/shot-preview-fixtures");
+    const repo = useRepoStore();
+    window.history.replaceState({}, "", "/?shotState=release%3AupdateAvailable");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            currentVersion: "0.6.0",
+            latestVersion: null,
+            available: false,
+            releaseNotes: null,
+            releaseUrl: "https://github.com/repo-os/repoos/releases",
+            installKind: "standalone",
+            upgradeCommand: "repoos upgrade",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
+
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      // Health is not loaded yet, so the real (no-update) payload won.
+      expect(document.body.querySelector(".release-update-banner")).toBeNull();
+
+      // App's fixture pass: with `/api/health` now reporting a preview build.
+      repo.health = { ok: true, isPreviewBuild: true } as typeof repo.health;
+      applyShotPreviewFixture(repo, "release:updateAvailable");
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-code")?.textContent?.trim()).toBe(
+        "repoos upgrade",
+      );
+      // These are the two probes the server's UI verification runs for a shot
+      // (#0866): the applied-state marker, an open dialog, and the declared
+      // highlight resolving on the page. Asserting them here means a regression
+      // that would fail the capture fails the test first.
+      expect(document.documentElement.getAttribute(SHOT_PREVIEW_APPLIED_ATTR)).toBe(
+        "release:updateAvailable",
+      );
+      expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+      const highlight = document.querySelector('[data-test-id="release-upgrade-command"]');
+      expect(highlight).not.toBeNull();
+      expect(highlight?.textContent ?? "").toContain("repoos upgrade");
+    } finally {
+      wrapper.unmount();
+      repo.health = null;
+      document.documentElement.removeAttribute(SHOT_PREVIEW_APPLIED_ATTR);
+      window.history.replaceState({}, "", "/");
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("remembers a dismissed version in localStorage until a newer one appears (#1073)", async () => {
+    const payload = {
+      currentVersion: "0.5.46",
+      latestVersion: "0.6.0",
+      available: true,
+      releaseNotes: null,
+      releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+      installKind: "standalone",
+      upgradeCommand: "repoos upgrade",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
+        ),
+      ),
+    );
+
+    localStorage.setItem("repoos.releaseUpdate.dismissedVersion", "0.6.0");
+    const dismissed = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      // Same dismissed version → banner stays hidden on a fresh load.
+      expect(document.body.querySelector(".release-update-banner")).toBeNull();
+    } finally {
+      dismissed.unmount();
+    }
+
+    // A newer version supersedes the remembered dismissal.
+    localStorage.setItem("repoos.releaseUpdate.dismissedVersion", "0.5.99");
+    const next = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-banner")).not.toBeNull();
+    } finally {
+      next.unmount();
+      localStorage.removeItem("repoos.releaseUpdate.dismissedVersion");
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("Not now dismisses the banner", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
@@ -92,6 +441,8 @@ describe("feature releases", () => {
           available: true,
           releaseNotes: null,
           releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+          installKind: "standalone",
+          upgradeCommand: "repoos upgrade",
         }),
         { status: 200, headers: { "Content-Type": "application/json" } },
       ),
@@ -117,8 +468,11 @@ describe("feature releases", () => {
       await notNow!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
       await flushPromises();
       expect(document.body.querySelector(".release-update-banner")).toBeNull();
+      // The dismissed version is remembered so the banner stays gone.
+      expect(localStorage.getItem("repoos.releaseUpdate.dismissedVersion")).toBe("0.6.0");
     } finally {
       wrapper.unmount();
+      localStorage.removeItem("repoos.releaseUpdate.dismissedVersion");
       vi.unstubAllGlobals();
     }
   });

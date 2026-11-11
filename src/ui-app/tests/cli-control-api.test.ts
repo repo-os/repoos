@@ -753,6 +753,30 @@ describe("control API CLI", () => {
     health.mockRestore();
     requestOk.mockRestore();
   });
+
+  it("handoff-status prints superseded instead of not requested (#1085)", async () => {
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const requestOk = vi.spyOn(RepoOsApi.prototype, "requestOk").mockResolvedValue({
+      taskId: "1085",
+      state: "superseded",
+      step: "validate",
+      reason: "task is already in review",
+      origin: null,
+      attempt: 2,
+      attemptKey: "run-old",
+      outcomeQueued: false,
+      updatedAt: "2026-11-10T06:05:00.000Z",
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdHandoffStatus(["1085"]);
+    expect(code).toBe(0);
+    const printed = log.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(printed).toContain("superseded");
+    expect(printed).not.toContain("not requested");
+    log.mockRestore();
+    health.mockRestore();
+    requestOk.mockRestore();
+  });
 });
 
 describe("repoos summary polling", () => {

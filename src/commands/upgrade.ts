@@ -26,12 +26,22 @@ export { launcherScript } from "../core/launcher-runtime.js";
 
 const REPO = "repo-os/repoos";
 
-/** The directory containing cli/, core/, server/, ui/, .build-info.json — dist/ in a source checkout, or the whole install root for a standalone install. */
-function installRoot(): string {
+/**
+ * The directory containing cli/, core/, server/, ui/, .build-info.json — dist/
+ * in a source checkout, or the whole install root for a standalone install.
+ * Exported so the server's install detection starts from the same root.
+ */
+export function installRoot(): string {
   return dirname(dirname(fileURLToPath(import.meta.url)));
 }
 
-function readVersion(root: string): string | null {
+/**
+ * The version in the install's own `.build-info.json`, or null when there is
+ * none — the same read `cmdUpgrade` uses. Exported so the server's install
+ * detection passes identical input to `upgradeInstruction` and never disagrees
+ * with the CLI on the same checkout (#1073 review).
+ */
+export function readInstallVersion(root: string): string | null {
   try {
     const info = JSON.parse(readFileSync(join(root, ".build-info.json"), "utf8")) as {
       version?: string;
@@ -45,6 +55,96 @@ function readVersion(root: string): string | null {
 export interface PackageManagerUpgrade {
   label: string;
   command: string;
+}
+
+/** How this RepoOS was installed, as far as `repoos upgrade` can tell (#1073). */
+export type InstallKind = "standalone" | "source" | "package-manager";
+
+/** The upgrade instruction a user should run, and how we decided it. */
+export interface UpgradeInstruction {
+  installKind: InstallKind;
+  /** Package-manager label (e.g. "Homebrew") — only set for `package-manager`. */
+  packageManager: string | null;
+  /** The exact command/instruction, ready to copy into a terminal. */
+  command: string;
+}
+
+/** The command shown for a source checkout — the same one `repoos upgrade` prints. */
+export const SOURCE_UPGRADE_COMMAND = "git pull && bun install && bun run build";
+
+/**
+ * Whether `root` is a source checkout's build output rather than a standalone
+ * install (#1073 review).
+ *
+ * The version alone cannot tell them apart: `scripts/copy-assets.mjs` writes
+ * `package.json`'s version into `dist/.build-info.json` on every source build,
+ * so a built checkout looks exactly like a curl install. The reliable signal is
+ * structure: a checkout's install root is `<repo>/dist` (or `<repo>/src` for a
+ * `bun src/...` run), and its parent holds `src/` + `package.json`, or a `.git`
+ * directory. A standalone install's parent holds neither.
+ */
+export function isSourceCheckout(root: string): boolean {
+  const parent = dirname(root);
+  try {
+    if (existsSync(join(parent, ".git"))) return true;
+    return existsSync(join(parent, "src")) && existsSync(join(parent, "package.json"));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The prerelease channel a version belongs to (`0.6.0-beta.1` → `"beta"`), or
+ * null for a stable version. Release tags carry the channel as the prerelease
+ * identifier, so an installed channel build is how the update dialog knows to
+ * offer `repoos upgrade --channel <name>` (docs/releases.md).
+ */
+export function channelFromVersion(version: string | null): string | null {
+  if (!version) return null;
+  const match = version.trim().match(/^\d+\.\d+\.\d+-([A-Za-z]+)\./);
+  return match ? match[1] : null;
+}
+
+/**
+ * The install instruction for a checkout, matching `cmdUpgrade`'s own
+ * detection so the dashboard dialog and the CLI never disagree (#1073).
+ * Pure and exported: the server calls it to fill `upgradeCommand` /
+ * `installKind` on `GET /api/release/available`, and #1072 reuses it.
+ *
+ * Detection order mirrors `cmdUpgrade`:
+ *   1. a recognized package-manager path → that manager's update command;
+ *   2. a source checkout (`isSourceCheckout`) or no `.build-info.json`
+ *      (`version` is null) → the source-checkout command;
+ *   3. otherwise → standalone (curl) install, with the channel form when the
+ *      installed version is a prerelease.
+ *
+ * `sourceCheckout` overrides the filesystem probe for tests; production callers
+ * omit it.
+ */
+export function upgradeInstruction(input: {
+  installRoot: string;
+  version: string | null;
+  channel?: string | null;
+  sourceCheckout?: boolean;
+}): UpgradeInstruction {
+  const packageManager = packageManagerUpgrade(input.installRoot);
+  if (packageManager) {
+    return {
+      installKind: "package-manager",
+      packageManager: packageManager.label,
+      command: packageManager.command,
+    };
+  }
+  const source = input.sourceCheckout ?? isSourceCheckout(input.installRoot);
+  if (source || input.version === null) {
+    return { installKind: "source", packageManager: null, command: SOURCE_UPGRADE_COMMAND };
+  }
+  const channel = input.channel ?? null;
+  return {
+    installKind: "standalone",
+    packageManager: null,
+    command: channel ? `repoos upgrade --channel ${channel}` : "repoos upgrade",
+  };
 }
 
 /**
@@ -79,10 +179,11 @@ interface ReleaseAsset {
   name: string;
   browser_download_url: string;
 }
-interface Release {
+export interface Release {
   tag_name: string;
   assets: ReleaseAsset[];
   prerelease?: boolean;
+  html_url?: string;
   /** GitHub release body — the notes authored in the "Cut a release" modal (#0361), when set. */
   body?: string | null;
 }
@@ -111,15 +212,21 @@ function parseChannel(args: string[]): string | null {
  * -canary.N, -rc.N) as a prerelease, exactly so stable users never get handed
  * one from this endpoint. A channel opt-in has to use the list endpoint
  * instead and find its own match.
+ *
+ * Exported so the update dialog's banner (#1073) compares against exactly the
+ * release `repoos upgrade --channel <name>` would install.
  */
-async function fetchLatestRelease(channel: string | null): Promise<Release> {
+export async function fetchLatestRelease(
+  channel: string | null,
+  signal?: AbortSignal,
+): Promise<Release> {
   if (!channel) {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { signal });
     if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
     return (await res.json()) as Release;
   }
   // Newest first by default; the first tag matching "-<channel>." wins.
-  const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`);
+  const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { signal });
   if (!res.ok) throw new Error(`GitHub API returned ${res.status}`);
   const releases = (await res.json()) as Release[];
   const match = releases.find((r) => r.tag_name.includes(`-${channel}.`));
@@ -131,26 +238,29 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   const root = installRoot();
   const channel = parseChannel(args);
 
-  const packageManager = packageManagerUpgrade(root);
-  if (packageManager) {
-    console.log(c.yellow(`  repoos was installed with ${packageManager.label}.`));
+  const instruction = upgradeInstruction({
+    installRoot: root,
+    version: readInstallVersion(root),
+    channel,
+  });
+  if (instruction.installKind === "package-manager") {
+    console.log(c.yellow(`  repoos was installed with ${instruction.packageManager}.`));
     console.log(c.dim("  Update it with:"));
-    console.log(c.dim(`    ${packageManager.command}`));
+    console.log(c.dim(`    ${instruction.command}`));
     if (channel) {
       console.log(c.dim(`  --channel ${channel} only applies to standalone curl installs.`));
     }
     return;
   }
-
-  const current = readVersion(root);
-  if (!current) {
+  if (instruction.installKind === "source") {
     console.log(
       c.yellow("  repoos appears to be running from a source checkout, not a standalone install."),
     );
-    console.log(c.dim("  Update it with: git pull && bun run build"));
+    console.log(c.dim(`  Update it with: ${instruction.command}`));
     return;
   }
 
+  const current = readInstallVersion(root)!;
   console.log(c.dim(`  Current version: v${current}`));
   console.log(
     c.dim(channel ? `  Checking latest "${channel}" release…` : "  Checking latest release…"),
