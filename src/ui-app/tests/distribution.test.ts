@@ -365,10 +365,7 @@ describe("release workflow CI attribution (#1090)", () => {
   it("ignores unrelated failed workflow runs when the release workflow succeeded", async () => {
     const urls: string[] = [];
     const summary = await getDistributionStatus(
-      configWithRelease([
-        { name: "npm", kind: "npm", package: "@scope/pkg" },
-        homebrewChannel,
-      ]),
+      configWithRelease([{ name: "npm", kind: "npm", package: "@scope/pkg" }, homebrewChannel]),
       release,
       fakeFetch((url) => {
         urls.push(url);
