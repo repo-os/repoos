@@ -37,6 +37,8 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 ## Screenshots
 
 ![32](/api/tasks/1084/attachments/att_bf168d02-53c0-4a61-9f11-e304e50cca7e.webp)
+![Card 9m 46s](/api/tasks/1084/attachments/att_1129551f-d173-488c-9279-cef590bb105a.png)
+![Drawer 2m 46s](/api/tasks/1084/attachments/att_a40476b9-e8e5-4d5b-88de-567d8eca5e79.png)
 
 ## Activity
 
@@ -44,3 +46,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-10T04:51:25Z · screenshots
 - 2026-11-10T04:51:27Z · needs_input
 - 2026-11-11T03:12:51Z · body: Also fix: elapsed time differs between task card and drawer (added)
+- 2026-11-11T03:12:51Z · screenshots
