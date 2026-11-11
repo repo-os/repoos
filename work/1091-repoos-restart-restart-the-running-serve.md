@@ -196,3 +196,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T19:50:56Z · note: handoff requested (cli)
 - 2026-11-11T19:53:19Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T20:08:02Z · message_queued at 2026-11-11T20:08:02.154Z
+- 2026-11-11T20:08:02Z · handoff failed · task-file handoff failed at check · the worktree changed while the gate was running (appeared: src/commands/restart.ts, src/core/server-restart.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable.
