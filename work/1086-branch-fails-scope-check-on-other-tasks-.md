@@ -2,7 +2,7 @@
 id: "1086"
 title: Branch fails scope check on other tasks' bookkeeping that main legitimately has; sync does not bring it in (kamrai report)
 type: bug
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
