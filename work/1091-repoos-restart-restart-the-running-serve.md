@@ -187,3 +187,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T19:16:21Z · note: handoff requested (cli)
 - 2026-11-11T19:18:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T19:27:30Z · message_queued at 2026-11-11T19:27:30.043Z
+- 2026-11-11T19:27:30Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch on mini — fix it in the feature branch and re-run the gate
