@@ -4,8 +4,8 @@ title: "repoos restart: restart the running server whether hand-run, supervised 
 type: feature
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — hand-run restart respawns without its serve flags whenever the lock predates this build or the server is found via the …
 priority: p2
 area: [core, server]
 assigned_to: ai
