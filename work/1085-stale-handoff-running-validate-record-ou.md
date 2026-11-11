@@ -14,7 +14,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-11T01:24:15Z"
+updated_at: "2026-11-11T01:25:29Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -55,7 +55,7 @@ Look at the handoff state store behind `repoos handoff-status` (src/server/hando
 ```
 
 ## Accepted scope and known limitations
-FINAL (pass 5): reconciling stale handoff records, stale flag on all checks renderers, watchdog skipping held tasks, keeping pending delta-review markers, and single-flight checkpoint recovery (slot claimed synchronously, required runner) are in scope and done. NOT blocking, follow-up only: (1) HANDOFF_DEADLINE_MS being both the stale threshold and the deadline timer; (2) GET persisting superseded and emitting SSE; (3) a live finalization superseded by a newer review pass staying live; (4) beginHandoffStatus restarting a superseded attemptKey with outcomeQueued false; (5) the optional reviews dependency in the watchdog (server always wires it); (6) a review marker with no running review restarting the gate (intended, untested); (7) stale shots: handoff re-captures them. Report these under Suggestions, not Bugs.
+FINAL (pass 6): reconciling stale handoff records, stale flag on all checks renderers, watchdog skipping held tasks, pending delta-review markers kept, single-flight checkpoint recovery (claim first, marker only replaced after the claim succeeds, slot released on every throw path) are in scope and done. NOT blocking, follow-up only: HANDOFF_DEADLINE_MS doubling as stale threshold; GET persisting superseded; a live finalization superseded by a newer review staying live; beginHandoffStatus restarting a superseded attemptKey; optional reviews dependency in the watchdog; a review marker with no running review restarting the gate; the unchanged server.ts unified-handoff throw paths; capture of the stale-running state in shots. Report these under Suggestions, not Bugs.
 
 ## Screenshots
 
@@ -188,3 +188,4 @@ FINAL (pass 5): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:10:25Z · needs_input
 - 2026-11-11T01:24:13Z · status review→active
 - 2026-11-11T01:24:15Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T01:25:29Z · body: Accepted scope and known limitations (added 1, removed 1)
