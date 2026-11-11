@@ -106,3 +106,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T18:45:07Z · CTO nudge: held — remote validation is running
 - 2026-11-11T19:13:09Z · body
 - 2026-11-11T19:28:16Z · message_queued at 2026-11-11T19:28:16.159Z
+- 2026-11-11T19:28:16Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
