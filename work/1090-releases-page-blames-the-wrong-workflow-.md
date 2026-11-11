@@ -63,3 +63,4 @@ FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress mus
 - 2026-11-11T05:11:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T05:24:18Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-11T05:24:18Z · message_queued at 2026-11-11T05:24:18.489Z
+- 2026-11-11T05:24:18Z · ↻ resuming engineer to read queued message
