@@ -9,19 +9,20 @@ assigned_to: human
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-11T10:04:28Z"
-updated_at: "2026-11-11T10:20:00Z"
+updated_at: "2026-11-11T10:43:59Z"
 ---
-Commit 5607e2aaa (WIP checkpoint #0892, 2026-10-21) swept 4,763 Xcode build files from macos/.derived-data-verify/ into public history (~271 MB raw, ~160 MB compressed; also reachable from ~10 task branches). No secrets found (a scanner email claiming a Stripe key was a false positive). .gitignore already covers it going forward (macos/.gitignore: .derived-data-*/).
+Commit 5607e2aaa (WIP checkpoint #0892, 2026-10-21) swept 4,763 Xcode build files from macos/.derived-data-verify/ into public history (~271 MB raw, ~160 MB compressed; also reachable from ~19 branches). 
 
-Do at a quiet moment with no active tasks: git filter-repo --path macos/.derived-data-verify --invert-paths, force-push, then re-sync task branches/worktrees. Rewrites hashes, so plan first: list branches/worktrees affected, how RepoOS task refs/locks cope, and the rollback.
+CORRECTION: these files DO contain secrets. Decompressed, the .xcresult blobs include machine-wide diagnostics with a live Stripe restricted key, a test key, and Google API keys (see #1096). A purge removes size and future exposure but does NOT un-leak anything: the human must ROTATE the Stripe live/test restricted keys (ending oiD6 / 9MIs, acct 51JO2q2G...), revoke any live Google key, and clear Raycast clipboard history BEFORE or regardless of the purge. GitHub secret scanning did not flag it (compressed binary).
+
+Overnight prep: a scheduled run (repoos-purge-dryrun-1095) writes /Users/nick/repoos-purge-dryrun/REPORT.md with the branch inventory and a scratch-clone dry run. The real force-push needs the human's go-ahead.
+
+Plan: git filter-repo --path macos/.derived-data-verify --invert-paths, force-push, re-sync task branches/worktrees. Rewrites hashes, so check sha-dependent bookkeeping (review locks) first.
 
 Human-gated: needs a human go-ahead on the force-push.
-
-## Human task
-
-_Assigned to a human, not an AI agent. No `## Notes for AI` is required here; the acceptance criteria are the human's checklist._
 
 ## Activity
 
 - 2026-11-11T10:04:28Z · created · njachowski@gmail.com
 - 2026-11-11T10:20:00Z · status inbox→ready
+- 2026-11-11T10:43:59Z · body: Human task (removed)
