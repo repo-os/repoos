@@ -3,9 +3,6 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
-hold: true
-hold_reason: "load: pausing extra engineers until #1080/#1070 land"
-hold_at: "2026-11-10T06:26:35.269Z"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T04:06:10Z"
+updated_at: "2026-11-11T04:16:32Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
@@ -155,3 +152,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T02:03:45Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T04:06:10Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T04:16:32Z · released
