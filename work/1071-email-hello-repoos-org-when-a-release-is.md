@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-emails-any-project-with-email-co
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T04:21:56Z"
+updated_at: "2026-11-11T04:21:57Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
@@ -159,3 +159,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T04:16:49Z · message_delivered: 2 message(s)
 - 2026-11-11T04:17:33Z · message_queued at 2026-11-11T04:17:33.511Z
 - 2026-11-11T04:21:55Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T04:21:57Z · CTO nudge: held — an undelivered message is already queued
