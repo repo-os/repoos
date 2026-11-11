@@ -14,7 +14,6 @@ model_override: composer-2.5
 created_at: "2026-11-09T05:34:00Z"
 updated_at: "2026-11-11T03:15:44Z"
 dev_error_count: 1
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T02:28:59.468Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
