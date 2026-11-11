@@ -195,3 +195,4 @@ FINAL (pass 6): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:37:20Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-11T01:39:08Z · body
 - 2026-11-11T01:39:44Z · status active→review
+- 2026-11-11T01:39:44Z · note: Task body is underspecified: missing sections: Desired UX
