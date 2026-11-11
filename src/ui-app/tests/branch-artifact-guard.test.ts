@@ -1,18 +1,26 @@
 import { describe, expect, it, afterEach } from "vitest";
 import { gzipSync } from "node:zlib";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { cpSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   evaluateAddedPaths,
+  evaluateStagedForPreCommit,
+  expandCheckpointPaths,
+  gitAddedPathsOnBranch,
   isBuildOutputPath,
   planCheckpointStaging,
   scanBuffersForSecrets,
   scanTextForSecrets,
+  zstdAvailable,
 } from "../../core/branch-artifact-guard.js";
 import { commitWipCheckpointForRemoteGate } from "../../server/engineer-remote-self-check.js";
 import { loadConfig } from "../../core/config.js";
+import { stepBranchArtifacts } from "../../commands/check.js";
+
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -40,6 +48,25 @@ function initRepo(root: string) {
   git(root, "checkout", "-q", "-b", "feat/x");
 }
 
+function seedPreCommitRepo(): string {
+  const root = mkdtempSync(join(tmpdir(), "repoos-hook-"));
+  initRepo(root);
+  cpSync(join(repoRoot, ".githooks"), join(root, ".githooks"), { recursive: true });
+  mkdirSync(join(root, "scripts"), { recursive: true });
+  cpSync(
+    join(repoRoot, "scripts", "staged-artifact-pre-commit.mjs"),
+    join(root, "scripts/staged-artifact-pre-commit.mjs"),
+  );
+  mkdirSync(join(root, "dist", "core"), { recursive: true });
+  cpSync(
+    join(repoRoot, "dist", "core", "branch-artifact-guard.js"),
+    join(root, "dist", "core", "branch-artifact-guard.js"),
+  );
+  cpSync(join(repoRoot, "dist", "core", "config.js"), join(root, "dist", "core", "config.js"));
+  git(root, "config", "core.hooksPath", ".githooks");
+  return root;
+}
+
 describe("isBuildOutputPath", () => {
   it("flags derived data and xcresult trees", () => {
     expect(isBuildOutputPath("macos/.derived-data-verify/foo", [])).toBe(true);
@@ -52,24 +79,54 @@ describe("secret scan", () => {
   it("finds a fake Stripe key inside gzip", () => {
     const secret = fakeStripeTestSecret();
     const z = gzipSync(Buffer.from(secret, "utf8"));
-    const hits = scanBuffersForSecrets(z, "blob.bin", 1_000_000);
-    expect(hits.length).toBeGreaterThan(0);
-    expect(hits[0]!.suffix).toHaveLength(4);
-    expect(hits[0]!.type).toBe("stripe_secret");
-    expect(JSON.stringify(hits)).not.toContain(secret);
+    const { secrets } = scanBuffersForSecrets(z, "blob.bin", 1_000_000);
+    expect(secrets.length).toBeGreaterThan(0);
+    expect(secrets[0]!.suffix).toHaveLength(4);
+    expect(secrets[0]!.type).toBe("stripe_secret");
+    expect(JSON.stringify(secrets)).not.toContain(secret);
+  });
+
+  it("finds gzip at an embedded offset", () => {
+    const secret = fakeStripeTestSecret();
+    const z = gzipSync(Buffer.from(secret, "utf8"));
+    const host = Buffer.concat([Buffer.alloc(700_000, 0), z]);
+    const { secrets } = scanBuffersForSecrets(host, "blob.bin", 1_000_000);
+    expect(secrets.some((h) => h.type === "stripe_secret")).toBe(true);
+  });
+
+  it("fails closed when gzip expands past the decompress limit", () => {
+    const secret = fakeStripeTestSecret();
+    const body = Buffer.concat([Buffer.from(secret, "utf8"), Buffer.alloc(5 * 1024 * 1024, 0)]);
+    const z = gzipSync(body);
+    const { secrets, incomplete } = scanBuffersForSecrets(z, "big.gz", 64 * 1024);
+    expect(incomplete.some((i) => i.reason.includes("scan limit"))).toBe(true);
+    expect(secrets.length).toBe(0);
   });
 
   const bun = (globalThis as unknown as { Bun?: { zstdCompressSync?: (b: Buffer) => Buffer } }).Bun;
   it.skipIf(!bun?.zstdCompressSync)("finds a fake Stripe key inside zstd", () => {
     const secret = fakeStripeTestSecret();
     const z = bun!.zstdCompressSync!(Buffer.from(secret, "utf8"));
-    const hits = scanBuffersForSecrets(z, "blob.bin", 1_000_000);
-    expect(hits.length).toBeGreaterThan(0);
+    const { secrets } = scanBuffersForSecrets(z, "blob.bin", 1_000_000);
+    expect(secrets.length).toBeGreaterThan(0);
+  });
+
+  it("flags zstd payloads when no decompressor is available", () => {
+    if (zstdAvailable()) return;
+    const fakeFrame = Buffer.from([0x28, 0xb5, 0x2f, 0xfd, 0x00, 0x00, 0x00, 0x01]);
+    const { incomplete } = scanBuffersForSecrets(fakeFrame, "x.zst", 64 * 1024);
+    expect(incomplete.some((i) => i.reason.includes("zstd"))).toBe(true);
   });
 
   it("does not false-positive on random base64 noise", () => {
-    const noise = "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkw";
-    expect(scanTextForSecrets(noise, "noise.txt")).toEqual([]);
+    const samples = [
+      "YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkw",
+      "QUJDREVGR0hJS0tMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ejAxMjM0NTY3ODkw",
+      "aGVsbG8gd29ybGQgdGhpcyBpcyBub3Qga2V5IG1hdGVyaWFs",
+    ];
+    for (const noise of samples) {
+      expect(scanTextForSecrets(noise, "noise.txt")).toEqual([]);
+    }
   });
 });
 
@@ -81,17 +138,45 @@ describe("branch diff guard", () => {
     writeFileSync(join(root, "big.bin"), Buffer.alloc(2 * 1024 * 1024, 1));
     git(root, "add", "big.bin");
     git(root, "commit", "-qm", "big");
-    const added = execFileSync("git", ["diff", "--diff-filter=A", "--name-only", "main...HEAD"], {
-      cwd: root,
-      encoding: "utf8",
-    })
-      .trim()
-      .split("\n")
-      .filter(Boolean);
+    const added = gitAddedPathsOnBranch(root, "main")!;
     const { violations } = evaluateAddedPaths(root, added, {
       maxAddedFileBytes: 1_048_576,
     });
     expect(violations.some((v) => v.kind === "oversize" && v.path === "big.bin")).toBe(true);
+  });
+
+  it("scans a file that was added then deleted on the branch", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-del-add-"));
+    dirs.push(root);
+    initRepo(root);
+    const secret = fakeStripeTestSecret();
+    writeFileSync(join(root, "leak.txt"), secret);
+    git(root, "add", "leak.txt");
+    git(root, "commit", "-qm", "add secret");
+    git(root, "rm", "-f", "leak.txt");
+    git(root, "commit", "-qm", "delete");
+    const added = gitAddedPathsOnBranch(root, "main")!;
+    expect(added).toContain("leak.txt");
+    const { violations } = evaluateAddedPaths(root, added, {});
+    expect(violations.some((v) => v.kind === "secret" && v.path === "leak.txt")).toBe(true);
+  });
+
+  it("fails when more paths are added than maxScanFiles", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-scan-cap-"));
+    dirs.push(root);
+    initRepo(root);
+    const paths: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const p = `f${i}.txt`;
+      paths.push(p);
+      writeFileSync(join(root, p), `ok ${i}\n`);
+    }
+    git(root, "add", ".");
+    git(root, "commit", "-qm", "many");
+    const { violations } = evaluateAddedPaths(root, gitAddedPathsOnBranch(root, "main")!, {
+      maxScanFiles: 2,
+    });
+    expect(violations.some((v) => v.kind === "scan-limit")).toBe(true);
   });
 
   it("fails on an added xcresult path", () => {
@@ -107,8 +192,36 @@ describe("branch diff guard", () => {
   });
 });
 
+describe("checkpoint staging", () => {
+  it("expands untracked directories", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-dir-expand-"));
+    dirs.push(root);
+    initRepo(root);
+    mkdirSync(join(root, "dump"), { recursive: true });
+    writeFileSync(join(root, "dump", "big.bin"), Buffer.alloc(3 * 1024 * 1024, 1));
+    writeFileSync(join(root, "dump", "leak.txt"), fakeStripeTestSecret());
+    const expanded = expandCheckpointPaths(root, ["dump/"], 50);
+    expect(expanded).toContain("dump/big.bin");
+    const staging = planCheckpointStaging(root, ["dump/"], {
+      maxAddedFileBytes: 1_048_576,
+    });
+    expect(staging.unstagedOversize.length + staging.secrets.length).toBeGreaterThan(0);
+  });
+
+  it("refuses secrets in staged content", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-chk-secret-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "secret.txt"), fakeStripeTestSecret());
+    git(root, "add", "secret.txt");
+    const staging = planCheckpointStaging(root, ["secret.txt"], {});
+    expect(staging.error).toMatch(/Secret pattern/);
+    expect(staging.report).toBeNull();
+  });
+});
+
 describe("commitWipCheckpointForRemoteGate build-output guard (#1096)", () => {
-  it("does not commit derived-data paths", async () => {
+  it("does not commit derived-data paths and records unstaged build output", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-wip-build-out-"));
     dirs.push(root);
     initRepo(root);
@@ -132,5 +245,90 @@ describe("commitWipCheckpointForRemoteGate build-output guard (#1096)", () => {
       planCheckpointStaging(root, ["macos/.derived-data-verify/nested/obj"], {})
         .unstagedBuildOutput,
     ).toContain("macos/.derived-data-verify/nested/obj");
+  });
+
+  it("unstages foreign bookkeeping before refusing a staged secret", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-foreign-secret-"));
+    dirs.push(root);
+    initRepo(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "work", "1096-task.md"), '---\nid: "1096"\n---\n');
+    writeFileSync(join(root, "work", "9999-other.md"), '---\nid: "9999"\n---\n');
+    writeFileSync(join(root, "leak.txt"), fakeStripeTestSecret());
+    git(root, "add", "--", "work/1096-task.md", "work/9999-other.md", "leak.txt");
+    const cfg = loadConfig(root);
+    const err = await commitWipCheckpointForRemoteGate(root, { ...cfg, root }, "1096");
+    expect(err).toMatch(/Secret pattern/);
+    const stagedOut = execFileSync("git", ["diff", "--cached", "--name-only"], {
+      cwd: root,
+      encoding: "utf8",
+    });
+    expect(stagedOut).not.toContain("work/9999-other.md");
+    expect(stagedOut).not.toContain("leak.txt");
+  });
+});
+
+describe("pre-commit hook (#1096)", () => {
+  it("blocks build output on a task branch", () => {
+    const root = seedPreCommitRepo();
+    dirs.push(root);
+    git(root, "checkout", "-q", "-b", "feat/y");
+    mkdirSync(join(root, "macos/.derived-data-verify"), { recursive: true });
+    writeFileSync(join(root, "macos/.derived-data-verify/o"), "x");
+    git(root, "add", "macos/.derived-data-verify/o");
+    const res = spawnSync("git", ["commit", "-qm", "bad"], { cwd: root, encoding: "utf8" });
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/artifact guard|build-output/i);
+  });
+
+  it("still runs artifact guard for docs-only stages", () => {
+    const root = seedPreCommitRepo();
+    dirs.push(root);
+    git(root, "checkout", "-q", "-b", "feat/docs");
+    mkdirSync(join(root, "macos/.derived-data-verify"), { recursive: true });
+    writeFileSync(join(root, "macos/.derived-data-verify/o"), "x");
+    mkdirSync(join(root, "docs"), { recursive: true });
+    writeFileSync(join(root, "docs/note.md"), "docs\n");
+    git(root, "add", "docs/note.md", "macos/.derived-data-verify/o");
+    const res = spawnSync("git", ["commit", "-qm", "bad"], { cwd: root, encoding: "utf8" });
+    expect(res.status).not.toBe(0);
+  });
+});
+
+describe("evaluateStagedForPreCommit reads the index", () => {
+  it("catches a secret in the staged blob when the worktree no longer matches", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-staged-blob-"));
+    dirs.push(root);
+    initRepo(root);
+    const secret = fakeStripeTestSecret();
+    writeFileSync(join(root, "k.txt"), secret);
+    git(root, "add", "k.txt");
+    writeFileSync(join(root, "k.txt"), "clean\n");
+    const res = evaluateStagedForPreCommit(root, {});
+    expect(res.ok).toBe(false);
+    expect(res.message).toMatch(/Secret pattern/);
+  });
+});
+
+describe("stepBranchArtifacts", () => {
+  it("fails when the merge-base ref is missing", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-step-ref-"));
+    dirs.push(root);
+    initRepo(root);
+    const cfg = loadConfig(root);
+    const outcome = await stepBranchArtifacts({
+      repoRoot: root,
+      cfg: { ...cfg, root },
+      changedRef: "main",
+    } as Parameters<typeof stepBranchArtifacts>[0]);
+    expect(outcome.status).toBe("passed");
+    git(root, "checkout", "-q", "main");
+    const bad = await stepBranchArtifacts({
+      repoRoot: root,
+      cfg: { ...cfg, root },
+      changedRef: "no-such-ref",
+    } as Parameters<typeof stepBranchArtifacts>[0]);
+    expect(bad.status).toBe("failed");
+    expect(bad.detail).toMatch(/could not resolve git ref/);
   });
 });

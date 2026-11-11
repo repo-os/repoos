@@ -3106,6 +3106,8 @@ export interface UncommittedWorkFilesOptions {
    * (#0609) — close-out uses this after a merged branch when removal stalled.
    */
   omitWorktreeDeletionsPresentAtRef?: string;
+  /** Passed through to `git status` for untracked directory expansion (#1096). */
+  untrackedFiles?: DirtyFilesOptions["untrackedFiles"];
 }
 
 /**
@@ -3130,11 +3132,13 @@ export async function uncommittedWorkFiles(
   opts: UncommittedWorkFilesOptions = {},
 ): Promise<string[]> {
   const ref = opts.omitWorktreeDeletionsPresentAtRef;
+  const statusOpts: DirtyFilesOptions = {};
+  if (opts.untrackedFiles) statusOpts.untrackedFiles = opts.untrackedFiles;
   if (!ref) {
-    const files = await dirtyFiles(root);
+    const files = await dirtyFiles(root, statusOpts);
     return files.filter((p) => !isGeneratedOrRuntimePath(p, filter));
   }
-  const entries = await dirtyFilesDetailed(root);
+  const entries = await dirtyFilesDetailed(root, statusOpts);
   const out: string[] = [];
   for (const e of entries) {
     if (isWorktreeOnlyDeletion(e.status)) {

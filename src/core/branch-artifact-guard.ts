@@ -3,20 +3,29 @@
  * branch diffs and engineer WIP checkpoint commits (#1096).
  */
 import * as nodeZlib from "node:zlib";
+import {
+  closeSync,
+  existsSync,
+  fstatSync,
+  openSync,
+  readdirSync,
+  readSync,
+  statSync,
+} from "node:fs";
+import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import type { CheckConfig } from "./types.js";
 
 const { gunzipSync, inflateSync, unzipSync } = nodeZlib;
 const zstdDecompressSync = (nodeZlib as { zstdDecompressSync?: typeof gunzipSync })
   .zstdDecompressSync;
-import { statSync, readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
-import { execFileSync } from "node:child_process";
-import type { CheckConfig } from "./types.js";
 
 export const DEFAULT_MAX_ADDED_FILE_BYTES = 1_048_576;
 export const DEFAULT_CHECKPOINT_MAX_FILES = 200;
 export const DEFAULT_CHECKPOINT_MAX_BYTES = 5_242_880;
 export const DEFAULT_MAX_DECOMPRESS_BYTES = 4_194_304;
 export const DEFAULT_MAX_SCAN_FILES = 500;
+export const DEFAULT_MAX_COMPRESSED_PROBE_OFFSETS = 512;
 
 /** Built-in path segments / suffixes that must never enter git (#1096). */
 export const DEFAULT_BUILD_OUTPUT_PATTERNS = [
@@ -35,6 +44,7 @@ export interface BranchArtifactGuardOptions {
   largeFileAllowlist?: string[];
   maxDecompressBytes?: number;
   maxScanFiles?: number;
+  maxCompressedProbeOffsets?: number;
 }
 
 export interface SecretHit {
@@ -43,19 +53,35 @@ export interface SecretHit {
   suffix: string;
 }
 
+export interface ScanIncomplete {
+  path: string;
+  reason: string;
+}
+
+export type BranchArtifactGuardConfig = CheckConfig | BranchArtifactGuardOptions | undefined;
+
 export function resolveBranchArtifactGuardOptions(
-  check: CheckConfig | undefined,
+  check: BranchArtifactGuardConfig,
 ): Required<BranchArtifactGuardOptions> {
+  const c = check && "branchArtifactsMaxFileBytes" in check ? check : undefined;
+  const o = check && !c ? (check as BranchArtifactGuardOptions) : {};
   return {
-    maxAddedFileBytes: check?.branchArtifactsMaxFileBytes ?? DEFAULT_MAX_ADDED_FILE_BYTES,
-    checkpointMaxFiles: check?.checkpointMaxStagedFiles ?? DEFAULT_CHECKPOINT_MAX_FILES,
-    checkpointMaxBytes: check?.checkpointMaxStagedBytes ?? DEFAULT_CHECKPOINT_MAX_BYTES,
-    buildOutputPatterns: check?.buildOutputPatterns?.length
-      ? check.buildOutputPatterns
-      : DEFAULT_BUILD_OUTPUT_PATTERNS,
-    largeFileAllowlist: check?.branchArtifactsAllowlist ?? [],
-    maxDecompressBytes: check?.branchArtifactsMaxDecompressBytes ?? DEFAULT_MAX_DECOMPRESS_BYTES,
-    maxScanFiles: check?.branchArtifactsMaxScanFiles ?? DEFAULT_MAX_SCAN_FILES,
+    maxAddedFileBytes:
+      c?.branchArtifactsMaxFileBytes ?? o.maxAddedFileBytes ?? DEFAULT_MAX_ADDED_FILE_BYTES,
+    checkpointMaxFiles:
+      c?.checkpointMaxStagedFiles ?? o.checkpointMaxFiles ?? DEFAULT_CHECKPOINT_MAX_FILES,
+    checkpointMaxBytes:
+      c?.checkpointMaxStagedBytes ?? o.checkpointMaxBytes ?? DEFAULT_CHECKPOINT_MAX_BYTES,
+    buildOutputPatterns: c?.buildOutputPatterns?.length
+      ? c.buildOutputPatterns
+      : o.buildOutputPatterns?.length
+        ? o.buildOutputPatterns
+        : DEFAULT_BUILD_OUTPUT_PATTERNS,
+    largeFileAllowlist: c?.branchArtifactsAllowlist ?? o.largeFileAllowlist ?? [],
+    maxDecompressBytes:
+      c?.branchArtifactsMaxDecompressBytes ?? o.maxDecompressBytes ?? DEFAULT_MAX_DECOMPRESS_BYTES,
+    maxScanFiles: c?.branchArtifactsMaxScanFiles ?? o.maxScanFiles ?? DEFAULT_MAX_SCAN_FILES,
+    maxCompressedProbeOffsets: o.maxCompressedProbeOffsets ?? DEFAULT_MAX_COMPRESSED_PROBE_OFFSETS,
   };
 }
 
@@ -132,6 +158,9 @@ const SECRET_RULES: { type: string; re: RegExp }[] = [
   { type: "slack", re: /\bxox[baprs]-[0-9a-zA-Z\-]{10,}\b/ },
 ];
 
+const ZSTD_MAGIC = Buffer.from([0x28, 0xb5, 0x2f, 0xfd]);
+const GZIP_MAGIC = Buffer.from([0x1f, 0x8b]);
+
 function lastFourOfMatch(buf: Buffer, match: RegExpExecArray): string {
   const raw = match[0] ?? "";
   const tail = raw.slice(-4);
@@ -158,43 +187,92 @@ export function scanTextForSecrets(text: string, path: string): SecretHit[] {
   return hits;
 }
 
-function zstdDecompress(buf: Buffer, maxOut: number): Buffer | null {
+function zstdAvailable(): boolean {
+  const bun = (
+    globalThis as unknown as { Bun?: { zstdDecompressSync?: (b: Buffer) => Uint8Array } }
+  ).Bun;
+  return Boolean(bun?.zstdDecompressSync) || typeof zstdDecompressSync === "function";
+}
+
+function zstdDecompress(buf: Buffer, maxOut: number): "ok" | "too_large" | "missing" | "error" {
   try {
     const bun = (
       globalThis as unknown as { Bun?: { zstdDecompressSync?: (b: Buffer) => Uint8Array } }
     ).Bun;
     if (bun?.zstdDecompressSync) {
       const out = bun.zstdDecompressSync(buf);
-      if (out.length > maxOut) return null;
+      if (out.length > maxOut) return "too_large";
+      return "ok";
+    }
+    if (typeof zstdDecompressSync === "function") {
+      zstdDecompressSync(buf, { maxOutputLength: maxOut });
+      return "ok";
+    }
+    return "missing";
+  } catch {
+    return "error";
+  }
+}
+
+function decompressZstd(buf: Buffer, maxOut: number): Buffer | "too_large" | "missing" | "error" {
+  const status = zstdDecompress(buf, maxOut);
+  if (status !== "ok") return status;
+  try {
+    const bun = (
+      globalThis as unknown as { Bun?: { zstdDecompressSync?: (b: Buffer) => Uint8Array } }
+    ).Bun;
+    if (bun?.zstdDecompressSync) {
+      const out = bun.zstdDecompressSync(buf);
       return Buffer.from(out);
     }
     if (typeof zstdDecompressSync === "function") {
       return zstdDecompressSync(buf, { maxOutputLength: maxOut });
     }
+    return "missing";
   } catch {
-    /* unsupported or corrupt */
+    return "error";
   }
-  return null;
 }
 
-function tryGunzip(buf: Buffer, maxOut: number): Buffer | null {
+function tryGunzip(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
   try {
     return gunzipSync(buf, { maxOutputLength: maxOut });
-  } catch {
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("maxOutputLength") || msg.includes("Buffer")) return "too_large";
     return null;
   }
 }
 
-function tryZlibInflate(buf: Buffer, maxOut: number): Buffer | null {
+function tryZlibInflate(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
   try {
     return inflateSync(buf, { maxOutputLength: maxOut });
   } catch {
     try {
       return unzipSync(buf, { maxOutputLength: maxOut });
-    } catch {
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes("maxOutputLength") || msg.includes("Buffer")) return "too_large";
       return null;
     }
   }
+}
+
+function indexOfAll(buf: Buffer, needle: Buffer, max: number): number[] {
+  const out: number[] = [];
+  let start = 0;
+  while (out.length < max && start <= buf.length - needle.length) {
+    const i = buf.indexOf(needle, start);
+    if (i === -1) break;
+    out.push(i);
+    start = i + 1;
+  }
+  return out;
+}
+
+export interface BufferSecretScan {
+  secrets: SecretHit[];
+  incomplete: ScanIncomplete[];
 }
 
 /** Collect bounded buffers to scan for secrets (raw + decompressed windows). */
@@ -202,24 +280,34 @@ export function scanBuffersForSecrets(
   buf: Buffer,
   path: string,
   maxDecompressBytes: number,
-  maxAttempts = 24,
-): SecretHit[] {
-  const hits: SecretHit[] = [];
+  maxOffsets = DEFAULT_MAX_COMPRESSED_PROBE_OFFSETS,
+): BufferSecretScan {
+  const secrets: SecretHit[] = [];
+  const incomplete: ScanIncomplete[] = [];
   const pushHits = (chunk: Buffer) => {
     const text = chunk.toString("latin1");
     for (const h of scanTextForSecrets(text, path)) {
-      hits.push(h);
-      if (hits.length >= 20) return;
+      secrets.push(h);
+      if (secrets.length >= 20) return;
     }
   };
-  pushHits(buf.slice(0, Math.min(buf.length, maxDecompressBytes)));
-  if (hits.length >= 20) return hits;
 
-  let attempts = 0;
-  const trySlice = (start: number, slice: Buffer) => {
-    if (attempts >= maxAttempts || hits.length >= 20) return;
-    attempts++;
-    let out: Buffer | null = null;
+  pushHits(buf.slice(0, Math.min(buf.length, maxDecompressBytes)));
+  if (secrets.length >= 20) return { secrets, incomplete };
+
+  const offsets = new Set<number>([0]);
+  for (const i of indexOfAll(buf, GZIP_MAGIC, maxOffsets)) offsets.add(i);
+  for (const i of indexOfAll(buf, ZSTD_MAGIC, maxOffsets)) offsets.add(i);
+  for (let i = 0; i < buf.length && offsets.size < maxOffsets + 1; i++) {
+    if (buf[i] === 0x78 && i + 1 < buf.length) offsets.add(i);
+  }
+
+  const sorted = [...offsets].sort((a, b) => a - b).slice(0, maxOffsets);
+  for (const start of sorted) {
+    if (secrets.length >= 20) break;
+    const slice = buf.subarray(start);
+    if (slice.length < 2) continue;
+
     if (
       slice.length >= 4 &&
       slice[0] === 0x28 &&
@@ -227,40 +315,178 @@ export function scanBuffersForSecrets(
       slice[2] === 0x2f &&
       slice[3] === 0xfd
     ) {
-      out = zstdDecompress(slice, maxDecompressBytes);
-    } else if (slice.length >= 2 && slice[0] === 0x1f && slice[1] === 0x8b) {
-      out = tryGunzip(slice, maxDecompressBytes);
-    } else if (slice[0] === 0x78) {
-      out = tryZlibInflate(slice, maxDecompressBytes);
+      const out = decompressZstd(slice, maxDecompressBytes);
+      if (out === "missing") {
+        incomplete.push({
+          path,
+          reason: "zstd payload present but no zstd decompressor is available in this runtime",
+        });
+        pushHits(slice);
+        continue;
+      }
+      if (out === "too_large") {
+        incomplete.push({
+          path,
+          reason: `zstd payload expands past the ${maxDecompressBytes}-byte scan limit`,
+        });
+        pushHits(slice);
+        continue;
+      }
+      if (out === "error") {
+        pushHits(slice);
+        continue;
+      }
+      if (out.length > 0) pushHits(out);
+      continue;
     }
-    if (out && out.length > 0) pushHits(out);
-  };
 
-  if (buf.length >= 4) trySlice(0, buf);
-  const step = Math.max(4096, Math.floor(buf.length / maxAttempts));
-  for (let i = step; i < buf.length && attempts < maxAttempts; i += step) {
-    trySlice(i, buf.subarray(i));
+    if (slice.length >= 2 && slice[0] === 0x1f && slice[1] === 0x8b) {
+      const out = tryGunzip(slice, maxDecompressBytes);
+      if (out === "too_large") {
+        incomplete.push({
+          path,
+          reason: `gzip payload expands past the ${maxDecompressBytes}-byte scan limit`,
+        });
+        pushHits(slice);
+        continue;
+      }
+      if (out) pushHits(out);
+      else pushHits(slice);
+      continue;
+    }
+
+    if (slice[0] === 0x78) {
+      const out = tryZlibInflate(slice, maxDecompressBytes);
+      if (out === "too_large") {
+        incomplete.push({
+          path,
+          reason: `zlib payload expands past the ${maxDecompressBytes}-byte scan limit`,
+        });
+        pushHits(slice);
+        continue;
+      }
+      if (out) pushHits(out);
+    }
   }
-  return hits;
+
+  return { secrets, incomplete };
 }
 
 export function readPathBytes(repoRoot: string, rel: string, maxRead: number): Buffer | null {
   const abs = join(repoRoot, rel);
   if (!existsSync(abs)) return null;
+  let fd: number | undefined;
   try {
     const st = statSync(abs);
     if (st.isDirectory()) return null;
-    if (st.size > maxRead) {
-      const fd = readFileSync(abs).subarray(0, maxRead);
-      return fd;
+    fd = openSync(abs, "r");
+    const stFd = fstatSync(fd);
+    const toRead = Math.min(stFd.size, maxRead);
+    const buf = Buffer.alloc(toRead);
+    readSync(fd, buf, 0, toRead, 0);
+    return buf;
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+}
+
+/** Staged index object bytes (`:path`) — not the working tree. */
+export function readStagedPathBytes(repoRoot: string, rel: string, maxRead: number): Buffer | null {
+  const path = normRepoPath(rel);
+  try {
+    execFileSync("git", ["rev-parse", "--verify", "--quiet", `:${path}`], {
+      cwd: repoRoot,
+      stdio: "pipe",
+    });
+    const size = Number(
+      execFileSync("git", ["cat-file", "-s", `:${path}`], {
+        cwd: repoRoot,
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"],
+      }).trim(),
+    );
+    if (!Number.isFinite(size) || size < 0) return null;
+    const toRead = Math.min(size, maxRead);
+    const out = execFileSync("git", ["show", `:${path}`], {
+      cwd: repoRoot,
+      maxBuffer: toRead + 64,
+      stdio: ["pipe", "pipe", "pipe"],
+    }) as Buffer;
+    return out.subarray(0, toRead);
+  } catch {
+    return null;
+  }
+}
+
+export function readBranchAddedBytes(
+  repoRoot: string,
+  rel: string,
+  maxRead: number,
+  preferStaged = false,
+): Buffer | null {
+  if (preferStaged) {
+    const staged = readStagedPathBytes(repoRoot, rel, maxRead);
+    if (staged) return staged;
+  }
+  const work = readPathBytes(repoRoot, rel, maxRead);
+  if (work) return work;
+  for (const spec of [`HEAD:${rel}`, rel]) {
+    try {
+      const size = Number(
+        execFileSync("git", ["cat-file", "-s", spec], {
+          cwd: repoRoot,
+          encoding: "utf8",
+          stdio: ["pipe", "pipe", "pipe"],
+        }).trim(),
+      );
+      if (!Number.isFinite(size) || size <= 0) continue;
+      const out = execFileSync("git", ["show", spec], {
+        cwd: repoRoot,
+        maxBuffer: Math.min(size, maxRead) + 64,
+        stdio: ["pipe", "pipe", "pipe"],
+      }) as Buffer;
+      return out.subarray(0, Math.min(out.length, maxRead));
+    } catch {
+      /* try next */
     }
-    return readFileSync(abs);
+  }
+  try {
+    const rev = execFileSync(
+      "git",
+      ["log", "--diff-filter=A", "-n", "1", "--format=%H", "HEAD", "--", normRepoPath(rel)],
+      { cwd: repoRoot, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
+    ).trim();
+    if (!rev) return null;
+    const spec = `${rev}:${normRepoPath(rel)}`;
+    const out = execFileSync("git", ["show", spec], {
+      cwd: repoRoot,
+      maxBuffer: maxRead + 64,
+      stdio: ["pipe", "pipe", "pipe"],
+    }) as Buffer;
+    return out.subarray(0, Math.min(out.length, maxRead));
   } catch {
     return null;
   }
 }
 
 export function fileSizeAt(repoRoot: string, rel: string): number | null {
+  const stagedSize = (() => {
+    try {
+      const n = Number(
+        execFileSync("git", ["cat-file", "-s", `:${normRepoPath(rel)}`], {
+          cwd: repoRoot,
+          encoding: "utf8",
+          stdio: ["pipe", "pipe", "pipe"],
+        }).trim(),
+      );
+      return Number.isFinite(n) ? n : null;
+    } catch {
+      return null;
+    }
+  })();
+  if (stagedSize != null) return stagedSize;
   try {
     const st = statSync(join(repoRoot, rel));
     return st.isFile() ? st.size : null;
@@ -269,44 +495,75 @@ export function fileSizeAt(repoRoot: string, rel: string): number | null {
   }
 }
 
-export function gitAddedPathsVsRef(repoRoot: string, ref: string): string[] | null {
+function refResolvable(repoRoot: string, ref: string): boolean {
   try {
     execFileSync("git", ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`], {
       cwd: repoRoot,
       stdio: "pipe",
     });
+    return true;
   } catch {
-    return null;
+    return false;
   }
+}
+
+/** Paths introduced on the branch (including adds later removed from HEAD). */
+export function gitAddedPathsOnBranch(repoRoot: string, ref: string): string[] | null {
+  if (!refResolvable(repoRoot, ref)) return null;
   try {
-    return execFileSync("git", ["diff", "--diff-filter=A", "--name-only", "-z", `${ref}...HEAD`], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      maxBuffer: 32 * 1024 * 1024,
-    })
-      .split("\0")
+    const raw = execFileSync(
+      "git",
+      ["log", "--pretty=format:", "--name-only", "--diff-filter=A", `${ref}..HEAD`],
+      {
+        cwd: repoRoot,
+        encoding: "utf8",
+        maxBuffer: 32 * 1024 * 1024,
+      },
+    );
+    const paths = raw
+      .split("\n")
+      .map((s) => s.trim())
       .filter(Boolean)
       .map(normRepoPath);
+    return [...new Set(paths)].sort();
   } catch {
     return null;
   }
 }
 
+/** @deprecated Prefer {@link gitAddedPathsOnBranch}. */
+export function gitAddedPathsVsRef(repoRoot: string, ref: string): string[] | null {
+  return gitAddedPathsOnBranch(repoRoot, ref);
+}
+
 export interface BranchArtifactViolation {
-  kind: "build-output" | "oversize" | "secret";
+  kind: "build-output" | "oversize" | "secret" | "scan-incomplete" | "scan-limit";
   path: string;
   detail?: string;
+}
+
+export interface EvaluateAddedPathsOptions extends BranchArtifactGuardOptions {
+  /** Read staged index blobs when present (pre-commit). */
+  preferStaged?: boolean;
 }
 
 export function evaluateAddedPaths(
   repoRoot: string,
   paths: string[],
-  opts: BranchArtifactGuardOptions,
+  opts: EvaluateAddedPathsOptions = {},
 ): { violations: BranchArtifactViolation[]; secrets: SecretHit[] } {
-  const resolved = { ...resolveBranchArtifactGuardOptions({ ...opts }), ...opts };
+  const resolved = resolveBranchArtifactGuardOptions(opts);
   const violations: BranchArtifactViolation[] = [];
   const secrets: SecretHit[] = [];
   let scanned = 0;
+
+  if (paths.length > resolved.maxScanFiles) {
+    violations.push({
+      kind: "scan-limit",
+      path: "(branch)",
+      detail: `${paths.length} added paths exceed scan cap ${resolved.maxScanFiles}`,
+    });
+  }
 
   for (const path of paths) {
     if (isBuildOutputPath(path, resolved.buildOutputPatterns)) {
@@ -326,60 +583,183 @@ export function evaluateAddedPaths(
       });
     }
     if (scanned >= resolved.maxScanFiles) continue;
-    const buf = readPathBytes(
+    const buf = readBranchAddedBytes(
       repoRoot,
       path,
       resolved.maxAddedFileBytes + resolved.maxDecompressBytes,
+      Boolean(opts.preferStaged),
     );
     if (!buf) continue;
     scanned++;
-    for (const hit of scanBuffersForSecrets(buf, path, resolved.maxDecompressBytes)) {
+    const { secrets: found, incomplete } = scanBuffersForSecrets(
+      buf,
+      path,
+      resolved.maxDecompressBytes,
+      resolved.maxCompressedProbeOffsets,
+    );
+    for (const hit of found) {
       secrets.push(hit);
       violations.push({ kind: "secret", path, detail: hit.type });
       if (secrets.length >= 20) break;
+    }
+    for (const inc of incomplete) {
+      violations.push({
+        kind: "scan-incomplete",
+        path: inc.path,
+        detail: inc.reason,
+      });
     }
     if (secrets.length >= 20) break;
   }
   return { violations, secrets };
 }
 
+function walkDirFiles(repoRoot: string, dir: string, budget: number, out: string[]): void {
+  if (budget <= 0) return;
+  const abs = join(repoRoot, dir);
+  let names: string[];
+  try {
+    names = readdirSync(abs);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    if (budget <= 0) return;
+    const rel = normRepoPath(join(dir, name));
+    const full = join(repoRoot, rel);
+    try {
+      const st = statSync(full);
+      if (st.isDirectory()) walkDirFiles(repoRoot, rel, budget - out.length, out);
+      else {
+        out.push(rel);
+        budget--;
+      }
+    } catch {
+      /* skip */
+    }
+  }
+}
+
+/** Expand directory porcelain entries into file paths for checkpoint staging. */
+export function expandCheckpointPaths(
+  repoRoot: string,
+  paths: string[],
+  maxFiles: number,
+): string[] {
+  const out: string[] = [];
+  for (const raw of paths) {
+    if (out.length >= maxFiles) break;
+    const p = normRepoPath(raw);
+    const abs = join(repoRoot, p);
+    if (!existsSync(abs)) {
+      out.push(p);
+      continue;
+    }
+    try {
+      const st = statSync(abs);
+      if (st.isFile()) out.push(p);
+      else if (st.isDirectory()) walkDirFiles(repoRoot, p, maxFiles - out.length, out);
+      else out.push(p);
+    } catch {
+      out.push(p);
+    }
+  }
+  return [...new Set(out)];
+}
+
 export interface CheckpointStagingResult {
   allowed: string[];
   unstagedBuildOutput: string[];
   unstagedOversize: string[];
+  /** Paths removed from the index when a checkpoint is refused. */
+  refusedPaths: string[];
   secrets: SecretHit[];
   error: string | null;
+  report: string | null;
+}
+
+export function formatCheckpointUnstagedReport(staging: CheckpointStagingResult): string | null {
+  const lines: string[] = [];
+  if (staging.unstagedBuildOutput.length) {
+    lines.push(
+      `Unstaged build-output paths (not checkpointed):\n    ${staging.unstagedBuildOutput.slice(0, 15).join("\n    ")}`,
+    );
+  }
+  if (staging.unstagedOversize.length) {
+    lines.push(
+      `Unstaged oversized / excess staged paths:\n    ${staging.unstagedOversize.slice(0, 15).join("\n    ")}`,
+    );
+  }
+  return lines.length ? lines.join("\n\n") : null;
 }
 
 /** Split checkpoint paths: refuse secrets; drop build output and staged bulk. */
 export function planCheckpointStaging(
   repoRoot: string,
   paths: string[],
-  opts: BranchArtifactGuardOptions,
+  opts: BranchArtifactGuardConfig = {},
 ): CheckpointStagingResult {
-  const resolved = { ...resolveBranchArtifactGuardOptions({ ...opts }), ...opts };
+  const resolved = resolveBranchArtifactGuardOptions(opts);
+  const expanded = expandCheckpointPaths(repoRoot, paths, resolved.maxScanFiles);
   const unstagedBuildOutput: string[] = [];
   const unstagedOversize: string[] = [];
   const allowed: string[] = [];
   const secrets: SecretHit[] = [];
+  const incomplete: ScanIncomplete[] = [];
+  const refusedPaths: string[] = [];
 
-  for (const path of paths) {
+  for (const path of expanded) {
     if (isBuildOutputPath(path, resolved.buildOutputPatterns)) {
       unstagedBuildOutput.push(path);
       continue;
     }
-    const buf = readPathBytes(
+    const buf = readBranchAddedBytes(
       repoRoot,
       path,
       resolved.maxAddedFileBytes + resolved.maxDecompressBytes,
+      true,
     );
     if (buf) {
-      for (const hit of scanBuffersForSecrets(buf, path, resolved.maxDecompressBytes)) {
-        secrets.push(hit);
+      const scan = scanBuffersForSecrets(
+        buf,
+        path,
+        resolved.maxDecompressBytes,
+        resolved.maxCompressedProbeOffsets,
+      );
+      secrets.push(...scan.secrets);
+      incomplete.push(...scan.incomplete);
+      if (scan.secrets.length > 0 || scan.incomplete.length > 0) {
+        refusedPaths.push(path);
+        continue;
       }
     }
     if (secrets.length > 0) continue;
+    if (incomplete.length > 0) continue;
     allowed.push(path);
+  }
+
+  if (incomplete.length > 0) {
+    const detail = incomplete
+      .slice(0, 5)
+      .map((i) => `${i.path}: ${i.reason}`)
+      .join("; ");
+    return {
+      allowed: [],
+      unstagedBuildOutput,
+      unstagedOversize,
+      refusedPaths,
+      secrets,
+      error: `Could not fully scan staged content — refusing to checkpoint (${detail})`,
+      report: formatCheckpointUnstagedReport({
+        allowed: [],
+        unstagedBuildOutput,
+        unstagedOversize,
+        refusedPaths,
+        secrets,
+        error: null,
+        report: null,
+      }),
+    };
   }
 
   if (secrets.length > 0) {
@@ -387,8 +767,18 @@ export function planCheckpointStaging(
       allowed: [],
       unstagedBuildOutput,
       unstagedOversize,
+      refusedPaths,
       secrets,
       error: formatSecretHits(secrets),
+      report: formatCheckpointUnstagedReport({
+        allowed: [],
+        unstagedBuildOutput,
+        unstagedOversize,
+        refusedPaths,
+        secrets,
+        error: null,
+        report: null,
+      }),
     };
   }
 
@@ -407,15 +797,27 @@ export function planCheckpointStaging(
     capped.push(path);
   }
 
+  const report = formatCheckpointUnstagedReport({
+    allowed: capped,
+    unstagedBuildOutput,
+    unstagedOversize,
+    refusedPaths: [],
+    secrets: [],
+    error: null,
+    report: null,
+  });
+
   return {
     allowed: capped,
     unstagedBuildOutput,
     unstagedOversize,
+    refusedPaths: [],
     secrets: [],
     error:
       capped.length === 0 && (unstagedBuildOutput.length > 0 || unstagedOversize.length > 0)
         ? "nothing left to checkpoint after removing build output or oversized staged files"
         : null,
+    report,
   };
 }
 
@@ -447,6 +849,15 @@ export function formatBranchArtifactFailures(
         .join("\n    ")}`,
     );
   }
+  const inc = violations.filter((v) => v.kind === "scan-incomplete" || v.kind === "scan-limit");
+  if (inc.length) {
+    parts.push(
+      `Secret scan did not finish (fail-closed):\n    ${inc
+        .slice(0, 10)
+        .map((v) => (v.detail ? `${v.path}: ${v.detail}` : v.path))
+        .join("\n    ")}`,
+    );
+  }
   if (secrets.length) parts.push(formatSecretHits(secrets));
   return parts.join("\n\n");
 }
@@ -469,11 +880,17 @@ export function gitStagedPaths(repoRoot: string): string[] {
 
 export function evaluateStagedForPreCommit(
   repoRoot: string,
-  opts: BranchArtifactGuardOptions,
+  opts: BranchArtifactGuardConfig = {},
 ): { ok: boolean; message: string } {
   const staged = gitStagedPaths(repoRoot);
   if (staged.length === 0) return { ok: true, message: "" };
-  const { violations, secrets } = evaluateAddedPaths(repoRoot, staged, opts);
+  const resolved = resolveBranchArtifactGuardOptions(opts);
+  const { violations, secrets } = evaluateAddedPaths(repoRoot, staged, {
+    ...resolved,
+    preferStaged: true,
+  });
   if (violations.length === 0 && secrets.length === 0) return { ok: true, message: "" };
   return { ok: false, message: formatBranchArtifactFailures(violations, secrets) };
 }
+
+export { zstdAvailable };

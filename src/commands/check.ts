@@ -2,7 +2,7 @@ import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.
 import {
   evaluateAddedPaths,
   formatBranchArtifactFailures,
-  gitAddedPathsVsRef,
+  gitAddedPathsOnBranch,
   resolveBranchArtifactGuardOptions,
 } from "../core/branch-artifact-guard.js";
 import { buildIndex } from "../core/indexer.js";
@@ -1480,21 +1480,25 @@ async function stepBareRequire(ctx: StepContext): Promise<BuiltinOutcome> {
   };
 }
 
-async function stepBranchArtifacts(ctx: StepContext): Promise<BuiltinOutcome> {
+export async function stepBranchArtifacts(ctx: StepContext): Promise<BuiltinOutcome> {
   const ref = ctx.changedRef ?? "main";
-  const added = gitAddedPathsVsRef(ctx.repoRoot, ref);
+  const added = gitAddedPathsOnBranch(ctx.repoRoot, ref);
   if (added === null) {
-    return skipped(`skipped — could not resolve git ref ${ref}`);
+    return {
+      status: "failed",
+      detail: `branch-artifacts guard could not resolve git ref ${ref} — refusing to pass without a scan`,
+    };
   }
   if (added.length === 0) {
     return { status: "passed", detail: `no new files vs ${ref}` };
   }
   const opts = resolveBranchArtifactGuardOptions(ctx.cfg.check);
   const { violations, secrets } = evaluateAddedPaths(ctx.repoRoot, added, opts);
+  const scanned = Math.min(added.length, opts.maxScanFiles);
   if (violations.length === 0) {
     return {
       status: "passed",
-      detail: `scanned ${Math.min(added.length, opts.maxScanFiles)} added path(s) vs ${ref}`,
+      detail: `scanned ${scanned} added path(s) on branch vs ${ref}`,
     };
   }
   return {

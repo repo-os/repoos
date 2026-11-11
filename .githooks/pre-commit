@@ -17,16 +17,15 @@ top=$(git rev-parse --show-toplevel)
 staged_all=$(git diff --cached --name-only)
 staged_artifact=$(echo "$staged_all" | grep -v '^$' || true)
 if [ -n "$staged_artifact" ]; then
-  if ! echo "$staged_artifact" | grep -qvE '^(work/reports/|work/[^/]+\.md$|inputs/|docs/|user-docs/)'; then
-    : # bookkeeping-only — skip artifact guard
+  if ! echo "$staged_artifact" | grep -qvE '^(work/reports/|work/[^/]+\.md$|inputs/)'; then
+    : # RepoOS task bookkeeping only — skip artifact guard
   elif [ "${REPOOS_SKIP_STAGED_ARTIFACT_GUARD:-}" != "1" ]; then
     if command -v bun >/dev/null 2>&1; then
       if ! bun "$top/scripts/staged-artifact-pre-commit.mjs" 2>&1; then
         exit 1
       fi
     else
-      echo "pre-commit: bun not found — cannot run staged artifact guard (#1096)." >&2
-      exit 1
+      echo "pre-commit: bun not found — skipping staged artifact guard (#1096). Install bun for local protection." >&2
     fi
   fi
 fi

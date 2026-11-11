@@ -638,6 +638,39 @@ export function inferPlan(markers: RepoMarkers): CheckStep[] {
   return steps;
 }
 
+function crossCuttingBuiltinStep(
+  kind: "branch-artifacts" | "task-assets",
+  name: string,
+): CheckStep {
+  return {
+    name,
+    kind,
+    timeoutMs: DEFAULT_STEP_TIMEOUT_MS,
+    required: true,
+    profiles: [],
+    whenChanged: [],
+    requires: [],
+    runsOn: [],
+    dependsOn: [],
+  };
+}
+
+/** Declared plans with `task-assets` auto-pick up `branch-artifacts` until main adds the row (#1096). */
+function ensureDeclaredCrossCuttingBuiltins(steps: CheckStep[]): CheckStep[] {
+  const kinds = new Set(steps.map((s) => s.kind).filter(Boolean));
+  const out = [...steps];
+  if (!kinds.has("task-assets") || kinds.has("branch-artifacts")) return steps;
+  if (!kinds.has("branch-artifacts")) {
+    const at = out.findIndex((s) => s.kind === "task-assets");
+    out.splice(
+      at >= 0 ? at : out.length,
+      0,
+      crossCuttingBuiltinStep("branch-artifacts", "branch-artifacts"),
+    );
+  }
+  return out;
+}
+
 // ── Public resolution ───────────────────────────────────────────────────
 
 export interface ResolvePlanInput {
@@ -679,7 +712,7 @@ export function resolveCheckPlan(input: ResolvePlanInput): CheckPlan {
     .filter((s): s is CheckStep => s !== null);
 
   if (declared.length > 0) {
-    const steps = dedupeNames(declared, warnings);
+    const steps = ensureDeclaredCrossCuttingBuiltins(dedupeNames(declared, warnings));
     return { version, defaultProfile, steps, source: "declared", warnings, errors };
   }
 

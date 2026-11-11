@@ -103,7 +103,9 @@ export async function commitWipCheckpointForRemoteGate(
   }
   let dirty: string[];
   try {
-    dirty = await uncommittedWorkFiles(worktreePath, workFileFilter(config));
+    dirty = await uncommittedWorkFiles(worktreePath, workFileFilter(config), {
+      untrackedFiles: "all",
+    });
   } catch {
     return "could not read git status before remote self-check";
   }
@@ -133,11 +135,8 @@ export async function commitWipCheckpointForRemoteGate(
   const staging = planCheckpointStaging(
     worktreePath,
     [...new Set([...toCommit, ...stagedForGuard])],
-    config.check ?? {},
+    config.check,
   );
-  if (staging.error) {
-    return staging.error;
-  }
   const blocked = [...staging.unstagedBuildOutput, ...staging.unstagedOversize];
   if (blocked.length > 0) {
     const unstageBlocked = await runGit(
@@ -149,7 +148,6 @@ export async function commitWipCheckpointForRemoteGate(
       return `could not unstage build output or oversized files (${blocked.slice(0, 5).join(", ")}) before the remote self-check`;
     }
   }
-  toCommit = staging.allowed;
   if (foreign.length > 0) {
     const unstage = await runGit(
       worktreePath,
@@ -160,6 +158,31 @@ export async function commitWipCheckpointForRemoteGate(
       return `could not unstage another task's bookkeeping (${foreign.slice(0, 5).join(", ")}) before the remote self-check`;
     }
   }
+  if (staging.error) {
+    const refused = [...new Set([...staging.refusedPaths, ...staging.unstagedBuildOutput])];
+    if (refused.length > 0) {
+      await runGit(worktreePath, ["reset", "--quiet", "HEAD", "--", ...refused], 30_000);
+    }
+    return staging.report ? `${staging.error}\n\n${staging.report}` : staging.error;
+  }
+  if (staging.report) {
+    try {
+      const workDir = join(boardRoot, config.workDir ?? "work");
+      const taskAbs = readdirSync(workDir).find(
+        (name) => name.startsWith(`${taskId}-`) && name.endsWith(".md"),
+      );
+      if (taskAbs) {
+        await appendEngineerSelfCheckActivity(
+          { ...config, root: boardRoot },
+          join(workDir, taskAbs),
+          staging.report,
+        );
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
+  toCommit = staging.allowed;
   if (toCommit.length === 0) return null;
   for (const path of toCommit) {
     const add = await runGit(worktreePath, ["add", "--", path], 60_000);

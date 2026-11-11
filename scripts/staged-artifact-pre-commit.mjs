@@ -8,14 +8,30 @@ import { accessSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-let guardPath = join(root, "dist/core/branch-artifact-guard.js");
-try {
-  accessSync(guardPath);
-} catch {
-  guardPath = join(root, "src/core/branch-artifact-guard.ts");
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+async function loadGuard() {
+  const distGuard = join(repoRoot, "dist/core/branch-artifact-guard.js");
+  const distConfig = join(repoRoot, "dist/core/config.js");
+  try {
+    accessSync(distGuard);
+    const mod = await import(pathToFileURL(distGuard).href);
+    let check;
+    try {
+      accessSync(distConfig);
+      const cfgMod = await import(pathToFileURL(distConfig).href);
+      check = cfgMod.loadConfig(process.cwd()).check;
+    } catch {
+      check = undefined;
+    }
+    return { evaluateStagedForPreCommit: mod.evaluateStagedForPreCommit, check };
+  } catch {
+    const srcGuard = join(repoRoot, "src/core/branch-artifact-guard.ts");
+    accessSync(srcGuard);
+    const mod = await import(pathToFileURL(srcGuard).href);
+    return { evaluateStagedForPreCommit: mod.evaluateStagedForPreCommit, check: undefined };
+  }
 }
-const { evaluateStagedForPreCommit } = await import(pathToFileURL(guardPath).href);
 
 if (process.env.REPOOS_SKIP_STAGED_ARTIFACT_GUARD === "1") {
   process.exit(0);
@@ -23,7 +39,19 @@ if (process.env.REPOOS_SKIP_STAGED_ARTIFACT_GUARD === "1") {
 
 const top = process.cwd();
 
-const { ok, message } = evaluateStagedForPreCommit(top, {});
+let evaluateStagedForPreCommit;
+let check;
+try {
+  ({ evaluateStagedForPreCommit, check } = await loadGuard());
+} catch (err) {
+  console.error(
+    "pre-commit: staged artifact guard unavailable — rebuild dist/ or run from a RepoOS checkout.",
+  );
+  console.error(String(err));
+  process.exit(1);
+}
+
+const { ok, message } = evaluateStagedForPreCommit(top, check);
 if (!ok) {
   console.error("pre-commit: staged artifact guard:\n" + message);
   console.error(
