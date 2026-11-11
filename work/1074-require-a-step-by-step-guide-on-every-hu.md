@@ -13,11 +13,10 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T11:06:35Z"
-check_retry_count: 1
+updated_at: "2026-11-11T17:13:17Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
+last_handoff_failure_sha: 62c37da85d6b2e33005b5b757f3f754fbfde6216
 last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 24cd8ae0c44f83a19a649951f763a90c6dac957b
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
@@ -195,3 +194,24 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T10:35:52Z · message_queued at 2026-11-11T10:35:52.358Z
 - 2026-11-11T10:35:55Z · message_delivered: 1 message(s)
 - 2026-11-11T11:06:35Z · engineer stopped by request
+- 2026-11-11T11:08:04Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 28445 is dead for 29m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-11T15:38:09Z · needs_input
+- 2026-11-11T15:38:23Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 4h 59m · next step: investigate the abnormal wait; the flag clears when the check starts
+- 2026-11-11T15:48:13Z · message_queued at 2026-11-11T15:48:13.945Z
+- 2026-11-11T15:48:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T15:53:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T16:18:18Z · body
+- 2026-11-11T16:18:31Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-11T16:25:10Z · body
+- 2026-11-11T16:33:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T16:41:21Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T16:41:31Z · message_queued at 2026-11-11T16:41:31.536Z
+- 2026-11-11T16:43:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T16:48:34Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-11T16:48:40Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at check · remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-11T16:48:41Z · note: handoff requested (cli)
+- 2026-11-11T16:53:13Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T16:58:20Z · message_queued at 2026-11-11T16:58:20.673Z
+- 2026-11-11T16:58:21Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+- 2026-11-11T17:03:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T17:13:17Z · message_delivered: 1 message(s)
