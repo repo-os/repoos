@@ -42,6 +42,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "card:doneError",
   "board:withReviewTask",
   "card:reviewChecksRunning",
+  "card:reviewLandableReady",
+  // #1085 — active task with a stale but live handoff record on the checks line.
+  "card:handoffStaleActive",
   // #1035 — several tasks spread across every pipeline stage (plus stuck,
   // held, sent-back and recently-merged lanes) for the Pipeline view capture.
   "board:pipeline",
@@ -63,6 +66,7 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "drawer:statusChecksRunning",
   "drawer:statusChecksRunningNarrow",
   "drawer:statusConfirmingHandoff",
+  "drawer:handoffWaiting",
   "drawer:statusConfirmingHandoffNarrow",
   "drawer:statusChecksFailed",
   "drawer:statusChecksFailedNarrow",
@@ -139,6 +143,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "settings:wheelieCourier",
   "settings:booSwoop",
   "settings:pumpkinSpell",
+  // #1062 — Settings activity animation with Motion off (no preview PATCH).
+  "settings:motionOff",
   // #0821 — a task with a running agent and a message queued for when the turn
   // ends, so a capture can show the composer's "Queued — will be read when the
   // current turn ends" notice (and a still-usable send control).
@@ -146,7 +152,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // #0775 — a failed dev target on the Dev page, so a capture can show the
   // plain-language failure summary, its port holder and the Stop action.
   "dev:failed",
-  // #0950 — pin the shared loading skeleton for first-load captures.
+  // #0950 — hold the Dev targets request pending so the first-load skeleton
+  // stays visible while the real target cards are unavailable.
   "dev:loading",
   // #0801 — a started dev target beside a stopped one, so a capture can show
   // the running highlight (the same cyan glow an active remote runner uses).
@@ -190,6 +197,10 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // `emailFailed` shows "Email failed: …" with Resend.
   "release:emailSent",
   "release:emailFailed",
+  // #1073 — the release-update dialog pinned open with a newer version
+  // available, so a capture shows the upgrade command block (which only
+  // renders when `available` is true on the live board).
+  "release:updateAvailable",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];
@@ -216,7 +227,9 @@ export function shotFixtureContainer(fixture: string): ShotFixtureContainer | nu
   if (
     fixture.startsWith("drawer:") ||
     fixture.startsWith("panel:") ||
-    fixture.startsWith("schedule:")
+    fixture.startsWith("schedule:") ||
+    // #1073 — `release:updateAvailable` pins the release-update modal open.
+    fixture.startsWith("release:")
   ) {
     return "dialog";
   }

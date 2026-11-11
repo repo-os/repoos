@@ -97,9 +97,10 @@ worktreeWarnThreshold = 20     # 0 disables the warning
 
 # ── Server and UI ────────────────────────────────────────────────────────
 servePort = 7171   # omit to derive a stable per-repo port (7200-7999)
+activityAnimationEnabled = true             # false = plain status dots, no motion
 activityAnimationStyle = "orbital-pixel"   # compact agent-activity indicator; see table below
 activityAnimationSize = "16"               # fixed pixels: 8, 12, 16, 20 or 24; see table below
-activityAnimationConcurrency = 6            # simultaneous visible animations; 0 disables motion
+activityAnimationConcurrency = 6            # max on-screen animations at once; 0 = all still
 strictBuild = false
 autoReload = true
 
@@ -300,6 +301,7 @@ taskExtensions = [".md"]
 | `inputsDir` | string | `inputs` | yes | Directory holding user-submitted inputs and their attachments. Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `schedulesDir` | string | `schedules` | yes | Directory holding scheduled task definitions (Agents → Scheduled Tasks). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `remindersDir` | string | `reminders` | yes | Directory holding reminder notes (Agents → Reminders). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
+| `updates.check` | boolean | `true` | no | When true, RepoOS checks GitHub for newer releases and may show a passive CLI notice (stderr, at most once per 24h) and the dashboard update banner. Off in CI, non-interactive runs, and with `REPOOS_NO_UPDATE_CHECK=1`. Source checkouts never see a notice. See [Updating RepoOS](/getting-started#updating-repoos). |
 | `scheduledTasks.enabled` | boolean | `false` | no | When true, the control-plane server runs enabled schedules on a cadence. Off by default; previews and task worktrees never run schedules. |
 | `storiesDir` | string | `stories` | yes | Directory holding story definitions (used when Stories are enabled). Must be repo-relative; an absolute or escaping value falls back to the default with a warning. |
 | `cacheDir` | string | `.repoos` | yes | Derived state only — logs, indexes, cached databases. Delete it and RepoOS rebuilds from the task files; nothing of record is lost. |
@@ -473,9 +475,10 @@ activityAnimationSize = "auto"
 | `servePort` | number | derived per repo | yes | Port `repoos serve` binds by default. If omitted, RepoOS derives a stable port from the repo's path in the 7200–7999 range, so two checkouts never collide. Must be 1–65535. `--port` on the command line overrides it. |
 | `strictBuild` | boolean | `false` | yes | When true, a stale build makes `repoos` exit with an error instead of printing a warning. `REPOOS_STRICT_BUILD=1` (environment) and the `--strict-build` flag do the same without changing the file. |
 | `autoReload` | boolean | `true` | yes | Automatically hands over to a replacement server when a newer build is available. Edit in **Settings → General**; changing it takes effect after the next server start. After three failed handovers the server stops retrying and the UI reports that a restart is needed. |
+| `activityAnimationEnabled` | boolean | `true` | yes | When off, every activity indicator (Board, Pipeline, Dev, drawer) shows a plain colored status dot with no CSS animation or motion timers. Edit at the top of **Settings → General → Activity animation**. |
 | `activityAnimationStyle` | select | `orbital-pixel` | yes | Motion beside coding, reviewing, and other agent-activity labels in the web UI. Values: `orbital-pixel` (default compact orbit), `cursor-scan-pulse`, `breathing-brackets`, `micro-dot-matrix`, `tiny-signal-bars`, `spark-diamond`, `arcade-hopper` (alien that jumps and tilts), `puppy-tracks` (two alternating paw prints), `bird-quick-trail` (fast alternating bird footprints), `rgb-keystorm` (multicolor keyboard with a moving key wave, typing fingers and rising code), `wheelie-courier` (motorcycle and rider doing repeated wheelies), `boo-swoop` (ghost swooping with a rippling hem and orbiting wisps), `pumpkin-spell` (bouncing jack-o'-lantern with a witch hat and rising sparks), or `three-dots` (legacy horizontal dots). Omitted config uses `orbital-pixel`. Edit in **Settings → General → Activity animation**; the page previews all three activity states before save. Honors `prefers-reduced-motion` with a static indicator. |
 | `activityAnimationSize` | select | `16` | yes | Fixed pixel width of the activity animation, rendered at the same size on every surface (task cards, the Dev page and the Settings preview) regardless of the surrounding font. Values are the quoted strings `"8"`, `"12"`, `"16"`, `"20"`, `"24"`; a hand-written numeric TOML value (`16`) is normalized to the same value. Omitted config uses `16`. Legacy character-width values (`"auto"`, `"1"`–`"3"`) still load and are mapped onto the pixel ladder by ordinal, so existing configs keep their relative size. Edit in **Settings → General → Activity animation** with a single slider (no Auto toggle; the default is marked with a tick); the preview updates live. Honors `prefers-reduced-motion` at every size. |
-| `activityAnimationConcurrency` | number | `6` | yes | Maximum number of visible activity indicators animated simultaneously. Additional and off-screen indicators hold a still frame without changing their footprint. Values are integers 0–24; 0 pauses all motion. Hidden documents and `prefers-reduced-motion` also pause animation. Edit in **Settings → General → Activity animation**. |
+| `activityAnimationConcurrency` | number | `6` | yes | Maximum number of **on-screen** activity indicators animated at once; off-screen, hidden-tab, and collapsed-column indicators do not occupy a slot. Values are integers 0–24; 0 keeps every indicator on a still frame. Use **Motion** off to disable animation entirely. Hidden documents and `prefers-reduced-motion` also pause animation. Edit in **Settings → General → Activity animation**. |
 
 Appearance is **not** a `repoos.toml` setting. The dark/light/system theme and
 the UI design language are per-browser preferences stored in the browser, so
@@ -849,12 +852,14 @@ A **command capture target** (`[[shot.targets]]`, below) has no browser page or 
 
 ```toml
 review.humanFlagAfterPasses = 5
+review.freezeAfterPasses = 4
 review.timeoutMinutes = 15
 ```
 
 | Field | Type | Default | Committed | Effect |
 | --- | --- | --- | --- | --- |
 | `review.humanFlagAfterPasses` | number | `5` | yes | Completed review passes on one task before the next report opens with a summary of the bug classes earlier passes kept finding, and the task gets a human-attention flag (`review-human-attention`). Default 5. The flag is separate from the auto-bounce `review-rounds-exhausted` backstop: it counts every completed pass, including manual **Review again**, and clears when a clean review or a new engineer run confirms progress. |
+| `review.freezeAfterPasses` | number | `4` | yes | Completed review passes on one task before the blocking bar freezes. From the next pass the reviewer blocks only on a defect that breaks the task's own acceptance criteria, a regression, or a landing blocker; everything else goes under `Suggestions (non-blocking)`. P3 tasks and `Easter eggs bundle` tasks use the lighter bar from pass 1 regardless of this value. See [Review and close-out](/review-and-close-out). |
 | `review.timeoutMinutes` | number | `15` | yes | Minutes one review pass may run before it is stopped. A large diff on a slow cheap model can legitimately take longer than the default; raise this when reviews of big branches keep getting cut off. Values are clamped to 1–240. A pass that hits the limit is recorded as **timed out after N minutes** (not "no usable report"), retried once automatically on the same reviewer, and only flagged for a human if that retry also times out. |
 
 Edit both keys in **Settings → General** (Automation & approval). A task can bounce between `active` and `review` many times when each pass finds one more instance of the same class; this is the signal to stop and look at the pattern rather than pay for another round. See [Review and close-out → Repeated review classes](/review-and-close-out#repeated-review-classes-and-the-human-attention-flag).

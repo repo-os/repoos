@@ -18,7 +18,16 @@ import {
 } from "../../core/config.js";
 import type { Agent, RepoOSConfig, Task } from "../../core/types.js";
 import type { LandableResult } from "../../core/landable.js";
-import { reviewHumanFlagThreshold, reviewMission, reviewPassesSoFar } from "../../server/review.js";
+import {
+  acceptedScopeSection,
+  reviewBlockingBar,
+  reviewFreezeThreshold,
+  reviewHumanFlagThreshold,
+  reviewMission,
+  reviewPassesSoFar,
+  reviewUsesLightBar,
+} from "../../server/review.js";
+import { extractReviewReportSections } from "../../core/review-report-sections.js";
 import {
   needsInputClearsOnNewEngineerRun,
   needsInputClearsOnSuccessfulReview,
@@ -305,5 +314,292 @@ describe("review.humanFlagAfterPasses config (#0872)", () => {
       }),
     ).toBe(true);
     expect(needsInputClearsOnNewEngineerRun("review-human-attention")).toBe(true);
+  });
+});
+
+describe("review blocking bar, freeze and accepted scope (#1080)", () => {
+  const root = mkdtempSync(join(tmpdir(), "repoos-review-freeze-"));
+  const acceptedBody = [
+    "## Problem",
+    "",
+    "The loop never converges.",
+    "",
+    "## Acceptance criteria",
+    "",
+    "- Every pass re-reports the whole class.",
+    "",
+    "## Accepted scope and known limitations",
+    "",
+    "- The freeze does not auto-file follow-ups; that is a separate task.",
+    "- Acceptance criterion 5 is superseded: follow-ups are manual in this change.",
+    "",
+    "## Notes for AI",
+    "",
+    "Start in src/server/review.ts.",
+  ].join("\n");
+
+  it("freezes after four passes by default and honours a configured threshold", () => {
+    expect(reviewFreezeThreshold(config(root))).toBe(4);
+    expect(reviewFreezeThreshold(config(root, { freezeAfterPasses: 2 }))).toBe(2);
+    expect(reviewBlockingBar(task({ review_passes: 3 }), config(root))).toBe("full");
+    expect(reviewBlockingBar(task({ review_passes: 4 }), config(root))).toBe("frozen");
+  });
+
+  it("uses the lighter bar from pass 1 for p3 and Easter eggs bundles only", () => {
+    const p3 = { ...task(), priority: "p3" };
+    const bundle = { ...task(), priority: "p2", title: "Easter eggs bundle: hover, toasts" };
+    const p2 = { ...task(), priority: "p2" };
+    expect(reviewUsesLightBar(p3)).toBe(true);
+    expect(reviewUsesLightBar(bundle)).toBe(true);
+    expect(reviewUsesLightBar(p2)).toBe(false);
+    expect(reviewBlockingBar(p3, config(root))).toBe("light");
+    expect(reviewBlockingBar(bundle, config(root))).toBe("light");
+    expect(reviewBlockingBar(p2, config(root))).toBe("full");
+  });
+
+  it("names the frozen blocking definition and the non-blocking suggestions heading", () => {
+    const mission = reviewMission(task({ review_passes: 4 }), reviewer, root, "main", config(root));
+    expect(mission).toContain("FROZEN");
+    expect(mission).toContain("a regression of existing behaviour");
+    expect(mission).toContain("a landing blocker");
+    expect(mission).toContain("## Suggestions (non-blocking)");
+    expect(mission).toContain("must not change the verdict");
+  });
+
+  it("keeps the full bar and plain Suggestions heading before the freeze", () => {
+    const mission = reviewMission(task({ review_passes: 1 }), reviewer, root, "main", config(root));
+    expect(mission).not.toContain("FROZEN");
+    expect(mission).toContain("The FULL bar applies until the freeze");
+    expect(mission).not.toContain("## Suggestions (non-blocking)");
+  });
+
+  it("applies the light bar text to a P3 task on pass 1", () => {
+    const mission = reviewMission(
+      { ...task(), priority: "p3" },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    expect(mission).toContain("LIGHT bar");
+    expect(mission).toContain("correctness bugs");
+  });
+
+  it("quotes an accepted-scope section from a fixture body and says it is not blocking", () => {
+    expect(acceptedScopeSection(acceptedBody)).toBe(
+      [
+        "## Accepted scope and known limitations",
+        "",
+        "- The freeze does not auto-file follow-ups; that is a separate task.",
+        "- Acceptance criterion 5 is superseded: follow-ups are manual in this change.",
+      ].join("\n"),
+    );
+    expect(acceptedScopeSection("## Problem\n\nx")).toBeNull();
+
+    const mission = reviewMission(
+      { ...task({ review_passes: 0 }), body: acceptedBody },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    expect(mission).toContain("## Accepted scope and known limitations");
+    expect(mission).toContain("The freeze does not auto-file follow-ups");
+    expect(mission).toContain("Acceptance criterion 5 is superseded");
+    expect(mission).toMatch(/AUTHORITATIVE/);
+    expect(mission).toMatch(/NOT blocking/);
+  });
+
+  it("omits the accepted-scope block when the body has no such section", () => {
+    const mission = reviewMission(task(), reviewer, root, "main", config(root));
+    expect(mission).not.toContain("AUTHORITATIVE");
+  });
+
+  it("keeps the full-bar enumeration wording out of the frozen and light prompts", () => {
+    const full = reviewMission(task({ review_passes: 0 }), reviewer, root, "main", config(root));
+    const light = reviewMission(
+      { ...task({ review_passes: 0 }), priority: "p3" },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    const frozen = reviewMission(task({ review_passes: 4 }), reviewer, root, "main", config(root));
+    expect(full).toContain("list them all under ## Bugs");
+    for (const mission of [light, frozen]) {
+      expect(mission).not.toContain("list them all under ## Bugs");
+      expect(mission).toContain("list every instance that meets the blocking bar");
+    }
+  });
+
+  it("names the suggestions heading that matches the bar in the accepted-scope quote", () => {
+    const body = acceptedBody;
+    const frozen = reviewMission(
+      { ...task({ review_passes: 4 }), body },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    const light = reviewMission(
+      { ...task(), priority: "p3", body },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    expect(frozen).toContain("`## Suggestions (non-blocking)` at most, never under `## Bugs`");
+    expect(light).toContain("`## Suggestions` at most, never under `## Bugs`");
+  });
+
+  it("names ## Suggestions, not the frozen heading, on a P3 mission", () => {
+    const mission = reviewMission(
+      { ...task(), priority: "p3" },
+      reviewer,
+      root,
+      "main",
+      config(root),
+    );
+    expect(mission).not.toContain("(non-blocking)");
+    expect(mission).toContain("under `## Suggestions` and must not change the verdict");
+    expect(mission).toContain("the rest under `## Suggestions`. Never hold a");
+  });
+
+  it("quotes the real accepted-scope section, not a fenced example of one", () => {
+    const body = [
+      "```md",
+      "## Accepted scope and known limitations",
+      "- example only",
+      "```",
+      "",
+      "## Accepted scope and known limitations",
+      "",
+      "- real item",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toContain("- real item");
+    expect(section).not.toContain("- example only");
+  });
+
+  it("does not end the accepted-scope section at a heading inside a fenced block", () => {
+    const body = [
+      "## Accepted scope and known limitations",
+      "",
+      "```md",
+      "## not a heading",
+      "```",
+      "",
+      "- The guard is out of scope.",
+      "",
+      "## Notes for AI",
+      "",
+      "x",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toContain("## not a heading");
+    expect(section).toContain("- The guard is out of scope.");
+    expect(section).not.toContain("## Notes for AI");
+  });
+
+  it("keeps a long accepted-scope section whole up to the 12000-character cap", () => {
+    const items = Array.from({ length: 200 }, (_, i) => `- limitation ${i}: ${"x".repeat(30)}`);
+    const body = [
+      "## Accepted scope and known limitations",
+      "",
+      ...items,
+      "",
+      "## Notes",
+      "x",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).not.toMatch(/\[truncated/);
+    expect(section).toContain("- limitation 199:");
+    expect(section).not.toContain("## Notes");
+  });
+
+  it("marks a truncated accepted-scope quote instead of dropping items silently", () => {
+    const body = ["## Accepted scope and known limitations", "", "- item ".repeat(3000)].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toMatch(
+      /\[truncated: the accepted-scope section is longer than 12000 characters/,
+    );
+    expect(section.length).toBeLessThan(12_200);
+  });
+
+  it("treats a tilde-fenced accepted-scope example as a fence, not the real section", () => {
+    const body = [
+      "~~~md",
+      "## Accepted scope and known limitations",
+      "- example only",
+      "~~~",
+      "",
+      "## Accepted scope and known limitations",
+      "",
+      "- real item",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toContain("- real item");
+    expect(section).not.toContain("- example only");
+  });
+
+  it("does not end the section at a heading inside a tilde fence or close a tilde fence with backticks", () => {
+    const body = [
+      "## Accepted scope and known limitations",
+      "",
+      "~~~md",
+      "## not a heading",
+      "```",
+      "## still inside the tilde fence",
+      "~~~",
+      "",
+      "- The guard is out of scope.",
+      "",
+      "## Notes for AI",
+      "",
+      "x",
+    ].join("\n");
+    const section = acceptedScopeSection(body) ?? "";
+    expect(section).toContain("## not a heading");
+    expect(section).toContain("## still inside the tilde fence");
+    expect(section).toContain("- The guard is out of scope.");
+    expect(section).not.toContain("## Notes for AI");
+  });
+
+  it("keeps the engineer handoff sentence well formed", () => {
+    const engineer = promptFor("engineer");
+    expect(engineer).toMatch(/instead of patching one\. A new config key needs a Settings control/);
+    expect(engineer).not.toMatch(/Before handoff, A new/);
+  });
+
+  it("parses the frozen suggestions heading as the Suggestions section", () => {
+    const sections = extractReviewReportSections(
+      "## Bugs\nNone found\n\n## Suggestions (non-blocking)\n- Add a helper for the retry.\n",
+    );
+    expect(sections.suggestions).toContain("Add a helper for the retry.");
+  });
+
+  it("exposes the freeze setting in the schema, supported keys and loader", () => {
+    const field = getConfigSchema().find((f) => f.key === "review.freezeAfterPasses");
+    expect(field).toMatchObject({
+      type: "number",
+      tier: "live",
+      restartRequired: false,
+      default: 4,
+    });
+    expect(SUPPORTED_TOML_KEYS).toContain("review.freezeAfterPasses");
+
+    const dir = mkdtempSync(join(tmpdir(), "repoos-review-freeze-config-"));
+    try {
+      writeFileSync(join(dir, "repoos.toml"), "[review]\nfreezeAfterPasses = 3\n");
+      expect(loadConfig(dir).review?.freezeAfterPasses).toBe(3);
+      writeFileSync(join(dir, "repoos.toml"), "");
+      expect(loadConfig(dir).review?.freezeAfterPasses).toBe(4);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  afterAll(() => {
+    rmSync(root, { recursive: true, force: true });
   });
 });

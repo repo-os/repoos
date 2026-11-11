@@ -74,6 +74,21 @@ applies only to the standalone curl install.
 
 See [Updating RepoOS](/getting-started#updating-repoos) for every install method.
 
+### Passive update notice
+
+On interactive runs (both stdout and stderr are a TTY, no `--json`, not in CI),
+most `repoos` commands may end with one quiet stderr line when a newer release
+is available on GitHub — at most once per 24 hours per machine. The message
+names your install’s real upgrade command (standalone, package manager, or
+source) and links to the release notes. It never runs during `repoos upgrade`,
+never blocks the command (the check is cached and uses a ~1.5s timeout), and
+fails silently when offline.
+
+Turn it off with `updates.check = false` in Settings or `repoos.toml`, or with
+`REPOOS_NO_UPDATE_CHECK=1`. Source checkouts are not nagged. The dashboard
+banner uses the same check and the same toggle. Design details:
+[`docs/update-check.md`](../docs/update-check.md).
+
 ## The board
 
 ### `repoos new "<title>"`
@@ -230,7 +245,7 @@ done wait by default in human mode).
 | `repoos done <id> --cancel` (`repoos abort <id>`) | `POST /api/tasks/:id/done/cancel` |
 | `repoos api <METHOD> /api/<path> [--json body] [--port N]` | Any `/api/` route |
 | `repoos landable <id>` | `GET /api/tasks/:id/landable` — read-only merge readiness checks; exits non-zero unless the task is ready to merge (`--json` for a stable checklist shape) |
-| `repoos handoff-status <id>` | `GET /api/tasks/:id/handoff-status` — non-blocking latest handoff state (`not_requested`, `running`, `passed`, `failed`, `deferred`), step and reason; never starts or waits for a handoff |
+| `repoos handoff-status <id>` | `GET /api/tasks/:id/handoff-status` — non-blocking latest handoff state (`not_requested`, `running`, `passed`, `failed`, `deferred`, `superseded`), step and reason; never starts or waits for a handoff |
 | `repoos override <id> --cli X --model Y` | `PATCH /api/tasks/:id` |
 | `repoos preview <id> [--stop]` | `POST /api/tasks/:id/preview` (+ `/stop`) |
 | `repoos dev [list]` · `repoos dev <name> start\|stop\|restart\|status\|logs` | `GET`/`POST /api/dev/targets` |

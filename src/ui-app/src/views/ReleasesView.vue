@@ -76,7 +76,7 @@ interface DistributionChannel {
   url: string | null;
   install: string[];
   version: string | null;
-  state: "matching" | "out-of-sync" | "unverified" | "unavailable" | "failed";
+  state: "matching" | "out-of-sync" | "updating" | "unverified" | "unavailable" | "failed";
   detail: string | null;
 }
 
@@ -240,6 +240,13 @@ const distributionSync = computed(() => {
   if (!distribution.value.length) return null;
   if (distribution.value.every((channel) => channel.state === "matching")) {
     return { state: "matching", label: "All distribution destinations in sync" };
+  }
+  if (
+    distribution.value.every(
+      (channel) => channel.state === "matching" || channel.state === "updating",
+    )
+  ) {
+    return { state: "attention", label: "Distribution destinations are updating" };
   }
   return { state: "attention", label: "Some distribution destinations need attention" };
 });
@@ -624,6 +631,7 @@ async function loadDistribution(manual = false): Promise<void> {
 const CHANNEL_STATE_LABELS: Record<DistributionChannel["state"], string> = {
   matching: "Up to date",
   "out-of-sync": "Out of sync",
+  updating: "Updating",
   unverified: "Unverified",
   unavailable: "Not published yet",
   failed: "Check failed",
@@ -642,6 +650,8 @@ function channelSummary(channel: DistributionChannel): string {
       return channel.version
         ? `${channel.version} · release is ${distributionReleaseVersion.value ?? "different"}`
         : "Out of sync with this release";
+    case "updating":
+      return channel.detail ?? "Updating to match this release";
     case "unavailable":
       return channel.detail ?? "No version published on this channel yet";
     case "failed":
@@ -1205,8 +1215,8 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="page-scroll-body">
-      <PageSkeleton v-if="loading && !status" kind="cards" />
-      <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
+      <PageSkeleton :loading="loading && !status" kind="cards" />
+      <p v-if="loadError && !status" class="rel-error">{{ loadError }}</p>
       <p v-if="loadError && status" class="rel-error" role="status">
         Refresh failed: {{ loadError }}
       </p>
@@ -1481,7 +1491,7 @@ Subject: {{ releaseEmailPreview.subject }}
             <!-- First lookup: a skeleton shaped like the channel cards, not a
                  lone spinner. A "Check again" recheck keeps the channels on
                  screen and shows the compact indicator below. -->
-            <PageSkeleton v-if="distributionLoading && !distribution.length" kind="cards" />
+            <PageSkeleton :loading="distributionLoading && !distribution.length" kind="cards" />
             <p v-if="distributionCiFailure" class="ff-error" role="alert">
               The release workflow failed<template v-if="distributionCiFailure.failedStep">
                 at “{{ distributionCiFailure.failedStep }}”</template
@@ -2256,6 +2266,11 @@ a.rel-channel-name:hover {
   color: var(--amber);
   background: var(--amber-tint);
   border-color: var(--amber-border-tint);
+}
+.rel-channel-state[data-state="updating"] {
+  color: var(--violet);
+  background: var(--violet-tint);
+  border-color: var(--violet-border-tint);
 }
 .rel-channel-state[data-state="failed"] {
   color: var(--red);

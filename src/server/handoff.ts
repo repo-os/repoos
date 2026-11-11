@@ -49,16 +49,21 @@ import {
 import {
   runGit,
   worktreePathForBranch,
-  currentBranch,
   branchChangesSinceBase,
   uncommittedWorkFiles,
   workFileFilter,
   commitTaskFile,
   pathsChangedBetweenCommits,
   getChangedFilePaths,
+  gitRunLockContention,
+  retryOnGitLock,
+  restoreForeignTaskBookkeepingFromMain,
+  foreignTaskBookkeepingPaths,
 } from "../core/git.js";
 import { gitDirectorySnapshot } from "../core/git-directory-snapshot.js";
 import { getGitWorker } from "./git-worker.js";
+import { resolveDefaultBranch } from "../core/repo-log.js";
+import { bookkeepingDirs } from "../core/config.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
 import { taskWithLiveHold } from "./hold-guard.js";
@@ -72,13 +77,20 @@ import {
   finishHandoffStatus,
   updateHandoffStatusStep,
   updateHandoffStatusProgress,
+  readHandoffStatus,
+  setHandoffWaitingReason,
 } from "./handoff-status.js";
 import { patchTaskFile } from "./write.js";
 import { scheduleCloseOutRepairHandback } from "./close-out-repair.js";
 import { guardReviewTransition } from "./review-guard.js";
 import { guardStrayRepoosTomlOnTaskBranch } from "../core/repoos-toml-branch-guard.js";
 import { checkGateHeadDriftAllowed } from "../core/check-gate-bookkeeping.js";
-import { acquireCheckGateLock } from "./check-gate-lock.js";
+import {
+  acquireCheckGateLock,
+  checkGateBusyRun,
+  checkGateWaitBudgetMs,
+  waitForCheckGateRelease,
+} from "./check-gate-lock.js";
 import { runFormatFixes } from "../core/check-format.js";
 import { recordWorktreeHandoffProtection } from "./worktree-handoff-guard.js";
 import { closingOutRefusal, isTaskClosingOut } from "./close-out-lock.js";
@@ -112,6 +124,41 @@ import {
 } from "./engineering-reports.js";
 import { engineeringReportRelPath, legacyEngineeringReportRelPath } from "../core/report-paths.js";
 
+/** Plain-English handoff state while a running self-check holds the worktree (#1082). */
+const CHECK_GATE_WAIT_LABEL = "Waiting for the running check to finish";
+
+/**
+ * Run one handoff git step that a running self-check may refuse. While it
+ * waits, the handoff shows `CHECK_GATE_WAIT_LABEL`; the label is cleared in a
+ * `finally`, so an error or timeout never leaves it stuck (#1082).
+ */
+async function runWhileCheckGateWait<T>(
+  config: RepoOSConfig,
+  taskId: string,
+  deadlineAt: number,
+  attempt: () => Promise<T>,
+  busy: (result: T) => boolean,
+): Promise<T> {
+  // The label is keyed to the attempt that started the wait, so a late waiter
+  // cannot mark a newer handoff as waiting (#1082).
+  const attemptKey = readHandoffStatus(config, taskId).attemptKey;
+  let waiting = false;
+  try {
+    const waited = await waitForCheckGateRelease(attempt, busy, {
+      boardRoot: config.root,
+      cacheDir: config.cacheDir ?? ".repoos",
+      timeoutMs: checkGateWaitBudgetMs(deadlineAt),
+      onWait: () => {
+        waiting = true;
+        setHandoffWaitingReason(config, taskId, CHECK_GATE_WAIT_LABEL, attemptKey);
+      },
+    });
+    return waited.result;
+  } finally {
+    if (waiting) setHandoffWaitingReason(config, taskId, null, attemptKey);
+  }
+}
+
 export type HandoffStep = "validate" | "check" | "verify" | "commit" | "review" | "main" | "done";
 
 export interface HandoffResult {
@@ -127,6 +174,21 @@ interface RunResult {
   stdout: string;
   stderr: string;
   error?: NodeJS.ErrnoException;
+}
+
+/**
+ * The branch a task's work diverged from — the anchor for the merge-base used
+ * by the bookkeeping restore, the stray-`repoos.toml` guard, the check scope and
+ * the engineering-report base.
+ *
+ * Resolved from the repo's default branch (`main`), NOT from the main
+ * checkout's `currentBranch()`. If the main checkout happens to sit on a
+ * feature branch, `merge-base(feat/x, HEAD)` can miss a sibling file present in
+ * both trees, so handoff would report a heal while the branch still carried the
+ * file (#1076).
+ */
+async function handoffBaseBranch(config: RepoOSConfig): Promise<string> {
+  return await resolveDefaultBranch(config.root);
 }
 
 export function runHandoffCommand(
@@ -317,7 +379,7 @@ async function runCheck(
       : (
           await getGitWorker(config.root).branchChangesSinceBase(
             worktree,
-            (await getGitWorker(config.root).currentBranch()) ?? "main",
+            await handoffBaseBranch(config),
           )
         ).base;
   // Identify the caller to the check-run history (#0564): the child records
@@ -781,14 +843,73 @@ async function runHandoffFinalization(
   // `resolveWorktree` (an empty worktree branch is a lag, not a mismatch),
   // but fatal here, and the mismatch was invisible until #0507 started routing
   // file edits through this path.
-  const gate = await guardReviewTransition(config, { ...worktreeTask, branch: task.branch });
+  // A self-check that still holds the worktree makes this step wait, not fail
+  // (#1082); the handoff row says so in plain words while it waits.
+  // The wait stops before the handoff deadline, so it never outlives the
+  // handoff it belongs to (#1082).
+  const guardAttemptKey = readHandoffStatus(config, task.id).attemptKey;
+  let waitingForCheck = false;
+  let gate: Awaited<ReturnType<typeof guardReviewTransition>>;
+  try {
+    gate = await guardReviewTransition(
+      config,
+      { ...worktreeTask, branch: task.branch },
+      {
+        checkGateWait: { timeoutMs: checkGateWaitBudgetMs(handoffDeadlineAt) },
+        onCheckGateWait: () => {
+          waitingForCheck = true;
+          setHandoffWaitingReason(config, task.id, CHECK_GATE_WAIT_LABEL, guardAttemptKey);
+        },
+      },
+    );
+  } finally {
+    if (waitingForCheck) setHandoffWaitingReason(config, task.id, null, guardAttemptKey);
+  }
   if (!gate.ok) {
     return fail("commit", gate.detail ?? "the commit/vacuity gate rejected the transition");
   }
 
+  // #1076: a self-check WIP checkpoint (or a concurrent board write, or a
+  // partial merge of main) can leave ANOTHER task's `work/` bookkeeping on this
+  // branch. Restore main's copy now, before the check snapshots the
+  // tree and before the review lock — the restore lands as one bookkeeping
+  // commit, so a branch that already drifted is healed here instead of failing
+  // landing with "the diff changes another task's bookkeeping". Report it; never
+  // fail on it.
+  if (!isHotfix) {
+    try {
+      const bkDirs = bookkeepingDirs(config);
+      const restored = await restoreForeignTaskBookkeepingFromMain({
+        worktree: workdir,
+        baseBranch: await handoffBaseBranch(config),
+        taskId: task.id,
+        ownTaskFile: task.path,
+        workDir: bkDirs.workDir,
+        inputsDir: bkDirs.inputsDir,
+        storiesDir: bkDirs.storiesDir,
+      });
+      if (restored.length > 0) {
+        const listed = restored.slice(0, 8).join(", ");
+        const more = restored.length > 8 ? ` (+${restored.length - 8} more)` : "";
+        opts.onTaskLog?.(
+          task.id,
+          "info",
+          `restored main's copy of another task's bookkeeping on this branch: ${listed}${more}`,
+        );
+      }
+    } catch (error) {
+      // Fail closed on a real restore failure: continuing would hand off a
+      // branch that still carries a sibling's files and cannot land.
+      return fail(
+        "commit",
+        `could not restore main's copy of another task's bookkeeping on this branch: ${(error as Error).message}`,
+      );
+    }
+  }
+
   const tomlGuard = await guardStrayRepoosTomlOnTaskBranch(
     workdir,
-    (await getGitWorker(config.root).currentBranch()) ?? "main",
+    await handoffBaseBranch(config),
     task,
   );
   if (!tomlGuard.ok) {
@@ -848,7 +969,7 @@ async function runHandoffFinalization(
       {
         const { base } = await getGitWorker(config.root).branchChangesSinceBase(
           workdir,
-          (await getGitWorker(config.root).currentBranch()) ?? "main",
+          await handoffBaseBranch(config),
         );
         if (base) {
           changedBase = base;
@@ -940,7 +1061,7 @@ async function runHandoffFinalization(
         return fail("check", `repoos check failed: ${buildLastCheckFailureSummary(checkOutput)}`);
       }
       if (checkRunSkipped(checkOutput)) {
-        const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
+        const baseBranch = await handoffBaseBranch(config);
         if (branchAddsBuildableProjectMarker(workdir, baseBranch)) {
           return fail("check", BRANCH_ADDS_PROJECT_NO_CHECK_PLAN);
         }
@@ -1035,7 +1156,7 @@ async function runHandoffFinalization(
       );
     }
     const source = await worktreeState(workdir, config);
-    const baseBranch = (await getGitWorker(config.root).currentBranch()) ?? "main";
+    const baseBranch = await handoffBaseBranch(config);
     const codingAgent = resolveAgentForTask(config, task);
     if (!codingAgent) {
       return fail("review", "could not resolve the coding agent metadata for the report");
@@ -1073,8 +1194,12 @@ async function runHandoffFinalization(
     if (!finalized.report)
       return fail("review", finalized.error ?? "engineering report could not be finalized");
     finalizedReport = finalized.report;
-    const reportPath = engineeringReportRelPath(config, task.id, finalized.report.round);
-    const staged = await runGit(workdir, ["add", "--", reportPath], 10_000);
+    const reportRound = finalized.report.round;
+    const reportPath = engineeringReportRelPath(config, task.id, reportRound);
+    const staged = await retryOnGitLock(
+      () => runGit(workdir, ["add", "--", reportPath], 10_000),
+      gitRunLockContention,
+    );
     if (staged.status !== 0)
       return fail("review", `could not stage finalized engineering report: ${concise(staged)}`);
     const stagedDiff = await runGit(
@@ -1083,14 +1208,30 @@ async function runHandoffFinalization(
       10_000,
     );
     if (stagedDiff.status === 1) {
-      const reportCommit = await runGit(
-        workdir,
-        [
-          "commit",
-          "-m",
-          `docs: record engineering report for #${task.id} round ${finalized.report.round}`,
-        ],
-        20_000,
+      const reportCommit = await runWhileCheckGateWait(
+        config,
+        task.id,
+        handoffDeadlineAt,
+        () =>
+          retryOnGitLock(
+            () =>
+              runGit(
+                workdir,
+                [
+                  "commit",
+                  "-m",
+                  `docs: record engineering report for #${task.id} round ${reportRound}`,
+                  // Pathspec, not a bare commit: this runs after the check gate (minutes
+                  // long), well past the one-shot foreign-bookkeeping restore, and a
+                  // sibling staged in that window must not ride this commit (#1076).
+                  "--",
+                  reportPath,
+                ],
+                20_000,
+              ),
+            gitRunLockContention,
+          ),
+        checkGateBusyRun,
       );
       if (reportCommit.status !== 0)
         return fail(

@@ -42,14 +42,25 @@ import { extractFailedTests } from "../../core/check-failure-summary.js";
 import { sanitizeTldrAnswer } from "../debug-tldr.js";
 import { redactSecrets } from "./debugger.js";
 import { readBuildMeta } from "../../core/build.js";
-import { compareSemver } from "../../core/agent-updates.js";
+import {
+  channelFromVersion,
+  fetchLatestRelease,
+  installRoot,
+  readInstallVersion,
+  upgradeInstruction,
+  type InstallKind,
+} from "../../commands/upgrade.js";
+import {
+  availableReleaseFromGithub,
+  isUpdateCheckConfigEnabled,
+  isUpdateCheckEnvDisabled,
+} from "../../core/update-check.js";
 import {
   readCachedReleaseNotes,
   releaseNotesCacheKey,
   writeCachedReleaseNotes,
 } from "../release-notes-cache.js";
 
-const STABLE_VERSION = /^v?(\d+)\.(\d+)\.(\d+)$/;
 const RELEASE_CACHE_MS = 10 * 60 * 1000;
 const RELEASE_FAILURE_CACHE_MS = 60 * 1000;
 let releaseCache: { value: AvailableRelease; expiresAt: number } | null = null;
@@ -62,81 +73,107 @@ export interface AvailableRelease {
   available: boolean;
   releaseNotes: string | null;
   releaseUrl: string | null;
+  /**
+   * How this RepoOS was installed, and the command that actually upgrades it
+   * (#1073). Both come from `upgradeInstruction` — the same detection
+   * `repoos upgrade` uses — so the dialog never tells a package-manager or
+   * source install to run a command that would not work for it.
+   */
+  installKind: InstallKind;
+  upgradeCommand: string;
 }
 
-function versionParts(version: string): [number, number, number] | null {
-  const match = version.trim().match(STABLE_VERSION);
-  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+/**
+ * The install detection shared by every `AvailableRelease` we return (#1073).
+ *
+ * The version passed here is the one in the *install's own* `.build-info.json`
+ * (`readInstallVersion`), not `readBuildMeta().version` — the latter falls back
+ * to `package.json`, so a bare source run and the CLI can otherwise disagree on
+ * the same checkout (#1073 review). `upgradeInstruction` also probes the install
+ * root structurally, so a built source checkout is never mistaken for a
+ * standalone install.
+ */
+interface InstallInfo {
+  installKind: InstallKind;
+  upgradeCommand: string;
+  /**
+   * The channel the banner must compare against: set only for a standalone
+   * channel install, the one case `repoos upgrade` follows a channel (see
+   * `cmdUpgrade`). Null means the stable latest release.
+   */
+  channel: string | null;
 }
 
-export function isStableRelease(release: { tag_name?: unknown; prerelease?: unknown }): boolean {
-  return (
-    release.prerelease !== true &&
-    typeof release.tag_name === "string" &&
-    versionParts(release.tag_name) !== null
-  );
+function installInfo(): InstallInfo {
+  const root = installRoot();
+  const version = readInstallVersion(root);
+  const channel = channelFromVersion(version);
+  const instruction = upgradeInstruction({ installRoot: root, version, channel });
+  return {
+    installKind: instruction.installKind,
+    upgradeCommand: instruction.command,
+    channel: instruction.installKind === "standalone" ? channel : null,
+  };
 }
 
-export function isNewerVersion(latest: string, current: string | null): boolean {
-  if (!latest || !isStableRelease({ tag_name: latest, prerelease: false })) return false;
-  if (!current) return false;
-  const compared = compareSemver(latest, current);
-  return compared !== null && compared > 0;
-}
+export { isNewerVersion, isStableRelease } from "../../core/release-version.js";
 
-async function fetchAvailableRelease(): Promise<AvailableRelease | null> {
+/**
+ * The newest release `repoos upgrade` would install for this install: the
+ * stable latest, or the newest build on the install's channel (the same
+ * lookup `cmdUpgrade` uses, so the banner and the command agree).
+ */
+async function fetchAvailableRelease(
+  install: InstallInfo,
+  config: RepoOSConfig,
+): Promise<AvailableRelease | null> {
   const currentVersion = readBuildMeta().version;
-  if (process.env.REPOOS_DISABLE_UPDATE_CHECK === "1") return null;
+  if (isUpdateCheckEnvDisabled() || !isUpdateCheckConfigEnabled(config)) return null;
   try {
-    const response = await fetch("https://api.github.com/repos/repo-os/repoos/releases/latest", {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "RepoOS update checker",
-      },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
-    const candidate = (await response.json()) as {
-      tag_name?: unknown;
-      prerelease?: unknown;
-      body?: unknown;
-      html_url?: unknown;
-    };
-    const latestVersion =
-      isStableRelease(candidate) && typeof candidate.tag_name === "string"
-        ? candidate.tag_name.replace(/^v/, "")
-        : null;
+    const candidate = await fetchLatestRelease(install.channel, AbortSignal.timeout(5000));
+    const mapped = availableReleaseFromGithub(install, candidate, currentVersion ?? "");
     return {
       currentVersion,
-      latestVersion,
-      available:
-        latestVersion !== null &&
-        currentVersion !== null &&
-        isNewerVersion(latestVersion, currentVersion),
+      latestVersion: mapped.latestVersion,
+      available: mapped.available,
       releaseNotes:
         typeof candidate.body === "string" && candidate.body.trim() ? candidate.body : null,
-      releaseUrl:
-        typeof candidate.html_url === "string"
-          ? candidate.html_url
-          : "https://github.com/repo-os/repoos/releases",
+      releaseUrl: mapped.releaseUrl,
+      installKind: install.installKind,
+      upgradeCommand: install.upgradeCommand,
     };
   } catch {
     return null;
   }
 }
 
-export const getAvailableRelease: RouteHandler = async (_ctx, _req, res) => {
+export const getAvailableRelease: RouteHandler = async (ctx, _req, res) => {
+  if (!isUpdateCheckConfigEnabled(ctx.config)) {
+    const install = installInfo();
+    return json(res, 200, {
+      currentVersion: readBuildMeta().version,
+      latestVersion: null,
+      available: false,
+      releaseNotes: null,
+      releaseUrl: "https://github.com/repo-os/repoos/releases",
+      installKind: install.installKind,
+      upgradeCommand: install.upgradeCommand,
+    });
+  }
   const now = Date.now();
   if (releaseCache && releaseCache.expiresAt > now) return json(res, 200, releaseCache.value);
+  const install = installInfo();
   const fallback: AvailableRelease = {
     currentVersion: readBuildMeta().version,
     latestVersion: null,
     available: false,
     releaseNotes: null,
     releaseUrl: "https://github.com/repo-os/repoos/releases",
+    installKind: install.installKind,
+    upgradeCommand: install.upgradeCommand,
   };
   if (releaseFailureUntil > now) return json(res, 200, fallback);
-  releaseRequest ??= fetchAvailableRelease().finally(() => {
+  releaseRequest ??= fetchAvailableRelease(install, ctx.config).finally(() => {
     releaseRequest = null;
   });
   const value = await releaseRequest;

@@ -1,6 +1,7 @@
 /**
  * Preview-only board fixtures driven by `?shotState=` on the capture URL (#0743).
  */
+import { ref } from "vue";
 import {
   SHOT_PREVIEW_FIXTURE_QUERY,
   SHOT_PREVIEW_FIXTURE_TASK_ID,
@@ -40,6 +41,26 @@ const DEBUG_LOGS_FIXTURE_MESSAGE =
  * history is a real API read and 404s for that id, which fails the handoff
  * console check (#1011).
  */
+/** Client-only task ids seeded by preview board/pipeline fixtures (never on the API). */
+export function isShotPreviewSeededTaskId(taskId: string): boolean {
+  if (taskId === SHOT_PREVIEW_FIXTURE_TASK_ID) return true;
+  if (taskId.startsWith("pipe-")) return true;
+  if (/^0980-\d+$/.test(taskId)) return true;
+  return false;
+}
+
+/**
+ * True while capture is rendering a client-seeded task. The store must not
+ * poll server-backed task endpoints for these ids or handoff UI verification
+ * records 404s (#0768, #1011).
+ */
+export function shotPreviewSkipsServerBackedTaskRecord(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  return isShotPreviewCaptureActive(location) && isShotPreviewSeededTaskId(taskId);
+}
+
 export function shotPreviewSkipsEngineeringReportsFetch(
   location: Pick<Location, "search">,
   taskId: string,
@@ -501,6 +522,7 @@ export function readShotPreviewFixtureFromLocation(
 const TASK_CHECK_PROGRESS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set([
   "checks:progress",
   "card:checksProgress",
+  "card:handoffStaleActive",
   "drawer:checksProgress",
   "pipeline:checksProgress",
 ]);
@@ -633,6 +655,69 @@ export function shotFixtureDevTargets(
     },
   ];
 }
+
+/**
+ * A deterministic "newer release available" payload for the
+ * `release:updateAvailable` capture fixture (#1073). The dialog only renders
+ * its upgrade command block when `available` is true, which the live preview
+ * board usually is not (the preview build tracks the version it was built
+ * from). Returns null for any other fixture, so the component keeps its real
+ * `/api/release/available` data. Also reports `standalone`, so the capture
+ * shows the plain `repoos upgrade` command the majority of users run.
+ */
+export interface ShotPreviewAvailableRelease {
+  currentVersion: string;
+  latestVersion: string;
+  available: boolean;
+  releaseNotes: string;
+  releaseUrl: string;
+  installKind: "standalone" | "source" | "package-manager";
+  upgradeCommand: string;
+}
+
+export function shotFixtureAvailableRelease(
+  fixture: ShotPreviewFixtureId | null,
+): ShotPreviewAvailableRelease | null {
+  if (fixture !== "release:updateAvailable") return null;
+  return {
+    currentVersion: "0.5.79",
+    latestVersion: "0.6.0",
+    available: true,
+    releaseNotes:
+      "## Highlights\n\n- Release update dialog now shows the upgrade command\n- The Copy button puts the exact command on your clipboard",
+    releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+    installKind: "standalone",
+    upgradeCommand: "repoos upgrade",
+  };
+}
+
+/**
+ * The release payload a `release:updateAvailable` fixture pinned (#1073), or
+ * null when none.
+ *
+ * `applyShotPreviewFixture` seeds this when the App applies the capture fixture,
+ * and the component reads it synchronously on mount. Without the pin the
+ * component had to out-race its own `/api/release/available` fetch (which
+ * reports no update on the preview build): the capture mounted before
+ * `/api/health` reported `isPreviewBuild`, the real payload landed first, and
+ * the fixture never rendered — the shot then showed the applied marker with no
+ * open dialog. A pin the component can read unconditionally removes the race.
+ * Only `applyShotPreviewFixture` writes it, and that runs solely on preview
+ * builds with `?shotState=` (plus tests).
+ */
+const pinnedAvailableRelease = ref<ShotPreviewAvailableRelease | null>(null);
+
+/** The fixture-pinned release payload, or null when nothing is pinned (#1073). */
+export function shotFixturePinnedAvailableRelease(): ShotPreviewAvailableRelease | null {
+  return pinnedAvailableRelease.value;
+}
+
+/**
+ * The reactive pin, so the update notification can open its dialog the moment
+ * the App applies the fixture — even though the component mounts before the
+ * App's own fixture pass runs (#1073).
+ */
+export const shotFixturePinnedAvailableReleaseRef = pinnedAvailableRelease;
 
 /**
  * Two deterministic schedules for the `agents:scheduledSeeded` capture fixture
@@ -877,6 +962,23 @@ function setNarrowDrawerWidth(): void {
   }
 }
 
+/**
+ * Drop every fixture pin. Called at the start of `applyShotPreviewFixture` (a
+ * fixture that seeds nothing must not inherit a previous fixture's pinned
+ * state) and by tests between mounts, since the pins are module-level.
+ */
+export function resetShotFixturePins(): void {
+  pinnedIntegration = null;
+  pinnedSystemStats = null;
+  pinnedCheckRuns = null;
+  pinnedTestCasesByRun = null;
+  pinnedRemoteStatus = null;
+  pinnedGitStatus = null;
+  pinnedWorkingDiff = null;
+  pinnedAvailableRelease.value = null;
+  for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
+}
+
 /** Apply a named fixture to the live board (preview builds only). */
 export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFixtureId): void {
   // #0866: record that the app actually applied the fixture, so a capture can
@@ -888,14 +990,7 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
   }
   // Reset first: a fixture that seeds no pipeline must not leave a previous
   // pin freezing the live snapshot (#0782).
-  pinnedIntegration = null;
-  pinnedSystemStats = null;
-  pinnedCheckRuns = null;
-  pinnedTestCasesByRun = null;
-  pinnedRemoteStatus = null;
-  pinnedGitStatus = null;
-  pinnedWorkingDiff = null;
-  for (const key of Object.keys(pinnedTaskRemoteActivity)) delete pinnedTaskRemoteActivity[key];
+  resetShotFixturePins();
   switch (fixture) {
     case "release:emailSent":
     case "release:emailFailed":
@@ -906,6 +1001,12 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "secrets:removeDialog":
       // SecretsView reads this registered fixture and seeds fake metadata
       // locally, without fetching a project's actual environment data.
+      break;
+    case "release:updateAvailable":
+      // #1073 — pin a newer-release payload so the update dialog opens with its
+      // upgrade command block. The preview build reports no update of its own,
+      // so the component reads this pin instead of racing its live fetch.
+      pinnedAvailableRelease.value = shotFixtureAvailableRelease(fixture);
       break;
     case "system:worktreeGc":
       repo.systemStats = {
@@ -1343,6 +1444,55 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         ],
         summary: { pass: 5, warn: 0, fail: 1 },
       });
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "validate",
+        attempt: 1,
+        progress: null,
+        updatedAt: new Date().toISOString(),
+        startedAt: new Date(Date.now() - 75 * 60_000).toISOString(),
+        machine: null,
+        stale: true,
+      };
+      break;
+    case "card:reviewLandableReady":
+      ensureFixtureTask(repo, "review", { title: "Review passed · ready to land" });
+      repo.reviews = {
+        ...repo.reviews,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            at: new Date().toISOString(),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "feat/shot-fixture",
+            state: "ok",
+            markdown: "## Verdict\ngood to go — nothing blocks sign-off.",
+          },
+        },
+      };
+      repo.seedLandable(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+        branch: "feat/shot-fixture",
+        headSha: "a".repeat(40),
+        lockSha: "a".repeat(40),
+        landable: true,
+        checks: [],
+        summary: { pass: 6, warn: 0, fail: 0 },
+      });
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "superseded",
+        step: "validate",
+        attempt: 1,
+        progress: null,
+        updatedAt: new Date().toISOString(),
+        machine: null,
+        reason: "task is already in review",
+      };
       break;
     case "board:pipeline": {
       // #1035 — one lane per stage plus the special states, so the Pipeline
@@ -1830,6 +1980,23 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       ];
       break;
     }
+    case "drawer:handoffWaiting":
+      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+      // A handoff waiting on a self-check that still holds the worktree (#1082).
+      // No check run is attached, so the drawer shows the wait in place of a step.
+      repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "commit";
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "commit",
+        startedAt: new Date(Date.now() - 90_000).toISOString(),
+        updatedAt: new Date().toISOString(),
+        attempt: 1,
+        progress: {
+          reason: "Waiting for the running check to finish",
+        } as unknown as TaskCheckRun,
+        machine: null,
+      };
+      break;
     case "drawer:statusConfirmingHandoff":
       ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
       repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "check";
@@ -2157,6 +2324,22 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "panel:defaultScreenshotPicker":
       useUiStore().openNewTask();
       break;
+    case "card:handoffStaleActive": {
+      applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
+      repo.runningIds = repo.runningIds.filter((id) => id !== SHOT_PREVIEW_FIXTURE_TASK_ID);
+      const startedAt = new Date(Date.now() - 45 * 60_000).toISOString();
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "validate",
+        startedAt,
+        updatedAt: new Date().toISOString(),
+        attempt: 1,
+        progress: null,
+        machine: "local",
+        stale: true,
+      };
+      break;
+    }
     case "drawer:checksProgress":
     case "card:checksProgress": {
       applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
@@ -2330,6 +2513,7 @@ export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boole
     fixture === "pages:scroll" ||
     fixture === "editor:unconfigured" ||
     fixture === "budget:paused" ||
+    fixture === "settings:motionOff" ||
     fixture in SETTINGS_FIXTURE_STYLE
   );
 }
@@ -2349,6 +2533,12 @@ export function applyShotPreviewConfigFixture(
     if (editor) editor.command = "";
     const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
     if (dev?.inspector) dev.inspector.editorCommand = "";
+    return;
+  }
+  if (fixture === "settings:motionOff") {
+    config.form.activityAnimationEnabled = false;
+    if (config.data) config.data.activityAnimationEnabled = false;
+    config.notifyExternalFormUpdate();
     return;
   }
   if (fixture === "budget:paused") {

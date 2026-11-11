@@ -1,0 +1,12 @@
+{
+  "taskId": "1072",
+  "round": 4,
+  "at": "2026-11-11T09:02:56.737Z",
+  "agent": "opencode",
+  "model": "deepinfra/deepseek-ai/DeepSeek-V4.1-Flash",
+  "branch": "feat/tell-users-when-a-newer-repoos-release-i",
+  "baseSha": "a873d52c3a48f97f9231429cf482f10b5bd2cf06",
+  "sourceSha": "af27c48695474975b806dbfc5d4d4439ca5237a8",
+  "wordCount": 282,
+  "markdown": "## TL;DR\nThe CLI now tells users when a newer RepoOS release exists: a one-line notice on stderr for interactive commands, from a cached background check that never slows or breaks a command, with an opt-out. This round wired the documented Retry-After backoff and made the shared cache write atomic.\n\n## Work and rationale\n`update-check.ts` keeps a small cache (latest version, channel, last notice time, backoff) refreshed by a detached child, so commands never wait on the network. The notice prints at most once per 24 hours, only on a TTY, never for help/version/upgrade/serve, and honours `REPOOS_DISABLE_UPDATE_CHECK`. Failures are cached, the cache is keyed by install channel, spawn errors and the passive hooks cannot fail a command, and a 403/429 backs off for 24 hours. Review 3 found that `Retry-After` was documented but unreachable and that the cache write could be seen truncated by a concurrent reader. `fetchLatestRelease` now throws a typed `UpdateCheckFetchError` carrying the status and the `Retry-After` delay (seconds or HTTP date), with a test, and `writeUpdateCheckCache` writes a temp file and renames it. Type check and 28 update-check tests pass.\n\n## Approaches tried\nChecking inline with a short timeout (rejected: slows commands), then a cached detached refresh with an exit-time notice, then channel keying and typed fetch errors.\n\n## Challenges and blockers\nThree review rounds on narrow edge cases of one class (shared cache races and documented-but-unwired behaviour). The engineer stalled after the Cursor outage, and the last round was finished by hand. The first handoffs failed on a missing report draft.\n\n## Key learnings\nWhen docs describe a behaviour, add a test that reaches it through the real code path, not a hand-built error. Write shared files atomically.\n\n## Generated change summary\n\nBase tree: `a873d52c3a48f97f9231429cf482f10b5bd2cf06`\nSource tree: `525b7a48dcfd3eb7af83e78f838219fae7d6d207`\n\n- M src/commands/upgrade.ts: +22 / −2\n- M src/core/update-check.test.ts: +19 / −0\n- M src/core/update-check.ts: +6 / −2"
+}
