@@ -154,3 +154,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T06:31:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T06:46:11Z · agent exited with an error (cursor) · handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`
 - 2026-11-11T06:58:33Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T06:58:33Z · message_queued at 2026-11-11T06:58:33.424Z
