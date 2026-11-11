@@ -38,6 +38,18 @@ describe("human task guide warning", () => {
     expect(humanTaskGuideWarning("human", HUMAN_TASK_SCAFFOLD)).toContain("still empty");
   });
 
+  it("does not treat a guide heading inside a fenced code sample as present (#1074)", () => {
+    const body = [
+      "## Problem",
+      "",
+      "```md",
+      "## Step-by-step guide",
+      "1. Only in the sample",
+      "```",
+    ].join("\n");
+    expect(humanTaskGuideWarning("human", body)).toContain("Missing");
+  });
+
   it("does not treat a guide heading inside a fenced block as present (#1074)", () => {
     const body = [
       "## Problem",

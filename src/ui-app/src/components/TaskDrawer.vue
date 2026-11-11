@@ -339,9 +339,11 @@ const selectableStatuses = computed(() => {
   );
 });
 const isHumanTask = computed(() => ui.active?.assignee === "human");
-const humanGuideWarning = computed(() =>
-  ui.active ? humanTaskGuideWarning(ui.active.assignee, ui.active.body) : null,
-);
+const humanGuideWarning = computed(() => {
+  if (!ui.active || ui.active.assignee !== "human") return null;
+  if (ui.active.status === "done" || ui.active.isArchived) return null;
+  return humanTaskGuideWarning(ui.active.assignee, ui.active.body);
+});
 /**
  * The status control must always name the current status (#1023): during a
  * close-out the selected item can be unmounted, and an empty trigger reads as

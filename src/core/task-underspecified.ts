@@ -1,5 +1,11 @@
 import { parseTaskAreas } from "./areas.js";
-import { hasHumanTaggedCriteria, humanTaggedCriteria, taggedCriteria } from "./human-step-tags.js";
+import {
+  HUMAN_SPLIT_GUIDE_PLACEHOLDER,
+  hasHumanTaggedCriteria,
+  humanTaggedCriteria,
+  taggedCriteria,
+} from "./human-step-tags.js";
+import { isMarkdownFenceClose } from "./markdown-fence.js";
 import {
   ACTIVITY_HEADING,
   ORIGINAL_PROMPT_HEADING,
@@ -12,15 +18,11 @@ import {
 export const HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER =
   "_Write numbered steps with exact commands or click paths, where to enter information and store secrets, what could go wrong, how to know each step worked, and what to report back._";
 
-/** Placeholder line in the human-step split task template (`human-step-tags.ts`). */
-export const HUMAN_SPLIT_GUIDE_PLACEHOLDER =
-  "_Write numbered steps with exact commands or click paths, where to enter information and store secrets (never in chat, task text or git), what can go wrong, how to tell each step worked, and what to report back._";
-
 const HUMAN_TASK_GUIDE_MISSING =
   "Missing ## Step-by-step guide — add numbered steps, exact commands or click paths, safe secret handling, success checks, and what to report back.";
 
 const HUMAN_TASK_GUIDE_UNFILLED =
-  "## Step-by-step guide is still empty — replace the placeholder with numbered steps, exact commands or click paths, safe secret handling, success checks, and what to report back.";
+  "## Step-by-step guide is still empty — add numbered steps (not bullets alone), exact commands or click paths, safe secret handling, success checks, and what to report back.";
 
 /** Machine-readable `needs_input_reason` when a task body looks like an unfinished stub. */
 export const UNDERSPECIFIED_NEEDS_INPUT_REASON = "underspecified";
@@ -75,7 +77,7 @@ function extractHumanTaskGuideSection(body: string): string | null {
     const line = lines[i]!;
     const trimmedStart = line.trimStart();
     if (fence) {
-      if (trimmedStart.startsWith(fence)) fence = null;
+      if (isMarkdownFenceClose(trimmedStart, fence)) fence = null;
       continue;
     }
     const fenceMatch = /^(`{3,}|~{3,})/.exec(trimmedStart);

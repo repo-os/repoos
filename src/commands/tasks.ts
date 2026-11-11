@@ -1279,6 +1279,8 @@ export async function cmdSplit(args: string[]): Promise<void> {
         c.dim(`#${result.source.id} — human steps → `) +
         c.cyan(`#${result.humanTask.id}`),
     );
+    const guideWarning = humanTaskGuideWarning(result.humanTask.assignee, result.humanTask.body);
+    if (guideWarning) console.log("  " + c.yellow("warning: ") + c.dim(guideWarning));
   } catch (err) {
     const message = err instanceof HumanStepSplitError ? err.message : (err as Error).message;
     console.error(c.red(`  ${message}`));

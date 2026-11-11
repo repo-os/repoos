@@ -3964,10 +3964,13 @@ export const taskAction: RouteHandler = async (ctx, req, res, params) => {
       logger.task(id, "info", "Split human-step acceptance criteria", {
         humanTaskId: result.humanTask.id,
       });
+      const human = index.getTask(result.humanTask.id) ?? result.humanTask;
+      const splitGuideWarning = humanTaskGuideWarning(human.assignee, human.body);
       return json(res, 200, {
         ok: true,
         task: index.getTask(result.source.id) ?? result.source,
-        humanTask: result.humanTask,
+        humanTask: human,
+        ...(splitGuideWarning ? { warning: splitGuideWarning } : {}),
       });
     } catch (err) {
       if (err instanceof HumanStepSplitError) return json(res, 400, { error: err.message });

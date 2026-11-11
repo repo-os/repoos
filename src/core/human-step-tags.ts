@@ -12,6 +12,10 @@ import { extractSection, replaceSection } from "./task.js";
 
 export type HumanStepTag = "human" | "ai";
 
+/** Italic prompt under `## Step-by-step guide` in split-off human tasks (#1074). */
+export const HUMAN_SPLIT_GUIDE_PLACEHOLDER =
+  "_Write numbered steps with exact commands or click paths, where to enter information and store secrets (never in chat, task text or git), what can go wrong, how to tell each step worked, and what to report back._";
+
 export interface TaggedCriterion {
   /** The criterion text with the tag removed. */
   text: string;
@@ -145,7 +149,7 @@ ${criteria}
 
 ## Step-by-step guide
 
-_Write numbered steps with exact commands or click paths, where to enter information and store secrets (never in chat, task text or git), what can go wrong, how to tell each step worked, and what to report back._
+${HUMAN_SPLIT_GUIDE_PLACEHOLDER}
 
 ## Notes for AI
 
