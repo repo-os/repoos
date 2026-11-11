@@ -12,11 +12,21 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-11T05:28:23Z"
-updated_at: "2026-11-11T05:28:24Z"
+updated_at: "2026-11-11T05:28:38Z"
 ---
-Follow-up from #1071. Add an end-to-end test that drives deliverCutReleaseEmail through the real sendEmail path with a fake Resend endpoint, asserting the From header and one message per recipient. Current tests use an injected fetchImpl and do not cover the sendEmail wiring.
+## Problem
+The release-email tests (#1071) inject a fake fetch and check the send loop, but nothing drives the real sendEmail wiring from a cut through to the Resend request. A regression in the From header or the request shape would pass the current suite.
+
+## Acceptance criteria
+1. One test runs deliverCutReleaseEmail through the real sendEmail path against a local fake Resend endpoint.
+2. It asserts the request shape, the From header and one message per recipient.
+3. It uses fake keys and sends no real mail.
+
+## Notes for AI
+See src/server/email.ts and src/server/release-email.ts. Do not put any real key in the test.
 
 ## Activity
 
 - 2026-11-11T05:28:23Z · created · njachowski@gmail.com
 - 2026-11-11T05:28:24Z · needs_input
+- 2026-11-11T05:28:38Z · body: Problem (added); Acceptance criteria (added); Notes for AI (added)
