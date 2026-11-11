@@ -5,6 +5,22 @@ pipeline from `release-history.json`; the newest entry is also the GitHub
 release body. The full discussion of each change lives in the release notes
 and on GitHub.
 
+## [v0.5.82] - 2026-11-11
+
+## Highlights
+
+- **Stuck "checks running" labels are gone.** A handoff record that outlived its check is now cleared or marked stale, so the task card, drawer and CLI show the real state and Move to done is no longer disabled by a leftover record. Checkpoint recovery after Move to done is now single-flight, and a pending delta review is no longer lost on a restart (#1085).
+- **A stale "a review is already running" marker no longer blocks reviews.** Every path that can end a review now clears its registration, a stale one is reaped, and board reads no longer do process probing for idle tasks (#1083).
+- **Task branches stop failing the scope check on bookkeeping that main legitimately has.** Handoff and sync restore or drop other tasks' work files so a branch only contains its own files, even when other tasks landed while it was open (#1086).
+- **Pipeline cards use the same activity animation as Board cards,** and animations pause when not visible (#1062).
+
+## Known issues
+
+- Remaining edge cases of the stale-record and review-marker fixes are tracked as follow-ups (#1087 and the notes in #1083 and #1085).
+- The shell swaps the loading skeleton for the page instantly; a smooth fade is planned (#1078).
+
+[Release on GitHub](https://github.com/repo-os/repoos/releases/tag/v0.5.82)
+
 ## [v0.5.81] - 2026-11-10
 
 ## Highlights

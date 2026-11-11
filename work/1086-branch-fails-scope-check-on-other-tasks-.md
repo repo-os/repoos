@@ -2,18 +2,22 @@
 id: "1086"
 title: Branch fails scope check on other tasks' bookkeeping that main legitimately has; sync does not bring it in (kamrai report)
 type: bug
-status: active
+status: done
 priority: p2
 area: [core, server]
+merged_commit: e24c3dbfd5db301e83c94a5c47f031aba86875a9
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T02:03:46Z"
+updated_at: "2026-11-11T04:06:10Z"
+last_close_out_gate_ms: 71374
+last_close_out_gate_at: "2026-11-11T03:41:41.443Z"
+review_passes: 3
 review_rounds: 2
-review_passes: 2
+dev_error_count: 1
 ---
 ## Problem
 Reported from a new RepoOS project (kamrai, on the mini, RepoOS v0.5.80). A task branch fails the scope check ("diff changes another task's bookkeeping") on files that already exist on main, and the engineer cannot fix it: each time they restore the files from main, the files come back as uncommitted changes (one modified, four untracked) and the committed branch still lacks them. `repoos landable` stays red with no code involved.
@@ -93,3 +97,26 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T02:03:46Z · status active→review
 - 2026-11-11T02:03:46Z · message_delivered: 3 message(s)
 - 2026-11-11T02:03:46Z · note: handoff requested (cli)
+- 2026-11-11T02:04:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T02:17:01Z · message_queued at 2026-11-11T02:17:01.622Z
+- 2026-11-11T02:17:01Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-11T02:19:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T02:26:36Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T02:26:36Z · message_queued at 2026-11-11T02:26:36.795Z
+- 2026-11-11T02:26:36Z · ↻ resuming engineer to read queued message
+- 2026-11-11T02:26:36Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T02:26:36Z · needs_input
+- 2026-11-11T02:26:37Z · message_delivered: 2 message(s)
+- 2026-11-11T02:39:44Z · message_queued at 2026-11-11T02:39:44.046Z
+- 2026-11-11T02:39:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T02:44:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T02:46:57Z · body
+- 2026-11-11T03:09:44Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T03:24:36Z · status active→review
+- 2026-11-11T03:24:36Z · note: Task body is underspecified: missing sections: Acceptance criteria, Notes for AI
+- 2026-11-11T03:24:36Z · message_queued at 2026-11-11T03:24:36.863Z
+- 2026-11-11T03:24:36Z · note: shots: skipped — the diff (20 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-11T03:28:33Z · note: review pass 3: good to go
+- 2026-11-11T03:41:41Z · close-out gate completed in 71s
+- 2026-11-11T03:41:56Z · status done→done, release:success
+- 2026-11-11T04:06:10Z · message_dropped: 1 queued message(s) discarded — task is done
