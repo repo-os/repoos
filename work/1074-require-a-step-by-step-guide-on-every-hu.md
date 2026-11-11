@@ -8,8 +8,9 @@ area: [core, agent]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/require-a-step-by-step-guide-on-every-hu
+cli_override: cursor
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T02:03:45Z"
+updated_at: "2026-11-11T02:18:39Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -57,3 +58,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-10T23:04:19Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T02:03:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T02:18:39Z · cli_override
