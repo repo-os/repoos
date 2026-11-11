@@ -2,14 +2,20 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T10:54:04Z"
+updated_at: "2026-11-11T13:28:48Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
+review_rounds: 2
+routing_switches: 1
+routing_escalations: 1
+review_passes: 2
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
@@ -47,4 +53,38 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T05:27:34Z · created · njachowski@gmail.com
 - 2026-11-11T10:20:39Z · status inbox→ready
 - 2026-11-11T10:20:42Z · status ready→active, branch
+- 2026-11-11T10:30:47Z · message_queued at 2026-11-11T10:30:47.779Z
+- 2026-11-11T10:30:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T10:35:47Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T10:54:04Z · status active→review
+- 2026-11-11T10:54:04Z · message_queued at 2026-11-11T10:54:04.241Z
+- 2026-11-11T10:54:04Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T10:55:25Z · note: review pass 1: needs some work
+- 2026-11-11T10:55:26Z · message_delivered: 1 message(s)
+- 2026-11-11T10:55:26Z · status review→active
+- 2026-11-11T11:06:36Z · engineer stopped by request
+- 2026-11-11T12:03:31Z · watchdog: auto-surfaced stuck task · status active→review · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-11T12:03:32Z · note: handoff requested (cli)
+- 2026-11-11T12:08:10Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T12:18:09Z · message_queued at 2026-11-11T12:18:09.412Z
+- 2026-11-11T12:18:09Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1091.md
+- 2026-11-11T12:18:09Z · message_delivered: 1 message(s)
+- 2026-11-11T12:28:10Z · message_queued at 2026-11-11T12:28:10.357Z
+- 2026-11-11T12:28:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T12:28:23Z · body
+- 2026-11-11T12:30:29Z · status active→review
+- 2026-11-11T12:30:32Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T12:32:51Z · message_queued at 2026-11-11T12:32:51.185Z
+- 2026-11-11T12:32:51Z · note: review pass 2: needs some work
+- 2026-11-11T12:32:53Z · message_delivered: 1 message(s)
+- 2026-11-11T12:32:53Z · status review→active
+- 2026-11-11T12:32:54Z · message_queued at 2026-11-11T12:32:54.190Z
+- 2026-11-11T12:32:56Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T12:46:21Z · body
+- 2026-11-11T13:01:52Z · body
+- 2026-11-11T13:13:10Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T13:22:30Z · body
+- 2026-11-11T13:28:46Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T13:28:46Z · message_queued at 2026-11-11T13:28:46.757Z
+- 2026-11-11T13:28:47Z · ↻ resuming engineer to read queued message
+- 2026-11-11T13:28:48Z · message_delivered: 2 message(s)
