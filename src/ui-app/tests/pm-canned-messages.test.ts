@@ -9,6 +9,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { nextTick } from "vue";
 import { createRouter, createMemoryHistory } from "vue-router";
 import TaskDrawer from "../src/components/TaskDrawer.vue";
+import { useConfigStore } from "../src/stores/config";
 import { useRepoStore } from "../src/stores/repo";
 import { useUiStore } from "../src/stores/ui";
 import type { Task } from "../src/types";
@@ -91,6 +92,9 @@ async function mountPmTab(task: Task): Promise<{ wrapper: VueWrapper; sent: stri
   stubFetch(sent);
   const pinia = createPinia();
   setActivePinia(pinia);
+  const config = useConfigStore();
+  config.loaded = true;
+  config.agents = [{ name: "pm", cli: "opencode", model: "default", enabled: true }];
   const router = createRouter({ history: createMemoryHistory(), routes: [] });
   await router.push("/");
   await router.isReady();
@@ -201,7 +205,10 @@ describe("canned PM messages above the compose box", () => {
     ui.activeTab = "details";
     await flush();
 
-    await wrapper.find(".questions-for-you-answer").trigger("click");
+    const answerBtn = wrapper.findAll("button").find((b) => b.text().includes("Answer in PM"));
+    expect(answerBtn).toBeDefined();
+    expect((answerBtn!.element as HTMLButtonElement).disabled).toBe(false);
+    await answerBtn!.trigger("click");
     await flush();
 
     expect(ui.activeTab).toBe("pm");
