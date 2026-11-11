@@ -90,3 +90,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T02:03:45Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-11T02:03:45Z · message_queued at 2026-11-11T02:03:45.976Z
 - 2026-11-11T02:03:46Z · ↻ resuming engineer to read queued message
+- 2026-11-11T02:03:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Fixing review round 2: aligning docs with heal/drop behavior, tightening scope filtering, and adding a sync-path test. · stderr: (empty)
