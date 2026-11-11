@@ -263,3 +263,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T19:33:12Z · needs_input
 - 2026-11-11T19:38:30Z · status review→active
 - 2026-11-11T19:38:32Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T19:39:08Z · note: handoff requested (cli)
