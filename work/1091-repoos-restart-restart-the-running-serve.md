@@ -2,7 +2,7 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — `restartCommand` now tells a down server's user to run `repoos restart`, which refuses when nothing is listening, so th…"
@@ -14,7 +14,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T22:16:16Z"
+updated_at: "2026-11-11T22:19:14Z"
 review_passes: 5
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -230,3 +230,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:16:16Z · message_queued at 2026-11-11T22:16:16.139Z
 - 2026-11-11T22:16:16Z · ↻ resuming engineer to read queued message
 - 2026-11-11T22:16:16Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The tests are actually running and passing. The scoped check is fully green. Let me do a final verification of the complete picture before handing off: confirm the diff scope, that no bare node/npm/npx was introduced, and that the worktree… · stderr: (empty)
+- 2026-11-11T22:19:14Z · status active→review
