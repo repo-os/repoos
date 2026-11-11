@@ -233,3 +233,4 @@ FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every 
 - 2026-11-11T09:49:40Z · note: handoff requested (cli)
 - 2026-11-11T09:53:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T10:12:13Z · message_queued at 2026-11-11T10:12:13.262Z
+- 2026-11-11T10:12:13Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
