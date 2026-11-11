@@ -11,7 +11,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T16:13:14Z"
+updated_at: "2026-11-11T16:13:33Z"
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -151,3 +151,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T16:08:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1091.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
 - 2026-11-11T16:08:18Z · note: handoff requested (cli)
 - 2026-11-11T16:13:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T16:13:33Z · message_queued at 2026-11-11T16:13:33.191Z
