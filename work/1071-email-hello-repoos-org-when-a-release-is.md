@@ -3,16 +3,13 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-emails-any-project-with-email-co
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T04:21:57Z"
+updated_at: "2026-11-11T04:41:42Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
@@ -160,3 +157,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T04:17:33Z · message_queued at 2026-11-11T04:17:33.511Z
 - 2026-11-11T04:21:55Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T04:21:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T04:41:42Z · needs_input
