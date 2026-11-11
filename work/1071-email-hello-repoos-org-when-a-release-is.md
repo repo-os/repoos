@@ -4,8 +4,8 @@ title: "Release emails: any project with email configured can email its team whe
 type: feature
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — code is sound, but acceptance 7's status-row capture is missing and the captures are stale for HEAD d498bd668."
 priority: p2
 area: [server, web, core]
 assigned_to: ai
