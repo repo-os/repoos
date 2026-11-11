@@ -164,3 +164,4 @@ FINAL (round 4, hand-finished): Retry-After is now wired (fetchLatestRelease thr
 - 2026-11-11T08:49:21Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T08:50:05Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T08:50:06Z · message_delivered: 1 message(s)
+- 2026-11-11T08:50:07Z · note: handoff requested (cli)
