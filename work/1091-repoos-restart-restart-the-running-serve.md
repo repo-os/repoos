@@ -177,3 +177,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T18:46:03Z · note: handoff requested (cli)
 - 2026-11-11T18:48:15Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T19:00:35Z · status active→review
+- 2026-11-11T19:00:35Z · message_queued at 2026-11-11T19:00:35.721Z
