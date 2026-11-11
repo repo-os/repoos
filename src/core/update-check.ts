@@ -33,8 +33,8 @@ export const UPDATE_CHECK_FAILURE_CACHE_MS = 60 * 1000;
  * Long backoff after a rate-limit response (403/429). Unauthenticated GitHub
  * allows 60 requests/hour per IP; retrying every 60s would keep the quota
  * exhausted, so back off for a full day (the same 24h the spec asks for). A
- * `Retry-After` header, when present, takes precedence (see
- * `updateCheckRetryAfterMs`).
+ * `Retry-After` value, when GitHub sends one, is honoured instead (see
+ * `updateCheckFailureBackoffMs`).
  */
 export const UPDATE_CHECK_RATE_LIMIT_CACHE_MS = UPDATE_CHECK_TTL_MS;
 export const UPDATE_CHECK_TIMEOUT_MS = 1500;
