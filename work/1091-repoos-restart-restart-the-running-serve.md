@@ -14,7 +14,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T22:51:11Z"
+updated_at: "2026-11-11T22:53:18Z"
 review_passes: 7
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -248,3 +248,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:50:04Z · status review→active
 - 2026-11-11T22:50:06Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T22:51:11Z · note: handoff requested (cli)
+- 2026-11-11T22:53:18Z · CTO nudge: held — handoff gate is running
