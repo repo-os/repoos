@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T08:49:21Z"
+updated_at: "2026-11-11T09:08:36Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -212,3 +212,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T08:49:04Z · message_delivered: 1 message(s)
 - 2026-11-11T08:49:09Z · note: handoff requested (cli)
 - 2026-11-11T08:49:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T09:08:36Z · message_queued at 2026-11-11T09:08:36.752Z
