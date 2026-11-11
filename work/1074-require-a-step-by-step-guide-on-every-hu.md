@@ -69,3 +69,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T02:49:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T02:49:45Z · message_delivered: 1 message(s)
 - 2026-11-11T02:59:44Z · message_queued at 2026-11-11T02:59:44.061Z
+- 2026-11-11T02:59:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
