@@ -1,6 +1,6 @@
 ---
-updated_at: "2026-11-11T23:05:42Z"
-review_passes: 8
+last_close_out_gate_ms: 200899
+last_close_out_gate_at: "2026-11-11T23:17:22.829Z"
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
@@ -13,6 +13,8 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
+updated_at: "2026-11-11T23:17:22Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -252,4 +254,5 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T23:02:55Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T23:05:42Z · note: review pass 8: good to go
 - 2026-11-11T23:05:42Z · needs_input
+- 2026-11-11T23:17:22Z · close-out gate completed in 201s
 
