@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T21:17:52Z"
+updated_at: "2026-11-11T21:17:53Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: check-fmt:check — Formatting failed — run `bun run fmt` to fix:"
 last_handoff_failure_sha: 6e68569cdbc78040106828753090228e88172c2f
 review_rounds: 1
@@ -93,3 +93,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:17:51Z · ↻ resuming engineer to read queued message
 - 2026-11-11T21:17:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **#1096 — Guard against huge/build-output files** Implementation covers the branch-artifact guard (checkpoint, `branch-artifacts` step, pre-commit, macOS docs), review fixes (fail-closed scan, checkpoint unstage ordering, staged blobs, etc… · stderr: (empty)
 - 2026-11-11T21:17:52Z · status active→review
+- 2026-11-11T21:17:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
