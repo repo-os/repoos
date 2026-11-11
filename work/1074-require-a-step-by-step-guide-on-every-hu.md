@@ -1,11 +1,10 @@
 ---
+updated_at: "2026-11-11T20:42:33Z"
+review_passes: 6
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
-status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `replaceSection`, `extractSection`, and `removeSection` regress on bodies with an unclosed code fence, a narrow but rea…"
+status: review
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -16,8 +15,6 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T20:18:17Z"
-review_passes: 5
 last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -276,3 +273,9 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T20:16:26Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T20:17:13Z · note: handoff requested (cli)
 - 2026-11-11T20:18:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T20:40:04Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T20:40:06Z · status active→review
+- 2026-11-11T20:40:06Z · message_queued at 2026-11-11T20:40:06.416Z
+- 2026-11-11T20:42:32Z · note: review pass 8: good to go
+- 2026-11-11T20:42:33Z · needs_input
+

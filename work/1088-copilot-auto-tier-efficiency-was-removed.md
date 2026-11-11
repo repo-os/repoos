@@ -2,10 +2,10 @@
 id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the engineer activity line still shows raw tier errors, and the tier message has a wrong path and a self-contradicting …"
+needs_input_detail: "`needs some work` — the engineer activity line can splice guidance into the wrong place when the assistant's last words contain \"stderr: \"."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,8 +14,8 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T20:54:19Z"
-review_passes: 3
+updated_at: "2026-11-11T21:02:14Z"
+review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 1
 dev_error_count: 6
@@ -141,4 +141,13 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T20:37:38Z · note: review pass 3: needs some work
 - 2026-11-11T20:37:39Z · needs_input
 - 2026-11-11T20:38:19Z · status review→active
+- 2026-11-11T20:38:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T20:39:12Z · note: handoff requested (cli)
+- 2026-11-11T20:40:10Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T20:54:17Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-11T20:54:19Z · status active→review
+- 2026-11-11T20:54:19Z · message_queued at 2026-11-11T20:54:19.784Z
+- 2026-11-11T20:55:51Z · note: review pass 4: needs some work
+- 2026-11-11T20:55:51Z · needs_input
+- 2026-11-11T20:55:51Z · needs_input
+- 2026-11-11T21:02:14Z · status review→active
