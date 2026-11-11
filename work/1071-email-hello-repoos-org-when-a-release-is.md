@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: e738f025d11cdaa88fd5509000a7d7b75dceacd6
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -14,8 +16,6 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
 updated_at: "2026-11-11T19:46:47Z"
-last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > uses one representative block while the gated collection is not loaded, tests/app-loading-skeleton.test.ts > repo loading skeleton > renders each skeleton kind from the real column or representative-block layout on thinkpad — fix it in the feature branch and re-run the gate"
-last_handoff_failure_sha: 27026587838fdfde40d67c7e32893fddf8ce0ef0
 review_passes: 6
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -294,3 +294,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T19:39:27Z · status active→review
 - 2026-11-11T19:46:47Z · message_queued at 2026-11-11T19:46:47.029Z
 - 2026-11-11T19:46:47Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
+
