@@ -15,8 +15,6 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
 updated_at: "2026-11-11T09:41:42Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
-last_handoff_failure_sha: 11cfcfbfc6a08796663f49d81db3b65a1cf720fe
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -225,3 +223,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T09:38:43Z · ↻ resuming engineer to read queued message
 - 2026-11-11T09:38:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **All checks passed** on the current tip `c963a9a0f` — including the two tests that flaked earlier (`handoff-unification.test.ts > ignores a marker left behind by an earlier turn` now passes in 8.77s, and `tests` overall is green). Both re… · stderr: (empty)
 - 2026-11-11T09:41:42Z · status active→review
+
