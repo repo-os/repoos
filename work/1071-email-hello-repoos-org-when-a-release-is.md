@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > uses one representative block while the gated collection is not loaded, tests/app-loading-skeleton.test.ts > repo loading skeleton > renders each skeleton kind from the real column or representative-block layout on thinkpad — fix it in the feature branch and re-run the gate"
+last_handoff_failure_sha: 27026587838fdfde40d67c7e32893fddf8ce0ef0
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -16,8 +18,6 @@ model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
 updated_at: "2026-11-11T19:02:15Z"
 review_passes: 6
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 4
@@ -277,3 +277,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T18:44:09Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T19:02:15Z · message_queued at 2026-11-11T19:02:15.573Z
 - 2026-11-11T19:02:15Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: tests/app-loading-skeleton.test.ts > repo loading skeleton > uses one representative block while the gated collection is not loaded, tests/app-loading-skeleton.test.ts > repo loading skeleton > renders each skeleton kind from the real column or representative-block layout on thinkpad — fix it in the feature branch and re-run the gate
+
