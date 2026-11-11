@@ -2,9 +2,10 @@
 id: "1062"
 title: Same activity animation on Pipeline cards as Board cards; pause animations when not visible
 type: chore
-status: review
+status: done
 priority: p2
 area: web
+merged_commit: 1b80838a6ec1b400da16ad0456b06b264123971e
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/same-activity-animation-on-pipeline-card
@@ -13,7 +14,9 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-10T20:03:26Z"
+updated_at: "2026-11-11T02:03:45Z"
+last_close_out_gate_ms: 930615
+last_close_out_gate_at: "2026-11-11T01:43:56.162Z"
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -275,3 +278,8 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T19:04:38Z · note: review pass 3: needs some work
 - 2026-11-10T19:07:44Z · note: ui verification passed: 3 of 3 shots captured with clean console (1 shot warning)
 - 2026-11-10T20:03:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T23:04:19Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T01:43:56Z · close-out gate completed in 931s
+- 2026-11-11T01:44:29Z · status done→done, release:success
+- 2026-11-11T02:03:45Z · message_dropped: 1 queued message(s) discarded — task is done

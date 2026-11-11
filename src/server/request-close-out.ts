@@ -296,6 +296,7 @@ export async function enqueueCloseOutForTask(
               reload,
               emitEvent,
               triggerJobProcessing,
+              runner,
             },
             task,
             integrity.checkpointOnlyDrift.approvedSha,

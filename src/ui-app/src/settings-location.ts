@@ -93,7 +93,12 @@ export function isGeneralSectionId(id: string): boolean {
  * the page renders that row under.
  */
 export function generalSectionForKey(key: string): string {
-  if (key === "activityAnimationStyle" || key === "activityAnimationSize") {
+  if (
+    key === "activityAnimationEnabled" ||
+    key === "activityAnimationStyle" ||
+    key === "activityAnimationSize" ||
+    key === "activityAnimationConcurrency"
+  ) {
     return "activity-animation";
   }
   if (key === "tunnelEnabled") return "publishing";
@@ -161,9 +166,11 @@ const GENERAL_EXCLUDED_KEYS = new Set([
   // General (#0659) that carries the availability explanation beside the
   // select, so it must not also auto-render as a plain General row.
   "storage.provider",
-  // Hand-rendered card with live preview (#0787, #0813).
+  // Hand-rendered card with live preview (#0787, #0813, #1062).
+  "activityAnimationEnabled",
   "activityAnimationStyle",
   "activityAnimationSize",
+  "activityAnimationConcurrency",
   // Dev targets have a dedicated hand-rendered card on Advanced (#0749); a
   // plain comma-separated General row cannot express the four fields.
   "dev.targets",
@@ -255,7 +262,12 @@ export function resolveSettingLocation(
     // Dedicated hand-rendered "Attachments" card on General (#0659).
     return { tab: "general", hasUiRow: true };
   }
-  if (key === "activityAnimationStyle" || key === "activityAnimationSize") {
+  if (
+    key === "activityAnimationEnabled" ||
+    key === "activityAnimationStyle" ||
+    key === "activityAnimationSize" ||
+    key === "activityAnimationConcurrency"
+  ) {
     return { tab: "general", hasUiRow: true };
   }
   if (key === "cto.actions") {

@@ -1748,11 +1748,14 @@ export async function cmdHandoffStatus(args: string[]): Promise<number> {
             ? c.yellow("running")
             : status.state === "deferred"
               ? c.yellow("deferred")
-              : c.dim("not requested");
+              : status.state === "superseded"
+                ? c.dim("superseded")
+                : c.dim("not requested");
     console.log(`  ${c.bold(`#${id}`)} handoff: ${label}`);
     if (status.step) console.log(`    step:   ${status.step}`);
     if (status.reason) console.log(`    reason: ${status.reason}`);
     if (status.updatedAt) console.log(`    at:     ${status.updatedAt}`);
+    if (status.stale && status.state === "running") console.log(`    stale:  yes`);
     if (status.state === "not_requested") {
       console.log(
         c.dim(

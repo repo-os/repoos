@@ -41,6 +41,26 @@ const DEBUG_LOGS_FIXTURE_MESSAGE =
  * history is a real API read and 404s for that id, which fails the handoff
  * console check (#1011).
  */
+/** Client-only task ids seeded by preview board/pipeline fixtures (never on the API). */
+export function isShotPreviewSeededTaskId(taskId: string): boolean {
+  if (taskId === SHOT_PREVIEW_FIXTURE_TASK_ID) return true;
+  if (taskId.startsWith("pipe-")) return true;
+  if (/^0980-\d+$/.test(taskId)) return true;
+  return false;
+}
+
+/**
+ * True while capture is rendering a client-seeded task. The store must not
+ * poll server-backed task endpoints for these ids or handoff UI verification
+ * records 404s (#0768, #1011).
+ */
+export function shotPreviewSkipsServerBackedTaskRecord(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  return isShotPreviewCaptureActive(location) && isShotPreviewSeededTaskId(taskId);
+}
+
 export function shotPreviewSkipsEngineeringReportsFetch(
   location: Pick<Location, "search">,
   taskId: string,
@@ -502,6 +522,7 @@ export function readShotPreviewFixtureFromLocation(
 const TASK_CHECK_PROGRESS_FIXTURES: ReadonlySet<ShotPreviewFixtureId> = new Set([
   "checks:progress",
   "card:checksProgress",
+  "card:handoffStaleActive",
   "drawer:checksProgress",
   "pipeline:checksProgress",
 ]);
@@ -1363,6 +1384,55 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
         ],
         summary: { pass: 5, warn: 0, fail: 1 },
       });
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "validate",
+        attempt: 1,
+        progress: null,
+        updatedAt: new Date().toISOString(),
+        startedAt: new Date(Date.now() - 75 * 60_000).toISOString(),
+        machine: null,
+        stale: true,
+      };
+      break;
+    case "card:reviewLandableReady":
+      ensureFixtureTask(repo, "review", { title: "Review passed · ready to land" });
+      repo.reviews = {
+        ...repo.reviews,
+        [SHOT_PREVIEW_FIXTURE_TASK_ID]: {
+          running: false,
+          enabled: true,
+          lines: [],
+          report: {
+            id: SHOT_PREVIEW_FIXTURE_TASK_ID,
+            at: new Date().toISOString(),
+            agent: "reviewer",
+            cli: "opencode",
+            model: "default",
+            branch: "feat/shot-fixture",
+            state: "ok",
+            markdown: "## Verdict\ngood to go — nothing blocks sign-off.",
+          },
+        },
+      };
+      repo.seedLandable(SHOT_PREVIEW_FIXTURE_TASK_ID, {
+        taskId: SHOT_PREVIEW_FIXTURE_TASK_ID,
+        branch: "feat/shot-fixture",
+        headSha: "a".repeat(40),
+        lockSha: "a".repeat(40),
+        landable: true,
+        checks: [],
+        summary: { pass: 6, warn: 0, fail: 0 },
+      });
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "superseded",
+        step: "validate",
+        attempt: 1,
+        progress: null,
+        updatedAt: new Date().toISOString(),
+        machine: null,
+        reason: "task is already in review",
+      };
       break;
     case "board:pipeline": {
       // #1035 — one lane per stage plus the special states, so the Pipeline
@@ -2194,6 +2264,22 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "panel:defaultScreenshotPicker":
       useUiStore().openNewTask();
       break;
+    case "card:handoffStaleActive": {
+      applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
+      repo.runningIds = repo.runningIds.filter((id) => id !== SHOT_PREVIEW_FIXTURE_TASK_ID);
+      const startedAt = new Date(Date.now() - 45 * 60_000).toISOString();
+      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+        state: "running",
+        step: "validate",
+        startedAt,
+        updatedAt: new Date().toISOString(),
+        attempt: 1,
+        progress: null,
+        machine: "local",
+        stale: true,
+      };
+      break;
+    }
     case "drawer:checksProgress":
     case "card:checksProgress": {
       applyShotPreviewFixture(repo, "drawer:statusChecksRunning");
@@ -2367,6 +2453,7 @@ export function isShotPreviewConfigFixture(fixture: ShotPreviewFixtureId): boole
     fixture === "pages:scroll" ||
     fixture === "editor:unconfigured" ||
     fixture === "budget:paused" ||
+    fixture === "settings:motionOff" ||
     fixture in SETTINGS_FIXTURE_STYLE
   );
 }
@@ -2386,6 +2473,12 @@ export function applyShotPreviewConfigFixture(
     if (editor) editor.command = "";
     const dev = data.dev as { inspector?: { editorCommand?: string } } | undefined;
     if (dev?.inspector) dev.inspector.editorCommand = "";
+    return;
+  }
+  if (fixture === "settings:motionOff") {
+    config.form.activityAnimationEnabled = false;
+    if (config.data) config.data.activityAnimationEnabled = false;
+    config.notifyExternalFormUpdate();
     return;
   }
   if (fixture === "budget:paused") {

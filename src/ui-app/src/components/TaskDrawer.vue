@@ -919,6 +919,7 @@ const cardChecksHeading = computed(() => {
       handoffStep: status?.step ?? repo.handoffSteps[task.id] ?? null,
       checkOutput: run?.output,
       slow,
+      stale: status?.stale,
       slotAgeMs: localCheckSlot.value?.ageMs ?? null,
     });
   }

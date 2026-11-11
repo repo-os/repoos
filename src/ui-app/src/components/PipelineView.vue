@@ -114,6 +114,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
       ? {
           handoffInFlight: repo.handoffInFlight(task.id),
           handoffState: handoffStatus?.state,
+          handoffStale: handoffStatus?.stale,
           handoffStep: handoffStatus?.step ?? repo.handoffSteps[task.id],
           handoffRequested: task.pendingHandoff === true,
           checkInFlight: runningCheck !== null || !!localCheckSlot,
@@ -347,6 +348,9 @@ function stageCells(stage: PipelineStage): string {
               :priority="lane.task.priority"
               :title="lane.task.title"
               :state="lane.model.state"
+              :pipeline-stage="lane.model.stage"
+              :review-running="lane.input.reviewRunning"
+              :closeout-active="lane.input.closeoutActive"
               :status-signals="lane.statusSignals"
               :step-label="lane.model.stepLabel"
               :chip-text="lane.chipText"

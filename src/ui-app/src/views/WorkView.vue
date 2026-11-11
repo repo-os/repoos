@@ -463,9 +463,9 @@ function openHeld(task: Task): void {
       <router-link to="/work" class="filter-clear">Show all statuses</router-link>
     </div>
 
-    <PipelineView v-if="effectiveView === 'pipeline'" />
+    <PipelineView v-show="effectiveView === 'pipeline'" />
 
-    <div v-else ref="boardEl" class="board">
+    <div v-show="effectiveView === 'board'" ref="boardEl" class="board">
       <template v-if="statusFilter">
         <BoardColumn
           :col="filterCol!"

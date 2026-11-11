@@ -191,7 +191,7 @@ const GROUPS: readonly CommandGroup[] = [
       {
         name: "handoff-status",
         usage: "handoff-status <id> [--json] [--port N]",
-        desc: "Non-blocking state of the latest handoff attempt: not requested, running, passed, failed or deferred (GET /api/tasks/:id/handoff-status)",
+        desc: "Non-blocking state of the latest handoff attempt: not requested, running, passed, failed, deferred or superseded (GET /api/tasks/:id/handoff-status)",
         flags: "--json · --port",
       },
       {
