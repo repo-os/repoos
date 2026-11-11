@@ -24,6 +24,7 @@ import {
   freshSessionId,
   HANDOFF_READY_SIGNAL,
   PREVIEW_REQUEST_SIGNAL,
+  oneShotFailureDetail,
   promptCommand,
   runPrompt,
 } from "../../server/agents";
@@ -307,12 +308,21 @@ describe("model-aware driver commands", () => {
   );
 
   it.each([
-    ["default", "efficiency"],
+    ["default", "balance"],
+    ["copilot-auto-efficiency", "balance"],
     ["copilot-auto-balance", "balance"],
     ["copilot-auto-intelligence", "intelligence"],
   ])("uses Copilot Auto %s tier", (model, tier) => {
     const command = promptCommand({ ...agent("github copilot"), model }, "ping");
     expect(command.args).toEqual(expect.arrayContaining(["--model", "auto", "--auto-tier", tier]));
+  });
+
+  it("maps a removed Copilot Auto tier failure to plain-English guidance", () => {
+    const raw =
+      "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence.";
+    expect(oneShotFailureDetail(raw, "")).toContain("Copilot Auto tier `efficiency`");
+    expect(oneShotFailureDetail(raw, "")).toMatch(/balance.*intelligence/i);
+    expect(oneShotFailureDetail(raw, "")).toContain("copilot-auto-efficiency");
   });
 
   it("keeps Copilot one-shot prompts as markdown for freeform task creation", () => {

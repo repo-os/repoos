@@ -171,8 +171,8 @@
         "cancellation"
       ],
       "verifiedAt": "2026-10-04",
-      "verificationSource": "repoos certify github copilot live probe \u2014 8/8 seams passed on 2026-10-04T11:40:49.760Z against binary /opt/homebrew/bin/copilot on model copilot-auto-efficiency",
-      "upgradeGuidance": "Install or update the GitHub Copilot CLI: run `copilot update` or reinstall from https://cli.github.com/",
+      "verificationSource": "repoos certify github copilot live probe \u2014 8/8 seams passed on 2026-10-04T11:40:49.760Z against binary /opt/homebrew/bin/copilot on model copilot-auto-efficiency (RepoOS now maps that id and default to --auto-tier balance; GitHub retired efficiency, #1088)",
+      "upgradeGuidance": "Install or update the GitHub Copilot CLI: run `copilot update` or reinstall from https://cli.github.com/. If Auto tier probes fail, pick Auto \u00b7 Balance or Auto \u00b7 Intelligence on the Agents page \u2014 tier ids are account-specific.",
       "officialUrl": "https://docs.github.com/en/copilot/github-copilot-in-the-cli"
     },
     {

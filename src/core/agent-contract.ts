@@ -23,6 +23,7 @@
  */
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { copilotAutoTierModelArgs } from "./copilot-auto-tier.js";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -689,11 +690,12 @@ const COPILOT_CONTRACT: ContractCommandTemplates = {
   version: () => ["version"],
   help: () => ["--help"],
   models: () => null,
-  // `copilot-auto-efficiency` is RepoOS's name for Copilot Auto's cheapest tier.
-  modelArgs: (model) =>
-    model === "copilot-auto-efficiency"
-      ? ["--model", "auto", "--auto-tier", "efficiency"]
-      : ["--model", model],
+  // `copilot-auto-efficiency` is a persisted alias; GitHub retired the efficiency tier (#1088).
+  modelArgs: (model) => {
+    const auto = copilotAutoTierModelArgs(model);
+    if (auto.length) return auto;
+    return ["--model", model];
+  },
   run: (_dir, prompt) => [
     "-p",
     prompt,

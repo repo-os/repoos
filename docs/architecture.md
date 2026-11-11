@@ -374,10 +374,14 @@ reviewer's built-in `rg` tool on a worktree path (#0625), failing the review.
 Their prompts still define the intended scope, but tool approval is not a
 read-only boundary: Copilot can run commands with the user's normal access.
 Copilot's live model listing is not yet a stable CLI interface, so the Agents
-page offers its three documented Auto tiers instead of guessing account-specific
-model IDs. `default` means `Auto · Efficiency`; Balance and Intelligence pass
-`--model auto --auto-tier <tier>`. A tier lets Copilot choose among models the
-account and policy permit.
+page offers its documented Auto tiers instead of guessing account-specific model
+IDs. `default` means `Auto · Balance` (the lowest-cost tier GitHub still exposes
+in common catalogs); Balance and Intelligence pass `--model auto --auto-tier
+<tier>`. The persisted id `copilot-auto-efficiency` is a legacy alias that maps
+to Balance — GitHub removed the CLI `efficiency` tier in late 2026. Valid tier
+ids are account-specific; when the CLI rejects a tier it may suggest replacements
+in the error text rather than listing a fixed catalog. A tier lets Copilot choose
+among models the account and policy permit.
 
 ## Cursor Agent CLI driver
 

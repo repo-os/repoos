@@ -17,6 +17,10 @@ import {
 } from "../core/agent-run-tmpdir.js";
 import { agentSilenceCountsAsStalled } from "../core/active-task-card.js";
 import {
+  copilotAutoTierModelArgs,
+  formatCopilotAutoTierFailure,
+} from "../core/copilot-auto-tier.js";
+import {
   patternKillWarning,
   processGroupKillSupported,
   reapAgentTurnProcessGroup,
@@ -3434,18 +3438,8 @@ export function resolveRepoGuide(config: RepoOSConfig): Agent | null {
  */
 function modelArgs(cli: string, model: string): string[] {
   if (cli === "github copilot") {
-    // Copilot Auto chooses an account-available model. Keep `default` as the
-    // persisted sentinel used across RepoOS, but make its Copilot meaning the
-    // least-expensive Auto tier rather than the CLI's opaque current default.
-    const tier =
-      model === "copilot-auto-balance"
-        ? "balance"
-        : model === "copilot-auto-intelligence"
-          ? "intelligence"
-          : model === "default" || !model
-            ? "efficiency"
-            : null;
-    if (tier) return ["--model", "auto", "--auto-tier", tier];
+    const auto = copilotAutoTierModelArgs(model);
+    if (auto.length) return auto;
   }
   if (!model || model === "default") return [];
   if (cli === "pi") {
@@ -5085,7 +5079,10 @@ export function extractOneShotReportText(cli: string, rawOutput: string): string
  */
 export function oneShotFailureDetail(stderr: string, output: string): string {
   const stderrText = stripAnsi(stderr).trim();
-  if (stderrText) return stderrText.split("\n").slice(-3).join(" ").trim();
+  if (stderrText) {
+    const fromStderr = stderrText.split("\n").slice(-3).join(" ").trim();
+    return formatCopilotAutoTierFailure(fromStderr) ?? fromStderr;
+  }
   const lines = stripAnsi(output)
     .trim()
     .split("\n")
@@ -5110,7 +5107,10 @@ export function oneShotFailureDetail(stderr: string, output: string): string {
         /error|unavailable|denied|fail|invalid/i.test(obj.message)
           ? obj.message
           : "");
-      if (err) return String(err).slice(0, 500);
+      if (err) {
+        const sliced = String(err).slice(0, 500);
+        return formatCopilotAutoTierFailure(sliced) ?? sliced;
+      }
     } catch {
       /* not JSON — keep scanning */
     }
@@ -5121,7 +5121,8 @@ export function oneShotFailureDetail(stderr: string, output: string): string {
     .find((line) =>
       /error|unavailable|denied|unauthori[sz]ed|rate limit|invalid|not found|no such/i.test(line),
     );
-  return (errLine ?? lines[lines.length - 1] ?? "").slice(0, 500);
+  const base = (errLine ?? lines[lines.length - 1] ?? "").slice(0, 500);
+  return formatCopilotAutoTierFailure(base) ?? base;
 }
 
 /**
