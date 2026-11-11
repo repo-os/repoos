@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-11T18:02:32.813Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
@@ -11,7 +9,9 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T18:02:32Z"
+updated_at: "2026-11-11T18:23:31Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-11T18:02:32.813Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -52,4 +52,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T17:33:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T18:02:25Z · message_queued at 2026-11-11T18:02:25.649Z
 - 2026-11-11T18:02:32Z · message_delivered: 1 message(s)
-
+- 2026-11-11T18:23:31Z · body
