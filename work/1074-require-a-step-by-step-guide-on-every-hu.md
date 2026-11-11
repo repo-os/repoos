@@ -1,6 +1,4 @@
 ---
-check_retry_count: 1
-last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -15,7 +13,9 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T10:35:55Z"
+updated_at: "2026-11-11T11:06:35Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 24cd8ae0c44f83a19a649951f763a90c6dac957b
 review_rounds: 2
@@ -194,4 +194,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T10:20:02Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T10:35:52Z · message_queued at 2026-11-11T10:35:52.358Z
 - 2026-11-11T10:35:55Z · message_delivered: 1 message(s)
-
+- 2026-11-11T11:06:35Z · engineer stopped by request
