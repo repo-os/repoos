@@ -32,6 +32,7 @@ import { homedir } from "node:os";
 import { basename, join, dirname, resolve } from "node:path";
 import { realpathSync } from "node:fs";
 import { loadConfig } from "./config.js";
+import { compiledCliEntry } from "./serve-lock-flags.js";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -214,8 +215,7 @@ export function repoosBinary(): { bin: string; needsCliEntry: boolean } {
   // If running from the source checkout (dist/ exists next to src/), use
   // process.execPath + the CLI entry directly. This covers the common dev
   // case where `repoos` is a bun link pointing at this repo's dist/.
-  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
-  const cliEntry = join(srcDir, "dist", "cli", "index.js");
+  const cliEntry = compiledCliEntry();
   if (existsSync(cliEntry)) {
     return { bin: process.execPath, needsCliEntry: true };
   }
@@ -232,12 +232,11 @@ function generatePlist(entry: ServiceEntry): string {
   // Derive the compiled entry point from this module's location
   // (src/core/service-manager.ts → ../../dist/cli/index.js) rather than
   // guessing from the binary path.
-  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
-  const cliEntry = join(srcDir, "dist", "cli", "index.js");
+  const cliEntry = compiledCliEntry();
   const programArgs = needsCliEntry
     ? [
         `<string>${xmlEscape(bin)}</string>`,
-        `<string>${xmlEscape(existsSync(cliEntry) ? cliEntry : join(srcDir, "cli", "index.js"))}</string>`,
+        `<string>${xmlEscape(cliEntry)}</string>`,
         `<string>serve</string>`,
         `<string>--port</string>`,
         `<string>${String(entry.port)}</string>`,
@@ -328,10 +327,9 @@ function systemdUnitPath(label: string): string {
 
 function generateUnit(entry: ServiceEntry): string {
   const { bin, needsCliEntry } = repoosBinary();
-  const srcDir = dirname(dirname(new URL(import.meta.url).pathname));
-  const cliEntry = join(srcDir, "dist", "cli", "index.js");
+  const cliEntry = compiledCliEntry();
   const execStart = needsCliEntry
-    ? `${bin} ${existsSync(cliEntry) ? cliEntry : join(srcDir, "cli", "index.js")} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`
+    ? `${bin} ${cliEntry} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`
     : `${bin} serve --port ${String(entry.port)} --host 127.0.0.1 --quiet`;
 
   // Always default.target for user units — multi-user.target is a system

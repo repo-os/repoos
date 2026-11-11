@@ -571,6 +571,33 @@ Prints the installed RepoOS version and build metadata.
 Stops this repo's server, identified by its own lockfile. It will not touch a
 server belonging to a different repo.
 
+### `repoos restart [--port N]`
+
+Restarts this repo's control-plane server the way it was started:
+
+- **`repoos service install`** — uses the managed service restart path (`repoos
+  service` semantics are unchanged).
+- **Hand-run `repoos serve`** — stops the recorded pid and starts a new
+  `repoos serve` on the same port, host and flags (the serve lock records the
+  restart-relevant flags).
+- **Externally supervised** (for example a hand-written launchd plist with
+  `KeepAlive`, or a systemd unit not installed by RepoOS) — signals the recorded
+  pid and waits for the supervisor to respawn it; no sudo when the process runs
+  as you.
+
+RepoOS identifies the supervisor from the live process (`launchctl list` on
+macOS, `systemctl status` on Linux) and only acts when it is sure: a launchd
+process whose label it cannot read is reported as unknown and refused, with the
+manual command to run, rather than guessed at.
+
+The command prints which path it took, warns when engineer agents were running
+before it stops the server, and reports success only after `/api/health` answers
+and the pid has changed — printing the old and new pid and version. If a
+supervisor does not respawn within the timeout it says so and prints the exact
+manual command instead of claiming success. It never touches another repo's
+server and refuses when the pid belongs to another user (it never escalates to
+sudo).
+
 ### `repoos servers [--json] [--prune]`
 
 Lists every control-plane `repoos serve` that registered itself under
@@ -591,8 +618,7 @@ tunnel, and git state.
 The `server` line names the *running server's* own RepoOS version and build
 (`v0.5.66 (build abc1234)`), and when that build differs from the installed CLI's
 it prints a warning — `server is older than the installed CLI … restart to pick
-up fixes` — with the command that restarts it (`repoos service restart` for a
-managed service, `repoos serve` for a hand-run process). The `build` line
+up fixes` — with `repoos restart`. The `build` line
 describes this checkout, so in a project repo it reads `no RepoOS build` rather
 than implying the repo is a RepoOS source checkout. `--json` exposes `cli` and
 `server.buildState` (`same`/`stale`/`unknown`) so scripts can detect a stale

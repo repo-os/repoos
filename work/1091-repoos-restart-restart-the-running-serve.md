@@ -2,20 +2,20 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `repoos restart` cannot find a server whose command line does not embed this repo's root, so a project repo on an insta…"
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 1a2a1574424db1670deab6c24efca90fd5c05573
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T22:26:55Z"
-review_passes: 6
+updated_at: "2026-11-11T23:18:26Z"
+last_close_out_gate_ms: 200899
+last_close_out_gate_at: "2026-11-11T23:17:22.829Z"
+review_passes: 8
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -238,3 +238,22 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:26:05Z · status review→active
 - 2026-11-11T22:26:07Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T22:26:55Z · note: handoff requested (cli)
+- 2026-11-11T22:27:03Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T22:47:41Z · status active→review
+- 2026-11-11T22:47:42Z · message_queued at 2026-11-11T22:47:42.112Z
+- 2026-11-11T22:47:42Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T22:49:36Z · note: review pass 7: needs some work
+- 2026-11-11T22:49:36Z · needs_input
+- 2026-11-11T22:49:36Z · needs_input
+- 2026-11-11T22:50:04Z · status review→active
+- 2026-11-11T22:50:06Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T22:51:11Z · note: handoff requested (cli)
+- 2026-11-11T22:53:18Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T23:02:54Z · status active→review
+- 2026-11-11T23:02:55Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T23:02:55Z · message_queued at 2026-11-11T23:02:55.212Z
+- 2026-11-11T23:02:55Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T23:05:42Z · note: review pass 8: good to go
+- 2026-11-11T23:05:42Z · needs_input
+- 2026-11-11T23:17:22Z · close-out gate completed in 201s
+- 2026-11-11T23:18:26Z · status done→done, release:success

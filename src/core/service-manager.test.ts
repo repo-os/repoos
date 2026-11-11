@@ -11,7 +11,7 @@ import {
 import { createServer } from "node:net";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import {
   restartCommand,
   serviceId,
@@ -26,6 +26,7 @@ import {
   repoosBinary,
   type ServiceEntry,
 } from "./service-manager.js";
+import { compiledCliEntry } from "./serve-lock-flags.js";
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -265,6 +266,24 @@ describe("repoosBinary", () => {
     fakeWhich(bin, "/usr/local/lib/node_modules/.bin/repoos");
     const result = repoosBinary();
     expect(result.needsCliEntry).toBe(false);
+  });
+
+  it("falls back to a real dist/cli/index.js when repoos is not on PATH (#1091)", () => {
+    // Regression: the no-PATH fallback must resolve to the compiled CLI entry,
+    // not `dist/dist/cli/index.js` — computing dirname(dirname(import.meta.url))
+    // from dist/core/ lands in dist/ and then joins a SECOND dist/. The shared
+    // `compiledCliEntry()` is dist/core-safe; this keeps every caller on it.
+    const bin = tmpDir("repoos-no-which-");
+    // A `which` that reports "not found" so the fallback branch is taken.
+    writeFileSync(join(bin, "which"), "#!/bin/sh\nexit 1\n");
+    chmodSync(join(bin, "which"), 0o755);
+    process.env.PATH = bin;
+    const result = repoosBinary();
+    expect(result.needsCliEntry).toBe(true);
+    expect(result.bin).toBe(process.execPath);
+    const entry = compiledCliEntry();
+    expect(existsSync(entry)).toBe(true);
+    expect(join(entry)).not.toContain(`dist${sep}dist`);
   });
 });
 

@@ -70,6 +70,15 @@ export const health: RouteHandler = (ctx, req, res) => {
     isPreviewBuild: process.env.REPOOS_PREVIEW_CHILD === "1",
     /** Live engineer turns (#0871). Registry entries carry the same count. */
     activeEngineers: ctx.runner.running().length,
+    // What a restart's stop will cancel (#1091) — the CLI warns with these so a
+    // real shutdown is never presented as the UI's in-flight-preserving reload.
+    // Reviews and previews are killed by a real shutdown; freeform runs and dev
+    // targets are durable-ish (re-adopted / restarted), but the count still
+    // names what the person is about to interrupt.
+    activeReviews: ctx.reviews.runningCount(),
+    activeFreeformRuns: ctx.freeformRuns.activeCount(),
+    activeDevTargets: ctx.devTargets?.activeCount() ?? 0,
+    activePreviews: ctx.previews.runningPreviews().length,
     copyInspectorAvailable: copyInspectorApiEnabled(ctx.config.root),
     canaryCounter: readCanaryCounter(ctx.config.root, ctx.config.cacheDir),
     canaryPath: canaryRelPath(ctx.config.cacheDir),

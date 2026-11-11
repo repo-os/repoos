@@ -2,18 +2,18 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the branch gate misses secrets added after a file's first commit, the allowlist can't cover files over 5 MiB, and zlib …"
+needs_input_detail: `needs some work` — secret scan misses gzip with trailing bytes; allowlist still fails above 5 MiB; refusals leave build output staged
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T23:11:34Z"
-review_passes: 4
+updated_at: "2026-11-11T23:26:16Z"
+review_passes: 5
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -122,4 +122,18 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T22:16:44Z · needs_input
 - 2026-11-11T22:16:45Z · needs_input
 - 2026-11-11T22:27:01Z · status review→active
+- 2026-11-11T22:27:03Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T22:28:51Z · note: handoff requested (cli)
+- 2026-11-11T22:33:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T22:38:11Z · message_queued at 2026-11-11T22:38:11.814Z
+- 2026-11-11T22:38:12Z · handoff failed · task-file handoff failed at check · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+- 2026-11-11T22:38:12Z · message_delivered: 3 message(s)
+- 2026-11-11T23:04:55Z · body
+- 2026-11-11T23:08:18Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T23:11:34Z · status active→review
+- 2026-11-11T23:11:35Z · message_queued at 2026-11-11T23:11:35.272Z
+- 2026-11-11T23:11:35Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-11T23:16:01Z · note: review pass 5: needs some work
+- 2026-11-11T23:16:01Z · needs_input
+- 2026-11-11T23:16:01Z · needs_input
+- 2026-11-11T23:26:16Z · status review→active

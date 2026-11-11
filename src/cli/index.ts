@@ -28,6 +28,7 @@ import { cmdChecks } from "../commands/checks.js";
 import { cmdShot } from "../commands/shot.js";
 import { cmdServe, serveProcessTitle, setServeProcessTitle } from "../commands/serve.js";
 import { cmdStop } from "../commands/stop.js";
+import { cmdRestart } from "../commands/restart.js";
 import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
 import { cmdUninstall } from "../commands/uninstall.js";
@@ -296,6 +297,9 @@ function main(): void {
       break;
     case "stop":
       cmdStop(rest);
+      break;
+    case "restart":
+      void cmdRestart(rest);
       break;
     case "service":
       void cmdService(rest);
