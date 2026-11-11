@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 8d251b33d5234a6344ed39242c2deb727cccf707
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -13,7 +11,9 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T06:58:47Z"
+updated_at: "2026-11-11T07:01:57Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: 8d251b33d5234a6344ed39242c2deb727cccf707
 review_passes: 3
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -186,4 +186,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T06:31:16Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T06:58:47Z · message_queued at 2026-11-11T06:58:47.736Z
 - 2026-11-11T06:58:47Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-11T07:01:57Z · CTO nudge: held — an undelivered message is already queued
