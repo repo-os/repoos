@@ -23,6 +23,7 @@ import type { DistributionConfig, DistributionKind, RepoOSConfig } from "../core
 export type DistributionState =
   | "matching"
   | "out-of-sync"
+  | "updating"
   | "unverified"
   | "unavailable"
   | "failed";
@@ -65,6 +66,12 @@ export interface DistributionSummary {
 
 /** How long a single registry lookup may take before it's abandoned. */
 export const DISTRIBUTION_TIMEOUT_MS = 5_000;
+
+/**
+ * After a successful run of the configured release workflow, a lagging Homebrew
+ * formula reads as **Updating** instead of **Out of sync** (#1090).
+ */
+export const DISTRIBUTION_HOMEBREW_GRACE_MS = 5 * 60 * 1000;
 
 export interface DistributionRelease {
   version: string | null;
@@ -249,48 +256,162 @@ async function resolveChannel(
   }
 }
 
-/** Public, credential-free lookup of a failed release workflow run for `tag`. */
-async function fetchCiFailure(
+const GITHUB_JSON_HEADERS = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": "RepoOS distribution check",
+} as const;
+
+type GithubWorkflowRun = {
+  id: number;
+  html_url: string;
+  conclusion: string | null;
+  status: string;
+  updated_at: string;
+};
+
+/** `.github/workflows/release.yml` → `release.yml` for the Actions workflows API. */
+export function releaseWorkflowBasename(workflowPath?: string): string | null {
+  const trimmed = workflowPath?.trim();
+  if (!trimmed) return null;
+  const base = trimmed.split("/").pop()?.trim();
+  return base || null;
+}
+
+/** `https://github.com/owner/tap/...` → `owner/tap`. */
+export function githubRepositoryFromUrl(url: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname !== "github.com") return null;
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    if (parts.length < 2) return null;
+    return `${parts[0]}/${parts[1]}`;
+  } catch {
+    return null;
+  }
+}
+
+async function listReleaseWorkflowRuns(
   repository: string,
+  workflowFile: string,
   tag: string,
   fetchImpl: typeof fetch,
   timeoutMs: number,
-): Promise<ReleaseCiFailure | null> {
-  const headers = {
-    Accept: "application/vnd.github+json",
-    "User-Agent": "RepoOS distribution check",
-  };
+): Promise<GithubWorkflowRun[]> {
   try {
     const runsRes = await fetchImpl(
-      `https://api.github.com/repos/${repository}/actions/runs?event=push&head_branch=${encodeURIComponent(tag)}&per_page=10`,
-      { headers, signal: AbortSignal.timeout(timeoutMs) },
+      `https://api.github.com/repos/${repository}/actions/workflows/${encodeURIComponent(workflowFile)}/runs?branch=${encodeURIComponent(tag)}&event=push&per_page=5`,
+      { headers: GITHUB_JSON_HEADERS, signal: AbortSignal.timeout(timeoutMs) },
     );
-    if (!runsRes.ok) return null;
-    const runs =
-      ((await runsRes.json()) as { workflow_runs?: Record<string, unknown>[] }).workflow_runs ?? [];
-    const failed = runs.find((r) => r.conclusion === "failure" || r.conclusion === "timed_out");
-    if (!failed || typeof failed.html_url !== "string") return null;
-    const result: ReleaseCiFailure = { runUrl: failed.html_url, failedStep: null, jobName: null };
+    if (!runsRes.ok) return [];
+    const runs = ((await runsRes.json()) as { workflow_runs?: GithubWorkflowRun[] }).workflow_runs;
+    return runs ?? [];
+  } catch {
+    return [];
+  }
+}
+
+async function failedStepForRun(
+  repository: string,
+  run: GithubWorkflowRun,
+  fetchImpl: typeof fetch,
+  timeoutMs: number,
+): Promise<ReleaseCiFailure> {
+  const result: ReleaseCiFailure = { runUrl: run.html_url, failedStep: null, jobName: null };
+  try {
     const jobsRes = await fetchImpl(
-      `https://api.github.com/repos/${repository}/actions/runs/${failed.id}/jobs`,
-      { headers, signal: AbortSignal.timeout(timeoutMs) },
+      `https://api.github.com/repos/${repository}/actions/runs/${run.id}/jobs`,
+      { headers: GITHUB_JSON_HEADERS, signal: AbortSignal.timeout(timeoutMs) },
     );
-    if (jobsRes.ok) {
-      const jobs = ((await jobsRes.json()) as { jobs?: Record<string, any>[] }).jobs ?? [];
-      for (const job of jobs) {
-        const step = (job.steps ?? []).find(
-          (st: { conclusion?: string }) => st.conclusion === "failure",
-        );
-        if (step) {
-          result.jobName = String(job.name);
-          result.failedStep = String(step.name);
-          break;
-        }
+    if (!jobsRes.ok) return result;
+    const jobs = ((await jobsRes.json()) as { jobs?: Record<string, any>[] }).jobs ?? [];
+    for (const job of jobs) {
+      const step = (job.steps ?? []).find(
+        (st: { conclusion?: string }) => st.conclusion === "failure",
+      );
+      if (step) {
+        result.jobName = String(job.name);
+        result.failedStep = String(step.name);
+        break;
       }
     }
-    return result;
   } catch {
-    return null;
+    /* best effort */
+  }
+  return result;
+}
+
+/**
+ * Inspect only the configured release workflow's latest run for `tag` — unrelated
+ * workflows that also trigger on the tag never count (#1090).
+ */
+async function inspectReleaseWorkflow(
+  repository: string,
+  workflowFile: string,
+  tag: string,
+  fetchImpl: typeof fetch,
+  timeoutMs: number,
+): Promise<{ ciFailure: ReleaseCiFailure | null; succeededAt: number | null }> {
+  const runs = await listReleaseWorkflowRuns(repository, workflowFile, tag, fetchImpl, timeoutMs);
+  if (!runs.length) return { ciFailure: null, succeededAt: null };
+  const latest = runs[0]!;
+  if (latest.conclusion === "success") {
+    const parsed = Date.parse(latest.updated_at);
+    return {
+      ciFailure: null,
+      succeededAt: Number.isFinite(parsed) ? parsed : null,
+    };
+  }
+  if (latest.conclusion === "failure" || latest.conclusion === "timed_out") {
+    return {
+      ciFailure: await failedStepForRun(repository, latest, fetchImpl, timeoutMs),
+      succeededAt: null,
+    };
+  }
+  return { ciFailure: null, succeededAt: null };
+}
+
+const TAP_ACTIVE_STATUSES = new Set(["in_progress", "queued", "waiting", "requested", "pending"]);
+
+async function homebrewTapUpdateInProgress(
+  tapRepository: string,
+  fetchImpl: typeof fetch,
+  timeoutMs: number,
+): Promise<boolean> {
+  try {
+    const res = await fetchImpl(
+      `https://api.github.com/repos/${tapRepository}/actions/runs?per_page=10`,
+      { headers: GITHUB_JSON_HEADERS, signal: AbortSignal.timeout(timeoutMs) },
+    );
+    if (!res.ok) return false;
+    const runs =
+      ((await res.json()) as { workflow_runs?: { status?: string }[] }).workflow_runs ?? [];
+    return runs.some((run) => typeof run.status === "string" && TAP_ACTIVE_STATUSES.has(run.status));
+  } catch {
+    return false;
+  }
+}
+
+function applyHomebrewUpdatingState(
+  channels: DistributionChannel[],
+  configured: DistributionConfig[],
+  releaseSucceededAt: number | null,
+  tapInProgressByRepo: ReadonlyMap<string, boolean>,
+  nowMs: number,
+): void {
+  const inGrace =
+    releaseSucceededAt !== null && nowMs - releaseSucceededAt < DISTRIBUTION_HOMEBREW_GRACE_MS;
+  for (let i = 0; i < channels.length; i++) {
+    const channel = channels[i]!;
+    const cfg = configured[i]!;
+    if (cfg.kind !== "homebrew" || channel.state !== "out-of-sync") continue;
+    const tapRepo = githubRepositoryFromUrl(channel.url ?? cfg.url);
+    const tapBusy = tapRepo ? (tapInProgressByRepo.get(tapRepo) ?? false) : false;
+    if (!inGrace && !tapBusy) continue;
+    channel.state = "updating";
+    channel.detail = tapBusy
+      ? "The Homebrew tap workflow is still running."
+      : "The formula usually catches up within a few minutes after release.";
   }
 }
 
@@ -304,6 +425,7 @@ export async function getDistributionStatus(
   release: DistributionRelease | null,
   fetchImpl: typeof fetch = fetch,
   timeoutMs: number = DISTRIBUTION_TIMEOUT_MS,
+  options?: { nowMs?: number },
 ): Promise<DistributionSummary> {
   const configured = config.distribution ?? [];
   const summary: DistributionSummary = {
@@ -316,8 +438,51 @@ export async function getDistributionStatus(
     configured.map((channel) => resolveChannel(channel, release, fetchImpl, timeoutMs)),
   );
   const repository = config.release?.repository;
-  if (repository && release?.tag && summary.channels.some((c) => c.state !== "matching")) {
-    summary.ciFailure = await fetchCiFailure(repository, release.tag, fetchImpl, timeoutMs);
+  const tag = release?.tag;
+  const workflowFile = releaseWorkflowBasename(config.release?.workflow);
+  const needsCiContext =
+    repository &&
+    tag &&
+    workflowFile &&
+    summary.channels.some((c) => c.state !== "matching");
+  let releaseSucceededAt: number | null = null;
+  if (needsCiContext) {
+    const inspected = await inspectReleaseWorkflow(
+      repository,
+      workflowFile,
+      tag,
+      fetchImpl,
+      timeoutMs,
+    );
+    summary.ciFailure = inspected.ciFailure;
+    releaseSucceededAt = inspected.succeededAt;
   }
+  const nowMs = options?.nowMs ?? Date.now();
+  const tapRepos = new Set<string>();
+  for (let i = 0; i < summary.channels.length; i++) {
+    const channel = summary.channels[i]!;
+    const cfg = configured[i]!;
+    if (cfg.kind !== "homebrew" || channel.state !== "out-of-sync") continue;
+    const tapRepo = githubRepositoryFromUrl(channel.url ?? cfg.url);
+    if (tapRepo) tapRepos.add(tapRepo);
+  }
+  const tapInProgressByRepo = new Map<string, boolean>();
+  if (tapRepos.size) {
+    await Promise.all(
+      [...tapRepos].map(async (repo) => {
+        tapInProgressByRepo.set(
+          repo,
+          await homebrewTapUpdateInProgress(repo, fetchImpl, timeoutMs),
+        );
+      }),
+    );
+  }
+  applyHomebrewUpdatingState(
+    summary.channels,
+    configured,
+    releaseSucceededAt,
+    tapInProgressByRepo,
+    nowMs,
+  );
   return summary;
 }

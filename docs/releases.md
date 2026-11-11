@@ -427,15 +427,25 @@ its install commands, just with an **Unverified** status — RepoOS never claims
 a version it couldn't read. A `404` is **Not published yet**; a fetch/timeout
 failure is **Check failed**. When the release being viewed has a version, a
 channel at the same version reads **Up to date**, and any other version reads
-**Out of sync** with both versions shown. All of this is computed for the UI
-only: it is never a prerequisite for viewing releases, and no token, registry
-secret or repository credential is ever sent to the browser. The initial
-check is a snapshot: publishing CI can finish before a registry or CDN makes
-the package available. RepoOS re-checks destinations when its local tag push
-finishes, and the operator can use **Check again** on the Releases page while
-downstream destinations catch up. Treat a few minutes of propagation as
+**Out of sync** with both versions shown. A Homebrew row that is still catching
+up after a successful release — or while the tap's own update workflow is still
+running — reads **Updating** instead, for a few minutes after the configured
+release workflow (the `release.workflow` path, typically
+`.github/workflows/release.yml`) finishes successfully. All of this is computed
+for the UI only: it is never a prerequisite for viewing releases, and no token,
+registry secret or repository credential is ever sent to the browser. The
+initial check is a snapshot: publishing CI can finish before a registry or CDN
+makes the package available. RepoOS re-checks destinations when its local tag
+push finishes, and the operator can use **Check again** on the Releases page
+while downstream destinations catch up. Treat a few minutes of propagation as
 normal; a channel is not a release failure merely because it has not updated
 yet.
+
+When at least one channel is out of sync, RepoOS may show a **release workflow
+failed** banner. It refers **only** to the latest run of the configured
+`release.workflow` file for the tag being viewed — not to other workflows that
+also trigger on tag pushes (adoption matrix, ordinary CI, and so on). Unrelated
+failures never produce that banner.
 
 ## API
 
