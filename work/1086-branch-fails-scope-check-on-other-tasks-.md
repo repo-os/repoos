@@ -92,3 +92,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T02:03:46Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Fixing review round 2: aligning docs with heal/drop behavior, tightening scope filtering, and adding a sync-path test. · stderr: (empty)
 - 2026-11-11T02:03:46Z · status active→review
 - 2026-11-11T02:03:46Z · message_delivered: 3 message(s)
+- 2026-11-11T02:03:46Z · note: handoff requested (cli)
