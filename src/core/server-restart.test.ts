@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { pidOwnership, restartRepoServer, waitForServerRestart } from "./server-restart.js";
+import {
+  pidOwnership,
+  restartRepoServer,
+  waitForServerRestart,
+  type RestartRepoServerOptions,
+} from "./server-restart.js";
 import type { LocatedServer } from "./server-locate.js";
 
 function server(over: Partial<LocatedServer> = {}): LocatedServer {
@@ -14,6 +19,20 @@ function server(over: Partial<LocatedServer> = {}): LocatedServer {
   };
 }
 
+/** Zeroed in-flight work so tests never make a real /api/health call. */
+const noWork = {
+  engineers: 0,
+  reviews: 0,
+  freeformRuns: 0,
+  devTargets: 0,
+  previews: 0,
+};
+
+/** `restartRepoServer` with a hermetic `cancelledWork` probe unless overridden. */
+function restart(root: string, opts: RestartRepoServerOptions = {}) {
+  return restartRepoServer(root, { cancelledWork: async () => noWork, ...opts });
+}
+
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -22,7 +41,7 @@ describe("restartRepoServer", () => {
   const root = "/projects/demo";
 
   it("refuses when server belongs to another user", async () => {
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 42 }),
       verifyPid: () => true,
       ownership: () => ({ uid: 999, canSignal: false, otherUser: true }),
@@ -31,9 +50,9 @@ describe("restartRepoServer", () => {
     expect(result.message).toMatch(/another user/i);
   });
 
-  it("warns before stop when engineers are active", async () => {
+  it("warns with the full set of in-flight work before stop", async () => {
     const warned = vi.fn();
-    await restartRepoServer(root, {
+    await restart(root, {
       locate: async () => server({ pid: 10 }),
       verifyPid: () => true,
       classify: async () => "managed-service",
@@ -44,15 +63,25 @@ describe("restartRepoServer", () => {
         serverVersion: "0.5.80",
         activeEngineers: 2,
       }),
+      cancelledWork: async () => ({
+        engineers: 2,
+        reviews: 1,
+        freeformRuns: 0,
+        devTargets: 0,
+        previews: 3,
+      }),
       restartManaged: async () => ({ ok: true }),
       wait: async () => ({ ok: true, pid: 11, version: "0.5.82" }),
       onBeforeStop: warned,
     });
-    expect(warned).toHaveBeenCalledWith({ activeEngineers: 2, path: "managed-service" });
+    expect(warned).toHaveBeenCalledWith({
+      cancelled: { engineers: 2, reviews: 1, freeformRuns: 0, devTargets: 0, previews: 3 },
+      path: "managed-service",
+    });
   });
 
   it("managed-service restart succeeds when health returns a new pid", async () => {
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 20 }),
       classify: async () => "managed-service",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -73,7 +102,7 @@ describe("restartRepoServer", () => {
 
   it("external-supervisor success reports the new pid after the supervisor respawns", async () => {
     const stop = vi.fn();
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 31 }),
       classify: async () => "external-supervisor",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -90,7 +119,7 @@ describe("restartRepoServer", () => {
 
   it("an uncertain supervisor refuses and says kill only stops the server", async () => {
     const stop = vi.fn();
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 33 }),
       classify: async () => "refuse-supervised-unknown",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -100,11 +129,11 @@ describe("restartRepoServer", () => {
     });
     expect(result.ok).toBe(false);
     expect(stop).not.toHaveBeenCalled();
-    expect(result.manualCommand).toMatch(/stays down|stops it/);
+    expect(result.manualCommand).toMatch(/stop it, then start it again/);
   });
 
   it("external-supervisor reports manual command when respawn times out", async () => {
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 30 }),
       classify: async () => "external-supervisor",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -134,7 +163,7 @@ describe("restartRepoServer", () => {
   });
 
   it("hand-run succeeds when spawn and health return a new pid", async () => {
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 50, serveFlags: ["--preview-overrides"] }),
       classify: async () => "hand-run",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -156,7 +185,7 @@ describe("restartRepoServer", () => {
   });
 
   it("hand-run fails cleanly when spawn fails after stop", async () => {
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 40 }),
       classify: async () => "hand-run",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -176,7 +205,7 @@ describe("restartRepoServer", () => {
   });
 
   it("refuses an uncertain supervisor and prints a manual command", async () => {
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 60 }),
       classify: async () => "refuse-supervised-unknown",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -191,12 +220,12 @@ describe("restartRepoServer", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.oldPid).toBe(60);
-    expect(result.manualCommand).toMatch(/^kill 60 /);
+    expect(result.manualCommand).toMatch(/kill 60 /);
   });
 
   it("hand-run aborts before spawning when the old pid will not exit", async () => {
     const spawn = vi.fn(() => ({ ok: true }) as const);
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 70 }),
       classify: async () => "hand-run",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -218,7 +247,7 @@ describe("restartRepoServer", () => {
 
   it("keeps the old flags when restarting a hand-run server", async () => {
     let spawnedFlags: readonly string[] = [];
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 80, serveFlags: ["--preview-overrides"] }),
       classify: async () => "hand-run",
       ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
@@ -243,7 +272,7 @@ describe("restartRepoServer", () => {
 
   it("refuses to signal a pid that does not verify, even when /api/health answers", async () => {
     const stop = vi.fn();
-    const result = await restartRepoServer(root, {
+    const result = await restart(root, {
       locate: async () => server({ pid: 77 }),
       verifyPid: () => false,
       classify: async () => "hand-run",
@@ -253,6 +282,35 @@ describe("restartRepoServer", () => {
     });
     expect(result.ok).toBe(false);
     expect(stop).not.toHaveBeenCalled();
+  });
+
+  it("reports the cancelled in-flight work on a successful restart", async () => {
+    const result = await restart(root, {
+      locate: async () => server({ pid: 90 }),
+      classify: async () => "hand-run",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({ ok: true, root, serverVersion: "0.5.80", activeEngineers: 1 }),
+      cancelledWork: async () => ({
+        engineers: 1,
+        reviews: 2,
+        freeformRuns: 0,
+        devTargets: 1,
+        previews: 3,
+      }),
+      stop: () => {},
+      waitPidGone: async () => true,
+      spawn: () => ({ ok: true }),
+      verifyPid: () => true,
+      wait: async () => ({ ok: true, pid: 91, version: "0.5.82" }),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.cancelled).toEqual({
+      engineers: 1,
+      reviews: 2,
+      freeformRuns: 0,
+      devTargets: 1,
+      previews: 3,
+    });
   });
 });
 

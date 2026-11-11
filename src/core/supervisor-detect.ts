@@ -277,6 +277,15 @@ function detectDarwinSupervisor(
       };
     }
   }
+  // A pid we could not read the parent of is NOT confidently hand-run: `ps`
+  // could have failed for any reason (permissions, timing). Refuse rather than
+  // SIGTERM a process whose manager we cannot rule out (#1091 review pass 4).
+  if (ppid === null) {
+    return {
+      kind: "uncertain",
+      reason: `pid ${pid} has no \`launchctl list\` row and its parent could not be read — refusing to guess how it is supervised`,
+    };
+  }
   return { kind: "none" };
 }
 

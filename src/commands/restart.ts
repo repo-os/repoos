@@ -31,20 +31,34 @@ export async function cmdRestart(argv: string[]): Promise<void> {
   const { root } = boardRoot();
   const result = await restartRepoServer(root, {
     portFilter,
-    onBeforeStop: ({ activeEngineers }) => {
-      // A stop is a real shutdown, not the UI's reload handover: in-flight
-      // reviews, PM/freeform runs, previews and dev targets are cancelled too.
-      console.log(
-        c.yellow(
-          "  ⚠ Restarting cancels any in-flight reviews, PM runs, previews and dev targets (the UI's reload keeps them).",
-        ),
-      );
-      if (activeEngineers > 0) {
+    onBeforeStop: ({ cancelled }) => {
+      // A stop is a real shutdown, not the UI's reload handover. Be specific
+      // about what it interrupts rather than a blanket warning: reviews are
+      // killed and re-spawned by recovery, previews/dev targets stop and are
+      // restarted on demand, and engineer/PM children are durable and re-adopted.
+      const killed: string[] = [];
+      const resumed: string[] = [];
+      if (cancelled.reviews > 0) killed.push(`${cancelled.reviews} in-flight review(s)`);
+      if (cancelled.previews > 0) killed.push(`${cancelled.previews} preview(s)`);
+      if (cancelled.engineers > 0) resumed.push(`${cancelled.engineers} engineer agent(s)`);
+      if (cancelled.freeformRuns > 0) resumed.push(`${cancelled.freeformRuns} PM run(s)`);
+      if (cancelled.devTargets > 0) resumed.push(`${cancelled.devTargets} dev target(s)`);
+      if (killed.length > 0) {
         console.log(
           c.yellow(
-            `  ⚠ ${activeEngineers} engineer agent(s) are running — restarting will interrupt them briefly until the new server is up.`,
+            `  ⚠ Restarting stops ${killed.join(" and ")} — reviews are re-spawned by recovery, previews restart on demand.`,
           ),
         );
+      }
+      if (resumed.length > 0) {
+        console.log(
+          c.yellow(
+            `  ⚠ ${resumed.join(", ")} will be interrupted briefly (durable; the new server re-adopts them).`,
+          ),
+        );
+      }
+      if (killed.length === 0 && resumed.length === 0) {
+        console.log(c.dim("  ⚠ Restarting with no in-flight reviews, previews, agents or dev targets."));
       }
     },
   });

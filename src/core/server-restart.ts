@@ -32,6 +32,68 @@ export interface HealthSnapshot {
   activeEngineers: number;
 }
 
+/** What a real shutdown cancels, for the pre-stop warning (#1091 review pass 4). */
+export interface CancelledWork {
+  /** Live engineer turns (durable: adopted by the respawned server, not lost). */
+  engineers: number;
+  /** In-flight reviews — killed by a real shutdown and re-spawned by recovery. */
+  reviews: number;
+  /** In-flight PM/freeform runs — durable, re-adopted after restart. */
+  freeformRuns: number;
+  /** Active dev targets — stopped by a real shutdown, not re-adopted. */
+  devTargets: number;
+  /** Active previews — stopped by a real shutdown, then restarted on demand. */
+  previews: number;
+}
+
+/** Read what a stop will cancel from `/api/health`; zeros when the server is silent. */
+export async function fetchCancelledWork(host: string, port: number): Promise<CancelledWork> {
+  const zero: CancelledWork = {
+    engineers: 0,
+    reviews: 0,
+    freeformRuns: 0,
+    devTargets: 0,
+    previews: 0,
+  };
+  const probeHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+  return new Promise((resolve) => {
+    const req = http.get(
+      `http://${probeHost}:${port}/api/health`,
+      { timeout: 1500 },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (c) => chunks.push(c as Buffer));
+        res.on("end", () => {
+          try {
+            const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
+              activeEngineers?: unknown;
+              activeReviews?: unknown;
+              activeFreeformRuns?: unknown;
+              activeDevTargets?: unknown;
+              activePreviews?: unknown;
+            };
+            const n = (v: unknown): number => (typeof v === "number" && v > 0 ? v : 0);
+            resolve({
+              engineers: n(body.activeEngineers),
+              reviews: n(body.activeReviews),
+              freeformRuns: n(body.activeFreeformRuns),
+              devTargets: n(body.activeDevTargets),
+              previews: n(body.activePreviews),
+            });
+          } catch {
+            resolve(zero);
+          }
+        });
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(zero);
+    });
+    req.on("error", () => resolve(zero));
+  });
+}
+
 export type { SupervisorInfo, SupervisorDetectResult };
 export {
   detectSupervisor,
@@ -99,6 +161,8 @@ export async function classifyRestartPath(
   const managed = await getServiceStatus(root);
   // Only the managed service when it is the server that was located: a hand-run
   // server on another port must not be "restarted" by bouncing the service.
+  // `getServiceStatus(root)` defaults to this repo's managed port, so a service
+  // restart always targets the same listener the located server owns.
   if (managed?.status === "running" && managed.port === server.port) return "managed-service";
   const detected = detectSupervisor(server.pid);
   if (detected.kind === "external") return "external-supervisor";
@@ -306,7 +370,9 @@ export interface RestartRepoServerOptions {
   resolveServeFlags?: (server: LocatedServer) => string[];
   wait?: typeof waitForServerRestart;
   health?: typeof fetchHealth;
-  onBeforeStop?: (ctx: { activeEngineers: number; path: RestartPath }) => void;
+  /** Inject for tests — defaults to reading counts from `/api/health`. */
+  cancelledWork?: (host: string, port: number) => Promise<CancelledWork>;
+  onBeforeStop?: (ctx: { cancelled: CancelledWork; path: RestartPath }) => void;
   verifyPid?: typeof verifyPidServesRepo;
   waitPidGone?: typeof waitForPidGone;
 }
@@ -321,6 +387,8 @@ export interface RestartRepoServerResult {
   newVersion?: string | null;
   manualCommand?: string;
   activeEngineers?: number;
+  /** Which kinds of in-flight work the stop cancelled, when known (#1091). */
+  cancelled?: CancelledWork;
 }
 
 export async function restartRepoServer(
@@ -377,6 +445,9 @@ export async function restartRepoServer(
   const path = await (opts.classify ?? classifyRestartPath)(root, server);
   if (path === "refuse-supervised-unknown") {
     const detected = detectSupervisor(server.pid);
+    const quotedRoot =
+      /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
+    const startCommand = `cd ${quotedRoot} && repoos serve --port ${server.port}`;
     return {
       ok: false,
       oldPid: server.pid,
@@ -386,18 +457,25 @@ export async function restartRepoServer(
           : detected.kind === "managed"
             ? `pid ${server.pid} is the RepoOS service ${detected.job}, but the service manager does not report it running — use \`repoos service restart\` instead of signalling it.`
             : "Could not determine how this server is supervised — refusing to restart automatically.",
-      // `kill` only stops the server, so say so rather than offering it as a restart.
+      // A bare `kill` only stops the server, so it is the FIRST step, not a
+      // restart: say plainly that the server stays down unless its supervisor
+      // respawns it, and name the start command to run either way.
       manualCommand:
         detected.kind === "managed"
           ? "repoos service restart"
-          : `kill ${server.pid}   # stops it; it stays down unless its supervisor respawns it, then run: repoos serve --port ${server.port}`,
+          : `stop it, then start it again:  kill ${server.pid} && ${startCommand}   # if a supervisor owns pid ${server.pid}, killing it lets the supervisor respawn it and the second command is unnecessary`,
     };
   }
 
   const oldPid = server.pid;
   const oldVersion = health.serverVersion ?? server.version;
 
-  opts.onBeforeStop?.({ activeEngineers: health.activeEngineers, path });
+  // A stop is a real shutdown, not the UI's reload handover: reviews are killed
+  // and re-spawned by recovery, previews/dev targets are stopped, and engineer/
+  // PM children are durable and re-adopted. Ask the server what is in flight so
+  // the warning names everything, not just engineers (#1091 review pass 4).
+  const cancelled = await (opts.cancelledWork ?? fetchCancelledWork)(server.host, server.port);
+  opts.onBeforeStop?.({ cancelled, path });
 
   if (path === "managed-service") {
     const result = await (opts.restartManaged ?? restartService)(root);
@@ -428,6 +506,7 @@ export async function restartRepoServer(
       oldVersion,
       newVersion: waited.version,
       activeEngineers: health.activeEngineers,
+      cancelled,
     };
   }
 
@@ -449,6 +528,8 @@ export async function restartRepoServer(
       fetch: opts.health,
     });
     if (!waited.ok) {
+      const quotedRoot =
+        /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
       return {
         ok: false,
         path,
@@ -457,7 +538,11 @@ export async function restartRepoServer(
         message:
           (waited.reason ?? "Supervisor did not respawn the server in time") +
           ` The old server (pid ${oldPid}) has been stopped, so the server may be DOWN now.`,
-        manualCommand: supervisor?.manualCommand,
+        // Prefer the supervisor's own restart; fall back to a start command so
+        // the human is never left with only "it may be down" (#1091 review pass 4).
+        manualCommand:
+          supervisor?.manualCommand ??
+          `cd ${quotedRoot} && repoos serve --port ${server.port}`,
       };
     }
     return {
@@ -468,6 +553,7 @@ export async function restartRepoServer(
       oldVersion,
       newVersion: waited.version,
       activeEngineers: health.activeEngineers,
+      cancelled,
     };
   }
 
@@ -530,13 +616,14 @@ export async function restartRepoServer(
   if (!waited.ok) {
     const port = server.port;
     const quoted = /^[\w./-]+$/.test(root) ? root : `'${root.replaceAll("'", "'\\''")}'`;
+    const flags = resolveFlags(server);
     return {
       ok: false,
       path,
       oldPid,
       oldVersion,
       message: waited.reason ?? "Server did not come back healthy",
-      manualCommand: `cd ${quoted} && repoos serve --port ${port} --host ${server.host || "127.0.0.1"}${server.serveFlags.length ? ` ${server.serveFlags.join(" ")}` : ""}`,
+      manualCommand: `cd ${quoted} && repoos serve --port ${port} --host ${server.host || "127.0.0.1"}${flags.length ? ` ${flags.join(" ")}` : ""}`,
     };
   }
   return {
@@ -547,5 +634,6 @@ export async function restartRepoServer(
     oldVersion,
     newVersion: waited.version,
     activeEngineers: health.activeEngineers,
+    cancelled,
   };
 }

@@ -115,6 +115,23 @@ describe("parseSystemdPidStatus", () => {
     expect(parseSystemdPidStatus("● user@501.service - User Manager")).toBeNull();
     expect(parseSystemdPidStatus("● foo.slice - Slice")).toBeNull();
   });
+
+  it("uses plain systemctl for a system unit and infers the unit from a pid status", () => {
+    // Captured `systemctl status <pid>` shape for a system service: the dot is
+    // the unit marker, no /run/user path, so restart is the system manager's.
+    const captured = `● my-serve.service - My Serve
+     Loaded: loaded (/etc/systemd/system/my-serve.service; enabled; preset: enabled)
+     Active: active (running) since Wed 2026-11-11 10:00:00 UTC; 1h ago
+   Main PID: 48210 (repoos)
+`;
+    const info = parseSystemdPidStatus(captured);
+    expect(info?.job).toBe("my-serve");
+    expect(info?.manualCommand).toBe("systemctl restart my-serve.service");
+  });
+
+  it("rejects the per-user manager unit even when a Main PID is present", () => {
+    expect(parseSystemdPidStatus("● user@501.service\n   Main PID: 12 (systemd)")).toBeNull();
+  });
 });
 
 describe("detectSupervisor", () => {
@@ -164,6 +181,20 @@ describe("detectSupervisor", () => {
     const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "launchctl" && args[0] === "list") return "PID\tStatus\tLabel\n";
       if (cmd === "ps" && args.includes("ppid=")) return "1\n";
+      throw new Error("unexpected");
+    });
+    const r = detectSupervisor(48210, execFile as never);
+    expect(r.kind).toBe("uncertain");
+  });
+
+  it("is uncertain (not hand-run) when the pid's parent cannot be read", () => {
+    // If `launchctl list` has no row AND we cannot read the parent, we cannot
+    // rule out a supervisor, so refuse rather than classify as hand-run and
+    // SIGTERM a supervised server (#1091 review pass 4).
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "launchctl" && args[0] === "list") return "PID\tStatus\tLabel\n";
+      if (cmd === "launchctl" && args[0] === "print") throw new Error("not permitted");
+      if (cmd === "ps" && args.includes("ppid=")) throw new Error("ps failed");
       throw new Error("unexpected");
     });
     const r = detectSupervisor(48210, execFile as never);

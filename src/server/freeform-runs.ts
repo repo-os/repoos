@@ -393,6 +393,11 @@ export class FreeformRunManager {
     return this.active.has(runId);
   }
 
+  /** Number of in-flight PM/freeform runs — what a real shutdown cancels (#1091). */
+  activeCount(): number {
+    return this.active.size;
+  }
+
   private track(record: FreeformRunRecord, proc?: ChildProcess, timeoutMs?: number): ActiveRun {
     const active: ActiveRun = {
       record,
