@@ -142,3 +142,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T07:11:32Z · needs_input
 - 2026-11-11T07:29:43Z · body
 - 2026-11-11T07:36:58Z · message_queued at 2026-11-11T07:36:58.010Z
+- 2026-11-11T07:36:58Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
