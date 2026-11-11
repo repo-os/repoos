@@ -1,0 +1,12 @@
+{
+  "taskId": "1083",
+  "round": 4,
+  "at": "2026-11-10T22:21:07.176Z",
+  "agent": "claude code",
+  "model": "haiku",
+  "branch": "feat/review-runner-a-stale-review-already-run",
+  "baseSha": "a46ceb620645ecdd559748b9372b6d1a248fd8b9",
+  "sourceSha": "ef78ee65c6f1c23a4174abdf34dfb033cf7bde4a",
+  "wordCount": 280,
+  "markdown": "## TL;DR\nA review registration can no longer leak and make `repoos review again` refuse with \"a review is already running\" when no reviewer exists. Every release path (reviewer throws, cancel after the child is gone, prepare rejects, registration older than the review timeout) clears the registration, and a stale one is reaped.\n\n## Work and rationale\n`ReviewManager` registrations could outlive their reviewer through a runner entry left after a dead finalize, a cancel that dropped a fence while a finalize was pending, and unguarded `runs.delete` sites. Registrations now go through `dropRun` or an identity-guarded `release`, a dead finalizing entry no longer counts as live, and a registration with no live process is reaped after the review timeout. Review 4 found that `registration()` still reconciled dead agents (registry read, pid probes) on every board read: it now first asks the runner's new non-reconciling `hasEntry`, and returns null for an idle task before any probe; the reconciling probe runs only when something could hold the key. Tests cover each release path, a rejecting prepare callback, and that an idle task triggers neither `reviewProcessLive` nor `isRunning`.\n\n## Approaches tried\nClearing only on cancel, then idempotent identity-guarded release on every path, reaping by age as the backstop, and finally a cheap presence check so read paths do no I/O for idle tasks.\n\n## Challenges and blockers\nFour review rounds raised narrow edge cases of one class (races between cancel, finalize and the reaper). Remaining ones are recorded as non-blocking follow-ups.\n\n## Key learnings\nA predicate called on every read must not reconcile or do I/O when there is nothing to check; an early return has to come before the expensive call, not after it.\n\n## Generated change summary\n\nBase tree: `a46ceb620645ecdd559748b9372b6d1a248fd8b9`\nSource tree: `43e1ac25367ff4b74ee071c368fde20c73166e72`\n\n- M src/server/agents.ts: +10 / −0\n- M src/server/review.ts: +9 / −4\n- M src/ui-app/tests/review-stale-registration.test.ts: +5 / −2"
+}
