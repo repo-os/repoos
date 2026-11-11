@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T10:30:47Z"
+updated_at: "2026-11-11T10:35:47Z"
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
@@ -49,3 +49,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T10:20:42Z · status ready→active, branch
 - 2026-11-11T10:30:47Z · message_queued at 2026-11-11T10:30:47.779Z
 - 2026-11-11T10:30:47Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T10:35:47Z · CTO nudge: held — an undelivered message is already queued
