@@ -200,4 +200,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T08:28:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T08:29:03Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-11T08:29:03Z · status active→review
-
+- 2026-11-11T08:29:03Z · message_queued at 2026-11-11T08:29:03.905Z
