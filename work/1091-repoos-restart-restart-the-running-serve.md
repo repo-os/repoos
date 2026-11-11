@@ -10,7 +10,6 @@ created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
 updated_at: "2026-11-11T13:48:11Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -93,3 +92,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T13:38:11Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T13:40:48Z · body
 - 2026-11-11T13:48:11Z · CTO nudge: held — handoff gate is running
+
