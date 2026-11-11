@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-11T08:43:54Z"
+review_passes: 2
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
@@ -13,9 +15,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T08:43:54Z"
 review_rounds: 1
-review_passes: 1
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
 handoff_signal_retry_count: 2
 dev_error_count: 4
@@ -171,3 +171,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T08:42:16Z · status active→review
 - 2026-11-11T08:42:17Z · message_queued at 2026-11-11T08:42:17.097Z
 - 2026-11-11T08:43:54Z · note: review pass 4: needs some work
+
