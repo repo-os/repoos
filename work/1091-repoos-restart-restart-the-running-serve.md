@@ -3,16 +3,13 @@ id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T14:32:32Z"
+updated_at: "2026-11-11T14:32:37Z"
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -124,3 +121,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T14:21:21Z · needs_input
 - 2026-11-11T14:28:32Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-11-11T14:32:32Z · engineer crash recovery: resuming cursor + composer-2.5 (8/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
+- 2026-11-11T14:32:37Z · needs_input
