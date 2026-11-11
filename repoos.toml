@@ -253,10 +253,6 @@ kind = "bare-require"
 whenChanged = ["src/**", "tsconfig.json"]
 
 [[check.steps]]
-name = "branch-artifacts"
-kind = "branch-artifacts"
-
-[[check.steps]]
 name = "task-assets"
 kind = "task-assets"
 whenChanged = ["work/**", "inputs/**"]
@@ -746,7 +742,7 @@ healthCheck.url = "http://127.0.0.1:{port}/"
 name = "hub"
 kind = "process"
 label = "RepoOS Hub (macOS app)"
-command = "just macos-build && derived=\"${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}\" && exec env LLVM_PROFILE_FILE=/dev/null \"$derived/Build/Products/Debug/RepoOS Hub.app/Contents/MacOS/RepoOS Hub\""
+command = "just macos-build && exec env LLVM_PROFILE_FILE=/dev/null 'macos/.derived-data/Build/Products/Debug/RepoOS Hub.app/Contents/MacOS/RepoOS Hub'"
 
 [[budget.allowlist]]
 cli = "opencode"
