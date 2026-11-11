@@ -63,6 +63,7 @@ import {
 import { gitDirectorySnapshot } from "../core/git-directory-snapshot.js";
 import { getGitWorker } from "./git-worker.js";
 import { resolveDefaultBranch } from "../core/repo-log.js";
+import { bookkeepingDirs } from "../core/config.js";
 import { parseTask } from "../core/task.js";
 import { isHoldActive } from "../core/task-selection.js";
 import { taskWithLiveHold } from "./hold-guard.js";
@@ -870,19 +871,22 @@ async function runHandoffFinalization(
 
   // #1076: a self-check WIP checkpoint (or a concurrent board write, or a
   // partial merge of main) can leave ANOTHER task's `work/` bookkeeping on this
-  // branch. Restore the branch point's copy now, before the check snapshots the
+  // branch. Restore main's copy now, before the check snapshots the
   // tree and before the review lock — the restore lands as one bookkeeping
   // commit, so a branch that already drifted is healed here instead of failing
   // landing with "the diff changes another task's bookkeeping". Report it; never
   // fail on it.
   if (!isHotfix) {
     try {
+      const bkDirs = bookkeepingDirs(config);
       const restored = await restoreForeignTaskBookkeepingFromMain({
         worktree: workdir,
         baseBranch: await handoffBaseBranch(config),
         taskId: task.id,
         ownTaskFile: task.path,
-        workDir: config.workDir,
+        workDir: bkDirs.workDir,
+        inputsDir: bkDirs.inputsDir,
+        storiesDir: bkDirs.storiesDir,
       });
       if (restored.length > 0) {
         const listed = restored.slice(0, 8).join(", ");
@@ -890,7 +894,7 @@ async function runHandoffFinalization(
         opts.onTaskLog?.(
           task.id,
           "info",
-          `restored the branch point's copy of another task's bookkeeping on this branch: ${listed}${more}`,
+          `restored main's copy of another task's bookkeeping on this branch: ${listed}${more}`,
         );
       }
     } catch (error) {
@@ -898,7 +902,7 @@ async function runHandoffFinalization(
       // branch that still carries a sibling's files and cannot land.
       return fail(
         "commit",
-        `could not restore the branch point's copy of another task's bookkeeping on this branch: ${(error as Error).message}`,
+        `could not restore main's copy of another task's bookkeeping on this branch: ${(error as Error).message}`,
       );
     }
   }
