@@ -176,3 +176,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T08:43:57Z · CTO nudge: held — remote validation is running
 - 2026-11-11T08:50:55Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T08:50:55Z · message_queued at 2026-11-11T08:50:55.985Z
+- 2026-11-11T08:50:58Z · note: handoff requested (cli)
