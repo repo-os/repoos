@@ -14,7 +14,7 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T21:02:55Z"
+updated_at: "2026-11-11T21:03:17Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 1
@@ -153,3 +153,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T21:02:14Z · status review→active
 - 2026-11-11T21:02:17Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T21:02:55Z · note: handoff requested (cli)
+- 2026-11-11T21:03:17Z · CTO nudge: held — handoff gate is running
