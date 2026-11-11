@@ -72,13 +72,21 @@ export function formatCopilotAutoTierFailure(detail: string): string | null {
     ? `The Copilot Auto tier \`${tier}\` is not available for this account.`
     : "The selected Copilot Auto tier is not available for this account.";
 
+  // Never suggest the tier that just failed (e.g. "`balance` is unavailable"
+  // followed by "pick Balance").
+  const failed = tier?.toLowerCase();
+  const known = ["balance", "intelligence"].filter((t) => t !== failed);
+  const cliOthers = fromCli.filter((t) => t.toLowerCase() !== failed);
+  const options = cliOthers.length > 0 ? cliOthers : known;
+  const optionText = options.length > 0 ? options.join(" or ") : "another Auto tier";
+
   const tierHint =
     fromCli.length > 0
-      ? ` Your Copilot CLI suggested: ${fromCli.join(" or ")}.`
-      : " Valid tier ids depend on your Copilot account — try Auto · Balance or Auto · Intelligence in the Agents model dropdown.";
+      ? ` Your Copilot CLI suggested: ${cliOthers.length > 0 ? cliOthers.join(" or ") : "(nothing other than the tier that failed)"}.`
+      : " Valid tier ids depend on your Copilot account.";
 
   return (
-    `${tierPhrase} In Settings → Agents, pick Auto · Balance or Auto · Intelligence for this agent.${tierHint} ` +
+    `${tierPhrase} Open the Agents page and pick a different model for this agent (try ${optionText}).${tierHint} ` +
     `RepoOS maps default and the legacy copilot-auto-efficiency model id to Balance.`
   );
 }

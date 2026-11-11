@@ -10126,7 +10126,17 @@ export class AgentRunner {
         `last assistant: ${oneLineTail(assistant ?? "no assistant message", 240)}`,
         `stderr: ${stderr ? oneLineTail(stderr, 320) : "(empty)"}`,
       ].join(" · ");
-      this.recordTaskActivity(taskId, detail);
+      // A Copilot Auto-tier rejection arrives as raw CLI text here; say what it
+      // means. Enrich only the stderr (keep "reason" and "last assistant").
+      const enrichedStderr = stderr
+        ? enrichAgentFailureDetail(oneLineTail(stderr, 320), session?.cli)
+        : null;
+      this.recordTaskActivity(
+        taskId,
+        enrichedStderr && enrichedStderr !== oneLineTail(stderr ?? "", 320)
+          ? detail.replace(/stderr: .*$/, `stderr: ${enrichedStderr}`)
+          : detail,
+      );
     }
     // Any non-clean exit that isn't a deliberate stop means the task is about
     // to sit silently in its current status with nothing left running — flag it

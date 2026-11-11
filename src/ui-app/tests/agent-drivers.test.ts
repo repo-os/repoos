@@ -318,6 +318,16 @@ describe("model-aware driver commands", () => {
     expect(command.args).toEqual(expect.arrayContaining(["--model", "auto", "--auto-tier", tier]));
   });
 
+  it("does not suggest the tier that just failed (balance unavailable)", () => {
+    const raw =
+      "Auto preference `balance` is unavailable for this account. Set --auto-tier to balance or intelligence.";
+    const msg = oneShotFailureDetail(raw, "", "github copilot");
+    expect(msg).toContain("Copilot Auto tier `balance`");
+    expect(msg).toMatch(/try intelligence\)/);
+    expect(msg).not.toMatch(/try [^)]*balance/);
+    expect(msg).not.toContain("Settings →");
+  });
+
   it("maps a removed Copilot Auto tier failure to plain-English guidance", () => {
     const raw =
       "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence.";
