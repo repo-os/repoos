@@ -3,6 +3,9 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Automatic recovery could not restart the engineer: This worktree already has a recorded live engineer for task #1071 (pid 68015)"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T10:40:19Z"
+updated_at: "2026-11-11T10:40:21Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_passes: 5
@@ -242,3 +245,4 @@ FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every 
 - 2026-11-11T10:30:04Z · watchdog: restarting engineer after 10m with no live process
 - 2026-11-11T10:30:05Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1071 (pid 68015)
 - 2026-11-11T10:40:19Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-11T10:40:21Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1071 (pid 68015)
