@@ -335,6 +335,9 @@ export const DEFAULT_CONFIG: Omit<RepoOSConfig, "root"> = {
     enabled: false,
     provisioningUrl: "",
   },
+  updates: {
+    check: true,
+  },
   auth: {
     enabled: false,
     sessionMaxAge: 2592000,
@@ -2338,6 +2341,11 @@ export function loadConfig(rootArg?: string, options: LoadConfigOptions = {}): R
     const tuneForScale = parsed["git.tuneForScale"];
     if (typeof tuneForScale === "boolean") cfg.git = { tuneForScale };
 
+    const updatesCheck = parsed["updates.check"];
+    if (typeof updatesCheck === "boolean") {
+      cfg.updates = { ...cfg.updates, check: updatesCheck };
+    }
+
     // [closeOut] section — wall-clock budget for one Move-to-done attempt
     // (#0573). Invalid/negative values are clamped back to the default with a
     // clear warning rather than failing config load: a typo in repoos.toml must
@@ -2891,6 +2899,18 @@ export function getConfigSchema(): ConfigFieldMeta[] {
       restartRequired: true,
       default: DEFAULT_CONFIG.remindersDir,
       description: "Directory holding reminder notes (relative to repo root)",
+    },
+    {
+      key: "updates.check",
+      label: "Release update notices",
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: DEFAULT_CONFIG.updates?.check ?? true,
+      description:
+        "Check GitHub for newer RepoOS releases and show a passive CLI notice and dashboard " +
+        "banner when one is available. Off in CI and non-interactive runs automatically; " +
+        "also disable with REPOOS_NO_UPDATE_CHECK=1.",
     },
     {
       key: "scheduledTasks.enabled",
@@ -4348,6 +4368,7 @@ export const SUPPORTED_TOML_KEYS: readonly string[] = [
   "inputsDir",
   "schedulesDir",
   "remindersDir",
+  "updates.check",
   "scheduledTasks.enabled",
   "storiesDir",
   "cacheDir",

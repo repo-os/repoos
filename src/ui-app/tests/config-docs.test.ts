@@ -27,6 +27,18 @@ describe("repoos.toml and environment docs", () => {
     expect(missing).toEqual([]);
   });
 
+  it("exposes updates.check as a documented Settings toggle (#1072)", () => {
+    const field = getConfigSchema().find((f) => f.key === "updates.check");
+    expect(field).toMatchObject({
+      type: "boolean",
+      tier: "live",
+      restartRequired: false,
+      default: true,
+    });
+    expect(field?.description).toMatch(/GitHub/i);
+    expect(SUPPORTED_TOML_KEYS).toContain("updates.check");
+  });
+
   it("exposes git.tuneForScale as a documented Settings toggle", () => {
     const field = getConfigSchema().find((f) => f.key === "git.tuneForScale");
     expect(field).toMatchObject({
