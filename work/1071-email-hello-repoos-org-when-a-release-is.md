@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
+last_handoff_failure_sha: 1541535f99c18250059c0409a7378be9d0444898
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
@@ -179,3 +181,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T05:51:57Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T06:09:20Z · message_queued at 2026-11-11T06:09:20.179Z
 - 2026-11-11T06:09:20Z · handoff failed · task-file handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+
