@@ -211,13 +211,8 @@ function zstdAvailable(): boolean {
   return Boolean(bun?.zstdDecompressSync) || typeof zstdDecompressSync === "function";
 }
 
-function compressionWouldExceedCap(compressedLen: number, maxOut: number): boolean {
-  return compressedLen > maxOut / MAX_COMPRESSION_EXPANSION_RATIO;
-}
-
 /** Node's `zstdDecompressSync` caps output during inflation; never uncapped Bun (#1096 r3). */
 function decompressZstd(buf: Buffer, maxOut: number): Buffer | "too_large" | "missing" | "error" {
-  if (compressionWouldExceedCap(buf.length, maxOut)) return "too_large";
   if (typeof zstdDecompressSync !== "function") return "missing";
   try {
     return zstdDecompressSync(buf, { maxOutputLength: maxOut });
@@ -230,7 +225,6 @@ function decompressZstd(buf: Buffer, maxOut: number): Buffer | "too_large" | "mi
 }
 
 function tryGunzip(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
-  if (compressionWouldExceedCap(buf.length, maxOut)) return "too_large";
   try {
     return gunzipSync(buf, { maxOutputLength: maxOut });
   } catch (e: unknown) {
@@ -241,7 +235,6 @@ function tryGunzip(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
 }
 
 function tryZlibInflate(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
-  if (compressionWouldExceedCap(buf.length, maxOut)) return "too_large";
   try {
     return inflateSync(buf, { maxOutputLength: maxOut });
   } catch {
@@ -435,7 +428,17 @@ export function gitAddingCommitForPath(repoRoot: string, rel: string): string | 
   try {
     const rev = execFileSync(
       "git",
-      ["log", "--diff-filter=A", "-n", "1", "--format=%H", "HEAD", "--", normRepoPath(rel)],
+      [
+        "log",
+        "--no-renames",
+        "--diff-filter=A",
+        "-n",
+        "1",
+        "--format=%H",
+        "HEAD",
+        "--",
+        normRepoPath(rel),
+      ],
       { cwd: repoRoot, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
     ).trim();
     return rev || null;
@@ -520,7 +523,7 @@ export function gitAddedPathsOnBranch(repoRoot: string, ref: string): string[] |
   try {
     const raw = execFileSync(
       "git",
-      ["log", "--pretty=format:", "--name-only", "--diff-filter=A", `${ref}..HEAD`],
+      ["log", "--no-renames", "--pretty=format:", "--name-only", "--diff-filter=A", `${ref}..HEAD`],
       {
         cwd: repoRoot,
         encoding: "utf8",
@@ -769,6 +772,11 @@ export function planCheckpointStaging(
     }
     const maxRead = resolved.maxAddedFileBytes + resolved.maxDecompressBytes;
     const blob = readStagedIndexBlob(repoRoot, path, maxRead);
+    if (!blob && isStagedDeletion(repoRoot, path)) {
+      // A deletion has no blob to scan and adds nothing to history.
+      allowed.push(path);
+      continue;
+    }
     if (!blob) {
       incomplete.push({ path, reason: "no staged index blob to scan" });
       refusedPaths.push(path);
@@ -921,14 +929,41 @@ export function formatBranchArtifactFailures(
   return parts.join("\n\n");
 }
 
-/** Staged paths from the index (porcelain name-only). */
+/** True when the path is a staged deletion (nothing to scan, nothing added). */
+function isStagedDeletion(repoRoot: string, path: string): boolean {
+  try {
+    return (
+      execFileSync(
+        "git",
+        [
+          "diff",
+          "--cached",
+          "--no-renames",
+          "--diff-filter=D",
+          "--name-only",
+          "--",
+          normRepoPath(path),
+        ],
+        { cwd: repoRoot, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
+      ).trim().length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Staged paths from the index (porcelain name-only, deletions excluded). */
 export function gitStagedPaths(repoRoot: string): string[] {
   try {
-    return execFileSync("git", ["diff", "--cached", "--name-only", "-z"], {
-      cwd: repoRoot,
-      encoding: "utf8",
-      maxBuffer: 32 * 1024 * 1024,
-    })
+    return execFileSync(
+      "git",
+      ["diff", "--cached", "--no-renames", "--diff-filter=ACMR", "--name-only", "-z"],
+      {
+        cwd: repoRoot,
+        encoding: "utf8",
+        maxBuffer: 32 * 1024 * 1024,
+      },
+    )
       .split("\0")
       .filter(Boolean)
       .map(normRepoPath);

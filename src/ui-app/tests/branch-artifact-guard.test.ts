@@ -229,6 +229,74 @@ describe("branch diff guard", () => {
   });
 });
 
+describe("review pass 3 regressions (#1096)", () => {
+  it("does not treat a staged deletion as a missing blob (hook and checkpoint)", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-del-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "old.txt"), "old\n");
+    git(root, "add", "old.txt");
+    git(root, "commit", "-qm", "track");
+    git(root, "rm", "-q", "old.txt");
+    expect(evaluateStagedForPreCommit(root, {}).ok).toBe(true);
+    const staging = planCheckpointStaging(root, ["old.txt"], {});
+    expect(staging.error).toBeFalsy();
+    expect(staging.allowed).toContain("old.txt");
+  });
+
+  it("does not fail closed on a large random binary that merely contains gzip magic bytes", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-rand-"));
+    dirs.push(root);
+    initRepo(root);
+    const buf = Buffer.alloc(300 * 1024, 7);
+    buf[1000] = 0x1f;
+    buf[1001] = 0x8b;
+    buf[200_000] = 0x1f;
+    buf[200_001] = 0x8b;
+    writeFileSync(join(root, "blob.bin"), buf);
+    git(root, "add", "blob.bin");
+    git(root, "commit", "-qm", "bin");
+    const added = gitAddedPathsOnBranch(root, "main")!;
+    const { violations } = evaluateAddedPaths(root, added, { maxAddedFileBytes: 1_048_576 });
+    expect(violations.filter((v) => v.kind === "scan-incomplete")).toEqual([]);
+  });
+
+  it("sees a renamed file: a rename into a build-output path still fires", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-rename-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "a.bin"), Buffer.alloc(1024, 3));
+    git(root, "add", "a.bin");
+    git(root, "commit", "-qm", "a");
+    git(root, "checkout", "-q", "-b", "feat/y");
+    mkdirSync(join(root, "x.xcresult"));
+    git(root, "mv", "a.bin", "x.xcresult/a.bin");
+    git(root, "commit", "-qm", "mv");
+    const added = gitAddedPathsOnBranch(root, "feat/x")!;
+    expect(added).toContain("x.xcresult/a.bin");
+    const { violations } = evaluateAddedPaths(root, added, {});
+    expect(violations.some((v) => v.kind === "build-output")).toBe(true);
+  });
+
+  it("scans a rename commit's new path for secrets", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-rename-secret-"));
+    dirs.push(root);
+    initRepo(root);
+    writeFileSync(join(root, "a.txt"), "x".repeat(300) + "\n");
+    git(root, "add", "a.txt");
+    git(root, "commit", "-qm", "a");
+    git(root, "checkout", "-q", "-b", "feat/z");
+    git(root, "mv", "a.txt", "b.txt");
+    writeFileSync(join(root, "b.txt"), "x".repeat(300) + "\n" + fakeStripeTestSecret() + "\n");
+    git(root, "add", "b.txt");
+    git(root, "commit", "-qm", "rename+secret");
+    const added = gitAddedPathsOnBranch(root, "feat/x")!;
+    expect(added).toContain("b.txt");
+    const { violations } = evaluateAddedPaths(root, added, {});
+    expect(violations.some((v) => v.kind === "secret")).toBe(true);
+  });
+});
+
 describe("checkpoint staging", () => {
   it("scans the index blob after git add, not a clean worktree with dirty disk", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-dirty-tracked-"));
