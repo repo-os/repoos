@@ -64,6 +64,26 @@ describe("shot-preview fixture task avoids server fetches (#0819)", () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("skips landable polling for pipeline fixture ids during capture (#1062)", async () => {
+    window.history.replaceState({}, "", "/work?tab=pipeline&shotState=board%3Apipeline");
+    const landableJson = { checks: [], summary: { pass: 0, warn: 0, fail: 0 }, landable: false };
+    const fetchMock = vi.fn(async (url: string) => json(landableJson));
+    vi.stubGlobal("fetch", fetchMock);
+    const repo = useRepoStore();
+
+    await Promise.all([
+      repo.loadLandable("pipe-review"),
+      repo.loadLandable("pipe-closeout"),
+      repo.loadLandable("1062"),
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const urls = fetchMock.mock.calls.map((c) => String(c[0]));
+    expect(urls).not.toContain("/api/tasks/pipe-review/landable");
+    expect(urls).not.toContain("/api/tasks/pipe-closeout/landable");
+    expect(urls).toContain("/api/tasks/1062/landable");
+  });
 });
 
 describe("repo store addShot/deleteShot (#0627)", () => {

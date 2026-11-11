@@ -73,6 +73,18 @@ describe("ActivityIndicator (#0787)", () => {
     expect(wrapper.find(".ai-style-spark-diamond").exists()).toBe(true);
   });
 
+  it("renders a still dot when activity animation is disabled", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.form.activityAnimationEnabled = false;
+    const wrapper = mount(ActivityIndicator, { global: { plugins: [pinia] } });
+    expect(wrapper.find(".ai-plain-dot-mode").exists()).toBe(true);
+    expect(wrapper.find(".ai-plain-dot").exists()).toBe(true);
+    expect(wrapper.find(".ai-style-orbital-pixel").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
   it("renders a distinct root class for every style", () => {
     for (const style of ACTIVITY_ANIMATION_STYLES) {
       const wrapper = mountIndicator({ animationStyle: style });
