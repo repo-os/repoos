@@ -3,9 +3,6 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: [unavailable] read ETIMEDOUT"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T04:23:09Z"
+updated_at: "2026-11-11T04:23:10Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 63cd33b58c7d8f5aa649159626b68a287739f125
 check_retry_count: 1
@@ -105,3 +102,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T04:22:27Z · message_delivered: 1 message(s)
 - 2026-11-11T04:22:39Z · agent exited with an error (cursor) · Error: [unavailable] read ETIMEDOUT
 - 2026-11-11T04:23:09Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [unavailable] read ETIMEDOUT
+- 2026-11-11T04:23:10Z · needs_input
