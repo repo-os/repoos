@@ -2,21 +2,21 @@
 id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
-status: active
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — The four frozen fixes are in, but a documented Retry-After path is dead code and the cache write can still lose the not…"
+status: done
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
+merged_commit: 15c5ef1a80a490f6e4a5f0294c517419d70f8336
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T08:50:07Z"
-review_passes: 3
+updated_at: "2026-11-11T10:15:46Z"
+last_close_out_gate_ms: 375683
+last_close_out_gate_at: "2026-11-11T10:15:33.034Z"
+review_passes: 5
 review_rounds: 2
 dev_error_count: 5
 ---
@@ -165,3 +165,14 @@ FINAL (round 4, hand-finished): Retry-After is now wired (fetchLatestRelease thr
 - 2026-11-11T08:50:05Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T08:50:06Z · message_delivered: 1 message(s)
 - 2026-11-11T08:50:07Z · note: handoff requested (cli)
+- 2026-11-11T08:53:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T09:02:57Z · status active→review
+- 2026-11-11T09:02:57Z · message_queued at 2026-11-11T09:02:57.384Z
+- 2026-11-11T09:05:22Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e1d1496b4) during finalization (#0734)
+- 2026-11-11T09:13:43Z · note: review pass 4: good to go
+- 2026-11-11T09:13:43Z · needs_input
+- 2026-11-11T09:22:11Z · note: review pass 5: good to go
+- 2026-11-11T10:12:13Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T10:15:33Z · close-out gate completed in 376s
+- 2026-11-11T10:15:36Z · message_dropped: 1 queued message(s) discarded — task is done
+- 2026-11-11T10:15:46Z · status done→done, release:success

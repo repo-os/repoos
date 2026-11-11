@@ -5,7 +5,7 @@ type: feature
 status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — two Resend paths can send the same release email twice. Both are small and local to `resendReleaseEmail`, with a test g…"
+needs_input_detail: "`needs some work` — `needs some work`: one Resend lifecycle bug. A corrupt `release-emails.json` leaves the version stuck \"in progress\" unt…"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -14,11 +14,14 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T08:49:21Z"
-review_passes: 4
+updated_at: "2026-11-11T10:20:02Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
+last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
+review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
-dev_error_count: 3
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-11T10:15:48.205Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -71,7 +74,7 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```
 
 ## Accepted scope and known limitations
-FINAL (pass 5, hand-finished): Resend now claims the version before its first await (two concurrent Resends cannot both send) and persists accepted recipients as failed when a local write throws, with tests for both. Earlier fixes stand: card refresh after a cut, caller-owned accepted list on the automatic path with an awaited send, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Report these under Suggestions, not Bugs.
+FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every path, including a corrupt log read (the read is inside the try; tested by corrupting the log, failing a Resend, repairing it and resending). All earlier fixes stand: card refresh after a cut, caller-owned accepted list with awaited sends on both paths, claim before the first await, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -212,3 +215,30 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T08:49:04Z · message_delivered: 1 message(s)
 - 2026-11-11T08:49:09Z · note: handoff requested (cli)
 - 2026-11-11T08:49:21Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T09:08:36Z · message_queued at 2026-11-11T09:08:36.752Z
+- 2026-11-11T09:08:36Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality
+- 2026-11-11T09:08:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T09:28:36Z · note: handoff requested (cli)
+- 2026-11-11T09:28:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T09:38:43Z · handoff_deferred: 1 queued message(s) must be read before review
+- 2026-11-11T09:38:43Z · message_queued at 2026-11-11T09:38:43.367Z
+- 2026-11-11T09:38:43Z · ↻ resuming engineer to read queued message
+- 2026-11-11T09:38:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **All checks passed** on the current tip `c963a9a0f` — including the two tests that flaked earlier (`handoff-unification.test.ts > ignores a marker left behind by an earlier turn` now passes in 8.77s, and `tests` overall is green). Both re… · stderr: (empty)
+- 2026-11-11T09:41:42Z · status active→review
+- 2026-11-11T09:43:22Z · note: review pass 5: needs some work
+- 2026-11-11T09:43:22Z · needs_input
+- 2026-11-11T09:43:22Z · needs_input
+- 2026-11-11T09:44:17Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (fc59e3bb4) during finalization (#0734)
+- 2026-11-11T09:49:07Z · status review→active
+- 2026-11-11T09:49:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T09:49:37Z · body: Accepted scope and known limitations (added 1, removed 1)
+- 2026-11-11T09:49:37Z · message_delivered: 2 message(s)
+- 2026-11-11T09:49:40Z · note: handoff requested (cli)
+- 2026-11-11T09:53:58Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T10:12:13Z · message_queued at 2026-11-11T10:12:13.262Z
+- 2026-11-11T10:12:13Z · handoff failed · task-file handoff failed at check · repoos check failed: ◆ Check plan
+- 2026-11-11T10:13:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T10:15:48Z · note: stopped orphaned engineer pid 58090
+- 2026-11-11T10:15:48Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The task stays active — fix the failure and ask again.
+- 2026-11-11T10:15:49Z · message_delivered: 1 message(s)
+- 2026-11-11T10:20:02Z · CTO nudge: held — an undelivered message is already queued
