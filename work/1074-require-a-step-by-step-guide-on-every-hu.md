@@ -2,7 +2,7 @@
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -107,3 +107,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T04:41:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T04:48:03Z · body
 - 2026-11-11T05:13:33Z · note: ui verification passed: 1 shot captured with clean console (1 shot warning)
+- 2026-11-11T05:13:33Z · status active→review
