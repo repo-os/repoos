@@ -65,3 +65,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T12:08:10Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T12:18:09Z · message_queued at 2026-11-11T12:18:09.412Z
 - 2026-11-11T12:18:09Z · handoff failed · task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1091.md
+- 2026-11-11T12:18:09Z · message_delivered: 1 message(s)
