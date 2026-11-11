@@ -2,7 +2,7 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
