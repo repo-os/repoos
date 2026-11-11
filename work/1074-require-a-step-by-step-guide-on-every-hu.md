@@ -3,6 +3,9 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — `repoos update --section \"Step-by-step guide\"` (via `replaceSection`) corrupts a guide that has a fenced block containi…"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -13,7 +16,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T19:03:01Z"
+updated_at: "2026-11-11T19:03:02Z"
 last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 review_rounds: 2
 review_passes: 2
@@ -247,3 +250,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T19:01:00Z · status active→review
 - 2026-11-11T19:01:00Z · message_queued at 2026-11-11T19:01:00.535Z
 - 2026-11-11T19:03:01Z · note: review pass 5: needs some work
+- 2026-11-11T19:03:02Z · needs_input
