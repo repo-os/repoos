@@ -14,9 +14,8 @@ import {
   removeSection,
 } from "./task.js";
 
-/** Scaffold italic line under `## Step-by-step guide` in {@link HUMAN_TASK_SCAFFOLD}. */
-export const HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER =
-  "_Write numbered steps with exact commands or click paths, where to enter information and store secrets, what could go wrong, how to know each step worked, and what to report back._";
+/** Same placeholder text as split-off human tasks — one source of truth (#1074). */
+export { HUMAN_SPLIT_GUIDE_PLACEHOLDER as HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER };
 
 const HUMAN_TASK_GUIDE_MISSING =
   "Missing ## Step-by-step guide — add numbered steps, exact commands or click paths, safe secret handling, success checks, and what to report back.";
@@ -63,7 +62,7 @@ _What needs doing, and why does it matter?_
 
 ## Step-by-step guide
 
-${HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER}`;
+${HUMAN_SPLIT_GUIDE_PLACEHOLDER}`;
 
 export const HUMAN_TASK_GUIDE_HEADING = "## Step-by-step guide";
 
@@ -99,7 +98,7 @@ function extractHumanTaskGuideSection(body: string): string | null {
 }
 
 function humanTaskGuidePlaceholderLines(): string[] {
-  return [HUMAN_TASK_GUIDE_SCAFFOLD_PLACEHOLDER, HUMAN_SPLIT_GUIDE_PLACEHOLDER];
+  return [HUMAN_SPLIT_GUIDE_PLACEHOLDER];
 }
 
 /** True when the guide section has no real steps yet (heading only or scaffold italic). */

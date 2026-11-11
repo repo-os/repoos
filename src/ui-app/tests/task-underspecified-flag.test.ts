@@ -38,6 +38,12 @@ describe("human task guide warning", () => {
     expect(humanTaskGuideWarning("human", HUMAN_TASK_SCAFFOLD)).toContain("still empty");
   });
 
+  it("warns when the guide section has bullets but no numbered steps (#1074)", () => {
+    const body = "## Step-by-step guide\n\n- Do the signup\n- Paste the key in Settings";
+    expect(humanTaskGuideWarning("human", body)).toContain("still empty");
+    expect(humanTaskGuideWarning("human", body)).toContain("numbered steps");
+  });
+
   it("does not treat a guide heading inside a fenced code sample as present (#1074)", () => {
     const body = [
       "## Problem",
