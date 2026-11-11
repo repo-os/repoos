@@ -11,14 +11,17 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T15:38:07Z"
+updated_at: "2026-11-11T16:58:14Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
+last_handoff_failure_sha: 60f9445261105da777b42d14a1ee98df2bc3c600
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 review_passes: 2
-dev_error_count: 12
+dev_error_count: 13
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
+engineer_stall_resume_log: "[{\"at\":\"2026-11-11T16:03:13.143Z\",\"reason\":\"handoff-deferred\"}]"
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
@@ -144,3 +147,20 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T15:33:12Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T15:34:52Z · message_queued at 2026-11-11T15:34:52.928Z
 - 2026-11-11T15:38:07Z · message_delivered: 1 message(s)
+- 2026-11-11T15:58:07Z · message_queued at 2026-11-11T15:58:07.720Z
+- 2026-11-11T15:58:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T16:03:13Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-11T16:08:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1091.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-11T16:08:18Z · note: handoff requested (cli)
+- 2026-11-11T16:13:14Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T16:13:33Z · message_queued at 2026-11-11T16:13:33.191Z
+- 2026-11-11T16:13:33Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+- 2026-11-11T16:18:14Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T16:29:47Z · message_delivered: 1 message(s)
+- 2026-11-11T16:41:45Z · agent exited with an error (opencode) · error: Transport
+- 2026-11-11T16:41:45Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · error: Transport
+- 2026-11-11T16:42:18Z · needs_input
+- 2026-11-11T16:42:19Z · message_delivered: 1 message(s)
+- 2026-11-11T16:53:16Z · message_queued at 2026-11-11T16:53:16.863Z
+- 2026-11-11T16:53:17Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T16:58:14Z · CTO nudge: held — an undelivered message is already queued
