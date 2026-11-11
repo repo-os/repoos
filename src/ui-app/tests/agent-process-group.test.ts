@@ -131,9 +131,11 @@ describe("AgentRunner process group (#0675)", () => {
       expect(start.ok).toBe(true);
 
       await waitFor(() => !runner.isRunning("0675"), "agent turn exit");
+      // The group kill is delivered asynchronously: the turn can report exit before
+      // the helper is gone. Wait for it to be reaped, rather than sampling once.
+      await waitFor(() => listSleepPids(FAKE_CHILD_SLEEP).length === 0, "helper child reaped");
 
-      const childSleeps = listSleepPids(FAKE_CHILD_SLEEP);
-      expect(childSleeps).toEqual([]);
+      expect(listSleepPids(FAKE_CHILD_SLEEP)).toEqual([]);
       expect(pidAlive(decoyPid)).toBe(true);
       try {
         process.kill(decoyPid, "SIGTERM");
