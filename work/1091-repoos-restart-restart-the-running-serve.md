@@ -2,7 +2,7 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: active
+status: review
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T16:03:13Z"
+updated_at: "2026-11-11T16:08:17Z"
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
 routing_switches: 1
@@ -148,3 +148,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T15:58:07Z · message_queued at 2026-11-11T15:58:07.720Z
 - 2026-11-11T15:58:13Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T16:03:13Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
+- 2026-11-11T16:08:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1091.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
