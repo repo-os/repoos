@@ -16,6 +16,7 @@ last_handoff_failure_fingerprint: "check|remote validation failed: test failure:
 last_handoff_failure_sha: 15d8889732f8cd7982d6b10a8793b51f81f70f9b
 review_rounds: 2
 review_passes: 2
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 Reported from a new RepoOS project (kamrai, on the mini, RepoOS v0.5.80). A task branch fails the scope check ("diff changes another task's bookkeeping") on files that already exist on main, and the engineer cannot fix it: each time they restore the files from main, the files come back as uncommitted changes (one modified, four untracked) and the committed branch still lacks them. `repoos landable` stays red with no code involved.
