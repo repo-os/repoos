@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-11T00:59:09Z"
+review_passes: 2
 id: "1086"
 title: Branch fails scope check on other tasks' bookkeeping that main legitimately has; sync does not bring it in (kamrai report)
 type: bug
@@ -11,9 +13,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T00:59:09Z"
 review_rounds: 1
-review_passes: 1
 ---
 ## Problem
 Reported from a new RepoOS project (kamrai, on the mini, RepoOS v0.5.80). A task branch fails the scope check ("diff changes another task's bookkeeping") on files that already exist on main, and the engineer cannot fix it: each time they restore the files from main, the files come back as uncommitted changes (one modified, four untracked) and the committed branch still lacks them. `repoos landable` stays red with no code involved.
@@ -73,3 +73,4 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 - 2026-11-11T00:57:19Z · message_queued at 2026-11-11T00:57:19.333Z
 - 2026-11-11T00:57:19Z · note: shots: skipped — the diff (15 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-11T00:59:09Z · note: review pass 2: needs some work
+
