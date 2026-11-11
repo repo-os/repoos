@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T18:43:55Z"
+updated_at: "2026-11-11T19:02:15Z"
 review_passes: 6
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
@@ -274,3 +274,5 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T13:07:36Z · needs_input
 - 2026-11-11T18:42:11Z · status review→active
 - 2026-11-11T18:43:55Z · note: handoff requested (cli)
+- 2026-11-11T18:44:09Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:02:15Z · message_queued at 2026-11-11T19:02:15.573Z
