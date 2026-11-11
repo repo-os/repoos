@@ -11,7 +11,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T02:04:17Z"
+updated_at: "2026-11-11T02:17:01Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -94,3 +94,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T02:03:46Z · message_delivered: 3 message(s)
 - 2026-11-11T02:03:46Z · note: handoff requested (cli)
 - 2026-11-11T02:04:17Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T02:17:01Z · message_queued at 2026-11-11T02:17:01.622Z
