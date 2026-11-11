@@ -63,3 +63,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T02:46:17Z · body
 - 2026-11-11T02:59:07Z · body
 - 2026-11-11T03:14:44Z · message_queued at 2026-11-11T03:14:44.098Z
+- 2026-11-11T03:14:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
