@@ -16,8 +16,6 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 2
@@ -170,4 +168,5 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T05:29:10Z · status active→review
 - 2026-11-11T05:34:32Z · note: review pass 3: needs some work
 - 2026-11-11T05:34:32Z · needs_input
+
 
