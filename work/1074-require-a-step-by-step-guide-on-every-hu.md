@@ -18,6 +18,7 @@ last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check fail
 handoff_signal_retry_count: 2
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T04:22:39.239Z\",\"kind\":\"dev-error\"}]"
+incomplete_review_retries: 1
 ---
 ## Problem
 Tasks assigned to a human (`--assigned-to human`, usually held, e.g. an account sign-up, a signing key, a real-device check) are often filed as a few lines of acceptance criteria. The human then has to decode what to do. Concrete case: in the Tiao project, tasks #0032 (create and back up a release keystore) and #0033 (sign up for a flight-status provider, set the key, verify a real lookup) were filed with two-line outcomes, and the human (Nick) asked for exact steps. The step-by-step guides had to be written afterwards by hand. Human tasks are the one place where the reader is the least able to infer missing detail, and nothing in RepoOS asks for it.
@@ -109,3 +110,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T05:13:34Z · message_queued at 2026-11-11T05:13:34.076Z
 - 2026-11-11T05:17:14Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a63f7c801) during finalization (#0734)
 - 2026-11-11T05:18:22Z · note: review pass 1: incomplete — no verdict in report
+
