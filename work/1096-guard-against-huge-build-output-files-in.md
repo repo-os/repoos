@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T23:51:46Z"
+updated_at: "2026-11-11T23:51:47Z"
 review_passes: 6
 review_rounds: 2
 routing_switches: 1
@@ -148,3 +148,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T23:49:39Z · needs_input
 - 2026-11-11T23:50:02Z · status review→active
 - 2026-11-11T23:50:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T23:51:47Z · note: handoff requested (cli)
