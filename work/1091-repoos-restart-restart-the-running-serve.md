@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/repoos-restart-restart-the-running-serve
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T12:30:29Z"
+updated_at: "2026-11-11T12:30:32Z"
 review_rounds: 1
 routing_switches: 1
 review_passes: 1
@@ -70,3 +70,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T12:28:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T12:28:23Z · body
 - 2026-11-11T12:30:29Z · status active→review
+- 2026-11-11T12:30:32Z · note: shots: skipped — Docs site skipped: no docs shot declared
