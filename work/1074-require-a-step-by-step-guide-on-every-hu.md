@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T05:48:16Z"
+updated_at: "2026-11-11T05:49:04Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
@@ -50,14 +50,17 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 "route": "/work?task=9999&tab=changes",
 "highlight": "[data-test-id=\"human-guide-warning\"]",
 "steps": [
-  {
-    "waitFor": "[data-test-id=\"human-guide-warning\"]"
-  }
+{
+  "waitFor": "[data-test-id=\"human-guide-warning\"]"
+}
 ],
 "state": "drawer:humanGuideWarning"
 }
 ]
 ```
+
+## Accepted scope and known limitations
+FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated pm-canned-messages test edit is dropped (main's version restored); the PM split prompt and PM_SPLIT_HUMAN_STEP_MESSAGE already require the ## Step-by-step guide; an unfilled guide (heading plus placeholder only) warns as HUMAN_TASK_GUIDE_UNFILLED. NOT blocking, follow-up only: a captured screenshot of the drawer banner (the declared shot was brittle; the warning is covered by unit and route tests); the heading regex matching inside fenced code blocks; the duplicate humanTaskGuideWarning call in patchTask; assignee case normalisation in the scaffold check. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -135,3 +138,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T05:31:41Z · message_delivered: 1 message(s)
 - 2026-11-11T05:32:51Z · body
 - 2026-11-11T05:35:41Z · body
+- 2026-11-11T05:49:04Z · body: Accepted scope and known limitations (added)
