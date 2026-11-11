@@ -714,8 +714,8 @@ export function serverBuildState(
 }
 
 /** The command that restarts this repo's server — matches how it is running. */
-export function restartHint(server: StatusServer): string {
-  return server.managedService ? "repoos service restart" : "repoos serve";
+export function restartHint(_server: StatusServer): string {
+  return "repoos restart";
 }
 
 /** `v0.5.66 (build abc123)` for the running server, degrading gracefully. */

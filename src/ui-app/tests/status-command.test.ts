@@ -632,11 +632,9 @@ describe("stale-server helpers (#0701)", () => {
   });
 
   describe("restartHint", () => {
-    it("uses `repoos service restart` for a managed service", () => {
-      expect(restartHint(srv({ managedService: true }))).toBe("repoos service restart");
-    });
-    it("uses `repoos serve` for a hand-run server", () => {
-      expect(restartHint(srv({ managedService: false }))).toBe("repoos serve");
+    it("names `repoos restart` regardless of how the server runs", () => {
+      expect(restartHint(srv({ managedService: true }))).toBe("repoos restart");
+      expect(restartHint(srv({ managedService: false }))).toBe("repoos restart");
     });
   });
 });
