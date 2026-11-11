@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T06:58:33Z"
+updated_at: "2026-11-11T07:06:58Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: c4a4aac81eb4365f88bf5ecb91decb216d4f4aa1
 review_rounds: 1
@@ -155,3 +155,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T06:58:33Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-11T06:58:33Z · needs_input
 - 2026-11-11T06:58:33Z · message_delivered: 3 message(s)
+- 2026-11-11T07:06:58Z · message_queued at 2026-11-11T07:06:58.037Z
