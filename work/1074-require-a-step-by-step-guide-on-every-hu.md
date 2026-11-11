@@ -243,3 +243,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T18:39:43Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-11T18:39:45Z · message_queued at 2026-11-11T18:39:45.844Z
 - 2026-11-11T18:42:13Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T18:46:45Z · note: handoff requested (cli)
