@@ -3,9 +3,6 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: [aborted] read ECONNRESET"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T07:27:24Z"
+updated_at: "2026-11-11T07:27:26Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: c4a4aac81eb4365f88bf5ecb91decb216d4f4aa1
 review_rounds: 1
@@ -163,3 +160,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T07:11:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T07:26:54Z · agent exited with an error (cursor) · Error: [aborted] read ECONNRESET
 - 2026-11-11T07:27:24Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · Error: [aborted] read ECONNRESET
+- 2026-11-11T07:27:26Z · needs_input
