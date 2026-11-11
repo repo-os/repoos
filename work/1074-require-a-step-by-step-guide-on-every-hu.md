@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T06:11:57Z"
+updated_at: "2026-11-11T06:28:33Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch — at tests/ensure-worktree-resilience.test.ts:195:30 — AssertionError: expected false to be true // Object.is equality"
 last_handoff_failure_sha: 1ddd2e06fde3bd1ed07d7a2accab2c7c6170ef6e
 review_rounds: 1
