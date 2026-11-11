@@ -228,3 +228,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:05:13Z · body
 - 2026-11-11T22:16:15Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-11T22:16:16Z · message_queued at 2026-11-11T22:16:16.139Z
+- 2026-11-11T22:16:16Z · ↻ resuming engineer to read queued message
