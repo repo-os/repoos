@@ -3,9 +3,6 @@ id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — the engineer activity line can splice guidance into the wrong place when the assistant's last words contain \"stderr: \"."
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T21:18:01Z"
+updated_at: "2026-11-11T21:18:02Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 1
@@ -158,3 +155,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T21:16:17Z · status active→review
 - 2026-11-11T21:16:18Z · message_queued at 2026-11-11T21:16:18.621Z
 - 2026-11-11T21:18:01Z · note: review pass 5: needs some work
+- 2026-11-11T21:18:02Z · needs_input
