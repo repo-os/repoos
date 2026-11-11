@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T06:11:08Z"
+updated_at: "2026-11-11T06:28:47Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
 last_handoff_failure_sha: 1541535f99c18250059c0409a7378be9d0444898
 review_passes: 3
