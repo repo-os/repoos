@@ -12,6 +12,7 @@ import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { createTask, patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import {
+  HUMAN_TASK_GUIDE_HEADING,
   HUMAN_TASK_SCAFFOLD,
   humanTaskGuideWarning,
   PM_SPLIT_HUMAN_STEP_MESSAGE,
@@ -35,6 +36,19 @@ describe("human task guide warning", () => {
 
   it("warns when the guide section is only the scaffold placeholder (#1074)", () => {
     expect(humanTaskGuideWarning("human", HUMAN_TASK_SCAFFOLD)).toContain("still empty");
+  });
+
+  it("does not treat a guide heading inside a fenced block as present (#1074)", () => {
+    const body = [
+      "## Problem",
+      "Document the section.",
+      "",
+      "```md",
+      HUMAN_TASK_GUIDE_HEADING,
+      "1. Example only",
+      "```",
+    ].join("\n");
+    expect(humanTaskGuideWarning("human", body)).toContain("Missing");
   });
 
   it("splitHumanStepRequirementsPrompt requires a step-by-step guide (#1074)", () => {
