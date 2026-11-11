@@ -12,7 +12,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T23:18:26Z"
+updated_at: "2026-11-11T23:47:30Z"
 last_close_out_gate_ms: 200899
 last_close_out_gate_at: "2026-11-11T23:17:22.829Z"
 review_passes: 8
@@ -257,3 +257,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T23:05:42Z · needs_input
 - 2026-11-11T23:17:22Z · close-out gate completed in 201s
 - 2026-11-11T23:18:26Z · status done→done, release:success
+- 2026-11-11T23:47:30Z · message_dropped: 4 queued message(s) discarded — task is done
