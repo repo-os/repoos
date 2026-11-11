@@ -190,3 +190,4 @@ FINAL (pass 6): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:24:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T01:25:29Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T01:25:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T01:25:29Z · message_delivered: 2 message(s)
