@@ -14,7 +14,7 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T12:03:29Z"
+updated_at: "2026-11-11T12:08:10Z"
 ---
 ## Problem
 The `github copilot` agent now fails its connectivity test (and any run) with: "The `efficiency` Auto profile is no longer available. Set --auto-tier to balance or intelligence." (Copilot CLI 1.0.109.) RepoOS hard-codes the cheapest Auto tier as `efficiency`: `src/server/agents.ts` `modelArgs` maps the model `default` (the only github copilot model on the budget allowlist) to `--model auto --auto-tier efficiency`, and `src/core/agent-contract.ts` maps `copilot-auto-efficiency` the same way (and uses it as the default model for github copilot, ~line 902). The CLI validates the tier up front against the account's catalog ("Auto preference ... is unavailable for this account") and does not list the valid ones; `copilot --help` says `--auto-tier <preference>`: "Set the Auto routing profile by its exact advertised ID (validated against the available catalog)".
@@ -53,3 +53,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T11:06:36Z · engineer stopped by request
 - 2026-11-11T11:08:04Z · watchdog: check wait escalated · waiting: waiting for serialized local fallback (1 ahead, position 2); slot holder 28445 is dead for 15m · next step: investigate the abnormal wait; the flag clears when the check starts
 - 2026-11-11T12:03:29Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T12:08:10Z · CTO nudge: held — an undelivered message is already queued
