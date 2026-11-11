@@ -146,3 +146,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T20:40:10Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T20:54:17Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-11T20:54:19Z · status active→review
+- 2026-11-11T20:54:19Z · message_queued at 2026-11-11T20:54:19.784Z
