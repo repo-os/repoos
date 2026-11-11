@@ -293,3 +293,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T19:39:23Z · needs_input
 - 2026-11-11T19:39:27Z · status active→review
 - 2026-11-11T19:46:47Z · message_queued at 2026-11-11T19:46:47.029Z
+- 2026-11-11T19:46:47Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
