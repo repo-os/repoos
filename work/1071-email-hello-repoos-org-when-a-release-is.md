@@ -173,3 +173,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T05:45:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T05:45:10Z · needs_input
 - 2026-11-11T05:46:49Z · body: Accepted scope and known limitations (added)
+- 2026-11-11T05:46:51Z · note: handoff requested (cli)
