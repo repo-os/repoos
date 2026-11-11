@@ -46,3 +46,4 @@ Separately (not part of this task): the Adoption matrix macOS job failed at `ove
 - 2026-11-11T05:01:22Z · note: ui verification passed: 1 shot captured with clean console
 - 2026-11-11T05:01:22Z · status active→review
 - 2026-11-11T05:01:23Z · note: Task body is underspecified: missing sections: Desired UX, Notes for AI
+- 2026-11-11T05:01:23Z · message_queued at 2026-11-11T05:01:23.091Z
