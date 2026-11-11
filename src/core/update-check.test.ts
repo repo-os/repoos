@@ -6,12 +6,14 @@ import type { Release } from "../commands/upgrade.js";
 import {
   UPDATE_CHECK_FAILURE_CACHE_MS,
   UPDATE_CHECK_TTL_MS,
+  beginCliUpdateBackgroundRefresh,
   emitCliUpdateNoticeOnExit,
   formatCliUpdateNotice,
   isUpdateCheckEnvDisabled,
   prefetchCliUpdateCheck,
   readUpdateCheckCache,
   refreshUpdateCheckCache,
+  registerCliUpdateNoticeExitHook,
   shouldRefreshUpdateCheckCache,
   shouldRunCliUpdateCheck,
   updateCheckCachePath,
@@ -165,6 +167,7 @@ describe("refreshUpdateCheckCache", () => {
     expect(
       shouldRefreshUpdateCheckCache(afterFail, null, base + UPDATE_CHECK_FAILURE_CACHE_MS - 1),
     ).toBe(false);
+    const spawnDetachedRefresh = vi.fn();
     prefetchCliUpdateCheck({
       home: () => home,
       now: () => base + 1000,
@@ -172,9 +175,9 @@ describe("refreshUpdateCheckCache", () => {
       readInstallVersion: () => "0.5.78",
       readVersion: () => "0.5.78",
       fetchRelease,
+      spawnDetachedRefresh,
     });
-    await new Promise((r) => setTimeout(r, 20));
-    expect(fetchRelease).not.toHaveBeenCalled();
+    expect(spawnDetachedRefresh).not.toHaveBeenCalled();
   });
 
   it("reuses a successful cache within the 24h TTL without calling fetch", async () => {
@@ -189,12 +192,9 @@ describe("refreshUpdateCheckCache", () => {
       fetchSucceeded: true,
     });
     expect(
-      shouldRefreshUpdateCheckCache(
-        readUpdateCheckCache(path),
-        null,
-        1_700_000_000_000 + 60_000,
-      ),
+      shouldRefreshUpdateCheckCache(readUpdateCheckCache(path), null, 1_700_000_000_000 + 60_000),
     ).toBe(false);
+    const spawnDetachedRefresh = vi.fn();
     prefetchCliUpdateCheck({
       home: () => home,
       now: () => 1_700_000_000_000 + 60_000,
@@ -202,9 +202,9 @@ describe("refreshUpdateCheckCache", () => {
       readInstallVersion: () => "0.5.78",
       readVersion: () => "0.5.78",
       fetchRelease,
+      spawnDetachedRefresh,
     });
-    await new Promise((r) => setTimeout(r, 20));
-    expect(fetchRelease).not.toHaveBeenCalled();
+    expect(spawnDetachedRefresh).not.toHaveBeenCalled();
   });
 
   it("ignores cached channel data after the install channel changes", async () => {
@@ -300,41 +300,120 @@ describe("emitCliUpdateNoticeOnExit", () => {
     stderrWrite.mockRestore();
   });
 
-  it("does not wait on a slow in-flight prefetch", async () => {
+  it("does not print when current version matches the cached latest", () => {
     const path = updateCheckCachePath(home);
-    let resolveFetch!: () => void;
-    const fetchRelease = vi.fn(
-      () =>
-        new Promise<Release>((resolve) => {
-          resolveFetch = () =>
-            resolve({
-              tag_name: "v0.5.99",
-              assets: [],
-              prerelease: false,
-              html_url: "https://github.com/repo-os/repoos/releases/tag/v0.5.99",
-            });
-        }),
-    );
-    prefetchCliUpdateCheck({
-      home: () => home,
-      now: () => 1_700_000_000_000,
-      installRoot: () => "/opt/standalone/repoos",
-      readInstallVersion: () => "0.5.78",
-      readVersion: () => "0.5.78",
-      fetchRelease,
+    writeUpdateCheckCache(path, {
+      lastCheckedAt: 1_700_000_000_000,
+      latestVersion: "0.5.79",
+      url: "https://github.com/repo-os/repoos/releases/tag/v0.5.79",
+      dismissedVersion: null,
+      channel: "",
+      fetchSucceeded: true,
     });
     const stderrWrite = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-    const start = Date.now();
     emitCliUpdateNoticeOnExit({
       home: () => home,
       now: () => 1_700_000_000_000,
       installRoot: () => "/opt/standalone/repoos",
-      readInstallVersion: () => "0.5.78",
-      readVersion: () => "0.5.78",
+      readInstallVersion: () => "0.5.79",
+      readVersion: () => "0.5.79",
     });
-    expect(Date.now() - start).toBeLessThan(200);
     expect(stderrWrite).not.toHaveBeenCalled();
-    resolveFetch();
+    stderrWrite.mockRestore();
+  });
+});
+
+describe("beginCliUpdateBackgroundRefresh", () => {
+  let home: string;
+
+  beforeEach(() => {
+    home = mkdtempSync(join(tmpdir(), "repoos-update-hook-"));
+  });
+
+  afterEach(() => {
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it("schedules refresh only for interactive TTY use", () => {
+    const spawnDetachedRefresh = vi.fn();
+    const tty = {
+      cmd: "list",
+      argv: [] as string[],
+      config: { updates: { check: true } },
+      deps: {
+        home: () => home,
+        spawnDetachedRefresh,
+        installRoot: () => "/opt/standalone/repoos",
+        readInstallVersion: () => "0.5.78",
+        readVersion: () => "0.5.78",
+      },
+    };
+    beginCliUpdateBackgroundRefresh({
+      cmd: "list",
+      argv: [],
+      config: { updates: { check: true } },
+      deps: tty.deps,
+      env: { REPOOS_NO_UPDATE_CHECK: "1" },
+      stderrIsTTY: true,
+      stdoutIsTTY: true,
+    });
+    expect(spawnDetachedRefresh).not.toHaveBeenCalled();
+
+    beginCliUpdateBackgroundRefresh({
+      cmd: "list",
+      argv: [],
+      config: { updates: { check: true } },
+      deps: tty.deps,
+      stderrIsTTY: true,
+      stdoutIsTTY: true,
+    });
+    expect(spawnDetachedRefresh).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("registerCliUpdateNoticeExitHook", () => {
+  let home: string;
+
+  beforeEach(() => {
+    home = mkdtempSync(join(tmpdir(), "repoos-update-exit-"));
+  });
+
+  afterEach(() => {
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it("honours env opt-out on the exit path", () => {
+    const path = updateCheckCachePath(home);
+    writeUpdateCheckCache(path, {
+      lastCheckedAt: 1_700_000_000_000,
+      latestVersion: "0.5.79",
+      url: "https://github.com/repo-os/repoos/releases/tag/v0.5.79",
+      dismissedVersion: null,
+      channel: "",
+      fetchSucceeded: true,
+    });
+    const chunks: string[] = [];
+    const stderrWrite = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      chunks.push(String(chunk));
+      return true;
+    });
+    registerCliUpdateNoticeExitHook({
+      cmd: "list",
+      argv: [],
+      config: { updates: { check: true } },
+      env: { REPOOS_NO_UPDATE_CHECK: "1" },
+      stderrIsTTY: true,
+      stdoutIsTTY: true,
+      deps: {
+        home: () => home,
+        now: () => 1_700_000_000_000 + UPDATE_CHECK_TTL_MS,
+        installRoot: () => "/opt/standalone/repoos",
+        readInstallVersion: () => "0.5.78",
+        readVersion: () => "0.5.78",
+      },
+    });
+    process.emit("exit", 0);
+    expect(chunks.join("")).toBe("");
     stderrWrite.mockRestore();
   });
 });

@@ -3,6 +3,7 @@
  * the server's `/api/release/available` route. One anonymous GET to GitHub; see
  * `docs/update-check.md`.
  */
+import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -25,6 +26,9 @@ export const UPDATE_CHECK_TTL_MS = 24 * 60 * 60 * 1000;
 /** Mirror `RELEASE_FAILURE_CACHE_MS` in `src/server/routes/release.ts`. */
 export const UPDATE_CHECK_FAILURE_CACHE_MS = 60 * 1000;
 export const UPDATE_CHECK_TIMEOUT_MS = 1500;
+/** Internal argv[1] for a detached cache refresh (not user-facing). */
+export const CLI_UPDATE_CHECK_REFRESH_CMD = "__update-check-refresh";
+export const REPOOS_UPDATE_CHECK_CHILD = "REPOOS_UPDATE_CHECK_CHILD";
 const DEFAULT_RELEASE_URL = "https://github.com/repo-os/repoos/releases";
 
 export interface UpdateCheckCache {
@@ -59,6 +63,8 @@ export interface UpdateCheckDeps {
   env?: NodeJS.ProcessEnv;
   /** When set, combined with the usual timeout for in-flight CLI refresh. */
   abortSignal?: AbortSignal;
+  /** Test hook — run refresh in-process instead of a detached child. */
+  spawnDetachedRefresh?: () => void;
 }
 
 export function updateCheckChannelKey(channel: string | null): string {
@@ -100,7 +106,10 @@ export function writeUpdateCheckCache(path: string, cache: UpdateCheckCache): vo
   }
 }
 
-export function cacheMatchesInstallChannel(cache: UpdateCheckCache, channel: string | null): boolean {
+export function cacheMatchesInstallChannel(
+  cache: UpdateCheckCache,
+  channel: string | null,
+): boolean {
   if (cache.channel === undefined) return false;
   return cache.channel === updateCheckChannelKey(channel);
 }
@@ -218,9 +227,7 @@ export async function refreshUpdateCheckCache(
   const currentVersion = (deps.readVersion ?? readVersion)();
   const fetchRelease = deps.fetchRelease ?? fetchLatestRelease;
   const prev = readUpdateCheckCache(path);
-  const signal =
-    deps.abortSignal ??
-    AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS);
+  const signal = deps.abortSignal ?? AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS);
   try {
     const candidate = await fetchRelease(install.channel, signal);
     const result = availableReleaseFromGithub(install, candidate, currentVersion);
@@ -236,8 +243,7 @@ export async function refreshUpdateCheckCache(
     writeUpdateCheckCache(path, cache);
     return cache;
   } catch {
-    const keepPrior =
-      prev && cacheMatchesInstallChannel(prev, install.channel) ? prev : null;
+    const keepPrior = prev && cacheMatchesInstallChannel(prev, install.channel) ? prev : null;
     const cache: UpdateCheckCache = {
       lastCheckedAt: now(),
       latestVersion: keepPrior?.latestVersion ?? null,
@@ -252,12 +258,21 @@ export async function refreshUpdateCheckCache(
   }
 }
 
-let activePrefetchAbort: AbortController | null = null;
+function spawnDetachedUpdateCheckRefresh(): void {
+  if (process.env[REPOOS_UPDATE_CHECK_CHILD] === "1") return;
+  const entry = process.argv[1];
+  if (!entry) return;
+  const child = spawn(process.execPath, [entry, CLI_UPDATE_CHECK_REFRESH_CMD], {
+    stdio: "ignore",
+    detached: true,
+    env: { ...process.env, [REPOOS_UPDATE_CHECK_CHILD]: "1" },
+  });
+  child.unref();
+}
 
 /**
- * Start a background refresh when the on-disk cache is stale. Does not block the
- * command; an in-flight request is aborted on process exit so stderr never waits
- * on GitHub.
+ * Start a detached background refresh when the on-disk cache is stale. The parent
+ * process never holds an in-flight GitHub GET open (so exit is not delayed).
  */
 export function prefetchCliUpdateCheck(deps: UpdateCheckDeps = {}): void {
   const home = deps.home ?? homedir;
@@ -271,21 +286,11 @@ export function prefetchCliUpdateCheck(deps: UpdateCheckDeps = {}): void {
   const cached = readUpdateCheckCache(path);
   if (!shouldRefreshUpdateCheckCache(cached, install.channel, now)) return;
 
-  activePrefetchAbort?.abort();
-  const abort = new AbortController();
-  activePrefetchAbort = abort;
-  let signal: AbortSignal;
-  try {
-    signal = AbortSignal.any([
-      abort.signal,
-      AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS),
-    ]);
-  } catch {
-    signal = abort.signal;
+  if (deps.spawnDetachedRefresh) {
+    deps.spawnDetachedRefresh();
+    return;
   }
-  void refreshUpdateCheckCache(path, { ...deps, abortSignal: signal }).finally(() => {
-    if (activePrefetchAbort === abort) activePrefetchAbort = null;
-  });
+  spawnDetachedUpdateCheckRefresh();
 }
 
 export function formatCliUpdateNotice(result: UpdateCheckResult): string {
@@ -307,9 +312,6 @@ function noticeAllowed(cache: UpdateCheckCache, available: boolean, now: number)
  */
 export function emitCliUpdateNoticeOnExit(deps: UpdateCheckDeps = {}): void {
   try {
-    activePrefetchAbort?.abort();
-    activePrefetchAbort = null;
-
     const now = deps.now ?? Date.now;
     const home = deps.home ?? homedir;
     const path = updateCheckCachePath(home());
@@ -347,13 +349,28 @@ export function emitCliUpdateNoticeOnExit(deps: UpdateCheckDeps = {}): void {
   }
 }
 
-export function registerCliUpdateNoticeHook(input: {
-  cmd: string | undefined;
-  argv: string[];
-  config?: Pick<RepoOSConfig, "updates">;
+type CliUpdateHookInput = Parameters<typeof shouldRunCliUpdateCheck>[0] & {
   deps?: UpdateCheckDeps;
-}): void {
+};
+
+export function beginCliUpdateBackgroundRefresh(input: CliUpdateHookInput): void {
   if (!shouldRunCliUpdateCheck(input)) return;
   prefetchCliUpdateCheck(input.deps);
+}
+
+export function registerCliUpdateNoticeExitHook(input: CliUpdateHookInput): void {
+  if (!shouldRunCliUpdateCheck(input)) return;
   process.once("exit", () => emitCliUpdateNoticeOnExit(input.deps));
+}
+
+/** Run the detached refresh child to completion (used from `src/cli/index.ts`). */
+export async function runCliUpdateCheckRefreshChild(deps: UpdateCheckDeps = {}): Promise<void> {
+  const path = updateCheckCachePath((deps.home ?? homedir)());
+  let signal: AbortSignal;
+  try {
+    signal = AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS);
+  } catch {
+    signal = new AbortController().signal;
+  }
+  await refreshUpdateCheckCache(path, { ...deps, abortSignal: signal });
 }
