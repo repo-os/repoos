@@ -11,8 +11,6 @@ branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
 updated_at: "2026-11-11T21:21:31Z"
 review_passes: 2
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: 179cccdfa9bb7c87ac9c55f5284cc8b1d1598252
 review_rounds: 1
 routing_switches: 1
 last_check_failure: "repoos check at 2026-11-11T18:02:32.813Z: repoos check failed: server-side finalization timed out (deadline exceeded)"
@@ -96,4 +94,5 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:17:53Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T21:21:13Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-11T21:21:30Z · note: review pass 2: needs some work
+
 
