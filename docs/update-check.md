@@ -62,8 +62,9 @@ Channel installs compare against their channel; stable installs use
 ## Implementation
 
 - Core: `src/core/update-check.ts`, semver helpers in `src/core/release-version.ts`
-- CLI hook: `registerCliUpdateNoticeHook` in `src/cli/index.ts` — background
-  prefetch while the command runs, cache-only stderr notice on `exit` (in-flight
-  GET is aborted so exit never waits on GitHub)
+- CLI hook: `beginCliUpdateBackgroundRefresh` / `registerCliUpdateNoticeExitHook`
+  in `src/cli/index.ts` — a **detached** `__update-check-refresh` child refetches
+  when the cache is stale while the command runs; the parent prints a cache-only
+  stderr line on `exit` and never holds an in-flight GitHub GET
 - Server: `fetchAvailableRelease` in `src/server/routes/release.ts` respects
   `updates.check`
