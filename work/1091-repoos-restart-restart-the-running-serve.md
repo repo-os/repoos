@@ -14,7 +14,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T20:08:16Z"
+updated_at: "2026-11-11T20:26:10Z"
 last_handoff_failure_fingerprint: "check|the worktree changed while the gate was running (appeared: src/commands/restart.ts, src/core/server-restart.ts) — the check result no longer describes what is committed, so the handoff was refused. Nothing was lost: the change is still in the worktree. Re-run the handoff once the worktree is stable."
 last_handoff_failure_sha: bb14f9d305fde0eb478da02eed80e343eb2457c8
 review_passes: 4
