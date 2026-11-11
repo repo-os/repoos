@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T05:28:14Z"
+updated_at: "2026-11-11T05:29:10Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
@@ -55,16 +55,16 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```json
 [
 {
-  "label": "Releases page: release email card with Preview and Resend",
-  "target": "default",
-  "route": "/releases",
-  "highlight": "[data-test-id=\"release-email\"]"
+"label": "Releases page: release email card with Preview and Resend",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-email\"]"
 },
 {
-  "label": "Settings: Release emails controls, select label not clipped",
-  "target": "default",
-  "route": "/settings?tab=general&section=release-emails",
-  "highlight": "[data-settings-section=\"release-emails\"]"
+"label": "Settings: Release emails controls, select label not clipped",
+"target": "default",
+"route": "/settings?tab=general&section=release-emails",
+"highlight": "[data-settings-section=\"release-emails\"]"
 }
 ]
 ```
@@ -164,3 +164,4 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T04:41:44Z · cli_override, model_override
 - 2026-11-11T04:48:22Z · message_delivered: 1 message(s)
 - 2026-11-11T05:28:14Z · body
+- 2026-11-11T05:29:10Z · status active→review
