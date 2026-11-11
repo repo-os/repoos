@@ -23,6 +23,42 @@ describe("human task guide warning", () => {
     expect(humanTaskGuideWarning("ai", "## Problem\nDo it")).toBeNull();
     expect(humanTaskGuideWarning("human", "## Step-by-step guide\n1. Do it")).toBeNull();
   });
+
+  it("returns a warning field from POST /api/tasks for human tasks without the guide (#1074)", async () => {
+    const humanBody = "## Problem\n\nDo the signup.\n";
+    const fx = makeFixture("inbox");
+    try {
+      const ctx = makeCtx(fx);
+      ctx.repoos = {
+        createTask: (input: { title: string; body?: string; assignedTo?: string }) => {
+          const taskPath = join(fx.root, "work", "1074-human.md");
+          writeFileSync(
+            taskPath,
+            taskFileText("1074", "inbox", input.body ?? "", "assigned_to: human\n"),
+          );
+          return parseTask({
+            content: readFileSync(taskPath, "utf8"),
+            absPath: taskPath,
+            root: fx.root,
+            defaultStatus: "inbox",
+            defaultAssignee: "unassigned",
+          });
+        },
+      } as RouteContext["repoos"];
+      const { res, fake } = makeRes();
+      await createTask(
+        ctx,
+        makeReq({ title: "Human signup", body: humanBody, assignedTo: "human" }),
+        res,
+        {},
+      );
+      expect(fake.status).toBe(201);
+      const payload = fake.payload as { warning?: string };
+      expect(payload.warning).toContain("## Step-by-step guide");
+    } finally {
+      fx.clean();
+    }
+  });
 });
 import {
   flagNeedsHumanStepIfNeeded,
