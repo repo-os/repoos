@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T05:11:58Z"
+updated_at: "2026-11-11T05:24:18Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -60,3 +60,4 @@ FINAL (round 2 freeze). Blocking, fix only this: homebrewTapUpdateInProgress mus
 - 2026-11-11T05:08:24Z · message_queued at 2026-11-11T05:08:24.674Z
 - 2026-11-11T05:08:25Z · message_queued at 2026-11-11T05:08:25.441Z
 - 2026-11-11T05:11:58Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T05:24:18Z · handoff_deferred: 2 queued message(s) must be read before review
