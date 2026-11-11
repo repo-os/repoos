@@ -11,7 +11,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T02:03:45Z"
+updated_at: "2026-11-11T02:03:46Z"
 review_rounds: 2
 review_passes: 2
 deferred_handoff_resume_count: 1
@@ -89,3 +89,4 @@ FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1
 - 2026-11-11T01:59:44Z · note: adopted orphaned engineer pid 27088
 - 2026-11-11T02:03:45Z · handoff_deferred: 2 queued message(s) must be read before review
 - 2026-11-11T02:03:45Z · message_queued at 2026-11-11T02:03:45.976Z
+- 2026-11-11T02:03:46Z · ↻ resuming engineer to read queued message
