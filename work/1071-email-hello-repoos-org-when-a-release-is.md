@@ -273,3 +273,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T13:07:35Z · note: review pass 6: needs some work
 - 2026-11-11T13:07:36Z · needs_input
 - 2026-11-11T18:42:11Z · status review→active
+- 2026-11-11T18:43:55Z · note: handoff requested (cli)
