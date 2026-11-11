@@ -1,13 +1,8 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: c4a4aac81eb4365f88bf5ecb91decb216d4f4aa1
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "handoff finalization was interrupted (server reload) — restart work to hand off again. If the conversation is poisoned (the same failure repeats every turn), reset it with `repoos start <id> --fresh`"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -19,6 +14,8 @@ review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
 updated_at: "2026-11-11T06:58:33Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: c4a4aac81eb4365f88bf5ecb91decb216d4f4aa1
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
@@ -156,4 +153,4 @@ FINAL (round 3, hand-finished): the merge conflict is resolved and the unrelated
 - 2026-11-11T06:58:33Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T06:58:33Z · message_queued at 2026-11-11T06:58:33.424Z
 - 2026-11-11T06:58:33Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-11T06:58:33Z · needs_input
