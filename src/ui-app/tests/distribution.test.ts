@@ -7,7 +7,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { parseDistributionConfig } from "../../core/config";
 import {
+  DISTRIBUTION_HOMEBREW_GRACE_MS,
   getDistributionStatus,
+  releaseWorkflowBasename,
   resolveChannelUrl,
   stripVersionPrefix,
 } from "../../server/distribution";
@@ -24,6 +26,17 @@ function config(distribution?: DistributionConfig[]): RepoOSConfig {
     defaultAssignee: "unassigned",
     cacheDir: ".repoos",
     distribution,
+  };
+}
+
+function configWithRelease(distribution?: DistributionConfig[]): RepoOSConfig {
+  return {
+    ...config(distribution),
+    release: {
+      enabled: true,
+      repository: "repo-os/repoos",
+      workflow: ".github/workflows/release.yml",
+    },
   };
 }
 
@@ -332,5 +345,335 @@ describe("distribution helpers", () => {
     expect(resolveChannelUrl("https://x/{version}", release)).toBe("https://x/1.2.3");
     expect(resolveChannelUrl("https://x/tag/{tag}", null)).toBeNull();
     expect(resolveChannelUrl(undefined, release)).toBeNull();
+  });
+
+  it("reads the release workflow basename from config paths", () => {
+    expect(releaseWorkflowBasename(".github/workflows/release.yml")).toBe("release.yml");
+    expect(releaseWorkflowBasename("  ")).toBeNull();
+  });
+});
+
+describe("release workflow CI attribution (#1090)", () => {
+  const homebrewChannel: DistributionConfig = {
+    name: "Homebrew",
+    kind: "homebrew",
+    versionUrl: "https://example.com/formula.rb",
+    url: "https://github.com/repo-os/homebrew-tap/blob/main/Formula/repoos.rb",
+    install: ["brew install repo-os/tap/repoos"],
+  };
+
+  it("ignores unrelated failed workflow runs when the release workflow succeeded", async () => {
+    const urls: string[] = [];
+    const summary = await getDistributionStatus(
+      configWithRelease([{ name: "npm", kind: "npm", package: "@scope/pkg" }, homebrewChannel]),
+      release,
+      fakeFetch((url) => {
+        urls.push(url);
+        if (url.includes("registry.npmjs.org")) {
+          return new Response(JSON.stringify({ version: "1.2.3" }), { status: 200 });
+        }
+        if (url.includes("example.com/formula.rb")) {
+          return new Response('version "1.2.2"', { status: 200 });
+        }
+        if (url.includes("/actions/workflows/release.yml/runs")) {
+          return new Response(
+            JSON.stringify({
+              workflow_runs: [
+                {
+                  id: 2,
+                  html_url: "https://github.com/repo-os/repoos/actions/runs/2",
+                  conclusion: "success",
+                  status: "completed",
+                  updated_at: new Date().toISOString(),
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/actions/runs?event=push")) {
+          return new Response(
+            JSON.stringify({
+              workflow_runs: [
+                {
+                  id: 1,
+                  conclusion: "failure",
+                  html_url: "https://github.com/example/adoption/run",
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("homebrew-tap/actions/runs")) {
+          return new Response(JSON.stringify({ workflow_runs: [] }), { status: 200 });
+        }
+        return new Response("", { status: 404 });
+      }),
+    );
+    expect(urls.some((u) => u.includes("/actions/runs?event=push"))).toBe(false);
+    expect(summary.ciFailure).toBeNull();
+  });
+
+  it("surfaces a failed release workflow run and its failed step", async () => {
+    const summary = await getDistributionStatus(
+      configWithRelease([{ name: "npm", kind: "npm", package: "@scope/pkg" }]),
+      release,
+      fakeFetch((url) => {
+        if (url.includes("registry.npmjs.org")) {
+          return new Response(JSON.stringify({ version: "1.2.2" }), { status: 200 });
+        }
+        if (url.includes("/actions/workflows/release.yml/runs")) {
+          return new Response(
+            JSON.stringify({
+              workflow_runs: [
+                {
+                  id: 99,
+                  html_url: "https://github.com/repo-os/repoos/actions/runs/99",
+                  conclusion: "failure",
+                  status: "completed",
+                  updated_at: new Date().toISOString(),
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.endsWith("/actions/runs/99/jobs")) {
+          return new Response(
+            JSON.stringify({
+              jobs: [
+                {
+                  name: "release",
+                  steps: [{ name: "Request Homebrew tap update", conclusion: "failure" }],
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("", { status: 404 });
+      }),
+    );
+    expect(summary.ciFailure).toEqual({
+      runUrl: "https://github.com/repo-os/repoos/actions/runs/99",
+      failedStep: "Request Homebrew tap update",
+      jobName: "release",
+    });
+  });
+
+  it("labels a lagging Homebrew row as updating within the post-release grace window", async () => {
+    const succeededAt = Date.parse("2026-11-11T12:00:00.000Z");
+    const summary = await getDistributionStatus(
+      configWithRelease([homebrewChannel]),
+      release,
+      fakeFetch((url) => {
+        if (url.includes("example.com/formula.rb")) {
+          return new Response('version "1.2.2"', { status: 200 });
+        }
+        if (url.includes("/actions/workflows/release.yml/runs")) {
+          return new Response(
+            JSON.stringify({
+              workflow_runs: [
+                {
+                  id: 3,
+                  html_url: "https://github.com/repo-os/repoos/actions/runs/3",
+                  conclusion: "success",
+                  status: "completed",
+                  updated_at: "2026-11-11T12:00:00.000Z",
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("homebrew-tap/actions/runs")) {
+          return new Response(JSON.stringify({ workflow_runs: [] }), { status: 200 });
+        }
+        return new Response("", { status: 404 });
+      }),
+      undefined,
+      { nowMs: succeededAt + DISTRIBUTION_HOMEBREW_GRACE_MS - 60_000 },
+    );
+    expect(summary.channels[0]).toMatchObject({ state: "updating" });
+  });
+
+  it("keeps out-of-sync after the grace window when the tap is idle", async () => {
+    const succeededAt = Date.parse("2026-11-11T12:00:00.000Z");
+    const summary = await getDistributionStatus(
+      configWithRelease([homebrewChannel]),
+      release,
+      fakeFetch((url) => {
+        if (url.includes("example.com/formula.rb")) {
+          return new Response('version "1.2.2"', { status: 200 });
+        }
+        if (url.includes("/actions/workflows/release.yml/runs")) {
+          return new Response(
+            JSON.stringify({
+              workflow_runs: [
+                {
+                  id: 4,
+                  html_url: "https://github.com/repo-os/repoos/actions/runs/4",
+                  conclusion: "success",
+                  status: "completed",
+                  updated_at: "2026-11-11T12:00:00.000Z",
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("homebrew-tap/actions/runs")) {
+          return new Response(JSON.stringify({ workflow_runs: [] }), { status: 200 });
+        }
+        return new Response("", { status: 404 });
+      }),
+      undefined,
+      { nowMs: succeededAt + DISTRIBUTION_HOMEBREW_GRACE_MS + 1_000 },
+    );
+    expect(summary.channels[0]?.state).toBe("out-of-sync");
+  });
+
+  /**
+   * A Homebrew row that is out of sync, with the viewed release's run (created
+   * 12:00, last updated 12:10) and the given tap runs. Records every request so
+   * a test can assert which tap endpoints were queried.
+   */
+  async function statusWithTap(
+    tapRuns: unknown[],
+    options: { releaseRuns?: unknown[]; nowMs?: number; repoWideTapRuns?: unknown[] } = {},
+  ) {
+    const urls: string[] = [];
+    const releaseRuns = options.releaseRuns ?? [
+      {
+        id: 5,
+        html_url: "https://github.com/repo-os/repoos/actions/runs/5",
+        conclusion: "success",
+        status: "completed",
+        created_at: "2026-11-11T12:00:00.000Z",
+        updated_at: "2026-11-11T12:10:00.000Z",
+      },
+    ];
+    const summary = await getDistributionStatus(
+      configWithRelease([homebrewChannel]),
+      release,
+      fakeFetch((url) => {
+        urls.push(url);
+        if (url.includes("example.com/formula.rb")) {
+          return new Response('version "1.2.2"', { status: 200 });
+        }
+        if (url.includes("/actions/workflows/release.yml/runs")) {
+          return new Response(JSON.stringify({ workflow_runs: releaseRuns }), { status: 200 });
+        }
+        // The tap's formula-update workflow, the only tap endpoint the check may read.
+        if (url.includes("homebrew-tap/actions/workflows/repoos-release.yml/runs")) {
+          return new Response(JSON.stringify({ workflow_runs: tapRuns }), { status: 200 });
+        }
+        // Repo-wide tap runs: unrelated CI that a correct check must never act on.
+        if (url.includes("homebrew-tap/actions/runs")) {
+          return new Response(JSON.stringify({ workflow_runs: options.repoWideTapRuns ?? [] }), {
+            status: 200,
+          });
+        }
+        return new Response("", { status: 404 });
+      }),
+      undefined,
+      // 12:30 is past the five-minute grace after the 12:10 success, so only the
+      // tap signal can make the row Updating.
+      { nowMs: options.nowMs ?? Date.parse("2026-11-11T12:30:00.000Z") },
+    );
+    return { summary, urls };
+  }
+
+  it("labels Homebrew as updating while this release's tap dispatch is still running", async () => {
+    const { summary, urls } = await statusWithTap([
+      {
+        event: "repository_dispatch",
+        status: "in_progress",
+        created_at: "2026-11-11T12:05:00.000Z",
+      },
+    ]);
+    expect(urls.some((u) => u.includes("event=repository_dispatch"))).toBe(true);
+    expect(summary.channels[0]).toMatchObject({ state: "updating" });
+  });
+
+  it("keeps out-of-sync when an unrelated tap workflow is in progress", async () => {
+    // The tap's CI (tests.yml, a push) is running inside this release's window,
+    // and the formula-update workflow has nothing active. Only the scoped
+    // endpoint may decide, so the row stays out of sync.
+    const { summary, urls } = await statusWithTap([], {
+      repoWideTapRuns: [
+        {
+          event: "push",
+          status: "in_progress",
+          created_at: "2026-11-11T12:05:00.000Z",
+          path: ".github/workflows/tests.yml",
+        },
+        {
+          event: "repository_dispatch",
+          status: "in_progress",
+          created_at: "2026-11-11T12:06:00.000Z",
+          path: ".github/workflows/unrelated.yml",
+        },
+      ],
+    });
+    expect(
+      urls.some((u) => u.includes("homebrew-tap/actions/workflows/repoos-release.yml/runs")),
+    ).toBe(true);
+    expect(summary.channels[0]?.state).toBe("out-of-sync");
+  });
+
+  it("keeps out-of-sync when the running tap dispatch belongs to an earlier release", async () => {
+    const { summary } = await statusWithTap([
+      {
+        event: "repository_dispatch",
+        status: "in_progress",
+        created_at: "2026-11-01T09:00:00.000Z",
+      },
+    ]);
+    expect(summary.channels[0]?.state).toBe("out-of-sync");
+  });
+
+  it("keeps the window open while the release run is still in progress", async () => {
+    // The run's last recorded update (12:10) is more than the grace before the
+    // dispatch (12:35). An in-progress run keeps moving, so the window runs to now.
+    const { summary } = await statusWithTap(
+      [
+        {
+          event: "repository_dispatch",
+          status: "in_progress",
+          created_at: "2026-11-11T12:35:00.000Z",
+        },
+      ],
+      {
+        releaseRuns: [
+          {
+            id: 6,
+            html_url: "https://github.com/repo-os/repoos/actions/runs/6",
+            conclusion: null,
+            status: "in_progress",
+            created_at: "2026-11-11T12:00:00.000Z",
+            updated_at: "2026-11-11T12:10:00.000Z",
+          },
+        ],
+        nowMs: Date.parse("2026-11-11T12:40:00.000Z"),
+      },
+    );
+    expect(summary.channels[0]).toMatchObject({ state: "updating" });
+  });
+
+  it("does not query the tap when no release run anchors the window", async () => {
+    const { summary, urls } = await statusWithTap(
+      [
+        {
+          event: "repository_dispatch",
+          status: "in_progress",
+          created_at: "2026-11-11T12:05:00.000Z",
+        },
+      ],
+      { releaseRuns: [] },
+    );
+    expect(urls.some((u) => u.includes("homebrew-tap/actions/"))).toBe(false);
+    expect(summary.channels[0]?.state).toBe("out-of-sync");
   });
 });
