@@ -21,7 +21,6 @@ review_passes: 1
 last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
 handoff_signal_retry_count: 2
 dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T07:26:54.870Z\",\"kind\":\"dev-error\"}]"
 incomplete_review_retries: 1
 ---
 ## Problem
