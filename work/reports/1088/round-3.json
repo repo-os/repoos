@@ -1,0 +1,12 @@
+{
+  "taskId": "1088",
+  "round": 3,
+  "at": "2026-11-11T20:36:00.585Z",
+  "agent": "cursor",
+  "model": "composer-2.5",
+  "branch": "feat/copilot-auto-tier-efficiency-was-removed",
+  "baseSha": "bd4989d91ad3467cf209dd5b2feea7711a4f9d10",
+  "sourceSha": "122381dbe68ad67a6d5da305c871d5799d8d3da2",
+  "wordCount": 131,
+  "markdown": "## TL;DR\n\nMaps retired Copilot `efficiency` to `--auto-tier balance`, enriches tier failures for GitHub Copilot only across one-shot, engineer, and review paths, and documents the legacy `copilot-auto-efficiency` alias without altering the 2026-10-04 certify record.\n\n## Work and rationale\n\nRound 3 fixed the accidental `oneShotResultFromLog(..., cli, cli)` call (freeform errors must say `agent exited`, not `github copilot exited`). `enrichAgentFailureDetail` centralizes formatting; `lastFailureLine`, provider overrides, `sessionErrorText`, and `oneShotFailureDetail` all use it when `cli === \"github copilot\"`.\n\n## Approaches tried\n\nScoped enrichment by harness id rather than widening regexes alone; unknown `--auto-tier` CLI parse errors are excluded from tier-unavailable messaging.\n\n## Challenges and blockers\n\nNo live Copilot probe in-session; human verification on Agents → Test still recommended.\n\n## Key learnings\n\nPositional API changes need call-site audits; failure text has multiple producers and needs one shared enrich helper keyed by cli.\n\n## Generated change summary\n\nBase tree: `bd4989d91ad3467cf209dd5b2feea7711a4f9d10`\nSource tree: `ed0c59afea263038594a601425aeb82b301b4f11`\n\n- M src/core/agent-compatibility.json: +2 / −2\n- M src/core/copilot-auto-tier.ts: +13 / −2\n- M src/server/agents.ts: +10 / −14\n- M src/server/freeform-runs.ts: +1 / −1\n- M src/server/review.ts: +5 / −4\n- M src/ui-app/tests/agent-drivers.test.ts: +16 / −0\n- A src/ui-app/tests/copilot-auto-tier.test.ts: +29 / −0"
+}
