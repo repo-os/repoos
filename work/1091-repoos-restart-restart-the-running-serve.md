@@ -14,7 +14,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T19:33:16Z"
+updated_at: "2026-11-11T19:50:55Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/ensure-worktree-resilience.test.ts > ensureWorktree resilience (#0994) > serializes concurrent starts from separate processes on one branch on mini — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 9f3a930b77ab9014171d8eb162d527be6892605b
 review_passes: 4
