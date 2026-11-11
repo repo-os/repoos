@@ -553,6 +553,51 @@ describe("resendReleaseEmail", () => {
     expect(again.status).toBe("sent");
     expect(fake.resendTo).toEqual(RECIPIENTS);
   });
+
+  // A resend after a restart reads the orphaned `pending` record as `failed`
+  // and would otherwise send at once. When `when` is `published` the gate must
+  // still hold, so a person cannot announce a version GitHub has not served yet.
+  it("refuses to send when a published release is not on GitHub yet", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "published" }, { repository: "repo-os/repoos" });
+    const fake = fakeFetch({ github: () => new Response("not found", { status: 404 }) });
+    await expect(
+      resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl }),
+    ).rejects.toThrow(/not.*published yet/i);
+    expect(fake.resendTo).toEqual([]);
+  });
+
+  it("sends once GitHub serves the published release", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "published" }, { repository: "repo-os/repoos" });
+    const fake = fakeFetch({ github: () => publishedResponse() });
+    const record = await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl });
+    expect(record.status).toBe("sent");
+    expect(fake.resendTo).toEqual(RECIPIENTS);
+  });
+
+  it("sends at the tag when GitHub cannot be reached, matching the automatic fallback", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "published" }, { repository: "repo-os/repoos" });
+    const fake = fakeFetch({
+      github: () => {
+        throw new Error("getaddrinfo ENOTFOUND");
+      },
+    });
+    const record = await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl });
+    expect(record.status).toBe("sent");
+    expect(fake.resendTo).toEqual(RECIPIENTS);
+  });
+
+  it("keeps waiting, not sending, when GitHub answers an error status", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "published" }, { repository: "repo-os/repoos" });
+    const fake = fakeFetch({ github: () => new Response("rate limited", { status: 403 }) });
+    await expect(
+      resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl }),
+    ).rejects.toThrow(/not.*published yet/i);
+    expect(fake.resendTo).toEqual([]);
+  });
 });
 
 describe("restart and failure recovery", () => {

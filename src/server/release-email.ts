@@ -388,7 +388,13 @@ export function getReleaseEmailRecord(
     const orphaned: ReleaseEmailRecord = {
       ...record,
       status: "failed",
-      reason: `The server restarted before the email for ${record.tag} finished. Resend to send the rest.`,
+      reason:
+        `The server restarted before the email for ${record.tag} finished. Resend to send the rest` +
+        (record.sentTo.length
+          ? ` — the rest only, since ${record.sentTo.length} already received it.`
+          : record.when === "published"
+            ? " — Resend checks GitHub first, so it will not announce a version that is not published yet."
+            : "."),
     };
     // Put it on the bell too: an interrupted send needs a human just like a
     // failed one. The bell item is keyed by version, so this is idempotent.
@@ -617,6 +623,13 @@ export function startCutReleaseEmail(
  * The explicit Resend button: sends to every configured recipient who does
  * not have it yet. Ignores the prerelease toggle, since a human asked. Throws
  * with a reason the UI can show when it cannot start.
+ *
+ * A resend after a restart reads the orphaned `pending` record as `failed`,
+ * which would otherwise send at once — before GitHub has published. When
+ * `when` is `published` and a repository is set, one live probe gates the send
+ * so a person cannot announce a version that is not downloadable yet. A probe
+ * that cannot reach GitHub (no network) falls through, matching the automatic
+ * path's tagged fallback; a probe that says "not yet" refuses the send.
  */
 export async function resendReleaseEmail(
   config: RepoOSConfig,
@@ -632,6 +645,17 @@ export async function resendReleaseEmail(
   const entry = findHistoryEntry(config, version);
   if (!entry) throw new Error(`No release notes are recorded for version ${version}.`);
   if (inFlight.has(version)) throw new Error(`An email for ${entry.tag} is already in progress.`);
+  const repository = githubRepository(config);
+  if ((email.when ?? "published") === "published" && repository) {
+    const probe = await probeRelease(repository, entry.tag, deps.fetchImpl ?? fetch);
+    if (probe.state === "not-yet" || probe.state === "http-error") {
+      throw new Error(
+        `GitHub does not have ${entry.tag} published yet (${probe.reason}). Send once it is, or set [release.email] when = "tagged".`,
+      );
+    }
+    // `published` and `unreachable` both proceed: unreachable is the same
+    // no-network fallback the automatic path takes.
+  }
   inFlight.add(version);
   try {
     const sentTo = [...(getReleaseEmailRecord(config, version)?.sentTo ?? [])];

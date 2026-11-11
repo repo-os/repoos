@@ -1571,6 +1571,9 @@ RepoOS never writes them for you. An empty field renders "None recorded". The
 Releases page shows whether the email was sent, is waiting for GitHub, or
 failed, with a **Preview** that renders the message without sending it and a
 **Resend** that only mails recipients who have not received this release yet.
+A resend with `when = "published"` checks GitHub once before sending, so it will
+not announce a version that is not downloadable yet; if GitHub cannot be reached,
+it sends at the tag, like the automatic path.
 Sends are recorded per version and per recipient in the gitignored cache
 directory, so a restart or a retried cut does not mail a recipient again once the
 record is written. There is a small window between the email provider accepting a

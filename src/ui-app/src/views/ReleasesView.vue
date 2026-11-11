@@ -1390,7 +1390,10 @@ onBeforeUnmount(() => {
               >
             </p>
             <p v-else-if="!releaseEmail.providerConfigured" class="rel-email-hint">
-              <a class="rel-link" href="/settings?tab=security">Set up email</a>
+              No email provider is configured, so nothing will be sent. Set
+              <code>[auth.emailProvider]</code> (Resend, key via <code>REPOOS_RESEND_API_KEY</code>)
+              in repoos.toml — <a class="rel-link" href="/settings?tab=toml">open repoos.toml</a>.
+              Nothing is sent to the team until it is set.
             </p>
             <div v-if="releaseEmailConfirm" class="rel-email-confirm">
               <span>

@@ -475,7 +475,10 @@ shared with login codes and invites).
 - **Bell.** A `failed` send, or a `skipped` one with no provider, raises a
   `releaseEmailFailed` notice linking to the Releases page. A later `sent` clears it.
 - **Resend** only targets configured recipients missing from `sentTo`, so a
-  partial failure can be retried without mailing a recorded recipient again (at most once per recipient, except for the short window between the provider accepting a message and the local write).
+  partial failure can be retried without mailing a recorded recipient again (at most once per recipient, except for the short window between the provider accepting a message and the local write). With `when = "published"` it also
+  probes GitHub once first, so a resend after a restart cannot announce a version
+  GitHub has not published yet — an unreachable GitHub still falls through to the
+  tag, like the automatic path.
 - **Known issues** live on the committed release entry (`knownIssues` in
   `release-history.json`), typed in the release modal. They are never generated.
   An empty field renders "None recorded".
@@ -487,8 +490,9 @@ shared with login codes and invites).
 Known gaps, filed rather than built here: no "send test email" action (Preview
 renders without sending); no `repoos release email` CLI subcommand (the routes are
 HTTP only); the send route accepts a version before GitHub has published it (only
-the UI hides the button); the wait does not resume after a restart (Resend sends
-at once instead); and the email has no per-recipient unsubscribe.
+the UI hides the button); the publish wait itself does not resume after a restart
+(Resend re-probes, then sends, rather than waiting out the original hour); and the
+email has no per-recipient unsubscribe.
 
 ## CI: `release.yml`
 
