@@ -777,16 +777,19 @@ dirs in #0726 and #0860):
   only the paths it intended (`git commit -- <paths>`) and resets any foreign
   `work/` bookkeeping first, so a board write left dirty-and-staged can no longer
   be folded into the branch by a bare `git commit` (#1076).
-- `restoreForeignTaskBookkeepingFromMain` (`git.ts`) runs at handoff, after the
-  commit gate and **before the review lock** (#1076): it makes the branch point's
-  copy authoritative for every foreign `work/` file the branch touched (modified
-  or deleted → that copy back; branch-added → removed) and lands the restore as
-  one plain bookkeeping commit the review tolerates. The copy is the branch point
-  (the merge-base with main), not main's tip, because the branch's own diff is
-  graded `merge-base..HEAD`. It reports what it restored;
-  it never fails the handoff. This heals a branch that already drifted (a sibling
-  re-committed by an earlier WIP checkpoint) rather than bouncing it to the
-  engineer again.
+- `restoreForeignTaskBookkeepingFromMain` (`git.ts`) runs at handoff, and
+  `healForeignBookkeepingAfterSync` runs after every **sync with main** attempt
+  (#1086) — merge success or aborted conflict. Both run after the commit gate
+  and before the review lock (#1076). The heal grades `work/`, `inputs/`, and
+  `stories/` in every git tree state (committed, staged, unstaged, untracked).
+  Siblings at the merge-base are **restored** to main's tip (main's copy wins on
+  the branch). Post-merge siblings that **exist on main** but not at the merge-base
+  are **dropped** from the branch (not copied in) so main stays authoritative at
+  landing; stray adds with no main blob are removed. If the heal throws, handoff
+  stops at the **commit** step with a message naming the paths — it does not
+  silently succeed. Sync heal is best-effort after every attempt, including when
+  the merge aborts on conflict (#1086). This heals drift from WIP checkpoints or
+  concurrent board writes instead of bouncing the engineer.
   A handoff is also refused on an unchanged branch tip with a recorded identical
   check failure; a new commit (even a docs touch) is the way to request a fresh
   validation after a failure that is no longer reproducible.

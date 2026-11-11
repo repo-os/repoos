@@ -3,9 +3,6 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: active
-hold: true
-hold_reason: "load: pausing extra engineers until #1080/#1070 land"
-hold_at: "2026-11-10T06:26:35.269Z"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -14,13 +11,13 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T02:03:45Z"
-last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
-last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
+updated_at: "2026-11-11T06:11:08Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: vite v8.2.0 building client environment for production..."
+last_handoff_failure_sha: 1541535f99c18250059c0409a7378be9d0444898
+review_passes: 3
 review_rounds: 2
-review_passes: 2
 handoff_signal_retry_count: 2
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -58,18 +55,22 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```json
 [
 {
-"label": "Release email status card with Preview and Resend",
+"label": "Releases page: release email card with Preview and Resend",
 "target": "default",
 "route": "/releases",
 "highlight": "[data-test-id=\"release-email\"]"
 },
 {
-"label": "Settings → General → Release emails controls",
+"label": "Settings: Release emails controls, select label not clipped",
 "target": "default",
-"route": "/settings?tab=general&section=release-emails"
+"route": "/settings?tab=general&section=release-emails",
+"highlight": "[data-settings-section=\"release-emails\"]"
 }
 ]
 ```
+
+## Accepted scope and known limitations
+FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut; accepted recipients are kept in a caller-owned list so a failed local write cannot make Resend mail them twice (and the send is now awaited so its errors are caught); an interrupted send reaches the bell; the docs state per-recipient at-most-once with the provider-accept-to-write window. NOT blocking, follow-up only: Resend after a restart skipping the publish gate (reuse probeRelease for when=published); the Set up email link target and a Settings email-setup surface; [release.email] enabled saving without [release] enabled; anything under Edge cases of earlier reviews. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -154,3 +155,30 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-10T23:04:19Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T02:03:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T04:06:10Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T04:16:32Z · released
+- 2026-11-11T04:16:42Z · cli_override, model_override
+- 2026-11-11T04:16:43Z · model_override
+- 2026-11-11T04:16:49Z · message_delivered: 2 message(s)
+- 2026-11-11T04:17:33Z · message_queued at 2026-11-11T04:17:33.511Z
+- 2026-11-11T04:21:55Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T04:21:57Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T04:41:42Z · needs_input
+- 2026-11-11T04:41:44Z · cli_override, model_override
+- 2026-11-11T04:48:22Z · message_delivered: 1 message(s)
+- 2026-11-11T05:28:14Z · body
+- 2026-11-11T05:29:10Z · status active→review
+- 2026-11-11T05:34:32Z · note: review pass 3: needs some work
+- 2026-11-11T05:34:32Z · needs_input
+- 2026-11-11T05:34:33Z · message_queued at 2026-11-11T05:34:33.277Z
+- 2026-11-11T05:45:07Z · status review→active
+- 2026-11-11T05:45:09Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T05:45:10Z · needs_input
+- 2026-11-11T05:46:49Z · body: Accepted scope and known limitations (added)
+- 2026-11-11T05:46:51Z · note: handoff requested (cli)
+- 2026-11-11T05:49:15Z · message_delivered: 1 message(s)
+- 2026-11-11T05:49:29Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Task #1071 is in review. Nothing else is needed from me this turn. The "changes from prior turn" in the resume state are already committed as `3d1564aee`, and the worktree is clean. The five files in that commit match the listed diff exact… · stderr: RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T05:51:57Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T06:09:20Z · message_queued at 2026-11-11T06:09:20.179Z
+- 2026-11-11T06:09:20Z · handoff failed · task-file handoff failed at check · repoos check failed: vite v8.2.0 building client environment for production...
+- 2026-11-11T06:11:08Z · message_delivered: 1 message(s)

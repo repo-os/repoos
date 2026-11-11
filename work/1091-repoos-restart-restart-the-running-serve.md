@@ -1,0 +1,47 @@
+---
+id: "1091"
+title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
+type: feature
+status: inbox
+priority: p2
+area: [core, server]
+assigned_to: ai
+created_by: njachowski@gmail.com
+branch: ""
+created_at: "2026-11-11T05:27:34Z"
+updated_at: "2026-11-11T05:27:34Z"
+---
+## Problem
+Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
+- The server runs as a LaunchDaemon (`org.repoos.serve.kamrai`, `UserName=nick`, `KeepAlive=true`) from a hand-written plist.
+- `repoos service` reports "No background service installed for this repo", so `repoos service restart` cannot see it.
+- `repoos status` shows it as "hand-run serve".
+- The documented system-level fix, `sudo launchctl kickstart -k system/org.repoos.serve.kamrai`, failed because `nick` is not a sudoer.
+- What worked was `kill <pid>` as `nick`, found by hand, with launchd then restarting the process. The new server came up on the same port with the new version.
+
+`repoos status` already warns "server is older than the installed CLI … restart" and names a restart command that does not apply here.
+
+## Desired UX
+`repoos restart` restarts this repo's server, whatever started it, and does not need sudo when the daemon runs as the invoking user. It prints which path it took and waits until `/api/health` answers, then reports the new pid and version. The `repoos status` stale-server warning names `repoos restart`.
+
+## Acceptance criteria
+1. Find the server the way `repoos stop` does (the repo's own lockfile and `~/.repoos/servers/`). It must never touch another repo's server.
+2. Managed service (`repoos service install`): use the service manager's restart.
+3. Hand-run server: stop it and start it again with the same flags, unless a supervisor will respawn it.
+4. Externally supervised server, such as launchd with `KeepAlive`: if the pid is owned by the invoking user, stop it and let the supervisor respawn it. Wait for a new pid before reporting success. If the supervisor does not respawn within a timeout, say so and print the exact manual command instead of claiming success.
+5. Refuse with a clear message if the server belongs to another user and sudo would be needed. No automatic sudo.
+6. Report success only after `/api/health` returns ok and the pid has changed. Print the old and new pid and version.
+7. Tests cover the three cases above plus the "supervisor never respawns" timeout and the "other user's pid" refusal. Update `user-docs/cli.md`, `user-docs/troubleshooting.md` and the `repoos status` warning text.
+8. Add a CLI route/command parity entry if any API route is added.
+9. Check git history for related earlier restart work (#0185 service management and #0214 server restart adoption exist).
+
+## Notes for AI
+Do not change `repoos service` semantics for managed services. Restarting a server must not kill or interrupt running engineer agents without telling the user. Server restarts are meant to adopt in-flight agents (#0214); confirm and preserve that. Never use `pkill`; stop by exact pid.
+
+## Reporter notes
+- Reproduce on macOS with a LaunchDaemon that has `KeepAlive=true`, running as a non-sudo user.
+- Related quirk seen on the same box, possibly a separate task: `repoos landable` kept saying "review still lists blocking bugs" for a review whose Bugs section read "None found" followed by a bullet list of previously fixed items, but `repoos done` accepted it. The parser seems to count those bullets as bugs. Seen on Kamrai #0007 after v0.5.80; not rechecked on v0.5.82.
+
+## Activity
+
+- 2026-11-11T05:27:34Z · created · njachowski@gmail.com
