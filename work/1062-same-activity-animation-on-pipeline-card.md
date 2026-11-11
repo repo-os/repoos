@@ -14,7 +14,7 @@ model_override: composer-2.5
 review_cli_override: github copilot
 review_model_override: default
 created_at: "2026-11-08T09:13:53Z"
-updated_at: "2026-11-11T01:44:29Z"
+updated_at: "2026-11-11T02:03:45Z"
 last_close_out_gate_ms: 930615
 last_close_out_gate_at: "2026-11-11T01:43:56.162Z"
 review_passes: 3
@@ -282,3 +282,4 @@ Files: `src/ui-app/src/components/ActivityIndicator.vue`, `PipelineCard.vue`, `T
 - 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T01:43:56Z · close-out gate completed in 931s
 - 2026-11-11T01:44:29Z · status done→done, release:success
+- 2026-11-11T02:03:45Z · message_dropped: 1 queued message(s) discarded — task is done
