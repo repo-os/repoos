@@ -92,3 +92,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:21:52Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T04:21:52Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T04:21:55Z · needs_input
+- 2026-11-11T04:21:55Z · message_delivered: 1 message(s)
