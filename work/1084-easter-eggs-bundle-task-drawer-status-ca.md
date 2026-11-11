@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-10T04:51:27Z"
+updated_at: "2026-11-11T03:12:51Z"
 ---
 ## Problem
 The task drawer (screenshot, #1070 after a failed Move to done) stacks a red close-out failure card on top of a yellow "Waiting for you" review card. Several things are wrong:
@@ -31,6 +31,9 @@ The task drawer (screenshot, #1070 after a failed Move to done) stacks a red clo
 ## Notes for AI
 Find the drawer cards in src/ui-app (task drawer status/close-out failure and review "waiting for you" components). Easter egg bundle: keep it to this card cleanup. Do not edit repoos.toml.
 
+## Also fix: elapsed time differs between task card and drawer
+On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46s' while the open drawer showed 'Running checks · 2m 46s' for the same handoff. Both subtract the same status.startedAt, but from different clocks: TaskCard.vue (cardChecksDisplay, ~line 96) uses the shared once-a-second useNow clock, while TaskDrawer.vue (drawerChecksDisplay, ~line 462) uses its own checkNow ref, which only ticks while a check-run loop is active (and the drawer's progress line read 'starting...' while the handoff step was 'review'). Make the drawer use the same live clock (useNow) so both always agree, and show the same step wording (the drawer should say what the card says, e.g. 'checking review'). Add a test that renders both with one status and asserts the same elapsed string.
+
 ## Screenshots
 
 ![32](/api/tasks/1084/attachments/att_bf168d02-53c0-4a61-9f11-e304e50cca7e.webp)
@@ -40,3 +43,4 @@ Find the drawer cards in src/ui-app (task drawer status/close-out failure and re
 - 2026-11-10T04:51:24Z · created · njachowski@gmail.com
 - 2026-11-10T04:51:25Z · screenshots
 - 2026-11-10T04:51:27Z · needs_input
+- 2026-11-11T03:12:51Z · body: Also fix: elapsed time differs between task card and drawer (added)
