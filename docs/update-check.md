@@ -28,15 +28,30 @@ Path: `~/.repoos/release-update-cache.json` (machine state dir via
 Fields:
 
 - `lastCheckedAt` — unix ms; network refresh at most once per **24 hours** on
-  success, or **60 seconds** after a failed GET (mirrors the server’s in-memory
-  failure cache)
+  success. After a **generic** failure (offline, DNS, timeout, 5xx) the retry
+  backoff is **60 seconds** (mirrors the server’s in-memory failure cache).
+  After a **rate-limit** response (**403/429**) it backs off for **24 hours**
+  (or a `Retry-After` value when GitHub sends one), because unauthenticated
+  GitHub allows only 60 requests/hour per IP and a 60s retry would keep the
+  quota exhausted
 - `latestVersion`, `url` — last successful lookup (preserved across failures)
-- `channel` — install channel the row was fetched for (`""` = stable `latest`)
-- `fetchSucceeded` — `false` after offline/timeout/403/429 so refetch backoff
-  stays short
+- `channel` — install channel the row was fetched for (`""` = stable `latest`).
+  A row whose `channel` does not match the running install is ignored on read
+  (a beta install and a stable install do not share a `latestVersion`)
+- `fetchSucceeded` — `false` after offline/timeout/403/429
+- `retryNotBefore` — unix ms before which a failed refresh must not be retried
+  (set on a rate-limit response; absent for generic failures)
+- `refreshingSince` — unix ms when a detached refresh child was last spawned;
+  suppresses parallel spawns (several commands at once, or offline retries) for
+  up to **60 seconds**, and is cleared when the child writes
 - `dismissedVersion` — reserved for cross-surface dismissal (dashboard uses
   `localStorage` today; #1073 owns dismissal UX)
 - `lastNoticeAt` — when the CLI last printed its stderr line
+
+The detached refresh child owns `lastCheckedAt`, `latestVersion`, `url`,
+`channel`, `fetchSucceeded` and `retryNotBefore`; the parent’s exit hook owns
+`lastNoticeAt`. Writes re-read the file first and merge, so a notice the parent
+printed while the child’s GET was in flight is not lost (and vice-versa).
 
 **Why 24h?** Frequent checks would add noise and repeat GitHub traffic on every
 command; once per day is enough for a passive reminder and matches the CLI

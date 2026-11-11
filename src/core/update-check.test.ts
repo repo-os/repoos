@@ -5,7 +5,10 @@ import { tmpdir } from "node:os";
 import type { Release } from "../commands/upgrade.js";
 import {
   UPDATE_CHECK_FAILURE_CACHE_MS,
+  UPDATE_CHECK_RATE_LIMIT_CACHE_MS,
+  UPDATE_CHECK_SPAWN_LOCK_MS,
   UPDATE_CHECK_TTL_MS,
+  UpdateCheckFetchError,
   beginCliUpdateBackgroundRefresh,
   emitCliUpdateNoticeOnExit,
   formatCliUpdateNotice,
@@ -16,6 +19,7 @@ import {
   registerCliUpdateNoticeExitHook,
   shouldRefreshUpdateCheckCache,
   shouldRunCliUpdateCheck,
+  shouldSpawnUpdateCheckRefresh,
   updateCheckCachePath,
   writeUpdateCheckCache,
 } from "./update-check.js";
@@ -86,9 +90,43 @@ describe("shouldRunCliUpdateCheck", () => {
         cmd: "list",
         argv: [],
         stderrIsTTY: true,
+        stdoutIsTTY: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldRunCliUpdateCheck({
+        cmd: "list",
+        argv: [],
+        stderrIsTTY: false,
+        stdoutIsTTY: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldRunCliUpdateCheck({
+        cmd: "list",
+        argv: [],
+        stderrIsTTY: true,
         stdoutIsTTY: true,
       }),
     ).toBe(true);
+  });
+
+  it("treats a JSON argv on the live process as script output", () => {
+    const original = process.argv;
+    try {
+      process.argv = [...process.argv, "--json"];
+      expect(
+        shouldRunCliUpdateCheck({
+          cmd: "list",
+          argv: [],
+          env: {},
+          stderrIsTTY: true,
+          stdoutIsTTY: true,
+        }),
+      ).toBe(false);
+    } finally {
+      process.argv = original;
+    }
   });
 });
 
@@ -205,6 +243,125 @@ describe("refreshUpdateCheckCache", () => {
       spawnDetachedRefresh,
     });
     expect(spawnDetachedRefresh).not.toHaveBeenCalled();
+  });
+
+  it("does not clobber a lastNoticeAt written while the GET was in flight", async () => {
+    const path = updateCheckCachePath(home);
+    const base = 1_700_000_000_000;
+    // Seed a stale failed row the refresh would read as `prev`.
+    writeUpdateCheckCache(path, {
+      lastCheckedAt: base - UPDATE_CHECK_TTL_MS - 1,
+      latestVersion: null,
+      url: null,
+      dismissedVersion: null,
+      channel: "",
+      fetchSucceeded: false,
+    });
+    // The parent's exit hook prints and writes `lastNoticeAt` mid-flight.
+    const fetchRelease = vi.fn(async () => {
+      const mid = readUpdateCheckCache(path)!;
+      writeUpdateCheckCache(path, { ...mid, lastNoticeAt: base - 5 });
+      return stableRelease;
+    });
+    await refreshUpdateCheckCache(path, {
+      home: () => home,
+      now: () => base,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      fetchRelease,
+    });
+    const cache = readUpdateCheckCache(path);
+    expect(cache?.latestVersion).toBe("0.5.79");
+    // The parent's notice timestamp survives the child's write.
+    expect(cache?.lastNoticeAt).toBe(base - 5);
+  });
+
+  it("preserves a dismissedVersion written while the GET was in flight", async () => {
+    const path = updateCheckCachePath(home);
+    const base = 1_700_000_000_000;
+    writeUpdateCheckCache(path, {
+      lastCheckedAt: base - UPDATE_CHECK_TTL_MS - 1,
+      latestVersion: null,
+      url: null,
+      dismissedVersion: null,
+      channel: "",
+      fetchSucceeded: false,
+    });
+    const fetchRelease = vi.fn(async () => {
+      const mid = readUpdateCheckCache(path)!;
+      writeUpdateCheckCache(path, { ...mid, dismissedVersion: "0.5.79" });
+      return stableRelease;
+    });
+    await refreshUpdateCheckCache(path, {
+      home: () => home,
+      now: () => base,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      fetchRelease,
+    });
+    expect(readUpdateCheckCache(path)?.dismissedVersion).toBe("0.5.79");
+  });
+
+  it("backs off for 24h after a rate-limit response", async () => {
+    const path = updateCheckCachePath(home);
+    const base = 1_700_000_000_000;
+    await refreshUpdateCheckCache(path, {
+      home: () => home,
+      now: () => base,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      fetchRelease: async () => {
+        throw new Error("GitHub API returned 429");
+      },
+    });
+    const after = readUpdateCheckCache(path);
+    expect(after?.fetchSucceeded).toBe(false);
+    expect(after?.retryNotBefore).toBe(base + UPDATE_CHECK_RATE_LIMIT_CACHE_MS);
+    // Not eligible a minute later, but eligible after the long backoff.
+    expect(shouldRefreshUpdateCheckCache(after, null, base + 60_000)).toBe(false);
+    expect(
+      shouldRefreshUpdateCheckCache(after, null, base + UPDATE_CHECK_RATE_LIMIT_CACHE_MS),
+    ).toBe(true);
+  });
+
+  it("keeps the short 60s backoff for a generic failure", async () => {
+    const path = updateCheckCachePath(home);
+    const base = 1_700_000_000_000;
+    await refreshUpdateCheckCache(path, {
+      home: () => home,
+      now: () => base,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      fetchRelease: async () => {
+        throw new TypeError("fetch failed");
+      },
+    });
+    const after = readUpdateCheckCache(path);
+    expect(after?.retryNotBefore).toBe(base + UPDATE_CHECK_FAILURE_CACHE_MS);
+    expect(shouldRefreshUpdateCheckCache(after, null, base + UPDATE_CHECK_FAILURE_CACHE_MS)).toBe(
+      true,
+    );
+  });
+
+  it("honours a Retry-After value on a rate-limit response", async () => {
+    const path = updateCheckCachePath(home);
+    const base = 1_700_000_000_000;
+    const retryAfterMs = 5 * 60 * 1000;
+    await refreshUpdateCheckCache(path, {
+      home: () => home,
+      now: () => base,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      fetchRelease: async () => {
+        throw new UpdateCheckFetchError(403, retryAfterMs);
+      },
+    });
+    expect(readUpdateCheckCache(path)?.retryNotBefore).toBe(base + retryAfterMs);
   });
 
   it("ignores cached channel data after the install channel changes", async () => {
@@ -418,6 +575,103 @@ describe("registerCliUpdateNoticeExitHook", () => {
   });
 });
 
+describe("spawn in-flight guard", () => {
+  let home: string;
+
+  beforeEach(() => {
+    home = mkdtempSync(join(tmpdir(), "repoos-update-lock-"));
+  });
+
+  afterEach(() => {
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  const standaloneRoot = "/opt/standalone/repoos";
+  const base = 1_700_000_000_000;
+
+  function staleCache() {
+    return {
+      lastCheckedAt: base - UPDATE_CHECK_TTL_MS - 1,
+      latestVersion: null,
+      url: null,
+      dismissedVersion: null,
+      channel: "",
+      fetchSucceeded: true,
+    } as const;
+  }
+
+  it("skips the spawn while a recent refresh is in flight", () => {
+    const path = updateCheckCachePath(home);
+    writeUpdateCheckCache(path, { ...staleCache(), refreshingSince: base - 1000 });
+    const spawnDetachedRefresh = vi.fn();
+    prefetchCliUpdateCheck({
+      home: () => home,
+      now: () => base,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      spawnDetachedRefresh,
+    });
+    expect(spawnDetachedRefresh).not.toHaveBeenCalled();
+  });
+
+  it("allows a new spawn once the in-flight marker is stale", () => {
+    const path = updateCheckCachePath(home);
+    writeUpdateCheckCache(path, {
+      ...staleCache(),
+      refreshingSince: base - UPDATE_CHECK_SPAWN_LOCK_MS - 1,
+    });
+    const spawnDetachedRefresh = vi.fn();
+    prefetchCliUpdateCheck({
+      home: () => home,
+      now: () => base,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      spawnDetachedRefresh,
+    });
+    expect(spawnDetachedRefresh).toHaveBeenCalledTimes(1);
+    // A second command a moment later is suppressed by the marker.
+    prefetchCliUpdateCheck({
+      home: () => home,
+      now: () => base + 1000,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      spawnDetachedRefresh,
+    });
+    expect(spawnDetachedRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the in-flight marker when the refresh writes", async () => {
+    const path = updateCheckCachePath(home);
+    writeUpdateCheckCache(path, { ...staleCache(), refreshingSince: base - 1 });
+    await refreshUpdateCheckCache(path, {
+      home: () => home,
+      now: () => base,
+      installRoot: () => standaloneRoot,
+      readInstallVersion: () => "0.5.78",
+      readVersion: () => "0.5.78",
+      fetchRelease: async () => ({
+        tag_name: "v0.5.79",
+        assets: [],
+        prerelease: false,
+        html_url: "https://github.com/repo-os/repoos/releases/tag/v0.5.79",
+      }),
+    });
+    expect(readUpdateCheckCache(path)?.refreshingSince).toBeUndefined();
+  });
+
+  it("shouldSpawnUpdateCheckRefresh is time-bounded", () => {
+    const cache = { ...staleCache(), refreshingSince: base } as ReturnType<
+      typeof readUpdateCheckCache
+    >;
+    expect(shouldSpawnUpdateCheckRefresh(cache, base + UPDATE_CHECK_SPAWN_LOCK_MS - 1)).toBe(false);
+    expect(shouldSpawnUpdateCheckRefresh(cache, base + UPDATE_CHECK_SPAWN_LOCK_MS)).toBe(true);
+    expect(shouldSpawnUpdateCheckRefresh(null, base)).toBe(true);
+  });
+});
+
 describe("formatCliUpdateNotice", () => {
   it("names the install-specific upgrade command", () => {
     const line = formatCliUpdateNotice({
@@ -437,5 +691,60 @@ describe("isUpdateCheckEnvDisabled", () => {
   it("accepts both env spellings", () => {
     expect(isUpdateCheckEnvDisabled({ REPOOS_NO_UPDATE_CHECK: "1" })).toBe(true);
     expect(isUpdateCheckEnvDisabled({ REPOOS_DISABLE_UPDATE_CHECK: "1" })).toBe(true);
+  });
+});
+
+describe("passive hooks never throw (must-never-break)", () => {
+  // Every dependency throws: install detection, version reads and the state-dir
+  // path. A passive update check must still leave the user's command unharmed.
+  const boom = () => {
+    throw new Error("boom");
+  };
+  const explosiveDeps = {
+    home: boom,
+    installRoot: boom,
+    readInstallVersion: boom,
+    readVersion: boom,
+    spawnDetachedRefresh: boom,
+    now: boom,
+  };
+
+  it("beginCliUpdateBackgroundRefresh swallows a throwing dependency", () => {
+    expect(() =>
+      beginCliUpdateBackgroundRefresh({
+        cmd: "list",
+        argv: [],
+        config: { updates: { check: true } },
+        stderrIsTTY: true,
+        stdoutIsTTY: true,
+        deps: explosiveDeps,
+      }),
+    ).not.toThrow();
+  });
+
+  it("registerCliUpdateNoticeExitHook swallows a throwing dependency", () => {
+    // Use a unique exit listener we can remove; the hook must register it safely.
+    expect(() =>
+      registerCliUpdateNoticeExitHook({
+        cmd: "list",
+        argv: [],
+        config: { updates: { check: true } },
+        stderrIsTTY: true,
+        stdoutIsTTY: true,
+        deps: explosiveDeps,
+      }),
+    ).not.toThrow();
+    // Draining the exit event must not surface the failure either.
+    expect(() => process.emit("exit", 0)).not.toThrow();
+  });
+
+  it("emitCliUpdateNoticeOnExit swallows a throwing dependency", () => {
+    expect(() => emitCliUpdateNoticeOnExit(explosiveDeps)).not.toThrow();
+  });
+
+  it("refreshUpdateCheckCache resolves null instead of rejecting", async () => {
+    await expect(
+      refreshUpdateCheckCache("/nonexistent/cache.json", explosiveDeps),
+    ).resolves.toBeNull();
   });
 });
