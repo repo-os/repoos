@@ -16,7 +16,6 @@ review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
 review_passes: 2
-deferred_handoff_resume_count: 1
 ---
 ## Problem
 Restarting a RepoOS server needs a different command for each way it is running, and none of them works for a common setup. Found on the Kamrai project (mini, macOS, RepoOS v0.5.80 upgraded to v0.5.82):
