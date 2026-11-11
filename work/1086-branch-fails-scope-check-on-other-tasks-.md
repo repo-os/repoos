@@ -2,7 +2,7 @@
 id: "1086"
 title: Branch fails scope check on other tasks' bookkeeping that main legitimately has; sync does not bring it in (kamrai report)
 type: bug
-status: review
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
 updated_at: "2026-11-11T00:35:35Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -65,3 +66,4 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 - 2026-11-11T00:33:45Z · note: shots: skipped — the diff (12 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-11T00:35:35Z · note: review pass 1: needs some work
 - 2026-11-11T00:35:35Z · message_delivered: 1 message(s)
+- 2026-11-11T00:35:35Z · status review→active
