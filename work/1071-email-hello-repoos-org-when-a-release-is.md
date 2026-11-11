@@ -3,6 +3,9 @@ id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 6 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -11,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T13:07:35Z"
+updated_at: "2026-11-11T13:07:36Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
 review_passes: 5
@@ -268,3 +271,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T12:44:04Z · body
 - 2026-11-11T12:59:43Z · body
 - 2026-11-11T13:07:35Z · note: review pass 6: needs some work
+- 2026-11-11T13:07:36Z · needs_input
