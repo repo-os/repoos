@@ -14,7 +14,7 @@ branch: feat/stale-handoff-running-validate-record-ou
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
-updated_at: "2026-11-11T00:06:35Z"
+updated_at: "2026-11-11T00:09:32Z"
 review_passes: 4
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -169,3 +169,4 @@ FINAL (pass 5): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T00:06:32Z · body: Accepted scope and known limitations (added 1, removed 1)
 - 2026-11-11T00:06:32Z · message_delivered: 1 message(s)
 - 2026-11-11T00:06:35Z · note: handoff requested (cli)
+- 2026-11-11T00:09:32Z · CTO nudge: held — handoff gate is running
