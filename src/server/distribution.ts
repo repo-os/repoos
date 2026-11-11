@@ -378,6 +378,7 @@ async function inspectReleaseWorkflow(
   tag: string,
   fetchImpl: typeof fetch,
   timeoutMs: number,
+  nowMs: number,
 ): Promise<{
   ciFailure: ReleaseCiFailure | null;
   succeededAt: number | null;
@@ -387,7 +388,13 @@ async function inspectReleaseWorkflow(
   if (!runs.length) return { ciFailure: null, succeededAt: null, window: null };
   const latest = runs[0]!;
   const startedAt = parseTimestamp(latest.created_at);
-  const endedAt = parseTimestamp(latest.updated_at);
+  const lastUpdatedAt = parseTimestamp(latest.updated_at);
+  // A run still in progress keeps moving, so its dispatch may land after the last
+  // recorded update; its window stays open until now.
+  const endedAt =
+    lastUpdatedAt !== null && latest.status !== "completed"
+      ? Math.max(lastUpdatedAt, nowMs)
+      : lastUpdatedAt;
   const window = startedAt !== null && endedAt !== null ? { startedAt, endedAt } : null;
   if (latest.conclusion === "success") {
     return { ciFailure: null, succeededAt: endedAt, window };
@@ -487,6 +494,7 @@ export async function getDistributionStatus(
     repository && tag && workflowFile && summary.channels.some((c) => c.state !== "matching");
   let releaseSucceededAt: number | null = null;
   let releaseWindow: ReleaseRunWindow | null = null;
+  const nowMs = options?.nowMs ?? Date.now();
   if (needsCiContext) {
     const inspected = await inspectReleaseWorkflow(
       repository,
@@ -494,12 +502,12 @@ export async function getDistributionStatus(
       tag,
       fetchImpl,
       timeoutMs,
+      nowMs,
     );
     summary.ciFailure = inspected.ciFailure;
     releaseSucceededAt = inspected.succeededAt;
     releaseWindow = inspected.window;
   }
-  const nowMs = options?.nowMs ?? Date.now();
   const tapRepos = new Set<string>();
   for (let i = 0; i < summary.channels.length; i++) {
     const channel = summary.channels[i]!;
