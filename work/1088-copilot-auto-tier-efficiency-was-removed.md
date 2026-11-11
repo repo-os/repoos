@@ -152,3 +152,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T20:55:51Z · needs_input
 - 2026-11-11T21:02:14Z · status review→active
 - 2026-11-11T21:02:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T21:02:55Z · note: handoff requested (cli)
