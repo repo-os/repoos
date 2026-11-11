@@ -114,6 +114,7 @@ function laneFor(task: Task, nowMs: number): Lane | null {
       ? {
           handoffInFlight: repo.handoffInFlight(task.id),
           handoffState: handoffStatus?.state,
+          handoffStale: handoffStatus?.stale,
           handoffStep: handoffStatus?.step ?? repo.handoffSteps[task.id],
           handoffRequested: task.pendingHandoff === true,
           checkInFlight: runningCheck !== null || !!localCheckSlot,

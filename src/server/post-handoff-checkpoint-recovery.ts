@@ -5,7 +5,14 @@
  * self-check checkpoint commit(s), re-run the handoff gate on the new tree,
  * review the delta since the approved SHA, then resume the authorized close-out.
  */
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import type { LogLevel } from "../core/logger.js";
 import type { RepoOSConfig, Task } from "../core/types.js";
@@ -17,6 +24,7 @@ import type { PreviewManager } from "./preview.js";
 import type { ReviewManager } from "./review.js";
 import type { RemoteValidator } from "./remote-validation.js";
 import type { TaskCheckManager, TaskCheckListener } from "./task-check.js";
+import type { AgentRunner } from "./agents.js";
 import { finalizeReviewHandoff } from "./handoff.js";
 import { readHandoffSnapshot, writeWorktreeReviewLock } from "./worktree-handoff-guard.js";
 import { buildIntegrationSnapshot } from "./integration-status.js";
@@ -83,6 +91,34 @@ export function isPostHandoffCheckpointRecoveryActive(
   return rec !== null && rec.phase !== "failed";
 }
 
+/** Drop checkpoint markers left behind when no handoff slot is claimed (#1085). */
+export function sweepOrphanedPostHandoffCheckpointRecoveries(
+  config: RepoOSConfig,
+  isHandoffLive: (taskId: string) => boolean,
+): number {
+  const dir = join(config.root, config.cacheDir ?? ".repoos", "post-handoff-checkpoint");
+  let removed = 0;
+  let names: string[];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return 0;
+  }
+  for (const name of names) {
+    if (!name.endsWith(".json")) continue;
+    const taskId = name.slice(0, -".json".length);
+    const rec = readPostHandoffCheckpointRecovery(config, taskId);
+    // Only a `gate` marker is backed by a handoff process. A `review` marker
+    // means the delta review is still pending: close-out resumes from it when
+    // the review says good to go, so a restart must not delete it.
+    if (!rec || rec.phase !== "gate") continue;
+    if (isHandoffLive(taskId)) continue;
+    clearPostHandoffCheckpointRecovery(config, taskId);
+    removed++;
+  }
+  return removed;
+}
+
 export interface CheckpointRecoveryDeps {
   config: RepoOSConfig;
   index: LiveIndex;
@@ -96,6 +132,8 @@ export interface CheckpointRecoveryDeps {
   remoteValidator?: RemoteValidator;
   previews?: PreviewManager;
   onTaskLog?: (taskId: string, level: LogLevel, message: string) => void;
+  /** Required: the handoff slot is what makes recovery single-flight (#1085). */
+  runner: Pick<AgentRunner, "markHandoffInFlight" | "releaseHandoffInFlight" | "isHandoffInFlight">;
 }
 
 /**
@@ -109,23 +147,45 @@ export async function startPostHandoffCheckpointRecovery(
   headSha: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const { config } = deps;
-  if (isPostHandoffCheckpointRecoveryActive(config, task.id)) {
+  const existing = readPostHandoffCheckpointRecovery(config, task.id);
+  if (existing && existing.phase !== "failed") {
+    if (deps.runner?.isHandoffInFlight?.(task.id)) {
+      return { ok: false, reason: "checkpoint recovery is already running for this task" };
+    }
+    // The `review` phase is not slot-backed, but its delta review may still be
+    // running: a second Move to done must not delete the marker and restart.
+    if (existing.phase === "review" && deps.reviews.isRunning(task.id)) {
+      return { ok: false, reason: "the delta review for this task is still running" };
+    }
+    // Do NOT clear the marker here: the claim below can still refuse, and a
+    // dropped `review` marker would stop close-out from ever resuming.
+    // `writeRecovery` overwrites it once the claim succeeds.
+  }
+  // Claim the handoff slot synchronously, before any await, so a second Move to
+  // done cannot slip in between the start decision and the pipeline's claim.
+  if (deps.runner?.markHandoffInFlight && !deps.runner.markHandoffInFlight(task.id)) {
     return { ok: false, reason: "checkpoint recovery is already running for this task" };
   }
-  writeRecovery(config, {
-    taskId: task.id,
-    approvedSha,
-    headSha,
-    phase: "gate",
-    startedAt: new Date().toISOString(),
-  });
-  deps.emitEvent({
-    type: "task.progress",
-    id: task.id,
-    step: "checkpoint-recovery",
-    detail: "Re-running handoff gate after engineer checkpoint commit(s)",
-    at: new Date().toISOString(),
-  });
+  try {
+    writeRecovery(config, {
+      taskId: task.id,
+      approvedSha,
+      headSha,
+      phase: "gate",
+      startedAt: new Date().toISOString(),
+    });
+    deps.emitEvent({
+      type: "task.progress",
+      id: task.id,
+      step: "checkpoint-recovery",
+      detail: "Re-running handoff gate after engineer checkpoint commit(s)",
+      at: new Date().toISOString(),
+    });
+  } catch (err) {
+    // Anything thrown after the claim must not leak the slot.
+    deps.runner?.releaseHandoffInFlight?.(task.id);
+    throw err;
+  }
   void runRecoveryPipeline(deps, task, approvedSha, headSha).catch((err) => {
     const message = err instanceof Error ? err.message : String(err);
     writeRecovery(config, {
@@ -158,31 +218,38 @@ async function runRecoveryPipeline(
 ): Promise<void> {
   const { config, reviews } = deps;
   const branch = task.branch;
-  if (!branch) throw new Error("task has no branch");
-  const workdir = await getGitWorker(config.root).worktreePath(branch);
-  if (!workdir) throw new Error("feature worktree not found");
+  // The slot was claimed by startPostHandoffCheckpointRecovery; hold it for the
+  // whole gate and release it however the gate ends, including a missing branch.
+  let liveHead = headSha;
+  try {
+    if (!branch) throw new Error("task has no branch");
+    const workdir = await getGitWorker(config.root).worktreePath(branch);
+    if (!workdir) throw new Error("feature worktree not found");
 
-  const headRes = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);
-  const liveHead = headRes.status === 0 ? headRes.stdout.trim() : headSha;
-  if (liveHead !== headSha) {
-    throw new Error(
-      `worktree HEAD moved during checkpoint recovery (${headSha.slice(0, 8)} → ${liveHead.slice(0, 8)})`,
-    );
-  }
+    const headRes = await runGit(workdir, ["rev-parse", "HEAD"], 10_000);
+    liveHead = headRes.status === 0 ? headRes.stdout.trim() : headSha;
+    if (liveHead !== headSha) {
+      throw new Error(
+        `worktree HEAD moved during checkpoint recovery (${headSha.slice(0, 8)} → ${liveHead.slice(0, 8)})`,
+      );
+    }
 
-  const handoff = await finalizeReviewHandoff(config, task, {
-    checkpointRecovery: { approvedSha },
-    taskChecks: deps.taskChecks,
-    onTaskCheckEvent: deps.onTaskCheckEvent,
-    remoteValidator: deps.remoteValidator,
-    previews: deps.previews,
-    onTaskLog: deps.onTaskLog,
-    onProgress: () => {
-      /* progress surfaced via task.progress above */
-    },
-  });
-  if (!handoff.ok) {
-    throw new Error(handoff.detail ?? `handoff gate failed at ${handoff.step}`);
+    const handoff = await finalizeReviewHandoff(config, task, {
+      checkpointRecovery: { approvedSha },
+      taskChecks: deps.taskChecks,
+      onTaskCheckEvent: deps.onTaskCheckEvent,
+      remoteValidator: deps.remoteValidator,
+      previews: deps.previews,
+      onTaskLog: deps.onTaskLog,
+      onProgress: () => {
+        /* progress surfaced via task.progress above */
+      },
+    });
+    if (!handoff.ok) {
+      throw new Error(handoff.detail ?? `handoff gate failed at ${handoff.step}`);
+    }
+  } finally {
+    deps.runner?.releaseHandoffInFlight?.(task.id);
   }
 
   writeRecovery(config, {

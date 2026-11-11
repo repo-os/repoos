@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 835515
-last_close_out_gate_at: "2026-11-11T01:59:28.853Z"
 id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
-status: review
+status: done
 priority: p2
 area: [server, web]
+merged_commit: 28a0af85bd921cd89f0806a708ac2fba4990b552
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/stale-handoff-running-validate-record-ou
@@ -14,6 +13,8 @@ cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T06:12:03Z"
 updated_at: "2026-11-11T01:59:28Z"
+last_close_out_gate_ms: 835515
+last_close_out_gate_at: "2026-11-11T01:59:28.853Z"
 review_passes: 6
 last_check_failure: "repoos check at 2026-11-10T21:15:11.774Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
