@@ -3,9 +3,6 @@ id: "1085"
 title: Stale handoff 'running validate' record outlives its check and disables Move to done
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — checkpoint recovery can start a second finalization before its slot is claimed; shots are stale on HEAD
 priority: p2
 area: [server, web]
 assigned_to: ai
@@ -184,3 +181,4 @@ FINAL (pass 5): reconciling stale handoff records, stale flag on all checks rend
 - 2026-11-11T01:08:43Z · message_queued at 2026-11-11T01:08:43.636Z
 - 2026-11-11T01:08:43Z · ↻ resuming engineer to read queued message
 - 2026-11-11T01:10:25Z · note: review pass 5: needs some work
+- 2026-11-11T01:10:25Z · needs_input
