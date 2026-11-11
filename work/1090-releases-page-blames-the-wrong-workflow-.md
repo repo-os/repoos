@@ -89,3 +89,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:22:01Z · note: handoff requested (cli)
 - 2026-11-11T06:25:01Z · message_queued at 2026-11-11T06:25:01.177Z
 - 2026-11-11T06:25:01Z · handoff failed · task-file handoff failed at review · Engineering report is missing required sections: ## Approaches tried.
+- 2026-11-11T06:28:16Z · note: handoff requested (cli)
