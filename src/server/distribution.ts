@@ -386,7 +386,9 @@ async function homebrewTapUpdateInProgress(
     if (!res.ok) return false;
     const runs =
       ((await res.json()) as { workflow_runs?: { status?: string }[] }).workflow_runs ?? [];
-    return runs.some((run) => typeof run.status === "string" && TAP_ACTIVE_STATUSES.has(run.status));
+    return runs.some(
+      (run) => typeof run.status === "string" && TAP_ACTIVE_STATUSES.has(run.status),
+    );
   } catch {
     return false;
   }
@@ -441,10 +443,7 @@ export async function getDistributionStatus(
   const tag = release?.tag;
   const workflowFile = releaseWorkflowBasename(config.release?.workflow);
   const needsCiContext =
-    repository &&
-    tag &&
-    workflowFile &&
-    summary.channels.some((c) => c.state !== "matching");
+    repository && tag && workflowFile && summary.channels.some((c) => c.state !== "matching");
   let releaseSucceededAt: number | null = null;
   if (needsCiContext) {
     const inspected = await inspectReleaseWorkflow(
