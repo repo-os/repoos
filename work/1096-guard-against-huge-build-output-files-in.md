@@ -90,3 +90,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:16:18Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T21:17:51Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-11T21:17:51Z · message_queued at 2026-11-11T21:17:51.414Z
+- 2026-11-11T21:17:51Z · ↻ resuming engineer to read queued message
