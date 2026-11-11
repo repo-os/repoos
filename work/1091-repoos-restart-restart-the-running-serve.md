@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs"
+last_handoff_failure_sha: 60f9445261105da777b42d14a1ee98df2bc3c600
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
@@ -153,3 +155,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T16:13:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T16:13:33Z · message_queued at 2026-11-11T16:13:33.191Z
 - 2026-11-11T16:13:33Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
+
