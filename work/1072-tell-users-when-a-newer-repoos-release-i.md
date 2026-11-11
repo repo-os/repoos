@@ -96,3 +96,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:48:10Z · cli_override, model_override
 - 2026-11-11T04:48:19Z · message_queued at 2026-11-11T04:48:19.335Z
 - 2026-11-11T04:48:22Z · engineer stopped by request
+- 2026-11-11T04:48:23Z · note: handoff requested (cli)
