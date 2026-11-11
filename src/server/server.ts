@@ -130,7 +130,6 @@ import {
   saveBuiltInAgentsConfig,
   projectDisplayName,
   worktreesDir,
-  bookkeepingDirs,
 } from "../core/config.js";
 import {
   ensureWorktree,
@@ -138,13 +137,12 @@ import {
   commitFiles,
   resetWorktree,
   syncBranchWithMain,
-  restoreForeignTaskBookkeepingFromMain,
   shouldTuneRepoForScaleAtStartup,
   tuneRepoForScale,
   runGit,
   setGitLockFailureSink,
 } from "../core/git.js";
-import { resolveDefaultBranch } from "../core/repo-log.js";
+import { healForeignBookkeepingAfterSync } from "./sync-bookkeeping-heal.js";
 import { setGitMaintenanceLockSink } from "../core/git-maintenance.js";
 import { sweepStaleWorktrees } from "../core/worktree-gc.js";
 import {
@@ -3433,23 +3431,6 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
       autoResolve: [rel],
     });
     const wtPath = await getGitWorker(config.root).worktreePath(task.branch);
-    const healDirs = bookkeepingDirs(config);
-    const healForeignBookkeeping = async (): Promise<void> => {
-      if (!wtPath || !task.branch) return;
-      try {
-        await restoreForeignTaskBookkeepingFromMain({
-          worktree: wtPath,
-          baseBranch: await resolveDefaultBranch(config.root),
-          taskId: task.id,
-          ownTaskFile: task.path,
-          workDir: healDirs.workDir,
-          inputsDir: healDirs.inputsDir,
-          storiesDir: healDirs.storiesDir,
-        });
-      } catch {
-        // Best-effort; handoff runs the same heal before review.
-      }
-    };
 
     const setNeedsMerge = async (value: boolean): Promise<void> => {
       const mainUpdated = patchTaskFile(
@@ -3474,7 +3455,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
     if (!result.ok) {
       await setNeedsMerge(true);
-      await healForeignBookkeeping();
+      await healForeignBookkeepingAfterSync(config, task, wtPath);
       return {
         ok: false,
         conflicts: result.conflicts,
@@ -3483,7 +3464,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
 
     await setNeedsMerge(false);
-    await healForeignBookkeeping();
+    await healForeignBookkeepingAfterSync(config, task, wtPath);
     return { ok: true, conflicts: [] };
   }
 

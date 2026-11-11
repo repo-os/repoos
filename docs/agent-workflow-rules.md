@@ -279,13 +279,16 @@ cannot tell from the code alone:
     anchor (`merge-base`, the restore, the stray-`repoos.toml` guard, the check
     scope) uses the configured default branch, not the main checkout's current
     branch (`handoffBaseBranch`). Handoff, after that commit gate and before the review lock, runs
-    `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): it makes the
-    main's copy authoritative for every foreign file the branch touched
-    (modified or deleted files get main's current bytes back, branch-added
-    siblings with no main equivalent are removed; #1086) and lands the restore as
-    one plain bookkeeping commit the review tolerates. `repoos sync` runs the same
-    restore after a successful merge.
-    It reports what it restored in the task log; it never fails a handoff.
+    `restoreForeignTaskBookkeepingFromMain` (`src/core/git.ts`): scans committed,
+    staged, unstaged, and untracked paths under `work/`, `inputs/`, and
+    `stories/` (#1086). Siblings present at the merge-base get **main's tip**;
+    post-merge siblings that only exist on main after the branch point are **dropped**
+    from the branch (not copied in); stray adds with no main blob are removed.
+    Lands a pathspec-scoped commit when needed. Handoff **fails closed** if git
+    refuses the heal; sync swallows heal errors as best-effort (`sync-bookkeeping-heal.ts`).
+    `repoos sync` runs that heal after every merge attempt — success or aborted conflict.
+    Handoff reports what was restored or dropped; it runs after the commit gate and
+    before the review lock (the report commit is pathspec-scoped to this task's report).
     A commit made WHILE a merge is in progress (`lockfile-conflict.ts`,
     `integration-orchestrator.ts`'s narrow resolution) cannot use a pathspec —
     git refuses (`cannot do a partial commit during a merge`) — so those keep a
@@ -296,9 +299,8 @@ cannot tell from the code alone:
   - **What an engineer sees.** `repoos landable` and the handoff report name the
     offending files and the cause in plain English ("the diff changes another
     task's bookkeeping: work/<id>-*.md"). When the drift is present, handoff
-    restores main's copy automatically and reports it — re-requesting review is
-    enough. Until handoff runs, `git checkout main -- <file>` in the worktree plus
-    a scoped commit on the branch is the manual workaround (#1086).
+    restores or drops foreign bookkeeping automatically — re-requesting review is
+    enough. `repoos sync` runs the same heal even when the merge aborts on a conflict.
 
 - **`repoos mv <id> done` never merges code — it only flips the status
   frontmatter.** Confirmed live twice in one session (2026-09-17): #0389 and

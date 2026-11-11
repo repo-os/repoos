@@ -777,15 +777,15 @@ dirs in #0726 and #0860):
   only the paths it intended (`git commit -- <paths>`) and resets any foreign
   `work/` bookkeeping first, so a board write left dirty-and-staged can no longer
   be folded into the branch by a bare `git commit` (#1076).
-- `restoreForeignTaskBookkeepingFromMain` (`git.ts`) runs at handoff (and after a
-  successful **sync with main**, #1086), after the commit gate and **before the
-  review lock** (#1076): it makes **main's tip** authoritative for every foreign
-  `work/` file the branch touched (modified or deleted → main's copy back;
-  branch-added with no main equivalent → removed) and lands the restore as one
-  plain bookkeeping commit the review tolerates. It reports what it restored;
-  it never fails the handoff. This heals a branch that already drifted (a sibling
-  re-committed by an earlier WIP checkpoint) rather than bouncing it to the
-  engineer again.
+- `restoreForeignTaskBookkeepingFromMain` (`git.ts`) runs at handoff, and
+  `healForeignBookkeepingAfterSync` runs after every **sync with main** attempt
+  (#1086) — merge success or aborted conflict. Both run after the commit gate
+  and before the review lock (#1076). The heal grades `work/`, `inputs/`, and
+  `stories/` in every git tree state (committed, staged, unstaged, untracked).
+  Siblings at the merge-base → main's tip; post-merge-only-on-main → dropped from
+  the branch; no main blob → removed. Handoff fails if git refuses; sync heal is
+  best-effort. This heals drift from WIP checkpoints or concurrent board writes
+  instead of bouncing the engineer.
   A handoff is also refused on an unchanged branch tip with a recorded identical
   check failure; a new commit (even a docs touch) is the way to request a fresh
   validation after a failure that is no longer reproducible.
