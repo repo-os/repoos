@@ -185,3 +185,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T09:20:58Z · handoff failed · task-file handoff failed at check · server-side finalization timed out (deadline exceeded)
 - 2026-11-11T09:23:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T09:51:00Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
+- 2026-11-11T09:51:00Z · message_delivered: 2 message(s)
