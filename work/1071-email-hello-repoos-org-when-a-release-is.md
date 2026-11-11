@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: active
+status: review
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -253,3 +253,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T12:13:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T12:18:10Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T12:21:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check is at remote validation, which can take a while. The report draft is complete and accurate. I'll stop here and let the background check notify me when it finishes. · stderr: (empty)
+- 2026-11-11T12:21:17Z · status active→review
