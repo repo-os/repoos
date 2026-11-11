@@ -12,6 +12,7 @@ import { api } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { copyToClipboard } from "../lib/clipboard";
 import { useRepoStore } from "../stores/repo";
+import { useConfigStore } from "../stores/config";
 import {
   readShotPreviewFixtureFromLocation,
   shotFixtureAvailableRelease,
@@ -23,6 +24,7 @@ import type { AvailableRelease } from "../types";
 const DISMISSED_KEY = "repoos.releaseUpdate.dismissedVersion";
 
 const repo = useRepoStore();
+const configStore = useConfigStore();
 const release = ref<AvailableRelease | null>(null);
 const dismissed = ref(false);
 const open = ref(false);
@@ -30,7 +32,13 @@ const copied = ref(false);
 const copyFailed = ref(false);
 let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
-const visible = computed(() => !!release.value?.available && !dismissed.value);
+const updatesCheckEnabled = computed(() => {
+  const v = configStore.form["updates.check"];
+  return v === undefined ? true : !!v;
+});
+const visible = computed(
+  () => updatesCheckEnabled.value && !!release.value?.available && !dismissed.value,
+);
 const notesHtml = computed(() =>
   release.value?.releaseNotes ? renderMarkdown(release.value.releaseNotes) : "",
 );
