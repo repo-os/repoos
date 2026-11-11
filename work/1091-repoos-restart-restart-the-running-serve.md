@@ -152,3 +152,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T16:08:18Z · note: handoff requested (cli)
 - 2026-11-11T16:13:14Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T16:13:33Z · message_queued at 2026-11-11T16:13:33.191Z
+- 2026-11-11T16:13:33Z · handoff failed · task-file handoff failed at check · repoos check failed: ui-smoke — $ bun scripts/ui-smoke.mjs
