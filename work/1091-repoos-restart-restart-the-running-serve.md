@@ -149,3 +149,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T15:58:13Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T16:03:13Z · watchdog: auto-resumed engineer to read a deferred handoff message · resume 1/3
 - 2026-11-11T16:08:17Z · watchdog: auto-surfaced stuck task · status active→review · agent crashed or was interrupted mid-turn — task-file handoff failed at review · Engineering report draft is missing: .repoos/engineering-report-drafts/1091.md · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-11T16:08:18Z · note: handoff requested (cli)
