@@ -2,20 +2,23 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: active
+status: review
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: [server, web, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-emails-any-project-with-email-co
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T04:17:33Z"
+updated_at: "2026-11-11T04:21:55Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: ba901205919c5521f99195e5c45a251e892c4bdf
 review_rounds: 2
 review_passes: 2
 handoff_signal_retry_count: 2
-dev_error_count: 1
+dev_error_count: 2
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -155,3 +158,5 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 - 2026-11-11T04:16:43Z · model_override
 - 2026-11-11T04:16:49Z · message_delivered: 2 message(s)
 - 2026-11-11T04:17:33Z · message_queued at 2026-11-11T04:17:33.511Z
+- 2026-11-11T04:21:55Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T04:21:55Z · status active→review
