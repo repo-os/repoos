@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T03:10:48Z"
+updated_at: "2026-11-11T03:15:19Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -34,6 +34,27 @@ Every human-assigned task body contains a `## Step-by-step guide` section that a
 
 ## Notes for AI
 Look at how `needs-human-step` is detected and how held human tasks are created (`repoos new --human --hold`, `repoos update --assigned-to human`, the split guidance in AGENTS.md "Never close out human-gated work as if the human part were done"). The default PM prompt text lives in the built-in agent defaults; the Tiao project also carries a copy in its `repoos.toml` agent instructions, so a project's own prompt will not pick this up automatically: make the warning (code) the enforcement and the prompt the guidance. Example of the target quality: Tiao tasks #0032 and #0033 (ssh to bee repo `~/code/nick/tiao`, see `repoos/work/0032-*.md`, `0033-*.md`) after their guides were added.
+
+## Shots
+```json
+[
+{
+  "label": "Human task drawer shows missing step-by-step guide warning",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": "[data-test-id=\"human-guide-warning\"]",
+  "steps": [
+    {
+      "click": "[data-task-id=\"9999\"]"
+    },
+    {
+      "waitMs": 400
+    }
+  ],
+  "state": "card:humanStep"
+}
+]
+```
 
 ## Activity
 
@@ -72,3 +93,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T02:59:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T03:04:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T03:10:48Z · body
+- 2026-11-11T03:15:19Z · body
