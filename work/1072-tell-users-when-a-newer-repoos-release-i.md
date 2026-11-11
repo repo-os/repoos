@@ -9,10 +9,10 @@ depends_on: ["1073"]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/tell-users-when-a-newer-repoos-release-i
-cli_override: cursor
-model_override: composer-2.5
+cli_override: claude code
+model_override: haiku
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T04:21:55Z"
+updated_at: "2026-11-11T04:48:10Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 3
@@ -93,3 +93,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:21:52Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T04:21:55Z · needs_input
 - 2026-11-11T04:21:55Z · message_delivered: 1 message(s)
+- 2026-11-11T04:48:10Z · cli_override, model_override
