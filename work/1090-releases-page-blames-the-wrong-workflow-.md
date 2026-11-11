@@ -11,7 +11,7 @@ branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: claude code
 model_override: haiku
 created_at: "2026-11-11T04:12:08Z"
-updated_at: "2026-11-11T06:34:29Z"
+updated_at: "2026-11-11T06:34:57Z"
 review_passes: 3
 review_rounds: 2
 deferred_handoff_resume_count: 1
@@ -96,3 +96,4 @@ FINAL (round 3, owner-amended): homebrewTapUpdateInProgress queries ONLY the tap
 - 2026-11-11T06:32:17Z · note: review pass 3: good to go
 - 2026-11-11T06:33:56Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (3061a9eb4) during finalization (#0734)
 - 2026-11-11T06:34:29Z · message_delivered: 2 message(s)
+- 2026-11-11T06:34:57Z · handoff_deferred: 2 queued message(s) must be read before review
