@@ -16,7 +16,6 @@ updated_at: "2026-11-11T08:17:49Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-11T07:44:00.542Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
