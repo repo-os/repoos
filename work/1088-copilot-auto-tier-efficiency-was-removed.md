@@ -2,7 +2,7 @@
 id: "1088"
 title: "Copilot Auto tier 'efficiency' was removed: default github copilot model fails; map to balance and explain tier errors"
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — freeform run errors lost their CLI name at `freeform-runs.ts:515`; the fix is one line, and the rest of the branch is s…"
@@ -14,7 +14,7 @@ branch: feat/copilot-auto-tier-efficiency-was-removed
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T02:58:46Z"
-updated_at: "2026-11-11T21:26:09Z"
+updated_at: "2026-11-11T21:52:24Z"
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 1
@@ -161,3 +161,4 @@ Files: `src/server/agents.ts` (~3430), `src/core/agent-contract.ts` (~690, ~900)
 - 2026-11-11T21:18:02Z · needs_input
 - 2026-11-11T21:18:02Z · needs_input
 - 2026-11-11T21:26:09Z · status review→active
+- 2026-11-11T21:52:24Z · status active→review
