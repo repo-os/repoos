@@ -169,10 +169,10 @@ The banner names the project and the address the page talks to, and tells two
 cases apart:
 
 - **Not running.** The connection was refused: nothing is listening on that
-  port. The banner shows a command to copy that restarts this project's server:
-  the `launchctl kickstart` line for a server installed with
-  `repoos service install`, or `repoos serve --port <port>` from the project
-  folder for one you started by hand. The browser cannot start it for you.
+  port. The banner shows a command to copy that restarts this project's server.
+  From a terminal in the project, **`repoos restart`** picks the right path for a
+  managed service, a hand-run `repoos serve`, or an external launchd/systemd
+  supervisor. The browser cannot start it for you.
 - **Not responding.** The server is running but did not answer within the time
   limit. It may be busy; retry in a moment. Restarting is not the first step.
 
