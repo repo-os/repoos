@@ -3,9 +3,6 @@ id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `restartCommand` now tells a down server's user to run `repoos restart`, which refuses when nothing is listening, so th…"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -233,3 +230,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T22:19:14Z · status active→review
 - 2026-11-11T22:19:15Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-11T22:21:04Z · note: review pass 6: needs some work
+- 2026-11-11T22:21:04Z · needs_input
