@@ -223,3 +223,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T09:38:43Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-11T09:38:43Z · message_queued at 2026-11-11T09:38:43.367Z
 - 2026-11-11T09:38:43Z · ↻ resuming engineer to read queued message
+- 2026-11-11T09:38:43Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **All checks passed** on the current tip `c963a9a0f` — including the two tests that flaked earlier (`handoff-unification.test.ts > ignores a marker left behind by an earlier turn` now passes in 8.77s, and `tests` overall is green). Both re… · stderr: (empty)
