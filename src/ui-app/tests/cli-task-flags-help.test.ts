@@ -243,6 +243,27 @@ describe("repoos new --assigned-to / --human / --ai (#0815)", () => {
     expect(task.needsInputReason).toBeUndefined();
   });
 
+  it("warns on the CLI when a human task body omits the guide heading (#1074)", async () => {
+    const { root, clean } = makeCliRepo();
+    tmpRoots.push(root);
+    const prevExit = process.exitCode;
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, "log").mockImplementation((...a: unknown[]) => {
+      logs.push(a.map(String).join(" "));
+    });
+    try {
+      await withCwd(root, () =>
+        cmdNew(["Signup chore", "--human", "--body", "## Problem\n\nRegister for the provider."]),
+      );
+      expect(process.exitCode).toBe(prevExit);
+      expect(logs.join("\n")).toMatch(/warning:.*## Step-by-step guide/);
+    } finally {
+      spy.mockRestore();
+      process.exitCode = prevExit;
+      clean();
+    }
+  });
+
   it("still flags an AI-assigned task with an empty body as underspecified", async () => {
     const { task } = await createAndRead(["Empty agent task", "--ai"]);
     expect(task.needsInput).toBe(true);
