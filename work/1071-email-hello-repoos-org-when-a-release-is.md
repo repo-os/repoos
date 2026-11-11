@@ -1,11 +1,13 @@
 ---
+updated_at: "2026-11-11T13:07:37Z"
+review_passes: 6
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — `needs some work`: one Resend lifecycle bug. A corrupt `release-emails.json` leaves the version stuck \"in progress\" unt…"
+needs_input_detail: "`needs some work` — code is sound, but acceptance 7's status-row capture is missing and the captures are stale for HEAD d498bd668."
 priority: p2
 area: [server, web, core]
 assigned_to: ai
@@ -14,14 +16,11 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T10:20:02Z"
 last_handoff_failure_fingerprint: "check|repoos check failed: ◆ Check plan"
 last_handoff_failure_sha: fc59e3bb4f9067afbe5f0524966324dfa1d618a6
-review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
 dev_error_count: 4
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-11T10:15:48.205Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 When a release goes out, the maintainer wants an email to their team (for RepoOS itself: hello@repoos.org) with the release notes and known issues, nicely formatted, so it can be forwarded to users. Today the only signals are the in-app bell notice and the GitHub Release. This should be a general RepoOS feature, not a one-off for this repo: any project that has email set up should be able to turn it on.
@@ -59,22 +58,30 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```json
 [
 {
-"label": "Releases page: Release email card with Preview/Resend and the setup hint",
+"label": "Releases page: email sent status row with Resend",
 "target": "default",
 "route": "/releases",
-"highlight": "[data-test-id=\"release-email\"]"
+"highlight": "[data-test-id=\"release-email\"] .rel-email-status",
+"state": "release:emailSent"
 },
 {
-"label": "Settings: Release emails controls (on/off, recipients, when, prereleases)",
+"label": "Releases page: email failed status with Resend",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-email\"]",
+"state": "release:emailFailed"
+},
+{
+"label": "Release emails settings controls",
 "target": "default",
 "route": "/settings?tab=general&section=release-emails",
-"highlight": "#settings-section-release-emails"
+"highlight": "[data-settings-section=\"release-emails\"]"
 }
 ]
 ```
 
 ## Accepted scope and known limitations
-FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every path, including a corrupt log read (the read is inside the try; tested by corrupting the log, failing a Resend, repairing it and resending). All earlier fixes stand: card refresh after a cut, caller-owned accepted list with awaited sends on both paths, claim before the first await, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Report these under Suggestions, not Bugs.
+FINAL (pass 7): the Resend in-flight claim releases on every path, including a corrupt-log read (the read is inside the try; tested by corrupting the log, failing a Resend, repairing it and resending). A GitHub error answer (rate limit, outage) no longer reads as a claim about the release: the automatic wait and the Resend gate say "could not be checked" and reserve "not on GitHub" for a real 404 (tested). The changelog link assumes CHANGELOG.md exists at the tag, which the RepoOS release pipeline always writes. All earlier fixes stand: card refresh after a cut, caller-owned accepted list with awaited sends on both paths, claim before the first await, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Also this round: an unrelated test edit carried on the branch (agent-process-group.test.ts) hung the check with a machine-wide pgrep on a fixed sleep duration; the helper/decoy sleeps are now unique per run.
 
 ## Activity
 
@@ -242,3 +249,27 @@ FINAL (pass 6, hand-finished): the Resend in-flight claim now releases on every 
 - 2026-11-11T10:15:48Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at check: repoos check failed: ◆ Check plan. The task stays active — fix the failure and ask again.
 - 2026-11-11T10:15:49Z · message_delivered: 1 message(s)
 - 2026-11-11T10:20:02Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T10:30:04Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-11T10:30:05Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1071 (pid 68015)
+- 2026-11-11T10:40:19Z · watchdog: restarting engineer after 10m with no live process
+- 2026-11-11T10:40:21Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1071 (pid 68015)
+- 2026-11-11T11:06:35Z · needs_input
+- 2026-11-11T11:06:40Z · body: Accepted scope and known limitations (added 1, removed 1)
+- 2026-11-11T11:48:10Z · note: handoff requested (cli)
+- 2026-11-11T12:03:25Z · watchdog: restarting engineer after 15m with no live process
+- 2026-11-11T12:03:28Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T12:03:29Z · message_delivered: 1 message(s)
+- 2026-11-11T12:13:10Z · message_queued at 2026-11-11T12:13:10.172Z
+- 2026-11-11T12:13:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T12:18:10Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T12:21:17Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The check is at remote validation, which can take a while. The report draft is complete and accurate. I'll stop here and let the background check notify me when it finishes. · stderr: (empty)
+- 2026-11-11T12:21:17Z · status active→review
+- 2026-11-11T12:21:18Z · message_delivered: 1 message(s)
+- 2026-11-11T12:21:18Z · engineer stopped by request
+- 2026-11-11T12:37:28Z · body
+- 2026-11-11T12:43:40Z · body
+- 2026-11-11T12:44:04Z · body
+- 2026-11-11T12:59:43Z · body
+- 2026-11-11T13:07:35Z · note: review pass 6: needs some work
+- 2026-11-11T13:07:36Z · needs_input
+

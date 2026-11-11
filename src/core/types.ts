@@ -495,10 +495,18 @@ export interface GitConfig {
   tuneForScale?: boolean;
 }
 
+/** RepoOS self-update notice (CLI + dashboard banner). */
+export interface UpdatesConfig {
+  /** When false, skip the GitHub latest-release check. Default true. */
+  check?: boolean;
+}
+
 /** Resolved configuration (after defaults + repoos.toml merge). */
 export interface RepoOSConfig {
   /** Git status performance tuning; enabled by default. */
   git?: GitConfig;
+  /** Passive release availability checks (#1072). */
+  updates?: UpdatesConfig;
   /** Absolute path to the repo root. */
   root: string;
   /** Directory holding task files, relative to root. Default "work". */

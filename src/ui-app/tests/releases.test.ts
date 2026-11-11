@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { parseTask, releasedAtFromActivity } from "../../core/task";
 import { markTaskReleased, patchTaskFile } from "../../server/write";
 import { nextReleaseVersion, releaseTimelineTasks } from "../src/releases";
-import { isNewerVersion, isStableRelease } from "../../server/routes/release";
+import { isNewerVersion, isStableRelease } from "../../core/release-version";
 import {
   SOURCE_UPGRADE_COMMAND,
   channelFromVersion,
@@ -13,6 +13,7 @@ import {
 } from "../../commands/upgrade";
 import { SHOT_PREVIEW_APPLIED_ATTR } from "../../core/shot-fixtures.js";
 import ReleaseUpdateNotification from "../src/components/ReleaseUpdateNotification.vue";
+import { useConfigStore } from "../src/stores/config";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -136,6 +137,34 @@ describe("feature releases", () => {
       packageManager: "npm",
       command: "npm update -g @repo-os/repoos",
     });
+  });
+
+  it("hides the banner when updates.check is off (#1072)", async () => {
+    const store = useConfigStore();
+    store.form["updates.check"] = false;
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          currentVersion: "0.5.46",
+          latestVersion: "0.6.0",
+          available: true,
+          releaseNotes: null,
+          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+          installKind: "standalone",
+          upgradeCommand: "repoos upgrade",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
+    try {
+      await flushPromises();
+      expect(document.body.querySelector(".release-update-banner")).toBeNull();
+    } finally {
+      wrapper.unmount();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("keeps the banner visible while the modal opens for details", async () => {
