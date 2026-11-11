@@ -3,9 +3,6 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: active
-needs_input: true
-needs_input_reason: check-wait
-needs_input_detail: "waiting: waiting for serialized local fallback (1 ahead, position 2); wait exceeds the handoff deadline for 4h 59m"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -16,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: claude code
 review_model_override: haiku
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T16:18:18Z"
+updated_at: "2026-11-11T16:25:10Z"
 check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-11T10:35:55.519Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
@@ -205,3 +202,5 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T15:48:14Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T15:53:13Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T16:18:18Z · body
+- 2026-11-11T16:18:31Z · watchdog: check wait ended or recovered — cleared needs_input
+- 2026-11-11T16:25:10Z · body
