@@ -2,14 +2,23 @@
 id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
-status: review
+status: active
 priority: p2
 area: [core, agent]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/require-a-step-by-step-guide-on-every-hu
+cli_override: cursor
+model_override: composer-2.5
+review_cli_override: muse
+review_model_override: muse-spark-1.3
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T05:13:33Z"
+updated_at: "2026-11-11T03:49:13Z"
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-11T03:18:34.355Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target \"default\"): click [data-task-id=\"9999\"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)"
+handoff_signal_retry_count: 2
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T03:31:08.614Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Tasks assigned to a human (`--assigned-to human`, usually held, e.g. an account sign-up, a signing key, a real-device check) are often filed as a few lines of acceptance criteria. The human then has to decode what to do. Concrete case: in the Tiao project, tasks #0032 (create and back up a release keystore) and #0033 (sign up for a flight-status provider, set the key, verify a real lookup) were filed with two-line outcomes, and the human (Nick) asked for exact steps. The step-by-step guides had to be written afterwards by hand. Human tasks are the one place where the reader is the least able to infer missing detail, and nothing in RepoOS asks for it.
@@ -34,11 +43,11 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 ```json
 [
 {
-"label": "Human task missing step-by-step guide warning",
-"target": "default",
-"route": "/work?task=9999&tab=changes",
-"highlight": "[data-test-id=\"human-guide-warning\"]",
-"state": "card:humanStep"
+  "label": "Human task missing step-by-step guide warning",
+  "target": "default",
+  "route": "/work?task=9999&tab=changes",
+  "highlight": "[data-test-id=\"human-guide-warning\"]",
+  "state": "card:humanStep"
 }
 ]
 ```
@@ -48,4 +57,45 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-09T07:52:08Z · created · njachowski@gmail.com
 - 2026-11-09T07:58:10Z · status inbox→ready
 - 2026-11-09T19:57:02Z · status ready→active, branch
-- 2026-11-11T05:13:33Z · status active→review
+- 2026-11-09T20:02:17Z · message_queued at 2026-11-09T20:02:17.663Z
+- 2026-11-09T20:04:16Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-09T20:09:33Z · message_queued at 2026-11-09T20:09:33.278Z
+- 2026-11-09T20:14:46Z · watchdog: auto-surfaced stuck task · status active→ready · agent exited without emitting the handoff signal · next step: the handoff signal may not have been detected — ask the agent to put `::repoos-handoff-ready::` at the start of a line (preferably alone) after checks pass
+- 2026-11-09T20:46:54Z · message_delivered: 2 message(s)
+- 2026-11-09T21:04:41Z · body
+- 2026-11-09T21:05:12Z · body
+- 2026-11-09T21:21:09Z · body
+- 2026-11-09T21:34:46Z · body
+- 2026-11-09T21:44:12Z · message_queued at 2026-11-09T21:44:12.362Z
+- 2026-11-09T22:45:43Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T00:39:48Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T04:29:28Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T05:00:00Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T08:24:40Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T11:04:26Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T13:31:44Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T17:26:31Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T23:04:19Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-10T23:57:57Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T02:03:45Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-11T02:18:39Z · cli_override
+- 2026-11-11T02:18:42Z · model_override
+- 2026-11-11T02:19:03Z · review_cli_override
+- 2026-11-11T02:19:05Z · review_model_override
+- 2026-11-11T02:49:43Z · status ready→active
+- 2026-11-11T02:49:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T02:49:45Z · message_delivered: 1 message(s)
+- 2026-11-11T02:59:44Z · message_queued at 2026-11-11T02:59:44.061Z
+- 2026-11-11T02:59:44Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-11T03:04:44Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T03:10:48Z · body
+- 2026-11-11T03:15:19Z · body
+- 2026-11-11T03:18:31Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target "default"): click [data-task-id="9999"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)
+- 2026-11-11T03:18:31Z · message_queued at 2026-11-11T03:18:31.239Z
+- 2026-11-11T03:18:34Z · message_delivered: 1 message(s)
+- 2026-11-11T03:18:52Z · body
+- 2026-11-11T03:31:08Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T03:31:08Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T03:31:09Z · needs_input
+- 2026-11-11T03:41:58Z · note: adopted orphaned engineer pid 89985
+- 2026-11-11T03:49:13Z · body

@@ -12,16 +12,35 @@ import { parseTask } from "../../core/task.js";
 import type { RepoOSConfig } from "../../core/types.js";
 import { createTask, patchTask, pmMessage, taskAction } from "../../server/routes/tasks.js";
 import {
+  HUMAN_TASK_SCAFFOLD,
   humanTaskGuideWarning,
   PM_SPLIT_HUMAN_STEP_MESSAGE,
   splitHumanStepRequirementsPrompt,
 } from "../../core/task-underspecified.js";
+import {
+  flagNeedsHumanStepIfNeeded,
+  flagTaskSpecFlagsIfNeeded,
+  flagUnderspecifiedIfNeeded,
+  sweepUnderspecifiedTasks,
+} from "../../server/task-underspecified-flag.js";
+import type { Agent } from "../../core/types.js";
+import type { RouteContext } from "../../server/routes/types.js";
 
 describe("human task guide warning", () => {
-  it("warns only when a human task lacks the guide heading", () => {
-    expect(humanTaskGuideWarning("human", "## Problem\nDo it")).toContain("## Step-by-step guide");
+  it("warns when a human task lacks the guide heading", () => {
+    expect(humanTaskGuideWarning("human", "## Problem\nDo it")).toContain("Missing");
     expect(humanTaskGuideWarning("ai", "## Problem\nDo it")).toBeNull();
     expect(humanTaskGuideWarning("human", "## Step-by-step guide\n1. Do it")).toBeNull();
+  });
+
+  it("warns when the guide section is only the scaffold placeholder (#1074)", () => {
+    expect(humanTaskGuideWarning("human", HUMAN_TASK_SCAFFOLD)).toContain("still empty");
+  });
+
+  it("splitHumanStepRequirementsPrompt requires a step-by-step guide (#1074)", () => {
+    const prompt = splitHumanStepRequirementsPrompt();
+    expect(prompt).toContain("## Step-by-step guide");
+    expect(prompt).toContain('--section "Step-by-step guide"');
   });
 
   it("returns a warning field from POST /api/tasks for human tasks without the guide (#1074)", async () => {
@@ -60,14 +79,6 @@ describe("human task guide warning", () => {
     }
   });
 });
-import {
-  flagNeedsHumanStepIfNeeded,
-  flagTaskSpecFlagsIfNeeded,
-  flagUnderspecifiedIfNeeded,
-  sweepUnderspecifiedTasks,
-} from "../../server/task-underspecified-flag.js";
-import type { Agent } from "../../core/types.js";
-import type { RouteContext } from "../../server/routes/types.js";
 
 vi.mock("../../core/bootstrap.js", () => ({
   bootstrap: vi.fn(async () => ({

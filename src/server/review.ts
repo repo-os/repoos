@@ -68,6 +68,7 @@ import {
   usageCostSource,
   type AgentRunner,
   type PromptResult,
+  type StartResult,
 } from "./agents.js";
 import { resolveRoutedAgent } from "./model-routing-wiring.js";
 import { NEEDS_INPUT_DISMISSED_LINE_RE } from "./needs-input-dismiss.js";
@@ -276,6 +277,91 @@ export function reviewHumanFlagThreshold(config: Pick<RepoOSConfig, "review">): 
   return typeof raw === "number" && Number.isFinite(raw) && raw >= 1
     ? Math.floor(raw)
     : DEFAULT_REVIEW_HUMAN_FLAG_PASSES;
+}
+
+/** Default completed passes before the blocking bar freezes (#1080). */
+export const DEFAULT_REVIEW_FREEZE_AFTER_PASSES = 4;
+
+/** Completed passes after which only real defects, regressions and landing blockers block (#1080). */
+export function reviewFreezeThreshold(config: Pick<RepoOSConfig, "review">): number {
+  const raw = config.review?.freezeAfterPasses;
+  return typeof raw === "number" && Number.isFinite(raw) && raw >= 1
+    ? Math.floor(raw)
+    : DEFAULT_REVIEW_FREEZE_AFTER_PASSES;
+}
+
+/**
+ * Lighter bar from pass 1 (#1080): P3 tasks and Easter-eggs bundles only block
+ * on correctness bugs and landing blockers.
+ */
+export function reviewUsesLightBar(task: Pick<Task, "title" | "priority">): boolean {
+  return task.priority === "p3" || /^easter eggs bundle/i.test(task.title.trim());
+}
+
+/**
+ * Which blocking bar a pass applies (#1080). `full` is the default for p1/p2;
+ * `light` is the P3 / Easter-eggs bar; `frozen` takes over from pass N+1.
+ */
+export type ReviewBlockingBar = "full" | "light" | "frozen";
+
+export function reviewBlockingBar(
+  task: Pick<Task, "extra" | "title" | "priority">,
+  config: Pick<RepoOSConfig, "review">,
+): ReviewBlockingBar {
+  if (reviewPassesSoFar(task) >= reviewFreezeThreshold(config)) return "frozen";
+  return reviewUsesLightBar(task) ? "light" : "full";
+}
+
+/**
+ * Cap on the quoted accepted-scope section (#1080). The section is
+ * authoritative, so it is cut only well past any realistic length.
+ */
+const ACCEPTED_SCOPE_CHARS = 12_000;
+
+/**
+ * Tracks Markdown fences across lines. A fence opens with three or more
+ * backticks or tildes and closes only with the same character, at least as
+ * long as the opener, so a tilde block can quote a backtick fence and the
+ * other way round (#1080). Returns the open fence, or null when outside one.
+ */
+function nextFenceState(open: string | null, line: string): string | null {
+  const match = /^(`{3,}|~{3,})/.exec(line.trim());
+  if (!match) return open;
+  const marker = match[1]!;
+  if (open === null) return marker;
+  const sameChar = marker[0] === open[0];
+  const closes = sameChar && marker.length >= open.length && line.trim() === marker;
+  return closes ? null : open;
+}
+
+/**
+ * The `## Accepted scope and known limitations` section of a task body, from
+ * its heading through the next `##` heading, or null when the body has none
+ * (#1080). Any heading starting with "Accepted scope" counts.
+ */
+export function acceptedScopeSection(body: string): string | null {
+  const lines = body.split("\n");
+  let start = -1;
+  let fence: string | null = null;
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i]!.trim();
+    if (fence === null && /^##\s+Accepted scope/i.test(trimmed)) {
+      start = i;
+      break;
+    }
+    fence = nextFenceState(fence, lines[i]!);
+  }
+  if (start < 0) return null;
+  let end = start + 1;
+  fence = null;
+  for (; end < lines.length; end++) {
+    if (fence === null && /^##\s/.test(lines[end]!.trim())) break;
+    fence = nextFenceState(fence, lines[end]!);
+  }
+  const text = lines.slice(start, end).join("\n").trim();
+  if (!text) return null;
+  if (text.length <= ACCEPTED_SCOPE_CHARS) return text;
+  return `${text.slice(0, ACCEPTED_SCOPE_CHARS)}\n\n[truncated: the accepted-scope section is longer than ${ACCEPTED_SCOPE_CHARS} characters; the rest is not quoted]`;
 }
 
 const now = (): string => new Date().toISOString();
@@ -532,6 +618,57 @@ export async function engineeringReportMatchesReviewTree(
     .every((path) => isOwnReportPath(path, config, task.id) || path === task.path);
 }
 
+/** The heading non-blocking suggestions go under for a bar (#1080). */
+export function suggestionsHeadingFor(bar: ReviewBlockingBar): string {
+  return bar === "frozen" ? "## Suggestions (non-blocking)" : "## Suggestions";
+}
+
+/**
+ * The blocking-bar and accepted-scope section of the reviewer prompt (#1080).
+ * Full and light bars block on every Bugs item; the frozen bar narrows what
+ * may block and sends the rest to `## Suggestions (non-blocking)`.
+ */
+export function blockingBarSection(
+  bar: ReviewBlockingBar,
+  pass: number,
+  freezeAfter: number,
+  acceptedScope: string | null,
+): string[] {
+  const lines = ["## Blocking bar (#1080)", ""];
+  if (bar === "frozen") {
+    lines.push(
+      `This is pass ${pass}, after ${freezeAfter} earlier passes, so the blocking bar is FROZEN.`,
+      "Blocking = exactly (a) a defect in behaviour this task introduced that breaks its own",
+      "acceptance criteria, (b) a regression of existing behaviour, (c) a landing blocker.",
+      "Everything else, including further edge cases of an already-fixed class and hardening",
+      `ideas, goes under \`${suggestionsHeadingFor(bar)}\` and must not change the verdict.`,
+    );
+  } else if (bar === "light") {
+    lines.push(
+      "This task uses the LIGHT bar (P3 or an Easter eggs bundle). Blocking = correctness bugs",
+      "and landing blockers only. Everything else (edge cases, hardening, naming, style) goes",
+      `under \`${suggestionsHeadingFor(bar)}\` and must not change the verdict.`,
+    );
+  } else {
+    lines.push(
+      "The FULL bar applies until the freeze. Every item under `## Bugs` blocks; edge cases and",
+      "suggestions never change the verdict.",
+    );
+  }
+  if (acceptedScope) {
+    lines.push(
+      "",
+      "The task body has an accepted-scope section. It is AUTHORITATIVE: the items it lists, and",
+      "anything it explicitly supersedes (for example an acceptance criterion it narrows or",
+      "replaces), are accepted limitations and are NOT blocking. Quote them under",
+      `\`${suggestionsHeadingFor(bar)}\` at most, never under \`## Bugs\`. Quoted from the task body:`,
+      "",
+      acceptedScope,
+    );
+  }
+  return [...lines, ""];
+}
+
 export function reviewMission(
   task: Task,
   agent: Agent,
@@ -550,6 +687,10 @@ export function reviewMission(
   const priorPasses = reviewPassesSoFar(task);
   const repeatedClassThreshold = reviewHumanFlagThreshold(config);
   const repeatedClasses = priorPasses >= repeatedClassThreshold;
+  const blockingBar = reviewBlockingBar(task, config);
+  const freezeAfter = reviewFreezeThreshold(config);
+  const acceptedScope = acceptedScopeSection(task.body);
+  const suggestionsHeading = suggestionsHeadingFor(blockingBar);
   const earlierReportsDir = trackedReviewsDir({ ...config, root: workdir }, task.id);
   const legacyEarlierReportsDir = join(
     config.root,
@@ -649,6 +790,7 @@ export function reviewMission(
     "",
     ...landablePromptSection(task.id, options.landable),
     "",
+    ...blockingBarSection(blockingBar, priorPasses + 1, freezeAfter, acceptedScope),
     "## How to inspect it",
     "",
     `- \`git diff ${baseBranch}...HEAD\` and \`git log ${baseBranch}..HEAD --oneline\` in the`,
@@ -699,8 +841,16 @@ export function reviewMission(
     "  registration, import/export path rewriting, fallback handling, and the",
     "  like), then grep the diff and the files it touches for every other",
     "  instance — sibling paths, callers, config/schema/docs/test registrations,",
-    "  both sides of a fallback — and list them all under ## Bugs. Never hold an",
-    "  instance back for a later pass.",
+    ...(blockingBar === "full"
+      ? [
+          "  both sides of a fallback — and list them all under ## Bugs. Never hold an",
+          "  instance back for a later pass.",
+        ]
+      : [
+          "  both sides of a fallback — list every instance that meets the blocking bar",
+          `  under ## Bugs and the rest under \`${suggestionsHeading}\`. Never hold a`,
+          "  blocking instance back for a later pass.",
+        ]),
     "- Separate code defects from evidence-only gaps: when the code is sound but a",
     "  capture is wrong or stale, use `EVIDENCE-GAP-ONLY` / `STALE-EVIDENCE-ONLY`",
     "  and check that each declared shot's target and route can really render its",
@@ -783,7 +933,7 @@ export function reviewMission(
     "## Edge cases",
     "Cases worth checking that the change may not handle.",
     "",
-    "## Suggestions",
+    suggestionsHeading,
     "Improvements worth making. Say so plainly when there are none.",
   );
   return parts.join("\n");
@@ -869,9 +1019,18 @@ export function reviewFollowupMission(
   return parts.join("\n");
 }
 
+/**
+ * What holds a review registration (#1083): a reviewer process still running,
+ * a finished reviewer whose report is still being stored, or a run that has not
+ * spawned its reviewer yet.
+ */
+type RegistrationPhase = "running" | "finalizing" | "preparing";
+
 /** In-flight bookkeeping for one review run. */
 interface Run {
   cancelled: boolean;
+  /** When this registration was taken (ms epoch). Drives the stale-entry reaper (#1083). */
+  startedAt: number;
   /**
    * Reviewer selected when this turn started. This keeps a task-level
    * override attached to the result even if global settings change mid-run.
@@ -1023,6 +1182,8 @@ function parseReviewReportFile(file: string, taskId: string): ReviewReport | nul
 
 export class ReviewManager {
   private readonly completions = new Map<string, Promise<void>>();
+  /** When each completion fence was taken (ms epoch), for the stale-entry reaper (#1083). */
+  private readonly completionSince = new Map<string, number>();
   private readonly config: RepoOSConfig;
   private readonly emit: (e: RepoEvent) => void;
   private readonly runs = new Map<string, Run>();
@@ -1105,14 +1266,16 @@ export class ReviewManager {
     return resolveReviewer(this.config) !== null;
   }
 
+  /**
+   * Whether a review registration holds this task. An in-flight review is
+   * tracked in the durable runner session (0288), so a review re-attached after
+   * a reload still reads as running here. A registration with no live process
+   * that has outlived the review timeout is stale: it is cleared first, so no
+   * caller (route gate, watchdog, `review again`) is refused by it (#1083).
+   */
   isRunning(taskId: string): boolean {
-    // An in-flight review is tracked in the durable runner session (0288), so
-    // a review re-attached after a reload still reads as running here.
-    return (
-      this.completions.has(taskId) ||
-      this.runs.has(taskId) ||
-      !!this.runner?.isRunning(this.reviewKey(taskId))
-    );
+    this.reapStaleRegistration(taskId);
+    return this.registration(taskId) !== null;
   }
 
   /**
@@ -1121,9 +1284,111 @@ export class ReviewManager {
    * Count turns and completions once each, including adopted reviews whose
    * process has exited but whose report is still being stored. Counting the
    * runner separately would double-count adopted turns (0288 review round 2).
+   * Stale registrations are reaped first so they cannot hold the idle check open.
    */
   runningCount(): number {
+    const ids = new Set([...this.runs.keys(), ...this.completions.keys()]);
+    for (const id of ids) this.reapStaleRegistration(id);
     return new Set([...this.runs.keys(), ...this.completions.keys()]).size;
+  }
+
+  /**
+   * What holds a task's review registration, or null when nothing does. `live`
+   * is whether a reviewer process (or its durable session, mid-finalize) still
+   * exists — the signal that separates a real registration from a leaked one.
+   */
+  private registration(taskId: string): {
+    since: number;
+    pid: number | null;
+    phase: RegistrationPhase;
+  } | null {
+    const run = this.runs.get(taskId);
+    const fenced = this.completions.has(taskId);
+    const key = this.reviewKey(taskId);
+    // Nothing holds this task: answer without reconciling dead agents, which
+    // reads the registry and probes pids (board reads call this once per task).
+    const held = this.runner
+      ? typeof this.runner.hasEntry === "function"
+        ? this.runner.hasEntry(key)
+        : this.runner.isRunning(key)
+      : false;
+    if (!run && !fenced && !held) return null;
+    // A finalizing runner entry has already exited: it is not a live reviewer.
+    const live = this.runner?.reviewProcessLive(key) ?? false;
+    const entryPresent = this.runner?.isRunning(key) ?? false;
+    const proc = live ? this.runner?.running().find((r) => r.id === key) : undefined;
+    // A live process reports its own start time; otherwise the registration's.
+    // Only a live registration reads this, so the reaper's age check is unaffected.
+    const since =
+      (proc ? Date.parse(proc.startedAt) : NaN) ||
+      run?.startedAt ||
+      this.completionSince.get(taskId) ||
+      Date.now();
+    const phase: RegistrationPhase = live
+      ? "running"
+      : fenced || entryPresent
+        ? "finalizing"
+        : "preparing";
+    return { since, pid: proc && proc.pid > 0 ? proc.pid : null, phase };
+  }
+
+  /**
+   * Clear a registration that has no live process once it is older than the
+   * review timeout (#1083). A fresh one (still preparing, or finalizing a
+   * just-finished turn) is left alone. Returns true when it cleared one.
+   */
+  private reapStaleRegistration(taskId: string): boolean {
+    const reg = this.registration(taskId);
+    if (!reg || reg.phase === "running") return false;
+    if (Date.now() - reg.since <= reviewTimeoutMs(this.config)) return false;
+    this.logger.task(
+      taskId,
+      "warn",
+      "stale review registration cleared — no live reviewer process",
+      {
+        since: new Date(reg.since).toISOString(),
+        phase: reg.phase,
+      },
+    );
+    // A run still preparing has no process yet. Mark it cancelled before it is
+    // dropped, so when its preparation resumes it stops rather than spawning.
+    const run = this.runs.get(taskId);
+    if (run) run.cancelled = true;
+    this.dropRun(taskId, run);
+    this.completions.delete(taskId);
+    this.completionSince.delete(taskId);
+    // A finalize that never settled leaves its runner entry behind. Drop it too,
+    // or the runner would still refuse the next review for this task (#1083).
+    this.runner?.abandonFinalizing(this.reviewKey(taskId));
+    return true;
+  }
+
+  /**
+   * Remove a run record and its timer, but only if it is still the registered
+   * one. A resumed preparation that was cancelled must not delete a newer run
+   * admitted after it (#1083).
+   */
+  private dropRun(taskId: string, run: Run | undefined): void {
+    if (!run) return;
+    if (run.timer) clearTimeout(run.timer);
+    if (this.runs.get(taskId) === run) this.runs.delete(taskId);
+  }
+
+  /**
+   * The refusal for a start request that finds a live registration. It names
+   * what is running (pid, start time) so a human can tell a live reviewer from
+   * a leaked one (#1083).
+   */
+  private refusalWhileRunning(taskId: string): string {
+    const reg = this.registration(taskId);
+    const since = reg ? new Date(reg.since).toISOString() : "unknown";
+    const what =
+      reg?.phase === "running"
+        ? `pid ${reg.pid ?? "unknown"}`
+        : reg?.phase === "finalizing"
+          ? "reviewer exited, finalizing its report"
+          : "preparing, no reviewer process yet";
+    return `a review is already running for this task (${what}, since ${since})`;
   }
 
   /**
@@ -1170,7 +1435,7 @@ export class ReviewManager {
       return { ok: false, reason: "evidence refresh is in progress for this task" };
     }
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task" };
+      return { ok: false, reason: this.refusalWhileRunning(task.id) };
     }
     if (task.hotfix) {
       return { ok: false, reason: "hotfix tasks skip diff-based review" };
@@ -1207,7 +1472,7 @@ export class ReviewManager {
     mode: "run" | "chat",
     prepare: (run: Run) => Promise<ReviewRunResult>,
   ): Promise<ReviewRunResult> {
-    const run: Run = { cancelled: false, mode };
+    const run: Run = { cancelled: false, mode, startedAt: Date.now() };
     this.runs.set(taskId, run);
     try {
       return await prepare(run);
@@ -1236,7 +1501,7 @@ export class ReviewManager {
       return { ok: false, reason: "evidence refresh is in progress for this task", trigger };
     }
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task", trigger };
+      return { ok: false, reason: this.refusalWhileRunning(task.id), trigger };
     }
     return this.prepareReview(task.id, "run", async (run) => {
       const stored = this.read(task.id);
@@ -1328,7 +1593,7 @@ export class ReviewManager {
         : missionBase;
       // A cancel that landed before the spawn must not still start a run.
       if (run.cancelled) {
-        this.runs.delete(task.id);
+        this.dropRun(task.id, run);
         this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
         return { ok: false, skipped: true, reason: "review cancelled" };
       }
@@ -1352,7 +1617,7 @@ export class ReviewManager {
    */
   async runCheckpointDelta(task: Task, approvedSha: string): Promise<ReviewRunResult> {
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task" };
+      return { ok: false, reason: this.refusalWhileRunning(task.id) };
     }
     return this.prepareReview(task.id, "run", async (run) => {
       const baseReviewer = resolveReviewerForTask(this.config, task);
@@ -1412,7 +1677,7 @@ export class ReviewManager {
         ? `${missionBase}\n\n## Handoff UI verification (recorded at handoff)\n\n${uiNote}\n`
         : missionBase;
       if (run.cancelled) {
-        this.runs.delete(task.id);
+        this.dropRun(task.id, run);
         this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
         return { ok: false, skipped: true, reason: "review cancelled" };
       }
@@ -1458,14 +1723,22 @@ export class ReviewManager {
     humanEntry?: AgentOutputEntry,
     sessionId?: string,
   ): void {
-    const started = this.runner?.startReview(this.reviewKey(taskId), agent, mission, workdir, {
-      reset: mode === "run",
-      reviewKind: mode,
-      humanEntry,
-      ...(sessionId ? { sessionId } : {}),
-    });
+    // A throwing spawn is a failed start like any other: it must release the
+    // registration taken in `prepareReview`, not leave it to block the next
+    // request (#1083).
+    let started: StartResult | undefined;
+    try {
+      started = this.runner?.startReview(this.reviewKey(taskId), agent, mission, workdir, {
+        reset: mode === "run",
+        reviewKind: mode,
+        humanEntry,
+        ...(sessionId ? { sessionId } : {}),
+      });
+    } catch (error) {
+      started = { ok: false, reason: (error as Error).message };
+    }
     if (!started || !started.ok) {
-      this.runs.delete(taskId);
+      if (this.runs.get(taskId) === run) this.runs.delete(taskId);
       this.emit({
         type: "review",
         id: taskId,
@@ -1506,6 +1779,7 @@ export class ReviewManager {
       if (this.runs.has(taskId)) continue;
       const run: Run = {
         cancelled: this.isCancelled(taskId),
+        startedAt: Date.now(),
         mode: this.runner?.reviewKindOf(r.id) ?? "run",
         timeoutMinutes: reviewTimeoutMinutes(this.config),
       };
@@ -1622,9 +1896,14 @@ export class ReviewManager {
       reject = failed;
     });
     this.completions.set(taskId, completion);
+    this.completionSince.set(taskId, Date.now());
+    // Release only the fence this call took: the reaper (#1083) may already
+    // have cleared it, and a newer registration must not be dropped with it.
     const release = () => {
+      if (this.completions.get(taskId) !== completion) return;
       this.runs.delete(taskId);
       this.completions.delete(taskId);
+      this.completionSince.delete(taskId);
     };
     // Start immediately so synchronous cancellation/chat bookkeeping keeps its
     // ordering; the fence stays registered across every awaited worker read.
@@ -2132,7 +2411,7 @@ export class ReviewManager {
    */
   async send(task: Task, text: string): Promise<ReviewRunResult> {
     if (this.isRunning(task.id)) {
-      return { ok: false, reason: "a review is already running for this task" };
+      return { ok: false, reason: this.refusalWhileRunning(task.id) };
     }
     return this.prepareReview(task.id, "chat", async (run) => {
       const agent = resolveReviewerForTask(this.config, task);
@@ -2164,7 +2443,7 @@ export class ReviewManager {
         this.config,
       );
       if (run.cancelled) {
-        this.runs.delete(task.id);
+        this.dropRun(task.id, run);
         this.emit({ type: "review", id: task.id, state: "cancelled", at: now() });
         return { ok: false, skipped: true, reason: "review cancelled" };
       }
@@ -2289,7 +2568,7 @@ export class ReviewManager {
   cancel(taskId: string): void {
     const run = this.runs.get(taskId);
     const key = this.reviewKey(taskId);
-    if (!run && !this.runner?.isRunning(key)) return;
+    if (!run && !this.completions.has(taskId) && !this.runner?.isRunning(key)) return;
     if (run) run.cancelled = true;
     // Persist the cancellation so it survives a reload: an adopted review whose
     // `Run` record died with the previous process must still finalize as
@@ -2301,7 +2580,13 @@ export class ReviewManager {
     } catch {
       /* already gone */
     }
-    if (run?.timer) clearTimeout(run.timer);
+    // Drop the runner entry of a finalize whose child already exited (#1083).
+    this.runner?.abandonFinalizing(key);
+    // Drop the run now, even when the child is already gone and will never
+    // report its exit (#1083). A live child still finalizes as cancelled through
+    // the marker above. A completion fence is left alone: its own finalize
+    // releases it, and the reaper clears it if that finalize never settles.
+    this.dropRun(taskId, run);
   }
 
   /** Cancel every in-flight review (server shutdown). */

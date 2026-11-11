@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { formatPipelineElapsed, type PipelineCardState } from "../../../core/pipeline-view.js";
+import {
+  formatPipelineElapsed,
+  type PipelineCardState,
+  type PipelineStage,
+} from "../../../core/pipeline-view.js";
+import ActivityIndicator from "./ActivityIndicator.vue";
+import { resolveCardActivityIndicator } from "../lib/card-activity-indicator";
 import { agentLastActivityTip } from "../lib/card-activity-recency";
 import { checkProgressPercent, type CheckProgress } from "../lib/check-progress";
 import {
@@ -20,6 +26,9 @@ const props = defineProps<{
   priority: string;
   title: string;
   state: PipelineCardState;
+  pipelineStage: PipelineStage;
+  reviewRunning: boolean;
+  closeoutActive: boolean;
   statusSignals: SharedTaskCardStatusInput | null;
   /** Live step in words ("Coding", "Running checks 3/5", …). */
   stepLabel: string;
@@ -72,6 +81,16 @@ const displayAction = computed<PipelineCardAction | null>(() => {
 
 const showInlineCheckBar = computed(
   () => props.checkProgress != null && checkProgressPercent(props.checkProgress) != null,
+);
+const activityIndicator = computed(() =>
+  resolveCardActivityIndicator({
+    shared: sharedStatus.value,
+    stage: props.pipelineStage,
+    reviewRunning: props.reviewRunning,
+    closeoutActive: props.closeoutActive,
+    chipText: displayChipText.value,
+    showCheckBar: showInlineCheckBar.value,
+  }),
 );
 const validLastActivityAt = computed(() =>
   Number.isFinite(Date.parse(props.lastActivityAt ?? "")) ? props.lastActivityAt : null,
@@ -166,7 +185,14 @@ function onKey(e: KeyboardEvent): void {
         :tabindex="!showElapsedInline && elapsedTip ? 0 : undefined"
       />
       <template v-else>
-        <span class="pl-dot" aria-hidden="true"></span>
+        <ActivityIndicator
+          v-if="activityIndicator"
+          class="pl-activity"
+          :variant="activityIndicator.variant"
+          :activity="activityIndicator.activity"
+          :label="activityIndicator.label"
+        />
+        <span v-else class="pl-dot" aria-hidden="true"></span>
         <span
           class="pl-step"
           :class="{ 'pl-step--recency-tip': !showElapsedInline && elapsedTip }"
@@ -268,6 +294,10 @@ function onKey(e: KeyboardEvent): void {
   border-radius: 50%;
   background: var(--green);
   flex: 0 0 auto;
+}
+.pl-activity {
+  flex: 0 0 auto;
+  line-height: 0;
 }
 .pipeline-card.is-paused .pl-dot {
   background: var(--amber);

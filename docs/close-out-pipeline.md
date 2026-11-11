@@ -768,8 +768,31 @@ real pollution of another task's record.
 
 **Guards** (both added `be3acd3f`, 2026-08-29; extended to all five bookkeeping
 dirs in #0726 and #0860):
-- `guardReviewTransition` (`review-guard.ts`) unstages every `work/*.md` that
-  isn't the task's own after `git add -A`, so drift never reaches the branch.
+- `guardReviewTransition` (`review-guard.ts`) unstages every foreign
+  `work/<other-id>-*.md` AND `work/reports/<other-id>/**` (`.json` as well as
+  `.md`) that isn't the task's own after `git add -A`, so drift never reaches the
+  branch (#1076).
+- The engineer self-check WIP checkpoint
+  (`commitWipCheckpointForRemoteGate`, `engineer-remote-self-check.ts`) commits
+  only the paths it intended (`git commit -- <paths>`) and resets any foreign
+  `work/` bookkeeping first, so a board write left dirty-and-staged can no longer
+  be folded into the branch by a bare `git commit` (#1076).
+- `restoreForeignTaskBookkeepingFromMain` (`git.ts`) runs at handoff, and
+  `healForeignBookkeepingAfterSync` runs after every **sync with main** attempt
+  (#1086) — merge success or aborted conflict. Both run after the commit gate
+  and before the review lock (#1076). The heal grades `work/`, `inputs/`, and
+  `stories/` in every git tree state (committed, staged, unstaged, untracked).
+  Siblings at the merge-base are **restored** to main's tip (main's copy wins on
+  the branch). Post-merge siblings that **exist on main** but not at the merge-base
+  are **dropped** from the branch (not copied in) so main stays authoritative at
+  landing; stray adds with no main blob are removed. If the heal throws, handoff
+  stops at the **commit** step with a message naming the paths — it does not
+  silently succeed. Sync heal is best-effort after every attempt, including when
+  the merge aborts on conflict (#1086). This heals drift from WIP checkpoints or
+  concurrent board writes instead of bouncing the engineer.
+  A handoff is also refused on an unchanged branch tip with a recorded identical
+  check failure; a new commit (even a docs touch) is the way to request a fresh
+  validation after a failure that is no longer reproducible.
 - `resetForeignWorkFiles` (`integration-orchestrator.ts`) restores main's copy of
   every foreign bookkeeping file the candidate changed — under the work dir,
   `inputs/`, `stories/`, `reminders/` or `schedules/`, per

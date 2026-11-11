@@ -303,7 +303,7 @@ function outcomeLabel(r: CheckRunRow): string {
     <p v-if="error && runs.length" class="cr-err" role="status">Refresh failed: {{ error }}</p>
     <p v-else-if="error" class="cr-err">{{ error }}</p>
 
-    <PageSkeleton v-if="loading && !runs.length" kind="table" />
+    <PageSkeleton :loading="loading && !runs.length" kind="table" />
 
     <section v-if="machines.length" class="cr-machines" aria-label="Machines summary">
       <div v-for="m in machines" :key="m.key" class="cr-machine">

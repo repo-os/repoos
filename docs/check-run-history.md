@@ -11,6 +11,28 @@ start another managed engineer turn with `A check is running; wait for it to
 finish.` and rejects source commits. Edits that bypass those managed paths are
 detected by the post-check drift comparison.
 
+A handoff whose commit step (the add and commit in `guardReviewTransition`) or
+engineering-report commit meets that refusal waits for the running check instead
+of failing (#1082). It polls once a second and shows `Waiting for the running
+check to finish` as its progress line while it waits. Each poll first reconciles
+stale or dead-holder locks, so a crashed check never holds a handoff. The guard
+is idempotent, so the whole add-and-commit step is re-run after each poll.
+
+The wait never outlives the handoff. Its budget is the time left before the
+handoff deadline (`HANDOFF_DEADLINE_MS`, 30 minutes by default, or
+`REPOOS_HANDOFF_DEADLINE_MS`) minus one minute, capped at 45 minutes. If the
+lock is still held when that budget runs out, the handoff fails with `timed out
+after waiting for the running check to finish` and the work stays uncommitted;
+request handoff again once the check has finished. The label is keyed to the
+attempt that started the wait, so a late waiter cannot mark a newer handoff.
+
+The review-report commit also waits, up to 45 minutes, from the background
+review job that writes it; it is not under a handoff deadline. The remote
+self-check checkpoint is not a waiting step: a second self-check that finds a
+live lock is refused at once, so only the commit that follows the pre-check
+can wait through a race. The PATCH close-out route ("commit & continue") fails
+fast on purpose, so an HTTP request never blocks behind a check.
+
 After validation, drift inspection examines the intervening commits as well as
 the net tree difference between the check-start commit and resulting HEAD.
 Changes under those bookkeeping roots are allowed; any other path touched by an

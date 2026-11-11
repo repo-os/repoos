@@ -1051,8 +1051,8 @@ onBeforeUnmount(() => {
     </header>
 
     <div class="page-scroll-body">
-      <PageSkeleton v-if="loading && !status" kind="cards" />
-      <p v-else-if="loadError && !status" class="rel-error">{{ loadError }}</p>
+      <PageSkeleton :loading="loading && !status" kind="cards" />
+      <p v-if="loadError && !status" class="rel-error">{{ loadError }}</p>
       <p v-if="loadError && status" class="rel-error" role="status">
         Refresh failed: {{ loadError }}
       </p>
@@ -1247,7 +1247,7 @@ onBeforeUnmount(() => {
             <!-- First lookup: a skeleton shaped like the channel cards, not a
                  lone spinner. A "Check again" recheck keeps the channels on
                  screen and shows the compact indicator below. -->
-            <PageSkeleton v-if="distributionLoading && !distribution.length" kind="cards" />
+            <PageSkeleton :loading="distributionLoading && !distribution.length" kind="cards" />
             <p v-if="distributionCiFailure" class="ff-error" role="alert">
               The release workflow failed<template v-if="distributionCiFailure.failedStep">
                 at “{{ distributionCiFailure.failedStep }}”</template

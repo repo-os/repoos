@@ -259,6 +259,8 @@ const cases: Case[] = [
     id: "task-scope",
     status: "fail",
     detail: "the diff changes another task's bookkeeping: work/0123-other-task.md",
+    nextStep:
+      "Re-request review — handoff (or repoos sync) heals work/0123-other-task.md from main; post-merge siblings are dropped from the branch, not copied in",
   },
   {
     name: "diff changes an input",

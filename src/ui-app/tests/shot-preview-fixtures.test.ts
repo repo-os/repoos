@@ -11,11 +11,13 @@ import {
   applyShotPreviewFixture,
   isShotPreviewConfigFixture,
   readShotPreviewFixtureFromLocation,
+  shotFixturePinnedAvailableRelease,
   shotFixturePinnedIntegration,
   shotFixturePinnedRemoteStatus,
   shotFixturePinnedTaskRemoteActivity,
   shotFixturePinnedWorkingDiff,
   shotFixtureSchedules,
+  isShotPreviewSeededTaskId,
   shotPreviewSkipsEngineeringReportsFetch,
   shotPreviewSkipsIntegrationJobFetch,
   shotPreviewSkipsTaskSummaryFetch,
@@ -31,6 +33,21 @@ import { activeEngineerCardHint } from "../src/lib/active-task-card";
 import { makeTask } from "./component-test-helpers";
 
 describe("shot preview board fixtures (#0743)", () => {
+  it("pins a newer-release payload for the release:updateAvailable dialog shot (#1073)", () => {
+    setActivePinia(createPinia());
+    const repo = useRepoStore();
+    expect(shotFixturePinnedAvailableRelease()).toBeNull();
+    applyShotPreviewFixture(repo, "release:updateAvailable");
+    const pinned = shotFixturePinnedAvailableRelease();
+    expect(pinned?.available).toBe(true);
+    expect(pinned?.upgradeCommand).toBe("repoos upgrade");
+    expect(pinned?.installKind).toBe("standalone");
+    // A subsequent fixture resets the pin so a non-release capture keeps its
+    // real `/api/release/available` data.
+    applyShotPreviewFixture(repo, "board:withReviewTask");
+    expect(shotFixturePinnedAvailableRelease()).toBeNull();
+  });
+
   it("seeds a done task for the post-merge summary capture (#1044)", () => {
     setActivePinia(createPinia());
     const repo = useRepoStore();
@@ -165,6 +182,7 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(isShotPreviewConfigFixture("settings:pumpkinSpell")).toBe(true);
     expect(isShotPreviewConfigFixture("editor:unconfigured")).toBe(true);
     expect(isShotPreviewConfigFixture("budget:paused")).toBe(true);
+    expect(isShotPreviewConfigFixture("settings:motionOff")).toBe(true);
     expect(isShotPreviewConfigFixture("board:startWorkPending")).toBe(false);
   });
 
@@ -184,6 +202,15 @@ describe("shot preview board fixtures (#0743)", () => {
     });
     expect(String(rows[0]?.pausedUntil)).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(rows[1]?.pausedModels).toMatchObject([{ model: "big pickle" }]);
+  });
+
+  it("seeds motion off on the settings form (#1062)", () => {
+    const pinia = createPinia();
+    setActivePinia(pinia);
+    const config = useConfigStore();
+    config.form.activityAnimationEnabled = true;
+    applyShotPreviewConfigFixture(config, "settings:motionOff");
+    expect(config.form.activityAnimationEnabled).toBe(false);
   });
 
   it("seeds bird quick trail on the settings form (#0822)", () => {
@@ -666,6 +693,7 @@ describe("shot preview board fixtures (#0743)", () => {
     ["drawer:statusHandoffFailed", "active"],
     ["drawer:statusChecksRunning", "active"],
     ["drawer:statusConfirmingHandoff", "active"],
+    ["drawer:handoffWaiting", "active"],
     ["drawer:statusChecksFailed", "active"],
     ["drawer:statusDetails", "review"],
   ] as const)("seeds the %s status drawer capture", (fixture, status) => {
@@ -692,6 +720,10 @@ describe("shot preview board fixtures (#0743)", () => {
       expect(repo.taskChecks[SHOT_PREVIEW_FIXTURE_TASK_ID]?.[0]?.running).toBe(true);
     } else if (fixture === "drawer:statusConfirmingHandoff") {
       expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBe("check");
+    } else if (fixture === "drawer:handoffWaiting") {
+      expect(repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID]?.progress?.reason).toBe(
+        "Waiting for the running check to finish",
+      );
     } else if (fixture === "drawer:engineeringReports") {
       expect(task?.status).toBe("active");
     } else {
@@ -936,6 +968,13 @@ describe("shot preview board fixtures (#0743)", () => {
       "installing dependencies",
     );
     vi.unstubAllGlobals();
+  });
+
+  it("recognizes client-seeded pipeline fixture task ids", () => {
+    expect(isShotPreviewSeededTaskId("9999")).toBe(true);
+    expect(isShotPreviewSeededTaskId("pipe-review")).toBe(true);
+    expect(isShotPreviewSeededTaskId("0980-3")).toBe(true);
+    expect(isShotPreviewSeededTaskId("1062")).toBe(false);
   });
 
   it("skips server-backed report fetches for the fixture task during capture (#1011)", () => {

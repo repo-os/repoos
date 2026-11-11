@@ -113,6 +113,15 @@ matching command when it can identify the source.
 available only for the curl install. Package-manager installs follow their
 package manager's stable release channel.
 
+When a newer release is available, the dashboard shows an update banner. Opening
+it shows the installed and available versions, a **How to upgrade** block with
+the exact command for *your* install (the same detection `repoos upgrade` uses,
+so a package-manager or source checkout sees its own command, and a channel
+install sees `repoos upgrade --channel <name>`), a Copy button, and a link to
+the release notes. A channel install is compared against the newest build on
+that channel, so the banner offers exactly what the command installs. The command runs in a terminal; a server already running
+keeps the old version until you restart it.
+
 RepoOS runs on **Bun** when it's available and falls back to **Node.js 20.6.0 or newer**
 otherwise — see
 [Configuration → Worktrees and runtime](/configuration#worktrees-and-runtime)

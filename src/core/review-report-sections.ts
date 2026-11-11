@@ -184,7 +184,8 @@ export function extractReviewReportSections(markdown: string): {
     } else if (trimmed === "## Edge cases") {
       currentSection = "edgeCases";
       sectionLines.edgeCases = [];
-    } else if (trimmed === "## Suggestions") {
+    } else if (trimmed === "## Suggestions" || trimmed.startsWith("## Suggestions (")) {
+      // `## Suggestions (non-blocking)` is the post-freeze heading (#1080).
       currentSection = "suggestions";
       sectionLines.suggestions = [];
     } else if (trimmed === "## Evidence") {

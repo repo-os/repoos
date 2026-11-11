@@ -3,11 +3,12 @@
  * one queued message for the engineer's next turn.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Agent, RepoOSConfig, Task } from "../../core/types";
 import { missionFor } from "../../server/agents";
+import { handoffProcessLive } from "../../server/handoff-live";
 import {
   beginHandoffStatus,
   deferHandoffStatus,
@@ -18,6 +19,9 @@ import {
   truncateHandoffReason,
   updateHandoffStatusStep,
   updateHandoffStatusProgress,
+  emitHandoffSupersededIfNeeded,
+  reconcileHandoffStatus,
+  supersedeHandoffStatus,
   HANDOFF_STATUS_REASON_LIMIT,
 } from "../../server/handoff-status";
 
@@ -271,6 +275,116 @@ describe("handoff outcome message (#1028)", () => {
     });
     expect(deliverHandoffOutcome(config, "1", failed, runner, null)).toBe(false);
     expect(runner.queueTaskMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe("stale running handoff reconciliation (#1085)", () => {
+  it("supersedes a running record with no live process", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1085", { attemptKey: "run-stale", step: "validate" });
+    const superseded = reconcileHandoffStatus(config, "1085", {
+      taskStatus: "review",
+      handoffLive: false,
+    });
+    expect(superseded).toMatchObject({
+      state: "superseded",
+      reason: "task is already in review",
+    });
+    expect(readHandoffStatus(config, "1085").state).toBe("superseded");
+  });
+
+  it("supersedes when a newer review pass finished after the handoff started", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1080", {
+      attemptKey: "run-old",
+      step: "validate",
+    });
+    const started = readHandoffStatus(config, "1080").startedAt;
+    expect(started).toBeTruthy();
+    const later = new Date(Date.parse(started!) + 60_000).toISOString();
+    const superseded = reconcileHandoffStatus(config, "1080", {
+      taskStatus: "review",
+      handoffLive: false,
+      latestReviewAt: later,
+    });
+    expect(superseded).toMatchObject({
+      state: "superseded",
+      reason: "a newer review pass completed",
+    });
+  });
+
+  it("does not supersede a live active handoff when a review finished after it started", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1085", { attemptKey: "run-live", step: "check" });
+    const started = readHandoffStatus(config, "1085").startedAt!;
+    const later = new Date(Date.parse(started) + 120_000).toISOString();
+    const status = reconcileHandoffStatus(config, "1085", {
+      taskStatus: "active",
+      handoffLive: true,
+      latestReviewAt: later,
+    });
+    expect(status.state).toBe("running");
+  });
+
+  it("flags a live handoff past the deadline as stale without persisting superseded", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1070", { attemptKey: "run-wait", step: "validate" });
+    const stale = reconcileHandoffStatus(config, "1070", {
+      taskStatus: "active",
+      handoffLive: true,
+      staleAfterMs: 60_000,
+      nowMs: Date.now() + 120_000,
+    });
+    expect(stale.state).toBe("running");
+    expect(stale.stale).toBe(true);
+    expect(readHandoffStatus(config, "1070").state).toBe("running");
+  });
+
+  it("does not treat an orphan checkpoint marker as a live handoff (#1085)", () => {
+    const config = makeConfig();
+    mkdirSync(join(config.root, ".repoos/post-handoff-checkpoint"), { recursive: true });
+    writeFileSync(
+      join(config.root, ".repoos/post-handoff-checkpoint/1085.json"),
+      JSON.stringify({
+        taskId: "1085",
+        approvedSha: "a".repeat(40),
+        headSha: "b".repeat(40),
+        phase: "gate",
+        startedAt: new Date().toISOString(),
+      }),
+      "utf8",
+    );
+    const runner = {
+      isHandoffInFlight: () => false,
+      hasPendingHandoff: () => false,
+    };
+    expect(handoffProcessLive(config, "1085", runner)).toBe(false);
+  });
+
+  it("begins a fresh running record after supersede with a new attempt key", () => {
+    const config = makeConfig();
+    supersedeHandoffStatus(config, "1085", "orphan");
+    const next = beginHandoffStatus(config, "1085", {
+      attemptKey: "new-attempt",
+      step: "validate",
+    });
+    expect(next.state).toBe("running");
+    expect(readHandoffStatus(config, "1085").state).toBe("running");
+  });
+
+  it("emits handoff:superseded when reconciliation clears a running record", () => {
+    const config = makeConfig();
+    beginHandoffStatus(config, "1085", { attemptKey: "run-stale", step: "validate" });
+    const before = readHandoffStatus(config, "1085");
+    const events: Array<{ type: string; step?: string }> = [];
+    const after = reconcileHandoffStatus(config, "1085", {
+      taskStatus: "review",
+      handoffLive: false,
+    });
+    emitHandoffSupersededIfNeeded(before, after, "1085", (e) =>
+      events.push({ type: e.type, step: e.type === "task.progress" ? e.step : undefined }),
+    );
+    expect(events).toEqual([expect.objectContaining({ step: "handoff:superseded" })]);
   });
 });
 
