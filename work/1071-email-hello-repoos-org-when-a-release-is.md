@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T08:48:17Z"
+updated_at: "2026-11-11T08:49:04Z"
 review_passes: 4
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -71,7 +71,7 @@ Look at `src/server/release.ts`, `src/core/auth.ts` and its email send, `src/cor
 ```
 
 ## Accepted scope and known limitations
-FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut; accepted recipients are kept in a caller-owned list so a failed local write cannot make Resend mail them twice (and the send is now awaited so its errors are caught); an interrupted send reaches the bell; the docs state per-recipient at-most-once with the provider-accept-to-write window. NOT blocking, follow-up only: Resend after a restart skipping the publish gate (reuse probeRelease for when=published); the Set up email link target and a Settings email-setup surface; [release.email] enabled saving without [release] enabled; anything under Edge cases of earlier reviews. Report these under Suggestions, not Bugs.
+FINAL (pass 5, hand-finished): Resend now claims the version before its first await (two concurrent Resends cannot both send) and persists accepted recipients as failed when a local write throws, with tests for both. Earlier fixes stand: card refresh after a cut, caller-owned accepted list on the automatic path with an awaited send, orphaned pending on the bell, per-recipient at-most-once docs. NOT blocking, follow-up only: Resend after a restart skipping the publish gate beyond the probe; the Set up email link target; [release.email] enabled without [release] enabled; edge cases from earlier reviews. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -208,3 +208,4 @@ FINAL (pass 4, hand-finished): the Releases email card now refreshes after a cut
 - 2026-11-11T08:30:34Z · needs_input
 - 2026-11-11T08:48:15Z · status review→active
 - 2026-11-11T08:48:17Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T08:49:04Z · body: Accepted scope and known limitations (added 1, removed 1)
