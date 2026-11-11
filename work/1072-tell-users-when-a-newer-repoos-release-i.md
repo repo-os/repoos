@@ -3,6 +3,9 @@ id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
@@ -12,10 +15,11 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T04:17:27Z"
+updated_at: "2026-11-11T04:21:52Z"
 review_rounds: 1
 review_passes: 1
-dev_error_count: 2
+dev_error_count: 3
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-11T04:21:52.567Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
@@ -88,3 +92,5 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:16:57Z · message_queued at 2026-11-11T04:16:57.844Z
 - 2026-11-11T04:16:57Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-11T04:17:27Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T04:21:52Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T04:21:52Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
