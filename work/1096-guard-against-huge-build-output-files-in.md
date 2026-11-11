@@ -2,7 +2,7 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: active
+status: review
 priority: p2
 area: core
 assigned_to: ai
@@ -92,3 +92,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T21:17:51Z · message_queued at 2026-11-11T21:17:51.414Z
 - 2026-11-11T21:17:51Z · ↻ resuming engineer to read queued message
 - 2026-11-11T21:17:52Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: **#1096 — Guard against huge/build-output files** Implementation covers the branch-artifact guard (checkpoint, `branch-artifacts` step, pre-commit, macOS docs), review fixes (fail-closed scan, checkpoint unstage ordering, staged blobs, etc… · stderr: (empty)
+- 2026-11-11T21:17:52Z · status active→review
