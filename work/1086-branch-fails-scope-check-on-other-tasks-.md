@@ -11,7 +11,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-10T23:56:50Z"
+updated_at: "2026-11-11T00:15:03Z"
 ---
 ## Problem
 Reported from a new RepoOS project (kamrai, on the mini, RepoOS v0.5.80). A task branch fails the scope check ("diff changes another task's bookkeeping") on files that already exist on main, and the engineer cannot fix it: each time they restore the files from main, the files come back as uncommitted changes (one modified, four untracked) and the committed branch still lacks them. `repoos landable` stays red with no code involved.
@@ -50,3 +50,4 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 - 2026-11-10T23:21:42Z · body
 - 2026-11-10T23:49:32Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-10T23:56:50Z · body
+- 2026-11-11T00:15:03Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
