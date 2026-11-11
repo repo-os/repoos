@@ -162,9 +162,18 @@ export async function commitWipCheckpointForRemoteGate(
     }
   }
   if (staging.error) {
-    const refused = [...new Set([...staging.refusedPaths, ...staging.unstagedBuildOutput])];
-    if (refused.length > 0) {
-      await runGit(worktreePath, ["reset", "--quiet", "HEAD", "--", ...refused], 30_000);
+    // A refused checkpoint must leave NOTHING it staged behind: otherwise clean
+    // paths (and build output beyond the expansion cap) stay in the index and the
+    // next bare commit sweeps them in. Unstage everything this pass staged.
+    const everything = [
+      ...new Set([...pathsToScan, ...staging.refusedPaths, ...staging.unstagedBuildOutput]),
+    ];
+    for (let i = 0; i < everything.length; i += 200) {
+      await runGit(
+        worktreePath,
+        ["reset", "--quiet", "HEAD", "--", ...everything.slice(i, i + 200)],
+        30_000,
+      );
     }
     return staging.report ? `${staging.error}\n\n${staging.report}` : staging.error;
   }

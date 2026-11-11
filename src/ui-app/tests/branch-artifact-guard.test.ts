@@ -326,7 +326,7 @@ describe("review pass 4 regressions (#1096)", () => {
     expect(violations.some((v) => v.kind === "oversize" && v.path === "data.bin")).toBe(true);
   });
 
-  it("scans an allowlisted file over 5 MiB (truncates, does not fail to read)", () => {
+  it("scans an allowlisted file over 5 MiB end to end with zero violations", () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-bigallow-"));
     dirs.push(root);
     initRepo(root);
@@ -335,8 +335,39 @@ describe("review pass 4 regressions (#1096)", () => {
     git(root, "commit", "-qm", "big");
     const added = gitAddedPathsOnBranch(root, "main")!;
     const { violations } = evaluateAddedPaths(root, added, { largeFileAllowlist: ["big.dat"] });
-    expect(violations.some((v) => v.detail?.includes("could not read blob"))).toBe(false);
-    expect(violations.some((v) => v.kind === "oversize")).toBe(false);
+    expect(violations).toEqual([]);
+  });
+
+  it("finds a secret past the first window of an allowlisted file over 5 MiB", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-bigsecret-"));
+    dirs.push(root);
+    initRepo(root);
+    const buf = Buffer.alloc(6 * 1024 * 1024, 9);
+    Buffer.from(fakeStripeTestSecret()).copy(buf, 5 * 1024 * 1024 + 100);
+    writeFileSync(join(root, "big.dat"), buf);
+    git(root, "add", "big.dat");
+    git(root, "commit", "-qm", "big");
+    const added = gitAddedPathsOnBranch(root, "main")!;
+    const { violations } = evaluateAddedPaths(root, added, { largeFileAllowlist: ["big.dat"] });
+    expect(violations.some((v) => v.kind === "secret" && v.path === "big.dat")).toBe(true);
+  });
+
+  it("finds a secret in a gzip member followed by trailing bytes", () => {
+    const payload = Buffer.concat([
+      gzipSync(Buffer.from(fakeStripeTestSecret())),
+      Buffer.alloc(2048, 7),
+    ]);
+    const { secrets } = scanBuffersForSecrets(payload, "t.bin", 1_048_576);
+    expect(secrets.length).toBeGreaterThan(0);
+  });
+
+  it("reports incomplete for a valid gzip header over a corrupt body", () => {
+    const bad = Buffer.concat([
+      Buffer.from([0x1f, 0x8b, 0x08, 0x00, 0, 0, 0, 0, 0, 0xff]),
+      Buffer.alloc(64, 0xff),
+    ]);
+    const { incomplete } = scanBuffersForSecrets(bad, "t.bin", 1_048_576);
+    expect(incomplete.length).toBeGreaterThan(0);
   });
 
   it("finds a zlib payload at a non-zero offset", () => {
@@ -526,5 +557,23 @@ describe("stepBranchArtifacts", () => {
     } as Parameters<typeof stepBranchArtifacts>[0]);
     expect(bad.status).toBe("failed");
     expect(bad.detail).toMatch(/could not resolve git ref/);
+  });
+  it("leaves nothing staged when a refusal happens (clean paths included)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-refuse-clean-"));
+    dirs.push(root);
+    initRepo(root);
+    mkdirSync(join(root, "work"), { recursive: true });
+    writeFileSync(join(root, "work", "1096-task.md"), '---\nid: "1096"\n---\n');
+    writeFileSync(join(root, "src.ts"), "ok\n");
+    writeFileSync(join(root, "leak.txt"), fakeStripeTestSecret());
+    git(root, "add", "--", "work/1096-task.md", "src.ts", "leak.txt");
+    const cfg = loadConfig(root);
+    const err = await commitWipCheckpointForRemoteGate(root, { ...cfg, root }, "1096");
+    expect(err).toMatch(/Secret pattern/);
+    const stagedOut = execFileSync("git", ["diff", "--cached", "--name-only"], {
+      cwd: root,
+      encoding: "utf8",
+    });
+    expect(stagedOut.trim()).toBe("");
   });
 });

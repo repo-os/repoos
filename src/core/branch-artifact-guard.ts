@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import type { CheckConfig } from "./types.js";
 
-const { gunzipSync, inflateSync, unzipSync } = nodeZlib;
+const { gunzipSync, inflateRawSync, inflateSync, unzipSync } = nodeZlib;
 const zstdDecompressSync = (nodeZlib as { zstdDecompressSync?: typeof gunzipSync })
   .zstdDecompressSync;
 
@@ -225,13 +225,52 @@ function decompressZstd(buf: Buffer, maxOut: number): Buffer | "too_large" | "mi
   }
 }
 
-function tryGunzip(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
+/** Length of a gzip member header (RFC 1952), or null when it is not a valid deflate gzip header. */
+function gzipHeaderLength(buf: Buffer): number | null {
+  if (buf.length < 10 || buf[0] !== 0x1f || buf[1] !== 0x8b || buf[2] !== 8) return null;
+  const flags = buf[3]!;
+  if (flags & 0xe0) return null; // reserved bits must be zero
+  let pos = 10;
+  if (flags & 0x04) {
+    if (pos + 2 > buf.length) return null;
+    pos += 2 + buf.readUInt16LE(pos);
+  }
+  for (const bit of [0x08, 0x10]) {
+    if (flags & bit) {
+      const end = buf.indexOf(0, pos);
+      if (end === -1) return null;
+      pos = end + 1;
+    }
+  }
+  if (flags & 0x02) pos += 2;
+  return pos <= buf.length ? pos : null;
+}
+
+/**
+ * Gunzip with a decode fallback: gunzip throws on trailing bytes after the member,
+ * so recover the deflate stream directly and keep the partial output
+ * (`Z_SYNC_FLUSH`). "undecodable" means a valid gzip header whose body still
+ * cannot be inflated, which the caller reports as incomplete (never a silent pass).
+ */
+function tryGunzip(buf: Buffer, maxOut: number): Buffer | "too_large" | "undecodable" | null {
   try {
     return gunzipSync(buf, { maxOutputLength: maxOut });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes("maxOutputLength") || msg.includes("Buffer")) return "too_large";
-    return null;
+  }
+  const header = gzipHeaderLength(buf);
+  if (header === null) return null; // not a real gzip header: random bytes, not a payload
+  try {
+    const out = inflateRawSync(buf.subarray(header), {
+      maxOutputLength: maxOut,
+      finishFlush: nodeZlib.constants.Z_SYNC_FLUSH,
+    });
+    return out.length > 0 ? out : "undecodable";
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("maxOutputLength") || msg.includes("Buffer")) return "too_large";
+    return "undecodable";
   }
 }
 
@@ -350,6 +389,10 @@ export function scanBuffersForSecrets(
         continue;
       }
       if (out === "error") {
+        incomplete.push({
+          path,
+          reason: "zstd payload could not be decoded — cannot scan it",
+        });
         pushHits(slice);
         continue;
       }
@@ -359,6 +402,14 @@ export function scanBuffersForSecrets(
 
     if (slice.length >= 2 && slice[0] === 0x1f && slice[1] === 0x8b) {
       const out = tryGunzip(slice, maxDecompressBytes);
+      if (out === "undecodable") {
+        incomplete.push({
+          path,
+          reason: "gzip payload has a valid header but could not be decoded — cannot scan it",
+        });
+        pushHits(slice);
+        continue;
+      }
       if (out === "too_large") {
         incomplete.push({
           path,
@@ -587,6 +638,11 @@ export interface EvaluateAddedPathsOptions extends BranchArtifactGuardOptions {
   preferStaged?: boolean;
 }
 
+/** Allowlisted files are scanned in windows up to this many bytes. */
+const ALLOWLIST_SCAN_HARD_CAP = 64 * 1024 * 1024;
+/** Overlap between scan windows so a secret straddling a boundary is still seen. */
+const WINDOW_OVERLAP = 8 * 1024;
+
 export function evaluateAddedPaths(
   repoRoot: string,
   paths: string[],
@@ -656,11 +712,16 @@ export function evaluateAddedPaths(
     // The branch gate must judge what the branch ends with as well as what it
     // introduced: a file that was clean when added can gain a secret or grow
     // past the size limit in a later commit.
+    const addRev = opts.preferStaged ? null : gitAddingCommitForPath(repoRoot, path);
     const blobs: BoundedBlobRead[] = [blob];
+    const blobSpecs: string[] = [
+      opts.preferStaged ? `:${normRepoPath(path)}` : `${addRev}:${normRepoPath(path)}`,
+    ];
     if (!opts.preferStaged) {
       const head = readGitBlobBounded(repoRoot, `HEAD:${normRepoPath(path)}`, maxRead);
       if (head) {
         blobs.push(head);
+        blobSpecs.push(`HEAD:${normRepoPath(path)}`);
         if (
           head.size > resolved.maxAddedFileBytes &&
           !isAllowlistedLargePath(path, resolved.largeFileAllowlist) &&
@@ -674,21 +735,47 @@ export function evaluateAddedPaths(
         }
       }
     }
-    for (const b of blobs) {
+    for (let bi = 0; bi < blobs.length; bi++) {
+      const b = blobs[bi]!;
       const scanIncomplete: ScanIncomplete[] = [];
+      const found: SecretHit[] = [];
+      let windows: Buffer[] = [b.buf];
       if (b.truncated) {
-        scanIncomplete.push({
-          path,
-          reason: `file is ${b.size} bytes but only the first ${maxRead} bytes were scanned`,
-        });
+        if (isAllowlistedLargePath(path, resolved.largeFileAllowlist)) {
+          // An allowlisted large file is still scanned end to end, in overlapping
+          // windows, up to a hard cap (a secret must not hide past the first window).
+          const full = readGitBlobBounded(repoRoot, blobSpecs[bi]!, ALLOWLIST_SCAN_HARD_CAP);
+          if (full) {
+            windows = [];
+            for (let off = 0; off < full.buf.length; off += maxRead - WINDOW_OVERLAP) {
+              windows.push(full.buf.subarray(off, Math.min(full.buf.length, off + maxRead)));
+              if (off + maxRead >= full.buf.length) break;
+            }
+            if (full.truncated) {
+              scanIncomplete.push({
+                path,
+                reason: `allowlisted file is ${full.size} bytes, past the ${ALLOWLIST_SCAN_HARD_CAP}-byte scan hard cap`,
+              });
+            }
+          }
+        } else {
+          scanIncomplete.push({
+            path,
+            reason: `file is ${b.size} bytes but only the first ${maxRead} bytes were scanned`,
+          });
+        }
       }
-      const { secrets: found, incomplete } = scanBuffersForSecrets(
-        b.buf,
-        path,
-        resolved.maxDecompressBytes,
-        resolved.maxCompressedProbeOffsets,
-      );
-      scanIncomplete.push(...incomplete);
+      for (const w of windows) {
+        const r = scanBuffersForSecrets(
+          w,
+          path,
+          resolved.maxDecompressBytes,
+          resolved.maxCompressedProbeOffsets,
+        );
+        found.push(...r.secrets);
+        scanIncomplete.push(...r.incomplete);
+        if (found.length >= 20) break;
+      }
       for (const hit of found) {
         secrets.push(hit);
         violations.push({ kind: "secret", path, detail: hit.type });
