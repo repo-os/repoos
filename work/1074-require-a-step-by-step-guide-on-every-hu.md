@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T04:23:10Z"
+updated_at: "2026-11-11T04:28:17Z"
 last_handoff_failure_fingerprint: "check|remote validation failed: test failure: tests/pm-canned-messages.test.ts > canned PM messages above the compose box > opens the PM tab with question cards instead of prefilling the compose box on thinkpad — fix it in the feature branch and re-run the gate"
 last_handoff_failure_sha: 63cd33b58c7d8f5aa649159626b68a287739f125
 check_retry_count: 1
