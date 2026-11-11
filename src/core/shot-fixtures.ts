@@ -140,6 +140,8 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   "settings:wheelieCourier",
   "settings:booSwoop",
   "settings:pumpkinSpell",
+  // #1062 — Settings activity animation with Motion off (no preview PATCH).
+  "settings:motionOff",
   // #0821 — a task with a running agent and a message queued for when the turn
   // ends, so a capture can show the composer's "Queued — will be read when the
   // current turn ends" notice (and a still-usable send control).

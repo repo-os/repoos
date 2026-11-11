@@ -3767,6 +3767,23 @@
   box-shadow: var(--dot-glow);
   animation: ai-bounce 1.2s ease-in-out infinite;
 }
+.ai-plain-dot,
+.ai-plain-dot-mode .ai-plain-dot {
+  animation: none !important;
+  transform: none !important;
+}
+.ai-plain-dot-mode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ai-size-px, 6px);
+  height: var(--ai-size-px, 6px);
+  flex: none;
+}
+.ai-plain-dot-mode.ai-reviewing .ai-plain-dot {
+  background: var(--amber);
+  box-shadow: 0 0 7px var(--amber);
+}
 .ai-reviewing .ai-dot {
   background: var(--amber);
   box-shadow: 0 0 7px var(--amber);
@@ -4812,6 +4829,59 @@
 }
 .activity-animation-preview-line.ai-reviewing-preview {
   color: var(--amber);
+}
+.activity-animation-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 0.55fr);
+  gap: 12px 14px;
+  align-items: start;
+  margin: 12px 0 10px;
+}
+@media (max-width: 760px) {
+  .activity-animation-controls {
+    grid-template-columns: 1fr;
+  }
+}
+.activity-animation-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.activity-animation-control-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.activity-animation-control-hint {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.activity-animation-control--cap .activity-size-control {
+  justify-content: flex-start;
+}
+.activity-animation-cap-input {
+  width: 100%;
+  max-width: 72px;
+}
+.activity-animation-preview--inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 0;
+  padding: 8px 0 6px 12px;
+}
+.activity-animation-preview--inline .activity-animation-preview-line {
+  margin: 0;
+  gap: 0.5ch;
+  font-size: 11px;
 }
 /* Size control beside the animation-style select (#0813). One slider, in
    pixels (#0816) — no Auto toggle; the default is marked with a tick. */
