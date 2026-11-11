@@ -11,7 +11,7 @@ branch: feat/branch-fails-scope-check-on-other-tasks-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-10T08:56:33Z"
-updated_at: "2026-11-11T00:59:09Z"
+updated_at: "2026-11-11T01:04:35Z"
 review_rounds: 2
 review_passes: 2
 ---
@@ -38,6 +38,9 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 3. Engineer feature commits never include other tasks' work/ or reports files (guard at commit time), and handoff restores them from main automatically as the last step instead of leaving uncommitted/untracked leftovers.
 4. Manual workaround documented in the task report: commit the restore on the branch.
 5. Check git history of sync and the scope check for a recent regression.
+
+## Accepted scope and known limitations
+FINAL (pass 2 freeze): the only blocking items are the three DOC corrections: (1) docs/agent-workflow-rules.md and docs/close-out-pipeline.md must not say the restore never fails a handoff, state that restore errors fail the handoff at the commit step with the named paths; (2) the same docs and AGENTS.md must say post-merge siblings that exist on main are dropped from the branch (main's copy wins) as well as restored; (3) docs must say sync heals after failed syncs too. NOT blocking, follow-up only: restore running before the report commit instead of last; a test for the server.ts sync wiring; repoos.toml exclusion in dropForeignBookkeepingPathsMatchingMain; request-close-out changedPaths. Report these under Suggestions, not Bugs.
 
 ## Activity
 
@@ -75,3 +78,4 @@ Start two tasks. Land one so main gets its post-merge summary.md and review-*.md
 - 2026-11-11T00:59:09Z · note: review pass 2: needs some work
 - 2026-11-11T00:59:09Z · message_delivered: 1 message(s)
 - 2026-11-11T00:59:09Z · status review→active
+- 2026-11-11T01:04:35Z · body: Accepted scope and known limitations (added)
