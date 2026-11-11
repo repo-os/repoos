@@ -2,7 +2,7 @@
 id: "1091"
 title: "repoos restart: restart the running server whether hand-run, supervised or a managed service"
 type: feature
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — the reported Kamrai case (system-domain LaunchDaemon, KeepAlive) is never detected, so `repoos restart` refuses it inst…"
@@ -14,7 +14,7 @@ branch: feat/repoos-restart-restart-the-running-serve
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-11T05:27:34Z"
-updated_at: "2026-11-11T18:48:15Z"
+updated_at: "2026-11-11T19:00:35Z"
 review_passes: 3
 last_check_failure: "repoos check at 2026-11-11T12:32:54.405Z: repoos check failed: reused check inputs changed during handoff — run the check again"
 review_rounds: 2
@@ -176,3 +176,4 @@ Do not change `repoos service` semantics for managed services. Restarting a serv
 - 2026-11-11T18:44:09Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T18:46:03Z · note: handoff requested (cli)
 - 2026-11-11T18:48:15Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T19:00:35Z · status active→review
