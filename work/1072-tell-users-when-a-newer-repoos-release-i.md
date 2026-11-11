@@ -19,7 +19,7 @@ updated_at: "2026-11-11T07:44:00Z"
 review_rounds: 2
 review_passes: 2
 dev_error_count: 5
-engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-11T07:11:31.450Z\",\"kind\":\"dev-error\"}]"
+engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-11T07:44:00.542Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Users learn about new RepoOS releases only if they happen to read an announcement. `repoos upgrade` exists but nothing tells a user that a newer version is out: the CLI never checks, and the dashboard doesn't say either. Releases that fix important problems (for example v0.5.79's remote capture fix) can sit uninstalled indefinitely.
@@ -149,3 +149,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T07:41:58Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T07:44:00Z · note: stopped orphaned engineer pid 50732
 - 2026-11-11T07:44:00Z · agent exited with an error (opencode) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
+- 2026-11-11T07:44:00Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · ✗ Server finalization stopped at review: Engineering report draft is missing: .repoos/engineering-report-drafts/1072.md. The same worktree can be resumed and retried.
