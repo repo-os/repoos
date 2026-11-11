@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-11T21:21:30Z"
-review_passes: 2
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
@@ -11,6 +9,8 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
+updated_at: "2026-11-11T21:21:31Z"
+review_passes: 2
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 179cccdfa9bb7c87ac9c55f5284cc8b1d1598252
 review_rounds: 1
