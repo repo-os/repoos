@@ -53,6 +53,18 @@ export function launchctlKickstartCommand(
   }
 }
 
+/** Launchd-supervised job with no user-domain label (system daemon, or not in `launchctl list`). */
+function launchdExternalWithoutLabel(pid: number): SupervisorDetectResult {
+  return {
+    kind: "external",
+    info: {
+      platform: "launchd",
+      job: `pid-${pid}`,
+      manualCommand: `kill ${pid}`,
+    },
+  };
+}
+
 function readPpid(pid: number, execFile: typeof execFileSync): number | null {
   try {
     const out = execFile("ps", ["-o", "ppid=", "-p", String(pid)], {
@@ -162,15 +174,18 @@ function detectDarwinSupervisor(
 
   const creator = parseLaunchctlPrintCreator(printOut);
   if (creator === "launchctl") {
-    return {
-      kind: "uncertain",
-      reason: `pid ${pid} was started by launchctl but has no label in launchctl list — kill it and let the supervisor respawn, or restart the launchd job by label`,
-    };
+    return launchdExternalWithoutLabel(pid);
   }
 
   const ppid = readPpid(pid, execFile);
+  if (ppid === 1) {
+    return launchdExternalWithoutLabel(pid);
+  }
   if (ppid !== null && ppid > 1) {
     const parent = parentCommand(ppid, execFile);
+    if (parent && /\blaunchd\b/.test(parent)) {
+      return launchdExternalWithoutLabel(pid);
+    }
     if (parent && /\b(repoos|bun|node)\b.*\bserve\b/.test(parent) && !/launchctl/.test(parent)) {
       return { kind: "none" };
     }
@@ -189,6 +204,12 @@ function detectLinuxSupervisor(pid: number, execFile: typeof execFileSync): Supe
     const info = parseSystemdPidStatus(out);
     if (info?.job.startsWith("com.repoos.serve.")) return { kind: "none" };
     if (info) return { kind: "external", info };
+    if (/\b\.service\b/.test(out) || /Main PID:/.test(out)) {
+      return {
+        kind: "uncertain",
+        reason: `systemctl described pid ${pid} but the unit name could not be parsed — restart the unit manually`,
+      };
+    }
     return { kind: "none" };
   } catch {
     const ppid = readPpid(pid, execFile);

@@ -2,11 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   pidOwnership,
   restartRepoServer,
-  spawnHandRunServe,
   waitForServerRestart,
 } from "./server-restart.js";
 import type { LocatedServer } from "./server-locate.js";
-import * as serviceManager from "./service-manager.js";
 
 function server(over: Partial<LocatedServer> = {}): LocatedServer {
   return {
@@ -55,6 +53,78 @@ describe("restartRepoServer", () => {
     expect(warned).toHaveBeenCalledWith({ activeEngineers: 2, path: "managed-service" });
   });
 
+  it("managed-service restart succeeds when health returns a new pid", async () => {
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 20 }),
+      classify: async () => "managed-service",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: true,
+        root,
+        serverVersion: "0.5.80",
+        activeEngineers: 0,
+      }),
+      restartManaged: async () => ({ ok: true }),
+      verifyPid: () => true,
+      wait: async () => ({ ok: true, pid: 21, version: "0.5.82" }),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.path).toBe("managed-service");
+    expect(result.newPid).toBe(21);
+  });
+
+  it("external-supervisor reports manual command when respawn times out", async () => {
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 30 }),
+      classify: async () => "external-supervisor",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: true,
+        root,
+        serverVersion: "0.5.80",
+        activeEngineers: 0,
+      }),
+      supervisor: () => ({
+        platform: "launchd",
+        job: "org.repoos.serve.kamrai",
+        manualCommand: "launchctl kickstart -k system/org.repoos.serve.kamrai",
+      }),
+      stop: () => {},
+      verifyPid: () => true,
+      wait: async () => ({
+        ok: false,
+        pid: null,
+        version: null,
+        reason: "timed out",
+      }),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.path).toBe("external-supervisor");
+    expect(result.manualCommand).toContain("kickstart");
+  });
+
+  it("hand-run succeeds when spawn and health return a new pid", async () => {
+    const result = await restartRepoServer(root, {
+      locate: async () => server({ pid: 50, serveFlags: ["--preview-overrides"] }),
+      classify: async () => "hand-run",
+      ownership: () => ({ uid: 1000, canSignal: true, otherUser: false }),
+      health: async () => ({
+        ok: true,
+        root,
+        serverVersion: "0.5.80",
+        activeEngineers: 0,
+      }),
+      stop: () => {},
+      waitPidGone: async () => true,
+      spawn: () => ({ ok: true }),
+      verifyPid: () => true,
+      wait: async () => ({ ok: true, pid: 51, version: "0.5.82" }),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.path).toBe("hand-run");
+    expect(result.newPid).toBe(51);
+  });
+
   it("hand-run fails cleanly when spawn fails after stop", async () => {
     const result = await restartRepoServer(root, {
       locate: async () => server({ pid: 40 }),
@@ -73,17 +143,6 @@ describe("restartRepoServer", () => {
     });
     expect(result.ok).toBe(false);
     expect(result.message).toMatch(/Failed to start hand-run/i);
-  });
-});
-
-describe("spawnHandRunServe", () => {
-  it("returns error when needsCliEntry and dist/cli is missing", () => {
-    vi.spyOn(serviceManager, "repoosBinary").mockReturnValue({
-      bin: process.execPath,
-      needsCliEntry: true,
-    });
-    const r = spawnHandRunServe("/tmp", 7200, "127.0.0.1");
-    expect(r.ok).toBe(true);
   });
 });
 

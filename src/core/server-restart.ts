@@ -267,8 +267,11 @@ export function spawnHandRunServe(
       stdio: "ignore",
       env: process.env,
     });
-    child.on("error", () => {
-      /* surfaced via spawnHandRunServe return when synchronous throw doesn't happen */
+    child.on("error", (err) => {
+      // Detached spawn: ENOENT on bin surfaces here after we already returned — log for diagnosis.
+      if (process.env.REPOOS_DEBUG) {
+        console.error(`spawnHandRunServe: ${err.message}`);
+      }
     });
     child.unref();
     return { ok: true };

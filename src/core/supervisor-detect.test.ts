@@ -93,14 +93,28 @@ describe("detectSupervisor", () => {
     }
   });
 
-  it("returns uncertain when creator is launchctl but list has no row", () => {
+  it("treats launchctl creator without list row as external (kill + respawn)", () => {
     const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
       if (cmd === "launchctl" && args[0] === "list") return "PID\tStatus\tLabel\n";
       if (cmd === "launchctl" && args[0] === "print") return MACOS_PRINT_LAUNCHCTL;
-      if (cmd === "ps") return "9999\n";
+      if (cmd === "ps" && args.includes("-o") && args.includes("ppid=")) return "1\n";
       throw new Error("unexpected");
     });
     const r = detectSupervisor(48210, execFile as never);
-    expect(r.kind).toBe("uncertain");
+    expect(r.kind).toBe("external");
+    if (r.kind === "external") {
+      expect(r.info.manualCommand).toBe("kill 48210");
+    }
+  });
+
+  it("treats ppid 1 without a list label as external launchd", () => {
+    const execFile = vi.fn().mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === "launchctl" && args[0] === "list") return "PID\tStatus\tLabel\n";
+      if (cmd === "launchctl" && args[0] === "print") return MACOS_PRINT_DIVOT;
+      if (cmd === "ps" && args.includes("ppid=")) return "1\n";
+      throw new Error("unexpected");
+    });
+    const r = detectSupervisor(48210, execFile as never);
+    expect(r.kind).toBe("external");
   });
 });
