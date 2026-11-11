@@ -1,10 +1,8 @@
 ---
-updated_at: "2026-11-11T08:37:49Z"
-review_passes: 3
 id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — The four frozen fixes are in, but a documented Retry-After path is dead code and the cache write can still lose the not…"
@@ -17,6 +15,8 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
+updated_at: "2026-11-11T08:49:19Z"
+review_passes: 3
 review_rounds: 2
 dev_error_count: 5
 ---
@@ -160,4 +160,4 @@ FINAL (round 2 freeze). Blocking, fix these four only: (1) lost update on the sh
 - 2026-11-11T08:36:08Z · message_queued at 2026-11-11T08:36:08.587Z
 - 2026-11-11T08:37:49Z · note: review pass 3: needs some work
 - 2026-11-11T08:37:49Z · needs_input
-
+- 2026-11-11T08:49:19Z · status review→active
