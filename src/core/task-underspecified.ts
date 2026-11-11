@@ -93,10 +93,7 @@ function extractHumanTaskGuideSection(body: string): string | null {
     }
   }
   if (start === -1) return null;
-  return lines
-    .slice(start, end)
-    .join("\n")
-    .trim();
+  return lines.slice(start, end).join("\n").trim();
 }
 
 function humanTaskGuidePlaceholderLines(): string[] {
