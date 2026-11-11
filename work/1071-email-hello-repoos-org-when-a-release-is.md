@@ -250,3 +250,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T12:03:28Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-11T12:03:29Z · message_delivered: 1 message(s)
 - 2026-11-11T12:13:10Z · message_queued at 2026-11-11T12:13:10.172Z
+- 2026-11-11T12:13:10Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
