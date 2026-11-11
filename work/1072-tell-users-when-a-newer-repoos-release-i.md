@@ -15,7 +15,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T09:02:57Z"
+updated_at: "2026-11-11T09:05:22Z"
 review_passes: 3
 review_rounds: 2
 dev_error_count: 5
@@ -168,3 +168,4 @@ FINAL (round 4, hand-finished): Retry-After is now wired (fetchLatestRelease thr
 - 2026-11-11T08:53:58Z · CTO nudge: held — handoff gate is running
 - 2026-11-11T09:02:57Z · status active→review
 - 2026-11-11T09:02:57Z · message_queued at 2026-11-11T09:02:57.384Z
+- 2026-11-11T09:05:22Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (e1d1496b4) during finalization (#0734)
