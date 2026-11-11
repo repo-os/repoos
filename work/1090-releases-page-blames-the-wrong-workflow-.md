@@ -2,15 +2,12 @@
 id: "1090"
 title: "Releases page blames the wrong workflow: an unrelated failed run shows as 'release workflow failed' while Homebrew is just updating"
 type: bug
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Desired UX, Notes for AI"
+status: active
 priority: p2
 area: [server, web]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/releases-page-blames-the-wrong-workflow-
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-11T04:12:08Z"
@@ -38,3 +35,4 @@ Separately (not part of this task): the Adoption matrix macOS job failed at `ove
 - 2026-11-11T04:12:08Z · needs_input
 - 2026-11-11T04:17:23Z · status inbox→ready
 - 2026-11-11T04:17:24Z · cli_override, model_override
+- 2026-11-11T04:17:24Z · status ready→active, needs_input, branch
