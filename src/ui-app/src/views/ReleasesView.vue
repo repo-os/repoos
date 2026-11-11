@@ -1062,7 +1062,7 @@ async function pollRun(): Promise<void> {
         debuggerSent.value = false;
         debuggerErr.value = "";
         invalidatePageData("release-distribution");
-        await Promise.all([load(), loadDistribution()]);
+        await Promise.all([load(), loadDistribution(), loadReleaseEmail()]);
       } else if (latest.state === "failed" && latest.message) {
         // A failed phase reports its full command output (repoos check log, build
         // errors). Classify the common causes into the headline, then show the

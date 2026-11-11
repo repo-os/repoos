@@ -1571,8 +1571,11 @@ RepoOS never writes them for you. An empty field renders "None recorded". The
 Releases page shows whether the email was sent, is waiting for GitHub, or
 failed, with a **Preview** that renders the message without sending it and a
 **Resend** that only mails recipients who have not received this release yet.
-Sends are recorded per version in the gitignored cache directory, so a restart
-or a retried cut never mails the team twice.
+Sends are recorded per version and per recipient in the gitignored cache
+directory, so a restart or a retried cut does not mail a recipient again once the
+record is written. There is a small window between the email provider accepting a
+message and the local record being written; a crash inside it can mail that one
+recipient twice.
 
 ### Distribution destinations
 

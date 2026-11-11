@@ -385,11 +385,15 @@ export function getReleaseEmailRecord(
 ): ReleaseEmailRecord | null {
   const record = readReleaseEmailLog(config)[version] ?? null;
   if (record?.status === "pending" && !inFlight.has(version)) {
-    return {
+    const orphaned: ReleaseEmailRecord = {
       ...record,
       status: "failed",
       reason: `The server restarted before the email for ${record.tag} finished. Resend to send the rest.`,
     };
+    // Put it on the bell too: an interrupted send needs a human just like a
+    // failed one. The bell item is keyed by version, so this is idempotent.
+    surfaceRecord(config, orphaned);
+    return orphaned;
   }
   return record;
 }
@@ -455,20 +459,25 @@ async function sendAndRecord(
   entry: ReleaseHistoryEntry,
   context: ReleaseEmailContext,
   deps: ReleaseEmailDeps,
-  previouslySent: readonly string[],
+  /**
+   * Caller-owned list of addresses already accepted. Accepted addresses are
+   * pushed onto THIS array as they are sent, so a caller's catch block sees
+   * every one, even when a later local write throws.
+   */
+  accepted: string[],
   note?: string,
 ): Promise<ReleaseEmailRecord> {
   const email = config.release?.email ?? {};
-  const targets = pendingRecipients(email, previouslySent);
+  const targets = pendingRecipients(email, accepted);
   if (targets.length === 0) {
     return recordFor(config, entry, {
       status: "sent",
-      sentTo: [...previouslySent],
+      sentTo: [...accepted],
       reason: "Already sent to every recipient",
     });
   }
   const message = renderReleaseEmail(config, entry, context);
-  const sentTo = [...previouslySent];
+  const sentTo = accepted;
   const failures: string[] = [];
   for (const to of targets) {
     const result = await sendEmail(
@@ -515,8 +524,11 @@ export async function deliverCutReleaseEmail(
   if (inFlight.has(entry.version)) return null;
   inFlight.add(entry.version);
   let existing: ReleaseEmailRecord | null = null;
+  // Owned here so the catch below sees every address accepted so far.
+  const accepted: string[] = [];
   try {
     existing = getReleaseEmailRecord(config, entry.version);
+    accepted.push(...(existing?.sentTo ?? []));
     if (existing?.status === "sent") return existing;
     const recipients = email.to ?? [];
     if (recipients.length === 0) {
@@ -541,7 +553,7 @@ export async function deliverCutReleaseEmail(
           "No email provider is configured. Set [auth.emailProvider] first (see Authentication).",
       });
     }
-    const sentTo = existing?.sentTo ?? [];
+    const sentTo = accepted;
     const repository = githubRepository(config);
     if ((email.when ?? "published") === "published" && repository) {
       recordFor(config, entry, {
@@ -559,7 +571,7 @@ export async function deliverCutReleaseEmail(
       }
       if (outcome.state === "unavailable") {
         // No network: fall back to the tag, as documented. The record says so.
-        return sendAndRecord(
+        return await sendAndRecord(
           config,
           entry,
           context,
@@ -569,14 +581,15 @@ export async function deliverCutReleaseEmail(
         );
       }
     }
-    return sendAndRecord(config, entry, context, deps, sentTo);
+    // `await`, so a throw inside the send is caught below and keeps the accepted list.
+    return await sendAndRecord(config, entry, context, deps, sentTo);
   } catch (err) {
     console.error(
       `Release email for ${entry.tag} failed: ${err instanceof Error ? err.message : String(err)}`,
     );
     return recordFor(config, entry, {
       status: "failed",
-      sentTo: existing?.sentTo ?? [],
+      sentTo: [...accepted],
       reason: err instanceof Error ? err.message : String(err),
     });
   } finally {
@@ -621,7 +634,7 @@ export async function resendReleaseEmail(
   if (inFlight.has(version)) throw new Error(`An email for ${entry.tag} is already in progress.`);
   inFlight.add(version);
   try {
-    const sentTo = getReleaseEmailRecord(config, version)?.sentTo ?? [];
+    const sentTo = [...(getReleaseEmailRecord(config, version)?.sentTo ?? [])];
     return await sendAndRecord(config, entry, context, deps, sentTo);
   } finally {
     inFlight.delete(version);

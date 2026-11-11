@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, rmdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
@@ -352,6 +352,38 @@ describe("deliverCutReleaseEmail", () => {
     const second = await deliverCutReleaseEmail(config, entry(), {}, deps);
     expect(second?.status).toBe("sent");
     expect(fake.resendTo).toEqual(RECIPIENTS);
+  });
+
+  it("keeps recipients already accepted when a later local write throws, so Resend does not mail them twice", async () => {
+    writeHistory([entry()]);
+    const config = makeConfig({ when: "tagged" });
+    const fake = fakeFetch();
+    const logTmp = join(root, ".repoos", "release-emails.json.tmp");
+    // Make the write that follows the first accepted recipient fail (the temp
+    // file path is a directory), then clear the obstacle once the catch logs.
+    const accepted = fake.fetchImpl;
+    let first = true;
+    const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const res = await accepted(input, init);
+      if (first && String(input) === "https://api.resend.com/emails") {
+        first = false;
+        mkdirSync(logTmp, { recursive: true });
+      }
+      return res;
+    }) as typeof fetch;
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {
+      rmdirSync(logTmp);
+    });
+
+    const record = await deliverCutReleaseEmail(config, entry(), {}, { fetchImpl });
+    errorSpy.mockRestore();
+    expect(record?.status).toBe("failed");
+    expect(record?.sentTo).toEqual([RECIPIENTS[0]]);
+
+    const resent = await resendReleaseEmail(config, "0.6.0", {}, { fetchImpl: fake.fetchImpl });
+    expect(resent.status).toBe("sent");
+    // Recipient 1 was mailed once in total; recipient 2 on the resend.
+    expect(fake.resendTo).toEqual([RECIPIENTS[0], RECIPIENTS[1]]);
   });
 
   it("sends nothing when the feature is off", async () => {

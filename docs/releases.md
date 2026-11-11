@@ -475,7 +475,7 @@ shared with login codes and invites).
 - **Bell.** A `failed` send, or a `skipped` one with no provider, raises a
   `releaseEmailFailed` notice linking to the Releases page. A later `sent` clears it.
 - **Resend** only targets configured recipients missing from `sentTo`, so a
-  partial failure can be retried without mailing anyone twice.
+  partial failure can be retried without mailing a recorded recipient again (at most once per recipient, except for the short window between the provider accepting a message and the local write).
 - **Known issues** live on the committed release entry (`knownIssues` in
   `release-history.json`), typed in the release modal. They are never generated.
   An empty field renders "None recorded".
