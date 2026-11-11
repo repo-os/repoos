@@ -3,9 +3,6 @@ id: "1072"
 title: Tell users when a newer RepoOS release is available (CLI notice + dashboard banner)
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "RetriableError: Agent turn stopped after repeated resume attempts made no progress"
 priority: p2
 area: [cli, server, web]
 depends_on: ["1073"]
@@ -15,7 +12,7 @@ branch: feat/tell-users-when-a-newer-repoos-release-i
 cli_override: cursor
 model_override: composer-2.5
 created_at: "2026-11-09T05:34:00Z"
-updated_at: "2026-11-11T04:21:52Z"
+updated_at: "2026-11-11T04:21:55Z"
 review_rounds: 1
 review_passes: 1
 dev_error_count: 3
@@ -94,3 +91,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T04:17:27Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T04:21:52Z · agent exited with an error (cursor) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
 - 2026-11-11T04:21:52Z · engineer crash recovery: resuming cursor + composer-2.5 (1/3 crashes in 30m) · RetriableError: Agent turn stopped after repeated resume attempts made no progress
+- 2026-11-11T04:21:55Z · needs_input
