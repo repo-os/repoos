@@ -68,3 +68,4 @@ The dashboard ALREADY shows an update banner and dialog (src/ui-app/src/componen
 - 2026-11-11T03:19:32Z · message_queued at 2026-11-11T03:19:32.154Z
 - 2026-11-11T03:19:44Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T03:24:45Z · message_delivered: 1 message(s)
+- 2026-11-11T03:24:45Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
