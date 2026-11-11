@@ -187,3 +187,4 @@ FINAL (round 5, hand-finished): other tasks' work files were restored from main 
 - 2026-11-11T09:51:00Z · queued message undelivered for 60m and the engineer produced no output — ending the turn so it is delivered
 - 2026-11-11T09:51:00Z · message_delivered: 2 message(s)
 - 2026-11-11T10:15:36Z · message_queued at 2026-11-11T10:15:36.105Z
+- 2026-11-11T10:15:36Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
