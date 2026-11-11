@@ -3,6 +3,9 @@ id: "1074"
 title: Require a step-by-step guide on every human-assigned task
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-failed
+needs_input_detail: "the muse agent exited without output: Muse run network connection could not be opened within 15 seconds (after 3 provider attempts). muse: subscription allowance unavailable: refresh failed (transient) run ended with Failed: network connection could not be opened within 15 seconds (after 3 provider attempts)"
 priority: p2
 area: [core, agent]
 assigned_to: ai
@@ -111,3 +114,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T05:17:14Z · note: shots: skipped — 1 handoff shot already captured for this exact plan (a63f7c801) during finalization (#0734)
 - 2026-11-11T05:18:22Z · note: review pass 1: incomplete — no verdict in report
 - 2026-11-11T05:20:42Z · note: review pass 2: failed — no usable report
+- 2026-11-11T05:20:42Z · needs_input
