@@ -185,8 +185,9 @@ make available; the tier controls the cost, quality, and latency trade-off rathe
 than pinning a named model. The legacy model id `copilot-auto-efficiency` still
 works in saved config but maps to Balance — GitHub removed the CLI `efficiency`
 tier. Valid tier ids can differ by account; if a tier fails, the CLI error may
-name alternatives. RepoOS uses Copilot's documented `--model auto --auto-tier
-<tier>` flags, so it does not need to scrape the interactive `/model` picker.
+name alternatives. RepoOS uses Copilot's documented `--model auto --auto-tier`
+flags (for example `balance` or `intelligence`), so it does not need to scrape
+the interactive `/model` picker.
 
 RepoOS passes Copilot's `--yolo` flag (all tools, paths and URLs) for every role:
 engineer, PM, reviewer, Debugger, RepoOS Guide, and one-shot authoring. Copilot
