@@ -245,3 +245,4 @@ FINAL (pass 7): the Resend in-flight claim releases on every path, including a c
 - 2026-11-11T10:40:21Z · watchdog: active-without-engineer recovery failed — This worktree already has a recorded live engineer for task #1071 (pid 68015)
 - 2026-11-11T11:06:35Z · needs_input
 - 2026-11-11T11:06:40Z · body: Accepted scope and known limitations (added 1, removed 1)
+- 2026-11-11T11:48:10Z · note: handoff requested (cli)
