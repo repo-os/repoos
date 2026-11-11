@@ -13,7 +13,7 @@ model_override: composer-2.5
 review_cli_override: muse
 review_model_override: muse-spark-1.3
 created_at: "2026-11-09T07:52:08Z"
-updated_at: "2026-11-11T03:18:31Z"
+updated_at: "2026-11-11T03:18:34Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -45,10 +45,10 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 "highlight": "[data-test-id=\"human-guide-warning\"]",
 "steps": [
 {
-  "click": "[data-task-id=\"9999\"]"
+"click": "[data-task-id=\"9999\"]"
 },
 {
-  "waitMs": 400
+"waitMs": 400
 }
 ],
 "state": "card:humanStep"
@@ -96,3 +96,4 @@ Look at how `needs-human-step` is detected and how held human tasks are created 
 - 2026-11-11T03:15:19Z · body
 - 2026-11-11T03:18:31Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Human task drawer shows missing step-by-step guide warning (target "default"): click [data-task-id="9999"]: click: Timeout 5000ms exceeded. on /work?task=9999&tab=changes (http://127.0.0.1:38317/work?shotState=card:humanStep)
 - 2026-11-11T03:18:31Z · message_queued at 2026-11-11T03:18:31.239Z
+- 2026-11-11T03:18:34Z · message_delivered: 1 message(s)
