@@ -2547,6 +2547,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
           emitEvent,
           triggerJobProcessing,
           reviews,
+          runner,
           taskChecks,
           onTaskCheckEvent,
           remoteValidator,

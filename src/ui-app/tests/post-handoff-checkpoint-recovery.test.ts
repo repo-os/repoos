@@ -95,6 +95,77 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
     }
   });
 
+  it("refuses to start when the handoff slot cannot be claimed (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-claim-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos"), { recursive: true });
+      const task = { id: "0834", status: "review", branch: "feat/x", title: "t" } as Task;
+      const release = vi.fn();
+      const started = await startPostHandoffCheckpointRecovery(
+        {
+          config,
+          index: { getTask: () => task } as any,
+          jobCoordinator: createJobCoordinator(root),
+          reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+          reload: null,
+          emitEvent: () => {},
+          triggerJobProcessing: () => {},
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => false,
+            releaseHandoffInFlight: release,
+          },
+        },
+        task,
+        "aaa111",
+        "bbb222",
+      );
+      expect(started.ok).toBe(false);
+      expect(readPostHandoffCheckpointRecovery(config, "0834")).toBeNull();
+    } finally {
+      rmFixture(root);
+    }
+  });
+
+  it("two starts racing: the second is refused because the slot is claimed first (#1085)", async () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-phc-race-"));
+    try {
+      const config = { root, workDir: "work", cacheDir: ".repoos" } as RepoOSConfig;
+      mkdirSync(join(root, ".repoos"), { recursive: true });
+      const task = { id: "0834", status: "review", branch: "feat/x", title: "t" } as Task;
+      let held = false;
+      const runner = {
+        isHandoffInFlight: () => held,
+        markHandoffInFlight: () => {
+          if (held) return false;
+          held = true;
+          return true;
+        },
+        releaseHandoffInFlight: () => {
+          held = false;
+        },
+      };
+      const deps = {
+        config,
+        index: { getTask: () => task } as any,
+        jobCoordinator: createJobCoordinator(root),
+        reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
+        reload: null,
+        emitEvent: () => {},
+        triggerJobProcessing: () => {},
+        runner,
+      };
+      const [a, b] = await Promise.all([
+        startPostHandoffCheckpointRecovery(deps, task, "aaa111", "bbb222"),
+        startPostHandoffCheckpointRecovery(deps, task, "aaa111", "bbb222"),
+      ]);
+      expect([a.ok, b.ok].filter(Boolean)).toHaveLength(1);
+    } finally {
+      rmFixture(root);
+    }
+  });
+
   it("clears an orphan marker so recovery can restart after a crash (#1085)", async () => {
     const root = mkdtempSync(join(tmpdir(), "repoos-phc-restart-"));
     try {
@@ -158,6 +229,11 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
         jobCoordinator: createJobCoordinator(root),
         reviews: reviews as any,
         reload: null,
+        runner: {
+          isHandoffInFlight: () => false,
+          markHandoffInFlight: () => true,
+          releaseHandoffInFlight: () => {},
+        },
         emitEvent: () => {},
         triggerJobProcessing: () => {},
       },
@@ -192,6 +268,11 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
           jobCoordinator: createJobCoordinator(root),
           reviews: { isRunning: () => false, runCheckpointDelta: vi.fn() } as any,
           reload: null,
+          runner: {
+            isHandoffInFlight: () => false,
+            markHandoffInFlight: () => true,
+            releaseHandoffInFlight: () => {},
+          },
           emitEvent: (e) => events.push(e as never),
           triggerJobProcessing: () => {},
         },
@@ -257,6 +338,11 @@ describe("post-handoff checkpoint recovery (#0834)", () => {
         jobCoordinator: coordinator,
         reviews: { isRunning: () => false } as any,
         reload: null,
+        runner: {
+          isHandoffInFlight: () => false,
+          markHandoffInFlight: () => true,
+          releaseHandoffInFlight: () => {},
+        },
         emitEvent: (e) => events.push(e as never),
         triggerJobProcessing: vi.fn(),
       },
