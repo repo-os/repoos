@@ -2,7 +2,7 @@
 id: "1071"
 title: "Release emails: any project with email configured can email its team when a release is published"
 type: feature
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — `needs some work`: one Resend lifecycle bug. A corrupt `release-emails.json` leaves the version stuck \"in progress\" unt…"
@@ -14,7 +14,7 @@ branch: feat/release-emails-any-project-with-email-co
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-09T04:42:41Z"
-updated_at: "2026-11-11T09:44:17Z"
+updated_at: "2026-11-11T09:49:07Z"
 review_passes: 5
 review_rounds: 2
 handoff_signal_retry_count: 2
@@ -227,3 +227,4 @@ FINAL (pass 5, hand-finished): Resend now claims the version before its first aw
 - 2026-11-11T09:43:22Z · needs_input
 - 2026-11-11T09:43:22Z · needs_input
 - 2026-11-11T09:44:17Z · note: shots: skipped — 2 handoff shots already captured for this exact plan (fc59e3bb4) during finalization (#0734)
+- 2026-11-11T09:49:07Z · status review→active
