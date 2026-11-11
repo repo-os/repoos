@@ -2,7 +2,7 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: `needs some work` — secret scan misses gzip with trailing bytes; allowlist still fails above 5 MiB; refusals leave build output staged
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T23:28:22Z"
+updated_at: "2026-11-11T23:47:29Z"
 review_passes: 5
 review_rounds: 2
 routing_switches: 1
@@ -140,3 +140,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T23:26:18Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-11T23:28:05Z · note: handoff requested (cli)
 - 2026-11-11T23:28:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-11T23:47:29Z · status active→review
