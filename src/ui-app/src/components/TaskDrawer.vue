@@ -6025,6 +6025,7 @@ watch(
               :scope-line="drawerChecksDisplay.scopeLine"
               :machine-line="drawerChecksDisplay.machineLine"
               :retry-line="drawerChecksDisplay.retryLine"
+              :detail-line="statusProgressLabel"
             />
           </button>
           <DoneErrorCard

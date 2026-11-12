@@ -357,6 +357,28 @@ describe("task drawer status summary (#0952)", () => {
     expect(summary.text()).not.toContain("step —");
   });
 
+  it("renders the handoff check wait reason in the progress detail", async () => {
+    const pinia = setup();
+    const repo = useRepoStore();
+    const task = makeTask({ status: "active", branch: "feat/status-summary" });
+    repo.handoffStatuses["0001"] = {
+      state: "running",
+      step: "commit",
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      attempt: 1,
+      progress: { reason: "Waiting for the running check to finish" } as never,
+      machine: null,
+    };
+    const wrapper = await mountDrawer(pinia, task);
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+      "Waiting for the running check to finish",
+    );
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).not.toContain(
+      "starting…",
+    );
+  });
+
   it("renders three lines for a failed check and opens Status details", async () => {
     const pinia = setup();
     const repo = useRepoStore();
