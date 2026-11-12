@@ -67,3 +67,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T13:46:25Z · note: review pass 1: good to go
 - 2026-11-12T14:30:57Z · status review→active
 - 2026-11-12T14:30:57Z · note: close-out repair: merge-conflict
+- 2026-11-12T14:30:57Z · message_delivered: 1 message(s)
