@@ -869,9 +869,10 @@ async function isPreviewProcess(info: PreviewInfo): Promise<boolean> {
     // and (when no port is visible) a complete argument token from the launch
     // command. A bare basename can match an unrelated process after PID reuse.
     const commandTokens =
-      info.command.trim().match(/'[^']*'|"[^"]*"|\S+/g)?.map((token) =>
-        token.replace(/^['"]|['"]$/g, ""),
-      ) ?? [];
+      info.command
+        .trim()
+        .match(/'[^']*'|"[^"]*"|\S+/g)
+        ?.map((token) => token.replace(/^['"]|['"]$/g, "")) ?? [];
     const first = commandTokens[0] ?? "";
     const binary = basename(first);
     if (cmd.includes(`--port ${port}`)) return true;
