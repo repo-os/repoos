@@ -44,6 +44,7 @@ beforeEach(() => {
 
 afterEach(() => {
   api.mockReset();
+  vi.useRealTimers();
 });
 
 describe("CheckRunsPanel loading (#0950)", () => {
@@ -65,6 +66,7 @@ describe("CheckRunsPanel loading (#0950)", () => {
   });
 
   it("shows a skeleton instead of a bare loading line on first load", async () => {
+    vi.useFakeTimers();
     api.mockImplementation(() => new Promise(() => {}));
     const wrapper = mount(CheckRunsPanel);
     await flushPromises();
