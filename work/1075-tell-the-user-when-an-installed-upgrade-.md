@@ -86,3 +86,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T16:07:49Z · message_queued at 2026-11-12T16:07:49.347Z
 - 2026-11-12T16:07:52Z · message_delivered: 1 message(s)
 - 2026-11-12T16:19:48Z · message_queued at 2026-11-12T16:19:48.239Z
+- 2026-11-12T16:19:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
