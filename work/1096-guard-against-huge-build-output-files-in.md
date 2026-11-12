@@ -162,3 +162,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-12T00:12:46Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T00:12:49Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-12T00:21:58Z · status active→review
+- 2026-11-12T00:21:58Z · message_queued at 2026-11-12T00:21:58.541Z
