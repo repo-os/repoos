@@ -127,3 +127,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T18:44:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T18:56:25Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-12T18:56:26Z · status active→review
+- 2026-11-12T18:56:26Z · message_queued at 2026-11-12T18:56:26.179Z
