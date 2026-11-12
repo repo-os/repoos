@@ -1147,7 +1147,10 @@ function registerFatalHandlersOnce(): void {
   fatalHandlersRegistered = true;
   const logFatal = (message: string, err: unknown, origin: string) => {
     const record = describeFatalError(err, origin);
-    if (isBenignEpipe(err) || (origin === "unhandledRejection" && isRecoverableUnhandledRejection(err))) {
+    if (
+      isBenignEpipe(err) ||
+      (origin === "unhandledRejection" && isRecoverableUnhandledRejection(err))
+    ) {
       // Child stdin churn, transient network errors and process cleanup races
       // are visible operational errors, not control-plane crash conditions.
       activeLogger?.system("error", message, record);
@@ -1158,7 +1161,10 @@ function registerFatalHandlersOnce(): void {
       try {
         const marker = join(activeLogger.rootDirectory(), ".repoos", "server-crash-pending.json");
         mkdirSync(dirname(marker), { recursive: true });
-        writeFileSync(marker, JSON.stringify({ at: new Date().toISOString(), error: record.error }));
+        writeFileSync(
+          marker,
+          JSON.stringify({ at: new Date().toISOString(), error: record.error }),
+        );
       } catch {
         // Crash marking is best-effort; the fatal log remains authoritative.
       }
