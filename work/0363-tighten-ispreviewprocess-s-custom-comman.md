@@ -11,7 +11,7 @@ branch: feat/tighten-ispreviewprocess-s-custom-comman
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-11-12T18:36:23Z"
+updated_at: "2026-11-12T18:36:55Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -80,3 +80,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 - 2026-11-12T18:36:23Z · note: Task body is underspecified: missing sections: Acceptance criteria
 - 2026-11-12T18:36:23Z · message_queued at 2026-11-12T18:36:23.240Z
 - 2026-11-12T18:36:23Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-12T18:36:55Z · note: review pass 1: good to go
