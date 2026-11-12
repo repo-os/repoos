@@ -33,7 +33,10 @@ const reviewTask = (over: Partial<Task> = {}): Task =>
 async function mountDrawer(
   pinia: Pinia,
   task: Task,
-  opts: { reviewReport?: Record<string, unknown> | null } = {},
+  opts: {
+    reviewReport?: Record<string, unknown> | null;
+    handoffStatus?: Record<string, unknown>;
+  } = {},
 ) {
   const router = createRouter({ history: createMemoryHistory(), routes: [] });
   await router.push("/");
@@ -60,6 +63,7 @@ async function mountDrawer(
           review: opts.reviewReport ?? null,
           lines: [],
         });
+      if (url.includes("/handoff-status")) return json(opts.handoffStatus ?? { state: "idle" });
       if (url.includes("/output")) return json({ ok: true, lines: [], stats: {} });
       return json({ ok: true });
     }),
@@ -355,6 +359,42 @@ describe("task drawer status summary (#0952)", () => {
       "on thinkpad",
     );
     expect(summary.text()).not.toContain("step —");
+  });
+
+  it("renders the handoff check wait reason in the progress detail", async () => {
+    const pinia = setup();
+    const repo = useRepoStore();
+    const task = makeTask({ status: "active", branch: "feat/status-summary" });
+    repo.handoffSteps["0001"] = "commit";
+    repo.handoffStatuses["0001"] = {
+      state: "running",
+      step: "commit",
+      startedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      attempt: 1,
+      reason: "Waiting for the running check to finish",
+      progress: { reason: "Waiting for the running check to finish" } as never,
+      machine: null,
+    };
+    const wrapper = await mountDrawer(pinia, task, {
+      handoffStatus: {
+        state: "running",
+        step: "commit",
+        startedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        attempt: 1,
+        reason: "Waiting for the running check to finish",
+        progress: null,
+        machine: null,
+      },
+    });
+    await nextTick();
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).toContain(
+      "Waiting for the running check to finish",
+    );
+    expect(wrapper.find('[data-test-id="close-out-check-progress"]').text()).not.toContain(
+      "starting…",
+    );
   });
 
   it("renders three lines for a failed check and opens Status details", async () => {

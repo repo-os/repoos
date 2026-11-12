@@ -22,6 +22,7 @@ import {
   isShotPreviewSeededTaskId,
   shotPreviewSkipsEngineeringReportsFetch,
   shotPreviewSkipsIntegrationJobFetch,
+  shotPreviewSkipsHandoffStatusFetch,
   shotPreviewSkipsTaskSummaryFetch,
 } from "../src/lib/shot-preview-fixtures";
 import { useConfigStore } from "../src/stores/config";
@@ -763,7 +764,7 @@ describe("shot preview board fixtures (#0743)", () => {
     } else if (fixture === "drawer:statusConfirmingHandoff") {
       expect(repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID]).toBe("check");
     } else if (fixture === "drawer:handoffWaiting") {
-      expect(repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID]?.progress?.reason).toBe(
+      expect(repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID]?.reason).toBe(
         "Waiting for the running check to finish",
       );
     } else if (fixture === "drawer:engineeringReports") {
@@ -1040,6 +1041,17 @@ describe("shot preview board fixtures (#0743)", () => {
     expect(shotPreviewSkipsIntegrationJobFetch(during, "1047")).toBe(true);
     expect(shotPreviewSkipsIntegrationJobFetch(during, "1048")).toBe(false);
     expect(shotPreviewSkipsIntegrationJobFetch({ search: "?task=1047&tab=changes" }, "1047")).toBe(
+      false,
+    );
+  });
+
+  it("keeps the drawer handoff wait fixture from being overwritten by a live status poll", () => {
+    const during = {
+      search: "?task=1087&tab=changes&shotState=drawer:handoffWaiting",
+    };
+    expect(shotPreviewSkipsHandoffStatusFetch(during, "1087")).toBe(true);
+    expect(shotPreviewSkipsHandoffStatusFetch(during, "1088")).toBe(false);
+    expect(shotPreviewSkipsHandoffStatusFetch({ search: "?task=1087&tab=changes" }, "1087")).toBe(
       false,
     );
   });
