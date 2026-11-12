@@ -86,3 +86,4 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 - 2026-11-12T01:08:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementing UI changes, shot fixture, tests, and declarations. · stderr: (empty)
 - 2026-11-12T01:08:27Z · message_delivered: 2 message(s)
 - 2026-11-12T01:17:52Z · message_queued at 2026-11-12T01:17:52.386Z
+- 2026-11-12T01:17:52Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
