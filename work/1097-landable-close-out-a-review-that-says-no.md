@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: c78deec73dababb2938f8b2b3271fb20f44bb2db
 id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
@@ -72,3 +74,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T05:33:15Z · note: handoff requested (ui-review)
 - 2026-11-12T06:03:15Z · message_queued at 2026-11-12T06:03:15.693Z
 - 2026-11-12T06:03:16Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
+
