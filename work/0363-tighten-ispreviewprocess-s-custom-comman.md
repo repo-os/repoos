@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1479363
-last_close_out_gate_at: "2026-11-12T19:06:32.514Z"
 id: "0363"
 title: Tighten isPreviewProcess's custom-command orphan match beyond bare binary basename
 type: bug
-status: review
+status: done
 priority: p3
 area: server
+merged_commit: 575666118039736a3c007a6c4fbe6c6f50b0254a
 assigned_to: ai
 created_by: ""
 branch: feat/tighten-ispreviewprocess-s-custom-comman
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-16T02:09:23Z"
 updated_at: "2026-11-12T19:06:32Z"
+last_close_out_gate_ms: 1479363
+last_close_out_gate_at: "2026-11-12T19:06:32.514Z"
 review_passes: 1
 handoff_signal_retry_count: 2
 ---
