@@ -3,15 +3,21 @@ id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "Cannot use this model: composer-2.5. Available models:"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/landable-close-out-a-review-that-says-no
+cli_override: opencode
+model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T04:17:23Z"
-dev_error_count: 3
-engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:10:21.536Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:12:57.913Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:15:40.676Z\",\"kind\":\"dev-error\"}]"
+updated_at: "2026-11-12T04:18:57Z"
+dev_error_count: 4
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:10:21.536Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:12:57.913Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:15:40.676Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:18:57.099Z\",\"kind\":\"dev-error\"}]"
+engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
 ---
 ## Problem
 A review whose verdict is 'good to go' and whose ## Bugs section reads 'None found' followed by explanatory prose and bullets (what the reviewer checked) is treated by `repoos landable` as 'the review still lists blocking bugs'. Seen on #1077 (review passes 1 and 2, both 'good to go'): landable stays red on 'Review verdict' and close-out would refuse, so a clean task cannot land and a human has to intervene. Earlier reviews flagged the same quirk ('Bugs-section bullets counted as blocking').
@@ -54,3 +60,5 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T04:15:40Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-12T04:17:10Z · engineer crash recovery: resuming cursor + composer-2.5 (3/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-12T04:17:23Z · needs_input
+- 2026-11-12T04:18:56Z · agent exited with an error (cursor) · Cannot use this model: composer-2.5. Available models:
+- 2026-11-12T04:18:57Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash after 4/3 crashes in 30m · Cannot use this model: composer-2.5. Available models:
