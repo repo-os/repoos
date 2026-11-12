@@ -10,6 +10,7 @@ created_by: njachowski@gmail.com
 branch: feat/check-window-drift-catch-source-changes-
 created_at: "2026-11-09T09:04:34Z"
 updated_at: "2026-11-12T00:34:01Z"
+deferred_handoff_resume_count: 1
 ---
 ## Problem
 #1061 detects source changes that exist when a check ends (net tree delta vs the check-start tree) and defers RepoOS bookkeeping commits while a check runs. Two gaps were accepted when #1061 landed: (1) a source commit followed by a revert inside the same check window leaves an empty endpoint diff, so a check that observed the intermediate source is treated as valid; (2) an already-running engineer can still write source files directly during a check (not blockable; only detectable).
