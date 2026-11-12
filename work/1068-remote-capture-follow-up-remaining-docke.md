@@ -2,7 +2,7 @@
 id: "1068"
 title: "Remote capture follow-up: remaining Docker/ssh failure-handling and provider-parity gaps"
 type: bug
-status: active
+status: review
 priority: p2
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/remote-capture-follow-up-remaining-docke
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:05:29Z"
-updated_at: "2026-11-12T18:45:21Z"
+updated_at: "2026-11-12T18:47:00Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -49,3 +49,4 @@ Start from the merged #1060 code on main and its review reports under work/repor
 - 2026-11-12T18:44:55Z · message_queued at 2026-11-12T18:44:55.320Z
 - 2026-11-12T18:44:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-12T18:45:21Z · body
+- 2026-11-12T18:47:00Z · status active→review
