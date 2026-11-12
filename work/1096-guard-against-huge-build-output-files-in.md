@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-12T00:21:58Z"
+updated_at: "2026-11-12T00:23:11Z"
 review_passes: 7
 review_rounds: 2
 routing_switches: 1
@@ -164,3 +164,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-12T00:21:58Z · status active→review
 - 2026-11-12T00:21:58Z · message_queued at 2026-11-12T00:21:58.541Z
 - 2026-11-12T00:21:58Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-12T00:23:11Z · note: review pass 8: needs some work
