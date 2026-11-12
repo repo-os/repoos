@@ -38,3 +38,4 @@ Look at .repoos/logs/system.log around 2026-11-09T11:14:22Z (UTC) for the full s
 - 2026-11-12T12:31:36Z · body
 - 2026-11-12T12:34:48Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T12:38:39Z · status active→review
+- 2026-11-12T12:38:39Z · message_queued at 2026-11-12T12:38:39.994Z
