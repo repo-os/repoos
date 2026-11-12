@@ -1195,10 +1195,12 @@ export function staleContainerCleanupCommand(): string {
     // Docker's name filter is a substring search unless anchored. Keep the
     // daemon-side candidate set restricted to names with this exact prefix;
     // the inspect/case check below remains a second guard.
-    `docker ps -aq --filter ${shellQuote(`name=^/${VALIDATE_CONTAINER_PREFIX}-`)} ` +
-    "--filter status=created --filter status=exited --filter status=dead 2>/dev/null | " +
-    `while IFS= read -r id; do name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null | sed 's#^/##'); ` +
-    `case "$name" in ${VALIDATE_CONTAINER_PREFIX}-*) docker rm -f "$id" >/dev/null 2>&1 || true ;; esac; done`
+    `ids=$(docker ps -aq --filter ${shellQuote(`name=^/${VALIDATE_CONTAINER_PREFIX}-`)} ` +
+    "--filter status=created --filter status=exited --filter status=dead 2>/dev/null) || exit $?; " +
+    `printf '%s\\n' "$ids" | while IFS= read -r id; do [ -n "$id" ] || continue; ` +
+    `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null) || { echo "failed to inspect stale container $id" >&2; continue; }; name=\${name#/}; ` +
+    `case "$name" in ${VALIDATE_CONTAINER_PREFIX}-*) ;; *) continue ;; esac; ` +
+    `out=$(docker rm -f "$id" 2>&1) || { case "$out" in "Error response from daemon: No such container: "*) ;; *) echo "$out" >&2; exit 1 ;; esac; }; done`
   );
 }
 
@@ -3383,10 +3385,14 @@ export class RemoteValidationRunner implements RemoteValidator {
     const killFailures: string[] = [];
     await Promise.all(
       controls.map(async (control) => {
-        control.controller.abort();
         control.abortUpload?.();
-        control.abortRun?.();
-        if (!control.host) return;
+        if (!control.host) {
+          // No remote container has been assigned yet; stop provisioning or
+          // upload work while there is nothing to remove.
+          control.controller.abort();
+          control.abortRun?.();
+          return;
+        }
         const killRes = await execRemoteWithHardDeadline(
           this.exec,
           control.host,
@@ -3399,6 +3405,9 @@ export class RemoteValidationRunner implements RemoteValidator {
             ? "remote kill ssh timed out"
             : tail(killRes.output, 1, 200) || `exit ${killRes.code}`;
           killFailures.push(`${control.container} on ${control.host.ip}: ${why}`);
+        } else {
+          control.controller.abort();
+          control.abortRun?.();
         }
       }),
     );
@@ -5131,7 +5140,6 @@ export class TailscaleHostPool {
           `hang removal for #${taskId} failed; container may still be running`,
         );
       }
-      releaseSlot?.();
       if (killErr) {
         return {
           ok: false,
@@ -5153,6 +5161,7 @@ export class TailscaleHostPool {
           container,
         };
       }
+      releaseSlot?.();
       if (run.bundle && run.artifacts) {
         void execRemoteWithHardDeadline(
           this.exec,
@@ -6100,8 +6109,6 @@ export class TailscaleRunner implements RemoteValidator {
       if (!run.container) continue;
       const container = run.container;
       this.captureUploadAbort.get(container)?.();
-      this.activeRunAbort.get(container)?.abort();
-      this.activeRunSettle.get(container)?.settle({ code: null, output: "", timedOut: false });
       const killRes = await execRemoteWithHardDeadline(
         this.exec,
         host,
@@ -6114,6 +6121,9 @@ export class TailscaleRunner implements RemoteValidator {
           ? "remote kill ssh timed out"
           : tail(killRes.output, 1, 200) || `exit ${killRes.code}`;
         killFailures.push(`${container} on ${host.ip}: ${why}`);
+      } else {
+        this.activeRunAbort.get(container)?.abort();
+        this.activeRunSettle.get(container)?.settle({ code: null, output: "", timedOut: false });
       }
     }
     if (runs.length === 0) return;
@@ -6370,14 +6380,12 @@ export class TailscaleRunner implements RemoteValidator {
         },
       });
     });
-    if (result.container) {
+    if (result.ok && result.container) {
       const container = result.container;
-      this.activeRunAbort.get(container)?.abort();
-      this.activeRunSettle.get(container)?.settle({
-        code: null,
-        output: "",
-        timedOut: false,
-      });
+      if (result.ok) {
+        this.activeRunAbort.get(container)?.abort();
+        this.activeRunSettle.get(container)?.settle({ code: null, output: "", timedOut: false });
+      }
     }
     return result;
   }

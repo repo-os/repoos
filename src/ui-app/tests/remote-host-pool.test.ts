@@ -805,9 +805,14 @@ describe("completed browser capture collection", () => {
     };
     try {
       const running = runner.validate(opts("1060", capture));
+      let settled = false;
+      void running.then(() => {
+        settled = true;
+      });
       await vi.waitFor(() => expect(started).toBe(true));
       await runner.cancelBrowserCaptures("1060");
-      expect((await running).cancelled).toBe(true);
+      expect(settled).toBe(false);
+      expect(runner.hostStatus()?.[0]?.activeRuns).toHaveLength(1);
       expect(killCmd).toBeDefined();
       expect(killCmd).not.toContain("|| true");
       expect(
@@ -3349,6 +3354,8 @@ describe("pool hung-run bookkeeping (#0729)", () => {
     expect(result.detail).toMatch(detail);
     expect(f.cleanupCmds).toHaveLength(0);
     expect(f.runner.hostStatus()?.[0]?.healthy).toBe(false);
+    expect(f.runner.hostStatus()?.[0]?.activeRuns).toHaveLength(1);
+    f.release();
     await run;
     await f.runner.dispose();
   });
