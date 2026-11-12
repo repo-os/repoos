@@ -12,7 +12,7 @@ branch: feat/per-view-skeletons-apply-the-show-delay-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T09:38:37Z"
-updated_at: "2026-11-12T16:30:34Z"
+updated_at: "2026-11-12T16:31:37Z"
 last_close_out_gate_ms: 1001261
 last_close_out_gate_at: "2026-11-12T16:30:34.982Z"
 review_passes: 1
@@ -66,4 +66,4 @@ From review 5 of #1070, accepted as follow-up and NOT blocking #1070: (a) board 
 - 2026-11-12T15:23:59Z · note: review pass 1: good to go
 - 2026-11-12T16:24:40Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-12T16:30:34Z · close-out gate completed in 1001s
-
+- 2026-11-12T16:31:37Z · status done→done, release:success
