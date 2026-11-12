@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T09:25:17Z"
 updated_at: "2026-11-12T13:33:19Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-12T13:24:03.200Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer shows the check wait reason (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=1087&tab=changes (http://127.0.0.1:46505/work?shotState=drawer:handoffWaiting)"
 handoff_signal_retry_count: 1
 ---
@@ -51,3 +50,4 @@ Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaiti
 - 2026-11-12T13:24:03Z · message_delivered: 1 message(s)
 - 2026-11-12T13:24:18Z · body
 - 2026-11-12T13:33:19Z · body
+
