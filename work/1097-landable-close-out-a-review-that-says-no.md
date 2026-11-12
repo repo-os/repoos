@@ -3,13 +3,18 @@ id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
 status: active
+needs_input: true
+needs_input_reason: dev-error
+needs_input_detail: "RetriableError: Connection stalled repeatedly"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/landable-close-out-a-review-that-says-no
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T04:03:26Z"
+updated_at: "2026-11-12T04:10:51Z"
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:10:21.536Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 A review whose verdict is 'good to go' and whose ## Bugs section reads 'None found' followed by explanatory prose and bullets (what the reviewer checked) is treated by `repoos landable` as 'the review still lists blocking bugs'. Seen on #1077 (review passes 1 and 2, both 'good to go'): landable stays red on 'Review verdict' and close-out would refuse, so a clean task cannot land and a human has to intervene. Earlier reviews flagged the same quirk ('Bugs-section bullets counted as blocking').
@@ -42,3 +47,5 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T03:46:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-12T03:51:15Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-12T04:03:26Z · body
+- 2026-11-12T04:10:21Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
+- 2026-11-12T04:10:51Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
