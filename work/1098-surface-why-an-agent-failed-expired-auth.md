@@ -75,3 +75,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T14:59:02Z · message_queued at 2026-11-12T14:59:02.326Z
 - 2026-11-12T14:59:05Z · message_delivered: 1 message(s)
 - 2026-11-12T15:14:48Z · message_queued at 2026-11-12T15:14:48.449Z
+- 2026-11-12T15:14:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
