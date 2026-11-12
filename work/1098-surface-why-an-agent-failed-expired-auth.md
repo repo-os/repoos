@@ -123,3 +123,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T18:42:58Z · status review→active
 - 2026-11-12T18:43:00Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-12T18:43:37Z · body
+- 2026-11-12T18:43:49Z · note: handoff requested (cli)
