@@ -129,9 +129,7 @@ const EMPTY_BUGS_PHRASINGS = [
   "Nothing to report.",
   "-",
 ];
-const LANDABLE_BUGS_WITH_COMMENTARY = [
-  "None found.\n\n- Checked parser and landable paths",
-];
+const LANDABLE_BUGS_WITH_COMMENTARY = ["None found.\n\n- Checked parser and landable paths"];
 
 const FINDING_BUGS_PHRASINGS = [
   "- Off-by-one in parser",

@@ -82,13 +82,19 @@ describe("isEmptyReviewSection (#0894)", () => {
     expect(isEmptyReviewSection(phrasing)).toBe(false);
   });
 
-  it.each(NONE_OPENER_COMMENTARY)("treats none-opener commentary %j as empty (#1097)", (phrasing) => {
-    expect(isEmptyReviewSection(phrasing)).toBe(true);
-  });
+  it.each(NONE_OPENER_COMMENTARY)(
+    "treats none-opener commentary %j as empty (#1097)",
+    (phrasing) => {
+      expect(isEmptyReviewSection(phrasing)).toBe(true);
+    },
+  );
 
-  it.each(NONE_OPENER_MIXED_FINDINGS)("treats mixed none-opener %j as a finding (#1097)", (phrasing) => {
-    expect(isEmptyReviewSection(phrasing)).toBe(false);
-  });
+  it.each(NONE_OPENER_MIXED_FINDINGS)(
+    "treats mixed none-opener %j as a finding (#1097)",
+    (phrasing) => {
+      expect(isEmptyReviewSection(phrasing)).toBe(false);
+    },
+  );
 
   it("treats missing/undefined text as empty", () => {
     expect(isEmptyReviewSection(undefined)).toBe(true);
@@ -113,13 +119,21 @@ describe("extractReviewReportSections (#0894)", () => {
       expect(extractReviewReportSections(reportWith(section, phrasing))[key]).toBe(phrasing.trim());
     });
 
-    it.each(NONE_OPENER_COMMENTARY)(`drops none-opener commentary %j from ${section} (#1097)`, (phrasing) => {
-      expect(extractReviewReportSections(reportWith(section, phrasing))[key]).toBeUndefined();
-    });
+    it.each(NONE_OPENER_COMMENTARY)(
+      `drops none-opener commentary %j from ${section} (#1097)`,
+      (phrasing) => {
+        expect(extractReviewReportSections(reportWith(section, phrasing))[key]).toBeUndefined();
+      },
+    );
 
-    it.each(NONE_OPENER_MIXED_FINDINGS)(`keeps mixed none-opener %j in ${section} (#1097)`, (phrasing) => {
-      expect(extractReviewReportSections(reportWith(section, phrasing))[key]).toBe(phrasing.trim());
-    });
+    it.each(NONE_OPENER_MIXED_FINDINGS)(
+      `keeps mixed none-opener %j in ${section} (#1097)`,
+      (phrasing) => {
+        expect(extractReviewReportSections(reportWith(section, phrasing))[key]).toBe(
+          phrasing.trim(),
+        );
+      },
+    );
   }
 
   it("keeps the relevance label even though it has no bullets", () => {
@@ -143,13 +157,19 @@ describe("reviewReportHasBlockingBugs (#0894)", () => {
     expect(reviewReportHasBlockingBugs(reportWith("Bugs", phrasing))).toBe(true);
   });
 
-  it.each(NONE_OPENER_COMMENTARY)("is false for none-opener commentary Bugs %j (#1097)", (phrasing) => {
-    expect(reviewReportHasBlockingBugs(reportWith("Bugs", phrasing))).toBe(false);
-  });
+  it.each(NONE_OPENER_COMMENTARY)(
+    "is false for none-opener commentary Bugs %j (#1097)",
+    (phrasing) => {
+      expect(reviewReportHasBlockingBugs(reportWith("Bugs", phrasing))).toBe(false);
+    },
+  );
 
-  it.each(NONE_OPENER_MIXED_FINDINGS)("is true for mixed none-opener Bugs %j (#1097)", (phrasing) => {
-    expect(reviewReportHasBlockingBugs(reportWith("Bugs", phrasing))).toBe(true);
-  });
+  it.each(NONE_OPENER_MIXED_FINDINGS)(
+    "is true for mixed none-opener Bugs %j (#1097)",
+    (phrasing) => {
+      expect(reviewReportHasBlockingBugs(reportWith("Bugs", phrasing))).toBe(true);
+    },
+  );
 
   it("is false for an empty or missing report", () => {
     expect(reviewReportHasBlockingBugs("")).toBe(false);
