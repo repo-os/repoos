@@ -26,7 +26,11 @@ export function notifyAttentionAgentStalled(taskId: string): void {
 }
 
 /** One current board notice per CLI for actionable agent setup failures. */
-export function notifyAttentionAgentFailure(cli: string, detail: string, at = new Date().toISOString()): void {
+export function notifyAttentionAgentFailure(
+  cli: string,
+  detail: string,
+  at = new Date().toISOString(),
+): void {
   const reason = classifyAgentFailure(detail, cli);
   if (!attentionEvents || !reason || reason.id === "network" || reason.id === "usage-limit") return;
   attentionEvents.record({

@@ -14,7 +14,8 @@ describe("classifyAgentFailure", () => {
 
   it("preserves unknown output and includes raw CLI output for known failures", () => {
     expect(classifyAgentFailure("something unexpected", "cursor")).toBeNull();
-    expect(formatAgentFailure("Cannot use this model: composer-2.5", "cursor"))
-      .toContain("CLI: Cannot use this model: composer-2.5");
+    expect(formatAgentFailure("Cannot use this model: composer-2.5", "cursor")).toContain(
+      "CLI: Cannot use this model: composer-2.5",
+    );
   });
 });

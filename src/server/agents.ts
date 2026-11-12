@@ -82,7 +82,12 @@ import {
   scrapeProviderFailure,
 } from "../core/agent-run-health.js";
 import { sanitizeSpawnArgs, stripNulBytes } from "../core/spawn-args.js";
-import { notifyAttentionAfterSession, notifyAttentionAgentStalled, notifyAttentionAgentFailure, clearAttentionAgentFailure } from "./attention-notify.js";
+import {
+  notifyAttentionAfterSession,
+  notifyAttentionAgentStalled,
+  notifyAttentionAgentFailure,
+  clearAttentionAgentFailure,
+} from "./attention-notify.js";
 import { taskWorkLink } from "./board-events.js";
 import { parseTaskAreas } from "../core/areas.js";
 import { commitTaskFile, fileCommittedClean, gitOutputAsync } from "../core/git.js";
@@ -10746,7 +10751,8 @@ export class AgentRunner {
    * (see `sysLineDescribesFailure`), then a generic fallback.
    */
   private lastFailureLine(session: Session | undefined): string {
-    const wrap = (text: string) => formatAgentFailure(enrichAgentFailureDetail(text, session?.cli), session?.cli);
+    const wrap = (text: string) =>
+      formatAgentFailure(enrichAgentFailureDetail(text, session?.cli), session?.cli);
     if (session?.permissionDenial) {
       return `permission problem, not a code failure: ${session.permissionDenial}`;
     }
