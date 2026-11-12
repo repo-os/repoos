@@ -1051,9 +1051,9 @@ describe("shot preview board fixtures (#0743)", () => {
     };
     expect(shotPreviewSkipsHandoffStatusFetch(during, "1087")).toBe(true);
     expect(shotPreviewSkipsHandoffStatusFetch(during, "1088")).toBe(false);
-    expect(
-      shotPreviewSkipsHandoffStatusFetch({ search: "?task=1087&tab=changes" }, "1087"),
-    ).toBe(false);
+    expect(shotPreviewSkipsHandoffStatusFetch({ search: "?task=1087&tab=changes" }, "1087")).toBe(
+      false,
+    );
   });
 
   it("seeds 15 succeeded close-outs for the integration timer tooltip (#0819)", () => {
