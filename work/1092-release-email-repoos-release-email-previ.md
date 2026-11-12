@@ -2,14 +2,14 @@
 id: "1092"
 title: "Release email: repoos release email --preview CLI subcommand"
 type: feature
-status: ready
+status: active
 priority: p3
 area: [server, core]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/release-email-repoos-release-email-previ
 created_at: "2026-11-11T05:28:20Z"
-updated_at: "2026-11-12T00:10:48Z"
+updated_at: "2026-11-12T00:23:22Z"
 ---
 ## Problem
 Release emails (#1071) have a preview endpoint, GET /api/release/email/preview, that renders the subject, HTML and text for a version without sending. It is reachable only through `repoos api`. Maintainers who want to check the rendered message from a terminal have no first-class command, and the repo's CLI parity rule expects one.
@@ -29,3 +29,7 @@ Start from src/server/routes/release.ts (getReleaseEmailPreview) and src/cli. Do
 - 2026-11-11T05:28:37Z · body: Problem (added); Acceptance criteria (added); Notes for AI (added)
 - 2026-11-11T07:43:59Z · needs_input
 - 2026-11-12T00:10:48Z · status inbox→ready
+- 2026-11-12T00:12:43Z · status ready→active, branch
+- 2026-11-12T00:22:00Z · message_queued at 2026-11-12T00:22:00.765Z
+- 2026-11-12T00:22:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-12T00:23:22Z · CTO nudge: held — an undelivered message is already queued
