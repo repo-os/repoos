@@ -103,6 +103,8 @@ function parseBoldLabelFinding(line: string): { value: string } | null {
   return { value };
 }
 
+const NUMBERED_LIST_MARKER = /^\s*\d+[.)]\s+/;
+
 /**
  * True when a review section has nothing to report. Case, punctuation,
  * markdown emphasis, backticks, bullets and whitespace are ignored, so
@@ -112,21 +114,54 @@ function parseBoldLabelFinding(line: string): { value: string } | null {
  * item, or a bold `**<label>:**` line, whose content is not itself a "none"
  * statement. Plain prose (including a qualifier after "None found") does not
  * count, which keeps harmless reviewer phrasing from blocking a clean review.
+ *
+ * When the first substantive line is a "none" statement (including a bold
+ * label whose value is none-ish), later unordered bullets are treated as
+ * commentary — what the reviewer checked — not as findings. Numbered items and
+ * bold-labelled findings after that opener still block (fail closed for mixed
+ * content). Sections that do not open with "none" keep the original rule:
+ * any list marker line is a finding.
  */
 export function isEmptyReviewSection(text: string | null | undefined): boolean {
   if (!text?.trim()) return true;
+  let openedWithNone = false;
+  let sawFirstSubstantive = false;
+
+  const firstLineIsNoneOpener = (line: string, content: string): boolean => {
+    if (isNoneStatement(content)) return true;
+    const bold = parseBoldLabelFinding(line);
+    return !!bold && (!bold.value || isNoneStatement(bold.value));
+  };
+
   for (const rawLine of text.split("\n")) {
     const line = rawLine.trim();
     if (!line) continue;
     const content = stripListMarker(line);
     if (!content) continue;
+
+    if (!sawFirstSubstantive) {
+      sawFirstSubstantive = true;
+      if (firstLineIsNoneOpener(line, content)) {
+        openedWithNone = true;
+        continue;
+      }
+    }
+
     if (isNoneStatement(content)) continue;
     const bold = parseBoldLabelFinding(line);
     if (bold) {
       if (!bold.value || isNoneStatement(bold.value)) continue;
       return false;
     }
-    if (LIST_MARKER.test(line)) return false;
+    if (LIST_MARKER.test(line)) {
+      if (openedWithNone) {
+        if (NUMBERED_LIST_MARKER.test(line)) return false;
+        const boldInItem = parseBoldLabelFinding(line);
+        if (boldInItem?.value && !isNoneStatement(boldInItem.value)) return false;
+        continue;
+      }
+      return false;
+    }
   }
   return true;
 }

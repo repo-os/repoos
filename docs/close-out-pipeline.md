@@ -82,6 +82,8 @@ detail, nextStep? }], summary: { pass, warn, fail } }`.
 | `task-scope` | the diff changes `repoos.toml`, or another task's `work/`, `inputs/` or `stories/` file. This task's own `work/<id>-*.md` and its own `work/engineering-reports/<id>/` are bookkeeping, not drift | restore that path from main, re-review |
 | `main-clean` | the primary checkout has uncommitted files, listed with their owner (`repoos.toml`, `work/`, `reminders/`, `schedules/`, `unknown`). A `repoos.toml` diff that is only automatic quota/pause fields is ignored. A tracked task file is ignored only when its entire delta is a valid watchdog check-wait escalation/recovery: the watchdog fields and exact activity entry, with the rest of the task unchanged. A task markdown file under `work/` that **this branch does not change** is a **warning**, not a failure: publish checkpoint-commits it (#1020). A task file the branch itself changes, any source file, a report under `work/reports/`, or a reminder/schedule/input still fails. | commit or stash the named paths on main (live task files need no action) |
 
+A `## Bugs` section that opens with `None found` (or an equivalent) is treated as having no blocking bugs even when unordered bullets follow — those bullets are commentary (what the reviewer checked), not findings (#1097); numbered items and bold-labelled findings after that opener still block (fail closed), and a section with no `None found` opener keeps the original rule that any list-marker line is a finding.
+
 The server gathers these facts with the same `gatherApprovalPreflight` the
 opt-in approval policy uses (`src/server/request-close-out.ts`), so the command,
 auto-approval and Move to done cannot disagree; only the finer classification

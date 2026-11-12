@@ -49,6 +49,7 @@ describe("built-in role prompts (#0872)", () => {
     expect(reviewer).toContain("EVIDENCE-GAP-ONLY");
     expect(reviewer).toContain("STALE-EVIDENCE-ONLY");
     expect(reviewer).toContain("write exactly `None found`");
+    expect(reviewer).toMatch(/checked under Edge cases or its own heading, not under Bugs/i);
     expect(reviewer).toMatch(/declared shot's target and route/);
     expect(reviewer).toMatch(/merges cleanly with its base/);
     expect(reviewer).toMatch(/name the conflicting files/);
@@ -248,6 +249,7 @@ describe("shared review mission prompt (#0872)", () => {
     expect(mission).toContain("`good to go`");
     expect(mission).toContain("`needs some work`");
     expect(mission).toContain("`back to the drawing board`");
+    expect(mission).toMatch(/checked under ## Edge cases or its own heading, never under ## Bugs/i);
   });
 
   it("does not ask for the repeated-class summary before the pass budget is spent", () => {

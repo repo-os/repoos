@@ -930,6 +930,8 @@ export function reviewMission(
     "",
     "## Bugs",
     "Concrete defects, each with the file and what goes wrong.",
+    "List what you checked under ## Edge cases or its own heading, never under ## Bugs",
+    "(unordered bullets after `None found` in Bugs are parsed as commentary, not findings).",
     "",
     "## Edge cases",
     "Cases worth checking that the change may not handle.",

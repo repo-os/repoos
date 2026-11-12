@@ -1,15 +1,11 @@
 ---
-last_close_out_gate_ms: 253232
-last_close_out_gate_at: "2026-11-12T08:41:08.285Z"
 id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
-status: review
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "engineer keeps crashing (3 in 30m): RepoOS already switched this task once (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash); it will not chain another automatic switch. Review the crash detail and either fix the environment, change the override, or resume manually. If the conversation itself is poisoned (it repeats the same failure), reset it with `repoos start 1097 --fresh`."
+status: done
 priority: p2
 area: [core, server]
+merged_commit: 3ff0e35fd6d476bf50aeb6be6a4b6cb9446f8bcc
 assigned_to: ai
 created_by: t@t
 branch: feat/landable-close-out-a-review-that-says-no
@@ -17,6 +13,8 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
 updated_at: "2026-11-12T08:41:08Z"
+last_close_out_gate_ms: 253232
+last_close_out_gate_at: "2026-11-12T08:41:08.285Z"
 review_passes: 1
 dev_error_count: 8
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T06:04:41.657Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T06:06:08.526Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T06:07:41.755Z\",\"kind\":\"dev-error\"}]"
