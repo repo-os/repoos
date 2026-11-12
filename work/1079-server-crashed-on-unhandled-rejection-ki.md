@@ -51,3 +51,4 @@ Look at .repoos/logs/system.log around 2026-11-09T11:14:22Z (UTC) for the full s
 - 2026-11-12T13:36:52Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-12T13:41:30Z · body
 - 2026-11-12T13:43:08Z · status active→review
+- 2026-11-12T13:43:08Z · message_queued at 2026-11-12T13:43:08.706Z
