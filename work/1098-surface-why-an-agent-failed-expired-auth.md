@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-12T14:59:05.632Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
@@ -72,3 +74,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T14:49:48Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T14:59:02Z · message_queued at 2026-11-12T14:59:02.326Z
 - 2026-11-12T14:59:05Z · message_delivered: 1 message(s)
+
