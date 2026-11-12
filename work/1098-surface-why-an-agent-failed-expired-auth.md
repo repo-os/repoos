@@ -2,7 +2,7 @@
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
-status: inbox
+status: ready
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T12:17:15Z"
+updated_at: "2026-11-12T12:17:17Z"
 ---
 ## Problem
 When an agent run fails, the reason is usually an expired login (Cursor, Claude, Copilot) or an unavailable model, but it only appears as one line in the task's activity log (for example 'agent exited with an error (cursor) · Cannot use this model: composer-2.5' on #1097), or as a terse crash-recovery note after the task has already been switched to another agent. A human watching the board sees a task that stalls or silently changes agent and has to dig for why. Cursor was unauthenticated for hours before anyone noticed.
@@ -36,3 +36,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 
 - 2026-11-12T05:35:20Z · created · t@t
 - 2026-11-12T12:17:15Z · cli_override, model_override
+- 2026-11-12T12:17:17Z · status inbox→ready
