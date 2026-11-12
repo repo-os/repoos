@@ -39,6 +39,7 @@ import type { Logger } from "../core/logger.js";
 import { stripNulBytes } from "../core/spawn-args.js";
 import { pauseAllowlistEntry, pairPauseInfo } from "../core/budget-allowlist.js";
 import { detectProviderUsageLimit } from "../core/provider-usage-limit.js";
+import { formatAgentFailure } from "../core/agent-failure.js";
 import { recordAutomaticAllowlist } from "../core/budget-runtime-state.js";
 import { notifyAttentionProviderUsageLimit } from "./attention-notify.js";
 import { resolveAgentForTask, type AgentRunner, type EngineerCrashInfo } from "./agents.js";
@@ -190,10 +191,11 @@ export async function recoverEngineerAfterCrash(
     // excerpt made of NULs. It is pasted into the relaunch prompt and the
     // activity line, and one NUL in argv makes `spawn` throw, so strip it once
     // here and name the change in the activity entry.
-    const reason = stripNulBytes(info.reason);
+    const rawReason = stripNulBytes(info.reason);
+    const reason = formatAgentFailure(rawReason, info.cli ?? pair.cli);
     const detectedLimit = detectProviderUsageLimit(reason);
     const usageLimit = config.watchdog?.autoPauseOnUsageLimit === false ? null : detectedLimit;
-    const nulNote = reason === info.reason ? "" : " · stripped NUL bytes from the crash detail";
+    const nulNote = rawReason === info.reason ? "" : " · stripped NUL bytes from the crash detail";
 
     const now = opts.now ?? Date.now();
     const nowIso = new Date(now).toISOString();
