@@ -26,6 +26,7 @@ import {
   shotFixturePinnedTaskRemoteActivity,
   shotFixtureSchedules,
   shotPreviewSkipsRemoteEventsFetch,
+  shotPreviewSkipsHandoffStatusFetch,
   shotFixtureSeedsLiveTaskChecks,
   shotPreviewSkipsServerBackedTaskRecord,
   shotPreviewSkipsTaskLogsFetch,
@@ -933,6 +934,8 @@ export const useRepoStore = defineStore("repo", () => {
     // Shot fixtures are client-only tasks. Keep their seeded handoff state
     // intact instead of polling an id that does not exist on the preview API.
     if (isSeededShotFixtureTask(id)) return;
+    if (typeof window !== "undefined" && shotPreviewSkipsHandoffStatusFetch(window.location, id))
+      return;
     try {
       const status = await api<{
         state: string;

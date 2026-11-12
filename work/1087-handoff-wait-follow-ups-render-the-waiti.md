@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 773348
-last_close_out_gate_at: "2026-11-12T14:30:32.744Z"
 id: "1087"
 title: "Handoff-wait follow-ups: render the waiting label in the drawer, wait in fail-fast git paths, label tests (from #1082)"
 type: feature
-status: review
+status: done
 priority: p3
 area: [web, server]
+merged_commit: 067554095231b6644151b2da158bfbb1bd16023f
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/handoff-wait-follow-ups-render-the-waiti
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T09:25:17Z"
 updated_at: "2026-11-12T14:30:32Z"
+last_close_out_gate_ms: 773348
+last_close_out_gate_at: "2026-11-12T14:30:32.744Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-12T13:24:03.200Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer shows the check wait reason (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=1087&tab=changes (http://127.0.0.1:46505/work?shotState=drawer:handoffWaiting)"
 handoff_signal_retry_count: 1

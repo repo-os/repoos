@@ -421,7 +421,9 @@ const activeCheckRun = computed(() => {
 // the live check run, which is still `running` while it holds the worktree.
 const handoffWaitingReason = computed(() => {
   const id = ui.active?.id;
-  return id ? (repo.handoffStatuses[id]?.progress?.reason ?? null) : null;
+  if (!id) return null;
+  const status = repo.handoffStatuses[id];
+  return status?.reason ?? status?.progress?.reason ?? null;
 });
 const statusProgress = computed(() => {
   const id = ui.active?.id;
@@ -6025,6 +6027,7 @@ watch(
               :scope-line="drawerChecksDisplay.scopeLine"
               :machine-line="drawerChecksDisplay.machineLine"
               :retry-line="drawerChecksDisplay.retryLine"
+              :detail-line="statusProgressLabel"
             />
           </button>
           <DoneErrorCard
