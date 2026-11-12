@@ -3,9 +3,6 @@ id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — plaintext secrets at 4–5 MiB escape the scan, the checkpoint ignores the allowlist, and the hook exempts work/ files by…"
 priority: p2
 area: core
 assigned_to: ai
@@ -154,3 +151,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-12T00:03:08Z · message_queued at 2026-11-12T00:03:08.608Z
 - 2026-11-12T00:03:08Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-12T00:07:04Z · note: review pass 7: needs some work
+- 2026-11-12T00:07:04Z · needs_input
