@@ -11,8 +11,10 @@ area: server
 assigned_to: ai
 created_by: ""
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-10-05T22:38:17Z"
+updated_at: "2026-11-12T17:11:34Z"
 ---
 ## Problem
 
@@ -64,3 +66,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 
 - 2026-09-16T02:09:23Z · created · unknown
 - 2026-10-05T11:15:30Z · needs_input
+- 2026-11-12T17:11:34Z · cli_override, model_override
