@@ -61,3 +61,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T04:18:57Z · engineer crash recovery: switched cursor + composer-2.5 → opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash after 4/3 crashes in 30m · Cannot use this model: composer-2.5. Available models:
 - 2026-11-12T04:19:13Z · needs_input
 - 2026-11-12T04:46:15Z · message_queued at 2026-11-12T04:46:15.350Z
+- 2026-11-12T04:46:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
