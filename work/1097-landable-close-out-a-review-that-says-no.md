@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
-last_handoff_failure_sha: c78deec73dababb2938f8b2b3271fb20f44bb2db
 id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
@@ -14,6 +12,8 @@ cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
 updated_at: "2026-11-12T06:03:16Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: c78deec73dababb2938f8b2b3271fb20f44bb2db
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T05:21:11.022Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
@@ -74,4 +74,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T05:33:15Z · note: handoff requested (ui-review)
 - 2026-11-12T06:03:15Z · message_queued at 2026-11-12T06:03:15.693Z
 - 2026-11-12T06:03:16Z · handoff failed · ui-review handoff failed at check · server-side finalization timed out (deadline exceeded)
-
+- 2026-11-12T06:03:16Z · message_delivered: 1 message(s)
