@@ -9,8 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-window-drift-catch-source-changes-
 created_at: "2026-11-09T09:04:34Z"
-updated_at: "2026-11-12T03:33:47Z"
-review_passes: 2
+updated_at: "2026-11-12T01:09:00Z"
 ---
 ## Problem
 #1061 detects source changes that exist when a check ends (net tree delta vs the check-start tree) and defers RepoOS bookkeeping commits while a check runs. Two gaps were accepted when #1061 landed: (1) a source commit followed by a revert inside the same check window leaves an empty endpoint diff, so a check that observed the intermediate source is treated as valid; (2) an already-running engineer can still write source files directly during a check (not blockable; only detectable).
@@ -33,22 +32,4 @@ Start from the merged #1061 code (`src/core/check-gate-bookkeeping.ts`, `src/ser
 - 2026-11-12T00:14:57Z · status inbox→ready
 - 2026-11-12T00:15:01Z · status ready→active, branch
 - 2026-11-12T00:15:27Z · message_queued at 2026-11-12T00:15:27.446Z
-- 2026-11-12T00:18:22Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-12T00:22:18Z · body
-- 2026-11-12T00:30:46Z · body
-- 2026-11-12T00:34:00Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-12T00:34:01Z · message_queued at 2026-11-12T00:34:01.008Z
-- 2026-11-12T00:34:01Z · ↻ resuming engineer to read queued message
-- 2026-11-12T00:34:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Fixing the handoff test: `headBeforeCheck` was captured before the handoff commit, so the comparison was invalid. · stderr: (empty)
-- 2026-11-12T00:34:02Z · message_delivered: 2 message(s)
-- 2026-11-12T00:43:22Z · message_queued at 2026-11-12T00:43:22.604Z
-- 2026-11-12T00:43:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-12T00:48:22Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-12T00:55:31Z · body
-- 2026-11-12T01:03:22Z · CTO nudge: held — handoff gate is running
-- 2026-11-12T01:09:01Z · status active→review
-- 2026-11-12T01:09:01Z · message_queued at 2026-11-12T01:09:01.663Z
-- 2026-11-12T01:09:02Z · note: shots: skipped — the diff (4 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-12T01:10:05Z · note: review pass 1: good to go
-- 2026-11-12T01:15:09Z · note: review pass 2: good to go
-- 2026-11-12T03:33:47Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-12T01:09:00Z · status active→review
