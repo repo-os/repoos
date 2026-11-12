@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: schedule
 branch: feat/review-and-safely-clean-task-worktrees
 created_at: "2026-11-07T22:37:10Z"
-updated_at: "2026-11-12T12:17:14Z"
+updated_at: "2026-11-12T17:31:15Z"
 review_rounds: 1
 routing_switches: 1
 routing_escalations: 1
@@ -202,3 +202,4 @@ Context: `repoos gc` is the only sanctioned way to remove worktrees and branches
 - 2026-11-11T12:03:28Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-12T03:33:47Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-12T12:17:14Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-12T17:31:15Z · message_overdue: still queued after 60m without being delivered
