@@ -3,9 +3,6 @@ id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
 status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — undecodable zlib payloads pass silently, so a truncated zlib blob can hide a key"
 priority: p2
 area: core
 assigned_to: ai
@@ -175,3 +172,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-12T00:48:36Z · message_queued at 2026-11-12T00:48:36.449Z
 - 2026-11-12T00:48:36Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-12T00:49:13Z · note: review pass 9: good to go
+- 2026-11-12T00:49:13Z · needs_input
