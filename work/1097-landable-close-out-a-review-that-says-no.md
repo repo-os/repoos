@@ -87,4 +87,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T07:56:03Z · note: handoff requested (ui-review)
 - 2026-11-12T07:56:25Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T08:06:44Z · status active→review
-
+- 2026-11-12T08:06:44Z · message_queued at 2026-11-12T08:06:44.687Z
