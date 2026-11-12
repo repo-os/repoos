@@ -107,3 +107,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T17:24:55Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T17:39:46Z · handoff failed · remote validation failed: test failure: tests/pressure-guard.test.ts > waitForPressureRelief > waits until a fake probe reports relief, then proceeds on thinkpad — fix it in the feature branch and re-run the gate
 - 2026-11-12T17:39:46Z · message_queued at 2026-11-12T17:39:46.548Z
+- 2026-11-12T17:39:46Z · handoff failed · handoff recovery attempted · finalization failed
