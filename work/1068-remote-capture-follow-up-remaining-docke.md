@@ -12,7 +12,7 @@ branch: feat/remote-capture-follow-up-remaining-docke
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:05:29Z"
-updated_at: "2026-11-12T19:18:24Z"
+updated_at: "2026-11-12T19:18:37Z"
 last_close_out_gate_ms: 690967
 last_close_out_gate_at: "2026-11-12T19:18:24.198Z"
 review_passes: 2
@@ -57,4 +57,4 @@ Start from the merged #1060 code on main and its review reports under work/repor
 - 2026-11-12T18:47:00Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-12T18:47:46Z · note: review pass 2: good to go
 - 2026-11-12T19:18:24Z · close-out gate completed in 691s
-
+- 2026-11-12T19:18:37Z · status done→done, release:success
