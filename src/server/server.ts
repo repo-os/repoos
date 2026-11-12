@@ -89,6 +89,7 @@ import {
   accessSync,
   constants,
   writeFileSync,
+  unlinkSync,
 } from "node:fs";
 import { execFile } from "node:child_process";
 import { homedir } from "node:os";
@@ -1105,6 +1106,22 @@ export function isBenignEpipe(err: unknown): boolean {
   return !!e && e.code === "EPIPE" && e.syscall === "write";
 }
 
+/** Errors from best-effort cleanup and transient sockets are recoverable. */
+export function isRecoverableUnhandledRejection(err: unknown): boolean {
+  const e = err as NodeJS.ErrnoException | null | undefined;
+  if (!e) return false;
+  if (e.code === "EPERM" || e.code === "ESRCH") return true;
+  return new Set([
+    "ECONNRESET",
+    "ECONNREFUSED",
+    "EHOSTUNREACH",
+    "ENETUNREACH",
+    "ETIMEDOUT",
+    "EPIPE",
+    "EAI_AGAIN",
+  ]).has(e.code ?? "");
+}
+
 /**
  * Every legible field of a thrown value, including a non-`Error` object. Bun
  * throws plain objects for stream failures, which is why the old handler only
@@ -1130,13 +1147,22 @@ function registerFatalHandlersOnce(): void {
   fatalHandlersRegistered = true;
   const logFatal = (message: string, err: unknown, origin: string) => {
     const record = describeFatalError(err, origin);
-    if (isBenignEpipe(err)) {
-      // Do not exit: a child closing its stdin early must not take the server
-      // down. Log at error so it stays visible, then keep serving (#0646).
+    if (isBenignEpipe(err) || (origin === "unhandledRejection" && isRecoverableUnhandledRejection(err))) {
+      // Child stdin churn, transient network errors and process cleanup races
+      // are visible operational errors, not control-plane crash conditions.
       activeLogger?.system("error", message, record);
       return;
     }
     activeLogger?.system("fatal", message, record);
+    if (activeLogger) {
+      try {
+        const marker = join(activeLogger.rootDirectory(), ".repoos", "server-crash-pending.json");
+        mkdirSync(dirname(marker), { recursive: true });
+        writeFileSync(marker, JSON.stringify({ at: new Date().toISOString(), error: record.error }));
+      } catch {
+        // Crash marking is best-effort; the fatal log remains authoritative.
+      }
+    }
     if (process.env.VITEST !== "true") process.exit(1);
   };
   process.on("uncaughtException", (err, origin) => logFatal("Uncaught exception", err, origin));
@@ -1388,6 +1414,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const attentionEvents = createAttentionEventStore(config.root, config.cacheDir, (error) =>
     logger.system("warn", `attention event persistence failed: ${(error as Error).message}`),
   );
+  const crashMarker = join(config.root, config.cacheDir ?? ".repoos", "server-crash-pending.json");
+  try {
+    const previousCrash = JSON.parse(readFileSync(crashMarker, "utf8")) as {
+      at?: string;
+      error?: string;
+    };
+    attentionEvents.record({
+      id: `serverCrash:${previousCrash.at ?? "unknown"}`,
+      kind: "serverCrash",
+      taskId: null,
+      message: "Server restarted after a crash",
+      detail: `The server restarted after a crash; see logs.${previousCrash.error ? ` ${previousCrash.error.slice(0, 180)}` : ""}`,
+      at: previousCrash.at ?? new Date().toISOString(),
+    });
+    unlinkSync(crashMarker);
+  } catch {
+    // Missing or unreadable marker means no confirmed previous fatal exit.
+  }
   const ctoActionRates = createCtoActionRateStore(config.root, config.cacheDir);
   const repoLock = createRepositoryLock(config.root);
   const rootLock = createRootLock(config.root);

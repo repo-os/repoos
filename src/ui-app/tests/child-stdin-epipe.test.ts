@@ -10,7 +10,11 @@ import { describe, expect, it, vi } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { writeChildStdin } from "../../core/child-stdin";
-import { describeFatalError, isBenignEpipe } from "../../server/server";
+import {
+  describeFatalError,
+  isBenignEpipe,
+  isRecoverableUnhandledRejection,
+} from "../../server/server";
 
 describe("isBenignEpipe", () => {
   it("treats an EPIPE on a write as benign", () => {
@@ -24,6 +28,16 @@ describe("isBenignEpipe", () => {
     expect(isBenignEpipe("EPIPE")).toBe(false);
     expect(isBenignEpipe(undefined)).toBe(false);
     expect(isBenignEpipe(null)).toBe(false);
+  });
+});
+
+describe("recoverable process-level rejections", () => {
+  it.each(["EPERM", "ESRCH", "ECONNRESET", "ETIMEDOUT"])("keeps %s recoverable", (code) => {
+    expect(isRecoverableUnhandledRejection({ code })).toBe(true);
+  });
+
+  it("leaves unknown failures fatal", () => {
+    expect(isRecoverableUnhandledRejection(new Error("unexpected failure"))).toBe(false);
   });
 });
 

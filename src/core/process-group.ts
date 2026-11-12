@@ -75,7 +75,17 @@ export async function terminateProcessGroupAndWait(
     try {
       process.kill(-leaderPid, signal);
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ESRCH" || code === "EPERM") {
+        // ESRCH means the group exited between the liveness check and signal;
+        // EPERM means it is outside our authority. In either case cleanup must
+        // not turn into an unhandled rejection that can take down the server.
+        console.warn(
+          `[process-group] ${code} signalling process group ${leaderPid} with ${signal}; treating it as unavailable`,
+        );
+        return;
+      }
+      throw error;
     }
   };
   signalGroup("SIGTERM");

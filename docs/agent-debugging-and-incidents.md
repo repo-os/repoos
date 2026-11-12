@@ -1,5 +1,23 @@
 # Agent debugging notes and incidents — full text
 
+## Server cleanup signal rejection (2026-11-09, task #1079)
+
+The control-plane server exited after a process-group cleanup signal failed
+with `EPERM`, during a busy period shortly after a slow release-availability
+request. Cleanup treated `ESRCH` (the target had exited) as expected but let
+`EPERM` reject its promise. The process-level unhandled-rejection handler then
+classified every rejection as fatal, turning a failed best-effort cleanup into
+a full server outage. Process-group teardown now treats both `ESRCH` and
+`EPERM` as unavailable targets, records the process-group PID and signal, and
+resolves so the owning run can finish its normal failure/cleanup path. The
+global rejection handler keeps known process-signal and transient socket
+errors at error level; uncaught exceptions and unknown rejection classes
+remain fatal. Fatal exits write a durable marker, which the next server boot
+turns into a dashboard attention notice directing the operator to the logs.
+Managed service installs already use the OS service manager's restart-on-failure
+policy; foreground `repoos serve` still requires an external supervisor for
+automatic restart.
+
 Worked examples and incident write-ups moved out of `AGENTS.md` on 2026-11-05
 (size budget: `docs/agents-md-size.md`). The rules they motivate are summarised
 in `AGENTS.md`; see also `docs/debugging-check-failures.md`.
@@ -175,4 +193,3 @@ transitions, e.g. `ready`→`active`) commits only to `main`, a worktree's own
 copy of its task file can legitimately lag main's frontmatter (stale
 `status`/`branch`/`updated_at`) even when the file itself is present — this is
 expected, not a bug, and does not block review/done.
-
