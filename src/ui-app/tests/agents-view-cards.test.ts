@@ -4,7 +4,6 @@ import { createPinia, setActivePinia } from "pinia";
 import { createMemoryHistory, createRouter } from "vue-router";
 import AgentsView from "../src/views/AgentsView.vue";
 import { useConfigStore } from "../src/stores/config";
-import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 async function flush(): Promise<void> {
   await flushPromises();
@@ -13,7 +12,6 @@ async function flush(): Promise<void> {
 
 describe("AgentsView agent cards", () => {
   it("renders the page tabs while config is still loading", async () => {
-    vi.useFakeTimers();
     vi.stubGlobal(
       "fetch",
       vi.fn(() => new Promise<Response>(() => {})),
@@ -34,7 +32,7 @@ describe("AgentsView agent cards", () => {
       },
     });
     await flush();
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(wrapper.find(".agents-page-title").text()).toBe("Agents");
     expect(wrapper.find(".agent-tabs").exists()).toBe(true);

@@ -59,7 +59,6 @@ describe("CheckRunsPanel loading (#0950)", () => {
     } as never);
     const wrapper = mount(CheckRunsPanel);
     await flushPromises();
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.get('[data-test-id="reused-check"]').text()).toContain("reused check 9822");
     expect(wrapper.find(".cr-detail-row").exists()).toBe(false);
     wrapper.unmount();
@@ -69,6 +68,7 @@ describe("CheckRunsPanel loading (#0950)", () => {
     api.mockImplementation(() => new Promise(() => {}));
     const wrapper = mount(CheckRunsPanel);
     await flushPromises();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
 
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);

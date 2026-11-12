@@ -10,7 +10,6 @@ import { nextTick } from "vue";
 import * as apiMod from "../src/api";
 import ReleasesView from "../src/views/ReleasesView.vue";
 import { invalidatePageData } from "../src/composables/page-data-cache";
-import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 const api = vi.spyOn(apiMod, "api");
 
@@ -342,7 +341,6 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
   });
 
   it("shows a skeleton in Published to while the first lookup is in flight (#0950)", async () => {
-    vi.useFakeTimers();
     // Never resolves: keeps distributionLoading true through the mount flush.
     api.mockImplementation((path: string) => {
       if (path === "/api/release") return Promise.resolve(releaseStatus());
@@ -358,7 +356,7 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
       return Promise.reject(new Error(`unexpected ${path}`));
     });
     const wrapper = await mountView();
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(wrapper.find(".rel-dist").exists()).toBe(true);
     // Card-shaped skeleton, not a lone spinner or a text line.
@@ -366,7 +364,6 @@ describe("ReleasesView failure promotion + published-to loading (#0622)", () => 
     expect(wrapper.find(".rel-dist-refreshing").exists()).toBe(false);
     expect(wrapper.find(".rel-dist-channels").exists()).toBe(false);
     wrapper.unmount();
-    vi.useRealTimers();
   });
 
   it("replaces the first-load skeleton with channels once they load", async () => {

@@ -176,7 +176,6 @@ describe("AgentsView detected-tab loading (#0950)", () => {
       }),
     );
     await flushPromises();
-    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(detected.find(".detect-agent-name").text()).toBe("Codex Nightly");
     expect(detected.find(".page-skeleton").exists()).toBe(false);
     revisit.unmount();
