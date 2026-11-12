@@ -12,7 +12,7 @@ branch: feat/handoff-wait-follow-ups-render-the-waiti
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T09:25:17Z"
-updated_at: "2026-11-12T14:30:32Z"
+updated_at: "2026-11-12T14:30:47Z"
 last_close_out_gate_ms: 773348
 last_close_out_gate_at: "2026-11-12T14:30:32.744Z"
 review_passes: 1
@@ -61,4 +61,4 @@ Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaiti
 - 2026-11-12T13:36:50Z · message_queued at 2026-11-12T13:36:50.005Z
 - 2026-11-12T13:37:35Z · note: review pass 1: good to go
 - 2026-11-12T14:30:32Z · close-out gate completed in 773s
-
+- 2026-11-12T14:30:47Z · status done→done, release:success
