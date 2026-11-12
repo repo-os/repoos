@@ -3,9 +3,6 @@ id: "1075"
 title: "Tell the user when an installed upgrade is waiting for a restart, and offer Restart now"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-11-12T14:59:16.035791Z ERROR codex_core::session: failed to record rollout items: thread 01a1d01f-1cb3-7ea2-8704-ded609b9dd5f not found"
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/tell-the-user-when-an-installed-upgrade-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
-updated_at: "2026-11-12T14:59:16Z"
+updated_at: "2026-11-12T14:59:17Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-12T14:59:16.380Z\",\"kind\":\"dev-error\"}]"
@@ -70,3 +67,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T14:31:36Z · body
 - 2026-11-12T14:59:16Z · agent exited with an error (codex) · 2026-11-12T14:59:16.035791Z ERROR codex_core::session: failed to record rollout items: thread 01a1d01f-1cb3-7ea2-8704-ded609b9dd5f not found
 - 2026-11-12T14:59:16Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-12T14:59:16.035791Z ERROR codex_core::session: failed to record rollout items: thread 01a1d01f-1cb3-7ea2-8704-ded609b9dd5f not found
+- 2026-11-12T14:59:17Z · needs_input
