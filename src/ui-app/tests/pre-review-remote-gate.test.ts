@@ -481,7 +481,12 @@ describe("standalone `repoos check` remote failure (#0520)", () => {
       const res = spawnSync(process.execPath, [cli, "check"], {
         cwd: root,
         encoding: "utf8",
-        env: { ...process.env, REPOOS_CHECK_CHANGED: "", REPOOS_SKIP_TESTS: "" },
+        env: {
+          ...process.env,
+          REPOOS_CHECK_CHANGED: "",
+          REPOOS_SKIP_TESTS: "",
+          [REPOOS_REMOTE_VALIDATION_DONE]: "",
+        },
       });
       expect(res.status).toBe(1);
       const run = readCheckRun(root, ".repoos");
