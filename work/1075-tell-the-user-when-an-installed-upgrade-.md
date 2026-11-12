@@ -2,7 +2,7 @@
 id: "1075"
 title: "Tell the user when an installed upgrade is waiting for a restart, and offer Restart now"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/tell-the-user-when-an-installed-upgrade-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
-updated_at: "2026-11-12T14:17:36Z"
+updated_at: "2026-11-12T16:32:41Z"
 ---
 ## Problem
 `repoos upgrade` replaces the installed files, but the already-running server keeps running the old version until someone restarts it. Nothing tells the user. Concrete case (Tiao project, 2026-11-09): after `repoos upgrade` reported "Upgraded to v0.5.79", `repoos --version` printed v0.5.79 while the server (a systemd user service) was still running v0.5.78, and the dashboard kept showing the new-version reminder. The user had no way to know a restart was needed, or whether doing it would interrupt running agents, other than being told by an agent.
@@ -40,3 +40,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T14:17:01Z · cli_override, model_override
 - 2026-11-12T14:17:05Z · status inbox→ready
 - 2026-11-12T14:17:36Z · status ready→active, branch
+- 2026-11-12T16:32:41Z · status active→review
