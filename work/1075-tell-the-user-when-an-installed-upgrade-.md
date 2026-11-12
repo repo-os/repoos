@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
 updated_at: "2026-11-12T16:29:48Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-12T16:07:52.587Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Installed upgrade restart notice in light theme (target \"default\"): highlight [data-test-id=\"installed-restart-notice\"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingLight); [missing-target] Installed upgrade restart notice in dark theme (target \"default\"): highlight [data-test-id=\"installed-restart-notice\"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingD… (truncated)"
 handoff_signal_retry_count: 1
 dev_error_count: 1
@@ -90,3 +89,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T16:24:48Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-12T16:25:08Z · body
 - 2026-11-12T16:29:48Z · CTO nudge: held — handoff gate is running
+
