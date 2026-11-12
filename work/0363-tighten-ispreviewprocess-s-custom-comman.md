@@ -2,7 +2,7 @@
 id: "0363"
 title: Tighten isPreviewProcess's custom-command orphan match beyond bare binary basename
 type: bug
-status: active
+status: review
 priority: p3
 area: server
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/tighten-ispreviewprocess-s-custom-comman
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-11-12T18:35:54Z"
+updated_at: "2026-11-12T18:36:23Z"
 handoff_signal_retry_count: 2
 ---
 ## Problem
@@ -76,3 +76,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 - 2026-11-12T18:13:48Z · body
 - 2026-11-12T18:23:53Z · body
 - 2026-11-12T18:35:54Z · body
+- 2026-11-12T18:36:23Z · status active→review
