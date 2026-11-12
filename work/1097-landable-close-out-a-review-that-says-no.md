@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: t@t
 branch: ""
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T01:26:14Z"
+updated_at: "2026-11-12T03:33:28Z"
 ---
 ## Problem
 A review whose verdict is 'good to go' and whose ## Bugs section reads 'None found' followed by explanatory prose and bullets (what the reviewer checked) is treated by `repoos landable` as 'the review still lists blocking bugs'. Seen on #1077 (review passes 1 and 2, both 'good to go'): landable stays red on 'Review verdict' and close-out would refuse, so a clean task cannot land and a human has to intervene. Earlier reviews flagged the same quirk ('Bugs-section bullets counted as blocking').
@@ -27,7 +27,15 @@ The verdict line decides: 'good to go' plus a Bugs section that begins with 'Non
 - Tests for each; reviewer prompt gets one line telling it to put its checked-items list under Edge cases or a separate heading, not under ## Bugs.
 - Docs: docs/close-out-pipeline.md or user-docs/review-and-close-out.md one line.
 
+## Notes for AI
+The parser is in `src/core/review-report-sections.ts`: `reviewReportHasBlockingBugs` (~line 216) is `!!extractReviewReportSections(markdown).bugs`, and `sectionContent` drops a section only when `isEmptyReviewSection` (~lines 105-132) says it is empty. That function skips lines that are a 'none' statement, but returns false for ANY other list-marker line (`if (LIST_MARKER.test(line)) return false`), which is why 'None found' followed by explanatory bullets reads as findings.
+
+Suggested rule (decide and document): when the first non-empty line of ## Bugs is a none statement, treat the rest of the section as commentary UNLESS it contains a numbered finding (`1.`, `2.`) or a bold-label finding, which stays blocking (fail closed for mixed content). Keep the existing behaviour for sections that do not open with a none statement.
+
+Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (the 'review-verdict' check), `src/core/decision-digest.ts`. Existing tests: `src/ui-app/tests/landable.test.ts`, `landable-gather.test.ts`; add table tests next to the section-parser tests. The reviewer prompt lives with the other built-in agent prompts; add one line: list what you checked under ## Edge cases or its own heading, never under ## Bugs. Real example that failed: #1077 review passes 1 and 2 (`work/reports/1077/review-1.md`, `review-2.md`), both 'good to go'. Do not touch repoos.toml.
+
 ## Activity
 
 - 2026-11-12T01:26:13Z · created · t@t
 - 2026-11-12T01:26:14Z · needs_input
+- 2026-11-12T03:33:28Z · body: Notes for AI (added)
