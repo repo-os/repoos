@@ -2,7 +2,7 @@
 id: "1078"
 title: "Per-view skeletons: apply the show-delay and minimum-visible-time gate in every view that renders its own PageSkeleton (follow-up to #1070)"
 type: chore
-status: inbox
+status: ready
 priority: p3
 area: web
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: ""
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T09:38:37Z"
-updated_at: "2026-11-12T14:16:53Z"
+updated_at: "2026-11-12T14:16:57Z"
 ---
 ## Problem
 #1070 added a show-delay (about 180 ms) and minimum visible time (about 350 ms) for the shell-level first-load skeleton in App.vue. Views that render their own `PageSkeleton` while their data loads (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) still show it immediately and can flash it for a few milliseconds.
@@ -35,3 +35,4 @@ From review 5 of #1070, accepted as follow-up and NOT blocking #1070: (a) board 
 - 2026-11-09T09:38:37Z · created · njachowski@gmail.com
 - 2026-11-09T12:59:00Z · body: More items moved here from #1070 (review pass 5) (added)
 - 2026-11-12T14:16:53Z · cli_override, model_override
+- 2026-11-12T14:16:57Z · status inbox→ready
