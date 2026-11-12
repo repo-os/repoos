@@ -7,6 +7,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync, spawn } from "node:child_process";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -805,9 +806,14 @@ describe("completed browser capture collection", () => {
     };
     try {
       const running = runner.validate(opts("1060", capture));
+      let settled = false;
+      void running.then(() => {
+        settled = true;
+      });
       await vi.waitFor(() => expect(started).toBe(true));
       await runner.cancelBrowserCaptures("1060");
-      expect((await running).cancelled).toBe(true);
+      expect(settled).toBe(false);
+      expect(runner.hostStatus()?.[0]?.activeRuns).toHaveLength(1);
       expect(killCmd).toBeDefined();
       expect(killCmd).not.toContain("|| true");
       expect(
@@ -3199,6 +3205,36 @@ describe("hung container cleanup (#0729)", () => {
     expect(cmd).not.toMatch(/--filter\s+'?name=repoos-validate-'?\s+2>/);
   });
 
+  it.each(["ps", "rm"] as const)(
+    "keeps prerequisite probing successful and logs stale-container %s failures",
+    (failure) => {
+      const root = tmpRoot();
+      const bin = join(root, "bin");
+      mkdirSync(bin, { recursive: true });
+      const docker = join(bin, "docker");
+      writeFileSync(
+        docker,
+        `#!/bin/sh\ncase "$1" in\n` +
+          `  ps) [ "$FAIL_MODE" = ps ] && { echo 'docker ps unavailable' >&2; exit 3; }; echo stale-id ;;\n` +
+          `  inspect) echo /repoos-validate-stale ;;\n` +
+          `  rm) echo 'docker rm unavailable' >&2; [ "$FAIL_MODE" = rm ] && exit 4; exit 0 ;;\n` +
+          `esac\n`,
+      );
+      chmodSync(docker, 0o755);
+
+      const output = execFileSync("bash", ["-c", `{ ${staleContainerCleanupCommand()}; } 2>&1`], {
+        encoding: "utf8",
+        env: { ...process.env, FAIL_MODE: failure, PATH: `${bin}:${process.env.PATH ?? ""}` },
+      });
+
+      expect(output).toContain(
+        failure === "ps"
+          ? "failed to list stale containers"
+          : "failed to remove stale container stale-id",
+      );
+    },
+  );
+
   it("docs distinguish confirmed workdir deletion from unproven cache corruption (#0735)", () => {
     const doc = readFileSync(join(process.cwd(), "docs/remote-validation.md"), "utf8");
     expect(doc).toMatch(/Confirmed.*workdir|Confirmed:.*startup/i);
@@ -3349,6 +3385,8 @@ describe("pool hung-run bookkeeping (#0729)", () => {
     expect(result.detail).toMatch(detail);
     expect(f.cleanupCmds).toHaveLength(0);
     expect(f.runner.hostStatus()?.[0]?.healthy).toBe(false);
+    expect(f.runner.hostStatus()?.[0]?.activeRuns).toHaveLength(1);
+    f.release();
     await run;
     await f.runner.dispose();
   });

@@ -61,9 +61,29 @@ IMAGE="${REPOOS_CI_IMAGE:-repoos-ci}"
 # Only NOT-RUNNING containers (status=created|exited|dead) are swept: this run
 # may start while a sibling run on the same host (maxConcurrent > 1) is still
 # executing, and removing that one would be a false hang kill.
-docker ps -aq --filter "name=repoos-validate-" \
-  --filter status=created --filter status=exited --filter status=dead 2>/dev/null \
-  | xargs -r docker rm -f >/dev/null 2>&1 || true
+if _stale_ids=$(docker ps -aq --filter "name=repoos-validate-" \
+  --filter status=created --filter status=exited --filter status=dead 2>&1); then
+  while IFS= read -r id; do
+    [ -n "$id" ] || continue
+    if _stale_name=$(docker inspect -f '{{.Name}}' "$id" 2>&1); then :; else
+      echo "[reaper] failed to inspect stale container $id reason=$_stale_name"
+      continue
+    fi
+    case "${_stale_name#/}" in repoos-validate-*) ;; *) continue ;; esac
+    if _stale_rm=$(docker rm -f "$id" 2>&1); then
+      echo "[reaper] removed stale container ${_stale_name#/}"
+    else
+      case "$_stale_rm" in
+        "Error response from daemon: No such container: "*) ;;
+        *) echo "[reaper] failed to remove stale container ${_stale_name#/} reason=$_stale_rm" ;;
+      esac
+    fi
+  done <<EOF_STALE
+${_stale_ids}
+EOF_STALE
+else
+  echo "[reaper] failed to list stale containers reason=$_stale_ids"
+fi
 
 # Best-effort: remove still-running capture containers that already published a
 # result and have gone quiet (#1060). Non-running leftovers are swept above; this
@@ -81,11 +101,18 @@ else
     fi
     case "$name" in /repoos-validate-*) ;; *) continue ;; esac
     bare=${name#/}
-    if ! docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null \
-      | grep -q '^REPOOS_BROWSER_CAPTURE_MODE=.'; then
+    if _capture_env=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>&1); then :; else
+      echo "[reaper] failed to inspect capture environment for $bare reason=$_capture_env"
       continue
     fi
-    if ! docker logs "$id" 2>&1 \
+    if ! printf '%s\n' "$_capture_env" | grep -q '^REPOOS_BROWSER_CAPTURE_MODE=.'; then
+      continue
+    fi
+    if _capture_logs=$(docker logs "$id" 2>&1); then :; else
+      echo "[reaper] failed to read capture logs for $bare reason=$_capture_logs"
+      continue
+    fi
+    if ! printf '%s\n' "$_capture_logs" \
       | grep -F '[browser-capture] runner browser capture ' \
       | grep -Eq '(completed|reported failures)'; then
       continue
@@ -105,11 +132,13 @@ else
     task=""
     if _capture_env=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$id" 2>/dev/null); then
       task=$(printf '%s\n' "$_capture_env" | sed -n 's/^REPOOS_BROWSER_CAPTURE_TASK=//p' | head -1 || true)
+    else
+      echo "[reaper] failed to inspect capture task for $bare reason=exit-$?"
     fi
     task_tag=""
     [ -n "$task" ] && task_tag=" task=$task"
     rm_out=$(docker rm -f "$id" 2>&1) && rm_code=0 || rm_code=$?
-    if [ "$rm_code" -eq 0 ] && ! docker inspect "$id" >/dev/null 2>&1; then
+    if [ "$rm_code" -eq 0 ]; then
       echo "[reaper] removed $bare$task_tag: no output for two minutes and CPU idle"
     else
       rm_reason=$(printf '%s' "$rm_out" | tr '\n' ' ')
