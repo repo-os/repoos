@@ -1079,7 +1079,12 @@ function safeRepoFile(root: string, urlPath: string): string | null {
  * error would take the whole suite down with it.
  */
 let activeLogger: Logger | null = null;
+let activeCrashMarkerPath: string | null = null;
 let fatalHandlersRegistered = false;
+
+export function serverCrashMarkerPath(root: string, cacheDir = ".repoos"): string {
+  return join(root, cacheDir, "server-crash-pending.json");
+}
 
 /** Structured record written for a process-level uncaught error (#0646). */
 export interface FatalErrorRecord {
@@ -1142,7 +1147,7 @@ export function describeFatalError(err: unknown, origin: string): FatalErrorReco
   };
 }
 
-function registerFatalHandlersOnce(): void {
+export function registerFatalHandlersOnce(): void {
   if (fatalHandlersRegistered) return;
   fatalHandlersRegistered = true;
   const logFatal = (message: string, err: unknown, origin: string) => {
@@ -1157,12 +1162,11 @@ function registerFatalHandlersOnce(): void {
       return;
     }
     activeLogger?.system("fatal", message, record);
-    if (activeLogger) {
+    if (activeLogger && activeCrashMarkerPath) {
       try {
-        const marker = join(activeLogger.rootDirectory(), ".repoos", "server-crash-pending.json");
-        mkdirSync(dirname(marker), { recursive: true });
+        mkdirSync(dirname(activeCrashMarkerPath), { recursive: true });
         writeFileSync(
-          marker,
+          activeCrashMarkerPath,
           JSON.stringify({ at: new Date().toISOString(), error: record.error }),
         );
       } catch {
@@ -1279,6 +1283,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     );
   }
   activeLogger = logger;
+  activeCrashMarkerPath = serverCrashMarkerPath(config.root, config.cacheDir ?? ".repoos");
   registerFatalHandlersOnce();
 
   // One-time, idempotent backfill (#0376): give every existing input a stable
@@ -1420,7 +1425,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   const attentionEvents = createAttentionEventStore(config.root, config.cacheDir, (error) =>
     logger.system("warn", `attention event persistence failed: ${(error as Error).message}`),
   );
-  const crashMarker = join(config.root, config.cacheDir ?? ".repoos", "server-crash-pending.json");
+  const crashMarker = serverCrashMarkerPath(config.root, config.cacheDir ?? ".repoos");
   try {
     const previousCrash = JSON.parse(readFileSync(crashMarker, "utf8")) as {
       at?: string;

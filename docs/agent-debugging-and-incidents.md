@@ -5,7 +5,8 @@
 The control-plane server exited after a process-group cleanup signal failed
 with `EPERM`, during a busy period shortly after a slow release-availability
 request. Cleanup treated `ESRCH` (the target had exited) as expected but let
-`EPERM` reject its promise. The process-level unhandled-rejection handler then
+`EPERM` reject its promise. Its later liveness probe also interpreted `EPERM`
+as “still alive,” creating an infinite wait. The process-level unhandled-rejection handler then
 classified every rejection as fatal, turning a failed best-effort cleanup into
 a full server outage. Process-group teardown now treats both `ESRCH` and
 `EPERM` as unavailable targets, records the process-group PID and signal, and

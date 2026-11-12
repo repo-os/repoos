@@ -36,11 +36,6 @@ export class Logger {
     this.logsDir = join(opts.root, ".repoos", "logs");
   }
 
-  /** Repository root for durable crash-recovery markers owned by the server. */
-  rootDirectory(): string {
-    return this.root;
-  }
-
   /**
    * Log a system-wide event or error. Includes fatal crashes and critical failures.
    */
