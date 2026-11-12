@@ -11,8 +11,10 @@ area: [web, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-10T09:25:17Z"
-updated_at: "2026-11-10T09:25:17Z"
+updated_at: "2026-11-12T12:17:20Z"
 ---
 Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaitingReason into the rendered progress line in TaskDrawer.vue so the drawer says what it is waiting for instead of 'starting'; (2) decide whether routes/tasks.ts waitForCheckGate:false and lockfile-conflict.ts add/commit should also wait (bounded) on a live check lock; (3) test the label path end to end. Do not edit repoos.toml.
 
@@ -20,3 +22,4 @@ Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaiti
 
 - 2026-11-10T09:25:17Z · created · njachowski@gmail.com
 - 2026-11-10T09:25:17Z · needs_input
+- 2026-11-12T12:17:20Z · cli_override, model_override
