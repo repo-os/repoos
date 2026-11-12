@@ -3,6 +3,9 @@ id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
 status: review
+needs_input: true
+needs_input_reason: review-human-attention
+needs_input_detail: Review pass 8 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
 priority: p2
 area: core
 assigned_to: ai
@@ -162,4 +165,5 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-12T00:21:58Z · message_queued at 2026-11-12T00:21:58.541Z
 - 2026-11-12T00:21:58Z · note: shots: skipped — Docs site skipped: no docs shot declared
 - 2026-11-12T00:23:11Z · note: review pass 8: needs some work
+- 2026-11-12T00:23:11Z · needs_input
 - 2026-11-12T00:23:11Z · needs_input
