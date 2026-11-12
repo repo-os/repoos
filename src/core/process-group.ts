@@ -7,6 +7,21 @@
  */
 import { spawnSync } from "node:child_process";
 
+export interface ProcessGroupSignalFailure {
+  leaderPid: number;
+  code: "EPERM" | "ESRCH";
+  signal: NodeJS.Signals;
+  taskId?: string;
+}
+
+let signalFailureHandler: ((failure: ProcessGroupSignalFailure) => void) | null = null;
+
+export function setProcessGroupSignalFailureHandler(
+  handler: ((failure: ProcessGroupSignalFailure) => void) | null,
+): void {
+  signalFailureHandler = handler;
+}
+
 /** Windows has no portable process-group signal API. */
 export function processGroupKillSupported(): boolean {
   return process.platform !== "win32";
@@ -55,7 +70,9 @@ export function processGroupAlive(leaderPid: number): boolean {
     process.kill(-leaderPid, 0);
     return true;
   } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "EPERM";
+    // EPERM proves the group exists but is outside our signalling authority;
+    // callers must not poll forever waiting for it to disappear.
+    return false;
   }
 }
 
@@ -66,22 +83,44 @@ export function processGroupAlive(leaderPid: number): boolean {
  */
 export async function terminateProcessGroupAndWait(
   leaderPid: number,
-  opts: { graceMs?: number; pollMs?: number } = {},
+  opts: { graceMs?: number; pollMs?: number; taskId?: string } = {},
 ): Promise<void> {
   if (leaderPid <= 0 || !processGroupKillSupported()) return;
   const graceMs = opts.graceMs ?? 1_500;
   const pollMs = opts.pollMs ?? 100;
-  const signalGroup = (signal: NodeJS.Signals): void => {
+  const signalGroup = (signal: NodeJS.Signals): boolean => {
     try {
       process.kill(-leaderPid, signal);
+      return true;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ESRCH" || code === "EPERM") {
+        // ESRCH means the group exited between the liveness check and signal;
+        // EPERM means it is outside our authority. In either case cleanup must
+        // not turn into an unhandled rejection that can take down the server.
+        const failure = {
+          leaderPid,
+          code: code as "EPERM" | "ESRCH",
+          signal,
+          taskId: opts.taskId,
+        };
+        console.warn(
+          `[process-group] ${code} signalling process group ${leaderPid}${opts.taskId ? ` for task #${opts.taskId}` : ""} with ${signal}; treating it as unavailable`,
+        );
+        signalFailureHandler?.(failure);
+        // A failed group signal means we cannot verify or complete its
+        // teardown. Stop waiting: processGroupAlive may report EPERM too.
+        return false;
+      }
+      throw error;
     }
   };
-  signalGroup("SIGTERM");
+  if (!signalGroup("SIGTERM")) return;
   const killAt = Date.now() + graceMs;
   while (processGroupAlive(leaderPid)) {
-    if (Date.now() >= killAt) signalGroup("SIGKILL");
+    if (Date.now() >= killAt) {
+      if (!signalGroup("SIGKILL")) return;
+    }
     await new Promise<void>((resolve) => setTimeout(resolve, pollMs));
   }
 }

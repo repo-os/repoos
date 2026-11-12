@@ -12,13 +12,14 @@
  *      redacted tail of stdout/stderr must survive into the result so the
  *      failing stage is diagnosable without leaking credentials.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deleteBranch, ensureWorktree, removeWorktree } from "../../core/git";
 import { parseTask } from "../../core/task";
+import { setProcessGroupSignalFailureHandler } from "../../core/process-group.js";
 import type { RepoOSConfig, Task } from "../../core/types";
 import {
   captureOutput,
@@ -465,6 +466,39 @@ describe("runCloseOutCheck — retry-once wiring (#0216)", () => {
       expect(readFileSync(envOut, "utf8")).toBe("1");
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("close-out process cleanup under EPERM", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("settles the gate as timed out when signaling its child group is denied", async () => {
+    const cwd = mkdtempSync(join(tmpdir(), "repoos-done-eperm-"));
+    const failure = vi.fn();
+    setProcessGroupSignalFailureHandler(failure);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(process, "kill").mockImplementation(() => {
+      throw Object.assign(new Error("kill failed: EPERM"), { code: "EPERM" });
+    });
+    try {
+      const result = await runDoneStep({
+        cwd,
+        candidates: [[process.execPath, "-e", "setTimeout(() => process.exit(7), 120)"]],
+        label: "fake validation gate",
+        stage: "check",
+        timeout: 15,
+        taskId: "1079",
+      });
+      expect(result.ok).toBe(false);
+      expect(result.transient).toBe(true);
+      expect(result.exitCode).toBe(7);
+      expect(failure).toHaveBeenCalledWith(
+        expect.objectContaining({ code: "EPERM", taskId: "1079" }),
+      );
+    } finally {
+      setProcessGroupSignalFailureHandler(null);
+      rmSync(cwd, { recursive: true, force: true });
     }
   });
 });

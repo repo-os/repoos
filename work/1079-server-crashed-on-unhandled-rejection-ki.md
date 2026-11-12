@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 591964
-last_close_out_gate_at: "2026-11-12T14:17:06.001Z"
 id: "1079"
 title: "Server crashed on unhandled rejection: kill() failed with EPERM (must never take the server down)"
 type: bug
-status: review
+status: done
 priority: p1
 area: server
+merged_commit: e84a20d1c555f9d9593d0c5ea366cde8a91e2506
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/server-crashed-on-unhandled-rejection-ki
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T11:20:50Z"
 updated_at: "2026-11-12T14:17:06Z"
+last_close_out_gate_ms: 591964
+last_close_out_gate_at: "2026-11-12T14:17:06.001Z"
 review_passes: 2
 handoff_signal_retry_count: 1
 review_rounds: 1
