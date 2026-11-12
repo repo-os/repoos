@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 2
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
@@ -16,7 +17,6 @@ review_rounds: 1
 review_passes: 2
 last_check_failure: "repoos check at 2026-11-12T14:59:05.632Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 close_out_repair_count: 1
-handoff_signal_retry_count: 1
 ---
 ## Problem
 When an agent run fails, the reason is usually an expired login (Cursor, Claude, Copilot) or an unavailable model, but it only appears as one line in the task's activity log (for example 'agent exited with an error (cursor) · Cannot use this model: composer-2.5' on #1097), or as a terse crash-recovery note after the task has already been switched to another agent. A human watching the board sees a task that stalls or silently changes agent and has to dig for why. Cursor was unauthenticated for hours before anyone noticed.
@@ -92,3 +92,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T16:06:28Z · message_delivered: 1 message(s)
 - 2026-11-12T16:06:28Z · status review→active
 - 2026-11-12T16:06:30Z · CTO nudge: held — remote validation is running
+
