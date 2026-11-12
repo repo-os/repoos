@@ -5,11 +5,11 @@ type: bug
 status: inbox
 priority: p2
 area: server
-assigned_to: ""
+assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
 created_at: "2026-11-09T03:05:29Z"
-updated_at: "2026-11-09T03:05:29Z"
+updated_at: "2026-11-12T17:11:26Z"
 ---
 ## Problem
 #1060 landed the core fix for stalled remote browser captures (runner exits, finished captures are reaped and force-collected, a failed handoff cancels its own captures), verified for the Tailscale runner. The review loop (rounds 8-14+) kept finding narrower variants of the same theme, which the owner chose to track separately instead of blocking the release.
