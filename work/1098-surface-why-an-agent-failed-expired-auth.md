@@ -11,7 +11,7 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T12:27:03Z"
+updated_at: "2026-11-12T12:38:30Z"
 ---
 ## Problem
 When an agent run fails, the reason is usually an expired login (Cursor, Claude, Copilot) or an unavailable model, but it only appears as one line in the task's activity log (for example 'agent exited with an error (cursor) · Cannot use this model: composer-2.5' on #1097), or as a terse crash-recovery note after the task has already been switched to another agent. A human watching the board sees a task that stalls or silently changes agent and has to dig for why. Cursor was unauthenticated for hours before anyone noticed.
@@ -32,6 +32,19 @@ When an agent run fails, the reason is usually an expired login (Cursor, Claude,
 ## Notes for AI
 Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/server/agents.ts (the Copilot enrichment from #1088 is the pattern to generalise), the crash-recovery switch in the engineer runner (search for 'engineer crash recovery'), and the existing release or bell notice code for one-per-key notices. Keep the raw error available.
 
+## Shots
+```json
+[
+{
+  "label": "Task card with agent failure explanation",
+  "target": "default",
+  "route": "/work?task=1098&tab=changes",
+  "highlight": "[data-task-id=\"1098\"]",
+  "state": "card:agentFailed"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-12T05:35:20Z · created · t@t
@@ -39,3 +52,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T12:17:17Z · status inbox→ready
 - 2026-11-12T12:17:18Z · status ready→active, branch
 - 2026-11-12T12:27:03Z · body
+- 2026-11-12T12:38:30Z · body
