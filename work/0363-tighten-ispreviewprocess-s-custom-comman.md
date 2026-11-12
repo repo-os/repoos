@@ -11,7 +11,7 @@ branch: feat/tighten-ispreviewprocess-s-custom-comman
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-11-12T17:11:39Z"
+updated_at: "2026-11-12T17:19:55Z"
 ---
 ## Problem
 
@@ -66,3 +66,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 - 2026-11-12T17:11:34Z · cli_override, model_override
 - 2026-11-12T17:11:37Z · status inbox→ready
 - 2026-11-12T17:11:39Z · status ready→active, needs_input, branch
+- 2026-11-12T17:19:55Z · note: adopted orphaned engineer pid 96832
