@@ -3,16 +3,13 @@ id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh"
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: t@t
 branch: feat/landable-close-out-a-review-that-says-no
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T04:13:57Z"
+updated_at: "2026-11-12T04:14:02Z"
 dev_error_count: 2
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:10:21.536Z\",\"kind\":\"dev-error\"},{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:12:57.913Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -53,3 +50,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T04:10:57Z · message_delivered: 1 message(s)
 - 2026-11-12T04:12:57Z · agent exited with an error (cursor) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
 - 2026-11-12T04:13:57Z · engineer crash recovery: resuming cursor + composer-2.5 (2/12 crashes in 30m) · Error: [unavailable] getaddrinfo ENOTFOUND api2.cursor.sh
+- 2026-11-12T04:14:02Z · needs_input
