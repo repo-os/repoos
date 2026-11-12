@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-12T12:39:28Z"
+review_passes: 1
 id: "1079"
 title: "Server crashed on unhandled rejection: kill() failed with EPERM (must never take the server down)"
 type: bug
@@ -11,7 +13,6 @@ branch: feat/server-crashed-on-unhandled-rejection-ki
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T11:20:50Z"
-updated_at: "2026-11-12T12:39:28Z"
 ---
 ## Problem
 On 2026-11-09 at 18:14 local the RepoOS server died with a fatal "Unhandled promise rejection ... kill() failed: EPERM: Operation not permitted" (logged to .repoos/logs/system.log, level fatal, just after a slow `GET /api/release/available` that took 5 seconds under heavy load). Every task handoff, review, close-out and release stopped until the human restarted `repoos serve` by hand. A failed `process.kill()` on an already-gone or foreign process must never terminate the control-plane server.
@@ -41,3 +42,4 @@ Look at .repoos/logs/system.log around 2026-11-09T11:14:22Z (UTC) for the full s
 - 2026-11-12T12:38:39Z · message_queued at 2026-11-12T12:38:39.994Z
 - 2026-11-12T12:38:40Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-12T12:39:28Z · note: review pass 1: needs some work
+
