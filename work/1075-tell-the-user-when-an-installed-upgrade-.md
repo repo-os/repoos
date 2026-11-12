@@ -102,3 +102,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T16:59:48Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T17:00:07Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-12T17:00:08Z · status active→review
+- 2026-11-12T17:00:08Z · message_queued at 2026-11-12T17:00:08.935Z
