@@ -149,19 +149,20 @@ describe("feature releases", () => {
   it("hides the banner when updates.check is off (#1072)", async () => {
     const store = useConfigStore();
     store.form["updates.check"] = false;
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          currentVersion: "0.5.46",
-          latestVersion: "0.6.0",
-          available: true,
-          releaseNotes: null,
-          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
-          installKind: "standalone",
-          upgradeCommand: "repoos upgrade",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Response(
+          JSON.stringify({
+            currentVersion: "0.5.46",
+            latestVersion: "0.6.0",
+            available: true,
+            releaseNotes: null,
+            releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+            installKind: "standalone",
+            upgradeCommand: "repoos upgrade",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
     const wrapper = mount(ReleaseUpdateNotification, { attachTo: document.body });
@@ -175,19 +176,20 @@ describe("feature releases", () => {
   });
 
   it("keeps the banner visible while the modal opens for details", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          currentVersion: "0.5.46",
-          latestVersion: "0.6.0",
-          available: true,
-          releaseNotes: "## Highlights\n- New release",
-          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
-          installKind: "standalone",
-          upgradeCommand: "repoos upgrade",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Response(
+          JSON.stringify({
+            currentVersion: "0.5.46",
+            latestVersion: "0.6.0",
+            available: true,
+            releaseNotes: "## Highlights\n- New release",
+            releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+            installKind: "standalone",
+            upgradeCommand: "repoos upgrade",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -209,19 +211,20 @@ describe("feature releases", () => {
   });
 
   it("shows the upgrade command in a code block and relabels the release button (#1073)", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          currentVersion: "0.5.46",
-          latestVersion: "0.6.0",
-          available: true,
-          releaseNotes: null,
-          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
-          installKind: "standalone",
-          upgradeCommand: "repoos upgrade",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Response(
+          JSON.stringify({
+            currentVersion: "0.5.46",
+            latestVersion: "0.6.0",
+            available: true,
+            releaseNotes: null,
+            releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+            installKind: "standalone",
+            upgradeCommand: "repoos upgrade",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -275,19 +278,20 @@ describe("feature releases", () => {
     async ({ installKind, upgradeCommand, hint }) => {
       vi.stubGlobal(
         "fetch",
-        vi.fn().mockResolvedValue(
-          new Response(
-            JSON.stringify({
-              currentVersion: "0.5.79",
-              latestVersion: "0.6.0",
-              available: true,
-              releaseNotes: null,
-              releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
-              installKind,
-              upgradeCommand,
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
+        vi.fn().mockImplementation(
+          () =>
+            new Response(
+              JSON.stringify({
+                currentVersion: "0.5.79",
+                latestVersion: "0.6.0",
+                available: true,
+                releaseNotes: null,
+                releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+                installKind,
+                upgradeCommand,
+              }),
+              { status: 200, headers: { "Content-Type": "application/json" } },
+            ),
         ),
       );
 
@@ -315,19 +319,20 @@ describe("feature releases", () => {
   it("says so when the copy fails instead of doing nothing (#1073)", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            currentVersion: "0.5.46",
-            latestVersion: "0.6.0",
-            available: true,
-            releaseNotes: null,
-            releaseUrl: null,
-            installKind: "standalone",
-            upgradeCommand: "repoos upgrade",
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
+      vi.fn().mockImplementation(
+        () =>
+          new Response(
+            JSON.stringify({
+              currentVersion: "0.5.46",
+              latestVersion: "0.6.0",
+              available: true,
+              releaseNotes: null,
+              releaseUrl: null,
+              installKind: "standalone",
+              upgradeCommand: "repoos upgrade",
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
       ),
     );
     // Both copy paths refuse: the async clipboard rejects and the legacy
@@ -469,19 +474,20 @@ describe("feature releases", () => {
   });
 
   it("Not now dismisses the banner", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          currentVersion: "0.5.46",
-          latestVersion: "0.6.0",
-          available: true,
-          releaseNotes: null,
-          releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
-          installKind: "standalone",
-          upgradeCommand: "repoos upgrade",
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } },
-      ),
+    const fetchMock = vi.fn().mockImplementation(
+      () =>
+        new Response(
+          JSON.stringify({
+            currentVersion: "0.5.46",
+            latestVersion: "0.6.0",
+            available: true,
+            releaseNotes: null,
+            releaseUrl: "https://github.com/repo-os/repoos/releases/tag/v0.6.0",
+            installKind: "standalone",
+            upgradeCommand: "repoos upgrade",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
