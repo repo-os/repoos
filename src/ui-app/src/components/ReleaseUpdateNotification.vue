@@ -37,6 +37,7 @@ const restartStatus = ref<{
   manualCommand: string;
 } | null>(null);
 const restartPendingAction = ref(false);
+const restartFixtureActive = ref(false);
 let restartStatusTimer: ReturnType<typeof setInterval> | null = null;
 const dismissed = ref(false);
 const open = ref(false);
@@ -54,15 +55,16 @@ const visible = computed(
 const restartNoticeVisible = computed(
   () =>
     restartStatus.value?.restartPending &&
-    (() => {
-      try {
-        return (
-          localStorage.getItem(RESTART_DISMISSED_KEY) !== restartStatus.value?.installedVersion
-        );
-      } catch {
-        return true;
-      }
-    })(),
+    (restartFixtureActive.value ||
+      (() => {
+        try {
+          return (
+            localStorage.getItem(RESTART_DISMISSED_KEY) !== restartStatus.value?.installedVersion
+          );
+        } catch {
+          return true;
+        }
+      })()),
 );
 const notesHtml = computed(() =>
   release.value?.releaseNotes ? renderMarkdown(release.value.releaseNotes) : "",
@@ -102,10 +104,10 @@ function writeDismissedVersion(version: string | null): void {
 
 onMounted(async () => {
   const fixtureState = readShotPreviewFixtureFromLocation(window.location);
-  if (
-    fixtureState === "release:restartPendingLight" ||
-    fixtureState === "release:restartPendingDark"
-  ) {
+  const restartFixture =
+    fixtureState === "release:restartPendingLight" || fixtureState === "release:restartPendingDark";
+  if (restartFixture) {
+    restartFixtureActive.value = true;
     restartStatus.value = {
       restartPending: true,
       restartWhenIdlePending: false,
@@ -117,18 +119,21 @@ onMounted(async () => {
     };
     document.documentElement.dataset.theme = fixtureState.endsWith("Dark") ? "dark" : "light";
   }
-  try {
-    restartStatus.value = await api<typeof restartStatus.value>("/api/update-status");
-  } catch {
-    /* optional */
-  }
-  restartStatusTimer = setInterval(async () => {
+  if (!restartFixture) {
     try {
-      restartStatus.value = await api("/api/update-status");
+      restartStatus.value = await api<typeof restartStatus.value>("/api/update-status");
     } catch {
-      /* reconnecting */
+      /* optional */
     }
-  }, 3000);
+  }
+  if (!restartFixture)
+    restartStatusTimer = setInterval(async () => {
+      try {
+        restartStatus.value = await api("/api/update-status");
+      } catch {
+        /* reconnecting */
+      }
+    }, 3000);
   if (applyShotFixture()) return;
   try {
     release.value = await api<AvailableRelease>("/api/release/available");
