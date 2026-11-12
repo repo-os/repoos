@@ -1,0 +1,12 @@
+{
+  "taskId": "1096",
+  "round": 7,
+  "at": "2026-11-12T00:21:57.703Z",
+  "agent": "cursor",
+  "model": "composer-2.5",
+  "branch": "feat/guard-against-huge-build-output-files-in",
+  "baseSha": "5733e85c4aebee3505e60b5ebcb56b976a4286b3",
+  "sourceSha": "fdf4fd727e58c13818af352c9feb1c8e447b4181",
+  "wordCount": 278,
+  "markdown": "## TL;DR\nRepoOS now guards against huge and build-output files and secrets in WIP checkpoint commits and branch diffs: path and size rules, a bounded secret scan that decompresses gzip, zlib and zstd, a check-gate step, and a pre-commit hook on every branch. DerivedData now lives outside the repo. This round fixes review pass 7.\n\n## Work and rationale\n- `.github/workflows/macos-hub.yml`: the Package DMG step still read `macos/.derived-data/Build/Products/Release/RepoOS Hub.app`, but the release build writes to `$REPOOS_MACOS_DERIVED_DATA` (under `runner.temp`), so DMG packaging would have failed on every tag release. It now uses the same variable (a job-level env, already set for the whole job). A repo-wide search found no other reference to the old in-repo path in this diff's scope.\n- The `repoos.toml` Hub dev command (`macos/.derived-data/...`, line 745) has the same stale path. Config never lands with a task, so the one-line change is applied on main at sign-off: the command should derive `${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}` like `just macos-build`.\n- Earlier rounds on the branch stay: blob-only reads, HEAD content scan, bounded inflation, gzip trailing bytes, windowed large-file scan, shared allowlist-aware scan, whole-buffer raw scan, refusal unstaging, narrower hook exemption, renames, deletions, bounded directory walk.\n\n## Approaches tried\nPointing the workflow at the env var rather than hard-coding a second path, so the build and package steps cannot drift apart again.\n\n## Challenges and blockers\nThe workflow change cannot be exercised locally; it is a one-variable swap of the path the same job already uses at the build and verify steps.\n\n## Key learnings\nWhen a build output path moves, grep for every consumer (dev target, workflow, scripts), not just the producer.\n\n## Generated change summary\n\nBase tree: `5733e85c4aebee3505e60b5ebcb56b976a4286b3`\nSource tree: `9ca5fdc9cf788353478b8c6650a44ca69877a72b`\n\n- M .github/workflows/macos-hub.yml: +1 / −1\n- M work/1092-release-email-repoos-release-email-previ.md: +3 / −2"
+}

@@ -84,6 +84,18 @@ or a JS build:
 | `hardcoded-colors` | No `#hex`/`rgba(255,…)` literals in component `<style>` blocks without a `/* hardcode-ok: <reason> */` marker | No `[check] hardcodedColorDirs` |
 | `bare-require` | No bare `require` in ESM source | The package isn't `"type": "module"`, or no source root |
 | `task-assets` | No committed binaries under your task/input/story dirs | Never — it reads `workDir`/`inputsDir`/`storiesDir` |
+| `branch-artifacts` | No build-output paths, files over the size limit, or secret patterns added vs `main` | Never — runs even in changed-path mode |
+
+GitHub secret scanning and push rulesets read plain text only; they do **not**
+decompress Zstandard/gzip blobs inside binaries (the #0892 `.xcresult` incident).
+This guard decompresses bounded payloads before matching. A complementary remote
+safety net is a push ruleset file-size limit on the hosting provider.
+
+The engineer self-check WIP checkpoint (`commitWipCheckpointForRemoteGate`) uses the
+same rules before it stages. `.githooks/pre-commit` blocks the same patterns on
+every branch (override: `REPOOS_SKIP_STAGED_ARTIFACT_GUARD=1`). Thresholds and
+extra patterns are under **Settings → Advanced** (`check.branchArtifacts*` /
+`check.buildOutputPatterns` / `check.checkpoint*`).
 
 ## Opting the stylesheet guards in
 

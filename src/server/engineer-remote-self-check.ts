@@ -24,6 +24,7 @@ import { REPOOS_TOML_REL } from "../core/repoos-toml-branch-guard.js";
 import { patchTaskFile } from "./write.js";
 import type { RepoOSConfig } from "../core/types.js";
 import { engineerSelfCheckCheckpointMessage } from "../core/engineer-checkpoint-commit.js";
+import { gitStagedPaths, planCheckpointStaging } from "../core/branch-artifact-guard.js";
 import { parseTask, recordChange } from "../core/task.js";
 import type { RemotePreReviewOutcome } from "./pre-review-remote-gate.js";
 import { runRemotePreReviewGate } from "./pre-review-remote-gate.js";
@@ -102,7 +103,9 @@ export async function commitWipCheckpointForRemoteGate(
   }
   let dirty: string[];
   try {
-    dirty = await uncommittedWorkFiles(worktreePath, workFileFilter(config));
+    dirty = await uncommittedWorkFiles(worktreePath, workFileFilter(config), {
+      untrackedFiles: "all",
+    });
   } catch {
     return "could not read git status before remote self-check";
   }
@@ -125,7 +128,29 @@ export async function commitWipCheckpointForRemoteGate(
     taskId,
   });
   const foreign = [...new Set([...foreignFromDirty, ...foreignStaged])];
-  const toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL && !foreign.includes(p));
+  let toCommit = dirty.filter((p) => p !== REPOOS_TOML_REL && !foreign.includes(p));
+  const stagedForGuard = gitStagedPaths(worktreePath).filter(
+    (p) => p !== REPOOS_TOML_REL && !foreign.includes(p),
+  );
+  const pathsToScan = [...new Set([...toCommit, ...stagedForGuard])];
+  for (const path of pathsToScan) {
+    const add = await runGit(worktreePath, ["add", "--", path], 60_000);
+    if (add.status !== 0) {
+      return `could not stage ${path} for artifact scan before remote self-check`;
+    }
+  }
+  const staging = planCheckpointStaging(worktreePath, pathsToScan, config.check);
+  const blocked = [...staging.unstagedBuildOutput, ...staging.unstagedOversize];
+  if (blocked.length > 0) {
+    const unstageBlocked = await runGit(
+      worktreePath,
+      ["reset", "--quiet", "HEAD", "--", ...blocked],
+      30_000,
+    );
+    if (unstageBlocked.status !== 0) {
+      return `could not unstage build output or oversized files (${blocked.slice(0, 5).join(", ")}) before the remote self-check`;
+    }
+  }
   if (foreign.length > 0) {
     const unstage = await runGit(
       worktreePath,
@@ -136,6 +161,40 @@ export async function commitWipCheckpointForRemoteGate(
       return `could not unstage another task's bookkeeping (${foreign.slice(0, 5).join(", ")}) before the remote self-check`;
     }
   }
+  if (staging.error) {
+    // A refused checkpoint must leave NOTHING it staged behind: otherwise clean
+    // paths (and build output beyond the expansion cap) stay in the index and the
+    // next bare commit sweeps them in. Unstage everything this pass staged.
+    const everything = [
+      ...new Set([...pathsToScan, ...staging.refusedPaths, ...staging.unstagedBuildOutput]),
+    ];
+    for (let i = 0; i < everything.length; i += 200) {
+      await runGit(
+        worktreePath,
+        ["reset", "--quiet", "HEAD", "--", ...everything.slice(i, i + 200)],
+        30_000,
+      );
+    }
+    return staging.report ? `${staging.error}\n\n${staging.report}` : staging.error;
+  }
+  if (staging.report) {
+    try {
+      const workDir = join(boardRoot, config.workDir ?? "work");
+      const taskAbs = readdirSync(workDir).find(
+        (name) => name.startsWith(`${taskId}-`) && name.endsWith(".md"),
+      );
+      if (taskAbs) {
+        await appendEngineerSelfCheckActivity(
+          { ...config, root: boardRoot },
+          join(workDir, taskAbs),
+          staging.report,
+        );
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
+  toCommit = staging.allowed;
   if (toCommit.length === 0) return null;
   for (const path of toCommit) {
     const add = await runGit(worktreePath, ["add", "--", path], 60_000);
