@@ -244,6 +244,7 @@ onUnmounted(() => {
       class="release-update-banner"
       role="status"
       data-test-id="installed-restart-notice"
+      data-overlay-layer="floating"
     >
       <span class="release-update-mark"><ArrowUpRight class="size-[15px]" /></span>
       <span class="release-update-copy">
