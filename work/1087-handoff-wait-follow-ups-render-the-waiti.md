@@ -53,3 +53,4 @@ Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaiti
 - 2026-11-12T13:34:48Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T13:36:48Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-12T13:36:49Z · status active→review
+- 2026-11-12T13:36:49Z · note: Task body is underspecified: missing sections: Problem, Desired UX, Acceptance criteria, Notes for AI
