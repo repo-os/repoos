@@ -31,6 +31,7 @@ import { cmdStop } from "../commands/stop.js";
 import { cmdRestart } from "../commands/restart.js";
 import { cmdTunnel } from "../commands/tunnel.js";
 import { cmdUpgrade } from "../commands/upgrade.js";
+import { cmdRelease } from "../commands/release.js";
 import { cmdUninstall } from "../commands/uninstall.js";
 import { cmdStatus } from "../commands/status.js";
 import { cmdDoctor } from "../commands/doctor.js";
@@ -463,6 +464,11 @@ function main(): void {
       break;
     case "upgrade":
       void cmdUpgrade(rest);
+      break;
+    case "release":
+      void cmdRelease(rest).then((code) => {
+        if (code !== 0) process.exitCode = code;
+      });
       break;
     case "uninstall":
       void cmdUninstall(rest);

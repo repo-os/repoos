@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-release-in-progress-s
 created_at: "2026-11-11T03:47:02Z"
-updated_at: "2026-11-12T02:21:11Z"
+updated_at: "2026-11-12T03:33:48Z"
 last_close_out_gate_ms: 1084321
 last_close_out_gate_at: "2026-11-12T02:20:08.169Z"
 review_passes: 1
@@ -101,3 +101,4 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 - 2026-11-12T01:51:26Z · note: review pass 1: good to go
 - 2026-11-12T02:20:08Z · close-out gate completed in 1084s
 - 2026-11-12T02:21:11Z · status done→done, release:success
+- 2026-11-12T03:33:48Z · message_dropped: 1 queued message(s) discarded — task is done

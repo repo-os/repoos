@@ -526,8 +526,8 @@ shared with login codes and invites).
   Nothing in the suite sends mail or reaches the network.
 
 Known gaps, filed rather than built here: no "send test email" action (Preview
-renders without sending); no `repoos release email` CLI subcommand (the routes are
-HTTP only); the send route accepts a version before GitHub has published it (only
+renders without sending; use `repoos release email --preview <version>` from the
+terminal); the send route accepts a version before GitHub has published it (only
 the UI hides the button); the publish wait itself does not resume after a restart
 (Resend re-probes, then sends, rather than waiting out the original hour); and the
 email has no per-recipient unsubscribe.

@@ -1,16 +1,19 @@
 ---
-updated_at: "2026-11-12T01:18:32Z"
-review_passes: 1
 id: "1092"
 title: "Release email: repoos release email --preview CLI subcommand"
 type: feature
-status: review
+status: done
 priority: p3
 area: [server, core]
+merged_commit: 4e275e8d2edb24725df9ecf69bbc8d0c60d884e4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-email-repoos-release-email-previ
 created_at: "2026-11-11T05:28:20Z"
+updated_at: "2026-11-12T05:21:22Z"
+last_close_out_gate_ms: 849711
+last_close_out_gate_at: "2026-11-12T04:57:33.944Z"
+review_passes: 1
 ---
 ## Problem
 Release emails (#1071) have a preview endpoint, GET /api/release/email/preview, that renders the subject, HTML and text for a version without sending. It is reachable only through `repoos api`. Maintainers who want to check the rendered message from a terminal have no first-class command, and the repo's CLI parity rule expects one.
@@ -42,4 +45,7 @@ Start from src/server/routes/release.ts (getReleaseEmailPreview) and src/cli. Do
 - 2026-11-12T01:17:50Z · message_queued at 2026-11-12T01:17:50.486Z
 - 2026-11-12T01:17:50Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-12T01:18:31Z · note: review pass 1: good to go
-
+- 2026-11-12T03:33:48Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-12T04:57:33Z · close-out gate completed in 850s
+- 2026-11-12T04:58:30Z · status done→done, release:success
+- 2026-11-12T05:21:22Z · message_dropped: 1 queued message(s) discarded — task is done
