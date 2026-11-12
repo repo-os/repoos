@@ -34,4 +34,10 @@ describe("classifyAgentFailure", () => {
       "CLI: Cannot use this model: composer-2.5",
     );
   });
+
+  it("keeps a provider reset time in usage-limit guidance", () => {
+    expect(classifyAgentFailure("usage limit reached until 14:00", "Claude Code")?.summary).toBe(
+      "Claude Code usage limit reached until 14:00.",
+    );
+  });
 });

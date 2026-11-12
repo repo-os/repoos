@@ -65,12 +65,14 @@ export function classifyAgentFailure(detail: string, cli = ""): AgentFailureReas
       fix: "Choose another model on the Agents page.",
     };
   }
-  if (LIMIT.test(text))
+  if (LIMIT.test(text)) {
+    const until = /\buntil\s+(\d{1,2}:\d{2}(?:\s*[ap]m)?)/i.exec(text)?.[1];
     return {
       id: "usage-limit",
-      summary: `${cli || "Agent"} usage limit reached.`,
+      summary: `${cli || "Agent"} usage limit reached${until ? ` until ${until}` : ""}.`,
       fix: "Wait for the provider limit to reset, then retry.",
     };
+  }
   if (NETWORK.test(text))
     return {
       id: "network",
