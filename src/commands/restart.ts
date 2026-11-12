@@ -6,6 +6,7 @@
 import { boardRoot } from "../core/config.js";
 import { restartRepoServer, type RestartPath } from "../core/server-restart.js";
 import { c } from "../cli/colors.js";
+import { locateRepoServer } from "../core/server-locate.js";
 
 const PATH_LABEL: Record<RestartPath, string> = {
   "managed-service": "managed service (`repoos service`)",
@@ -15,6 +16,7 @@ const PATH_LABEL: Record<RestartPath, string> = {
 
 export async function cmdRestart(argv: string[]): Promise<void> {
   let portFilter: number | undefined;
+  const whenIdle = argv.includes("--when-idle");
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--port" || argv[i] === "-p") {
       const raw = argv[++i];
@@ -29,6 +31,38 @@ export async function cmdRestart(argv: string[]): Promise<void> {
   }
 
   const { root } = boardRoot();
+  if (whenIdle) {
+    const server = await locateRepoServer(root, { portFilter });
+    if (!server) {
+      console.error(c.red("  ✗ No running RepoOS server found to wait on."));
+      process.exitCode = 1;
+      return;
+    }
+    console.log(c.dim("  Waiting for agents, reviews and checks to finish…"));
+    const host = server.host === "0.0.0.0" ? "127.0.0.1" : server.host;
+    for (;;) {
+      try {
+        const response = await fetch(`http://${host}:${server.port}/api/update-status`);
+        if (!response.ok) throw new Error(`server returned HTTP ${response.status}`);
+        const status = (await response.json()) as {
+          activeWork?: { agents?: number; checks?: number };
+        };
+        if (
+          typeof status.activeWork?.agents !== "number" ||
+          typeof status.activeWork?.checks !== "number"
+        )
+          throw new Error("server returned an invalid update status");
+        if ((status.activeWork?.agents ?? 0) === 0 && (status.activeWork?.checks ?? 0) === 0) break;
+      } catch (error) {
+        console.error(
+          c.red(`  ✗ Could not confirm the server is idle: ${(error as Error).message}`),
+        );
+        process.exitCode = 1;
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
   const result = await restartRepoServer(root, {
     portFilter,
     onBeforeStop: ({ cancelled }) => {

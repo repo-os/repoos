@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { RouteHandler } from "./types.js";
+import type { RouteContext, RouteHandler } from "./types.js";
 import { readWorktreeReviewLock } from "../worktree-handoff-guard.js";
 import { isPostHandoffCheckpointRecoveryActive } from "../post-handoff-checkpoint-recovery.js";
 import { json, readBody } from "./utils.js";
@@ -18,6 +18,16 @@ import {
 } from "../../core/story-definition-files.js";
 import { getGitWorker } from "../git-worker.js";
 import { restartCommand } from "../../core/service-manager.js";
+import { installRoot, readInstallVersion } from "../../commands/upgrade.js";
+import { detectSupervisor } from "../../core/supervisor-detect.js";
+import { isNewerVersion } from "../../core/release-version.js";
+
+let idleRestartTimer: ReturnType<typeof setInterval> | null = null;
+let idleRestartPending = false;
+// Freeze this at module start: the install marker can change during `repoos upgrade`.
+const SERVER_RUNNING_VERSION = loadBuildInfo().version;
+let installedVersionCache: { value: string | null; expiresAt: number } | null = null;
+let supervisedCache: { value: boolean; expiresAt: number } | null = null;
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -88,7 +98,7 @@ export const health: RouteHandler = (ctx, req, res) => {
   });
 };
 
-export const restart: RouteHandler = (ctx, _req, res) => {
+export const restart: RouteHandler = async (ctx, req, res) => {
   const reload = ctx.reload;
   const state =
     reload?.requestReload("manual restart", { manual: true }) ??
@@ -98,6 +108,93 @@ export const restart: RouteHandler = (ctx, _req, res) => {
     } as const);
   return json(res, 200, state);
 };
+
+/** Cheap local check for an installed build newer than this process (#1075). */
+export const getUpdateStatus: RouteHandler = (ctx, _req, res) => {
+  const status = getInstalledUpgradeStatus(ctx);
+  const installedVersion = installedVersionCache!.value;
+  const runningVersion = SERVER_RUNNING_VERSION;
+  return json(res, 200, {
+    restartPending: isNewerVersion(installedVersion ?? "", runningVersion),
+    restartWhenIdlePending: idleRestartPending,
+    runningVersion,
+    installedVersion,
+    activeWork: status.activeWork,
+    supervised: status.supervised,
+    manualCommand: status.manualCommand,
+  });
+};
+
+/** Restart an installed upgrade through its known supervisor (#1075). */
+export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
+  const body = (await readBody(req).catch(() => ({}))) as { whenIdle?: boolean; cancel?: boolean };
+  if (body.cancel) {
+    idleRestartPending = false;
+    if (idleRestartTimer) clearInterval(idleRestartTimer);
+    idleRestartTimer = null;
+    return json(res, 200, { state: "cancelled" });
+  }
+  const status = getInstalledUpgradeStatus(ctx);
+  if (!status.supervised) return json(res, 409, { state: "manual", command: status.manualCommand });
+  if (body.whenIdle) {
+    idleRestartPending = true;
+    if (!idleRestartTimer) {
+      idleRestartTimer = setInterval(() => {
+        const active = getInstalledUpgradeStatus(ctx).activeWork;
+        if (active.agents || active.checks || ctx.closeOutLock.closingOut()) return;
+        idleRestartPending = false;
+        if (idleRestartTimer) clearInterval(idleRestartTimer);
+        idleRestartTimer = null;
+        void performSupervisedRestart(ctx);
+      }, 1000);
+    }
+    return json(res, 202, { state: "waiting-for-idle" });
+  }
+  res.writeHead(202, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ state: "restarting" }));
+  setTimeout(() => void performSupervisedRestart(ctx), 100);
+};
+
+function getInstalledUpgradeStatus(ctx: RouteContext) {
+  const now = Date.now();
+  if (!installedVersionCache || installedVersionCache.expiresAt < now)
+    installedVersionCache = { value: readInstallVersion(installRoot()), expiresAt: now + 2000 };
+  if (!supervisedCache || supervisedCache.expiresAt < now) {
+    const supervisor = detectSupervisor(process.pid);
+    supervisedCache = {
+      value: supervisor.kind === "external" || supervisor.kind === "managed",
+      expiresAt: now + 10_000,
+    };
+  }
+  const snapshot = ctx.index.snapshot();
+  return {
+    manualCommand: restartCommand(ctx.config.root, ctx.servePort ?? null),
+    supervised: supervisedCache.value,
+    activeWork: {
+      agents: ctx.runner.running().length + ctx.reviews.runningCount(),
+      checks: ctx.taskChecks
+        ? snapshot.tasks.reduce(
+            (n, task) => n + ctx.taskChecks!.getRuns(task.id).filter((run) => run.running).length,
+            0,
+          )
+        : 0,
+    },
+  };
+}
+
+async function performSupervisedRestart(ctx: RouteContext): Promise<void> {
+  try {
+    const { restartRepoServer } = await import("../../core/server-restart.js");
+    const result = await restartRepoServer(ctx.config.root, { portFilter: ctx.servePort });
+    if (!result.ok)
+      ctx.logger.system(
+        "error",
+        `installed-upgrade restart failed: ${result.message ?? "unknown error"}`,
+      );
+  } catch (error) {
+    ctx.logger.system("error", `installed-upgrade restart failed: ${(error as Error).message}`);
+  }
+}
 
 export const getCounts: RouteHandler = (ctx, _req, res) => {
   const { index } = ctx;

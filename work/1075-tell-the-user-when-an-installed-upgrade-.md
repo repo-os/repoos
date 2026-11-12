@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 524103
-last_close_out_gate_at: "2026-11-12T17:19:40.304Z"
 id: "1075"
 title: "Tell the user when an installed upgrade is waiting for a restart, and offer Restart now"
 type: feature
-status: review
+status: done
 priority: p2
 area: [web, server, cli]
+merged_commit: 28facbc4a3826c9eb9b97c608b76bdbb2d164b5a
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/tell-the-user-when-an-installed-upgrade-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
 updated_at: "2026-11-12T17:19:40Z"
+last_close_out_gate_ms: 524103
+last_close_out_gate_at: "2026-11-12T17:19:40.304Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-12T16:07:52.587Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Installed upgrade restart notice in light theme (target \"default\"): highlight [data-test-id=\"installed-restart-notice\"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingLight); [missing-target] Installed upgrade restart notice in dark theme (target \"default\"): highlight [data-test-id=\"installed-restart-notice\"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingD… (truncated)"
