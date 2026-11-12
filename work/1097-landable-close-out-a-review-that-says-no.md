@@ -39,3 +39,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T03:33:32Z · status inbox→ready
 - 2026-11-12T03:33:36Z · status ready→active, needs_input, branch
 - 2026-11-12T03:46:15Z · message_queued at 2026-11-12T03:46:15.338Z
+- 2026-11-12T03:46:15Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
