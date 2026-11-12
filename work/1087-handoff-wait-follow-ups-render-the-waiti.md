@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T09:25:17Z"
 updated_at: "2026-11-12T13:19:34Z"
-check_retry_count: 1
 last_check_failure: "repoos check at 2026-11-12T12:44:33.058Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer shows the check wait reason (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work?task=1087&tab=changes (http://127.0.0.1:59380/work?shotState=drawer:handoffWaiting)"
 handoff_signal_retry_count: 1
 ---
@@ -46,3 +45,4 @@ Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaiti
 - 2026-11-12T12:46:01Z · body
 - 2026-11-12T12:47:17Z · body
 - 2026-11-12T13:19:34Z · body
+
