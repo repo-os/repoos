@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-12T00:54:15Z"
+updated_at: "2026-11-12T01:08:26Z"
 last_close_out_gate_ms: 189007
 last_close_out_gate_at: "2026-11-12T00:53:17.797Z"
 review_passes: 9
@@ -178,3 +178,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-12T00:49:13Z · needs_input
 - 2026-11-12T00:53:17Z · close-out gate completed in 189s
 - 2026-11-12T00:54:15Z · status done→done, release:success
+- 2026-11-12T01:08:26Z · message_dropped: 5 queued message(s) discarded — task is done
