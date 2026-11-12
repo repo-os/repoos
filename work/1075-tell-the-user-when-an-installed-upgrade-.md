@@ -2,14 +2,17 @@
 id: "1075"
 title: "Tell the user when an installed upgrade is waiting for a restart, and offer Restart now"
 type: feature
-status: inbox
+status: active
 priority: p2
 area: [web, server, cli]
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/tell-the-user-when-an-installed-upgrade-
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
-updated_at: "2026-11-09T08:24:33Z"
+updated_at: "2026-11-12T14:31:36Z"
+handoff_signal_retry_count: 1
 ---
 ## Problem
 `repoos upgrade` replaces the installed files, but the already-running server keeps running the old version until someone restarts it. Nothing tells the user. Concrete case (Tiao project, 2026-11-09): after `repoos upgrade` reported "Upgraded to v0.5.79", `repoos --version` printed v0.5.79 while the server (a systemd user service) was still running v0.5.78, and the dashboard kept showing the new-version reminder. The user had no way to know a restart was needed, or whether doing it would interrupt running agents, other than being told by an agent.
@@ -32,6 +35,31 @@ updated_at: "2026-11-09T08:24:33Z"
 ## Notes for AI
 Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upgrade command in the dialog) cover the stage before the upgrade is installed; this task covers the stage after, and should reuse their update-status plumbing rather than duplicate it. #0214 is about a restart adopting in-flight agent runs; do not depend on it, but link the warning text to it. Look at how the server is launched (systemd user unit `com.repoos.serve.<project>` on Linux, launchd on macOS) in the service/installer code, and at src/commands/upgrade.ts for the version/install-kind detection.
 
+## Shots
+```json
+[
+{
+  "label": "Installed upgrade restart notice in light theme",
+  "target": "default",
+  "route": "/",
+  "highlight": "section[data-test-id=\"installed-restart-notice\"]",
+  "state": "release:restartPendingLight"
+},
+{
+  "label": "Installed upgrade restart notice in dark theme",
+  "target": "default",
+  "route": "/",
+  "highlight": "section[data-test-id=\"installed-restart-notice\"]",
+  "state": "release:restartPendingDark"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-09T08:24:33Z · created · njachowski@gmail.com
+- 2026-11-12T14:17:01Z · cli_override, model_override
+- 2026-11-12T14:17:05Z · status inbox→ready
+- 2026-11-12T14:17:36Z · status ready→active, branch
+- 2026-11-12T14:21:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I haven’t completed task #1075, so I’m leaving it active without requesting handoff. Implemented a first pass of `GET /api/update-status`, registered it in the API parity map, and added a dashboard notice with restart controls. `bun run bu… · stderr: Reading additional input from stdin... 2026-11-12T14:21:02.508645Z ERROR codex_core::session: failed to record rollout items: thread 01a1d01f-1cb3-7ea2-8704-ded609b9dd5f not found
+- 2026-11-12T14:31:36Z · body

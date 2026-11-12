@@ -87,6 +87,18 @@ export function shotPreviewSkipsIntegrationJobFetch(
   );
 }
 
+/** A drawer handoff-wait shot owns its seeded status instead of the live API response. */
+export function shotPreviewSkipsHandoffStatusFetch(
+  location: Pick<Location, "search">,
+  taskId: string,
+): boolean {
+  return (
+    isShotPreviewCaptureActive(location) &&
+    readShotPreviewFixtureFromLocation(location) === "drawer:handoffWaiting" &&
+    taskId === shotPreviewDrawerTaskIdFromLocation(location)
+  );
+}
+
 /** True when preview capture should keep fixture debug logs instead of fetching. */
 export function shotPreviewSkipsTaskLogsFetch(
   location: Pick<Location, "search">,
@@ -2019,23 +2031,26 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
       ];
       break;
     }
-    case "drawer:handoffWaiting":
-      ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
+    case "drawer:handoffWaiting": {
+      const drawerId = shotPreviewDrawerTaskIdFromLocation(window.location);
+      const drawerTask = repo.tasks.find((task) => task.id === drawerId);
+      if (drawerTask) drawerTask.status = "active";
+      else ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" }, drawerId);
       // A handoff waiting on a self-check that still holds the worktree (#1082).
       // No check run is attached, so the drawer shows the wait in place of a step.
-      repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "commit";
-      repo.handoffStatuses[SHOT_PREVIEW_FIXTURE_TASK_ID] = {
+      repo.handoffSteps[drawerId] = "commit";
+      repo.handoffStatuses[drawerId] = {
         state: "running",
         step: "commit",
         startedAt: new Date(Date.now() - 90_000).toISOString(),
         updatedAt: new Date().toISOString(),
         attempt: 1,
-        progress: {
-          reason: "Waiting for the running check to finish",
-        } as unknown as TaskCheckRun,
+        reason: "Waiting for the running check to finish",
+        progress: null,
         machine: null,
       };
       break;
+    }
     case "drawer:statusConfirmingHandoff":
       ensureFixtureTask(repo, "active", { branch: "feat/shot-fixture" });
       repo.handoffSteps[SHOT_PREVIEW_FIXTURE_TASK_ID] = "check";

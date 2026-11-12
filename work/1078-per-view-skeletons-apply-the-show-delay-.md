@@ -2,14 +2,16 @@
 id: "1078"
 title: "Per-view skeletons: apply the show-delay and minimum-visible-time gate in every view that renders its own PageSkeleton (follow-up to #1070)"
 type: chore
-status: inbox
+status: active
 priority: p3
 area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/per-view-skeletons-apply-the-show-delay-
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-09T09:38:37Z"
-updated_at: "2026-11-09T12:59:00Z"
+updated_at: "2026-11-12T14:18:55Z"
 ---
 ## Problem
 #1070 added a show-delay (about 180 ms) and minimum visible time (about 350 ms) for the shell-level first-load skeleton in App.vue. Views that render their own `PageSkeleton` while their data loads (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) still show it immediately and can flash it for a few milliseconds.
@@ -28,7 +30,23 @@ See App.vue (showRepoSkeleton), `PageSkeleton.vue`, `src/ui-app/tests/app-loadin
 ## More items moved here from #1070 (review pass 5)
 From review 5 of #1070, accepted as follow-up and NOT blocking #1070: (a) board skeleton columns should match the real board's responsive breakpoints (real .board becomes 3 columns at <=1250px, style.css ~2073; the skeleton keeps six until 760px); (b) PageSkeleton should reuse the existing motion settings (activityAnimationConcurrency, page-visibility and IntersectionObserver gating from useActivityMotion, as ActivityIndicator.vue does) instead of an unconditional pulse; (c) cache seeding: views other than SecretsView (Checks, Releases, Deployments, Dev, Agents, CheckRuns) can still draw the skeleton on a revisit within five minutes because their local refs start empty; (d) Mission Control's real page is a usage panel plus a resources panel, so a closer skeleton shape is a later refinement.
 
+## Shots
+```json
+[
+{
+  "label": "Checks page loading placeholder",
+  "target": "default",
+  "route": "/checks",
+  "highlight": ".page-skeleton"
+}
+]
+```
+
 ## Activity
 
 - 2026-11-09T09:38:37Z · created · njachowski@gmail.com
 - 2026-11-09T12:59:00Z · body: More items moved here from #1070 (review pass 5) (added)
+- 2026-11-12T14:16:53Z · cli_override, model_override
+- 2026-11-12T14:16:57Z · status inbox→ready
+- 2026-11-12T14:16:58Z · status ready→active, branch
+- 2026-11-12T14:18:55Z · body

@@ -24,6 +24,8 @@ const props = withDefaults(
     handoffStep?: string | null;
     /** Canonical Board/Pipeline status line for an active task. */
     statusLine?: string | null;
+    /** Drawer detail override for handoff waits and early check progress. */
+    detailLine?: string | null;
     variant: "card" | "drawer" | "pipeline";
     /** Pipeline status row — step label beside the bar (e.g. "Running checks 3/680"). */
     pipelineStatusText?: string | null;
@@ -42,6 +44,7 @@ const props = withDefaults(
     retryLine: null,
     handoffStep: null,
     statusLine: null,
+    detailLine: null,
     pipelineStatusText: null,
     testId: undefined,
     showTitle: true,
@@ -57,6 +60,7 @@ const fillPercent = computed(() => {
 const percent = computed(() => (props.progress ? checkProgressPercent(props.progress) : null));
 
 const detailLabel = computed(() => {
+  if (props.detailLine) return props.detailLine;
   if (props.reused) return "reused earlier check";
   if (!props.progress) return props.titlePrefix === "drawer" ? "" : "starting…";
   return checkProgressDetailLabel(props.progress, { filesWord: props.variant === "drawer" });
