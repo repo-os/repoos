@@ -43,12 +43,22 @@ export async function cmdRestart(argv: string[]): Promise<void> {
     for (;;) {
       try {
         const response = await fetch(`http://${host}:${server.port}/api/update-status`);
+        if (!response.ok) throw new Error(`server returned HTTP ${response.status}`);
         const status = (await response.json()) as {
           activeWork?: { agents?: number; checks?: number };
         };
+        if (
+          typeof status.activeWork?.agents !== "number" ||
+          typeof status.activeWork?.checks !== "number"
+        )
+          throw new Error("server returned an invalid update status");
         if ((status.activeWork?.agents ?? 0) === 0 && (status.activeWork?.checks ?? 0) === 0) break;
-      } catch {
-        break;
+      } catch (error) {
+        console.error(
+          c.red(`  ✗ Could not confirm the server is idle: ${(error as Error).message}`),
+        );
+        process.exitCode = 1;
+        return;
       }
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }

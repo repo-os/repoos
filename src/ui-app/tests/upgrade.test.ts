@@ -5,7 +5,23 @@
  * going to look at GitHub themselves (#0371).
  */
 import { describe, expect, it } from "vitest";
-import { packageManagerUpgrade, releaseNotesToPrint } from "../../commands/upgrade";
+import {
+  packageManagerUpgrade,
+  releaseNotesToPrint,
+  upgradeRestartReminder,
+} from "../../commands/upgrade";
+
+describe("upgradeRestartReminder", () => {
+  it("tells the user when the server still runs the previous version", () => {
+    expect(upgradeRestartReminder("0.5.78", "0.5.79")).toBe(
+      "The running server is still v0.5.78; restart it (or run `repoos restart`) to use v0.5.79.",
+    );
+  });
+
+  it.each([null, "0.5.79"])("does not print a reminder for running version %s", (version) => {
+    expect(upgradeRestartReminder(version, "0.5.79")).toBeNull();
+  });
+});
 
 describe("releaseNotesToPrint", () => {
   it("returns the trimmed body when notes are present", () => {

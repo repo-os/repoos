@@ -99,36 +99,6 @@ export const health: RouteHandler = (ctx, req, res) => {
 };
 
 export const restart: RouteHandler = async (ctx, req, res) => {
-  const body = (await readBody(req).catch(() => ({}))) as { whenIdle?: boolean; cancel?: boolean };
-  if (body.cancel) {
-    idleRestartPending = false;
-    if (idleRestartTimer) clearInterval(idleRestartTimer);
-    idleRestartTimer = null;
-    return json(res, 200, { state: "cancelled" });
-  }
-  if (body.whenIdle) {
-    idleRestartPending = true;
-    if (!idleRestartTimer)
-      idleRestartTimer = setInterval(() => {
-        const checks = ctx.taskChecks
-          ? ctx.index
-              .snapshot()
-              .tasks.some((task) => ctx.taskChecks!.getRuns(task.id).some((run) => run.running))
-          : false;
-        if (
-          ctx.runner.running().length ||
-          ctx.reviews.runningCount() ||
-          checks ||
-          ctx.closeOutLock.closingOut()
-        )
-          return;
-        idleRestartPending = false;
-        if (idleRestartTimer) clearInterval(idleRestartTimer);
-        idleRestartTimer = null;
-        ctx.reload?.requestReload("restart when idle", { manual: true });
-      }, 1000);
-    return json(res, 202, { state: "waiting-for-idle" });
-  }
   const reload = ctx.reload;
   const state =
     reload?.requestReload("manual restart", { manual: true }) ??
@@ -168,7 +138,7 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
   if (!status.supervised) return json(res, 409, { state: "manual", command: status.manualCommand });
   if (body.whenIdle) {
     idleRestartPending = true;
-    if (!idleRestartTimer)
+    if (!idleRestartTimer) {
       idleRestartTimer = setInterval(() => {
         const active = getInstalledUpgradeStatus(ctx).activeWork;
         if (active.agents || active.checks || ctx.closeOutLock.closingOut()) return;
@@ -177,6 +147,7 @@ export const restartInstalledUpgrade: RouteHandler = async (ctx, req, res) => {
         idleRestartTimer = null;
         void performSupervisedRestart(ctx);
       }, 1000);
+    }
     return json(res, 202, { state: "waiting-for-idle" });
   }
   res.writeHead(202, { "Content-Type": "application/json" });

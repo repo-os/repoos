@@ -29,6 +29,15 @@ export { launcherScript } from "../core/launcher-runtime.js";
 
 const REPO = "repo-os/repoos";
 
+/** Upgrade completion note when the server is still serving an older build. */
+export function upgradeRestartReminder(
+  runningVersion: string | null,
+  installedVersion: string,
+): string | null {
+  if (!runningVersion || runningVersion === installedVersion) return null;
+  return `The running server is still v${runningVersion}; restart it (or run \`repoos restart\`) to use v${installedVersion}.`;
+}
+
 /**
  * The directory containing cli/, core/, server/, ui/, .build-info.json — dist/
  * in a source checkout, or the whole install root for a standalone install.
@@ -350,12 +359,9 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   console.log(c.green(`  Upgraded to v${latest}.`));
   try {
     const server = await locateRepoServer(boardRoot().root);
-    if (server?.version && server.version !== latest) {
-      console.log(
-        c.yellow(
-          `  The running server is still v${server.version}; restart it (or run \`repoos restart\`) to use v${latest}.`,
-        ),
-      );
+    const reminder = upgradeRestartReminder(server?.version ?? null, latest);
+    if (reminder) {
+      console.log(c.yellow(`  ${reminder}`));
     }
   } catch {
     // Upgrade succeeded; inability to inspect a running server is non-fatal.

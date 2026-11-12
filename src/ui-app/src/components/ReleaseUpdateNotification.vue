@@ -160,6 +160,7 @@ async function restartInstalled(whenIdle = false, cancel = false): Promise<void>
       body: JSON.stringify({ whenIdle, cancel }),
     });
   } finally {
+    restartPendingAction.value = false;
     // The replacement server reconnects through the app's existing health loop.
     setTimeout(async () => {
       try {
