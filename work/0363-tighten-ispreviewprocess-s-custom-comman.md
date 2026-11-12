@@ -1,18 +1,19 @@
 ---
+updated_at: "2026-11-12T18:36:55Z"
+review_passes: 1
 id: "0363"
 title: Tighten isPreviewProcess's custom-command orphan match beyond bare binary basename
 type: bug
-status: inbox
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Acceptance criteria"
+status: review
 priority: p3
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/tighten-ispreviewprocess-s-custom-comman
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-10-05T22:38:17Z"
+handoff_signal_retry_count: 2
 ---
 ## Problem
 
@@ -64,3 +65,21 @@ subtly wrong fix here risks killing processes it shouldn't.
 
 - 2026-09-16T02:09:23Z · created · unknown
 - 2026-10-05T11:15:30Z · needs_input
+- 2026-11-12T17:11:34Z · cli_override, model_override
+- 2026-11-12T17:11:37Z · status inbox→ready
+- 2026-11-12T17:11:39Z · status ready→active, needs_input, branch
+- 2026-11-12T17:19:55Z · note: adopted orphaned engineer pid 96832
+- 2026-11-12T17:31:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Implemented the stricter fallback in [preview.ts](/Users/nick/code/nick/repoos-worktrees/feat/tighten-ispreviewprocess-s-custom-comman/src/server/preview.ts): when the port is absent from `ps`, a match now requires both the executable base… · stderr: Reading additional input from stdin... 2026-11-12T17:31:07.236741Z ERROR codex_core::session: failed to record rollout items: thread 01a1d0be-671f-7ed3-9ede-242b23fd1c43 not found
+- 2026-11-12T17:43:09Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The implementation and report draft are present, but `REPOOS_CHECK_CHANGED=main repoos check` has not returned a result. The recovery run reached remote validation, then remained silent while the runner performed build and tests. I can’t c… · stderr: 2026-11-12T17:31:27.011847Z ERROR codex_core::tools::router: error=write_stdin failed: Unknown process id 33580 2026-11-12T17:43:06.683782Z ERROR codex_core::session: failed to record rollout items: thread 01a1d0be-671f-7ed3-9ede-242b23fd1c43 not found
+- 2026-11-12T17:54:55Z · message_queued at 2026-11-12T17:54:55.340Z
+- 2026-11-12T17:54:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-12T17:59:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-12T18:13:48Z · body
+- 2026-11-12T18:23:53Z · body
+- 2026-11-12T18:35:54Z · body
+- 2026-11-12T18:36:23Z · status active→review
+- 2026-11-12T18:36:23Z · note: Task body is underspecified: missing sections: Acceptance criteria
+- 2026-11-12T18:36:23Z · message_queued at 2026-11-12T18:36:23.240Z
+- 2026-11-12T18:36:23Z · note: shots: skipped — the diff (3 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-12T18:36:55Z · note: review pass 1: good to go
+

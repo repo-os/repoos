@@ -20,7 +20,9 @@ const props = withDefaults(
     count?: number;
     matrixCount?: number;
   }>(),
-  { kind: "rows", loading: true, defer: false },
+  // All page-level placeholders share the shell's delay and minimum-visible
+  // interval. Cached values can clear loading before this timer expires.
+  { kind: "rows", loading: true, defer: true },
 );
 const emit = defineEmits<{ "visibility-change": [visible: boolean] }>();
 

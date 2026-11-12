@@ -2,7 +2,10 @@
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
-status: review
+status: active
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Feature code matches the spec; close-out is blocked until foreign `work/*` bookkeeping is healed off the branch tip.
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -11,10 +14,12 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T16:04:31Z"
+updated_at: "2026-11-12T18:42:58Z"
+review_passes: 4
+review_rounds: 2
+last_check_failure: "repoos check at 2026-11-12T16:42:50.789Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
+handoff_signal_retry_count: 2
 close_out_repair_count: 1
-review_passes: 1
-handoff_signal_retry_count: 1
 ---
 ## Problem
 When an agent run fails, the reason is usually an expired login (Cursor, Claude, Copilot) or an unavailable model, but it only appears as one line in the task's activity log (for example 'agent exited with an error (cursor) · Cannot use this model: composer-2.5' on #1097), or as a terse crash-recovery note after the task has already been switched to another agent. A human watching the board sees a task that stalls or silently changes agent and has to dig for why. Cursor was unauthenticated for hours before anyone noticed.
@@ -69,4 +74,50 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T14:30:57Z · status review→active
 - 2026-11-12T14:30:57Z · note: close-out repair: merge-conflict
 - 2026-11-12T14:30:57Z · message_delivered: 1 message(s)
+- 2026-11-12T14:49:48Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T14:59:02Z · message_queued at 2026-11-12T14:59:02.326Z
+- 2026-11-12T14:59:05Z · message_delivered: 1 message(s)
+- 2026-11-12T15:14:48Z · message_queued at 2026-11-12T15:14:48.449Z
+- 2026-11-12T15:14:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-12T15:16:52Z · body
+- 2026-11-12T15:19:48Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T15:29:28Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-12T15:29:28Z · message_queued at 2026-11-12T15:29:28.361Z
+- 2026-11-12T15:29:48Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-12T15:34:49Z · message_delivered: 1 message(s)
+- 2026-11-12T15:34:50Z · CTO action: restart-stalled-agent (fresh) · agent exited without emitting the handoff signal
+- 2026-11-12T15:51:18Z · body
+- 2026-11-12T15:54:48Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T16:04:30Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-12T16:04:31Z · status active→review
+- 2026-11-12T16:04:31Z · message_queued at 2026-11-12T16:04:31.519Z
+- 2026-11-12T16:06:28Z · note: review pass 2: needs some work
+- 2026-11-12T16:06:28Z · message_delivered: 1 message(s)
+- 2026-11-12T16:06:28Z · status review→active
+- 2026-11-12T16:06:30Z · CTO nudge: held — remote validation is running
+- 2026-11-12T16:32:43Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T16:42:47Z · message_queued at 2026-11-12T16:42:47.421Z
+- 2026-11-12T16:42:50Z · message_delivered: 1 message(s)
+- 2026-11-12T16:53:42Z · body
+- 2026-11-12T16:54:48Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T17:07:36Z · status active→review
+- 2026-11-12T17:07:37Z · message_queued at 2026-11-12T17:07:37.000Z
+- 2026-11-12T17:08:12Z · note: review pass 3: needs some work
+- 2026-11-12T17:08:12Z · message_delivered: 1 message(s)
+- 2026-11-12T17:08:12Z · status review→active
+- 2026-11-12T17:08:14Z · CTO nudge: held — remote validation is running
+- 2026-11-12T17:09:48Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T17:24:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T17:39:46Z · handoff failed · remote validation failed: test failure: tests/pressure-guard.test.ts > waitForPressureRelief > waits until a fake probe reports relief, then proceeds on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-12T17:39:46Z · message_queued at 2026-11-12T17:39:46.548Z
+- 2026-11-12T17:39:46Z · handoff failed · handoff recovery attempted · finalization failed
+- 2026-11-12T17:39:55Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-12T17:44:56Z · message_delivered: 1 message(s)
+- 2026-11-12T17:44:57Z · CTO action: restart-stalled-agent (resume) · handoff recovery was attempted after an interrupted turn but finalization failed — manual intervention needed
+- 2026-11-12T18:08:28Z · body
+- 2026-11-12T18:09:57Z · status active→review
+- 2026-11-12T18:19:05Z · handoff failed · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+- 2026-11-12T18:19:05Z · message_queued at 2026-11-12T18:19:05.540Z
+- 2026-11-12T18:19:06Z · note: review pass 4: needs some work
+- 2026-11-12T18:19:06Z · needs_input
+- 2026-11-12T18:42:58Z · status review→active

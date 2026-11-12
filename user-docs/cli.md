@@ -571,7 +571,7 @@ Prints the installed RepoOS version and build metadata.
 Stops this repo's server, identified by its own lockfile. It will not touch a
 server belonging to a different repo.
 
-### `repoos restart [--port N]`
+### `repoos restart [--when-idle] [--port N]`
 
 Restarts this repo's control-plane server the way it was started:
 
@@ -589,6 +589,8 @@ RepoOS identifies the supervisor from the live process (`launchctl list` on
 macOS, `systemctl status` on Linux) and only acts when it is sure: a launchd
 process whose label it cannot read is reported as unknown and refused, with the
 manual command to run, rather than guessed at.
+
+`--when-idle` waits for agents, reviews and checks to finish before restarting.
 
 The command prints which path it took, warns when engineer agents were running
 before it stops the server, and reports success only after `/api/health` answers
