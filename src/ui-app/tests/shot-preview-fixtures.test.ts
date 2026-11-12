@@ -17,6 +17,7 @@ import {
   shotFixturePinnedTaskRemoteActivity,
   shotFixturePinnedWorkingDiff,
   shotFixtureReleaseEmail,
+  shotFixtureReleaseRun,
   shotFixtureSchedules,
   isShotPreviewSeededTaskId,
   shotPreviewSkipsEngineeringReportsFetch,
@@ -190,6 +191,15 @@ describe("shot preview board fixtures (#0743)", () => {
     // One recipient accepted, one still owed — exactly the Resend case.
     expect(failed?.record?.sentTo).toHaveLength(1);
     expect(failed?.to).toHaveLength(2);
+  });
+
+  it("seeds a running cut for the release:cutRunning fixture (#1089)", () => {
+    expect(shotFixtureReleaseRun(null)).toBeNull();
+    expect(shotFixtureReleaseRun("release:emailSent")).toBeNull();
+    const run = shotFixtureReleaseRun("release:cutRunning");
+    expect(run?.state).toBe("running");
+    expect(run?.phase).toBe("checking");
+    expect(run?.message.length).toBeGreaterThan(10);
   });
 
   it("clears the configured editor so the Set-editor hint renders (#0805)", () => {

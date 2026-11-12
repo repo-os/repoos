@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-12T01:51:27Z"
-review_passes: 1
 id: "1089"
 title: "Easter eggs bundle: release in progress shows the activity animation (Releases page and Cut a release panel)"
 type: feature
@@ -11,6 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-release-in-progress-s
 created_at: "2026-11-11T03:47:02Z"
+updated_at: "2026-11-12T01:50:24Z"
 ---
 ## Problem
 While a release is being cut (v0.5.82 on 2026-11-11), the Releases page shows a static "RELEASING..." pill and the "Cut a release" panel shows "Step 4 of 7 · Running checks · 2m 05s elapsed" with a log box. Nothing on either moves, so it looks stalled for the 20-30 minutes a release takes. Task cards and the Settings preview already show the user's chosen activity animation (the ActivityIndicator, the footprint/art styles with size and style settings) while work is running.
@@ -76,24 +75,4 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 - 2026-11-11T03:47:03Z · needs_input
 - 2026-11-12T00:15:11Z · status inbox→ready
 - 2026-11-12T00:15:14Z · status ready→active, needs_input, branch
-- 2026-11-12T00:15:29Z · message_queued at 2026-11-12T00:15:29.479Z
-- 2026-11-12T00:18:15Z · body
-- 2026-11-12T00:18:22Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-12T00:33:59Z · body
-- 2026-11-12T00:59:12Z · body
-- 2026-11-12T01:08:26Z · handoff_deferred: 1 queued message(s) must be read before review
-- 2026-11-12T01:08:26Z · message_queued at 2026-11-12T01:08:26.919Z
-- 2026-11-12T01:08:27Z · ↻ resuming engineer to read queued message
-- 2026-11-12T01:08:27Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Implementing UI changes, shot fixture, tests, and declarations. · stderr: (empty)
-- 2026-11-12T01:08:27Z · message_delivered: 2 message(s)
-- 2026-11-12T01:17:52Z · message_queued at 2026-11-12T01:17:52.386Z
-- 2026-11-12T01:17:52Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
-- 2026-11-12T01:18:22Z · CTO nudge: held — an undelivered message is already queued
-- 2026-11-12T01:24:06Z · body
-- 2026-11-12T01:28:22Z · CTO nudge: held — handoff gate is running
-- 2026-11-12T01:50:22Z · note: ui verification passed: 4 of 4 shots captured with clean console
 - 2026-11-12T01:50:24Z · status active→review
-- 2026-11-12T01:50:24Z · note: Task body is underspecified: missing sections: Notes for AI
-- 2026-11-12T01:50:24Z · message_queued at 2026-11-12T01:50:24.934Z
-- 2026-11-12T01:51:26Z · note: review pass 1: good to go
-

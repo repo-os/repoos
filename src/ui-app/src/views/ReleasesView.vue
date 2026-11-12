@@ -22,6 +22,7 @@ import {
   isShotPreviewCaptureActive,
   readShotPreviewFixtureFromLocation,
   shotFixtureReleaseEmail,
+  shotFixtureReleaseRun,
 } from "../lib/shot-preview-fixtures";
 
 interface ReleaseStatus {
@@ -1037,7 +1038,18 @@ function failureSummary(phaseName: string | null, msg: string): string {
   return `Release failed ${where} — see output below.`;
 }
 
+/** Pin a running cut for preview capture (#1089); keeps poll ticks from clearing it. */
+function applyReleaseRunFixture(): boolean {
+  if (!isShotPreviewCaptureActive(window.location)) return false;
+  const pinned = shotFixtureReleaseRun(readShotPreviewFixtureFromLocation(window.location));
+  if (!pinned) return false;
+  run.value = pinned;
+  running.value = true;
+  return true;
+}
+
 async function pollRun(): Promise<void> {
+  if (applyReleaseRunFixture()) return;
   const seq = ++runPollSeq;
   let prev: ReleaseRun | null = null;
   try {
@@ -1180,6 +1192,7 @@ onMounted(() => {
   // a click. It is view-only on a dirty tree or off the release branch — the
   // publish button and release() are still gated on `canOpen`.
   if (new URLSearchParams(window.location.search).get("drawer") === "cut") confirmOpen.value = true;
+  applyReleaseRunFixture();
   void load();
   void loadDistribution();
   void loadReleaseEmail();
@@ -1234,7 +1247,10 @@ onBeforeUnmount(() => {
                 <div class="rel-provider-name">{{ status.name }}</div>
                 <div class="rel-provider-meta">{{ status.provider }} · {{ status.branch }}</div>
               </div>
-              <span class="rel-pill" :data-phase="phase">{{ phaseLabel }}</span>
+              <span class="rel-pill" :data-phase="phase" data-test-id="release-phase-pill">
+                <ActivityIndicator v-if="running" :label="phaseLabel" />
+                {{ phaseLabel }}
+              </span>
             </div>
 
             <div class="rel-current-release">
@@ -1291,9 +1307,11 @@ onBeforeUnmount(() => {
                 <Button
                   variant="accent"
                   data-test-id="cut-release-open"
+                  class="rel-cut-open"
                   :disabled="!canOpen"
                   @click="openConfirm"
                 >
+                  <ActivityIndicator v-if="running" label="View progress" />
                   {{
                     running
                       ? "View progress"
@@ -1583,7 +1601,10 @@ Subject: {{ releaseEmailPreview.subject }}
                 </dl>
 
                 <template v-if="running && run">
-                  <h3 class="release-progress-heading">{{ phaseHeading }}</h3>
+                  <h3 class="release-progress-heading" data-test-id="release-cut-progress-heading">
+                    <ActivityIndicator :label="phaseHeading" />
+                    {{ phaseHeading }}
+                  </h3>
                   <div class="release-progress" aria-live="polite">
                     <span>{{ elapsed() }}</span>
                     <small v-if="run.phase === 'building'"
@@ -1884,8 +1905,16 @@ Subject: {{ releaseEmailPreview.subject }}
   font-size: 12px;
   margin-top: 2px;
 }
+.rel-cut-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .rel-pill {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 11px;
   border-radius: 999px;
   font-size: 11px;

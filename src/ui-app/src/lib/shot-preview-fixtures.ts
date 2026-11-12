@@ -850,6 +850,34 @@ export function shotFixtureReleaseEmail(
   };
 }
 
+/** Live release run snapshot for the `release:cutRunning` capture fixture (#1089). */
+export interface ShotReleaseRunState {
+  state: "running";
+  phase: "checking";
+  message: string;
+  startedAt: string;
+  updatedAt: string;
+}
+
+/**
+ * The `GET /api/release/run` body for `release:cutRunning` (#1089). Returns null
+ * for any other fixture so the Releases page keeps its real run polling.
+ */
+export function shotFixtureReleaseRun(
+  fixture: ShotPreviewFixtureId | null,
+): ShotReleaseRunState | null {
+  if (fixture !== "release:cutRunning") return null;
+  const started = "2026-11-11T03:00:00.000Z";
+  return {
+    state: "running",
+    phase: "checking",
+    message:
+      "\x1b[36m\x1b[1mRunning checks\x1b[0m\x1b[39m…\n\x1b[2mStep 4 of 7 · full verification\x1b[0m\n",
+    startedAt: started,
+    updatedAt: started,
+  };
+}
+
 /**
  * Fixture body for `drawer:shotEvidence` (#0819): the `## Activity` docs-skip
  * note the Changes tab parses into the "Docs site skipped: no docs shot
@@ -996,6 +1024,9 @@ export function applyShotPreviewFixture(repo: RepoStore, fixture: ShotPreviewFix
     case "release:emailFailed":
       // ReleasesView reads this registered fixture and renders the email card
       // in a terminal state locally, without a real release or provider (#1071).
+      break;
+    case "release:cutRunning":
+      // ReleasesView reads this fixture and pins a running cut (#1089).
       break;
     case "secrets:populated":
     case "secrets:removeDialog":
