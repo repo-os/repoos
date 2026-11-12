@@ -203,6 +203,9 @@ export const SHOT_PREVIEW_FIXTURE_IDS = [
   // available, so a capture shows the upgrade command block (which only
   // renders when `available` is true on the live board).
   "release:updateAvailable",
+  // #1089 — Releases page and cut drawer while a release run is in progress, so
+  // captures show the shared ActivityIndicator on the pill and progress heading.
+  "release:cutRunning",
 ] as const;
 
 export type ShotPreviewFixtureId = (typeof SHOT_PREVIEW_FIXTURE_IDS)[number];
