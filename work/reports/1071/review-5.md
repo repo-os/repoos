@@ -1,11 +1,19 @@
 ---
+id: review-5
+title: review-5
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/release-emails-any-project-with-email-co
 task: "1071"
 pass: 5
 at: "2026-11-11T09:43:22.049Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/release-emails-any-project-with-email-co
 state: ok
 tree_identity: "c963a9a0f:c963a9a0f"
 ---
@@ -20,7 +28,7 @@ None. Both handoff captures match their declared routes and highlights. `default
 
 ## Bugs
 - **`src/server/release-email.ts:650-654`** (class: in-flight claim taken outside its `try/finally`). `resendReleaseEmail` calls `inFlight.add(version)`, then calls `getReleaseEmailRecord` before the `try` opens. That call can throw: `readReleaseEmailLog` throws on a malformed `release-emails.json` by design, and `surfaceRecord` can throw too. The `finally` at line 681 never runs, so `version` stays in `inFlight` until the server restarts. After the file is repaired, every Resend for that version answers "An email for vX is already in progress", which is false. Fix: move the `getReleaseEmailRecord` read inside the `try`, with `accepted` declared before it, as `deliverCutReleaseEmail` does at lines 531–536. Add a test: corrupt the log, Resend throws, repair the file, second Resend is not refused as in progress.
-  - Sibling sweep: `inFlight` appears at lines 387, 530–531, 602, 647, 650 and 681 only. The deliver claim (531) and its read (536) are correctly ordered, and the Resend refusal check (647) is before any await. No other instance.
+- Sibling sweep: `inFlight` appears at lines 387, 530–531, 602, 647, 650 and 681 only. The deliver claim (531) and its read (536) are correctly ordered, and the Resend refusal check (647) is before any await. No other instance.
 - Bare `node`, `npm` and `npx`: none in the added lines.
 
 ## Edge cases

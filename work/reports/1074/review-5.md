@@ -1,11 +1,19 @@
 ---
+id: review-5
+title: review-5
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/require-a-step-by-step-guide-on-every-hu
 task: "1074"
 pass: 5
 at: "2026-11-11T19:03:01.755Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/require-a-step-by-step-guide-on-every-hu
 state: ok
 tree_identity: "fc1d2e2e4:c4d0db3c4"
 ---
@@ -20,9 +28,9 @@ None. The drawer capture (`default-1.png-1.png`, tree c4d0db3c4) shows the warni
 
 ## Bugs
 - **Fence-unaware `##` section scanning (class: markdown heading scanning inside fenced code).** `src/core/task.ts:233-238` `nextSection` stops at any `## ` line, even inside a fence. It feeds `extractSection`, `replaceSection` and `removeSection`. Reproduced with `bun -e` (read-only): a guide with ```` ```md ```` containing `## Example heading` gets `warning: null` from `humanTaskGuideWarning`, but `replaceSection(body, "## Step-by-step guide", …)` leaves the old `## Example heading` and the orphaned closing ```` ``` ```` as a fence opener that swallows the text after it. `repoos update --section` is the advertised edit path, so this corrupts the task file.
-  - Same class, same fix: `src/core/task.ts:184` `collectActivityEntries` breaks on any `## ` line regardless of fence.
-  - Downstream: `criteriaSection` in `src/core/human-step-tags.ts:41` uses `extractSection`, so acceptance-criteria parsing inherits the bug.
-  - Fix all of these in one change: make `nextSection` and the activity break use `isMarkdownFenceClose` (the same fence tracking as `extractHumanTaskGuideSection`), and add table tests for `extractSection`, `replaceSection` and `removeSection` with a fenced `## ` line.
+- Same class, same fix: `src/core/task.ts:184` `collectActivityEntries` breaks on any `## ` line regardless of fence.
+- Downstream: `criteriaSection` in `src/core/human-step-tags.ts:41` uses `extractSection`, so acceptance-criteria parsing inherits the bug.
+- Fix all of these in one change: make `nextSection` and the activity break use `isMarkdownFenceClose` (the same fence tracking as `extractHumanTaskGuideSection`), and add table tests for `extractSection`, `replaceSection` and `removeSection` with a fenced `## ` line.
 
 ## Edge cases
 - A filled guide written as prose (no `1.` lines) gets "still empty — add numbered steps (not bullets alone)". That message is misleading for prose.

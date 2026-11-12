@@ -1,11 +1,19 @@
 ---
+id: review-4
+title: review-4
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/require-a-step-by-step-guide-on-every-hu
 task: "1074"
 pass: 4
 at: "2026-11-11T08:43:54.641Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/require-a-step-by-step-guide-on-every-hu
 state: ok
 tree_identity: "ec63179fd:6082d732c6"
 ---
@@ -21,8 +29,8 @@ None. The drawer capture (`work/.attachments/1074/shots/default-1.png-1.png`, tr
 ## Bugs
 - **Foreign bookkeeping on the branch (blocks landing).** `git diff main...HEAD --name-only` includes `work/1055-…md` (`updated_at` and message lines), `work/1071-…md` (+71) and `work/1072-…md` (+82), which conflict with main, and `work/1086-…md`. The landing checklist fails on merge and task scope for this reason. Drop these four from the branch (main's copy wins), then merge main cleanly. Task-file edits are not this task's to ship.
 - **Fence-close matching treats an info-string line as closing a fence (class: markdown fence tracking).** `if (trimmedStart.startsWith(fence)) fence = null;` closes a ```` ``` ```` block on a line like ```` ```md ````. Per CommonMark, a closing fence is bare fence characters. A guide heading placed after a nested sample is then read as real, so the missing-guide warning is skipped. Instances:
-  - `src/core/task-underspecified.ts`, `extractHumanTaskGuideSection` (new in this diff).
-  - `src/core/task-summary.ts:141` (pre-existing copy, mirrored by this code). Fix both in one change, with a test for a nested info-string fence.
+- `src/core/task-underspecified.ts`, `extractHumanTaskGuideSection` (new in this diff).
+- `src/core/task-summary.ts:141` (pre-existing copy, mirrored by this code). Fix both in one change, with a test for a nested info-string fence.
 
 ## Edge cases
 - A guide written as bullets rather than numbered steps is flagged "still empty" forever. This follows the spec's "numbered steps" rule, but the message should say so.

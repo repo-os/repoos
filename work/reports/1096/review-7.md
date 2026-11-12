@@ -1,11 +1,19 @@
 ---
+id: review-7
+title: review-7
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/guard-against-huge-build-output-files-in
 task: "1096"
 pass: 7
 at: "2026-11-12T00:07:03.988Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/guard-against-huge-build-output-files-in
 state: ok
 tree_identity: "e084fc7c5:"
 ---
@@ -22,7 +30,7 @@ None
 
 ## Bugs
 1. **Release DMG packaging uses the old path.** `.github/workflows/macos-hub.yml:102` sets `APP="macos/.derived-data/Build/Products/Release/RepoOS Hub.app"`. The release build at about line 74 now writes to `$REPOOS_MACOS_DERIVED_DATA` (under `runner.temp`), so the Package DMG step fails on every tag release. Fix: use the env var.
-   Same class, second instance: `repoos.toml:745` runs `just macos-build && exec … 'macos/.derived-data/Build/Products/Debug/RepoOS Hub.app/…'`. That binary no longer exists, so the dev target fails. The repoos.toml edit is one line, and the branch cannot carry it, so apply it on main at sign-off. The engineer's deferral doesn't cover the workflow line, which this diff touched.
+Same class, second instance: `repoos.toml:745` runs `just macos-build && exec … 'macos/.derived-data/Build/Products/Debug/RepoOS Hub.app/…'`. That binary no longer exists, so the dev target fails. The repoos.toml edit is one line, and the branch cannot carry it, so apply it on main at sign-off. The engineer's deferral doesn't cover the workflow line, which this diff touched.
 
 ## Edge cases
 - The incident shape (more than 500 dirty files, e.g. 4,763 build-output files) makes `expandCheckpointPaths` cap out before build-output paths are classified. The whole checkpoint is refused with "Could not fully scan staged content", and the real edits don't commit. The AC allows "fails loudly", so this is not blocking, but it is a usability gap.

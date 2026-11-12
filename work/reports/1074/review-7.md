@@ -1,11 +1,19 @@
 ---
+id: review-7
+title: review-7
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/require-a-step-by-step-guide-on-every-hu
 task: "1074"
 pass: 7
 at: "2026-11-11T20:02:41.768Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/require-a-step-by-step-guide-on-every-hu
 state: ok
 tree_identity: "056e9dded:f8ddb46e70"
 ---
@@ -22,10 +30,10 @@ Not `EVIDENCE-GAP-ONLY`. The drawer shot is usable: `default-1.png-1.png` render
 **Class: fence state leaking past an unclosed fence.** The new `markdownFenceMask` and `nextSection` treat an opener with no close as open to end of body. One stray ```` ``` ```` before a section hides every later `## ` heading.
 
 1. `src/core/task.ts` `sectionStart` (line ~236). Body `## Problem` / ```` ``` ```` (unclosed) / `## Acceptance criteria` / `- [ ] a`:
-   - `extractSection(body, "## Acceptance criteria")` returns `null`.
-   - Two `replaceSection` calls leave 3 `## Acceptance criteria` headings.
-   - `removeSection` silently does nothing.
-   - On `main` all three act on the real section.
+- `extractSection(body, "## Acceptance criteria")` returns `null`.
+- Two `replaceSection` calls leave 3 `## Acceptance criteria` headings.
+- `removeSection` silently does nothing.
+- On `main` all three act on the real section.
 2. `src/core/task.ts` `nextSection` (line ~253). `extractSection(body, "## Problem")` returns the rest of the document, including `## Acceptance criteria`.
 3. `src/core/task-underspecified.ts` `bundleSpecSections` (line ~191). Every `## E<n> ·` item after an unclosed fence is dropped from the bundle.
 4. `src/core/task.ts` `collectActivityEntries`. Activity entries after an unclosed fence are dropped.

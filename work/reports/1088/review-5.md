@@ -1,11 +1,19 @@
 ---
+id: review-5
+title: review-5
+type: feature
+status: inbox
+priority: p2
+area: general
+assigned_to: ai
+created_by: ""
+branch: feat/copilot-auto-tier-efficiency-was-removed
 task: "1088"
 pass: 5
 at: "2026-11-11T21:18:01.645Z"
 agent: reviewer
 cli: claude code
 model: haiku
-branch: feat/copilot-auto-tier-efficiency-was-removed
 state: ok
 tree_identity: "e3e022e95:4feef727a3"
 ---
@@ -22,7 +30,7 @@ Not applicable to the verdict; the shot gap is listed under Suggestions. Sign-of
 **Class: positional argument drift when an optional parameter was inserted.** `oneShotResultFromLog` gained `cli` as its 6th argument, after `commandName`. The one caller that passed the CLI name as `commandName` was not updated to match.
 
 - `src/server/freeform-runs.ts:515-521`: on `main` the 5th argument is `record.agent.cli`, so freeform failures read `github copilot exited with code N: …`. This branch changes it to the literal `"agent"`, so every freeform CLI now reads `agent exited with code N: …`. That changes existing error text without mention in the report. `src/ui-app/tests/agent-drivers.test.ts:347-360` then pins the new wording.
-  Fix: pass `record.agent.cli` as `commandName` and `record.agent.cli` as the 7th argument, then restore the test expectation.
+Fix: pass `record.agent.cli` as `commandName` and `record.agent.cli` as the 7th argument, then restore the test expectation.
 - I checked the other `oneShotResultFromLog` callers (`antigravity-driver.test.ts`, which passes `"antigravity"`). They are unaffected.
 
 ## Edge cases
