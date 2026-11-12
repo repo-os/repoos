@@ -12,7 +12,7 @@ branch: feat/tell-the-user-when-an-installed-upgrade-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
-updated_at: "2026-11-12T17:19:40Z"
+updated_at: "2026-11-12T17:19:54Z"
 last_close_out_gate_ms: 524103
 last_close_out_gate_at: "2026-11-12T17:19:40.304Z"
 review_rounds: 1
@@ -108,4 +108,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T17:00:08Z · message_queued at 2026-11-12T17:00:08.935Z
 - 2026-11-12T17:01:33Z · note: review pass 2: good to go
 - 2026-11-12T17:19:40Z · close-out gate completed in 524s
-
+- 2026-11-12T17:19:54Z · status done→done, release:success
