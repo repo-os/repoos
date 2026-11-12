@@ -1,4 +1,6 @@
 ---
+last_close_out_gate_ms: 1042566
+last_close_out_gate_at: "2026-11-12T11:34:32.871Z"
 id: "1077"
 title: "Check-window drift: catch source changes that are committed then reverted during a check (follow-up to #1061)"
 type: bug
@@ -9,7 +11,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-window-drift-catch-source-changes-
 created_at: "2026-11-09T09:04:34Z"
-updated_at: "2026-11-12T03:33:47Z"
+updated_at: "2026-11-12T11:34:32Z"
 review_passes: 2
 ---
 ## Problem
@@ -52,3 +54,5 @@ Start from the merged #1061 code (`src/core/check-gate-bookkeeping.ts`, `src/ser
 - 2026-11-12T01:10:05Z · note: review pass 1: good to go
 - 2026-11-12T01:15:09Z · note: review pass 2: good to go
 - 2026-11-12T03:33:47Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-12T11:34:32Z · close-out gate completed in 1043s
+
