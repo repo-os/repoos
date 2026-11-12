@@ -8,8 +8,10 @@ area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-09T03:05:29Z"
-updated_at: "2026-11-12T17:11:26Z"
+updated_at: "2026-11-12T17:11:27Z"
 ---
 ## Problem
 #1060 landed the core fix for stalled remote browser captures (runner exits, finished captures are reaped and force-collected, a failed handoff cancels its own captures), verified for the Tailscale runner. The review loop (rounds 8-14+) kept finding narrower variants of the same theme, which the owner chose to track separately instead of blocking the release.
@@ -30,3 +32,4 @@ Start from the merged #1060 code on main and its review reports under work/repor
 ## Activity
 
 - 2026-11-09T03:05:29Z · created · njachowski@gmail.com
+- 2026-11-12T17:11:27Z · cli_override, model_override
