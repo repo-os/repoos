@@ -354,6 +354,32 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
     expect(existsSync(join(root, ".repoos", "check-gate-locks", "0695.json"))).toBe(false);
   }, 30_000);
 
+  it("fails a task self-check when source is committed and reverted with a net-zero tree (#1077)", async () => {
+    const root = unmanagedTaskCheckFixture(
+      [
+        "chmod u+w src/app.ts",
+        "printf 'intermediate\\n' > src/app.ts",
+        "git add src/app.ts",
+        "git commit -qm 'feat: temporary source change'",
+        "printf 'initial\\n' > src/app.ts",
+        "git add src/app.ts",
+        "git commit -qm 'revert: restore source'",
+      ].join(" && "),
+    );
+    const headBefore = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const { code, logs: out } = await runManagedCheck(root, false);
+    expect(code).toBe(1);
+    expect(out).toContain("worktree-drift");
+    expect(out).toContain("feat: temporary source change");
+    expect(out).toContain("revert: restore source");
+    expect(out).toContain("src/app.ts");
+    const headAfter = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    expect(
+      execFileSync("git", ["show", `${headBefore}:src/app.ts`], { cwd: root, encoding: "utf8" }),
+    ).toBe(execFileSync("git", ["show", `${headAfter}:src/app.ts`], { cwd: root, encoding: "utf8" }));
+    expect(out).not.toContain("All checks passed");
+  }, 30_000);
+
   it("fails a direct task check when tracked source is edited without a commit (#1061)", async () => {
     const root = unmanagedTaskCheckFixture("chmod u+w src/app.ts && printf changed >> src/app.ts");
     const { code, logs: out } = await runManagedCheck(root, false);
