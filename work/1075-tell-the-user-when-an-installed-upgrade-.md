@@ -68,3 +68,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T14:59:17Z · needs_input
 - 2026-11-12T15:01:18Z · body
 - 2026-11-12T15:14:48Z · message_queued at 2026-11-12T15:14:48.181Z
+- 2026-11-12T15:14:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
