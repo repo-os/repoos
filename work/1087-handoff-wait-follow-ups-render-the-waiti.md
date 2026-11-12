@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1087"
 title: "Handoff-wait follow-ups: render the waiting label in the drawer, wait in fail-fast git paths, label tests (from #1082)"
 type: feature
@@ -37,3 +38,4 @@ Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaiti
 - 2026-11-12T12:17:24Z · status ready→active, needs_input, branch
 - 2026-11-12T12:19:08Z · body
 - 2026-11-12T12:24:49Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: The drawer now passes its computed label to the progress detail, and the close-out and git-hook paths remain fail-fast by design. The UI build passed, but the scoped RepoOS check failed: the new drawer test still renders “checking commit” … · stderr: Reading additional input from stdin... 2026-11-12T12:18:07.019346Z ERROR codex_core::tools::router: error=apply_patch verification failed: invalid hunk at line 14, Unexpected line found in update hunk: '*** Update File: /Users/nick/code/nick/repoos-worktrees/feat/handoff-wait-follow-ups-render-the-waiti/src/ui-app/src…
+
