@@ -152,3 +152,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T23:53:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T00:03:08Z · status active→review
 - 2026-11-12T00:03:08Z · message_queued at 2026-11-12T00:03:08.608Z
+- 2026-11-12T00:03:08Z · note: shots: skipped — Docs site skipped: no docs shot declared
