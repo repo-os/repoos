@@ -11,8 +11,10 @@ branch: feat/tell-the-user-when-an-installed-upgrade-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
-updated_at: "2026-11-12T14:31:36Z"
+updated_at: "2026-11-12T15:14:48Z"
 handoff_signal_retry_count: 1
+dev_error_count: 1
+engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-12T14:59:16.380Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 `repoos upgrade` replaces the installed files, but the already-running server keeps running the old version until someone restarts it. Nothing tells the user. Concrete case (Tiao project, 2026-11-09): after `repoos upgrade` reported "Upgraded to v0.5.79", `repoos --version` printed v0.5.79 while the server (a systemd user service) was still running v0.5.78, and the dashboard kept showing the new-version reminder. The user had no way to know a restart was needed, or whether doing it would interrupt running agents, other than being told by an agent.
@@ -39,18 +41,16 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 ```json
 [
 {
-  "label": "Installed upgrade restart notice in light theme",
-  "target": "default",
-  "route": "/",
-  "highlight": "section[data-test-id=\"installed-restart-notice\"]",
-  "state": "release:restartPendingLight"
+"label": "Installed upgrade restart notice in light theme",
+"target": "default",
+"route": "/?shotState=release:restartPendingLight",
+"highlight": "[data-test-id=\"installed-restart-notice\"]"
 },
 {
-  "label": "Installed upgrade restart notice in dark theme",
-  "target": "default",
-  "route": "/",
-  "highlight": "section[data-test-id=\"installed-restart-notice\"]",
-  "state": "release:restartPendingDark"
+"label": "Installed upgrade restart notice in dark theme",
+"target": "default",
+"route": "/?shotState=release:restartPendingDark",
+"highlight": "[data-test-id=\"installed-restart-notice\"]"
 }
 ]
 ```
@@ -63,3 +63,9 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T14:17:36Z · status ready→active, branch
 - 2026-11-12T14:21:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I haven’t completed task #1075, so I’m leaving it active without requesting handoff. Implemented a first pass of `GET /api/update-status`, registered it in the API parity map, and added a dashboard notice with restart controls. `bun run bu… · stderr: Reading additional input from stdin... 2026-11-12T14:21:02.508645Z ERROR codex_core::session: failed to record rollout items: thread 01a1d01f-1cb3-7ea2-8704-ded609b9dd5f not found
 - 2026-11-12T14:31:36Z · body
+- 2026-11-12T14:59:16Z · agent exited with an error (codex) · 2026-11-12T14:59:16.035791Z ERROR codex_core::session: failed to record rollout items: thread 01a1d01f-1cb3-7ea2-8704-ded609b9dd5f not found
+- 2026-11-12T14:59:16Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-12T14:59:16.035791Z ERROR codex_core::session: failed to record rollout items: thread 01a1d01f-1cb3-7ea2-8704-ded609b9dd5f not found
+- 2026-11-12T14:59:17Z · needs_input
+- 2026-11-12T15:01:18Z · body
+- 2026-11-12T15:14:48Z · message_queued at 2026-11-12T15:14:48.181Z
+- 2026-11-12T15:14:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
