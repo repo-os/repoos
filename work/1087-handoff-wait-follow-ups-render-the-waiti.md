@@ -1,4 +1,6 @@
 ---
+check_retry_count: 1
+last_check_failure: "repoos check at 2026-11-12T12:44:33.058Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer shows the check wait reason (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work?task=1087&tab=changes (http://127.0.0.1:59380/work?shotState=drawer:handoffWaiting)"
 id: "1087"
 title: "Handoff-wait follow-ups: render the waiting label in the drawer, wait in fail-fast git paths, label tests (from #1082)"
 type: feature
@@ -41,3 +43,4 @@ Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaiti
 - 2026-11-12T12:44:29Z · note: ui verification failed (1 issue(s)): [missing-target] Task drawer shows the check wait reason (target "default"): highlight [data-test-id="close-out-check-progress"] matched nothing on /work?task=1087&tab=changes (http://127.0.0.1:59380/work?shotState=drawer:handoffWaiting)
 - 2026-11-12T12:44:29Z · message_queued at 2026-11-12T12:44:29.900Z
 - 2026-11-12T12:44:32Z · message_delivered: 1 message(s)
+
