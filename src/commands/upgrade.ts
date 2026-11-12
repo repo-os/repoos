@@ -22,10 +22,21 @@ import { fileURLToPath } from "node:url";
 import { c } from "../cli/colors.js";
 import { launcherScript } from "../core/launcher-runtime.js";
 import { UpdateCheckFetchError } from "../core/update-check.js";
+import { boardRoot } from "../core/config.js";
+import { locateRepoServer } from "../core/server-locate.js";
 
 export { launcherScript } from "../core/launcher-runtime.js";
 
 const REPO = "repo-os/repoos";
+
+/** Upgrade completion note when the server is still serving an older build. */
+export function upgradeRestartReminder(
+  runningVersion: string | null,
+  installedVersion: string,
+): string | null {
+  if (!runningVersion || runningVersion === installedVersion) return null;
+  return `The running server is still v${runningVersion}; restart it (or run \`repoos restart\`) to use v${installedVersion}.`;
+}
 
 /**
  * The directory containing cli/, core/, server/, ui/, .build-info.json — dist/
@@ -346,6 +357,15 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   regenerateLauncher(root);
 
   console.log(c.green(`  Upgraded to v${latest}.`));
+  try {
+    const server = await locateRepoServer(boardRoot().root);
+    const reminder = upgradeRestartReminder(server?.version ?? null, latest);
+    if (reminder) {
+      console.log(c.yellow(`  ${reminder}`));
+    }
+  } catch {
+    // Upgrade succeeded; inability to inspect a running server is non-fatal.
+  }
   const notes = releaseNotesToPrint(release.body);
   if (notes) {
     console.log("");

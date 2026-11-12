@@ -120,7 +120,13 @@ so a package-manager or source checkout sees its own command, and a channel
 install sees `repoos upgrade --channel <name>`), a Copy button, and a link to
 the release notes. A channel install is compared against the newest build on
 that channel, so the banner offers exactly what the command installs. The command runs in a terminal; a server already running
-keeps the old version until you restart it.
+keeps the old version until you restart it. Once the new files are installed,
+the dashboard reports both the installed and running versions. Use **Restart
+now** to reload immediately or **Restart when idle** to wait for agents,
+reviews and checks to finish. If RepoOS cannot safely control the server's
+supervisor, run `repoos restart` from a terminal. The CLI also prints a reminder
+after `repoos upgrade` when it can identify a server that is still on the old
+version.
 
 RepoOS runs on **Bun** when it's available and falls back to **Node.js 20.6.0 or newer**
 otherwise — see

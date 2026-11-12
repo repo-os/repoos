@@ -206,6 +206,8 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   exact("POST", "/api/transcribe"),
   under("/api/service/"),
   exact("POST", "/api/server/restart"),
+  exact("GET", "/api/update-status"),
+  exact("POST", "/api/update-status/restart"),
   exact("POST", "/api/tasks/freeform"),
   exact("POST", "/api/docs/create"),
   exact("POST", "/api/docs/freeform"),
