@@ -2,18 +2,18 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: review
+status: active
 needs_input: true
 needs_input_reason: review-rounds-exhausted
-needs_input_detail: "`needs some work` — plaintext secrets at 4–5 MiB escape the scan, the checkpoint ignores the allowlist, and the hook exempts work/ files by…"
+needs_input_detail: "`needs some work` — DerivedData moved out of the repo, but the release DMG step and the repoos.toml Hub dev command still point at the old …"
 priority: p2
 area: core
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-12T00:03:08Z"
-review_passes: 6
+updated_at: "2026-11-12T00:12:02Z"
+review_passes: 7
 review_rounds: 2
 routing_switches: 1
 routing_escalations: 1
@@ -147,4 +147,13 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T23:49:39Z · needs_input
 - 2026-11-11T23:49:39Z · needs_input
 - 2026-11-11T23:50:02Z · status review→active
+- 2026-11-11T23:50:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-11T23:51:47Z · note: handoff requested (cli)
+- 2026-11-11T23:53:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T00:03:08Z · status active→review
+- 2026-11-12T00:03:08Z · message_queued at 2026-11-12T00:03:08.608Z
+- 2026-11-12T00:03:08Z · note: shots: skipped — Docs site skipped: no docs shot declared
+- 2026-11-12T00:07:04Z · note: review pass 7: needs some work
+- 2026-11-12T00:07:04Z · needs_input
+- 2026-11-12T00:07:04Z · needs_input
+- 2026-11-12T00:12:02Z · status review→active
