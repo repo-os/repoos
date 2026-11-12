@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-email-repoos-release-email-previ
 created_at: "2026-11-11T05:28:20Z"
-updated_at: "2026-11-12T04:58:30Z"
+updated_at: "2026-11-12T05:21:22Z"
 last_close_out_gate_ms: 849711
 last_close_out_gate_at: "2026-11-12T04:57:33.944Z"
 review_passes: 1
@@ -48,3 +48,4 @@ Start from src/server/routes/release.ts (getReleaseEmailPreview) and src/cli. Do
 - 2026-11-12T03:33:48Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-12T04:57:33Z · close-out gate completed in 850s
 - 2026-11-12T04:58:30Z · status done→done, release:success
+- 2026-11-12T05:21:22Z · message_dropped: 1 queued message(s) discarded — task is done
