@@ -11,7 +11,7 @@ branch: feat/server-crashed-on-unhandled-rejection-ki
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T11:20:50Z"
-updated_at: "2026-11-12T12:31:36Z"
+updated_at: "2026-11-12T12:34:48Z"
 ---
 ## Problem
 On 2026-11-09 at 18:14 local the RepoOS server died with a fatal "Unhandled promise rejection ... kill() failed: EPERM: Operation not permitted" (logged to .repoos/logs/system.log, level fatal, just after a slow `GET /api/release/available` that took 5 seconds under heavy load). Every task handoff, review, close-out and release stopped until the human restarted `repoos serve` by hand. A failed `process.kill()` on an already-gone or foreign process must never terminate the control-plane server.
@@ -36,3 +36,4 @@ Look at .repoos/logs/system.log around 2026-11-09T11:14:22Z (UTC) for the full s
 - 2026-11-12T12:17:11Z · status inbox→ready
 - 2026-11-12T12:17:12Z · status ready→active, branch
 - 2026-11-12T12:31:36Z · body
+- 2026-11-12T12:34:48Z · CTO nudge: held — handoff gate is running
