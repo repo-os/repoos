@@ -39,3 +39,4 @@ Start from the merged #1060 code on main and its review reports under work/repor
 - 2026-11-12T18:06:51Z · body
 - 2026-11-12T18:09:12Z · status active→review
 - 2026-11-12T18:09:12Z · message_queued at 2026-11-12T18:09:12.307Z
+- 2026-11-12T18:09:12Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
