@@ -12,7 +12,7 @@ branch: feat/server-crashed-on-unhandled-rejection-ki
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T11:20:50Z"
-updated_at: "2026-11-12T14:17:29Z"
+updated_at: "2026-11-12T14:17:39Z"
 last_close_out_gate_ms: 591964
 last_close_out_gate_at: "2026-11-12T14:17:06.001Z"
 review_passes: 2
@@ -59,3 +59,4 @@ Look at .repoos/logs/system.log around 2026-11-09T11:14:22Z (UTC) for the full s
 - 2026-11-12T13:44:03Z · note: review pass 2: good to go
 - 2026-11-12T14:17:06Z · close-out gate completed in 592s
 - 2026-11-12T14:17:29Z · status done→done, release:success
+- 2026-11-12T14:17:39Z · message_dropped: 1 queued message(s) discarded — task is done
