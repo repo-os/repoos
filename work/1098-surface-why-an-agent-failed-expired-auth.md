@@ -114,3 +114,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T18:08:28Z · body
 - 2026-11-12T18:09:57Z · status active→review
 - 2026-11-12T18:19:05Z · handoff failed · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
+- 2026-11-12T18:19:05Z · message_queued at 2026-11-12T18:19:05.540Z
