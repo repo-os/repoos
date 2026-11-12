@@ -11,7 +11,7 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T13:24:48Z"
+updated_at: "2026-11-12T13:39:02Z"
 handoff_signal_retry_count: 1
 ---
 ## Problem
@@ -58,3 +58,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T13:19:48Z · message_queued at 2026-11-12T13:19:48.193Z
 - 2026-11-12T13:19:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-12T13:24:48Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-12T13:39:02Z · body
