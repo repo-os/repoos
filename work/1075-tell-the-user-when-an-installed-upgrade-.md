@@ -11,7 +11,7 @@ branch: feat/tell-the-user-when-an-installed-upgrade-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
-updated_at: "2026-11-12T17:00:08Z"
+updated_at: "2026-11-12T17:01:33Z"
 review_rounds: 1
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-12T16:07:52.587Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Installed upgrade restart notice in light theme (target \"default\"): highlight [data-test-id=\"installed-restart-notice\"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingLight); [missing-target] Installed upgrade restart notice in dark theme (target \"default\"): highlight [data-test-id=\"installed-restart-notice\"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingD… (truncated)"
@@ -103,3 +103,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T17:00:07Z · note: ui verification passed: 2 of 2 shots captured with clean console (1 shot warning)
 - 2026-11-12T17:00:08Z · status active→review
 - 2026-11-12T17:00:08Z · message_queued at 2026-11-12T17:00:08.935Z
+- 2026-11-12T17:01:33Z · note: review pass 2: good to go
