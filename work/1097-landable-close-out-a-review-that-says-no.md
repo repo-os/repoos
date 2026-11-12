@@ -3,9 +3,6 @@ id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "Cannot use this model: composer-2.5. Available models:"
 priority: p2
 area: [core, server]
 assigned_to: ai
@@ -14,7 +11,7 @@ branch: feat/landable-close-out-a-review-that-says-no
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T05:21:11Z"
+updated_at: "2026-11-12T05:21:23Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T05:21:11.022Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
@@ -69,3 +66,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T04:51:21Z · body
 - 2026-11-12T05:21:10Z · agent exited with an error (opencode) · Cannot use this model: composer-2.5. Available models:
 - 2026-11-12T05:21:11Z · engineer crash recovery: resuming opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash (1/3 crashes in 30m) · Cannot use this model: composer-2.5. Available models:
+- 2026-11-12T05:21:23Z · needs_input
