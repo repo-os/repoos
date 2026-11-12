@@ -57,6 +57,12 @@ const GROUPS: readonly CommandGroup[] = [
         flags: "--channel beta|canary|rc",
       },
       {
+        name: "release",
+        usage: "release email --preview <version> [--json] [--port N]",
+        desc: "Render a release email without sending (GET /api/release/email/preview)",
+        flags: "--json · --port",
+      },
+      {
         name: "uninstall",
         usage: "uninstall [--yes]",
         desc: "Remove the standalone (curl-installed) repoos from this machine",

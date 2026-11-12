@@ -30,6 +30,8 @@ import { readReleaseHistory, type ReleaseHistoryEntry } from "../../server/relea
 import { wireAttentionNotifications } from "../../server/attention-notify.js";
 import type { AttentionEventStore } from "../../server/attention-events.js";
 import type { RecordedAttentionEvent } from "../../core/attention.js";
+import { cmdRelease } from "../../commands/release.js";
+import { RepoOsApi, RepoOsApiError } from "../../cli/repoos-api.js";
 
 // Fake values only: no real key, no real address, and no network. Every test
 // passes its own fetch so nothing reaches Resend or GitHub.
@@ -1099,5 +1101,46 @@ describe("Settings recipient list", () => {
     );
     expect(out.status).toBe(400);
     expect((out.body as { error: string }).error).toMatch(/must be an array of addresses/);
+  });
+});
+
+describe("repoos release email --preview (#1092)", () => {
+  it("prints subject, HTML and text for a recorded version", async () => {
+    writeHistory([entry()]);
+    const preview = previewReleaseEmail(makeConfig(), "0.6.0");
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const requestOk = vi.spyOn(RepoOsApi.prototype, "requestOk").mockResolvedValue({
+      subject: preview.subject,
+      html: preview.html,
+      text: preview.text,
+      recipients: preview.recipients,
+    });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const code = await cmdRelease(["email", "--preview", "0.6.0"]);
+    expect(code).toBe(0);
+    expect(requestOk).toHaveBeenCalledWith("GET", "/api/release/email/preview?version=0.6.0");
+    const out = log.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(out).toContain(`Subject: ${preview.subject}`);
+    expect(out).toContain(preview.html);
+    expect(out).toContain(preview.text);
+    log.mockRestore();
+    health.mockRestore();
+    requestOk.mockRestore();
+  });
+
+  it("reports an error for an unknown version", async () => {
+    writeHistory([entry()]);
+    const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
+    const requestOk = vi.spyOn(RepoOsApi.prototype, "requestOk").mockRejectedValue(
+      new RepoOsApiError("No release notes are recorded for version 9.9.9.", 404),
+    );
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const code = await cmdRelease(["email", "--preview", "9.9.9"]);
+    expect(code).toBe(1);
+    expect(requestOk).toHaveBeenCalledWith("GET", "/api/release/email/preview?version=9.9.9");
+    expect(String(err.mock.calls[0]?.[0])).toMatch(/9\.9\.9/);
+    err.mockRestore();
+    health.mockRestore();
+    requestOk.mockRestore();
   });
 });
