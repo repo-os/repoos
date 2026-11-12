@@ -1,4 +1,5 @@
 ---
+close_out_repair_count: 1
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
@@ -68,3 +69,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T14:30:57Z · status review→active
 - 2026-11-12T14:30:57Z · note: close-out repair: merge-conflict
 - 2026-11-12T14:30:57Z · message_delivered: 1 message(s)
+
