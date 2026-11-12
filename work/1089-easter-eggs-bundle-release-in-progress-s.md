@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-12T01:51:27Z"
+review_passes: 1
 id: "1089"
 title: "Easter eggs bundle: release in progress shows the activity animation (Releases page and Cut a release panel)"
 type: feature
@@ -9,7 +11,6 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-release-in-progress-s
 created_at: "2026-11-11T03:47:02Z"
-updated_at: "2026-11-12T01:51:26Z"
 ---
 ## Problem
 While a release is being cut (v0.5.82 on 2026-11-11), the Releases page shows a static "RELEASING..." pill and the "Cut a release" panel shows "Step 4 of 7 · Running checks · 2m 05s elapsed" with a log box. Nothing on either moves, so it looks stalled for the 20-30 minutes a release takes. Task cards and the Settings preview already show the user's chosen activity animation (the ActivityIndicator, the footprint/art styles with size and style settings) while work is running.
@@ -95,3 +96,4 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 - 2026-11-12T01:50:24Z · note: Task body is underspecified: missing sections: Notes for AI
 - 2026-11-12T01:50:24Z · message_queued at 2026-11-12T01:50:24.934Z
 - 2026-11-12T01:51:26Z · note: review pass 1: good to go
+
