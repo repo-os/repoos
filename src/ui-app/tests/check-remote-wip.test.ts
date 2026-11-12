@@ -366,17 +366,25 @@ describe("managed engineer dirty-tree fallback (#0695)", () => {
         "git commit -qm 'revert: restore source'",
       ].join(" && "),
     );
-    const headBefore = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const headBefore = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
     const { code, logs: out } = await runManagedCheck(root, false);
     expect(code).toBe(1);
     expect(out).toContain("worktree-drift");
     expect(out).toContain("feat: temporary source change");
     expect(out).toContain("revert: restore source");
     expect(out).toContain("src/app.ts");
-    const headAfter = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+    const headAfter = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
     expect(
       execFileSync("git", ["show", `${headBefore}:src/app.ts`], { cwd: root, encoding: "utf8" }),
-    ).toBe(execFileSync("git", ["show", `${headAfter}:src/app.ts`], { cwd: root, encoding: "utf8" }));
+    ).toBe(
+      execFileSync("git", ["show", `${headAfter}:src/app.ts`], { cwd: root, encoding: "utf8" }),
+    );
     expect(out).not.toContain("All checks passed");
   }, 30_000);
 
