@@ -70,6 +70,13 @@ describe("feature releases", () => {
     expect(isNewerVersion("0.5.48", null)).toBe(false);
   });
 
+  it("flags a fake installed version newer than the version captured by the server", () => {
+    const fakeInstalledVersion = "0.5.79";
+    const serverStartedVersion = "0.5.78";
+    expect(isNewerVersion(fakeInstalledVersion, serverStartedVersion)).toBe(true);
+    expect(isNewerVersion(serverStartedVersion, fakeInstalledVersion)).toBe(false);
+  });
+
   it.each([
     ["0.5.81-beta.2", "0.5.81-beta.1", true],
     ["0.5.81-beta.1", "0.5.81-beta.2", false],

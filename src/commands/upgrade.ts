@@ -22,6 +22,8 @@ import { fileURLToPath } from "node:url";
 import { c } from "../cli/colors.js";
 import { launcherScript } from "../core/launcher-runtime.js";
 import { UpdateCheckFetchError } from "../core/update-check.js";
+import { boardRoot } from "../core/config.js";
+import { locateRepoServer } from "../core/server-locate.js";
 
 export { launcherScript } from "../core/launcher-runtime.js";
 
@@ -346,6 +348,18 @@ export async function cmdUpgrade(args: string[]): Promise<void> {
   regenerateLauncher(root);
 
   console.log(c.green(`  Upgraded to v${latest}.`));
+  try {
+    const server = await locateRepoServer(boardRoot().root);
+    if (server?.version && server.version !== latest) {
+      console.log(
+        c.yellow(
+          `  The running server is still v${server.version}; restart it (or run \`repoos restart\`) to use v${latest}.`,
+        ),
+      );
+    }
+  } catch {
+    // Upgrade succeeded; inability to inspect a running server is non-fatal.
+  }
   const notes = releaseNotesToPrint(release.body);
   if (notes) {
     console.log("");

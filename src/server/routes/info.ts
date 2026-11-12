@@ -20,6 +20,14 @@ import { getGitWorker } from "../git-worker.js";
 import { restartCommand } from "../../core/service-manager.js";
 import { installRoot, readInstallVersion } from "../../commands/upgrade.js";
 import { detectSupervisor } from "../../core/supervisor-detect.js";
+import { isNewerVersion } from "../../core/release-version.js";
+
+let idleRestartTimer: ReturnType<typeof setInterval> | null = null;
+let idleRestartPending = false;
+// Freeze this at module start: the install marker can change during `repoos upgrade`.
+const SERVER_RUNNING_VERSION = loadBuildInfo().version;
+let installedVersionCache: { value: string | null; expiresAt: number } | null = null;
+let supervisedCache: { value: boolean; expiresAt: number } | null = null;
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -90,7 +98,37 @@ export const health: RouteHandler = (ctx, req, res) => {
   });
 };
 
-export const restart: RouteHandler = (ctx, _req, res) => {
+export const restart: RouteHandler = async (ctx, req, res) => {
+  const body = (await readBody(req).catch(() => ({}))) as { whenIdle?: boolean; cancel?: boolean };
+  if (body.cancel) {
+    idleRestartPending = false;
+    if (idleRestartTimer) clearInterval(idleRestartTimer);
+    idleRestartTimer = null;
+    return json(res, 200, { state: "cancelled" });
+  }
+  if (body.whenIdle) {
+    idleRestartPending = true;
+    if (!idleRestartTimer)
+      idleRestartTimer = setInterval(() => {
+        const checks = ctx.taskChecks
+          ? ctx.index
+              .snapshot()
+              .tasks.some((task) => ctx.taskChecks!.getRuns(task.id).some((run) => run.running))
+          : false;
+        if (
+          ctx.runner.running().length ||
+          ctx.reviews.runningCount() ||
+          checks ||
+          ctx.closeOutLock.closingOut()
+        )
+          return;
+        idleRestartPending = false;
+        if (idleRestartTimer) clearInterval(idleRestartTimer);
+        idleRestartTimer = null;
+        ctx.reload?.requestReload("restart when idle", { manual: true });
+      }, 1000);
+    return json(res, 202, { state: "waiting-for-idle" });
+  }
   const reload = ctx.reload;
   const state =
     reload?.requestReload("manual restart", { manual: true }) ??
@@ -103,30 +141,35 @@ export const restart: RouteHandler = (ctx, _req, res) => {
 
 /** Cheap local check for an installed build newer than this process (#1075). */
 export const getUpdateStatus: RouteHandler = (ctx, _req, res) => {
-  const installedVersion = readInstallVersion(installRoot());
-  const runningVersion = loadBuildInfo().version;
-  const compare = (a: string | null, b: string | null): number => {
-    if (!a || !b) return 0;
-    const parts = (v: string) => v.replace(/^v/, "").split(/[.+-]/).map((x) => /^\d+$/.test(x) ? Number(x) : x);
-    const left = parts(a), right = parts(b);
-    for (let i = 0; i < Math.max(left.length, right.length); i++) {
-      const x = left[i] ?? 0, y = right[i] ?? 0;
-      if (x === y) continue;
-      if (typeof x === "number" && typeof y === "number") return x < y ? -1 : 1;
-      return String(x).localeCompare(String(y));
-    }
-    return 0;
-  };
-  const supervisor = detectSupervisor(process.pid);
+  const now = Date.now();
+  if (!installedVersionCache || installedVersionCache.expiresAt < now)
+    installedVersionCache = { value: readInstallVersion(installRoot()), expiresAt: now + 2000 };
+  if (!supervisedCache || supervisedCache.expiresAt < now) {
+    const supervisor = detectSupervisor(process.pid);
+    supervisedCache = {
+      value: supervisor.kind === "external" || supervisor.kind === "managed",
+      expiresAt: now + 10_000,
+    };
+  }
+  const installedVersion = installedVersionCache.value;
+  const runningVersion = SERVER_RUNNING_VERSION;
   return json(res, 200, {
-    restartPending: compare(installedVersion, runningVersion) > 0,
+    restartPending: isNewerVersion(installedVersion ?? "", runningVersion),
+    restartWhenIdlePending: idleRestartPending,
     runningVersion,
     installedVersion,
     activeWork: {
       agents: ctx.runner.running().length + ctx.reviews.runningCount(),
-      checks: ctx.taskChecks ? ctx.index.snapshot().tasks.reduce((n, task) => n + ctx.taskChecks!.getRuns(task.id).filter((run) => run.running).length, 0) : 0,
+      checks: ctx.taskChecks
+        ? ctx.index
+            .snapshot()
+            .tasks.reduce(
+              (n, task) => n + ctx.taskChecks!.getRuns(task.id).filter((run) => run.running).length,
+              0,
+            )
+        : 0,
     },
-    supervised: supervisor.kind === "external" || supervisor.kind === "managed",
+    supervised: supervisedCache.value,
   });
 };
 

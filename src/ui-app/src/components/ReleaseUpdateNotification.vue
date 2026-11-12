@@ -22,12 +22,21 @@ import type { AvailableRelease } from "../types";
 
 /** localStorage key: the version the user dismissed, so the banner stays gone. */
 const DISMISSED_KEY = "repoos.releaseUpdate.dismissedVersion";
+const RESTART_DISMISSED_KEY = "repoos.restartUpdate.dismissedVersion";
 
 const repo = useRepoStore();
 const configStore = useConfigStore();
 const release = ref<AvailableRelease | null>(null);
-const restartStatus = ref<{restartPending:boolean; runningVersion:string|null; installedVersion:string|null; activeWork:{agents:number;checks:number}; supervised:boolean}|null>(null);
+const restartStatus = ref<{
+  restartPending: boolean;
+  restartWhenIdlePending: boolean;
+  runningVersion: string | null;
+  installedVersion: string | null;
+  activeWork: { agents: number; checks: number };
+  supervised: boolean;
+} | null>(null);
 const restartPendingAction = ref(false);
+let restartStatusTimer: ReturnType<typeof setInterval> | null = null;
 const dismissed = ref(false);
 const open = ref(false);
 const copied = ref(false);
@@ -40,6 +49,19 @@ const updatesCheckEnabled = computed(() => {
 });
 const visible = computed(
   () => updatesCheckEnabled.value && !!release.value?.available && !dismissed.value,
+);
+const restartNoticeVisible = computed(
+  () =>
+    restartStatus.value?.restartPending &&
+    (() => {
+      try {
+        return (
+          localStorage.getItem(RESTART_DISMISSED_KEY) !== restartStatus.value?.installedVersion
+        );
+      } catch {
+        return true;
+      }
+    })(),
 );
 const notesHtml = computed(() =>
   release.value?.releaseNotes ? renderMarkdown(release.value.releaseNotes) : "",
@@ -78,7 +100,33 @@ function writeDismissedVersion(version: string | null): void {
 }
 
 onMounted(async () => {
-  try { restartStatus.value = await api<typeof restartStatus.value>("/api/update-status"); } catch { /* optional */ }
+  const fixtureState = readShotPreviewFixtureFromLocation(window.location);
+  if (
+    fixtureState === "release:restartPendingLight" ||
+    fixtureState === "release:restartPendingDark"
+  ) {
+    restartStatus.value = {
+      restartPending: true,
+      restartWhenIdlePending: false,
+      runningVersion: "0.5.78",
+      installedVersion: "0.5.79",
+      activeWork: { agents: 2, checks: 1 },
+      supervised: true,
+    };
+    document.documentElement.dataset.theme = fixtureState.endsWith("Dark") ? "dark" : "light";
+  }
+  try {
+    restartStatus.value = await api<typeof restartStatus.value>("/api/update-status");
+  } catch {
+    /* optional */
+  }
+  restartStatusTimer = setInterval(async () => {
+    try {
+      restartStatus.value = await api("/api/update-status");
+    } catch {
+      /* reconnecting */
+    }
+  }, 3000);
   if (applyShotFixture()) return;
   try {
     release.value = await api<AvailableRelease>("/api/release/available");
@@ -96,13 +144,31 @@ onMounted(async () => {
   }
 });
 
-async function restartInstalled(whenIdle = false): Promise<void> {
+async function restartInstalled(whenIdle = false, cancel = false): Promise<void> {
   restartPendingAction.value = true;
   try {
-    await api("/api/server/restart", { method: "POST", body: JSON.stringify({ whenIdle }) });
+    await api("/api/server/restart", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ whenIdle, cancel }),
+    });
   } finally {
     // The replacement server reconnects through the app's existing health loop.
-    setTimeout(async () => { try { restartStatus.value = await api("/api/update-status"); } catch { /* reconnecting */ } }, 1500);
+    setTimeout(async () => {
+      try {
+        restartStatus.value = await api("/api/update-status");
+      } catch {
+        /* reconnecting */
+      }
+    }, 1500);
+  }
+}
+function dismissRestartNotice(): void {
+  try {
+    if (restartStatus.value?.installedVersion)
+      localStorage.setItem(RESTART_DISMISSED_KEY, restartStatus.value.installedVersion);
+  } catch {
+    /* dismissal lasts until reload */
   }
 }
 
@@ -165,21 +231,65 @@ async function copyCommand(): Promise<void> {
 
 onUnmounted(() => {
   if (copiedTimer) clearTimeout(copiedTimer);
+  if (restartStatusTimer) clearInterval(restartStatusTimer);
 });
 </script>
 
 <template>
   <Teleport to="body">
-    <section v-if="restartStatus?.restartPending" class="release-update-banner" role="status" data-test-id="installed-restart-notice">
+    <section
+      v-if="restartNoticeVisible"
+      class="release-update-banner"
+      role="status"
+      data-test-id="installed-restart-notice"
+    >
       <span class="release-update-mark"><ArrowUpRight class="size-[15px]" /></span>
       <span class="release-update-copy">
         <strong>RepoOS v{{ restartStatus.installedVersion }} is installed</strong>
-        <span>This server is still running v{{ restartStatus.runningVersion }}. Restart to use it. {{ restartStatus.activeWork.agents }} agents and {{ restartStatus.activeWork.checks }} checks running.</span>
+        <span
+          >This server is still running v{{ restartStatus.runningVersion }}. Restart to use it.
+          {{ restartStatus.activeWork.agents }} agents and
+          {{ restartStatus.activeWork.checks }} checks running. Restart now briefly interrupts work;
+          see <a href="https://github.com/repo-os/repoos/issues/214">#0214</a> for how agents
+          resume.</span
+        >
       </span>
-      <Button size="sm" :disabled="restartPendingAction || !restartStatus.supervised" @click="void restartInstalled()">Restart now</Button>
-      <Button size="sm" variant="ghost" :disabled="restartPendingAction || !restartStatus.supervised" @click="void restartInstalled(true)">Restart when idle</Button>
-      <span v-if="!restartStatus.supervised" class="release-update-muted">Restart manually with <code>repoos restart</code>.</span>
-      <button type="button" class="release-update-dismiss" aria-label="Dismiss restart notice" @click="restartStatus = {...restartStatus, restartPending:false}"><X class="size-[15px]" /></button>
+      <Button
+        v-if="!restartStatus.restartWhenIdlePending"
+        size="sm"
+        :disabled="restartPendingAction || !restartStatus.supervised"
+        @click="void restartInstalled()"
+        >Restart now</Button
+      >
+      <Button
+        v-if="!restartStatus.restartWhenIdlePending"
+        size="sm"
+        variant="ghost"
+        :disabled="restartPendingAction || !restartStatus.supervised"
+        @click="void restartInstalled(true)"
+        >Restart when idle</Button
+      >
+      <template v-else
+        ><span role="status">Restart is waiting for agents, reviews and checks to finish.</span
+        ><Button
+          size="sm"
+          variant="ghost"
+          :disabled="restartPendingAction"
+          @click="void restartInstalled(false, true)"
+          >Cancel</Button
+        ></template
+      >
+      <span v-if="!restartStatus.supervised" class="release-update-muted"
+        >Restart manually with <code>repoos restart</code>.</span
+      >
+      <button
+        type="button"
+        class="release-update-dismiss"
+        aria-label="Dismiss restart notice"
+        @click="dismissRestartNotice"
+      >
+        <X class="size-[15px]" />
+      </button>
     </section>
     <div
       v-if="visible"
@@ -256,8 +366,8 @@ onUnmounted(() => {
             Couldn’t copy automatically — select the command above and copy it.
           </p>
           <p class="release-update-muted">
-            Runs in your terminal. A server already running keeps the old version until you restart
-            it.
+            Runs in your terminal. The dashboard will show when the installed version is waiting for
+            a server restart.
           </p>
         </div>
         <div v-if="notesHtml" class="release-update-notes">
