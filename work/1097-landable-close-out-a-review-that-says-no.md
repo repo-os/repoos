@@ -14,7 +14,7 @@ branch: feat/landable-close-out-a-review-that-says-no
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T07:56:03Z"
+updated_at: "2026-11-12T07:56:25Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: c78deec73dababb2938f8b2b3271fb20f44bb2db
 dev_error_count: 8
@@ -87,3 +87,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T06:07:41Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The task stays active — fix the failure and ask again.
 - 2026-11-12T06:07:41Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash); it will not chain another automatic switch (3/3 crashes in 30m)
 - 2026-11-12T07:56:03Z · note: handoff requested (ui-review)
+- 2026-11-12T07:56:25Z · CTO nudge: held — handoff gate is running
