@@ -2,7 +2,7 @@
 id: "1079"
 title: "Server crashed on unhandled rejection: kill() failed with EPERM (must never take the server down)"
 type: bug
-status: review
+status: active
 priority: p1
 area: server
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T11:20:50Z"
 updated_at: "2026-11-12T12:39:28Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -43,3 +44,4 @@ Look at .repoos/logs/system.log around 2026-11-09T11:14:22Z (UTC) for the full s
 - 2026-11-12T12:38:40Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-12T12:39:28Z · note: review pass 1: needs some work
 - 2026-11-12T12:39:28Z · message_delivered: 1 message(s)
+- 2026-11-12T12:39:28Z · status review→active
