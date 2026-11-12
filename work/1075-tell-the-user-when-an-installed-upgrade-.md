@@ -90,3 +90,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T16:25:08Z · body
 - 2026-11-12T16:29:48Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T16:32:41Z · status active→review
+- 2026-11-12T16:32:41Z · message_queued at 2026-11-12T16:32:41.665Z
