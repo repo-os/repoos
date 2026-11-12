@@ -2,7 +2,7 @@
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -11,7 +11,7 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T16:04:30Z"
+updated_at: "2026-11-12T16:04:31Z"
 last_check_failure: "repoos check at 2026-11-12T14:59:05.632Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 close_out_repair_count: 1
 review_passes: 1
@@ -85,3 +85,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T15:51:18Z · body
 - 2026-11-12T15:54:48Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T16:04:30Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
+- 2026-11-12T16:04:31Z · status active→review
