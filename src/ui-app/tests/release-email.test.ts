@@ -1131,9 +1131,11 @@ describe("repoos release email --preview (#1092)", () => {
   it("reports an error for an unknown version", async () => {
     writeHistory([entry()]);
     const health = vi.spyOn(RepoOsApi.prototype, "health").mockResolvedValue(true);
-    const requestOk = vi.spyOn(RepoOsApi.prototype, "requestOk").mockRejectedValue(
-      new RepoOsApiError("No release notes are recorded for version 9.9.9.", 404),
-    );
+    const requestOk = vi
+      .spyOn(RepoOsApi.prototype, "requestOk")
+      .mockRejectedValue(
+        new RepoOsApiError("No release notes are recorded for version 9.9.9.", 404),
+      );
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     const code = await cmdRelease(["email", "--preview", "9.9.9"]);
     expect(code).toBe(1);

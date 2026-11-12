@@ -25,7 +25,8 @@ function parseReleaseEmailPreviewArgs(args: string[]): {
     if (a === "--json") continue;
     if (a === "--port") {
       const value = Number(args[++i]);
-      if (!Number.isInteger(value) || value <= 0) return { json, error: "--port requires a positive integer" };
+      if (!Number.isInteger(value) || value <= 0)
+        return { json, error: "--port requires a positive integer" };
       port = value;
       continue;
     }
@@ -51,7 +52,10 @@ async function ensureServer(api: RepoOsApi): Promise<void> {
 }
 
 /** Render a release email without sending (`GET /api/release/email/preview`). */
-async function cmdReleaseEmailPreview(version: string, opts: { port?: number; json: boolean }): Promise<number> {
+async function cmdReleaseEmailPreview(
+  version: string,
+  opts: { port?: number; json: boolean },
+): Promise<number> {
   const api = new RepoOsApi({ port: opts.port });
   try {
     await ensureServer(api);
