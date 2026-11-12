@@ -11,7 +11,7 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T15:19:48Z"
+updated_at: "2026-11-12T15:29:28Z"
 last_check_failure: "repoos check at 2026-11-12T14:59:05.632Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 close_out_repair_count: 1
 review_passes: 1
@@ -77,4 +77,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T15:14:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-12T15:16:52Z · body
 - 2026-11-12T15:19:48Z · CTO nudge: held — handoff gate is running
-
+- 2026-11-12T15:29:28Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
