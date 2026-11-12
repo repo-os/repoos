@@ -2,7 +2,7 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — undecodable zlib payloads pass silently, so a truncated zlib blob can hide a key"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-12T00:33:22Z"
+updated_at: "2026-11-12T00:48:36Z"
 review_passes: 8
 review_rounds: 2
 routing_switches: 1
@@ -171,3 +171,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-12T00:26:14Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-12T00:28:25Z · note: handoff requested (cli)
 - 2026-11-12T00:33:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T00:48:36Z · status active→review
