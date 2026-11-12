@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-release-in-progress-s
 created_at: "2026-11-11T03:47:02Z"
-updated_at: "2026-11-12T00:18:15Z"
+updated_at: "2026-11-12T00:18:22Z"
 ---
 ## Problem
 While a release is being cut (v0.5.82 on 2026-11-11), the Releases page shows a static "RELEASING..." pill and the "Cut a release" panel shows "Step 4 of 7 · Running checks · 2m 05s elapsed" with a log box. Nothing on either moves, so it looks stalled for the 20-30 minutes a release takes. Task cards and the Settings preview already show the user's chosen activity animation (the ActivityIndicator, the footprint/art styles with size and style settings) while work is running.
@@ -29,36 +29,36 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 ```json
 [
 {
-  "label": "Releases page: releasing pill with activity (light)",
-  "target": "default",
-  "route": "/releases",
-  "highlight": "[data-test-id=\"release-phase-pill\"]",
-  "state": "release:cutRunning",
-  "theme": "light"
+"label": "Releases page: releasing pill with activity (light)",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-phase-pill\"]",
+"state": "release:cutRunning",
+"theme": "light"
 },
 {
-  "label": "Releases page: releasing pill with activity (dark)",
-  "target": "default",
-  "route": "/releases",
-  "highlight": "[data-test-id=\"release-phase-pill\"]",
-  "state": "release:cutRunning",
-  "theme": "dark"
+"label": "Releases page: releasing pill with activity (dark)",
+"target": "default",
+"route": "/releases",
+"highlight": "[data-test-id=\"release-phase-pill\"]",
+"state": "release:cutRunning",
+"theme": "dark"
 },
 {
-  "label": "Cut release drawer: step heading with activity (light)",
-  "target": "default",
-  "route": "/releases?drawer=cut",
-  "highlight": "[data-test-id=\"release-cut-progress-heading\"]",
-  "state": "release:cutRunning",
-  "theme": "light"
+"label": "Cut release drawer: step heading with activity (light)",
+"target": "default",
+"route": "/releases?drawer=cut",
+"highlight": "[data-test-id=\"release-cut-progress-heading\"]",
+"state": "release:cutRunning",
+"theme": "light"
 },
 {
-  "label": "Cut release drawer: step heading with activity (dark)",
-  "target": "default",
-  "route": "/releases?drawer=cut",
-  "highlight": "[data-test-id=\"release-cut-progress-heading\"]",
-  "state": "release:cutRunning",
-  "theme": "dark"
+"label": "Cut release drawer: step heading with activity (dark)",
+"target": "default",
+"route": "/releases?drawer=cut",
+"highlight": "[data-test-id=\"release-cut-progress-heading\"]",
+"state": "release:cutRunning",
+"theme": "dark"
 }
 ]
 ```
@@ -77,3 +77,4 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 - 2026-11-12T00:15:14Z · status ready→active, needs_input, branch
 - 2026-11-12T00:15:29Z · message_queued at 2026-11-12T00:15:29.479Z
 - 2026-11-12T00:18:15Z · body
+- 2026-11-12T00:18:22Z · CTO nudge: held — an undelivered message is already queued
