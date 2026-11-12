@@ -18,6 +18,8 @@ import {
 } from "../../core/story-definition-files.js";
 import { getGitWorker } from "../git-worker.js";
 import { restartCommand } from "../../core/service-manager.js";
+import { installRoot, readInstallVersion } from "../../commands/upgrade.js";
+import { detectSupervisor } from "../../core/supervisor-detect.js";
 
 // These will be passed via context in server.ts during integration
 let loadedHash: string;
@@ -97,6 +99,35 @@ export const restart: RouteHandler = (ctx, _req, res) => {
       reason: "auto-reload unavailable",
     } as const);
   return json(res, 200, state);
+};
+
+/** Cheap local check for an installed build newer than this process (#1075). */
+export const getUpdateStatus: RouteHandler = (ctx, _req, res) => {
+  const installedVersion = readInstallVersion(installRoot());
+  const runningVersion = loadBuildInfo().version;
+  const compare = (a: string | null, b: string | null): number => {
+    if (!a || !b) return 0;
+    const parts = (v: string) => v.replace(/^v/, "").split(/[.+-]/).map((x) => /^\d+$/.test(x) ? Number(x) : x);
+    const left = parts(a), right = parts(b);
+    for (let i = 0; i < Math.max(left.length, right.length); i++) {
+      const x = left[i] ?? 0, y = right[i] ?? 0;
+      if (x === y) continue;
+      if (typeof x === "number" && typeof y === "number") return x < y ? -1 : 1;
+      return String(x).localeCompare(String(y));
+    }
+    return 0;
+  };
+  const supervisor = detectSupervisor(process.pid);
+  return json(res, 200, {
+    restartPending: compare(installedVersion, runningVersion) > 0,
+    runningVersion,
+    installedVersion,
+    activeWork: {
+      agents: ctx.runner.running().length + ctx.reviews.runningCount(),
+      checks: ctx.taskChecks ? ctx.index.snapshot().tasks.reduce((n, task) => n + ctx.taskChecks!.getRuns(task.id).filter((run) => run.running).length, 0) : 0,
+    },
+    supervised: supervisor.kind === "external" || supervisor.kind === "managed",
+  });
 };
 
 export const getCounts: RouteHandler = (ctx, _req, res) => {

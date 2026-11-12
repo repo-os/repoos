@@ -26,6 +26,8 @@ const DISMISSED_KEY = "repoos.releaseUpdate.dismissedVersion";
 const repo = useRepoStore();
 const configStore = useConfigStore();
 const release = ref<AvailableRelease | null>(null);
+const restartStatus = ref<{restartPending:boolean; runningVersion:string|null; installedVersion:string|null; activeWork:{agents:number;checks:number}; supervised:boolean}|null>(null);
+const restartPendingAction = ref(false);
 const dismissed = ref(false);
 const open = ref(false);
 const copied = ref(false);
@@ -76,6 +78,7 @@ function writeDismissedVersion(version: string | null): void {
 }
 
 onMounted(async () => {
+  try { restartStatus.value = await api<typeof restartStatus.value>("/api/update-status"); } catch { /* optional */ }
   if (applyShotFixture()) return;
   try {
     release.value = await api<AvailableRelease>("/api/release/available");
@@ -92,6 +95,16 @@ onMounted(async () => {
     dismissed.value = readDismissedVersion() === release.value.latestVersion;
   }
 });
+
+async function restartInstalled(whenIdle = false): Promise<void> {
+  restartPendingAction.value = true;
+  try {
+    await api("/api/server/restart", { method: "POST", body: JSON.stringify({ whenIdle }) });
+  } finally {
+    // The replacement server reconnects through the app's existing health loop.
+    setTimeout(async () => { try { restartStatus.value = await api("/api/update-status"); } catch { /* reconnecting */ } }, 1500);
+  }
+}
 
 // The preview capture mounts this component before App's own fixture pass runs
 // (children mount first), so health alone is not enough — a capture that waited
@@ -157,6 +170,17 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
+    <section v-if="restartStatus?.restartPending" class="release-update-banner" role="status" data-test-id="installed-restart-notice">
+      <span class="release-update-mark"><ArrowUpRight class="size-[15px]" /></span>
+      <span class="release-update-copy">
+        <strong>RepoOS v{{ restartStatus.installedVersion }} is installed</strong>
+        <span>This server is still running v{{ restartStatus.runningVersion }}. Restart to use it. {{ restartStatus.activeWork.agents }} agents and {{ restartStatus.activeWork.checks }} checks running.</span>
+      </span>
+      <Button size="sm" :disabled="restartPendingAction || !restartStatus.supervised" @click="void restartInstalled()">Restart now</Button>
+      <Button size="sm" variant="ghost" :disabled="restartPendingAction || !restartStatus.supervised" @click="void restartInstalled(true)">Restart when idle</Button>
+      <span v-if="!restartStatus.supervised" class="release-update-muted">Restart manually with <code>repoos restart</code>.</span>
+      <button type="button" class="release-update-dismiss" aria-label="Dismiss restart notice" @click="restartStatus = {...restartStatus, restartPending:false}"><X class="size-[15px]" /></button>
+    </section>
     <div
       v-if="visible"
       class="release-update-banner"
