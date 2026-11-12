@@ -11,7 +11,7 @@ branch: feat/landable-close-out-a-review-that-says-no
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T05:33:06Z"
+updated_at: "2026-11-12T05:33:15Z"
 dev_error_count: 5
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T05:21:11.022Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
@@ -69,3 +69,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T05:21:23Z · needs_input
 - 2026-11-12T05:21:24Z · message_delivered: 1 message(s)
 - 2026-11-12T05:31:58Z · engineer stopped by request
+- 2026-11-12T05:33:15Z · note: handoff requested (ui-review)
