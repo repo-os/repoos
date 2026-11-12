@@ -2,7 +2,7 @@
 id: "1068"
 title: "Remote capture follow-up: remaining Docker/ssh failure-handling and provider-parity gaps"
 type: bug
-status: review
+status: active
 priority: p2
 area: server
 assigned_to: ai
@@ -12,6 +12,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:05:29Z"
 updated_at: "2026-11-12T18:10:13Z"
+review_rounds: 1
 review_passes: 1
 ---
 ## Problem
@@ -43,3 +44,4 @@ Start from the merged #1060 code on main and its review reports under work/repor
 - 2026-11-12T18:09:12Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
 - 2026-11-12T18:10:13Z · note: review pass 1: needs some work
 - 2026-11-12T18:10:13Z · message_delivered: 1 message(s)
+- 2026-11-12T18:10:13Z · status review→active
