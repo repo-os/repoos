@@ -751,6 +751,8 @@ pausedModels = [{ model = "opencode-go/mimo-v2.6-flash" }, { model = "opencode-g
 [[budget.allowlist]]
 cli = "github copilot"
 models = ["default"]
+paused = true
+pausedReason = "Waiting for model list fix"
 [[budget.allowlist]]
 cli = "cursor"
 models = ["composer-2.5", "grok-4.7-low"]
@@ -770,3 +772,5 @@ models = ["muse-spark-1.3-contributor"]
 [[budget.allowlist]]
 cli = "claude code"
 models = ["haiku"]
+paused = true
+pausedUntil = "2026-11-17T01:00:00.000Z"
