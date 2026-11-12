@@ -78,3 +78,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 - 2026-11-12T18:35:54Z · body
 - 2026-11-12T18:36:23Z · status active→review
 - 2026-11-12T18:36:23Z · note: Task body is underspecified: missing sections: Acceptance criteria
+- 2026-11-12T18:36:23Z · message_queued at 2026-11-12T18:36:23.240Z
