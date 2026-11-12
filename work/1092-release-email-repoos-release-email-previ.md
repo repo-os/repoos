@@ -39,3 +39,4 @@ Start from src/server/routes/release.ts (getReleaseEmailPreview) and src/cli. Do
 - 2026-11-12T01:11:41Z · body
 - 2026-11-12T01:17:50Z · status active→review
 - 2026-11-12T01:17:50Z · message_queued at 2026-11-12T01:17:50.486Z
+- 2026-11-12T01:17:50Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
