@@ -12,7 +12,7 @@ branch: feat/landable-close-out-a-review-that-says-no
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T08:42:44Z"
+updated_at: "2026-11-12T12:17:14Z"
 last_close_out_gate_ms: 253232
 last_close_out_gate_at: "2026-11-12T08:41:08.285Z"
 review_passes: 1
@@ -93,3 +93,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T08:07:26Z · note: review pass 1: good to go
 - 2026-11-12T08:41:08Z · close-out gate completed in 253s
 - 2026-11-12T08:42:44Z · status done→done, release:success
+- 2026-11-12T12:17:14Z · message_dropped: 1 queued message(s) discarded — task is done
