@@ -2,19 +2,16 @@
 id: "0363"
 title: Tighten isPreviewProcess's custom-command orphan match beyond bare binary basename
 type: bug
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Acceptance criteria"
+status: active
 priority: p3
 area: server
 assigned_to: ai
 created_by: ""
-branch: ""
+branch: feat/tighten-ispreviewprocess-s-custom-comman
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-09-16T02:09:23Z"
-updated_at: "2026-11-12T17:11:37Z"
+updated_at: "2026-11-12T17:11:39Z"
 ---
 ## Problem
 
@@ -68,3 +65,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 - 2026-10-05T11:15:30Z · needs_input
 - 2026-11-12T17:11:34Z · cli_override, model_override
 - 2026-11-12T17:11:37Z · status inbox→ready
+- 2026-11-12T17:11:39Z · status ready→active, needs_input, branch
