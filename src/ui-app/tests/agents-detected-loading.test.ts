@@ -13,6 +13,7 @@ import ScheduledTasksPanel from "../src/components/ScheduledTasksPanel.vue";
 import ModelProvidersPanel from "../src/components/ModelProvidersPanel.vue";
 import { useConfigStore } from "../src/stores/config";
 import { invalidatePageData, invalidatePageDataPrefix } from "../src/composables/page-data-cache";
+import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 const json = (body: unknown): Response =>
   ({
@@ -118,6 +119,7 @@ describe("AgentsView detected-tab loading (#0950)", () => {
     vi.useFakeTimers();
     vi.stubGlobal("EventSource", QuietEventSource);
     const wrapper = await mountAgents();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
 
     expect(wrapper.text()).not.toContain("Probing PATH");
     expect(wrapper.find(".detect-loading").exists()).toBe(false);
@@ -229,6 +231,7 @@ describe("Agents page panels share the skeleton (#0950)", () => {
     setActivePinia(pinia);
     const wrapper = mount(RemindersPanel, { global: { plugins: [pinia, await panelRouter()] } });
     await flushPromises();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
 
     expect(wrapper.text()).not.toContain("Loading reminders");
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
@@ -251,6 +254,7 @@ describe("Agents page panels share the skeleton (#0950)", () => {
       },
     });
     await flushPromises();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
 
     expect(wrapper.text()).not.toContain("Loading schedules");
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
@@ -268,6 +272,7 @@ describe("Agents page panels share the skeleton (#0950)", () => {
     setActivePinia(pinia);
     const wrapper = mount(ModelProvidersPanel, { global: { plugins: [pinia] } });
     await flushPromises();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
 
     expect(wrapper.text()).not.toContain("Loading providers");
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);

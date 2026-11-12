@@ -14,6 +14,7 @@ import { useAuthStore } from "../src/stores/auth";
 import Select from "../src/components/ui/select/root.vue";
 import DeploymentsView from "../src/views/DeploymentsView.vue";
 import { invalidatePageData } from "../src/composables/page-data-cache";
+import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 const api = vi.spyOn(apiMod, "api");
 
@@ -174,8 +175,10 @@ describe("DeploymentsView matrix (#0365)", () => {
   );
 
   it("pins the first-load skeleton for its declared shot fixture", async () => {
+    vi.useFakeTimers();
     window.history.replaceState({}, "", "/deployments?shotState=deployments%3Aloading");
     const wrapper = await mountView();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     expect(api).not.toHaveBeenCalled();
     wrapper.unmount();

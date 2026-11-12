@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 1001261
-last_close_out_gate_at: "2026-11-12T16:30:34.982Z"
 id: "1078"
 title: "Per-view skeletons: apply the show-delay and minimum-visible-time gate in every view that renders its own PageSkeleton (follow-up to #1070)"
 type: chore
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 861a0e47e3a19e259958728ddfb4c3475c3974fe
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/per-view-skeletons-apply-the-show-delay-
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T09:38:37Z"
 updated_at: "2026-11-12T16:30:34Z"
+last_close_out_gate_ms: 1001261
+last_close_out_gate_at: "2026-11-12T16:30:34.982Z"
 review_passes: 1
 last_check_failure: "repoos check at 2026-11-12T15:13:15.189Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Checks page loading placeholder (target \"default\"): highlight .page-skeleton matched nothing on /checks (http://127.0.0.1:36021/checks?tab=runs)"
 ---
