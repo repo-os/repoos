@@ -11,7 +11,7 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T16:32:43Z"
+updated_at: "2026-11-12T16:42:47Z"
 handoff_signal_retry_count: 2
 review_rounds: 1
 review_passes: 2
@@ -93,3 +93,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T16:06:28Z · status review→active
 - 2026-11-12T16:06:30Z · CTO nudge: held — remote validation is running
 - 2026-11-12T16:32:43Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T16:42:47Z · message_queued at 2026-11-12T16:42:47.421Z
