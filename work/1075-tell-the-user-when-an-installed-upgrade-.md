@@ -11,7 +11,8 @@ branch: feat/tell-the-user-when-an-installed-upgrade-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
-updated_at: "2026-11-12T15:49:50Z"
+updated_at: "2026-11-12T16:29:48Z"
+last_check_failure: "repoos check at 2026-11-12T16:07:52.587Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Installed upgrade restart notice in light theme (target \"default\"): highlight [data-test-id=\"installed-restart-notice\"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingLight); [missing-target] Installed upgrade restart notice in dark theme (target \"default\"): highlight [data-test-id=\"installed-restart-notice\"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingD… (truncated)"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -42,14 +43,16 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 {
 "label": "Installed upgrade restart notice in light theme",
 "target": "default",
-"route": "/?shotState=release:restartPendingLight",
-"highlight": "[data-test-id=\"installed-restart-notice\"]"
+"route": "/",
+"highlight": "[data-test-id=\"installed-restart-notice\"]",
+"state": "release:restartPendingLight"
 },
 {
 "label": "Installed upgrade restart notice in dark theme",
 "target": "default",
-"route": "/?shotState=release:restartPendingDark",
-"highlight": "[data-test-id=\"installed-restart-notice\"]"
+"route": "/",
+"highlight": "[data-test-id=\"installed-restart-notice\"]",
+"state": "release:restartPendingDark"
 }
 ]
 ```
@@ -75,3 +78,15 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T15:44:48Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-12T15:49:49Z · message_delivered: 1 message(s)
 - 2026-11-12T15:49:50Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/pressure-guard.test.ts > waitForPressureRelief > waits until a fake probe reports relief, then proceeds on thinkpad — fix it in the feature branch and re-run the gate
+- 2026-11-12T16:03:20Z · body
+- 2026-11-12T16:04:45Z · body
+- 2026-11-12T16:06:30Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T16:07:49Z · note: ui verification failed: ui verification failed (2 issue(s)): [missing-target] Installed upgrade restart notice in light theme (target "default"): highlight [data-test-id="installed-restart-notice"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendingLight); [missing-target] Installed upgrade restart notice in dark theme (target "default"): highlight [data-test-id="installed-restart-notice"] matched nothing on / (http://127.0.0.1:40743/?shotState=release%3ArestartPendi
+- 2026-11-12T16:07:49Z · message_queued at 2026-11-12T16:07:49.347Z
+- 2026-11-12T16:07:52Z · message_delivered: 1 message(s)
+- 2026-11-12T16:19:48Z · message_queued at 2026-11-12T16:19:48.239Z
+- 2026-11-12T16:19:48Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
+- 2026-11-12T16:24:48Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-12T16:25:08Z · body
+- 2026-11-12T16:29:48Z · CTO nudge: held — handoff gate is running
+
