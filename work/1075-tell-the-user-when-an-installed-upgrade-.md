@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1075"
 title: "Tell the user when an installed upgrade is waiting for a restart, and offer Restart now"
 type: feature
@@ -41,3 +42,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T14:17:05Z · status inbox→ready
 - 2026-11-12T14:17:36Z · status ready→active, branch
 - 2026-11-12T14:21:04Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: I haven’t completed task #1075, so I’m leaving it active without requesting handoff. Implemented a first pass of `GET /api/update-status`, registered it in the API parity map, and added a dashboard notice with restart controls. `bun run bu… · stderr: Reading additional input from stdin... 2026-11-12T14:21:02.508645Z ERROR codex_core::session: failed to record rollout items: thread 01a1d01f-1cb3-7ea2-8704-ded609b9dd5f not found
+
