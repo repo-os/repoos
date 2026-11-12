@@ -3,6 +3,9 @@ id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
 status: review
+needs_input: true
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: `needs some work` — Feature code matches the spec; close-out is blocked until foreign `work/*` bookkeeping is healed off the branch tip.
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -116,3 +119,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T18:19:05Z · handoff failed · remote validation failed: test failure: gate exit 1 on mini — fix it in the feature branch and re-run the gate
 - 2026-11-12T18:19:05Z · message_queued at 2026-11-12T18:19:05.540Z
 - 2026-11-12T18:19:06Z · note: review pass 4: needs some work
+- 2026-11-12T18:19:06Z · needs_input
