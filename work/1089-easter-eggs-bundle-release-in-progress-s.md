@@ -92,3 +92,4 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 - 2026-11-12T01:28:22Z · CTO nudge: held — handoff gate is running
 - 2026-11-12T01:50:22Z · note: ui verification passed: 4 of 4 shots captured with clean console
 - 2026-11-12T01:50:24Z · status active→review
+- 2026-11-12T01:50:24Z · note: Task body is underspecified: missing sections: Notes for AI
