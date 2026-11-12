@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "1079"
 title: "Server crashed on unhandled rejection: kill() failed with EPERM (must never take the server down)"
 type: bug
@@ -45,3 +46,4 @@ Look at .repoos/logs/system.log around 2026-11-09T11:14:22Z (UTC) for the full s
 - 2026-11-12T12:39:28Z · note: review pass 1: needs some work
 - 2026-11-12T12:39:28Z · message_delivered: 1 message(s)
 - 2026-11-12T12:39:28Z · status review→active
+
