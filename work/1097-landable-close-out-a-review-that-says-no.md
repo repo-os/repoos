@@ -2,17 +2,14 @@
 id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
-status: ready
-needs_input: true
-needs_input_reason: underspecified
-needs_input_detail: "missing sections: Notes for AI"
+status: active
 priority: p2
 area: [core, server]
 assigned_to: ai
 created_by: t@t
-branch: ""
+branch: feat/landable-close-out-a-review-that-says-no
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T03:33:32Z"
+updated_at: "2026-11-12T03:33:36Z"
 ---
 ## Problem
 A review whose verdict is 'good to go' and whose ## Bugs section reads 'None found' followed by explanatory prose and bullets (what the reviewer checked) is treated by `repoos landable` as 'the review still lists blocking bugs'. Seen on #1077 (review passes 1 and 2, both 'good to go'): landable stays red on 'Review verdict' and close-out would refuse, so a clean task cannot land and a human has to intervene. Earlier reviews flagged the same quirk ('Bugs-section bullets counted as blocking').
@@ -40,3 +37,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T01:26:14Z · needs_input
 - 2026-11-12T03:33:28Z · body: Notes for AI (added)
 - 2026-11-12T03:33:32Z · status inbox→ready
+- 2026-11-12T03:33:36Z · status ready→active, needs_input, branch
