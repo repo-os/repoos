@@ -1,4 +1,5 @@
 ---
+handoff_signal_retry_count: 1
 id: "0363"
 title: Tighten isPreviewProcess's custom-command orphan match beyond bare binary basename
 type: bug
@@ -68,3 +69,4 @@ subtly wrong fix here risks killing processes it shouldn't.
 - 2026-11-12T17:11:39Z · status ready→active, needs_input, branch
 - 2026-11-12T17:19:55Z · note: adopted orphaned engineer pid 96832
 - 2026-11-12T17:31:12Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code unknown · last assistant: Implemented the stricter fallback in [preview.ts](/Users/nick/code/nick/repoos-worktrees/feat/tighten-ispreviewprocess-s-custom-comman/src/server/preview.ts): when the port is absent from `ps`, a match now requires both the executable base… · stderr: Reading additional input from stdin... 2026-11-12T17:31:07.236741Z ERROR codex_core::session: failed to record rollout items: thread 01a1d0be-671f-7ed3-9ede-242b23fd1c43 not found
+
