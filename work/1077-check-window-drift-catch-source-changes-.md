@@ -38,3 +38,4 @@ Start from the merged #1061 code (`src/core/check-gate-bookkeeping.ts`, `src/ser
 - 2026-11-12T00:30:46Z · body
 - 2026-11-12T00:34:00Z · handoff_deferred: 1 queued message(s) must be read before review
 - 2026-11-12T00:34:01Z · message_queued at 2026-11-12T00:34:01.008Z
+- 2026-11-12T00:34:01Z · ↻ resuming engineer to read queued message
