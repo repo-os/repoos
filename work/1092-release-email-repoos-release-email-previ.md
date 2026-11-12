@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-email-repoos-release-email-previ
 created_at: "2026-11-11T05:28:20Z"
-updated_at: "2026-11-12T01:17:50Z"
+updated_at: "2026-11-12T01:18:31Z"
 ---
 ## Problem
 Release emails (#1071) have a preview endpoint, GET /api/release/email/preview, that renders the subject, HTML and text for a version without sending. It is reachable only through `repoos api`. Maintainers who want to check the rendered message from a terminal have no first-class command, and the repo's CLI parity rule expects one.
@@ -40,3 +40,4 @@ Start from src/server/routes/release.ts (getReleaseEmailPreview) and src/cli. Do
 - 2026-11-12T01:17:50Z · status active→review
 - 2026-11-12T01:17:50Z · message_queued at 2026-11-12T01:17:50.486Z
 - 2026-11-12T01:17:50Z · note: shots: skipped — the diff (8 changed paths) touches no capture target's globs — no UI change to capture
+- 2026-11-12T01:18:31Z · note: review pass 1: good to go
