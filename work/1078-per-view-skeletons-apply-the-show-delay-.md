@@ -11,7 +11,7 @@ branch: feat/per-view-skeletons-apply-the-show-delay-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T09:38:37Z"
-updated_at: "2026-11-12T15:20:36Z"
+updated_at: "2026-11-12T15:23:10Z"
 last_check_failure: "repoos check at 2026-11-12T15:13:15.189Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Checks page loading placeholder (target \"default\"): highlight .page-skeleton matched nothing on /checks (http://127.0.0.1:36021/checks?tab=runs)"
 ---
 ## Problem
@@ -56,4 +56,4 @@ From review 5 of #1070, accepted as follow-up and NOT blocking #1070: (a) board 
 - 2026-11-12T15:13:15Z · message_delivered: 1 message(s)
 - 2026-11-12T15:13:25Z · body
 - 2026-11-12T15:20:36Z · body
-
+- 2026-11-12T15:23:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
