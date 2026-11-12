@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 849711
-last_close_out_gate_at: "2026-11-12T04:57:33.944Z"
 id: "1092"
 title: "Release email: repoos release email --preview CLI subcommand"
 type: feature
-status: review
+status: done
 priority: p3
 area: [server, core]
+merged_commit: 4e275e8d2edb24725df9ecf69bbc8d0c60d884e4
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/release-email-repoos-release-email-previ
 created_at: "2026-11-11T05:28:20Z"
 updated_at: "2026-11-12T04:57:33Z"
+last_close_out_gate_ms: 849711
+last_close_out_gate_at: "2026-11-12T04:57:33.944Z"
 review_passes: 1
 ---
 ## Problem
