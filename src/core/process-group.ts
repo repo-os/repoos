@@ -98,7 +98,12 @@ export async function terminateProcessGroupAndWait(
         // ESRCH means the group exited between the liveness check and signal;
         // EPERM means it is outside our authority. In either case cleanup must
         // not turn into an unhandled rejection that can take down the server.
-        const failure = { leaderPid, code, signal, taskId: opts.taskId };
+        const failure = {
+          leaderPid,
+          code: code as "EPERM" | "ESRCH",
+          signal,
+          taskId: opts.taskId,
+        };
         console.warn(
           `[process-group] ${code} signalling process group ${leaderPid}${opts.taskId ? ` for task #${opts.taskId}` : ""} with ${signal}; treating it as unavailable`,
         );
