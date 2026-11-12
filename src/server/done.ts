@@ -252,7 +252,7 @@ interface RunResult {
 function runProcess(
   cmd: string,
   args: string[],
-  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv },
+  opts: { cwd: string; timeout: number; env?: NodeJS.ProcessEnv; taskId?: string },
 ): Promise<RunResult> {
   return new Promise((resolve) => {
     const child = spawn(cmd, args, {
@@ -282,7 +282,7 @@ function runProcess(
           process.platform !== "win32" &&
           (termination || processGroupAlive(child.pid))
         ) {
-          termination ??= terminateProcessGroupAndWait(child.pid);
+          termination ??= terminateProcessGroupAndWait(child.pid, { taskId: opts.taskId });
           await termination;
         }
         finish(code);
@@ -291,7 +291,7 @@ function runProcess(
     timer = setTimeout(() => {
       timedOut = true;
       if (child.pid && process.platform !== "win32") {
-        termination ??= terminateProcessGroupAndWait(child.pid);
+        termination ??= terminateProcessGroupAndWait(child.pid, { taskId: opts.taskId });
       } else {
         child.kill("SIGKILL");
       }
@@ -350,6 +350,7 @@ export type CheckStage = "build" | "check";
 
 export interface RunStepOptions {
   cwd: string;
+  taskId?: string;
   candidates: string[][];
   /** Human-readable label used in failure text. */
   label: string;
@@ -377,6 +378,7 @@ export async function runDoneStep(opts: RunStepOptions): Promise<CheckSummary> {
       cwd: opts.cwd,
       timeout,
       env: opts.env,
+      taskId: opts.taskId,
     });
     if (run.status === 0) return { ok: true, stage: opts.stage };
     if (run.error && (run.error.code === "ENOENT" || run.error.code === "EACCES")) {
@@ -489,9 +491,11 @@ export function describeRetryFailure(first: CheckSummary, retry: CheckSummary): 
 export async function runCloseOutCheck(
   root: string,
   env?: NodeJS.ProcessEnv,
+  taskId?: string,
 ): Promise<CheckSummary> {
   const first = await runDoneStep({
     cwd: root,
+    taskId,
     candidates: checkCandidates(root),
     label: "repoos check",
     stage: "check",
@@ -501,6 +505,7 @@ export async function runCloseOutCheck(
   if (!first.transient) return first;
   const retry = await runDoneStep({
     cwd: root,
+    taskId,
     candidates: checkCandidates(root),
     label: "repoos check (retry after timeout)",
     stage: "check",
@@ -682,6 +687,7 @@ async function completeTaskLocked(
     ? await steps.build(root)
     : await runDoneStep({
         cwd: root,
+        taskId: task.id,
         candidates: BUILD_STEPS,
         label: "bun run build",
         stage: "build",
@@ -706,7 +712,9 @@ async function completeTaskLocked(
   // `bun run build` is staleness-aware now (#0377), so `repoos check`'s own
   // "Full build" step detects the fresh marker and skips itself — no private
   // skip env flag needed (that plumbing was removed with #0377).
-  const check = steps.check ? await steps.check(root) : await runCloseOutCheck(root);
+  const check = steps.check
+    ? await steps.check(root)
+    : await runCloseOutCheck(root, undefined, task.id);
   if (!check.ok) {
     return {
       ok: false,
