@@ -4,8 +4,8 @@ title: Guard against huge/build-output files in WIP checkpoint commits and branc
 type: bug
 status: review
 needs_input: true
-needs_input_reason: review-human-attention
-needs_input_detail: Review pass 7 still found issues (human flag after 5 passes). The reviewer was asked to summarise the repeated bug classes — read the newest report and decide whether to keep iterating or rescope.
+needs_input_reason: review-rounds-exhausted
+needs_input_detail: "`needs some work` — DerivedData moved out of the repo, but the release DMG step and the repoos.toml Hub dev command still point at the old …"
 priority: p2
 area: core
 assigned_to: ai
