@@ -26,7 +26,8 @@ function isRecordedEvent(v: unknown): v is RecordedAttentionEvent {
       e.kind === "ctoAction" ||
       e.kind === "engineerRecoveryFailed" ||
       e.kind === "releaseEmailFailed" ||
-      e.kind === "serverCrash") &&
+      e.kind === "serverCrash" ||
+      e.kind === "processSignalFailure") &&
     typeof e.message === "string" &&
     typeof e.detail === "string" &&
     typeof e.at === "string"

@@ -320,6 +320,7 @@ export interface RemoteExecDeps {
         waitBudgetMs: number;
         runTimeoutMs: number;
       };
+      taskId?: string;
     },
   ): Promise<RemoteExecResult>;
   /** TCP connect probe (used to wait for sshd to come up). */
@@ -2667,6 +2668,7 @@ function runLocal(
   opts: {
     cwd?: string;
     timeoutMs: number;
+    taskId?: string;
     onChunk?: (c: string) => void;
     registerAbort?: (abort: () => void) => void;
     lockAwareTimeout?: {
@@ -2688,7 +2690,7 @@ function runLocal(
     const stopProcess = (): void => {
       timedOut = true;
       if (child.pid && process.platform !== "win32") {
-        termination ??= terminateProcessGroupAndWait(child.pid);
+        termination ??= terminateProcessGroupAndWait(child.pid, { taskId: opts.taskId });
       } else {
         child.kill("SIGKILL");
       }
@@ -2720,7 +2722,7 @@ function runLocal(
     opts.registerAbort?.(() => {
       if (settled) return;
       if (child.pid && process.platform !== "win32") {
-        termination ??= terminateProcessGroupAndWait(child.pid);
+        termination ??= terminateProcessGroupAndWait(child.pid, { taskId: opts.taskId });
       } else {
         child.kill("SIGKILL");
       }
@@ -2748,7 +2750,7 @@ function runLocal(
           process.platform !== "win32" &&
           (termination || processGroupAlive(child.pid))
         ) {
-          termination ??= terminateProcessGroupAndWait(child.pid);
+          termination ??= terminateProcessGroupAndWait(child.pid, { taskId: opts.taskId });
           await termination;
         }
         done(code);
@@ -2943,6 +2945,7 @@ export function defaultRemoteExec(): RemoteExecDeps {
     async runRemote(host, command, onChunk, timeoutMs, opts) {
       return runLocal("ssh", [...sshArgs(host), `${host.user}@${host.ip}`, command], {
         timeoutMs,
+        taskId: opts?.taskId,
         onChunk,
         registerAbort: opts?.registerAbort,
         lockAwareTimeout: opts?.lockAwareTimeout,
@@ -4008,6 +4011,7 @@ export class RemoteValidationRunner implements RemoteValidator {
             run = await Promise.race([
               captureFinished,
               this.exec.runRemote(host, cmd, emitStream, this.timings.remoteRunTimeoutMs, {
+                taskId: opts.taskId,
                 registerAbort: (abort) => {
                   control.abortRun = abort;
                   if (signal.aborted) abort();
@@ -7256,6 +7260,7 @@ export class TailscaleRunner implements RemoteValidator {
           run = await Promise.race([
             captureFinished,
             this.exec.runRemote(host, cmd, emitStream, outerTimeoutMs, {
+              taskId: opts.taskId,
               lockAwareTimeout: {
                 acquiredMarker: "[lock] slot ",
                 waitBudgetMs: waitSecs * 1000,

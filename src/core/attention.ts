@@ -42,7 +42,8 @@ export type AttentionKind =
   | "ctoSilent"
   | "engineerRecoveryFailed"
   | "releaseEmailFailed"
-  | "serverCrash";
+  | "serverCrash"
+  | "processSignalFailure";
 
 export interface AttentionItem {
   /** Stable per event — dedupe key for clients and dismiss markers. */
@@ -74,7 +75,8 @@ export interface RecordedAttentionEvent {
     | "gitLock"
     | "engineerRecoveryFailed"
     | "releaseEmailFailed"
-    | "serverCrash";
+    | "serverCrash"
+    | "processSignalFailure";
   taskId: string | null;
   message: string;
   detail: string;
@@ -160,6 +162,7 @@ const SEVERITY: Record<AttentionKind, AttentionSeverity> = {
   engineerRecoveryFailed: "error",
   releaseEmailFailed: "warning",
   serverCrash: "error",
+  processSignalFailure: "warning",
 };
 
 /** Attention kinds that imply the CTO (or a driver) should be acting (#0728). */

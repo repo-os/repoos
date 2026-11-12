@@ -8,6 +8,7 @@ import { join } from "node:path";
 import { createAttentionEventStore } from "../../server/attention-events.js";
 import {
   notifyAttentionAfterSession,
+  notifyAttentionProcessSignalFailure,
   notifyAttentionProviderUsageLimit,
   wireAttentionNotifications,
 } from "../../server/attention-notify.js";
@@ -57,6 +58,33 @@ describe("notifyAttentionProviderUsageLimit", () => {
       kind: "providerUsageLimit",
       message: expect.stringContaining("opencode-go out of usage since"),
       detail: expect.stringContaining("repoos agents resume opencode --model go"),
+    });
+    expect(bumps).toBe(1);
+  });
+});
+
+describe("notifyAttentionProcessSignalFailure", () => {
+  it("records a task-linked bell item and bumps attention", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-signal-attention-"));
+    const store = createAttentionEventStore(root);
+    let bumps = 0;
+    wireAttentionNotifications(store, () => {
+      bumps += 1;
+    });
+
+    notifyAttentionProcessSignalFailure({
+      leaderPid: 43210,
+      code: "EPERM",
+      signal: "SIGTERM",
+      taskId: "1079",
+    });
+
+    expect(store.list()).toHaveLength(1);
+    expect(store.list()[0]).toMatchObject({
+      kind: "processSignalFailure",
+      taskId: "1079",
+      message: expect.stringContaining("43210 for #1079"),
+      detail: expect.stringContaining("EPERM while sending SIGTERM"),
     });
     expect(bumps).toBe(1);
   });

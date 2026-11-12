@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { terminateProcessGroupAndWait } from "./process-group.js";
+import {
+  setProcessGroupSignalFailureHandler,
+  terminateProcessGroupAndWait,
+} from "./process-group.js";
 
 describe("terminateProcessGroupAndWait", () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    setProcessGroupSignalFailureHandler(null);
+    vi.restoreAllMocks();
+  });
 
   it.each(["EPERM", "ESRCH"])("contains %s from a cleanup signal", async (code) => {
     const kill = vi.spyOn(process, "kill").mockImplementation(() => {
@@ -25,5 +31,23 @@ describe("terminateProcessGroupAndWait", () => {
 
     await expect(terminateProcessGroupAndWait(43210, { pollMs: 1 })).resolves.toBeUndefined();
     expect(kill).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports task context for the durable server attention notice", async () => {
+    vi.spyOn(process, "kill").mockImplementation(() => {
+      throw Object.assign(new Error("kill failed: EPERM"), { code: "EPERM" });
+    });
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onFailure = vi.fn();
+    setProcessGroupSignalFailureHandler(onFailure);
+
+    await terminateProcessGroupAndWait(43210, { taskId: "1079" });
+
+    expect(onFailure).toHaveBeenCalledWith({
+      leaderPid: 43210,
+      code: "EPERM",
+      signal: "SIGTERM",
+      taskId: "1079",
+    });
   });
 });

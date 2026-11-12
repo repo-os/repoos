@@ -24,6 +24,25 @@ export function notifyAttentionAgentStalled(taskId: string): void {
   bumpAttention?.();
 }
 
+export function notifyAttentionProcessSignalFailure(failure: {
+  leaderPid: number;
+  code: "EPERM" | "ESRCH";
+  signal: string;
+  taskId?: string;
+}): void {
+  if (!attentionEvents) return;
+  const at = new Date().toISOString();
+  attentionEvents.record({
+    id: `processSignalFailure:${failure.leaderPid}:${at}`,
+    kind: "processSignalFailure",
+    taskId: failure.taskId ?? null,
+    message: `Could not signal process group ${failure.leaderPid}${failure.taskId ? ` for #${failure.taskId}` : ""}`,
+    detail: `${failure.code} while sending ${failure.signal}; RepoOS stopped waiting for this process group. See system logs for details.`,
+    at,
+  });
+  bumpAttention?.();
+}
+
 /** Active task could not be restarted after the no-engineer window (#0993). */
 export function notifyAttentionEngineerRecoveryFailed(
   taskId: string,

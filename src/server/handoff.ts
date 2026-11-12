@@ -199,6 +199,7 @@ export function runHandoffCommand(
   env?: NodeJS.ProcessEnv,
   onChunk?: (text: string) => void,
   registerCancel?: (cancel: () => Promise<boolean>) => void,
+  taskId?: string,
 ): Promise<RunResult> {
   return new Promise((finish) => {
     const child = spawn(cmd, args, {
@@ -242,7 +243,7 @@ export function runHandoffCommand(
       finalizePromise = (async () => {
         if (child.pid && process.platform !== "win32") {
           if (!termination && processGroupAlive(child.pid)) {
-            termination = terminateProcessGroupAndWait(child.pid);
+            termination = terminateProcessGroupAndWait(child.pid, { taskId });
           }
           await termination;
         }
@@ -265,7 +266,7 @@ export function runHandoffCommand(
         await childClose;
         return settled;
       }
-      termination ??= terminateProcessGroupAndWait(child.pid);
+      termination ??= terminateProcessGroupAndWait(child.pid, { taskId });
       await termination;
       if (!childClosed) await childClose;
       await finalize(closeCode);
@@ -275,7 +276,7 @@ export function runHandoffCommand(
       timedOut = true;
       if (!child.pid) return;
       if (process.platform === "win32") child.kill("SIGKILL");
-      else termination ??= terminateProcessGroupAndWait(child.pid);
+      else termination ??= terminateProcessGroupAndWait(child.pid, { taskId });
     }, timeoutMs);
   });
 }
@@ -426,6 +427,7 @@ async function runCheck(
         env,
         onChunk,
         registerCancel,
+        taskId,
       );
       if (last.status === 0) return last;
       if (!last.error || (last.error.code !== "ENOENT" && last.error.code !== "EACCES"))

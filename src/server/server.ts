@@ -215,7 +215,11 @@ import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
 import { createCtoActionRateStore } from "./cto-action-rates.js";
 import { runCtoMonitorSafeActions } from "./cto-actions.js";
-import { wireAttentionNotifications } from "./attention-notify.js";
+import {
+  notifyAttentionProcessSignalFailure,
+  wireAttentionNotifications,
+} from "./attention-notify.js";
+import { setProcessGroupSignalFailureHandler } from "../core/process-group.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
 import { createRemoteValidator, type RemoteValidator } from "./remote-validation.js";
 import { hostLockJobsForTask, taskRemoteActivityForCard } from "./active-task-card.js";
@@ -1571,6 +1575,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
     }
   });
   wireAttentionNotifications(attentionEvents, bumpAttention);
+  setProcessGroupSignalFailureHandler(notifyAttentionProcessSignalFailure);
   const recordRemoteFallbackAttention = (taskId: string, detail: string): void => {
     const at = new Date().toISOString();
     const line =
