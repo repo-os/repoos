@@ -132,7 +132,7 @@ describe("runner worktree layout for browser capture (#0854)", () => {
       "# handles the hang where the runner process never exits after writing result.json.";
     const start = validateScript.indexOf(marker);
     expect(start).toBeGreaterThan(-1);
-    const block = validateScript.slice(start, start + 2600);
+    const block = validateScript.slice(start, start + 5000);
     expect(block).not.toMatch(/set \+e/);
     expect(block).toMatch(
       /_reap_ids=\$\(docker ps -q --filter "name=repoos-validate-" --filter status=running 2>\/dev\/null\) \\\n  && _reap_ps_ok=0 \|\| _reap_ps_ok=\$\?/,
