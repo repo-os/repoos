@@ -11,7 +11,7 @@ branch: feat/remote-capture-follow-up-remaining-docke
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:05:29Z"
-updated_at: "2026-11-12T18:22:53Z"
+updated_at: "2026-11-12T18:44:55Z"
 review_rounds: 1
 review_passes: 1
 ---
@@ -46,3 +46,4 @@ Start from the merged #1060 code on main and its review reports under work/repor
 - 2026-11-12T18:10:13Z · message_delivered: 1 message(s)
 - 2026-11-12T18:10:13Z · status review→active
 - 2026-11-12T18:22:53Z · body
+- 2026-11-12T18:44:55Z · message_queued at 2026-11-12T18:44:55.320Z
