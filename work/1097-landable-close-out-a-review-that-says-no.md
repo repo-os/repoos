@@ -14,7 +14,7 @@ branch: feat/landable-close-out-a-review-that-says-no
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T06:07:41Z"
+updated_at: "2026-11-12T07:55:59Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: c78deec73dababb2938f8b2b3271fb20f44bb2db
 dev_error_count: 8
