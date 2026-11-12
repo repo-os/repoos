@@ -65,6 +65,12 @@ async function loadAgentLastRuns(): Promise<void> {
     agentLastRuns.value = [];
   }
 }
+function lastRunStatusLabel(status: string): string {
+  if (status === "errored") return "Failed";
+  if (status === "active" || status === "running") return "Running";
+  if (status === "ok" || status === "succeeded") return "Succeeded";
+  return status;
+}
 
 type AgentTab =
   | "default"
@@ -817,7 +823,7 @@ onUnmounted(() => {
             >
               <span class="agents-last-run-name">{{ run.name }}</span>
               <span
-                >{{ run.status === "errored" ? "Failed" : "Succeeded" }} ·
+                >{{ lastRunStatusLabel(run.status) }} ·
                 {{ new Date(run.at).toLocaleString() }}</span
               >
               <span v-if="run.reason" class="agents-last-run-reason">{{

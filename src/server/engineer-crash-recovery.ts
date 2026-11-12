@@ -148,6 +148,7 @@ function failoverInstruction(
 ): string {
   return [
     `Automatic crash recovery: ${plan.from.cli} + ${plan.from.model} crashed ${plan.crashes} times in the last ${minutes(plan.windowMs)} minutes (${condense(reason)}).`,
+    `If this is a sign-in or model issue, see the ${plan.from.cli} notice on the Agents page for the fix.`,
     `RepoOS switched this task to ${plan.to.cli} + ${plan.to.model}. The worktree and task history are unchanged.`,
     `Resume from the current state and finish the task. Run \`repoos check\` and emit the handoff signal only when the work is complete and the check passes.`,
   ].join("\n");
