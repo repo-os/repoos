@@ -614,6 +614,33 @@ export class RepoOSDb {
     }
   }
 
+  /** Latest completed run per named agent for the Agents page. */
+  getAgentLastRuns(): Array<
+    Pick<SessionRecord, "agent" | "codingAgent" | "status" | "startedAt" | "errorReason" | "taskId">
+  > {
+    if (!this.available || !this.db) return [];
+    try {
+      return this.db
+        .prepare(`
+        SELECT s.agent, s.codingAgent, s.status, s.startedAt, s.errorReason, s.taskId
+        FROM sessions s
+        INNER JOIN (
+          SELECT agent, MAX(startedAt) AS startedAt FROM sessions
+          WHERE agent IS NOT NULL AND agent != '' GROUP BY agent
+        ) latest ON latest.agent = s.agent AND latest.startedAt = s.startedAt
+        ORDER BY s.agent COLLATE NOCASE
+      `)
+        .all() as Array<
+        Pick<
+          SessionRecord,
+          "agent" | "codingAgent" | "status" | "startedAt" | "errorReason" | "taskId"
+        >
+      >;
+    } catch {
+      return [];
+    }
+  }
+
   /**
    * Sessions run by one candidate (coding agent + model), optionally scoped to
    * a role/sessionType (#0812). Feeds the per-candidate project history the

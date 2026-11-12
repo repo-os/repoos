@@ -393,9 +393,11 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
       detail: ev.detail,
       link: ev.taskId
         ? `/work?task=${ev.taskId}`
-        : ev.kind === "releaseEmailFailed"
-          ? "/releases"
-          : null,
+        : ev.id.startsWith("agentFailure:")
+          ? "/agents"
+          : ev.kind === "releaseEmailFailed"
+            ? "/releases"
+            : null,
       at: ev.at,
     });
   }

@@ -3,6 +3,22 @@ import { classifyAgentFailure, formatAgentFailure } from "./agent-failure.js";
 
 describe("classifyAgentFailure", () => {
   it.each([
+    "opencode",
+    "claude code",
+    "qwen code",
+    "kiro",
+    "codex",
+    "github copilot",
+    "cursor",
+    "antigravity",
+    "crush",
+    "pi",
+    "muse",
+  ])("classifies signed-out text for %s", (cli) => {
+    expect(classifyAgentFailure("Not logged in", cli)?.id).toBe("auth");
+  });
+
+  it.each([
     ["cursor", "Cannot use this model: composer-2.5", "model-unavailable"],
     ["Claude Code", "OAuth token expired; please log in again", "auth"],
     ["GitHub Copilot", "Auto preference balance is unavailable", "model-unavailable"],

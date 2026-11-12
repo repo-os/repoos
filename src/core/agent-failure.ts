@@ -15,6 +15,24 @@ const LIMIT = /(?:usage limit|rate limit|quota exceeded|out of usage|too many re
 const NETWORK =
   /(?:ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNRESET|ECONNREFUSED|network unreachable|fetch failed|socket hang up|connection timed out)/i;
 
+function cliName(cli: string): string {
+  const names: Record<string, string> = {
+    cursor: "Cursor",
+    "claude code": "Claude",
+    "github copilot": "Copilot",
+    codex: "Codex",
+    opencode: "OpenCode",
+    "qwen code": "Qwen Code",
+    antigravity: "Antigravity",
+    crush: "Crush",
+    muse: "Muse",
+  };
+  return (
+    names[cli.trim().toLowerCase()] ??
+    (cli ? `${cli[0]!.toUpperCase()}${cli.slice(1)}` : "This agent")
+  );
+}
+
 /** Classify known CLI failures; null means callers should preserve/show the raw tail. */
 export function classifyAgentFailure(detail: string, cli = ""): AgentFailureReason | null {
   const text = detail.trim();
@@ -34,8 +52,8 @@ export function classifyAgentFailure(detail: string, cli = ""): AgentFailureReas
   if (AUTH.test(text))
     return {
       id: "auth",
-      summary: `${cli || "This agent"} is signed out.`,
-      fix: `Re-authenticate ${cli || "the agent"} on this computer.`,
+      summary: `${cliName(cli)} is signed out.`,
+      fix: `Re-authenticate ${cli ? cliName(cli) : "this agent"} on this computer.`,
     };
   if (MODEL.test(text)) {
     const model = /Cannot use this model:\s*([^\s.,]+)/i.exec(text)?.[1];
@@ -65,4 +83,11 @@ export function classifyAgentFailure(detail: string, cli = ""): AgentFailureReas
 export function formatAgentFailure(detail: string, cli?: string): string {
   const reason = classifyAgentFailure(detail, cli);
   return reason ? `${reason.summary} ${reason.fix} (CLI: ${detail.trim()})` : detail;
+}
+
+/** Separate the concise guidance from the retained CLI tail for disclosure UI. */
+export function splitAgentFailureDetail(detail: string): { summary: string; raw: string | null } {
+  const marker = detail.lastIndexOf(" (CLI: ");
+  if (marker < 0 || !detail.endsWith(")")) return { summary: detail, raw: null };
+  return { summary: detail.slice(0, marker), raw: detail.slice(marker + 7, -1) };
 }

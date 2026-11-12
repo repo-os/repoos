@@ -96,6 +96,7 @@ import {
   resolveNeedsInputReasonKey,
   STALE_REVIEW_DEV_ERROR_BANNER,
 } from "../lib/needs-input-ui";
+import { splitAgentFailureDetail } from "../../../core/agent-failure.js";
 import Button from "./ui/button.vue";
 import Input from "./ui/input.vue";
 import ActivityIndicator from "./ActivityIndicator.vue";
@@ -3307,11 +3308,16 @@ function openSkillSuggestion(): void {
 const activeNeedsInputQuestions = computed(() => (ui.active?.questions?.length ?? 0) > 0);
 const activeNeedsInputDetailLine = computed(() => {
   if (!ui.active) return null;
-  return formatNeedsInputDetailForDisplay(
+  const detail = formatNeedsInputDetailForDisplay(
     ui.active.needsInputReason,
     ui.active.needsInputDetail,
     activeNeedsInputQuestions.value,
   );
+  return detail ? splitAgentFailureDetail(detail).summary : null;
+});
+const activeNeedsInputRawFailure = computed(() => {
+  const detail = ui.active?.needsInputDetail;
+  return detail ? splitAgentFailureDetail(detail).raw : null;
 });
 
 /**
@@ -6130,6 +6136,10 @@ watch(
                   }}</span>
                   <span class="diagnostic-details-affordance">Details</span>
                 </button>
+                <details v-if="activeNeedsInputRawFailure" class="agent-failure-raw">
+                  <summary>Raw CLI error</summary>
+                  <pre>{{ activeNeedsInputRawFailure }}</pre>
+                </details>
                 <div class="agent-waiting-actions">
                   <Button
                     v-if="needsInputPrimary && !staleNeedsInputOnReview"

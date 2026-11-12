@@ -213,6 +213,8 @@ import { closeOutPending, createJobCoordinator, type JobCoordinator } from "./in
 import { createCloseOutOutcomeStore } from "./close-out-outcome.js";
 import { createAttentionEventStore } from "./attention-events.js";
 import { createCtoActionRateStore } from "./cto-action-rates.js";
+import { getRepoOSDb } from "../core/db.js";
+import { formatAgentFailure } from "../core/agent-failure.js";
 import { runCtoMonitorSafeActions } from "./cto-actions.js";
 import { wireAttentionNotifications } from "./attention-notify.js";
 import { CloseOutOrchestrator } from "./integration-orchestrator.js";
@@ -4115,6 +4117,24 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
 
   // Agent routes
   router.register("GET", "/api/agents/running", runningAgents);
+  router.register("GET", "/api/agents/last-runs", (_ctx, _req, res) => {
+    const rows = getRepoOSDb(config.root)?.getAgentLastRuns() ?? [];
+    return json(res, 200, {
+      agents: rows.map((row) => {
+        const reason =
+          row.status === "errored" && row.errorReason
+            ? formatAgentFailure(row.errorReason, row.codingAgent ?? "")
+            : null;
+        return {
+          name: row.agent,
+          status: row.status,
+          at: row.startedAt,
+          taskId: row.taskId,
+          reason,
+        };
+      }),
+    });
+  });
   router.register("GET", "/api/agents/queued", queuedAgents);
   router.register("GET", "/api/agents/detect", detectInstalledAgents);
   router.register("GET", "/api/agents/detect/stream", streamDetectAgents);

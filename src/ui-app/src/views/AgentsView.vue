@@ -5,6 +5,7 @@ import { Star } from "lucide-vue-next";
 import { useConfigStore, type ModelListNotice } from "../stores/config";
 import { useDocsStore } from "../stores/docs";
 import { api, JSON_OPTS } from "../api";
+import { splitAgentFailureDetail } from "../../../core/agent-failure.js";
 import { copyToClipboard } from "../lib/clipboard";
 import type {
   Agent,
@@ -47,6 +48,23 @@ const router = useRouter();
 const route = useRoute();
 const docs = useDocsStore();
 const reminders = useRemindersStore();
+
+interface AgentLastRun {
+  name: string;
+  status: string;
+  at: string;
+  taskId: string | null;
+  reason: string | null;
+}
+const agentLastRuns = ref<AgentLastRun[]>([]);
+async function loadAgentLastRuns(): Promise<void> {
+  try {
+    const result = await api<{ agents: AgentLastRun[] }>("/api/agents/last-runs");
+    agentLastRuns.value = result.agents;
+  } catch {
+    agentLastRuns.value = [];
+  }
+}
 
 type AgentTab =
   | "default"
@@ -679,6 +697,7 @@ function copyHint(hint: string): void {
 onMounted(() => {
   void checkAgents();
   void loadModels();
+  void loadAgentLastRuns();
 });
 
 onUnmounted(() => {
@@ -788,6 +807,30 @@ onUnmounted(() => {
           <div class="agent-desc">
             Headless task-engine roles that run the roadmap. Toggle them on or off and pick their
             coding agent and model.
+          </div>
+          <div v-if="agentLastRuns.length" class="agents-last-runs" data-testid="agents-last-runs">
+            <div
+              v-for="run in agentLastRuns"
+              :key="run.name"
+              class="agents-last-run"
+              :data-status="run.status"
+            >
+              <span class="agents-last-run-name">{{ run.name }}</span>
+              <span
+                >{{ run.status === "errored" ? "Failed" : "Succeeded" }} ·
+                {{ new Date(run.at).toLocaleString() }}</span
+              >
+              <span v-if="run.reason" class="agents-last-run-reason">{{
+                splitAgentFailureDetail(run.reason).summary
+              }}</span>
+              <details
+                v-if="run.reason && splitAgentFailureDetail(run.reason).raw"
+                class="agent-failure-raw"
+              >
+                <summary>Raw CLI error</summary>
+                <pre>{{ splitAgentFailureDetail(run.reason).raw }}</pre>
+              </details>
+            </div>
           </div>
           <AgentCard
             v-for="a in sortedHeadlessAgents"
@@ -1203,3 +1246,33 @@ onUnmounted(() => {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.agents-last-runs {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.agents-last-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 14px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--line);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.agents-last-run[data-status="errored"] {
+  border-left-color: var(--red);
+}
+.agents-last-run-name {
+  min-width: 90px;
+  color: var(--text);
+  font-weight: 650;
+}
+.agents-last-run-reason {
+  flex-basis: 100%;
+  color: var(--text);
+}
+</style>
