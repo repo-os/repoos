@@ -864,15 +864,21 @@ async function isPreviewProcess(info: PreviewInfo): Promise<boolean> {
         cmd.includes(`--port ${port}`)
       );
     }
-    // The shell may quote the binary, and `ps` may report an absolute path —
-    // match on the executable's basename plus the exact port binding.
-    const first =
-      info.command
-        .trim()
-        .split(/\s+/)[0]
-        ?.replace(/^['"]|['"]$/g, "") ?? "";
+    // With shell:true the child pid is the shell/exec'd command depending on
+    // platform. `ps` removes shell quotes, so compare the executable basename
+    // and (when no port is visible) a complete argument token from the launch
+    // command. A bare basename can match an unrelated process after PID reuse.
+    const commandTokens =
+      info.command.trim().match(/'[^']*'|"[^"]*"|\S+/g)?.map((token) =>
+        token.replace(/^['"]|['"]$/g, ""),
+      ) ?? [];
+    const first = commandTokens[0] ?? "";
     const binary = basename(first);
-    return cmd.includes(`--port ${port}`) || (Boolean(binary) && cmd.includes(binary));
+    if (cmd.includes(`--port ${port}`)) return true;
+    const argument = commandTokens[1];
+    if (!binary || !argument || !cmd.includes(binary)) return false;
+    const escapedArgument = argument.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\s)${escapedArgument}(?:\\s|$)`).test(cmd);
   } catch {
     return false;
   }
