@@ -32,6 +32,7 @@ describe("AgentsView agent cards", () => {
       },
     });
     await flush();
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     expect(wrapper.find(".agents-page-title").text()).toBe("Agents");
     expect(wrapper.find(".agent-tabs").exists()).toBe(true);

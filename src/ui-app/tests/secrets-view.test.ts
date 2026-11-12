@@ -7,6 +7,7 @@ import SecretsView from "../src/views/SecretsView.vue";
 import { navFromConfig } from "../src/nav";
 import { useAuthStore } from "../src/stores/auth";
 import { invalidatePageData } from "../src/composables/page-data-cache";
+import { SKELETON_MIN_VISIBLE_MS, SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 const api = vi.spyOn(apiMod, "api");
 const envs = {
@@ -154,8 +155,10 @@ describe("SecretsView (#0929)", () => {
   it.each(["success", "failure"])(
     "keeps environment keys isolated when the previous request ends in %s",
     async (outcome) => {
+      vi.useFakeTimers();
       const first = mountPage();
       await flushPromises();
+      await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
       first.unmount();
       // Only the old environment has a cached snapshot.
       invalidatePageData("secrets:integration");
@@ -176,6 +179,7 @@ describe("SecretsView (#0929)", () => {
       });
       const revisit = mountPage();
       await flushPromises();
+      await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
       expect(revisit.get(".secrets-picker").text()).toContain("integration");
       expect(revisit.text()).not.toContain("DATABASE_URL");
       expect(revisit.find(".page-skeleton").exists()).toBe(true);
@@ -187,6 +191,7 @@ describe("SecretsView (#0929)", () => {
       expect(revisit.find(".page-skeleton").exists()).toBe(true);
       finishIntegration(snapshots.integration);
       await flushPromises();
+      await vi.advanceTimersByTimeAsync(SKELETON_MIN_VISIBLE_MS);
       expect(revisit.find(".secrets-ledger").exists()).toBe(true);
       expect(revisit.find(".page-skeleton").exists()).toBe(false);
       revisit.unmount();

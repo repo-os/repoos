@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-12T15:23:59Z"
-review_passes: 1
 id: "1078"
 title: "Per-view skeletons: apply the show-delay and minimum-visible-time gate in every view that renders its own PageSkeleton (follow-up to #1070)"
 type: chore
@@ -13,7 +11,7 @@ branch: feat/per-view-skeletons-apply-the-show-delay-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T09:38:37Z"
-last_check_failure: "repoos check at 2026-11-12T15:13:15.189Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Checks page loading placeholder (target \"default\"): highlight .page-skeleton matched nothing on /checks (http://127.0.0.1:36021/checks?tab=runs)"
+updated_at: "2026-11-12T15:23:10Z"
 ---
 ## Problem
 #1070 added a show-delay (about 180 ms) and minimum visible time (about 350 ms) for the shell-level first-load skeleton in App.vue. Views that render their own `PageSkeleton` while their data loads (Checks, Agents, Releases, Deployments, Dev, Secrets, Settings) still show it immediately and can flash it for a few milliseconds.
@@ -32,17 +30,6 @@ See App.vue (showRepoSkeleton), `PageSkeleton.vue`, `src/ui-app/tests/app-loadin
 ## More items moved here from #1070 (review pass 5)
 From review 5 of #1070, accepted as follow-up and NOT blocking #1070: (a) board skeleton columns should match the real board's responsive breakpoints (real .board becomes 3 columns at <=1250px, style.css ~2073; the skeleton keeps six until 760px); (b) PageSkeleton should reuse the existing motion settings (activityAnimationConcurrency, page-visibility and IntersectionObserver gating from useActivityMotion, as ActivityIndicator.vue does) instead of an unconditional pulse; (c) cache seeding: views other than SecretsView (Checks, Releases, Deployments, Dev, Agents, CheckRuns) can still draw the skeleton on a revisit within five minutes because their local refs start empty; (d) Mission Control's real page is a usage panel plus a resources panel, so a closer skeleton shape is a later refinement.
 
-## Shots
-```json
-[
-{
-"label": "Checks page with shared loading behavior",
-"target": "default",
-"route": "/checks?tab=runs"
-}
-]
-```
-
 ## Activity
 
 - 2026-11-09T09:38:37Z · created · njachowski@gmail.com
@@ -50,15 +37,4 @@ From review 5 of #1070, accepted as follow-up and NOT blocking #1070: (a) board 
 - 2026-11-12T14:16:53Z · cli_override, model_override
 - 2026-11-12T14:16:57Z · status inbox→ready
 - 2026-11-12T14:16:58Z · status ready→active, branch
-- 2026-11-12T14:18:55Z · body
-- 2026-11-12T15:08:18Z · body
-- 2026-11-12T15:13:11Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Checks page loading placeholder (target "default"): highlight .page-skeleton matched nothing on /checks (http://127.0.0.1:36021/checks?tab=runs)
-- 2026-11-12T15:13:12Z · message_queued at 2026-11-12T15:13:12.014Z
-- 2026-11-12T15:13:15Z · message_delivered: 1 message(s)
-- 2026-11-12T15:13:25Z · body
-- 2026-11-12T15:20:36Z · body
-- 2026-11-12T15:23:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
 - 2026-11-12T15:23:10Z · status active→review
-- 2026-11-12T15:23:11Z · message_queued at 2026-11-12T15:23:11.092Z
-- 2026-11-12T15:23:59Z · note: review pass 1: good to go
-

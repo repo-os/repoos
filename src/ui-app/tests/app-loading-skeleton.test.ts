@@ -27,7 +27,7 @@ const LoadingHarness = defineComponent({
   props: { loading: { type: Boolean, required: true } },
   template: '<PageSkeleton kind="rows" :loading="loading" defer />',
 });
-const ImmediateSkeletonHarness = defineComponent({
+const DefaultSkeletonHarness = defineComponent({
   components: { PageSkeleton },
   props: { loading: { type: Boolean, required: true } },
   template: '<PageSkeleton kind="rows" :loading="loading" />',
@@ -180,7 +180,7 @@ describe("repo loading skeleton", () => {
     }
   });
 
-  it("keeps per-view skeletons immediate and reserves the timing gate for the shell", () => {
+  it("applies the shared timing gate to every per-view skeleton", () => {
     const callsitePaths = [
       "../src/views/ChecksView.vue",
       "../src/views/SecretsView.vue",
@@ -200,7 +200,7 @@ describe("repo loading skeleton", () => {
       expect(tags.length, path).toBeGreaterThan(0);
       for (const tag of tags) {
         expect(tag, path).toContain(":loading=");
-        expect(tag, path).not.toMatch(/\bdefer\b/);
+        expect(tag, path).toContain(":loading=");
       }
     }
   });
@@ -218,9 +218,9 @@ describe("repo loading skeleton", () => {
       "deployments",
     ] as const;
     const wrappers = kinds.map((kind) => mount(PageSkeleton, { props: { kind, loading: true } }));
-    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS - 1);
     for (const wrapper of wrappers) {
-      expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+      expect(wrapper.find(".page-skeleton").exists()).toBe(false);
     }
     await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     for (const [index, wrapper] of wrappers.entries()) {
@@ -331,6 +331,21 @@ describe("repo loading skeleton", () => {
     wrapper.unmount();
     cached.unmount();
     vi.useRealTimers();
+  });
+
+  it("delays per-view skeletons by default and holds a shown skeleton for the minimum", async () => {
+    vi.useFakeTimers();
+    const wrapper = mount(DefaultSkeletonHarness, { props: { loading: true } });
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS - 1);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    await wrapper.setProps({ loading: false });
+    await vi.advanceTimersByTimeAsync(SKELETON_MIN_VISIBLE_MS - 1);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(wrapper.find(".page-skeleton").exists()).toBe(false);
+    wrapper.unmount();
   });
 
   it("keeps the shell skeleton visible for the minimum interval", async () => {
