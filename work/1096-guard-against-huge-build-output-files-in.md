@@ -158,3 +158,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-12T00:07:04Z · needs_input
 - 2026-11-12T00:12:02Z · status review→active
 - 2026-11-12T00:12:04Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-12T00:12:21Z · note: handoff requested (cli)
