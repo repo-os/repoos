@@ -1,9 +1,8 @@
 ---
-close_out_repair_count: 1
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
-status: active
+status: review
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -12,7 +11,8 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T14:30:57Z"
+updated_at: "2026-11-12T16:04:31Z"
+close_out_repair_count: 1
 review_passes: 1
 handoff_signal_retry_count: 1
 ---
@@ -69,4 +69,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T14:30:57Z · status review→active
 - 2026-11-12T14:30:57Z · note: close-out repair: merge-conflict
 - 2026-11-12T14:30:57Z · message_delivered: 1 message(s)
-
+- 2026-11-12T16:04:31Z · status active→review
