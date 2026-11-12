@@ -9,6 +9,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { nextTick } from "vue";
 import * as apiMod from "../src/api";
 import CheckRunsPanel from "../src/components/CheckRunsPanel.vue";
+import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 import { invalidatePageDataPrefix } from "../src/composables/page-data-cache";
 
 const api = vi.spyOn(apiMod, "api");
@@ -58,6 +59,7 @@ describe("CheckRunsPanel loading (#0950)", () => {
     } as never);
     const wrapper = mount(CheckRunsPanel);
     await flushPromises();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.get('[data-test-id="reused-check"]').text()).toContain("reused check 9822");
     expect(wrapper.find(".cr-detail-row").exists()).toBe(false);
     wrapper.unmount();
@@ -67,6 +69,7 @@ describe("CheckRunsPanel loading (#0950)", () => {
     api.mockImplementation(() => new Promise(() => {}));
     const wrapper = mount(CheckRunsPanel);
     await flushPromises();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
 
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     expect(wrapper.text()).not.toContain("Loading run history");

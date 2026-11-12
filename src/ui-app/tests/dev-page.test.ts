@@ -23,6 +23,7 @@ import { DEV_NAV, NAV, navFor, navFromConfig } from "../src/nav";
 import { invalidatePageData } from "../src/composables/page-data-cache";
 import { flush, json } from "./component-test-helpers";
 import type { DevFailureView, DevTargetView, Health } from "../src/types";
+import { SKELETON_SHOW_DELAY_MS } from "../src/lib/loading-skeleton";
 
 function makeHealth(over: Partial<Health> = {}): Health {
   return {
@@ -183,12 +184,14 @@ describe("Dev nav gating (#0748)", () => {
 
 describe("Dev loading shot", () => {
   it("pins the shared skeleton without fetching targets", async () => {
+    vi.useFakeTimers();
     useRepoStore().health = makeHealth({ isPreviewBuild: true });
     window.history.replaceState({}, "", "/dev?shotState=dev%3Aloading");
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);
     const wrapper = mountView();
     await flush();
+    await vi.advanceTimersByTimeAsync(SKELETON_SHOW_DELAY_MS);
     expect(wrapper.find(".page-skeleton").exists()).toBe(true);
     expect(fetchSpy).not.toHaveBeenCalled();
     wrapper.unmount();
