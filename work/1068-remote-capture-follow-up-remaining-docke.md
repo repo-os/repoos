@@ -47,3 +47,4 @@ Start from the merged #1060 code on main and its review reports under work/repor
 - 2026-11-12T18:10:13Z · status review→active
 - 2026-11-12T18:22:53Z · body
 - 2026-11-12T18:44:55Z · message_queued at 2026-11-12T18:44:55.320Z
+- 2026-11-12T18:44:55Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
