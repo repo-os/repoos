@@ -1,4 +1,6 @@
 ---
+check_retry_count: 2
+last_check_failure: "repoos check at 2026-11-12T13:24:03.200Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer shows the check wait reason (target \"default\"): loading state detected: loading text \"Loading changes…\" on /work?task=1087&tab=changes (http://127.0.0.1:46505/work?shotState=drawer:handoffWaiting)"
 id: "1087"
 title: "Handoff-wait follow-ups: render the waiting label in the drawer, wait in fail-fast git paths, label tests (from #1082)"
 type: feature
@@ -12,7 +14,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T09:25:17Z"
 updated_at: "2026-11-12T13:24:03Z"
-last_check_failure: "repoos check at 2026-11-12T12:44:33.058Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Task drawer shows the check wait reason (target \"default\"): highlight [data-test-id=\"close-out-check-progress\"] matched nothing on /work?task=1087&tab=changes (http://127.0.0.1:59380/work?shotState=drawer:handoffWaiting)"
 handoff_signal_retry_count: 1
 ---
 Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaitingReason into the rendered progress line in TaskDrawer.vue so the drawer says what it is waiting for instead of 'starting'; (2) decide whether routes/tasks.ts waitForCheckGate:false and lockfile-conflict.ts add/commit should also wait (bounded) on a live check lock; (3) test the label path end to end. Do not edit repoos.toml.
@@ -48,3 +49,4 @@ Follow-ups deferred from #1082 pass 3: (1) wire statusProgressLabel/handoffWaiti
 - 2026-11-12T13:23:59Z · note: ui verification failed: ui verification failed (1 issue(s)): [missing-target] Task drawer shows the check wait reason (target "default"): loading state detected: loading text "Loading changes…" on /work?task=1087&tab=changes (http://127.0.0.1:46505/work?shotState=drawer:handoffWaiting)
 - 2026-11-12T13:24:00Z · message_queued at 2026-11-12T13:24:00.014Z
 - 2026-11-12T13:24:03Z · message_delivered: 1 message(s)
+
