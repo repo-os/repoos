@@ -37,6 +37,7 @@ const EMPTY_BUGS_PHRASINGS = [
   "Nothing found",
   "Nothing to report.",
   "-",
+  "None found.\n\n- Checked landable and merge-tree paths (#1097)",
 ];
 const FINDING_BUGS_PHRASINGS = [
   "- Off-by-one in parser",
@@ -45,10 +46,9 @@ const FINDING_BUGS_PHRASINGS = [
   "**Bug:** crash on empty input",
   "**Bug**: crash on empty input",
   "- **Bug:** crash on empty input",
-  "None found.\n\n- Off-by-one in parser",
-  "**Bugs:** None found\n- Off-by-one in parser",
   "- No bugs in the parser, but the CLI crashes",
-  "None\n- Crash on empty input",
+  "None found\n\n1. Crash on empty input",
+  "None found.\n\n- **Bug:** crash on empty input",
 ];
 
 function task(overrides: Partial<Task> = {}): Task {

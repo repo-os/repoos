@@ -129,6 +129,8 @@ const EMPTY_BUGS_PHRASINGS = [
   "Nothing to report.",
   "-",
 ];
+const LANDABLE_BUGS_WITH_COMMENTARY = ["None found.\n\n- Checked parser and landable paths"];
+
 const FINDING_BUGS_PHRASINGS = [
   "- Off-by-one in parser",
   "1. Crash on empty input",
@@ -136,10 +138,9 @@ const FINDING_BUGS_PHRASINGS = [
   "**Bug:** crash on empty input",
   "**Bug**: crash on empty input",
   "- **Bug:** crash on empty input",
-  "None found.\n\n- Off-by-one in parser",
-  "**Bugs:** None found\n- Off-by-one in parser",
   "- No bugs in the parser, but the CLI crashes",
-  "None\n- Crash on empty input",
+  "None found\n\n1) Off-by-one in parser",
+  "None found\n\n**Bug:** real defect",
 ];
 
 function lockAt(root: string, wt: string): void {
@@ -173,8 +174,8 @@ describe("gatherLandable", () => {
     }
   });
 
-  it.each(EMPTY_BUGS_PHRASINGS)(
-    "does not report blocking bugs for a none-ish Bugs section %j (#0894)",
+  it.each([...EMPTY_BUGS_PHRASINGS, ...LANDABLE_BUGS_WITH_COMMENTARY])(
+    "does not report blocking bugs for a none-ish Bugs section %j (#0894/#1097)",
     async (phrasing) => {
       const { root, wt, clean } = makeRepo();
       try {

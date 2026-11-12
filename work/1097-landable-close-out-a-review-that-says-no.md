@@ -1,6 +1,4 @@
 ---
-updated_at: "2026-11-12T08:07:26Z"
-review_passes: 1
 id: "1097"
 title: "landable/close-out: a review that says 'None found' under ## Bugs but explains its checks in bullets is treated as listing blocking bugs"
 type: bug
@@ -16,6 +14,9 @@ branch: feat/landable-close-out-a-review-that-says-no
 cli_override: opencode
 model_override: deepinfra/deepseek-ai/DeepSeek-V4.1-Flash
 created_at: "2026-11-12T01:26:13Z"
+updated_at: "2026-11-12T08:06:43Z"
+last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
+last_handoff_failure_sha: c78deec73dababb2938f8b2b3271fb20f44bb2db
 dev_error_count: 8
 engineer_crash_log: "[{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T06:04:41.657Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T06:06:08.526Z\",\"kind\":\"dev-error\"},{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\",\"at\":\"2026-11-12T06:07:41.755Z\",\"kind\":\"dev-error\"}]"
 engineer_failover: "{\"cli\":\"opencode\",\"model\":\"deepinfra/deepseek-ai/DeepSeek-V4.1-Flash\"}"
@@ -85,10 +86,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T06:06:14Z · needs_input
 - 2026-11-12T06:07:41Z · agent exited with an error (opencode) · ✗ Server finalization stopped at check: server-side finalization timed out (deadline exceeded). The task stays active — fix the failure and ask again.
 - 2026-11-12T06:07:41Z · engineer crash recovery: surfaced instead of switching — RepoOS already switched this task once (opencode + deepinfra/deepseek-ai/DeepSeek-V4.1-Flash); it will not chain another automatic switch (3/3 crashes in 30m)
-- 2026-11-12T07:56:03Z · note: handoff requested (ui-review)
-- 2026-11-12T07:56:25Z · CTO nudge: held — handoff gate is running
-- 2026-11-12T08:06:44Z · status active→review
-- 2026-11-12T08:06:44Z · message_queued at 2026-11-12T08:06:44.687Z
-- 2026-11-12T08:06:44Z · note: shots: skipped — the diff (10 changed paths) touches no capture target's globs — no UI change to capture
-- 2026-11-12T08:07:26Z · note: review pass 1: good to go
-
+- 2026-11-12T08:06:43Z · status active→review
