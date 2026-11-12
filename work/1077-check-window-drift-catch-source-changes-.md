@@ -2,14 +2,14 @@
 id: "1077"
 title: "Check-window drift: catch source changes that are committed then reverted during a check (follow-up to #1061)"
 type: bug
-status: active
+status: review
 priority: p3
 area: [core, server]
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-window-drift-catch-source-changes-
 created_at: "2026-11-09T09:04:34Z"
-updated_at: "2026-11-12T01:03:22Z"
+updated_at: "2026-11-12T01:09:01Z"
 ---
 ## Problem
 #1061 detects source changes that exist when a check ends (net tree delta vs the check-start tree) and defers RepoOS bookkeeping commits while a check runs. Two gaps were accepted when #1061 landed: (1) a source commit followed by a revert inside the same check window leaves an empty endpoint diff, so a check that observed the intermediate source is treated as valid; (2) an already-running engineer can still write source files directly during a check (not blockable; only detectable).
@@ -45,3 +45,4 @@ Start from the merged #1061 code (`src/core/check-gate-bookkeeping.ts`, `src/ser
 - 2026-11-12T00:48:22Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-12T00:55:31Z · body
 - 2026-11-12T01:03:22Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T01:09:01Z · status active→review
