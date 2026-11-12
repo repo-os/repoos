@@ -552,6 +552,39 @@ describe("trusted server-side handoff", { timeout: 15_000 }, () => {
     }
   });
 
+  it("fails when source is committed and reverted during the check (#1077)", async () => {
+    const fx = makeFixture(0);
+    const oldPath = process.env.PATH ?? "";
+    process.env.PATH = `${fx.bin}:${oldPath}`;
+    try {
+      writeFileSync(
+        join(fx.bin, "repoos"),
+        [
+          "#!/bin/sh",
+          "printf 'late\\n' > late.txt",
+          "git add late.txt",
+          "git commit -qm 'feat: temporary source'",
+          "git rm -f late.txt",
+          "git commit -qm 'revert: remove temporary source'",
+          "exit 0",
+        ].join("\n"),
+        { mode: 0o755 },
+      );
+
+      const result = await handoffTask(fx.config, readTask(fx), request(fx));
+
+      expect(result).toMatchObject({ ok: false, step: "check" });
+      expect(result.detail).toMatch(/temporary source/);
+      expect(result.detail).toMatch(/revert: remove temporary source/);
+      expect(result.detail).toMatch(/late\.txt/);
+      expect(readTask(fx).status).toBe("active");
+      expect(git(fx.worktree, ["ls-tree", "-r", "HEAD", "--name-only"])).not.toContain("late.txt");
+    } finally {
+      process.env.PATH = oldPath;
+      fx.clean();
+    }
+  });
+
   it(
     "tolerates a task-file-only bookkeeping commit during the check",
     { timeout: 30_000 },

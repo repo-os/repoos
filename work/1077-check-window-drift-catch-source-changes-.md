@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 1042566
-last_close_out_gate_at: "2026-11-12T11:34:32.871Z"
 id: "1077"
 title: "Check-window drift: catch source changes that are committed then reverted during a check (follow-up to #1061)"
 type: bug
-status: review
+status: done
 priority: p3
 area: [core, server]
+merged_commit: ecc1976200c1ebb81eb37a5df39015705bbcc920
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-window-drift-catch-source-changes-
 created_at: "2026-11-09T09:04:34Z"
 updated_at: "2026-11-12T11:34:32Z"
+last_close_out_gate_ms: 1042566
+last_close_out_gate_at: "2026-11-12T11:34:32.871Z"
 review_passes: 2
 ---
 ## Problem
