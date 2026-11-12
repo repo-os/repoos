@@ -34,6 +34,7 @@ const restartStatus = ref<{
   installedVersion: string | null;
   activeWork: { agents: number; checks: number };
   supervised: boolean;
+  manualCommand: string;
 } | null>(null);
 const restartPendingAction = ref(false);
 let restartStatusTimer: ReturnType<typeof setInterval> | null = null;
@@ -112,6 +113,7 @@ onMounted(async () => {
       installedVersion: "0.5.79",
       activeWork: { agents: 2, checks: 1 },
       supervised: true,
+      manualCommand: "repoos restart",
     };
     document.documentElement.dataset.theme = fixtureState.endsWith("Dark") ? "dark" : "light";
   }
@@ -147,7 +149,7 @@ onMounted(async () => {
 async function restartInstalled(whenIdle = false, cancel = false): Promise<void> {
   restartPendingAction.value = true;
   try {
-    await api("/api/server/restart", {
+    await api("/api/update-status/restart", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ whenIdle, cancel }),
@@ -280,7 +282,8 @@ onUnmounted(() => {
         ></template
       >
       <span v-if="!restartStatus.supervised" class="release-update-muted"
-        >Restart manually with <code>repoos restart</code>.</span
+        >This server is not supervised. Run <code>{{ restartStatus.manualCommand }}</code> in a
+        terminal to restart it safely.</span
       >
       <button
         type="button"

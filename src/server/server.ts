@@ -338,6 +338,7 @@ import {
   // Info routes
   health,
   getUpdateStatus,
+  restartInstalledUpgrade,
   restart,
   getCounts,
   getIndex,
@@ -3554,6 +3555,7 @@ export function startServer(opts: ServeOptions = {}): Promise<ServerHandle> {
   // Info/metadata routes
   router.register("GET", "/api/health", health);
   router.register("GET", "/api/update-status", getUpdateStatus);
+  router.register("POST", "/api/update-status/restart", restartInstalledUpgrade);
   router.register("POST", "/api/server/restart", restart);
   router.register("GET", "/api/counts", getCounts);
   router.register("GET", "/api/index", getIndex);
