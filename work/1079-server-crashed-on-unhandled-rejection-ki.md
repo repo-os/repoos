@@ -1,5 +1,4 @@
 ---
-handoff_signal_retry_count: 1
 id: "1079"
 title: "Server crashed on unhandled rejection: kill() failed with EPERM (must never take the server down)"
 type: bug
@@ -12,7 +11,8 @@ branch: feat/server-crashed-on-unhandled-rejection-ki
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T11:20:50Z"
-updated_at: "2026-11-12T12:39:28Z"
+updated_at: "2026-11-12T13:34:48Z"
+handoff_signal_retry_count: 1
 review_rounds: 1
 review_passes: 1
 ---
@@ -46,4 +46,4 @@ Look at .repoos/logs/system.log around 2026-11-09T11:14:22Z (UTC) for the full s
 - 2026-11-12T12:39:28Z · note: review pass 1: needs some work
 - 2026-11-12T12:39:28Z · message_delivered: 1 message(s)
 - 2026-11-12T12:39:28Z · status review→active
-
+- 2026-11-12T13:34:48Z · message_queued at 2026-11-12T13:34:48.229Z
