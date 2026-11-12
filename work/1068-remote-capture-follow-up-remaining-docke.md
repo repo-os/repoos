@@ -2,16 +2,16 @@
 id: "1068"
 title: "Remote capture follow-up: remaining Docker/ssh failure-handling and provider-parity gaps"
 type: bug
-status: ready
+status: active
 priority: p2
 area: server
 assigned_to: ai
 created_by: njachowski@gmail.com
-branch: ""
+branch: feat/remote-capture-follow-up-remaining-docke
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:05:29Z"
-updated_at: "2026-11-12T17:11:29Z"
+updated_at: "2026-11-12T17:11:31Z"
 ---
 ## Problem
 #1060 landed the core fix for stalled remote browser captures (runner exits, finished captures are reaped and force-collected, a failed handoff cancels its own captures), verified for the Tailscale runner. The review loop (rounds 8-14+) kept finding narrower variants of the same theme, which the owner chose to track separately instead of blocking the release.
@@ -34,3 +34,4 @@ Start from the merged #1060 code on main and its review reports under work/repor
 - 2026-11-09T03:05:29Z · created · njachowski@gmail.com
 - 2026-11-12T17:11:27Z · cli_override, model_override
 - 2026-11-12T17:11:29Z · status inbox→ready
+- 2026-11-12T17:11:31Z · status ready→active, branch
