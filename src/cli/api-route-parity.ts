@@ -198,6 +198,8 @@ const UI_ONLY_MATCHERS: Matcher[] = [
   // the registry, never from a client path.
   re("POST", /^\/api\/project-environments\/([^/]+)\/open-in-editor$/.source),
   exact("GET", "/api/agents/queued"),
+  // Agents page: latest run status and failure reason for each agent.
+  exact("GET", "/api/agents/last-runs"),
   exact("GET", "/api/agents/detect"),
   exact("GET", "/api/agents/detect/stream"),
   exact("POST", "/api/agents/updates"),
