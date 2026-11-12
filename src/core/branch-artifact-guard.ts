@@ -274,17 +274,43 @@ function tryGunzip(buf: Buffer, maxOut: number): Buffer | "too_large" | "undecod
   }
 }
 
+/**
+ * Inflate a zlib stream, recovering a truncated or trailing-garbage one: after the
+ * 2-byte header check, raw inflate with `Z_SYNC_FLUSH` keeps the partial output.
+ * Returns `null` when nothing can be recovered (random bytes with a header-shaped
+ * pair are indistinguishable from a corrupt stream, so the caller decides whether
+ * that is worth reporting).
+ */
+function zlibHeaderLooksValid(buf: Buffer): boolean {
+  return buf.length >= 2 && buf[0] === 0x78 && (buf[0]! * 256 + buf[1]!) % 31 === 0;
+}
+
 function tryZlibInflate(buf: Buffer, maxOut: number): Buffer | "too_large" | null {
+  // A runtime may return an empty buffer instead of throwing on a truncated
+  // stream, so only a non-empty result counts as decoded.
   try {
-    return inflateSync(buf, { maxOutputLength: maxOut });
+    const out = inflateSync(buf, { maxOutputLength: maxOut });
+    if (out.length > 0) return out;
   } catch {
-    try {
-      return unzipSync(buf, { maxOutputLength: maxOut });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (msg.includes("maxOutputLength") || msg.includes("Buffer")) return "too_large";
-      return null;
-    }
+    /* fall through to the recovery paths */
+  }
+  try {
+    const out = unzipSync(buf, { maxOutputLength: maxOut });
+    if (out.length > 0) return out;
+  } catch {
+    /* fall through */
+  }
+  if (buf.length < 3) return null;
+  try {
+    const out = inflateRawSync(buf.subarray(2), {
+      maxOutputLength: maxOut,
+      finishFlush: nodeZlib.constants.Z_SYNC_FLUSH,
+    });
+    return out.length > 0 ? out : null;
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes("maxOutputLength") || msg.includes("Buffer")) return "too_large";
+    return null;
   }
 }
 
@@ -436,6 +462,14 @@ export function scanBuffersForSecrets(
         continue;
       }
       if (out) pushHits(out);
+      else if (zlibHeaderLooksValid(slice)) {
+        // The whole buffer is a zlib-shaped stream that cannot be recovered: say so
+        // rather than passing it (a header-shaped pair inside other data stays silent).
+        incomplete.push({
+          path,
+          reason: "zlib payload at the start of the file could not be decoded — cannot scan it",
+        });
+      }
     }
   }
 

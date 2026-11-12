@@ -407,6 +407,20 @@ describe("review pass 4 regressions (#1096)", () => {
     expect(incomplete.length).toBeGreaterThan(0);
   });
 
+  it("recovers a key from a truncated zlib stream (partial output via raw inflate)", () => {
+    const body = Buffer.from(fakeStripeTestSecret() + " " + "filler ".repeat(600));
+    const z = deflateSync(body);
+    const truncated = z.subarray(0, Math.floor(z.length * 0.6));
+    const { secrets } = scanBuffersForSecrets(truncated, "z.bin", 1_048_576);
+    expect(secrets.length).toBeGreaterThan(0);
+  });
+
+  it("reports incomplete when the file is a zlib stream that cannot be recovered at all", () => {
+    const bad = Buffer.concat([Buffer.from([0x78, 0x9c]), Buffer.alloc(64, 0xff)]);
+    const { incomplete } = scanBuffersForSecrets(bad, "z.bin", 1_048_576);
+    expect(incomplete.length).toBeGreaterThan(0);
+  });
+
   it("finds a zlib payload at a non-zero offset", () => {
     const payload = Buffer.concat([
       Buffer.from("AAAA"),
