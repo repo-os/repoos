@@ -1,17 +1,18 @@
 ---
-last_close_out_gate_ms: 1084321
-last_close_out_gate_at: "2026-11-12T02:20:08.169Z"
 id: "1089"
 title: "Easter eggs bundle: release in progress shows the activity animation (Releases page and Cut a release panel)"
 type: feature
-status: review
+status: done
 priority: p3
 area: web
+merged_commit: 3aef590c1dd010fb12ea84c459a24919e458f0f8
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-release-in-progress-s
 created_at: "2026-11-11T03:47:02Z"
 updated_at: "2026-11-12T02:20:08Z"
+last_close_out_gate_ms: 1084321
+last_close_out_gate_at: "2026-11-12T02:20:08.169Z"
 review_passes: 1
 ---
 ## Problem
