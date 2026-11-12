@@ -2,7 +2,7 @@
 id: "1078"
 title: "Per-view skeletons: apply the show-delay and minimum-visible-time gate in every view that renders its own PageSkeleton (follow-up to #1070)"
 type: chore
-status: active
+status: review
 priority: p3
 area: web
 assigned_to: ai
@@ -57,3 +57,4 @@ From review 5 of #1070, accepted as follow-up and NOT blocking #1070: (a) board 
 - 2026-11-12T15:13:25Z · body
 - 2026-11-12T15:20:36Z · body
 - 2026-11-12T15:23:10Z · note: ui verification passed: 1 of 1 shot captured with clean console
+- 2026-11-12T15:23:10Z · status active→review
