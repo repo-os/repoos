@@ -1523,6 +1523,20 @@ export interface CheckConfig {
    * touching any of these runs the whole suite.
    */
   fullSuitePaths?: string[];
+  /** Max bytes for a file added vs the merge base on a task branch (#1096). */
+  branchArtifactsMaxFileBytes?: number;
+  /** WIP checkpoint: max files staged in one commit (#1096). */
+  checkpointMaxStagedFiles?: number;
+  /** WIP checkpoint: max total bytes staged (#1096). */
+  checkpointMaxStagedBytes?: number;
+  /** Extra globs for build-output paths (#1096). */
+  buildOutputPatterns?: string[];
+  /** Repo-relative paths allowed to exceed the max file size (#1096). */
+  branchArtifactsAllowlist?: string[];
+  /** Secret scan: max bytes per decompressed blob (#1096). */
+  branchArtifactsMaxDecompressBytes?: number;
+  /** Secret scan: max files content-scanned per guard run (#1096). */
+  branchArtifactsMaxScanFiles?: number;
 }
 
 /**
@@ -1544,7 +1558,8 @@ export type CheckStepKind =
   | "theme-contrast"
   | "hardcoded-colors"
   | "bare-require"
-  | "task-assets";
+  | "task-assets"
+  | "branch-artifacts";
 
 /**
  * One declared step of a project's check plan (#0446) — a `[[check.steps]]`

@@ -15,6 +15,10 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SNAPSHOT_DIR="${HUB_SNAPSHOT_DIR:-${REPOOS_SHOT_DIR:-$REPO_ROOT/macos/.build/snapshots}}"
+DERIVED_DATA="${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}"
+RESULT_ROOT="${REPOOS_MACOS_XCRESULT_DIR:-$HOME/Library/Caches/RepoOS/xcresults}"
+mkdir -p "$DERIVED_DATA" "$RESULT_ROOT"
+XCRESULT="$RESULT_ROOT/hub-snapshots-$(date +%Y%m%d-%H%M%S).xcresult"
 
 export HUB_SNAPSHOT_DIR="$SNAPSHOT_DIR"
 # xcodebuild does not forward the shell environment to the test host; the
@@ -40,7 +44,8 @@ xcodebuild \
   -project "$REPO_ROOT/macos/RepoOSHub.xcodeproj" \
   -scheme RepoOSHub \
   -destination 'platform=macOS' \
-  -derivedDataPath "$REPO_ROOT/macos/.derived-data" \
+  -derivedDataPath "$DERIVED_DATA" \
+  -resultBundlePath "$XCRESULT" \
   -only-testing:RepoOSHubTests/HubSnapshotTests \
   CODE_SIGNING_ALLOWED=NO \
   test

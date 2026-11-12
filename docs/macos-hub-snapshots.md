@@ -49,7 +49,8 @@ Under the hood the script runs:
 xcodebuild -project macos/RepoOSHub.xcodeproj \
   -scheme RepoOSHub \
   -destination 'platform=macOS' \
-  -derivedDataPath macos/.derived-data \
+  -derivedDataPath "${REPOOS_MACOS_DERIVED_DATA:-$HOME/Library/Caches/RepoOS/macos-derived-data}" \
+  -resultBundlePath "${REPOOS_MACOS_XCRESULT_DIR:-$HOME/Library/Caches/RepoOS/xcresults}/hub-snapshots.xcresult" \
   -only-testing:RepoOSHubTests/HubSnapshotTests \
   CODE_SIGNING_ALLOWED=NO test
 ```
@@ -97,6 +98,26 @@ with `glob`.
 
 A shot is local evidence, not a golden baseline: nothing compares it to a
 stored image, and macOS version/font/DPI differences change the pixels.
+
+## `.xcresult` diagnostics (#0892)
+
+Xcode's `xcodebuild test` always writes an `.xcresult` bundle when
+`-resultBundlePath` is set. That archive can include **machine-wide diagnostics**
+(process samples, attachment logs, and other host context) in Zstandard-
+compressed `Data` files — not just test stdout. This is default XCTest /
+Xcode behaviour; RepoOS has not verified an `xcodebuild` flag that disables
+that collection while still writing a result bundle on macOS.
+
+RepoOS does **not** try to sanitise those blobs. Mitigation is procedural and
+layered:
+
+1. Keep DerivedData and `.xcresult` paths **outside the git tree** (`just
+   macos-test`, `macos/scripts/hub-snapshots.sh`, and
+   `REPOOS_MACOS_*` overrides).
+2. Let the branch-artifact guard and pre-commit hook refuse build-output and
+   oversize paths, and scan new blobs for secret patterns after
+   decompression — because GitHub secret scanning does not decode compressed
+   attachments.
 
 ## Adding a view
 

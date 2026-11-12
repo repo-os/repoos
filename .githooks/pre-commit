@@ -1,30 +1,59 @@
 #!/bin/sh
-# Pre-commit guard for direct commits to main (installed via core.hooksPath by
-# package.json's `prepare` script, so `bun install` sets it up for every
-# checkout and worktree).
+# Pre-commit guards:
+# - On main: format/lint for staged source (#0423).
+# - On every branch: block build output, oversized staged files, and secret
+#   patterns (#1096). Bypass: REPOOS_SKIP_STAGED_ARTIFACT_GUARD=1
+# - RepoOS task markdown bookkeeping only (no `inputs/` trees, no binaries).
 #
-# Why: close-out runs the full `repoos check` gate before anything lands on
-# main, but a hand commit straight to main skips it. On 2026-09-18 one such
-# commit left a stray blank line in style.css; every close-out after it merged
-# that in, failed `oxfmt --check`, and blamed "machine load" (#0423, #0425).
-#
-# Scope is deliberately narrow so RepoOS's own commits are never blocked:
-# - only commits on `main` (task branches are gated at close-out);
-# - never merge commits (close-out's merges are gated by the check itself);
-# - only staged source files that oxfmt/oxlint handle; task files (*.md) and
-#   other ignored paths are never checked.
-# Bypass (don't): git commit --no-verify.
+# Merge commits are never blocked. Format/lint still applies only on main.
 
-branch=$(git symbolic-ref --short -q HEAD)
-[ "$branch" = "main" ] || exit 0
+branch=$(git symbolic-ref --short -q HEAD 2>/dev/null || true)
 git_dir=$(git rev-parse --git-dir)
 [ -f "$git_dir/MERGE_HEAD" ] && exit 0
+
+top=$(git rev-parse --show-toplevel)
+
+staged_all=$(git diff --cached --name-only)
+staged_artifact=$(echo "$staged_all" | grep -v '^$' || true)
+if [ -n "$staged_artifact" ]; then
+  exempt=1
+  for f in $staged_artifact; do
+    case "$f" in
+      work/reports/*.md|work/reports/*.json|work/[0-9]*-*.md)
+        # Bookkeeping is exempt only while it is small and secret-free: the
+        # exemption must not be broader than the guard it skips.
+        size=$(git cat-file -s ":$f" 2>/dev/null || echo 0)
+        if [ "$size" -gt 262144 ] ||
+          git show ":$f" 2>/dev/null | grep -Eq 'sk_(live|test)_[0-9A-Za-z]{10,}|rk_(live|test)_[0-9A-Za-z]{10,}|whsec_[0-9A-Za-z]{10,}|AIza[0-9A-Za-z_-]{30,}|A[KS]IA[0-9A-Z]{16}|gh[pousr]_[0-9A-Za-z]{30,}|github_pat_[0-9A-Za-z_]{20,}|sk-ant-[0-9A-Za-z_-]{10,}|xox[baprs]-[0-9A-Za-z-]{10,}'; then
+          exempt=0
+          break
+        fi
+        ;;
+      *)
+        exempt=0
+        break
+        ;;
+    esac
+  done
+  if [ "$exempt" = 1 ]; then
+    : # bookkeeping-only — skip artifact guard
+  elif [ "${REPOOS_SKIP_STAGED_ARTIFACT_GUARD:-}" != "1" ]; then
+    if command -v bun >/dev/null 2>&1; then
+      if ! bun "$top/scripts/staged-artifact-pre-commit.mjs" 2>&1; then
+        exit 1
+      fi
+    else
+      echo "pre-commit: bun not found — skipping staged artifact guard (#1096). Install bun for local protection." >&2
+    fi
+  fi
+fi
+
+[ "$branch" = "main" ] || exit 0
 
 files=$(git diff --cached --name-only --diff-filter=ACMR |
   grep -E '\.(ts|tsx|mts|cts|js|jsx|mjs|cjs|vue|css)$')
 [ -n "$files" ] || exit 0
 
-top=$(git rev-parse --show-toplevel)
 common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 find_bin() {
   for dir in "$top/node_modules/.bin" "$(dirname "$common")/node_modules/.bin"; do

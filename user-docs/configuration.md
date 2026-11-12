@@ -1447,6 +1447,13 @@ than reporting green. (`[checks]` is accepted as an alias for `[check]`.)
 | `check.contrastExempts` | array of tables | unset | yes | Selectors the rendered-contrast audit allows below the WCAG floor, each with a reason. Rows missing either half are dropped. |
 | `check.alwaysRun` | array of strings | five safety suites | yes | Test-file globs unioned with changed-path tests, including default close-out. Defaults cover close-out, handoff, git-worker, server boot and task frontmatter parsing. Settings → Advanced exposes **Always-run test suites**; a tests step can override the list with `alwaysRun`. Release runs every test. |
 | `check.fullSuitePaths` | array of strings | unset | yes | Repo-relative path prefixes that force the **full** close-out suite even when `closeOut.gate` would reuse or scope it (#0724) — machinery the changed-path scoping cannot reason about, e.g. a CI pipeline or the check engine's own config. |
+| `check.branchArtifactsMaxFileBytes` | number | `1048576` | yes | `branch-artifacts` fails when the diff vs `main` adds a larger file (unless allowlisted). |
+| `check.checkpointMaxStagedFiles` | number | `200` | yes | Engineer WIP checkpoint commits skip staging beyond this many files. |
+| `check.checkpointMaxStagedBytes` | number | `5242880` | yes | Engineer WIP checkpoint commits skip staging beyond this total byte count. |
+| `check.buildOutputPatterns` | array of strings | unset | yes | Extra globs for build-output paths (`.derived-data*`, `.xcresult`, `DerivedData`, `.build` are always blocked). |
+| `check.branchArtifactsAllowlist` | array of strings | unset | yes | Deliberate large files that may exceed `branchArtifactsMaxFileBytes`. |
+| `check.branchArtifactsMaxDecompressBytes` | number | `4194304` | yes | Secret scan refuses to decompress a larger blob. |
+| `check.branchArtifactsMaxScanFiles` | number | `500` | yes | Caps content scans per `branch-artifacts` run. |
 | `check.contrastExempts.selector` | string | required | yes | CSS selector to exempt (matched against the text's element and its ancestors), e.g. `.code-pane`. |
 | `check.contrastExempts.reason` | string | required | yes | Why the block is intentionally off-contrast — this is what makes the exemption reviewable. |
 

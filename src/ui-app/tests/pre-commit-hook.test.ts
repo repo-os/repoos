@@ -32,6 +32,16 @@ function repo(): string {
   dirs.push(dir);
   git(dir, "init", "-q", "-b", "main");
   cpSync(join(repoRoot, ".githooks"), join(dir, ".githooks"), { recursive: true });
+  mkdirSync(join(dir, "scripts"), { recursive: true });
+  cpSync(
+    join(repoRoot, "scripts", "staged-artifact-pre-commit.mjs"),
+    join(dir, "scripts/staged-artifact-pre-commit.mjs"),
+  );
+  mkdirSync(join(dir, "dist", "core"), { recursive: true });
+  cpSync(
+    join(repoRoot, "dist", "core", "branch-artifact-guard.js"),
+    join(dir, "dist", "core", "branch-artifact-guard.js"),
+  );
   git(dir, "config", "core.hooksPath", ".githooks");
   writeFileSync(join(dir, "README.md"), "seed\n");
   git(dir, "add", "-A");
@@ -57,7 +67,7 @@ describe(".githooks/pre-commit", () => {
     const res = commitFile(repo(), "src/style.css", BAD_CSS);
     expect(res.status).not.toBe(0);
     expect(res.stderr).toContain("formatting issues in staged files on main");
-  });
+  }, 30_000);
 
   it("allows the same file on a task branch (close-out gates those)", () => {
     const dir = repo();

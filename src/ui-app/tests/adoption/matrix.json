@@ -23,6 +23,7 @@
           "check-lint",
           "build",
           "tests",
+          "branch-artifacts",
           "task-assets"
         ],
         "commands": [],
@@ -49,7 +50,7 @@
       ],
       "expectedPlan": {
         "source": "inferred",
-        "steps": ["staleness", "build", "tests", "task-assets"],
+        "steps": ["staleness", "build", "tests", "branch-artifacts", "task-assets"],
         "commands": [],
         "requires": { "build": ["npm"], "tests": ["npm"] }
       }
@@ -68,7 +69,7 @@
       ],
       "expectedPlan": {
         "source": "inferred",
-        "steps": ["staleness", "build", "tests", "task-assets"],
+        "steps": ["staleness", "build", "tests", "branch-artifacts", "task-assets"],
         "commands": ["go build ./...", "go test ./..."],
         "requires": { "build": ["go"], "tests": ["go"] }
       }
@@ -87,7 +88,7 @@
       ],
       "expectedPlan": {
         "source": "inferred",
-        "steps": ["staleness", "build", "check-fmt:check", "tests", "task-assets"],
+        "steps": ["staleness", "build", "check-fmt:check", "tests", "branch-artifacts", "task-assets"],
         "commands": ["cargo build", "cargo fmt --check", "cargo test"],
         "requires": {
           "build": ["cargo"],
@@ -109,7 +110,7 @@
       ],
       "expectedPlan": {
         "source": "inferred",
-        "steps": ["staleness", "build", "tests", "task-assets"],
+        "steps": ["staleness", "build", "tests", "branch-artifacts", "task-assets"],
         "commands": ["./gradlew assemble", "./gradlew test"],
         "requires": {}
       }
@@ -135,6 +136,7 @@
           "tests",
           "build-js",
           "tests-js",
+          "branch-artifacts",
           "task-assets"
         ],
         "commands": ["go build ./...", "go test ./..."],
@@ -160,7 +162,7 @@
       ],
       "expectedPlan": {
         "source": "inferred",
-        "steps": ["staleness", "tests", "task-assets"],
+        "steps": ["staleness", "tests", "branch-artifacts", "task-assets"],
         "commands": [],
         "requires": { "tests": ["npm"] }
       }
@@ -194,7 +196,7 @@
       ],
       "expectedPlan": {
         "source": "inferred",
-        "steps": ["staleness", "build", "tests", "task-assets"],
+        "steps": ["staleness", "build", "tests", "branch-artifacts", "task-assets"],
         "commands": ["go build ./...", "go test ./..."],
         "requires": { "build": ["go"], "tests": ["go"] }
       }

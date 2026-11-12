@@ -189,6 +189,7 @@ uiStylesheet = "src/app.css"
       "css-layers",
       "theme-contrast",
       "bare-require",
+      "branch-artifacts",
       "task-assets",
       "tests",
       "ui-smoke",
@@ -206,14 +207,22 @@ uiStylesheet = "src/app.css"
     expect(plan.source).toBe("inferred");
     // The stack's own commands, bookended by the two RepoOS-generic guards —
     // and nothing JS-shaped anywhere.
-    expect(plan.steps.map((s) => s.name)).toEqual(["staleness", "build", "tests", "task-assets"]);
+    expect(plan.steps.map((s) => s.name)).toEqual([
+      "staleness",
+      "build",
+      "tests",
+      "branch-artifacts",
+      "task-assets",
+    ]);
     expect(plan.steps.map((s) => s.command).filter(Boolean)).toEqual([
       "go build ./...",
       "go test ./...",
     ]);
     expect(
-      plan.steps.filter((s) => s.kind === "staleness" || s.kind === "task-assets").length,
-    ).toBe(2);
+      plan.steps.filter(
+        (s) => s.kind === "staleness" || s.kind === "task-assets" || s.kind === "branch-artifacts",
+      ).length,
+    ).toBe(3);
     expect(plan.warnings.join(" ")).toMatch(/inferred/i);
   });
 
@@ -265,6 +274,7 @@ uiStylesheet = "src/app.css"
       "format",
       "lint",
       "tests",
+      "branch-artifacts",
       "task-assets",
     ]);
     // No build script → no build step. That is the #0446 fix.
@@ -287,6 +297,7 @@ uiStylesheet = "src/app.css"
       "tests",
       "build-js",
       "tests-js",
+      "branch-artifacts",
       "task-assets",
     ]);
     expect(plan.steps.map((s) => s.command).filter(Boolean)).toEqual([
@@ -358,6 +369,7 @@ describe("inference — stack scoping and cross-cutting steps (#0447)", () => {
     // The generic guards are cross-cutting: no whenChanged, always run.
     expect(plan.steps.find((s) => s.name === "task-assets")?.whenChanged).toEqual([]);
     expect(isCrossCutting(plan.steps.find((s) => s.name === "task-assets")!)).toBe(true);
+    expect(isCrossCutting(plan.steps.find((s) => s.name === "branch-artifacts")!)).toBe(true);
   });
 
   it("flags a mixed repo and points at a cross-cutting contract step", () => {

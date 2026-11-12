@@ -1,4 +1,10 @@
 import { isDocsOnlyCheck, DOCS_ONLY_SKIP_REASON } from "../core/check-docs-only.js";
+import {
+  evaluateAddedPaths,
+  formatBranchArtifactFailures,
+  gitAddedPathsOnBranch,
+  resolveBranchArtifactGuardOptions,
+} from "../core/branch-artifact-guard.js";
 import { buildIndex } from "../core/indexer.js";
 import { runGit } from "../core/git.js";
 import { gitDirectorySnapshot } from "../core/git-directory-snapshot.js";
@@ -1474,6 +1480,33 @@ async function stepBareRequire(ctx: StepContext): Promise<BuiltinOutcome> {
   };
 }
 
+export async function stepBranchArtifacts(ctx: StepContext): Promise<BuiltinOutcome> {
+  const ref = ctx.changedRef ?? "main";
+  const added = gitAddedPathsOnBranch(ctx.repoRoot, ref);
+  if (added === null) {
+    return {
+      status: "failed",
+      detail: `branch-artifacts guard could not resolve git ref ${ref} — refusing to pass without a scan`,
+    };
+  }
+  if (added.length === 0) {
+    return { status: "passed", detail: `no new files vs ${ref}` };
+  }
+  const opts = resolveBranchArtifactGuardOptions(ctx.cfg.check);
+  const { violations, secrets } = evaluateAddedPaths(ctx.repoRoot, added, opts);
+  const scanned = Math.min(added.length, opts.maxScanFiles);
+  if (violations.length === 0) {
+    return {
+      status: "passed",
+      detail: `scanned ${scanned} added path(s) on branch vs ${ref}`,
+    };
+  }
+  return {
+    status: "failed",
+    detail: formatBranchArtifactFailures(violations, secrets),
+  };
+}
+
 async function stepTaskAssets(ctx: StepContext): Promise<BuiltinOutcome> {
   // Folder names are configurable (`workDir`/`inputsDir`/`storiesDir`), so a
   // repo that renames them is still guarded.
@@ -1859,6 +1892,7 @@ const BUILTIN_HANDLERS: Record<BuiltinCheckKind, (ctx: StepContext) => Promise<B
   "hardcoded-colors": stepHardcodedColors,
   "bare-require": stepBareRequire,
   "task-assets": stepTaskAssets,
+  "branch-artifacts": stepBranchArtifacts,
 };
 
 /** Human-readable duration for a timeout message (ms when sub-second). */
@@ -2122,7 +2156,9 @@ export async function runCheckPlan(
     }
     if (
       opts.docsOnly &&
-      !["format", "lockfile-sync", "zero-runtime-deps", "task-assets"].includes(step.kind ?? "")
+      !["format", "lockfile-sync", "zero-runtime-deps", "task-assets", "branch-artifacts"].includes(
+        step.kind ?? "",
+      )
     ) {
       push({
         name: step.name,
