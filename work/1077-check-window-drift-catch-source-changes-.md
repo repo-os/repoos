@@ -10,7 +10,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/check-window-drift-catch-source-changes-
 created_at: "2026-11-09T09:04:34Z"
-updated_at: "2026-11-12T11:34:47Z"
+updated_at: "2026-11-12T12:17:14Z"
 last_close_out_gate_ms: 1042566
 last_close_out_gate_at: "2026-11-12T11:34:32.871Z"
 review_passes: 2
@@ -57,3 +57,4 @@ Start from the merged #1061 code (`src/core/check-gate-bookkeeping.ts`, `src/ser
 - 2026-11-12T03:33:47Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-12T11:34:32Z · close-out gate completed in 1043s
 - 2026-11-12T11:34:47Z · status done→done, release:success
+- 2026-11-12T12:17:14Z · message_dropped: 1 queued message(s) discarded — task is done
