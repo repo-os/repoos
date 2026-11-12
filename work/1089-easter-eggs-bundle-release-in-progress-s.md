@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/easter-eggs-bundle-release-in-progress-s
 created_at: "2026-11-11T03:47:02Z"
-updated_at: "2026-11-12T01:18:22Z"
+updated_at: "2026-11-12T01:24:06Z"
 ---
 ## Problem
 While a release is being cut (v0.5.82 on 2026-11-11), the Releases page shows a static "RELEASING..." pill and the "Cut a release" panel shows "Step 4 of 7 · Running checks · 2m 05s elapsed" with a log box. Nothing on either moves, so it looks stalled for the 20-30 minutes a release takes. Task cards and the Settings preview already show the user's chosen activity animation (the ActivityIndicator, the footprint/art styles with size and style settings) while work is running.
@@ -88,3 +88,4 @@ Show the same ActivityIndicator, honouring the same style, size and reduced-moti
 - 2026-11-12T01:17:52Z · message_queued at 2026-11-12T01:17:52.386Z
 - 2026-11-12T01:17:52Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-12T01:18:22Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-12T01:24:06Z · body
