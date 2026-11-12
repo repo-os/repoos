@@ -3222,14 +3222,10 @@ describe("hung container cleanup (#0729)", () => {
       );
       chmodSync(docker, 0o755);
 
-      const output = execFileSync(
-        "bash",
-        ["-c", `{ ${staleContainerCleanupCommand()}; } 2>&1`],
-        {
-          encoding: "utf8",
-          env: { ...process.env, FAIL_MODE: failure, PATH: `${bin}:${process.env.PATH ?? ""}` },
-        },
-      );
+      const output = execFileSync("bash", ["-c", `{ ${staleContainerCleanupCommand()}; } 2>&1`], {
+        encoding: "utf8",
+        env: { ...process.env, FAIL_MODE: failure, PATH: `${bin}:${process.env.PATH ?? ""}` },
+      });
 
       expect(output).toContain(
         failure === "ps"
