@@ -41,3 +41,4 @@ Start from the merged #1061 code (`src/core/check-gate-bookkeeping.ts`, `src/ser
 - 2026-11-12T00:34:01Z · engineer turn ended without a handoff: the turn exited cleanly and did not request review · reason: exited with code 0 · last assistant: Fixing the handoff test: `headBeforeCheck` was captured before the handoff commit, so the comparison was invalid. · stderr: (empty)
 - 2026-11-12T00:34:02Z · message_delivered: 2 message(s)
 - 2026-11-12T00:43:22Z · message_queued at 2026-11-12T00:43:22.604Z
+- 2026-11-12T00:43:22Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
