@@ -11,7 +11,7 @@ branch: feat/tell-the-user-when-an-installed-upgrade-
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T08:24:33Z"
-updated_at: "2026-11-12T15:49:49Z"
+updated_at: "2026-11-12T15:49:50Z"
 handoff_signal_retry_count: 1
 dev_error_count: 1
 ---
@@ -74,3 +74,4 @@ Related tasks: #1072 (tell users a newer release exists) and #1073 (show the upg
 - 2026-11-12T15:40:59Z · message_queued at 2026-11-12T15:40:59.524Z
 - 2026-11-12T15:44:48Z · CTO nudge: held — an undelivered message is already queued
 - 2026-11-12T15:49:49Z · message_delivered: 1 message(s)
+- 2026-11-12T15:49:50Z · CTO action: restart-stalled-agent (resume) · agent crashed or was interrupted mid-turn — remote validation failed: test failure: tests/pressure-guard.test.ts > waitForPressureRelief > waits until a fake probe reports relief, then proceeds on thinkpad — fix it in the feature branch and re-run the gate
