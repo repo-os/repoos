@@ -1,0 +1,35 @@
+---
+id: "1098"
+title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
+type: feature
+status: inbox
+priority: p2
+area: [web, server, core]
+assigned_to: ""
+created_by: t@t
+branch: ""
+created_at: "2026-11-12T05:35:20Z"
+updated_at: "2026-11-12T05:35:20Z"
+---
+## Problem
+When an agent run fails, the reason is usually an expired login (Cursor, Claude, Copilot) or an unavailable model, but it only appears as one line in the task's activity log (for example 'agent exited with an error (cursor) · Cannot use this model: composer-2.5' on #1097), or as a terse crash-recovery note after the task has already been switched to another agent. A human watching the board sees a task that stalls or silently changes agent and has to dig for why. Cursor was unauthenticated for hours before anyone noticed.
+
+## Desired UX
+- When an engineer, reviewer, PM or debugger run fails, the task card and drawer show a short plain-English reason with the fix: 'Cursor is signed out. Re-authenticate Cursor on this computer', 'Model composer-2.5 is not available for this account', 'Claude usage limit reached until 14:00', with the raw CLI error behind a disclosure.
+- Auth and model-availability failures raise one board-level notice per agent (not per task), cleared when a later run of that agent succeeds, so a signed-out agent is visible immediately.
+- Crash recovery that switches a task to a different agent says why in the same plain language and links to the notice.
+
+## Acceptance criteria
+- A classifier maps known CLI error text (auth expired or signed out, model unavailable, usage limit, network unreachable) for each supported CLI to a reason id and a fix sentence; unknown errors fall back to the raw tail.
+- The task card shows the reason on an agent failure; a board notice appears once per agent and clears on the next success. Reuse the existing bell or notice mechanism.
+- The Agents page shows each agent's last-run status with the reason.
+- Crash-recovery agent switches record the plain-English reason, not only the raw error.
+- Tests: the classifier table for each CLI (include the Copilot auto-tier error and Cursor 'Cannot use this model'), notice dedupe and clearing, no network in tests.
+- Docs: a short note in user-docs/agents.md. No new runtime dependencies; Settings UI rule does not apply unless a toml key is added.
+
+## Notes for AI
+Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/server/agents.ts (the Copilot enrichment from #1088 is the pattern to generalise), the crash-recovery switch in the engineer runner (search for 'engineer crash recovery'), and the existing release or bell notice code for one-per-key notices. Keep the raw error available.
+
+## Activity
+
+- 2026-11-12T05:35:20Z · created · t@t
