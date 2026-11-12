@@ -99,7 +99,7 @@ jobs:
 
       - name: Package DMG
         run: |
-          APP="macos/.derived-data/Build/Products/Release/RepoOS Hub.app"
+          APP="$REPOOS_MACOS_DERIVED_DATA/Build/Products/Release/RepoOS Hub.app"
           DMGBUILD_VENV="$RUNNER_TEMP/repoos-dmgbuild"
           swift macos/scripts/generate-dmg-background.swift
           python3 -m venv "$DMGBUILD_VENV"
