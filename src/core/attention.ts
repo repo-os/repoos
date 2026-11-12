@@ -5,6 +5,7 @@
 import type { RepoOSConfig, Task } from "./types.js";
 import type { SlowKindNotice, SlowRunFlag } from "./check-slowness.js";
 import { detectProviderUsageLimit } from "./provider-usage-limit.js";
+import { classifyAgentFailure } from "./agent-failure.js";
 
 export interface CloseOutOutcomeFeedEvent {
   taskId: string;
@@ -80,6 +81,8 @@ export interface RecordedAttentionEvent {
   taskId: string | null;
   message: string;
   detail: string;
+  /** Coding CLI that produced this failure, when the event is agent-scoped. */
+  codingAgent?: string | null;
   at: string;
 }
 
@@ -109,6 +112,7 @@ export interface AttentionFeedInput {
   recentProviderFailures: Array<{
     sessionId: string;
     taskId: string | null;
+    codingAgent?: string | null;
     errorReason: string | null;
     startedAt: string;
   }>;
@@ -390,6 +394,15 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
   }
 
   for (const ev of input.recordedEvents) {
+    if (
+      ev.kind === "providerFailure" &&
+      ev.id.startsWith("providerFailure:") &&
+      ["auth", "model-unavailable"].includes(
+        classifyAgentFailure(ev.detail, ev.codingAgent ?? "")?.id ?? "",
+      )
+    ) {
+      continue;
+    }
     pushItem(items, {
       id: ev.id,
       kind: ev.kind,
@@ -414,6 +427,13 @@ export function buildAttentionFeed(input: AttentionFeedInput): AttentionFeed {
   for (const f of input.recentProviderFailures) {
     if (!isProviderFailureReason(f.errorReason)) continue;
     if (detectProviderUsageLimit(f.errorReason ?? "")) continue;
+    if (
+      ["auth", "model-unavailable"].includes(
+        classifyAgentFailure(f.errorReason ?? "", f.codingAgent ?? "")?.id ?? "",
+      )
+    ) {
+      continue;
+    }
     const id = `providerFailure:${f.sessionId}`;
     if (durableProviderIds.has(id)) continue;
     const at = f.startedAt;

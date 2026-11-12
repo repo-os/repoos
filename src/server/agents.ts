@@ -5492,6 +5492,7 @@ export function recordOneShotSession(
     notifyAttentionAfterSession(loadConfig(repoRoot), {
       sessionId,
       taskId: opts.taskId ?? null,
+      codingAgent: agent.cli,
       status: result.ok ? "finished" : "errored",
       errorReason,
       endedAt,
@@ -9735,6 +9736,7 @@ export class AgentRunner {
       notifyAttentionAfterSession(this.config, {
         sessionId: finalSessionId,
         taskId: taskId || null,
+        codingAgent,
         status,
         errorReason,
         endedAt,

@@ -48,4 +48,33 @@ describe("agent last runs", () => {
       }),
     ]);
   });
+
+  it("returns only one row when runs for the same role share a start time", () => {
+    root = mkdtempSync(join(tmpdir(), "repoos-agent-last-runs-tie-"));
+    db = new RepoOSDb(root);
+    const startedAt = "2026-11-12T00:00:00.000Z";
+    for (const [sessionId, status] of [
+      ["tie-a", "ok"],
+      ["tie-b", "errored"],
+    ] as const) {
+      db!.upsertSession({
+        sessionId,
+        sessionType: "engineer",
+        taskId: "1098",
+        agent: "engineer",
+        model: "composer-2.5",
+        codingAgent: "cursor",
+        startedAt,
+        endedAt: startedAt,
+        elapsedMs: 10,
+        status,
+        lastActivityAt: startedAt,
+        errorReason: status === "errored" ? "Cannot use this model: composer-2.5" : null,
+      });
+    }
+
+    const runs = db.getAgentLastRuns();
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({ status: "errored", taskId: "1098" });
+  });
 });

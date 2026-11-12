@@ -148,6 +148,7 @@ export function notifyAttentionAfterSession(
   opts: {
     sessionId: string;
     taskId?: string | null;
+    codingAgent?: string | null;
     status: string;
     errorReason?: string | null;
     endedAt: string;
@@ -158,6 +159,9 @@ export function notifyAttentionAfterSession(
       opts.status === "errored" &&
       isProviderFailureReason(opts.errorReason) &&
       !detectProviderUsageLimit(opts.errorReason ?? "") &&
+      !["auth", "model-unavailable"].includes(
+        classifyAgentFailure(opts.errorReason ?? "", opts.codingAgent ?? "")?.id ?? "",
+      ) &&
       attentionEvents
     ) {
       attentionEvents.record({
@@ -166,6 +170,7 @@ export function notifyAttentionAfterSession(
         taskId: opts.taskId ?? null,
         message: opts.taskId ? `Provider error on #${opts.taskId}` : "Provider error",
         detail: (opts.errorReason ?? "").trim().slice(0, 160) || "Provider or credit failure.",
+        codingAgent: opts.codingAgent ?? null,
         at: opts.endedAt,
       });
       bumpAttention?.();

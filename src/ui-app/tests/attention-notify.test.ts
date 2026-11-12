@@ -43,6 +43,31 @@ describe("notifyAttentionAfterSession", () => {
       taskId: "0042",
     });
   });
+
+  it("leaves auth and model failures to the single per-agent notice", () => {
+    const root = mkdtempSync(join(tmpdir(), "repoos-attn-agent-failure-"));
+    const store = createAttentionEventStore(root);
+    wireAttentionNotifications(store, () => {});
+
+    for (const [sessionId, codingAgent, errorReason] of [
+      ["auth", "cursor", "Cursor is not logged in"],
+      ["model", "cursor", "Cannot use this model: composer-2.5"],
+    ] as const) {
+      notifyAttentionAfterSession(
+        { ...DEFAULT_CONFIG, root, cacheDir: ".repoos", attention: { spendAlertUsd: 0 } },
+        {
+          sessionId,
+          codingAgent,
+          taskId: "0042",
+          status: "errored",
+          errorReason,
+          endedAt: "2026-01-01T00:00:00.000Z",
+        },
+      );
+    }
+
+    expect(store.list()).toHaveLength(0);
+  });
 });
 
 describe("notifyAttentionProviderUsageLimit", () => {

@@ -622,13 +622,15 @@ export class RepoOSDb {
     try {
       return this.db
         .prepare(`
-        SELECT s.agent, s.codingAgent, s.status, s.startedAt, s.errorReason, s.taskId
-        FROM sessions s
-        INNER JOIN (
-          SELECT agent, MAX(startedAt) AS startedAt FROM sessions
-          WHERE agent IS NOT NULL AND agent != '' GROUP BY agent
-        ) latest ON latest.agent = s.agent AND latest.startedAt = s.startedAt
-        ORDER BY s.agent COLLATE NOCASE
+        WITH ranked AS (
+          SELECT agent, codingAgent, status, startedAt, errorReason, taskId,
+            ROW_NUMBER() OVER (
+              PARTITION BY agent ORDER BY startedAt DESC, endedAt DESC, sessionId DESC
+            ) AS runRank
+          FROM sessions WHERE agent IS NOT NULL AND agent != ''
+        )
+        SELECT agent, codingAgent, status, startedAt, errorReason, taskId
+        FROM ranked WHERE runRank = 1 ORDER BY agent COLLATE NOCASE
       `)
         .all() as Array<
         Pick<

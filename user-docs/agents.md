@@ -371,6 +371,7 @@ human-approved subset.
 
 The allowlist is stored in `repoos.toml` as `[[budget.allowlist]]` rows; see
 [Configuration](/configuration#budget-controls-agent-drivers).
+
 ## Agent failure messages
 
 When an agent run fails because its CLI is signed out, its model is unavailable,
