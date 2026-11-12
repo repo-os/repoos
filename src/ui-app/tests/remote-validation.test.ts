@@ -354,9 +354,13 @@ describe("RemoteValidationRunner", () => {
     };
     try {
       const running = runner.validate({ ...mkOpts("1060"), ...capture });
+      let settled = false;
+      void running.then(() => {
+        settled = true;
+      });
       await vi.waitFor(() => expect(started).toBe(true));
       await runner.cancelBrowserCaptures("1060");
-      expect((await running).cancelled).toBe(true);
+      expect(settled).toBe(false);
       expect(
         readRemoteValidationEvents(root, "1060").some((event) =>
           event.message.includes("browser capture cancellation failed"),

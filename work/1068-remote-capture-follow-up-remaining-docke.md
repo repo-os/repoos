@@ -1,12 +1,11 @@
 ---
-last_close_out_gate_ms: 690967
-last_close_out_gate_at: "2026-11-12T19:18:24.198Z"
 id: "1068"
 title: "Remote capture follow-up: remaining Docker/ssh failure-handling and provider-parity gaps"
 type: bug
-status: review
+status: done
 priority: p2
 area: server
+merged_commit: a4d891fe0306902b8430555b35882576521b002c
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/remote-capture-follow-up-remaining-docke
@@ -14,6 +13,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:05:29Z"
 updated_at: "2026-11-12T19:18:24Z"
+last_close_out_gate_ms: 690967
+last_close_out_gate_at: "2026-11-12T19:18:24.198Z"
 review_passes: 2
 review_rounds: 1
 ---

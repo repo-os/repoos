@@ -56,6 +56,58 @@ it.each([
   }
 });
 
+it.each([
+  { failure: "docker ps", mode: "ps", expected: "failed to list stale containers" },
+  { failure: "docker logs", mode: "logs", expected: "failed to read capture logs" },
+  { failure: "docker rm", mode: "rm", expected: "failed to remove repoos-validate-stale" },
+])("startup reaper contains and logs $failure failures", ({ mode, expected }) => {
+  const root = mkdtempSync(join(tmpdir(), "validate-reaper-failure-"));
+  try {
+    const bin = join(root, "bin");
+    mkdirSync(bin);
+    const source = readFileSync(join(process.cwd(), "scripts/remote-runner/validate.sh"), "utf8");
+    const startup = source.slice(0, source.indexOf('WORK="$(mktemp')).concat("\nexit 0\n");
+    writeFileSync(join(root, "startup.sh"), startup);
+    writeFileSync(
+      join(bin, "docker"),
+      `#!/bin/bash
+if [[ "$1" == ps ]]; then
+  if [[ "$*" == *status=running* ]]; then
+    [[ "$MODE" == logs || "$MODE" == rm ]] && { echo abcdef123456; exit 0; }
+    exit 0
+  fi
+  [[ "$MODE" == ps ]] && { echo 'daemon unavailable' >&2; exit 1; }
+  [[ "$MODE" == rm ]] && exit 0
+  exit 0
+fi
+if [[ "$1" == inspect ]]; then
+  [[ "$*" == *.Name* ]] && { echo /repoos-validate-stale; exit 0; }
+  echo REPOOS_BROWSER_CAPTURE_MODE=shots
+  exit 0
+fi
+if [[ "$1" == logs ]]; then
+  if [[ "$MODE" == logs ]]; then echo 'daemon unavailable' >&2; exit 1; fi
+  [[ "$*" == *--since* ]] && exit 0
+  echo '[browser-capture] runner browser capture completed'
+  exit 0
+fi
+if [[ "$1" == stats ]]; then echo '0.2%'; exit 0; fi
+if [[ "$1" == rm ]]; then echo 'permission denied' >&2; exit 1; fi
+exit 0
+`,
+    );
+    chmodSync(join(bin, "docker"), 0o755);
+    const result = spawnSync("bash", [join(root, "startup.sh"), "bundle", "sha"], {
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, MODE: mode },
+      encoding: "utf8",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain(expected);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 it("removes only the run's container when its result is present", () => {
   const root = mkdtempSync(join(tmpdir(), "capture-collect-"));
   try {
