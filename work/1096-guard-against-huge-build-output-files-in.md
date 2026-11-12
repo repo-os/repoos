@@ -2,7 +2,7 @@
 id: "1096"
 title: Guard against huge/build-output files in WIP checkpoint commits and branch diffs
 type: bug
-status: active
+status: review
 needs_input: true
 needs_input_reason: review-rounds-exhausted
 needs_input_detail: "`needs some work` — plaintext secrets at 4–5 MiB escape the scan, the checkpoint ignores the allowlist, and the hook exempts work/ files by…"
@@ -12,7 +12,7 @@ assigned_to: ai
 created_by: njachowski@gmail.com
 branch: feat/guard-against-huge-build-output-files-in
 created_at: "2026-11-11T10:29:43Z"
-updated_at: "2026-11-11T23:50:02Z"
+updated_at: "2026-11-12T00:03:08Z"
 review_passes: 6
 review_rounds: 2
 routing_switches: 1
@@ -147,3 +147,4 @@ Do not rewrite history here; that is #1095. Keep zero runtime dependencies. Mirr
 - 2026-11-11T23:49:39Z · needs_input
 - 2026-11-11T23:49:39Z · needs_input
 - 2026-11-11T23:50:02Z · status review→active
+- 2026-11-12T00:03:08Z · status active→review
