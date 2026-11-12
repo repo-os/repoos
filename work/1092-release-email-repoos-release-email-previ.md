@@ -31,3 +31,4 @@ Start from src/server/routes/release.ts (getReleaseEmailPreview) and src/cli. Do
 - 2026-11-12T00:10:48Z · status inbox→ready
 - 2026-11-12T00:12:43Z · status ready→active, branch
 - 2026-11-12T00:22:00Z · message_queued at 2026-11-12T00:22:00.765Z
+- 2026-11-12T00:22:00Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
