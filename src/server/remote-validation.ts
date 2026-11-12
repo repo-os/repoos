@@ -1196,11 +1196,11 @@ export function staleContainerCleanupCommand(): string {
     // daemon-side candidate set restricted to names with this exact prefix;
     // the inspect/case check below remains a second guard.
     `ids=$(docker ps -aq --filter ${shellQuote(`name=^/${VALIDATE_CONTAINER_PREFIX}-`)} ` +
-    "--filter status=created --filter status=exited --filter status=dead 2>/dev/null) || exit $?; " +
+    "--filter status=created --filter status=exited --filter status=dead 2>/dev/null) || { echo \"failed to list stale containers\" >&2; ids=\"\"; }; " +
     `printf '%s\\n' "$ids" | while IFS= read -r id; do [ -n "$id" ] || continue; ` +
     `name=$(docker inspect -f '{{.Name}}' "$id" 2>/dev/null) || { echo "failed to inspect stale container $id" >&2; continue; }; name=\${name#/}; ` +
     `case "$name" in ${VALIDATE_CONTAINER_PREFIX}-*) ;; *) continue ;; esac; ` +
-    `out=$(docker rm -f "$id" 2>&1) || { case "$out" in "Error response from daemon: No such container: "*) ;; *) echo "$out" >&2; exit 1 ;; esac; }; done`
+    `out=$(docker rm -f "$id" 2>&1) || { case "$out" in "Error response from daemon: No such container: "*) ;; *) echo "failed to remove stale container $id: $out" >&2 ;; esac; }; done`
   );
 }
 
