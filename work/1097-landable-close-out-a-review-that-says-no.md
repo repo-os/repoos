@@ -9,7 +9,7 @@ assigned_to: ai
 created_by: t@t
 branch: feat/landable-close-out-a-review-that-says-no
 created_at: "2026-11-12T01:26:13Z"
-updated_at: "2026-11-12T04:10:56Z"
+updated_at: "2026-11-12T04:10:57Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"cursor\",\"model\":\"composer-2.5\",\"at\":\"2026-11-12T04:10:21.536Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -47,3 +47,4 @@ Callers: `src/server/landable.ts:72` (`blockingBugs`), `src/core/landable.ts` (t
 - 2026-11-12T04:10:21Z · agent exited with an error (cursor) · RetriableError: Connection stalled repeatedly
 - 2026-11-12T04:10:51Z · engineer crash recovery: resuming cursor + composer-2.5 (1/12 crashes in 30m) · RetriableError: Connection stalled repeatedly
 - 2026-11-12T04:10:56Z · needs_input
+- 2026-11-12T04:10:57Z · message_delivered: 1 message(s)
