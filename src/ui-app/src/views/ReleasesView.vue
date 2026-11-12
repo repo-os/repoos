@@ -1247,11 +1247,7 @@ onBeforeUnmount(() => {
                 <div class="rel-provider-name">{{ status.name }}</div>
                 <div class="rel-provider-meta">{{ status.provider }} · {{ status.branch }}</div>
               </div>
-              <span
-                class="rel-pill"
-                :data-phase="phase"
-                data-test-id="release-phase-pill"
-              >
+              <span class="rel-pill" :data-phase="phase" data-test-id="release-phase-pill">
                 <ActivityIndicator v-if="running" :label="phaseLabel" />
                 {{ phaseLabel }}
               </span>
@@ -1605,10 +1601,7 @@ Subject: {{ releaseEmailPreview.subject }}
                 </dl>
 
                 <template v-if="running && run">
-                  <h3
-                    class="release-progress-heading"
-                    data-test-id="release-cut-progress-heading"
-                  >
+                  <h3 class="release-progress-heading" data-test-id="release-cut-progress-heading">
                     <ActivityIndicator :label="phaseHeading" />
                     {{ phaseHeading }}
                   </h3>
