@@ -3,9 +3,6 @@ id: "1081"
 title: "Review loop slice 2: enumeration closer, follow-up tasks, convergence report, Land anyway override"
 type: feature
 status: active
-needs_input: true
-needs_input_reason: dev-error
-needs_input_detail: "2026-11-13T04:09:15.205995Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request"
 priority: p2
 area: [server, core]
 depends_on: ["1080"]
@@ -15,7 +12,7 @@ branch: feat/review-loop-slice-2-enumeration-closer-f
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
-updated_at: "2026-11-13T04:09:25Z"
+updated_at: "2026-11-13T04:09:26Z"
 dev_error_count: 1
 engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T04:09:25.253Z\",\"kind\":\"dev-error\"}]"
 ---
@@ -56,3 +53,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T04:09:12Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-13T04:09:25Z · agent exited with an error (codex) · 2026-11-13T04:09:15.205995Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
 - 2026-11-13T04:09:25Z · engineer crash recovery: resuming codex + gpt-6-luna (1/3 crashes in 30m) · 2026-11-13T04:09:15.205995Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request
+- 2026-11-13T04:09:26Z · needs_input
