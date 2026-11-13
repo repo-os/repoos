@@ -12,7 +12,6 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:34:05Z"
 updated_at: "2026-11-13T15:10:55Z"
-check_retry_count: 2
 last_check_failure: "repoos check at 2026-11-13T15:03:45.326Z: repoos check failed: ui verification failed (2 issue(s)): [missing-target] Board card activity recency popover (target \"default\"): waitFor [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]: waitFor: Timeout 5000ms exceeded. on /work (http://127.0.0.1:45027/work?shotState=board%3AactiveCoding); [missing-target] Board card activity recency popover (target \"default\"): hover [data-task-id=\"9999\"] [data-test-id=\"task-card-agent-hint\"]: hover: Timeout 5000ms exceeded. on /work (http://127.0.… (truncated)"
 ---
 ## Problem
@@ -75,3 +74,4 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 - 2026-11-13T15:03:45Z · message_delivered: 1 message(s)
 - 2026-11-13T15:06:17Z · body
 - 2026-11-13T15:10:55Z · body
+
