@@ -2491,7 +2491,6 @@ export function hostLockShell(opts: {
     '    case "$_opri" in ""|*[!0-9]*) _opri=0 ;; esac',
     '    if [ "$_opri" -gt "$PRIORITY" ] || { [ "$_opri" -eq "$PRIORITY" ] && [ "$_wpid" -lt "$$" ]; }; then',
     "      _defer=1",
-    "      break",
     "    fi",
     "  done",
     '  if [ "$_defer" -eq 1 ]; then',

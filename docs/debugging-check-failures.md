@@ -358,3 +358,21 @@ minute full close-out. Handoff now passes the default profile instead of
 `--profile full`; with no profile-restricted steps in `repoos.toml` the two
 select the same steps. Narrowing which tests close-out runs is a follow-up task.
 The runner host needs the updated `validate.sh` to report remote step timings.
+
+## Remote host lock queue test flaked under load (#1101)
+
+The `remote-host-pool.test.ts` lock-wait test used `process.pid + 1_000_000` as
+the “dead” queue entry and compared the entire queue directory to exactly
+`[process.pid]`. Those assumptions depended on unrelated process state, but
+the production queue scan also had a real bug: it stopped at the first live
+higher-priority waiter. When that filename sorted before a dead PID entry, the
+scan deferred correctly but never reached the dead entry to remove it. The
+test's offset PID could additionally belong to a real process, its exact
+directory assertion rejected legitimate concurrent waiters, and its
+wall-clock upper bound measured host scheduling as well as lock behavior.
+
+Continue scanning after recording a live blocker so every queue entry is
+checked for a dead PID before deferring. In the test, create and terminate a
+child process to obtain a known-dead PID after the lock shell starts; assert
+only the fixture entries (dead removed, live blocker retained), and avoid
+elapsed-time ceilings. Keep the lock's configured wait budget unchanged.
