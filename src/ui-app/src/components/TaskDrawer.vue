@@ -6065,7 +6065,12 @@ watch(
              which tab is open — a "needs input" / "reviewer crashed" message
              buried in one tab is a message the human never sees. -->
           <div
-            v-if="showAgentQuestionsBanner && ui.active && !handoffError && !repo.doneErrorFor(ui.active.id)"
+            v-if="
+              showAgentQuestionsBanner &&
+              ui.active &&
+              !handoffError &&
+              !repo.doneErrorFor(ui.active.id)
+            "
             class="drawer-critical"
           >
             <div class="questions-for-you-banner" role="region" aria-label="Questions for you">
