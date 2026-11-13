@@ -11,7 +11,7 @@ branch: feat/flaky-test-remote-host-pool-times-out-wh
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-13T05:55:54Z"
-updated_at: "2026-11-13T08:50:12Z"
+updated_at: "2026-11-13T09:56:32Z"
 ---
 ## Problem
 src/ui-app/tests/remote-host-pool.test.ts "times out while deferred and removes stale dead-pid queue entries" (added by #1099) passes alone on main (2.1s) but fails in the full-file run and in remote validation on a loaded machine: `expect(readdirSync(waitDir)).toEqual([String(process.pid)])` (line ~2447). It blocked #1081 twice remotely on 2026-11-13 even though the task does not touch remote validation.
@@ -32,3 +32,4 @@ It passes in isolation, so look for a race between stale-entry cleanup and the l
 - 2026-11-13T08:34:24Z · message_queued at 2026-11-13T08:34:24.073Z
 - 2026-11-13T08:34:24Z · CTO nudge: sent engineer a completion reminder after 5m without worktree activity
 - 2026-11-13T08:50:12Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-13T09:56:32Z · message_overdue: still queued after 60m without being delivered
