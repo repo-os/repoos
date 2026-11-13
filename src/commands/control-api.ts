@@ -490,7 +490,12 @@ export async function cmdReview(args: string[]): Promise<number> {
       const api = new RepoOsApi({ port: opts.port });
       await ensureServer(api);
       const res = await api.request("POST", `/api/tasks/${id}/review/followup`, {});
-      if (res.status < 200 || res.status >= 300) throw new RepoOsApiError(String(res.body.error ?? "follow-up creation failed"), res.status, res.body);
+      if (res.status < 200 || res.status >= 300)
+        throw new RepoOsApiError(
+          String(res.body.error ?? "follow-up creation failed"),
+          res.status,
+          res.body,
+        );
       if (opts.json) printJson(res.body);
       else console.log(c.green("  ✓ ") + c.dim(`created follow-up for #${id}`));
       return 0;

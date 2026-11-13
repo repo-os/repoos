@@ -4036,10 +4036,13 @@ export const createReviewFollowup: RouteHandler = async (ctx, _req, res, params)
   if (!task) return json(res, 404, { error: `Task #${params.param1} not found` });
   const report = ctx.reviews.read(task.id);
   if (Number(task.extra?.review_passes ?? 0) < 4) {
-    return json(res, 409, { error: "Follow-up tasks are available after the four-pass review freeze" });
+    return json(res, 409, {
+      error: "Follow-up tasks are available after the four-pass review freeze",
+    });
   }
   const suggestions = report ? extractReviewReportSections(report.markdown).suggestions : undefined;
-  if (!suggestions) return json(res, 400, { error: "The latest review has no non-blocking suggestions" });
+  if (!suggestions)
+    return json(res, 400, { error: "The latest review has no non-blocking suggestions" });
   const created = ctx.repoos.createTask({
     title: `Follow-up: ${task.title}`,
     type: task.type,

@@ -3475,14 +3475,21 @@ const reviewHtml = computed(() =>
 const creatingReviewFollowup = ref(false);
 const reviewFollowupCreated = ref(false);
 const reviewSuggestionsPresent = computed(() =>
-  Boolean(displayedReviewReport.value?.markdown.match(/## Suggestions(?: \([^\n]*\))?\s*\n(?!\s*(?:None found|None|No suggestions)\s*$)[\s\S]*\S/i)),
+  Boolean(
+    displayedReviewReport.value?.markdown.match(
+      /## Suggestions(?: \([^\n]*\))?\s*\n(?!\s*(?:None found|None|No suggestions)\s*$)[\s\S]*\S/i,
+    ),
+  ),
 );
 const reviewFrozen = computed(() => taskRounds.value.review >= 4);
 async function createReviewFollowup(): Promise<void> {
   if (!ui.active || creatingReviewFollowup.value || !reviewSuggestionsPresent.value) return;
   creatingReviewFollowup.value = true;
   try {
-    const result = await api<{ task: { id: string } }>(`/api/tasks/${ui.active.id}/review/followup`, { method: "POST" });
+    const result = await api<{ task: { id: string } }>(
+      `/api/tasks/${ui.active.id}/review/followup`,
+      { method: "POST" },
+    );
     reviewFollowupCreated.value = true;
     notices.push({ kind: "success", message: `Created follow-up task #${result.task.id}` });
   } catch (error) {
@@ -7107,17 +7114,30 @@ watch(
                   <div class="md-rendered" v-html="reviewHtml"></div>
                 </div>
                 <Button
-                  v-if="reviewSuggestionsPresent && reviewFrozen && selectedReviewPassIsLatest && !reviewStale"
+                  v-if="
+                    reviewSuggestionsPresent &&
+                    reviewFrozen &&
+                    selectedReviewPassIsLatest &&
+                    !reviewStale
+                  "
                   variant="secondary"
                   :disabled="creatingReviewFollowup || reviewFollowupCreated"
                   @click="createReviewFollowup"
                 >
-                  {{ reviewFollowupCreated ? "Follow-up created" : creatingReviewFollowup ? "Creating…" : "Create follow-up task" }}
+                  {{
+                    reviewFollowupCreated
+                      ? "Follow-up created"
+                      : creatingReviewFollowup
+                        ? "Creating…"
+                        : "Create follow-up task"
+                  }}
                 </Button>
               </template>
             </template>
             <p class="review-hint">Findings only — you decide whether this task is done.</p>
-            <p v-if="reviewHistoryRows.length" class="review-hint">Round {{ taskRounds.review }} of ~4 · review history is recorded above.</p>
+            <p v-if="reviewHistoryRows.length" class="review-hint">
+              Round {{ taskRounds.review }} of ~4 · review history is recorded above.
+            </p>
           </section>
 
           <section v-else class="review-pane review-chat-pane" role="tabpanel">

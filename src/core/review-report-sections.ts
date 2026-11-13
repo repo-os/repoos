@@ -170,7 +170,9 @@ function sectionContent(sectionLines: Record<string, string[]>): Record<string, 
   const sections: Record<string, string> = {};
   for (const [key, lines] of Object.entries(sectionLines)) {
     const content = lines
-      .filter((line) => !/^\s*No further findings of this class were found after grepping:/i.test(line))
+      .filter(
+        (line) => !/^\s*No further findings of this class were found after grepping:/i.test(line),
+      )
       .join("\n")
       .trim();
     if (!content) continue;
