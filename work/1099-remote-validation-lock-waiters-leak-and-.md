@@ -5,11 +5,13 @@ type: feature
 status: inbox
 priority: p1
 area: core
-assigned_to: ""
+assigned_to: ai
 created_by: t@t
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-12T19:01:43Z"
-updated_at: "2026-11-12T19:01:43Z"
+updated_at: "2026-11-13T00:45:33Z"
 ---
 ## Problem
 
@@ -31,3 +33,4 @@ The lock script is generated in the remote validation lock code (search for `.re
 ## Activity
 
 - 2026-11-12T19:01:43Z · created · t@t
+- 2026-11-13T00:45:33Z · cli_override, model_override
