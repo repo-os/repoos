@@ -11,7 +11,7 @@ branch: feat/release-email-send-to-self-test
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:23Z"
-updated_at: "2026-11-13T07:17:56Z"
+updated_at: "2026-11-13T08:34:24Z"
 ---
 ## Problem
 The release-email tests (#1071) inject a fake fetch and check the send loop, but nothing drives the real sendEmail wiring from a cut through to the Resend request. A regression in the From header or the request shape would pass the current suite.
@@ -34,3 +34,4 @@ See src/server/email.ts and src/server/release-email.ts. Do not put any real key
 - 2026-11-13T07:10:38Z · status inbox→ready
 - 2026-11-13T07:10:40Z · status ready→active, branch
 - 2026-11-13T07:17:56Z · body
+- 2026-11-13T08:34:24Z · message_queued at 2026-11-13T08:34:24.432Z
