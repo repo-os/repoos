@@ -11,8 +11,10 @@ area: web
 assigned_to: ai
 created_by: njachowski@gmail.com
 branch: ""
+cli_override: codex
+model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-11T03:12:51Z"
+updated_at: "2026-11-13T14:29:59Z"
 ---
 ## Problem
 The task drawer (screenshot, #1070 after a failed Move to done) stacks a red close-out failure card on top of a yellow "Waiting for you" review card. Several things are wrong:
@@ -47,3 +49,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-10T04:51:27Z · needs_input
 - 2026-11-11T03:12:51Z · body: Also fix: elapsed time differs between task card and drawer (added)
 - 2026-11-11T03:12:51Z · screenshots
+- 2026-11-13T14:29:59Z · cli_override, model_override
