@@ -12,7 +12,7 @@ branch: feat/release-email-send-to-self-test
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-11T05:28:23Z"
-updated_at: "2026-11-13T11:28:25Z"
+updated_at: "2026-11-13T11:55:43Z"
 last_close_out_gate_ms: 300210
 last_close_out_gate_at: "2026-11-13T11:27:46.101Z"
 review_passes: 1
@@ -59,3 +59,4 @@ See src/server/email.ts and src/server/release-email.ts. Do not put any real key
 - 2026-11-13T10:29:44Z · note: review pass 1: good to go
 - 2026-11-13T11:27:46Z · close-out gate completed in 300s
 - 2026-11-13T11:28:25Z · status done→done, release:success
+- 2026-11-13T11:55:43Z · message_dropped: 1 queued message(s) discarded — task is done
