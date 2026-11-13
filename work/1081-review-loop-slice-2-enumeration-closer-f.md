@@ -16,7 +16,6 @@ updated_at: "2026-11-13T10:35:35Z"
 last_handoff_failure_fingerprint: check|server-side finalization timed out (deadline exceeded)
 last_handoff_failure_sha: 10ee45f27ba6be7df508ee5061460da93d3d2207
 dev_error_count: 6
-engineer_crash_log: "[{\"cli\":\"codex\",\"model\":\"gpt-6-luna\",\"at\":\"2026-11-13T09:56:24.391Z\",\"kind\":\"dev-error\"}]"
 ---
 ## Problem
 Slice 1 of #1080 adds the automatic freeze after `review.freezeAfterPasses`, the lighter bar for P3 and Easter-eggs tasks, and authoritative accepted-scope sections. It does not yet make the review loop converge on its own. Three things remain: reviewers still stop at the first instance of a bug class, remaining non-blocking findings are not turned into follow-up tasks, and the human has no way to accept known, non-blocking risk instead of looping again. Tasks still take 10-15 rounds (#1058, #1060, #1061).
