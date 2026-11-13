@@ -366,6 +366,7 @@ function missingConfiguredAgentCli(root: string, path: string): string | undefin
     "qwen code": "qwen",
     antigravity: "agy",
     kiro: "kiro-cli",
+    cursor: "cursor-agent",
     opencode: "opencode",
   };
   for (const agent of config.agents ?? []) {
