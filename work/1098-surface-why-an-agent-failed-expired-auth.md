@@ -2,10 +2,7 @@
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
-status: review
-needs_input: true
-needs_input_reason: review-rounds-exhausted
-needs_input_detail: `needs some work` — Feature code matches the spec; close-out is blocked until foreign `work/*` bookkeeping is healed off the branch tip.
+status: active
 priority: p2
 area: [web, server, core]
 assigned_to: ai
@@ -14,8 +11,8 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-12T18:56:26Z"
-review_passes: 4
+updated_at: "2026-11-13T02:07:23Z"
+review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-12T16:42:50.789Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
 handoff_signal_retry_count: 2
@@ -44,10 +41,10 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 ```json
 [
 {
-"label": "Task card with agent failure explanation",
+"label": "Task card with plain-language agent failure and Raw CLI error disclosure",
 "target": "default",
-"route": "/work?task=1098&tab=changes",
-"highlight": "[data-task-id=\"1098\"]",
+"route": "/work",
+"highlight": "[data-task-id=\"9999\"] .tc-needs-detail",
 "state": "card:agentFailed"
 }
 ]
@@ -121,4 +118,15 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-12T18:19:06Z · note: review pass 4: needs some work
 - 2026-11-12T18:19:06Z · needs_input
 - 2026-11-12T18:42:58Z · status review→active
+- 2026-11-12T18:43:00Z · CTO nudge: held — an undelivered message is already queued
+- 2026-11-12T18:43:37Z · body
+- 2026-11-12T18:43:49Z · note: handoff requested (cli)
+- 2026-11-12T18:44:55Z · CTO nudge: held — handoff gate is running
+- 2026-11-12T18:56:25Z · note: ui verification passed: 1 of 1 shot captured with clean console (1 shot warning)
 - 2026-11-12T18:56:26Z · status active→review
+- 2026-11-12T18:56:26Z · message_queued at 2026-11-12T18:56:26.179Z
+- 2026-11-12T18:57:25Z · note: review pass 5: good to go
+- 2026-11-12T18:57:25Z · needs_input
+- 2026-11-13T00:45:38Z · message_overdue: still queued after 60m without being delivered
+- 2026-11-13T02:07:21Z · status review→active
+- 2026-11-13T02:07:23Z · CTO nudge: held — an undelivered message is already queued
