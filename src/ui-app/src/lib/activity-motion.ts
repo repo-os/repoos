@@ -55,9 +55,13 @@ function onOcclusionEvent(): void {
 }
 
 function nodeTouchesOverlayLayer(node: Node): boolean {
-  if (!(node instanceof Element)) return false;
-  if (node.hasAttribute(OVERLAY_LAYER_ATTR)) return true;
-  return node.querySelector(`[${OVERLAY_LAYER_ATTR}]`) !== null;
+  // MutationObserver deliveries can outlive jsdom's window during worker
+  // teardown. Avoid the realm global (`Element`), which may already be gone;
+  // the node's DOM type and methods remain available on the queued record.
+  if (node.nodeType !== 1) return false;
+  const element = node as Element;
+  if (element.hasAttribute(OVERLAY_LAYER_ATTR)) return true;
+  return element.querySelector(`[${OVERLAY_LAYER_ATTR}]`) !== null;
 }
 
 function attachOverlayDomObserver(): void {
