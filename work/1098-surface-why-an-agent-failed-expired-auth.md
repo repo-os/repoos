@@ -1,6 +1,4 @@
 ---
-last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends"
-last_handoff_failure_sha: 1d8580e59488533a22962294050c61990436f9d4
 id: "1098"
 title: "Surface why an agent failed (expired auth, unavailable model) on the task card and in a notification, not only in the activity log"
 type: feature
@@ -14,6 +12,8 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
 updated_at: "2026-11-13T02:38:32Z"
+last_handoff_failure_fingerprint: "check|repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends"
+last_handoff_failure_sha: 1d8580e59488533a22962294050c61990436f9d4
 review_passes: 5
 review_rounds: 2
 last_check_failure: "repoos check at 2026-11-12T16:42:50.789Z: repoos check failed: tests — tests/pre-review-remote-gate.test.ts > standalone `repoos check` remote failure (#0520) > exits non-zero AND records the failure for the Checks surface when the runner is unusable — at tests/pre-review-remote-gate.test.ts:486:26 — AssertionError: expected +0 to be 1 // Object.is equality"
@@ -139,4 +139,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-13T02:38:31Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-13T02:38:32Z · message_queued at 2026-11-13T02:38:32.022Z
 - 2026-11-13T02:38:32Z · handoff failed · task-file handoff failed at check · repoos check failed: tests — tests/handoff-unification.test.ts > the runner finalizes a `repoos mv review` request at turn end (#0507) > ignores a marker left behind by an earlier turn — at check tests/handoff-unification.test.ts:156:50 — Error: timeout: the turn ends
-
+- 2026-11-13T02:38:32Z · message_delivered: 3 message(s)
