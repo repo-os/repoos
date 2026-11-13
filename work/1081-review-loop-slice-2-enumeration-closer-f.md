@@ -1,4 +1,6 @@
 ---
+last_handoff_failure_fingerprint: "check|repoos check failed: ReferenceError: Element is not defined"
+last_handoff_failure_sha: b3fade40fcb336b8d9f88e98eb25876b0cb0dcee
 id: "1081"
 title: "Review loop slice 2: enumeration closer, follow-up tasks, convergence report, Land anyway override"
 type: feature
@@ -86,3 +88,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T06:18:44Z · body
 - 2026-11-13T06:23:35Z · message_queued at 2026-11-13T06:23:35.276Z
 - 2026-11-13T06:23:35Z · handoff failed · task-file handoff failed at check · repoos check failed: ReferenceError: Element is not defined
+
