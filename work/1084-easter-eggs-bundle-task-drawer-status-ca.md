@@ -11,7 +11,7 @@ branch: feat/easter-eggs-bundle-task-drawer-status-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-13T14:42:44Z"
+updated_at: "2026-11-13T15:13:19Z"
 ---
 ## Problem
 The task drawer (screenshot, #1070 after a failed Move to done) stacks a red close-out failure card on top of a yellow "Waiting for you" review card. Several things are wrong:
@@ -71,3 +71,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T14:30:03Z · status ready→active, needs_input, branch
 - 2026-11-13T14:33:47Z · body
 - 2026-11-13T14:42:44Z · body
+- 2026-11-13T15:13:19Z · message_queued at 2026-11-13T15:13:19.507Z
