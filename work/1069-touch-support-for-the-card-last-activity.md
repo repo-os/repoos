@@ -12,7 +12,7 @@ branch: feat/touch-support-for-the-card-last-activity
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T03:34:05Z"
-updated_at: "2026-11-13T16:33:04Z"
+updated_at: "2026-11-13T16:33:21Z"
 last_close_out_gate_ms: 317082
 last_close_out_gate_at: "2026-11-13T16:33:04.774Z"
 review_passes: 1
@@ -83,4 +83,4 @@ Likely best done as part of the planned mobile rewrite; check that first and fol
 - 2026-11-13T15:13:17Z · message_queued at 2026-11-13T15:13:17.504Z
 - 2026-11-13T15:14:13Z · note: review pass 1: good to go
 - 2026-11-13T16:33:04Z · close-out gate completed in 317s
-
+- 2026-11-13T16:33:21Z · status done→done, release:success
