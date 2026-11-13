@@ -1,4 +1,6 @@
 ---
+updated_at: "2026-11-13T15:29:59Z"
+review_passes: 1
 id: "1084"
 title: "Easter eggs bundle: task drawer status cards (one at a time, spacing, stray info icon)"
 type: feature
@@ -11,7 +13,6 @@ branch: feat/easter-eggs-bundle-task-drawer-status-ca
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-10T04:51:24Z"
-updated_at: "2026-11-13T15:29:59Z"
 last_check_failure: "repoos check at 2026-11-13T15:23:12.527Z: repoos check failed: ui verification failed (1 issue(s)): [missing-target] Drawer close-out failure in light appearance (target \"default\"): highlight .drawer-done-error matched nothing on /work?task=1084&tab=changes (http://127.0.0.1:38527/work?shotState=drawer:statusChecksFailed)"
 ---
 ## Problem
@@ -81,3 +82,4 @@ On #1086 the board and pipeline cards showed 'Checks · checking review · 9m 46
 - 2026-11-13T15:28:58Z · note: Task body is underspecified: missing sections: Desired UX, Acceptance criteria
 - 2026-11-13T15:28:58Z · message_queued at 2026-11-13T15:28:58.749Z
 - 2026-11-13T15:29:59Z · note: review pass 1: good to go
+
