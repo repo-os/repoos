@@ -12,7 +12,7 @@ branch: feat/surface-why-an-agent-failed-expired-auth
 cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-12T05:35:20Z"
-updated_at: "2026-11-13T05:54:39Z"
+updated_at: "2026-11-13T06:23:35Z"
 last_close_out_gate_ms: 597784
 last_close_out_gate_at: "2026-11-13T05:53:53.521Z"
 review_passes: 6
@@ -150,3 +150,4 @@ Related code: src/core/copilot-auto-tier.ts and enrichAgentFailureDetail in src/
 - 2026-11-13T04:09:11Z · message_overdue: still queued after 60m without being delivered
 - 2026-11-13T05:53:53Z · close-out gate completed in 598s
 - 2026-11-13T05:54:39Z · status done→done, release:success
+- 2026-11-13T06:23:35Z · message_dropped: 1 queued message(s) discarded — task is done
