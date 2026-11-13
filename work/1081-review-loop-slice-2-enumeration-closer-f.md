@@ -2,7 +2,7 @@
 id: "1081"
 title: "Review loop slice 2: enumeration closer, follow-up tasks, convergence report, Land anyway override"
 type: feature
-status: review
+status: active
 priority: p2
 area: [server, core]
 depends_on: ["1080"]
@@ -13,6 +13,7 @@ cli_override: codex
 model_override: gpt-6-luna
 created_at: "2026-11-09T13:59:41Z"
 updated_at: "2026-11-13T10:41:52Z"
+review_rounds: 1
 review_passes: 1
 dev_error_count: 6
 ---
@@ -129,3 +130,4 @@ Start from `src/server/review.ts` (`reviewMission`, the "Earlier passes and the 
 - 2026-11-13T10:40:35Z · message_queued at 2026-11-13T10:40:35.062Z
 - 2026-11-13T10:41:51Z · note: review pass 1: needs some work
 - 2026-11-13T10:41:52Z · message_delivered: 1 message(s)
+- 2026-11-13T10:41:52Z · status review→active
